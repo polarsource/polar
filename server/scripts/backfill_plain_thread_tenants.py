@@ -70,53 +70,65 @@ async def _process_thread(
     result: BackfillResult,
     result_lock: asyncio.Lock,
     dry_run: bool,
+    email_cache: dict[str, str | None],
+    org_cache: dict[str, list[tuple[uuid.UUID, str]]],
 ) -> None:
     async with semaphore:
-        try:
-            email = await plain_service.get_customer_email(customer_id)
-        except Exception:
-            async with result_lock:
-                result.thread_errors += 1
-                result.error_details.append(
-                    (
-                        thread_id,
-                        f"get_customer_email {customer_id}",
-                        traceback.format_exc(),
+        if customer_id in email_cache:
+            email = email_cache[customer_id]
+        else:
+            try:
+                email = await plain_service.get_customer_email(customer_id)
+            except Exception:
+                async with result_lock:
+                    result.thread_errors += 1
+                    result.error_details.append(
+                        (
+                            thread_id,
+                            f"get_customer_email {customer_id}",
+                            traceback.format_exc(),
+                        )
                     )
-                )
-            return
+                return
+            email_cache[customer_id] = email
 
         if not email:
             async with result_lock:
                 result.threads_skipped_no_email += 1
             return
 
-        async with sessionmaker() as session:
-            organizations = await _find_organizations_by_email(
-                session, email, self_org_id
-            )
+        cache_key = email.lower()
+        if cache_key in org_cache:
+            orgs = org_cache[cache_key]
+        else:
+            async with sessionmaker() as session:
+                fetched = await _find_organizations_by_email(
+                    session, email, self_org_id
+                )
+                orgs = [(o.id, o.name) for o in fetched]
+            org_cache[cache_key] = orgs
 
-        if len(organizations) == 0:
+        if len(orgs) == 0:
             async with result_lock:
                 result.threads_skipped_no_org += 1
             typer.echo(f"  No org for thread {thread_id} (email={email})")
             return
 
-        if len(organizations) > 1:
+        if len(orgs) > 1:
             async with result_lock:
                 result.threads_skipped_ambiguous += 1
-            org_ids = ", ".join(str(o.id) for o in organizations)
+            org_ids = ", ".join(str(org_id) for org_id, _ in orgs)
             typer.echo(
                 f"  Ambiguous orgs for thread {thread_id} (email={email}): {org_ids}"
             )
             return
 
-        organization = organizations[0]
-        tenant_external_id = str(organization.id)
+        org_id, org_name = orgs[0]
+        tenant_external_id = str(org_id)
 
         if dry_run:
             typer.echo(
-                f"  Would set tenant {organization.name} ({tenant_external_id}) "
+                f"  Would set tenant {org_name} ({tenant_external_id}) "
                 f"on thread {thread_id} (email={email})"
             )
             async with result_lock:
@@ -148,12 +160,15 @@ async def run_backfill(
     limit: int | None = None,
     concurrency: int = 5,
     page_size: int = 50,
+    customer_ids: list[str] | None = None,
 ) -> BackfillResult:
     result = BackfillResult()
     self_org_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
 
     semaphore = asyncio.Semaphore(concurrency)
     result_lock = asyncio.Lock()
+    email_cache: dict[str, str | None] = {}
+    org_cache: dict[str, list[tuple[uuid.UUID, str]]] = {}
 
     typer.echo("Scanning Plain threads without a tenant...")
 
@@ -163,7 +178,7 @@ async def run_backfill(
         tasks: list[asyncio.Task[None]] = []
         async with asyncio.TaskGroup() as tg:
             async for thread in plain_service.iter_threads_without_tenant(
-                page_size=page_size
+                page_size=page_size, customer_ids=customer_ids
             ):
                 result.threads_seen += 1
                 progress.update(task_id, total=result.threads_seen)
@@ -179,6 +194,8 @@ async def run_backfill(
                             result=result,
                             result_lock=result_lock,
                             dry_run=dry_run,
+                            email_cache=email_cache,
+                            org_cache=org_cache,
                         )
                     )
                 )
@@ -200,6 +217,11 @@ async def backfill(
     limit: int | None = typer.Option(None, help="Maximum number of threads to process"),
     concurrency: int = typer.Option(5, help="Number of threads to process in parallel"),
     page_size: int = typer.Option(50, help="Plain threads page size"),
+    customer_id: list[str] = typer.Option(
+        [],
+        "--customer-id",
+        help="Restrict to specific Plain customer IDs (repeat for multiple)",
+    ),
 ) -> None:
     """Backfill Plain thread tenants for threads missing a tenant."""
     configure_script_logging()
@@ -225,6 +247,7 @@ async def backfill(
             limit=limit,
             concurrency=concurrency,
             page_size=page_size,
+            customer_ids=customer_id or None,
         )
 
         typer.echo(

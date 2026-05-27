@@ -122,11 +122,14 @@ jobs:
         run: |
           DISALLOWED=""
           for file in $(echo "$SERVER_FILES" | jq -r '.[]'); do
-            # Allow: migrations, models, and the workflow file itself
+            # Allow: migrations, models, scripts, and the workflow file itself
             if [[ "$file" == server/migrations/* ]]; then
               continue
             fi
             if [[ "$file" == server/polar/models/* ]]; then
+              continue
+            fi
+            if [[ "$file" == server/scripts/* ]]; then
               continue
             fi
             if [[ "$file" == .github/* ]]; then

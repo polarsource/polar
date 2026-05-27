@@ -5,8 +5,12 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, TypedDict
 from uuid import UUID
 
+from alembic_utils.pg_function import PGFunction
+from alembic_utils.pg_trigger import PGTrigger
+from alembic_utils.replaceable_entity import register_entities
 from sqlalchemy import (
     TIMESTAMP,
+    BigInteger,
     Boolean,
     ColumnElement,
     Connection,
@@ -135,13 +139,22 @@ class Checkout(
     )
 
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount_v2: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True, default=None
+    )
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     min_seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     max_seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
     net_amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    net_amount_v2: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True, default=None
+    )
     tax_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    tax_amount_v2: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True, default=None
+    )
     tax_processor: Mapped[TaxProcessor | None] = mapped_column(
         StringEnum(TaxProcessor), default=None, nullable=True
     )
@@ -473,3 +486,86 @@ def check_expiration(
 ) -> None:
     if target.expires_at < utc_now() and target.status == CheckoutStatus.open:
         target.status = CheckoutStatus.expired
+
+
+checkouts_sync_v2_amounts_function = PGFunction(
+    schema="public",
+    signature="checkouts_sync_v2_amounts()",
+    definition="""
+    RETURNS trigger AS $$
+    BEGIN
+        IF TG_OP = 'INSERT' THEN
+            IF NEW.amount_v2 IS NULL AND NEW.amount IS NOT NULL THEN
+                NEW.amount_v2 := NEW.amount;
+            END IF;
+            IF NEW.net_amount_v2 IS NULL AND NEW.net_amount IS NOT NULL THEN
+                NEW.net_amount_v2 := NEW.net_amount;
+            END IF;
+            IF NEW.tax_amount_v2 IS NULL AND NEW.tax_amount IS NOT NULL THEN
+                NEW.tax_amount_v2 := NEW.tax_amount;
+            END IF;
+            IF NEW.amount IS NULL
+               AND NEW.amount_v2 IS NOT NULL
+               AND NEW.amount_v2 <= 2147483647 THEN
+                NEW.amount := NEW.amount_v2::integer;
+            END IF;
+            IF NEW.net_amount IS NULL
+               AND NEW.net_amount_v2 IS NOT NULL
+               AND NEW.net_amount_v2 <= 2147483647 THEN
+                NEW.net_amount := NEW.net_amount_v2::integer;
+            END IF;
+            IF NEW.tax_amount IS NULL
+               AND NEW.tax_amount_v2 IS NOT NULL
+               AND NEW.tax_amount_v2 <= 2147483647 THEN
+                NEW.tax_amount := NEW.tax_amount_v2::integer;
+            END IF;
+        ELSIF TG_OP = 'UPDATE' THEN
+            IF NEW.amount IS DISTINCT FROM OLD.amount THEN
+                NEW.amount_v2 := NEW.amount;
+            END IF;
+            IF NEW.net_amount IS DISTINCT FROM OLD.net_amount THEN
+                NEW.net_amount_v2 := NEW.net_amount;
+            END IF;
+            IF NEW.tax_amount IS DISTINCT FROM OLD.tax_amount THEN
+                NEW.tax_amount_v2 := NEW.tax_amount;
+            END IF;
+            IF NEW.amount_v2 IS DISTINCT FROM OLD.amount_v2
+               AND NEW.amount_v2 IS NOT NULL
+               AND NEW.amount_v2 <= 2147483647 THEN
+                NEW.amount := NEW.amount_v2::integer;
+            END IF;
+            IF NEW.net_amount_v2 IS DISTINCT FROM OLD.net_amount_v2
+               AND NEW.net_amount_v2 IS NOT NULL
+               AND NEW.net_amount_v2 <= 2147483647 THEN
+                NEW.net_amount := NEW.net_amount_v2::integer;
+            END IF;
+            IF NEW.tax_amount_v2 IS DISTINCT FROM OLD.tax_amount_v2 THEN
+                IF NEW.tax_amount_v2 IS NULL THEN
+                    NEW.tax_amount := NULL;
+                ELSIF NEW.tax_amount_v2 <= 2147483647 THEN
+                    NEW.tax_amount := NEW.tax_amount_v2::integer;
+                END IF;
+            END IF;
+        END IF;
+        RETURN NEW;
+    END
+    $$ LANGUAGE plpgsql;
+    """,
+)
+
+checkouts_sync_v2_amounts_trigger = PGTrigger(
+    schema="public",
+    signature="checkouts_sync_v2_amounts_trigger",
+    on_entity="checkouts",
+    definition="""
+    BEFORE INSERT OR UPDATE ON checkouts
+    FOR EACH ROW EXECUTE FUNCTION checkouts_sync_v2_amounts();
+    """,
+)
+
+register_entities(
+    (
+        checkouts_sync_v2_amounts_function,
+        checkouts_sync_v2_amounts_trigger,
+    )
+)

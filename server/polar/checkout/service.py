@@ -28,6 +28,7 @@ from polar.checkout.schemas import (
 from polar.config import settings
 from polar.custom_field.data import validate_custom_field_data
 from polar.customer.repository import CustomerRepository
+from polar.customer_seat.service import seat_service
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
@@ -67,6 +68,7 @@ from polar.models import (
     CheckoutLink,
     Customer,
     Discount,
+    Order,
     Organization,
     Payment,
     PaymentMethod,
@@ -1227,6 +1229,7 @@ class CheckoutService:
 
         product = checkout.product
         subscription: Subscription | None = None
+        order: Order | None = None
         if product.is_recurring:
             (
                 subscription,
@@ -1234,7 +1237,7 @@ class CheckoutService:
             ) = await subscription_service.create_or_update_from_checkout(
                 session, checkout, payment_method
             )
-            await order_service.create_from_checkout_subscription(
+            order = await order_service.create_from_checkout_subscription(
                 session,
                 checkout,
                 subscription,
@@ -1244,9 +1247,11 @@ class CheckoutService:
                 payment,
             )
         else:
-            await order_service.create_from_checkout_one_time(
+            order = await order_service.create_from_checkout_one_time(
                 session, checkout, payment
             )
+
+        await self._maybe_auto_claim_single_seat(session, checkout, subscription, order)
 
         # Create trial redemption record if this checkout had a trial period
         if checkout.trial_end is not None:
@@ -1317,6 +1322,46 @@ class CheckoutService:
             log.error("Failed to capture PostHog event", error=str(e))
 
         return checkout
+
+    async def _maybe_auto_claim_single_seat(
+        self,
+        session: AsyncSession,
+        checkout: Checkout,
+        subscription: Subscription | None,
+        order: Order | None,
+    ) -> None:
+        """When a buyer purchases exactly one seat through the default Polar
+        confirmation flow, immediately claim that seat for themselves so they
+        get access without going through the invitation email loop.
+        """
+        if checkout.seats != 1:
+            return
+        product_price = checkout.product_price
+        if product_price is None or not is_seat_price(product_price):
+            return
+        # Only apply to the default internal confirmation flow. If the merchant
+        # set a custom success_url, they own the post-checkout seat-assignment
+        # UX and we leave things alone.
+        if checkout._success_url is not None:
+            return
+
+        container: Subscription | Order | None = subscription or order
+        if container is None or container.customer is None:
+            return
+
+        try:
+            await seat_service.assign_seat(
+                session,
+                container,
+                email=container.customer.email,
+                immediate_claim=True,
+            )
+        except Exception as e:
+            log.exception(
+                "Failed to auto-claim single seat after checkout",
+                checkout_id=str(checkout.id),
+                error=str(e),
+            )
 
     async def handle_failure(
         self, session: AsyncSession, checkout: Checkout, payment: Payment | None = None

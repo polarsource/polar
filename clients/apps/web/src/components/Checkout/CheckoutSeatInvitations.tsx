@@ -28,7 +28,12 @@ const CheckoutSeatInvitations = ({
 }: CheckoutSeatInvitationsProps) => {
   const isSeatBased = getSeatPrice(checkout) !== null
 
-  if (!isSeatBased || !checkout.seats || !customerSessionToken) {
+  if (
+    !isSeatBased ||
+    !checkout.seats ||
+    checkout.seats === 1 ||
+    !customerSessionToken
+  ) {
     return null
   }
 

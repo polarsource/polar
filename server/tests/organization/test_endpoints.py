@@ -1185,6 +1185,15 @@ class TestCheckSlugAvailability:
         assert response.json() == {"available": False}
 
     @pytest.mark.auth
+    async def test_too_long(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/v1/organizations/check-slug", json={"slug": "a" * 65}
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"available": False}
+
+    @pytest.mark.auth
     async def test_invalid_format(self, client: AsyncClient) -> None:
         response = await client.post(
             "/v1/organizations/check-slug", json={"slug": "Invalid Slug!"}

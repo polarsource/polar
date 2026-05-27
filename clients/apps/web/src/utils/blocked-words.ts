@@ -1,3 +1,6 @@
+// Source of truth: server/polar/organization/schemas.py (SLUG_MAX_LENGTH).
+export const ORGANIZATION_SLUG_MAX_LENGTH = 64
+
 // Source of truth: server/polar/config.py, keep in sync.
 // Backend validates regardless, but this is to give the user immediate feedback in the onboarding
 // since org creation (and validation) is in the last step.

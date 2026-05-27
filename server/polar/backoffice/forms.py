@@ -6,7 +6,7 @@ from inspect import isclass
 from typing import Any, Self
 
 from fastapi.datastructures import FormData
-from pydantic import AfterValidator, BaseModel, ValidationError
+from pydantic import AfterValidator, BaseModel, StringConstraints, ValidationError
 from pydantic.fields import FieldInfo
 from pydantic_core import ErrorDetails
 from tagflow import classes, tag, text
@@ -492,6 +492,21 @@ def _is_skipped_field(field: FieldInfo) -> bool:
     return False
 
 
+def _string_constraint_attrs(field: FieldInfo) -> dict[str, Any]:
+    """Surface Pydantic `StringConstraints` as native HTML input attributes."""
+    attrs: dict[str, Any] = {}
+    for meta in field.metadata:
+        if not isinstance(meta, StringConstraints):
+            continue
+        if meta.min_length is not None:
+            attrs["minlength"] = meta.min_length
+        if meta.max_length is not None:
+            attrs["maxlength"] = meta.max_length
+        if meta.pattern is not None:
+            attrs["pattern"] = meta.pattern
+    return attrs
+
+
 def _get_input_field(field: FieldInfo) -> FormField:
     for meta in field.metadata:
         if isinstance(meta, FormField):
@@ -508,7 +523,7 @@ def _get_input_field(field: FieldInfo) -> FormField:
                     options=[(item.value, item.name) for item in field.annotation]
                 )
 
-    return InputField()
+    return InputField(**_string_constraint_attrs(field))
 
 
 CurrencyValidator = AfterValidator(lambda x: x * 100)

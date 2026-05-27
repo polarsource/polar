@@ -75,9 +75,12 @@ def validate_reserved_keywords(value: str) -> str:
     return value
 
 
+SLUG_MAX_LENGTH = 64
+
+
 SlugInput = Annotated[
     str,
-    StringConstraints(to_lower=True, min_length=3),
+    StringConstraints(to_lower=True, min_length=3, max_length=SLUG_MAX_LENGTH),
     SlugValidator,
     AfterValidator(validate_reserved_keywords),
     AfterValidator(validate_blocked_words),

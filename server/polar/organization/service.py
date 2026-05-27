@@ -8,9 +8,8 @@ from uuid import UUID
 
 import email_validator
 import structlog
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, TypeAdapter
 from pydantic import ValidationError as PydanticValidationError
-from slugify import slugify
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
@@ -99,12 +98,13 @@ from .schemas import (
     OrganizationReviewVerdict,
     OrganizationSlugAvailability,
     OrganizationUpdate,
-    validate_blocked_words,
-    validate_reserved_keywords,
+    SlugInput,
 )
 from .sorting import OrganizationSortProperty
 
 log = structlog.get_logger()
+
+_slug_input_adapter: TypeAdapter[str] = TypeAdapter(SlugInput)
 
 _MIN_REVIEW_THRESHOLD = 10_000
 SNOOZE_MIN_DAYS = 1
@@ -272,18 +272,13 @@ class OrganizationService:
     ) -> OrganizationSlugAvailability:
         """Check whether a slug is valid and available for a new organization.
 
-        Mirrors the validation rules of the `SlugInput` type plus a
-        check against existing (and soft-deleted) organizations.
+        Runs the slug through `SlugInput` (the same validator used when
+        creating an organization) and reports invalid slugs as unavailable
+        rather than as a 422.
         """
-        normalized = slug.lower()
-
-        if len(normalized) < 3 or slugify(normalized) != normalized:
-            return OrganizationSlugAvailability(available=False)
-
         try:
-            validate_reserved_keywords(normalized)
-            validate_blocked_words(normalized)
-        except ValueError:
+            normalized = _slug_input_adapter.validate_python(slug)
+        except PydanticValidationError:
             return OrganizationSlugAvailability(available=False)
 
         repository = OrganizationRepository.from_session(session)

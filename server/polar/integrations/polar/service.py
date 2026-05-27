@@ -75,7 +75,7 @@ BenefitGrantWebhookPayload = (
 
 
 SCALE_PLAN_NAME = "Scale"
-STARTUP_PROGRAM_DISCOUNT_NAME = "Startup Program - Scale"
+STARTUP_PROGRAM_DISCOUNT_NAME_PREFIX = "Startup Program — "
 
 
 class PolarSelfService:
@@ -646,18 +646,23 @@ class PolarSelfService:
         metadata = customer.metadata or {}
         if not metadata.get("startup_program_eligible"):
             return None
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(organization_id)
+        if organization is None:
+            return None
         discount = await self._get_or_create_startup_discount(
-            session, product_id=uuid.UUID(plan.id)
+            session, product_id=uuid.UUID(plan.id), org_slug=organization.slug
         )
         return str(discount.id)
 
     async def _get_or_create_startup_discount(
-        self, session: AsyncSession, *, product_id: uuid.UUID
+        self, session: AsyncSession, *, product_id: uuid.UUID, org_slug: str
     ) -> Discount:
         polar_organization_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
+        discount_name = f"{STARTUP_PROGRAM_DISCOUNT_NAME_PREFIX}{org_slug}"
         discount_repository = DiscountRepository.from_session(session)
         existing = await discount_repository.get_redeemable_by_name_and_organization(
-            name=STARTUP_PROGRAM_DISCOUNT_NAME,
+            name=discount_name,
             organization_id=polar_organization_id,
         )
         if existing is not None:
@@ -675,7 +680,7 @@ class PolarSelfService:
         return await discount_service.create(
             session,
             DiscountPercentageCreate(
-                name=STARTUP_PROGRAM_DISCOUNT_NAME,
+                name=discount_name,
                 type=DiscountType.percentage,
                 basis_points=10000,
                 duration=DiscountDuration.repeating,

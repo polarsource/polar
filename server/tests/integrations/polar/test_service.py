@@ -1250,6 +1250,7 @@ class TestStartCheckout:
         client_mock.get_customer_by_external_id_or_none = AsyncMock(
             return_value=eligible_customer,
         )
+        organization_repository_mock.get_by_id.return_value.slug = "test-org"
 
         discount_repository = MagicMock()
         discount_repository.get_redeemable_by_name_and_organization = AsyncMock(
@@ -1274,14 +1275,14 @@ class TestStartCheckout:
         )
 
         discount_repository.get_redeemable_by_name_and_organization.assert_awaited_once_with(
-            name="Startup Program - Scale",
+            name="Startup Program — test-org",
             organization_id=SELF_ORG_ID,
         )
         discount_create_mock.assert_awaited_once()
         create_call = discount_create_mock.await_args
         assert create_call is not None
         discount_create = create_call.args[1]
-        assert discount_create.name == "Startup Program - Scale"
+        assert discount_create.name == "Startup Program — test-org"
         assert discount_create.basis_points == 10000
         assert discount_create.duration_in_months == 12
         assert discount_create.max_redemptions == 1
@@ -1310,6 +1311,7 @@ class TestStartCheckout:
         client_mock.get_customer_by_external_id_or_none = AsyncMock(
             return_value=eligible_customer,
         )
+        organization_repository_mock.get_by_id.return_value.slug = "test-org"
 
         existing_discount = MagicMock(spec=Discount)
         existing_discount.id = uuid.UUID("33333333-3333-3333-3333-333333333333")
@@ -1332,6 +1334,10 @@ class TestStartCheckout:
             product_id=scale_product_id,
         )
 
+        discount_repository.get_redeemable_by_name_and_organization.assert_awaited_once_with(
+            name="Startup Program — test-org",
+            organization_id=SELF_ORG_ID,
+        )
         discount_create_mock.assert_not_awaited()
         assert client_mock.create_checkout.await_args.kwargs[
             "discount_id"

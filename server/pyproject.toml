@@ -58,7 +58,7 @@ dependencies = [
   "asgi-ratelimit>=0.10.0",
   "aiocsv>=1.4.0",
   "alembic-utils>=0.8.8",
-  "clickhouse-connect>=0.8.0",
+  "clickhouse-connect[async]>=1.0.1",
   "playwright>=1.59.0",
   "trafilatura>=2.0.0",
   "polar-sdk==0.31.5",

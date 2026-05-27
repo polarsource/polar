@@ -328,6 +328,89 @@ class TestEnqueueTrackOrganizationReviewUsage:
         assert enqueue.call_args.kwargs["cost_usd"] == "0.5"
 
 
+@pytest.mark.asyncio
+class TestResolveFreePlan:
+    async def test_subscribed_org_gets_standard_free(
+        self,
+        read_session_mock: AsyncReadSession,
+        account_repository_mock: MagicMock,
+    ) -> None:
+        subscription = MagicMock(spec=Subscription)
+
+        plan = await polar_self.resolve_free_plan(
+            read_session_mock, ORG_A, subscription=subscription
+        )
+
+        assert plan.name == "Free"
+        assert plan.transaction_fee is not None
+        assert plan.transaction_fee.percent == settings.PLATFORM_FEE_BASIS_POINTS
+        assert plan.transaction_fee.fixed == settings.PLATFORM_FEE_FIXED
+        account_repository_mock.get_by_organization.assert_not_called()
+
+    async def test_grandfathered_account_gets_early_member(
+        self,
+        read_session_mock: AsyncReadSession,
+        account_repository_mock: MagicMock,
+    ) -> None:
+        account = MagicMock()
+        account.platform_fee = (
+            settings.PLATFORM_FEE_BASIS_POINTS_EARLY_ACCESS,
+            settings.PLATFORM_FEE_FIXED_EARLY_ACCESS,
+            settings.PLATFORM_SUBSCRIPTION_FEE_BASIS_POINTS_EARLY_ACCESS,
+        )
+        account_repository_mock.get_by_organization.return_value = account
+
+        plan = await polar_self.resolve_free_plan(
+            read_session_mock, ORG_A, subscription=None
+        )
+
+        assert plan.name == "Early Member"
+        assert plan.transaction_fee is not None
+        assert (
+            plan.transaction_fee.percent
+            == settings.PLATFORM_FEE_BASIS_POINTS_EARLY_ACCESS
+        )
+        assert plan.transaction_fee.fixed == settings.PLATFORM_FEE_FIXED_EARLY_ACCESS
+
+    async def test_non_matching_account_gets_standard_free(
+        self,
+        read_session_mock: AsyncReadSession,
+        account_repository_mock: MagicMock,
+    ) -> None:
+        account = MagicMock()
+        account.platform_fee = (
+            settings.PLATFORM_FEE_BASIS_POINTS,
+            settings.PLATFORM_FEE_FIXED,
+            settings.PLATFORM_SUBSCRIPTION_FEE_BASIS_POINTS,
+        )
+        account_repository_mock.get_by_organization.return_value = account
+
+        plan = await polar_self.resolve_free_plan(
+            read_session_mock, ORG_A, subscription=None
+        )
+
+        assert plan.name == "Free"
+        assert plan.transaction_fee is not None
+        assert plan.transaction_fee.percent == settings.PLATFORM_FEE_BASIS_POINTS
+        assert plan.transaction_fee.fixed == settings.PLATFORM_FEE_FIXED
+
+    async def test_no_account_gets_standard_free(
+        self,
+        read_session_mock: AsyncReadSession,
+        account_repository_mock: MagicMock,
+    ) -> None:
+        account_repository_mock.get_by_organization.return_value = None
+
+        plan = await polar_self.resolve_free_plan(
+            read_session_mock, ORG_A, subscription=None
+        )
+
+        assert plan.name == "Free"
+        assert plan.transaction_fee is not None
+        assert plan.transaction_fee.percent == settings.PLATFORM_FEE_BASIS_POINTS
+        assert plan.transaction_fee.fixed == settings.PLATFORM_FEE_FIXED
+
+
 class TestResolveOrganizationId:
     def test_valid_uuid(self) -> None:
         assert (

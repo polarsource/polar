@@ -148,6 +148,7 @@ async def create_account(
     processor_fees_applicable: bool = True,
     fee_basis_points: int | None = None,
     fee_fixed: int | None = None,
+    subscription_fee_basis_points: int | None = None,
     billing_name: str | None = None,
     billing_address: Address | None = None,
 ) -> Account:
@@ -156,6 +157,7 @@ async def create_account(
         processor_fees_applicable=processor_fees_applicable,
         _platform_fee_percent=fee_basis_points,
         _platform_fee_fixed=fee_fixed,
+        _platform_subscription_fee_percent=subscription_fee_basis_points,
         billing_name=billing_name,
         billing_address=billing_address,
     )

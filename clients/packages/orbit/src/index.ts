@@ -7,6 +7,7 @@ export { BarChart } from './components/BarChart'
 export type { BarChartItem } from './components/BarChart'
 export { Button } from './components/Button'
 export type { ButtonProps } from './components/Button'
+export { OrbitThemeBinder } from './components/OrbitThemeBinder'
 
 // ─── Tokens ───────────────────────────────────────────────────────────────────
 export { animationDelays, animations } from './tokens/animations'

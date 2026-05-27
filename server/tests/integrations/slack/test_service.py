@@ -3,18 +3,19 @@ from unittest.mock import AsyncMock
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.integrations.slack.repository import OrganizationSlackIntegrationRepository
+from polar.integrations.slack.repository import BenefitSlackIntegrationRepository
 from polar.integrations.slack.schemas import SlackIntegrationCredentialsUpdate
 from polar.integrations.slack.service import (
-    OrganizationSlackIntegrationService,
+    BenefitSlackIntegrationService,
     SlackIntegrationAppIdAlreadyLinked,
     SlackIntegrationInvalidCredentials,
     SlackIntegrationNotConfigured,
 )
 from polar.models import (
+    Benefit,
+    BenefitSlackIntegration,
     Customer,
     Organization,
-    OrganizationSlackIntegration,
 )
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
@@ -23,16 +24,36 @@ from tests.fixtures.random_objects import create_benefit, create_benefit_grant
 
 _REDIRECT_URI = "https://api.polar.sh/v1/integrations/slack/callback"
 
+_BASE_PROPERTIES = {
+    "channel_name_template": "support-{customer_name}",
+    "private": True,
+    "welcome_message": None,
+    "archive_on_revoke": True,
+    "team_invitees": [],
+}
+
+
+async def _create_benefit(
+    save_fixture: SaveFixture, organization: Organization
+) -> Benefit:
+    return await create_benefit(
+        save_fixture,
+        organization=organization,
+        type=BenefitType.slack_shared_channel,
+        properties=_BASE_PROPERTIES,
+    )
+
 
 async def _create_integration(
     save_fixture: SaveFixture,
-    organization: Organization,
+    benefit: Benefit,
     *,
     bot_token: str | None = "xoxb-test-token",
     slack_app_id: str = "A0TESTAPPID",
-) -> OrganizationSlackIntegration:
-    integration = OrganizationSlackIntegration(
-        organization_id=organization.id,
+) -> BenefitSlackIntegration:
+    integration = BenefitSlackIntegration(
+        benefit_id=benefit.id,
+        organization_id=benefit.organization_id,
         display_name="Test",
         slack_app_id=slack_app_id,
         client_id="100.200",
@@ -51,7 +72,7 @@ async def _create_integration(
 
 def _service_with_mock(
     mocker: MockerFixture, **overrides: object
-) -> tuple[OrganizationSlackIntegrationService, AsyncMock]:
+) -> tuple[BenefitSlackIntegrationService, AsyncMock]:
     client = AsyncMock()
     client.oauth_v2_access = AsyncMock(
         return_value=overrides.get(
@@ -67,7 +88,7 @@ def _service_with_mock(
             },
         )
     )
-    service = OrganizationSlackIntegrationService()
+    service = BenefitSlackIntegrationService()
     service._client = client
     return service, client
 
@@ -77,15 +98,17 @@ class TestSetCredentials:
     async def test_creates_when_missing(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         mocker: MockerFixture,
         organization: Organization,
     ) -> None:
+        benefit = await _create_benefit(save_fixture, organization)
         service, _client = _service_with_mock(
             mocker,
             oauth_v2_access={"ok": False, "error": "invalid_code"},
         )
         update = SlackIntegrationCredentialsUpdate(
-            organization_id=organization.id,
+            benefit_id=benefit.id,
             display_name="Test",
             slack_app_id="A0NEWAPPID0",
             client_id="100.200",
@@ -94,7 +117,7 @@ class TestSetCredentials:
         )
 
         integration = await service.set_credentials(
-            session, organization, update, redirect_uri=_REDIRECT_URI
+            session, benefit, update, redirect_uri=_REDIRECT_URI
         )
 
         assert integration.slack_app_id == "A0NEWAPPID0"
@@ -108,13 +131,14 @@ class TestSetCredentials:
         mocker: MockerFixture,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
+        benefit = await _create_benefit(save_fixture, organization)
+        await _create_integration(save_fixture, benefit)
         service, _client = _service_with_mock(
             mocker,
             oauth_v2_access={"ok": False, "error": "invalid_code"},
         )
         update = SlackIntegrationCredentialsUpdate(
-            organization_id=organization.id,
+            benefit_id=benefit.id,
             display_name="Test",
             slack_app_id="A0TESTAPPID",
             client_id="100.200",
@@ -123,7 +147,7 @@ class TestSetCredentials:
         )
 
         integration = await service.set_credentials(
-            session, organization, update, redirect_uri=_REDIRECT_URI
+            session, benefit, update, redirect_uri=_REDIRECT_URI
         )
 
         # Same client_id and slack_app_id, only secrets rotated → keep install
@@ -139,13 +163,14 @@ class TestSetCredentials:
         mocker: MockerFixture,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
+        benefit = await _create_benefit(save_fixture, organization)
+        await _create_integration(save_fixture, benefit)
         service, _client = _service_with_mock(
             mocker,
             oauth_v2_access={"ok": False, "error": "invalid_code"},
         )
         update = SlackIntegrationCredentialsUpdate(
-            organization_id=organization.id,
+            benefit_id=benefit.id,
             display_name="Test",
             slack_app_id="A0TESTAPPID",
             client_id="999.888",
@@ -154,14 +179,14 @@ class TestSetCredentials:
         )
 
         integration = await service.set_credentials(
-            session, organization, update, redirect_uri=_REDIRECT_URI
+            session, benefit, update, redirect_uri=_REDIRECT_URI
         )
 
         assert integration.bot_token is None
         assert integration.team_id is None
         assert integration.client_id == "999.888"
 
-    async def test_rejects_app_id_owned_by_another_org(
+    async def test_rejects_app_id_owned_by_another_benefit(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -169,16 +194,18 @@ class TestSetCredentials:
         organization: Organization,
         organization_second: Organization,
     ) -> None:
+        other_benefit = await _create_benefit(save_fixture, organization_second)
         await _create_integration(
-            save_fixture, organization_second, slack_app_id="A0CONFLICTX"
+            save_fixture, other_benefit, slack_app_id="A0CONFLICTX"
         )
+        benefit = await _create_benefit(save_fixture, organization)
         await session.flush()
         service, _client = _service_with_mock(
             mocker,
             oauth_v2_access={"ok": False, "error": "invalid_code"},
         )
         update = SlackIntegrationCredentialsUpdate(
-            organization_id=organization.id,
+            benefit_id=benefit.id,
             display_name="Test",
             slack_app_id="A0CONFLICTX",
             client_id="100.200",
@@ -188,21 +215,23 @@ class TestSetCredentials:
 
         with pytest.raises(SlackIntegrationAppIdAlreadyLinked):
             await service.set_credentials(
-                session, organization, update, redirect_uri=_REDIRECT_URI
+                session, benefit, update, redirect_uri=_REDIRECT_URI
             )
 
     async def test_raises_when_slack_rejects_credentials(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         mocker: MockerFixture,
         organization: Organization,
     ) -> None:
+        benefit = await _create_benefit(save_fixture, organization)
         service, _client = _service_with_mock(
             mocker,
             oauth_v2_access={"ok": False, "error": "invalid_client_id"},
         )
         update = SlackIntegrationCredentialsUpdate(
-            organization_id=organization.id,
+            benefit_id=benefit.id,
             display_name="Test",
             slack_app_id="A0BADAPPXXX",
             client_id="1.234",
@@ -212,7 +241,7 @@ class TestSetCredentials:
 
         with pytest.raises(SlackIntegrationInvalidCredentials):
             await service.set_credentials(
-                session, organization, update, redirect_uri=_REDIRECT_URI
+                session, benefit, update, redirect_uri=_REDIRECT_URI
             )
 
 
@@ -225,11 +254,12 @@ class TestCompleteInstall:
         mocker: MockerFixture,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization, bot_token=None)
+        benefit = await _create_benefit(save_fixture, organization)
+        await _create_integration(save_fixture, benefit, bot_token=None)
         service, _client = _service_with_mock(mocker)
 
         integration = await service.complete_install(
-            session, organization.id, code="abc", redirect_uri=_REDIRECT_URI
+            session, benefit.id, code="abc", redirect_uri=_REDIRECT_URI
         )
 
         assert integration.bot_token == "xoxb-new-token"
@@ -246,7 +276,8 @@ class TestCompleteInstall:
         mocker: MockerFixture,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization, bot_token=None)
+        benefit = await _create_benefit(save_fixture, organization)
+        await _create_integration(save_fixture, benefit, bot_token=None)
         service, client = _service_with_mock(mocker)
         client.oauth_v2_access = AsyncMock(
             return_value={
@@ -260,19 +291,21 @@ class TestCompleteInstall:
 
         with pytest.raises(SlackIntegrationInvalidCredentials, match="app_id_mismatch"):
             await service.complete_install(
-                session, organization.id, code="abc", redirect_uri=_REDIRECT_URI
+                session, benefit.id, code="abc", redirect_uri=_REDIRECT_URI
             )
 
     async def test_raises_when_no_integration(
         self,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         mocker: MockerFixture,
         organization: Organization,
     ) -> None:
+        benefit = await _create_benefit(save_fixture, organization)
         service, _client = _service_with_mock(mocker)
         with pytest.raises(SlackIntegrationNotConfigured):
             await service.complete_install(
-                session, organization.id, code="abc", redirect_uri=_REDIRECT_URI
+                session, benefit.id, code="abc", redirect_uri=_REDIRECT_URI
             )
 
     async def test_empty_scope_string_yields_none(
@@ -282,7 +315,8 @@ class TestCompleteInstall:
         mocker: MockerFixture,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization, bot_token=None)
+        benefit = await _create_benefit(save_fixture, organization)
+        await _create_integration(save_fixture, benefit, bot_token=None)
         service, client = _service_with_mock(mocker)
         client.oauth_v2_access = AsyncMock(
             return_value={
@@ -295,7 +329,7 @@ class TestCompleteInstall:
         )
 
         integration = await service.complete_install(
-            session, organization.id, code="abc", redirect_uri=_REDIRECT_URI
+            session, benefit.id, code="abc", redirect_uri=_REDIRECT_URI
         )
         assert integration.scopes is None
 
@@ -309,7 +343,8 @@ class TestHandleEvent:
         mocker: MockerFixture,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
+        benefit = await _create_benefit(save_fixture, organization)
+        await _create_integration(save_fixture, benefit)
         service, _client = _service_with_mock(mocker)
 
         await service.handle_event(
@@ -318,8 +353,8 @@ class TestHandleEvent:
             event={"type": "tokens_revoked"},
         )
 
-        repo = OrganizationSlackIntegrationRepository.from_session(session)
-        integration = await repo.get_by_organization(organization.id)
+        repo = BenefitSlackIntegrationRepository.from_session(session)
+        integration = await repo.get_by_benefit(benefit.id)
         assert integration is not None
         assert integration.bot_token is None
         assert integration.revoked_at is not None
@@ -331,7 +366,8 @@ class TestHandleEvent:
         mocker: MockerFixture,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
+        benefit = await _create_benefit(save_fixture, organization)
+        await _create_integration(save_fixture, benefit)
         service, _client = _service_with_mock(mocker)
 
         await service.handle_event(
@@ -340,8 +376,8 @@ class TestHandleEvent:
             event={"type": "app_uninstalled"},
         )
 
-        repo = OrganizationSlackIntegrationRepository.from_session(session)
-        integration = await repo.get_by_organization(organization.id)
+        repo = BenefitSlackIntegrationRepository.from_session(session)
+        integration = await repo.get_by_benefit(benefit.id)
         assert integration is not None
         assert integration.bot_token is None
 
@@ -367,18 +403,8 @@ class TestHandleEvent:
     ) -> None:
         from polar.benefit.grant.repository import BenefitGrantRepository
 
-        await _create_integration(save_fixture, organization)
-        benefit = await create_benefit(
-            save_fixture,
-            organization=organization,
-            type=BenefitType.slack_shared_channel,
-            properties={
-                "channel_name_template": "x-{customer_name}",
-                "private": True,
-                "welcome_message": None,
-                "archive_on_revoke": True,
-            },
-        )
+        benefit = await _create_benefit(save_fixture, organization)
+        await _create_integration(save_fixture, benefit)
         grant = await create_benefit_grant(
             save_fixture,
             customer,
@@ -416,11 +442,12 @@ class TestDelete:
         mocker: MockerFixture,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
+        benefit = await _create_benefit(save_fixture, organization)
+        await _create_integration(save_fixture, benefit)
         service, _client = _service_with_mock(mocker)
 
-        integration = await service.get(session, organization.id)
+        integration = await service.get(session, benefit.id)
         assert integration is not None
         await service.delete(session, integration)
 
-        assert await service.get(session, organization.id) is None
+        assert await service.get(session, benefit.id) is None

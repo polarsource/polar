@@ -7,17 +7,24 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
 
+from .benefit import Benefit
 from .organization import Organization
 
 
-class OrganizationSlackIntegration(RecordModel):
-    __tablename__ = "organization_slack_integrations"
+class BenefitSlackIntegration(RecordModel):
+    __tablename__ = "benefit_slack_integrations"
 
+    benefit_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey("benefits.id", ondelete="cascade"),
+        nullable=False,
+        unique=True,
+    )
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
         nullable=False,
-        unique=True,
+        index=True,
     )
 
     display_name: Mapped[str] = mapped_column(String(35), nullable=False)
@@ -58,6 +65,10 @@ class OrganizationSlackIntegration(RecordModel):
     revoked_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
+
+    @declared_attr
+    def benefit(cls) -> Mapped["Benefit"]:
+        return relationship(Benefit, lazy="raise")
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:

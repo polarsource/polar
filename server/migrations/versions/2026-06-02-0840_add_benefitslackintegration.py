@@ -1,7 +1,7 @@
-"""Add OrganizationSlackIntegration
+"""Add BenefitSlackIntegration
 
 Revision ID: 0e4e79f67574
-Revises: 69a2e3ae542c
+Revises: 64d92ea66fa5
 Create Date: 2026-05-20 16:11:09.994763
 
 """
@@ -14,14 +14,15 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "0e4e79f67574"
-down_revision = "69a2e3ae542c"
+down_revision = "64d92ea66fa5"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
     op.create_table(
-        "organization_slack_integrations",
+        "benefit_slack_integrations",
+        sa.Column("benefit_id", sa.Uuid(), nullable=False),
         sa.Column("organization_id", sa.Uuid(), nullable=False),
         sa.Column("display_name", sa.String(length=35), nullable=False),
         sa.Column("slack_app_id", sa.String(length=32), nullable=True),
@@ -41,38 +42,48 @@ def upgrade() -> None:
         sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("deleted_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.ForeignKeyConstraint(
-            ["organization_id"],
-            ["organizations.id"],
-            name=op.f("organization_slack_integrations_organization_id_fkey"),
+            ["benefit_id"],
+            ["benefits.id"],
+            name=op.f("benefit_slack_integrations_benefit_id_fkey"),
             ondelete="cascade",
         ),
-        sa.PrimaryKeyConstraint(
-            "id", name=op.f("organization_slack_integrations_pkey")
+        sa.ForeignKeyConstraint(
+            ["organization_id"],
+            ["organizations.id"],
+            name=op.f("benefit_slack_integrations_organization_id_fkey"),
+            ondelete="cascade",
         ),
+        sa.PrimaryKeyConstraint("id", name=op.f("benefit_slack_integrations_pkey")),
         sa.UniqueConstraint(
-            "organization_id",
-            name=op.f("organization_slack_integrations_organization_id_key"),
+            "benefit_id",
+            name=op.f("benefit_slack_integrations_benefit_id_key"),
         ),
         sa.UniqueConstraint(
             "slack_app_id",
-            name=op.f("organization_slack_integrations_slack_app_id_key"),
+            name=op.f("benefit_slack_integrations_slack_app_id_key"),
         ),
     )
     op.create_index(
-        op.f("ix_organization_slack_integrations_created_at"),
-        "organization_slack_integrations",
+        op.f("ix_benefit_slack_integrations_created_at"),
+        "benefit_slack_integrations",
         ["created_at"],
         unique=False,
     )
     op.create_index(
-        op.f("ix_organization_slack_integrations_deleted_at"),
-        "organization_slack_integrations",
+        op.f("ix_benefit_slack_integrations_deleted_at"),
+        "benefit_slack_integrations",
         ["deleted_at"],
         unique=False,
     )
     op.create_index(
-        op.f("ix_organization_slack_integrations_team_id"),
-        "organization_slack_integrations",
+        op.f("ix_benefit_slack_integrations_organization_id"),
+        "benefit_slack_integrations",
+        ["organization_id"],
+        unique=False,
+    )
+    op.create_index(
+        op.f("ix_benefit_slack_integrations_team_id"),
+        "benefit_slack_integrations",
         ["team_id"],
         unique=False,
     )
@@ -80,15 +91,19 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_index(
-        op.f("ix_organization_slack_integrations_team_id"),
-        table_name="organization_slack_integrations",
+        op.f("ix_benefit_slack_integrations_team_id"),
+        table_name="benefit_slack_integrations",
     )
     op.drop_index(
-        op.f("ix_organization_slack_integrations_deleted_at"),
-        table_name="organization_slack_integrations",
+        op.f("ix_benefit_slack_integrations_organization_id"),
+        table_name="benefit_slack_integrations",
     )
     op.drop_index(
-        op.f("ix_organization_slack_integrations_created_at"),
-        table_name="organization_slack_integrations",
+        op.f("ix_benefit_slack_integrations_deleted_at"),
+        table_name="benefit_slack_integrations",
     )
-    op.drop_table("organization_slack_integrations")
+    op.drop_index(
+        op.f("ix_benefit_slack_integrations_created_at"),
+        table_name="benefit_slack_integrations",
+    )
+    op.drop_table("benefit_slack_integrations")

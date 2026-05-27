@@ -35,13 +35,7 @@ DisplayName = Annotated[str, StringConstraints(min_length=1, max_length=35)]
 
 
 class SlackIntegrationCredentialsUpdate(Schema):
-    organization_id: UUID4 | None = Field(
-        default=None,
-        description=(
-            "Target organization. Required when authenticated as a user. Must be "
-            "omitted when authenticated with an organization token."
-        ),
-    )
+    benefit_id: UUID4 = Field(description="Benefit the integration belongs to.")
     display_name: DisplayName = Field(
         description=(
             "Display name used by the bot user in your Slack workspace. "
@@ -71,7 +65,7 @@ class SlackIntegrationCredentialsUpdate(Schema):
 
 
 class SlackIntegrationManifestRequest(Schema):
-    organization_id: UUID4 | None = Field(default=None)
+    benefit_id: UUID4
     display_name: DisplayName = Field(
         description=(
             "Name shown in your Slack workspace for the app and bot user. "
@@ -102,6 +96,7 @@ class SlackWorkspaceUsersResponse(Schema):
 
 class SlackIntegration(TimestampedSchema):
     id: UUID4
+    benefit_id: UUID4
     organization_id: UUID4
 
     display_name: str

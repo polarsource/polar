@@ -1,18 +1,22 @@
 import json
 from typing import Annotated, Any
+from uuid import UUID
 
 from fastapi import Depends, Header, Query, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import UUID4
 
+from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
+from polar.benefit.repository import BenefitRepository
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
+from polar.kit.db.postgres import AsyncReadSession as AsyncReadSessionT
+from polar.kit.db.postgres import AsyncSession as AsyncSessionT
 from polar.kit.http import ReturnTo, get_safe_return_url
-from polar.models import OrganizationSlackIntegration
+from polar.models import Benefit, BenefitSlackIntegration
+from polar.models.benefit import BenefitType
 from polar.openapi import APITag
-from polar.organization.repository import OrganizationRepository
-from polar.organization.resolver import get_payload_organization
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
@@ -23,7 +27,7 @@ from polar.routing import APIRouter
 
 from .auth import SlackIntegrationRead, SlackIntegrationWrite
 from .manifest import generate_manifest
-from .repository import OrganizationSlackIntegrationRepository
+from .repository import BenefitSlackIntegrationRepository
 from .schemas import (
     SlackIntegration,
     SlackIntegrationCredentialsUpdate,
@@ -35,7 +39,7 @@ from .schemas import (
 from .service import (
     SlackIntegrationInvalidState,
     SlackIntegrationNotConfigured,
-    organization_slack_integration,
+    benefit_slack_integration,
 )
 from .verification import verify_slack_signature
 
@@ -47,7 +51,7 @@ router = APIRouter(
 CALLBACK_ROUTE_NAME = "integrations.slack.callback"
 
 
-def _to_read_schema(integration: OrganizationSlackIntegration) -> SlackIntegration:
+def _to_read_schema(integration: BenefitSlackIntegration) -> SlackIntegration:
     def _last_4(value: str | None) -> str:
         return value[-4:] if value else ""
 
@@ -55,6 +59,7 @@ def _to_read_schema(integration: OrganizationSlackIntegration) -> SlackIntegrati
         id=integration.id,
         created_at=integration.created_at,
         modified_at=integration.modified_at,
+        benefit_id=integration.benefit_id,
         organization_id=integration.organization_id,
         display_name=integration.display_name,
         slack_app_id=integration.slack_app_id or "",
@@ -72,23 +77,36 @@ def _to_read_schema(integration: OrganizationSlackIntegration) -> SlackIntegrati
     )
 
 
+async def _get_writable_benefit(
+    session: AsyncSessionT | AsyncReadSessionT,
+    auth_subject: AuthSubject[Any],
+    benefit_id: UUID,
+) -> Benefit:
+    benefit_repository = BenefitRepository.from_session(session)
+    benefit = await benefit_repository.get_by_id(benefit_id)
+    if benefit is None or benefit.type != BenefitType.slack_shared_channel:
+        raise ResourceNotFound()
+    await assert_organization_permission(
+        session,
+        auth_subject,
+        benefit.organization_id,
+        OrganizationPermission.organization_manage,
+    )
+    return benefit
+
+
 @router.get(
     "/integration",
     response_model=SlackIntegration,
     responses={404: {"description": "No Slack integration configured."}},
 )
 async def get_integration(
-    organization_id: Annotated[UUID4, Query()],
+    benefit_id: Annotated[UUID4, Query()],
     auth_subject: SlackIntegrationRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> SlackIntegration:
-    await assert_organization_permission(
-        session,
-        auth_subject,
-        organization_id,
-        OrganizationPermission.organization_manage,
-    )
-    integration = await organization_slack_integration.get(session, organization_id)
+    await _get_writable_benefit(session, auth_subject, benefit_id)
+    integration = await benefit_slack_integration.get(session, benefit_id)
     if integration is None:
         raise ResourceNotFound()
     return _to_read_schema(integration)
@@ -100,20 +118,15 @@ async def get_integration(
     responses={404: {"description": "No Slack integration configured."}},
 )
 async def list_workspace_users(
-    organization_id: Annotated[UUID4, Query()],
+    benefit_id: Annotated[UUID4, Query()],
     auth_subject: SlackIntegrationRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> SlackWorkspaceUsersResponse:
-    await assert_organization_permission(
-        session,
-        auth_subject,
-        organization_id,
-        OrganizationPermission.organization_manage,
-    )
-    integration = await organization_slack_integration.get(session, organization_id)
+    await _get_writable_benefit(session, auth_subject, benefit_id)
+    integration = await benefit_slack_integration.get(session, benefit_id)
     if integration is None or integration.bot_token is None:
         raise ResourceNotFound()
-    users = await organization_slack_integration.list_workspace_users(integration)
+    users = await benefit_slack_integration.list_workspace_users(integration)
     return SlackWorkspaceUsersResponse(users=[SlackWorkspaceUser(**u) for u in users])
 
 
@@ -123,20 +136,15 @@ async def list_workspace_users(
     responses={404: {"description": "No Slack integration configured."}},
 )
 async def delete_integration(
-    organization_id: Annotated[UUID4, Query()],
+    benefit_id: Annotated[UUID4, Query()],
     auth_subject: SlackIntegrationWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    await assert_organization_permission(
-        session,
-        auth_subject,
-        organization_id,
-        OrganizationPermission.organization_manage,
-    )
-    integration = await organization_slack_integration.get(session, organization_id)
+    await _get_writable_benefit(session, auth_subject, benefit_id)
+    integration = await benefit_slack_integration.get(session, benefit_id)
     if integration is None:
         raise ResourceNotFound()
-    await organization_slack_integration.delete(session, integration)
+    await benefit_slack_integration.delete(session, integration)
 
 
 @router.post("/manifest", response_model=SlackIntegrationManifest)
@@ -145,17 +153,11 @@ async def post_manifest(
     auth_subject: SlackIntegrationWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> SlackIntegrationManifest:
-    organization = await get_payload_organization(session, auth_subject, payload)
-    await assert_organization_permission(
-        session,
-        auth_subject,
-        organization.id,
-        OrganizationPermission.organization_manage,
-    )
+    benefit = await _get_writable_benefit(session, auth_subject, payload.benefit_id)
     # Upsert so the field the merchant types into doubles as a save and
     # survives reloads even before they've pasted credentials.
-    await organization_slack_integration.upsert_display_name(
-        session, organization, payload.display_name
+    await benefit_slack_integration.upsert_display_name(
+        session, benefit, payload.display_name
     )
     return SlackIntegrationManifest(manifest=generate_manifest(payload.display_name))
 
@@ -167,40 +169,29 @@ async def post_credentials(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
 ) -> SlackIntegration:
-    organization = await get_payload_organization(session, auth_subject, payload)
-    await assert_organization_permission(
-        session,
-        auth_subject,
-        organization.id,
-        OrganizationPermission.organization_manage,
-    )
+    benefit = await _get_writable_benefit(session, auth_subject, payload.benefit_id)
     redirect_uri = str(request.url_for(CALLBACK_ROUTE_NAME))
-    integration = await organization_slack_integration.set_credentials(
-        session, organization, payload, redirect_uri=redirect_uri
+    integration = await benefit_slack_integration.set_credentials(
+        session, benefit, payload, redirect_uri=redirect_uri
     )
     return _to_read_schema(integration)
 
 
 @router.get("/authorize")
 async def authorize(
-    organization_id: Annotated[UUID4, Query()],
+    benefit_id: Annotated[UUID4, Query()],
     return_to: ReturnTo,
     auth_subject: SlackIntegrationWrite,
     request: Request,
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
-    await assert_organization_permission(
-        session,
-        auth_subject,
-        organization_id,
-        OrganizationPermission.organization_manage,
-    )
-    integration = await organization_slack_integration.get(session, organization_id)
+    await _get_writable_benefit(session, auth_subject, benefit_id)
+    integration = await benefit_slack_integration.get(session, benefit_id)
     if integration is None or integration.client_id is None:
         raise SlackIntegrationNotConfigured()
 
     redirect_uri = str(request.url_for(CALLBACK_ROUTE_NAME))
-    authorize_url = organization_slack_integration.build_authorize_url(
+    authorize_url = benefit_slack_integration.build_authorize_url(
         integration,
         subject_id=auth_subject.subject.id,
         redirect_uri=redirect_uri,
@@ -217,29 +208,19 @@ async def callback(
     state: str = Query(...),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
-    state_data = organization_slack_integration.decode_state(state)
+    state_data = benefit_slack_integration.decode_state(state)
 
     if state_data.get("subject_id") != str(auth_subject.subject.id):
         raise SlackIntegrationInvalidState(
             "Authorization must be completed by the same account that started it."
         )
 
-    organization_id = state_data["organization_id"]
-    organization_repository = OrganizationRepository.from_session(session)
-    organization = await organization_repository.get_by_id(organization_id)
-    if organization is None:
-        raise ResourceNotFound()
-
-    await assert_organization_permission(
-        session,
-        auth_subject,
-        organization.id,
-        OrganizationPermission.organization_manage,
-    )
+    benefit_id = UUID(state_data["benefit_id"])
+    await _get_writable_benefit(session, auth_subject, benefit_id)
 
     redirect_uri = str(request.url_for(CALLBACK_ROUTE_NAME))
-    await organization_slack_integration.complete_install(
-        session, organization.id, code=code, redirect_uri=redirect_uri
+    await benefit_slack_integration.complete_install(
+        session, benefit_id, code=code, redirect_uri=redirect_uri
     )
 
     return RedirectResponse(get_safe_return_url(state_data.get("return_to")), 303)
@@ -269,7 +250,7 @@ async def events(
     if not isinstance(api_app_id, str):
         raise BadRequest("Missing api_app_id.")
 
-    repository = OrganizationSlackIntegrationRepository.from_session(session)
+    repository = BenefitSlackIntegrationRepository.from_session(session)
     integration = await repository.get_by_app_id(api_app_id)
     if integration is None or integration.signing_secret is None:
         raise Unauthorized()
@@ -289,7 +270,7 @@ async def events(
 
     if payload_type == "event_callback":
         event = payload.get("event") or {}
-        await organization_slack_integration.handle_event(
+        await benefit_slack_integration.handle_event(
             session, api_app_id=api_app_id, event=event
         )
 

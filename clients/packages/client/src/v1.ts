@@ -28532,6 +28532,11 @@ export interface components {
        */
       id: string
       /**
+       * Benefit Id
+       * Format: uuid4
+       */
+      benefit_id: string
+      /**
        * Organization Id
        * Format: uuid4
        */
@@ -28569,10 +28574,11 @@ export interface components {
     /** SlackIntegrationCredentialsUpdate */
     SlackIntegrationCredentialsUpdate: {
       /**
-       * Organization Id
-       * @description Target organization. Required when authenticated as a user. Must be omitted when authenticated with an organization token.
+       * Benefit Id
+       * Format: uuid4
+       * @description Benefit the integration belongs to.
        */
-      organization_id?: string | null
+      benefit_id: string
       /**
        * Display Name
        * @description Display name used by the bot user in your Slack workspace. Reflected in the manifest.
@@ -28609,8 +28615,11 @@ export interface components {
     }
     /** SlackIntegrationManifestRequest */
     SlackIntegrationManifestRequest: {
-      /** Organization Id */
-      organization_id?: string | null
+      /**
+       * Benefit Id
+       * Format: uuid4
+       */
+      benefit_id: string
       /**
        * Display Name
        * @description Name shown in your Slack workspace for the app and bot user. Defaults to your organization name; customize before pasting into Slack.
@@ -33200,7 +33209,7 @@ export interface operations {
   'integrations_slack:get_integration': {
     parameters: {
       query: {
-        organization_id: string
+        benefit_id: string
       }
       header?: never
       path?: never
@@ -33238,7 +33247,7 @@ export interface operations {
   'integrations_slack:delete_integration': {
     parameters: {
       query: {
-        organization_id: string
+        benefit_id: string
       }
       header?: never
       path?: never
@@ -33274,7 +33283,7 @@ export interface operations {
   'integrations_slack:list_workspace_users': {
     parameters: {
       query: {
-        organization_id: string
+        benefit_id: string
       }
       header?: never
       path?: never
@@ -33378,7 +33387,7 @@ export interface operations {
   'integrations_slack:authorize': {
     parameters: {
       query: {
-        organization_id: string
+        benefit_id: string
         return_to?: string | null
       }
       header?: never

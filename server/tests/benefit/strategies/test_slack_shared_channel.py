@@ -17,9 +17,10 @@ from polar.benefit.strategies.slack_shared_channel.service import (
     BenefitSlackSharedChannelService,
 )
 from polar.models import (
+    Benefit,
+    BenefitSlackIntegration,
     Customer,
     Organization,
-    OrganizationSlackIntegration,
 )
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
@@ -38,12 +39,13 @@ _BASE_PROPERTIES = {
 
 async def _create_integration(
     save_fixture: SaveFixture,
-    organization: Organization,
+    benefit: Benefit,
     *,
     bot_token: str | None = "xoxb-test-token",
-) -> OrganizationSlackIntegration:
-    integration = OrganizationSlackIntegration(
-        organization_id=organization.id,
+) -> BenefitSlackIntegration:
+    integration = BenefitSlackIntegration(
+        benefit_id=benefit.id,
+        organization_id=benefit.organization_id,
         display_name="Test",
         slack_app_id="A0TESTAPPID",
         client_id="100.200",
@@ -118,7 +120,6 @@ class TestSlackSharedChannelGrant:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         customer.name = "Acme"
         benefit = await create_benefit(
             save_fixture,
@@ -126,6 +127,7 @@ class TestSlackSharedChannelGrant:
             type=BenefitType.slack_shared_channel,
             properties=_BASE_PROPERTIES,
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
 
@@ -156,7 +158,6 @@ class TestSlackSharedChannelGrant:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         customer.name = "Acme"
         benefit = await create_benefit(
             save_fixture,
@@ -164,6 +165,7 @@ class TestSlackSharedChannelGrant:
             type=BenefitType.slack_shared_channel,
             properties=_BASE_PROPERTIES,
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(
             mocker,
             conversations_list=AsyncMock(
@@ -207,7 +209,6 @@ class TestSlackSharedChannelGrant:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         customer.name = "Acme"
         benefit = await create_benefit(
             save_fixture,
@@ -215,6 +216,7 @@ class TestSlackSharedChannelGrant:
             type=BenefitType.slack_shared_channel,
             properties=_BASE_PROPERTIES,
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(
             mocker,
             conversations_list=AsyncMock(
@@ -259,7 +261,6 @@ class TestSlackSharedChannelGrant:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         customer.name = "Acme"
         benefit = await create_benefit(
             save_fixture,
@@ -267,6 +268,7 @@ class TestSlackSharedChannelGrant:
             type=BenefitType.slack_shared_channel,
             properties={**_BASE_PROPERTIES, "private": True},
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(
             mocker,
             conversations_list=AsyncMock(
@@ -308,7 +310,6 @@ class TestSlackSharedChannelGrant:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         customer.name = "Acme"
         benefit = await create_benefit(
             save_fixture,
@@ -316,6 +317,7 @@ class TestSlackSharedChannelGrant:
             type=BenefitType.slack_shared_channel,
             properties=_BASE_PROPERTIES,
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(
             mocker,
             conversations_list=AsyncMock(
@@ -363,13 +365,13 @@ class TestSlackSharedChannelGrant:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.slack_shared_channel,
             properties=_BASE_PROPERTIES,
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
 
@@ -387,13 +389,13 @@ class TestSlackSharedChannelGrant:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.slack_shared_channel,
             properties={**_BASE_PROPERTIES, "team_invitees": ["U01", "U02"]},
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
 
@@ -448,13 +450,13 @@ class TestSlackSharedChannelGrant:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.slack_shared_channel,
             properties=_BASE_PROPERTIES,
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
 
@@ -479,13 +481,13 @@ class TestSlackSharedChannelGrant:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.slack_shared_channel,
             properties=_BASE_PROPERTIES,
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
 
@@ -515,13 +517,13 @@ class TestSlackSharedChannelGrant:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.slack_shared_channel,
             properties=_BASE_PROPERTIES,
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(
             mocker,
             conversations_create=AsyncMock(
@@ -554,13 +556,13 @@ class TestSlackSharedChannelGrant:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.slack_shared_channel,
             properties=_BASE_PROPERTIES,
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(
             mocker,
             conversations_create=AsyncMock(
@@ -610,13 +612,13 @@ class TestSlackSharedChannelGrant:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization, bot_token=None)
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.slack_shared_channel,
             properties=_BASE_PROPERTIES,
         )
+        await _create_integration(save_fixture, benefit, bot_token=None)
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
 
@@ -636,13 +638,13 @@ class TestSlackSharedChannelGrant:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.slack_shared_channel,
             properties={**_BASE_PROPERTIES, "team_invitees": ["U01", "U02"]},
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
 
@@ -665,13 +667,13 @@ class TestSlackSharedChannelGrant:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.slack_shared_channel,
             properties=_BASE_PROPERTIES,
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
 
@@ -692,13 +694,13 @@ class TestSlackSharedChannelGrant:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.slack_shared_channel,
             properties={**_BASE_PROPERTIES, "team_invitees": ["U01"]},
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(
             mocker,
             conversations_invite=AsyncMock(
@@ -725,13 +727,13 @@ class TestSlackSharedChannelGrant:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.slack_shared_channel,
             properties={**_BASE_PROPERTIES, "welcome_message": "Welcome!"},
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
 
@@ -754,13 +756,13 @@ class TestSlackSharedChannelGrant:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.slack_shared_channel,
             properties=_BASE_PROPERTIES,
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(
             mocker,
             conversations_invite_shared=AsyncMock(
@@ -796,13 +798,13 @@ class TestSlackSharedChannelRevoke:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.slack_shared_channel,
             properties=_BASE_PROPERTIES,
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
 
@@ -826,13 +828,13 @@ class TestSlackSharedChannelRevoke:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.slack_shared_channel,
             properties={**_BASE_PROPERTIES, "archive_on_revoke": False},
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
 
@@ -853,13 +855,13 @@ class TestSlackSharedChannelRevoke:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.slack_shared_channel,
             properties=_BASE_PROPERTIES,
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
 
@@ -880,13 +882,13 @@ class TestSlackSharedChannelRevoke:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization, bot_token=None)
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.slack_shared_channel,
             properties=_BASE_PROPERTIES,
         )
+        await _create_integration(save_fixture, benefit, bot_token=None)
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
 
@@ -907,13 +909,13 @@ class TestSlackSharedChannelRevoke:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        await _create_integration(save_fixture, organization)
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.slack_shared_channel,
             properties=_BASE_PROPERTIES,
         )
+        await _create_integration(save_fixture, benefit)
         client = _mock_client(
             mocker,
             conversations_archive=AsyncMock(side_effect=httpx.ConnectError("boom")),

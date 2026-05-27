@@ -6,6 +6,7 @@ from .authentication_session import AuthenticationSession
 from .backup_codes_enrollment import BackupCodesEnrollment
 from .benefit import Benefit
 from .benefit_grant import BenefitGrant
+from .benefit_slack_integration import BenefitSlackIntegration
 from .billing_entry import BillingEntry
 from .campaign import Campaign
 from .checkout import Checkout
@@ -54,7 +55,6 @@ from .organization_access_token import OrganizationAccessToken
 from .organization_agent_review import OrganizationAgentReview
 from .organization_review import OrganizationReview
 from .organization_review_feedback import OrganizationReviewFeedback
-from .organization_slack_integration import OrganizationSlackIntegration
 from .payment import Payment
 from .payment_method import PaymentMethod
 from .payout import Payout
@@ -104,6 +104,7 @@ __all__ = [
     "BackupCodesEnrollment",
     "Benefit",
     "BenefitGrant",
+    "BenefitSlackIntegration",
     "BillingEntry",
     "Campaign",
     "Checkout",
@@ -161,7 +162,6 @@ __all__ = [
     "OrganizationAgentReview",
     "OrganizationReview",
     "OrganizationReviewFeedback",
-    "OrganizationSlackIntegration",
     "Payment",
     "PaymentMethod",
     "Payout",

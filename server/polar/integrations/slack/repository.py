@@ -5,34 +5,30 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import OrganizationSlackIntegration
+from polar.models import BenefitSlackIntegration
 
 
-class OrganizationSlackIntegrationRepository(
-    RepositorySoftDeletionIDMixin[OrganizationSlackIntegration, UUID],
-    RepositorySoftDeletionMixin[OrganizationSlackIntegration],
-    RepositoryBase[OrganizationSlackIntegration],
+class BenefitSlackIntegrationRepository(
+    RepositorySoftDeletionIDMixin[BenefitSlackIntegration, UUID],
+    RepositorySoftDeletionMixin[BenefitSlackIntegration],
+    RepositoryBase[BenefitSlackIntegration],
 ):
-    model = OrganizationSlackIntegration
+    model = BenefitSlackIntegration
 
-    async def get_by_organization(
-        self, organization_id: UUID
-    ) -> OrganizationSlackIntegration | None:
+    async def get_by_benefit(self, benefit_id: UUID) -> BenefitSlackIntegration | None:
         statement = self.get_base_statement().where(
-            OrganizationSlackIntegration.organization_id == organization_id
+            BenefitSlackIntegration.benefit_id == benefit_id
         )
         return await self.get_one_or_none(statement)
 
-    async def get_by_app_id(
-        self, slack_app_id: str
-    ) -> OrganizationSlackIntegration | None:
+    async def get_by_app_id(self, slack_app_id: str) -> BenefitSlackIntegration | None:
         statement = self.get_base_statement().where(
-            OrganizationSlackIntegration.slack_app_id == slack_app_id
+            BenefitSlackIntegration.slack_app_id == slack_app_id
         )
         return await self.get_one_or_none(statement)
 
-    async def get_by_team_id(self, team_id: str) -> OrganizationSlackIntegration | None:
+    async def get_by_team_id(self, team_id: str) -> BenefitSlackIntegration | None:
         statement = self.get_base_statement().where(
-            OrganizationSlackIntegration.team_id == team_id
+            BenefitSlackIntegration.team_id == team_id
         )
         return await self.get_one_or_none(statement)

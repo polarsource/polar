@@ -7,15 +7,15 @@ import structlog
 
 from polar.auth.models import AuthSubject
 from polar.integrations.slack.client import SlackClient
-from polar.integrations.slack.repository import OrganizationSlackIntegrationRepository
+from polar.integrations.slack.repository import BenefitSlackIntegrationRepository
 from polar.kit.db.postgres import AsyncSession
 from polar.logging import Logger
 from polar.models import (
     Benefit,
+    BenefitSlackIntegration,
     Customer,
     Member,
     Organization,
-    OrganizationSlackIntegration,
     User,
 )
 from polar.redis import Redis
@@ -76,9 +76,7 @@ class BenefitSlackSharedChannelService(
             properties = self._get_properties(benefit)
             team_invitees = properties.get("team_invitees") or []
             if team_invitees:
-                integration = await self._get_installed_integration(
-                    benefit.organization_id
-                )
+                integration = await self._get_installed_integration(benefit.id)
                 await self._safe_invite_team(
                     bot_token=cast(str, integration.bot_token),
                     channel=existing_channel_id,
@@ -103,7 +101,7 @@ class BenefitSlackSharedChannelService(
                 )
 
         properties = self._get_properties(benefit)
-        integration = await self._get_installed_integration(benefit.organization_id)
+        integration = await self._get_installed_integration(benefit.id)
 
         context = self._build_context(customer)
         bot_token = cast(str, integration.bot_token)
@@ -198,8 +196,8 @@ class BenefitSlackSharedChannelService(
         if not properties.get("archive_on_revoke") or not channel_id:
             return {"invited_email": grant_properties.get("invited_email", "")}
 
-        repository = OrganizationSlackIntegrationRepository.from_session(self.session)
-        integration = await repository.get_by_organization(benefit.organization_id)
+        repository = BenefitSlackIntegrationRepository.from_session(self.session)
+        integration = await repository.get_by_benefit(benefit.id)
         if integration is None or integration.bot_token is None:
             bound_logger.info("Slack integration uninstalled; skipping archive")
             return {"invited_email": grant_properties.get("invited_email", "")}
@@ -251,13 +249,13 @@ class BenefitSlackSharedChannelService(
         return cast(BenefitSlackSharedChannelProperties, properties)
 
     async def _get_installed_integration(
-        self, organization_id: UUID
-    ) -> OrganizationSlackIntegration:
-        repository = OrganizationSlackIntegrationRepository.from_session(self.session)
-        integration = await repository.get_by_organization(organization_id)
+        self, benefit_id: UUID
+    ) -> BenefitSlackIntegration:
+        repository = BenefitSlackIntegrationRepository.from_session(self.session)
+        integration = await repository.get_by_benefit(benefit_id)
         if integration is None or integration.bot_token is None:
             raise BenefitActionRequiredError(
-                "The Slack integration is not installed for this organization."
+                "The Slack integration is not installed for this benefit."
             )
         return integration
 

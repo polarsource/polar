@@ -11,11 +11,11 @@ from polar.exceptions import BadRequest, PolarError, ResourceNotFound
 from polar.kit import jwt
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.utils import utc_now
-from polar.models import Organization, OrganizationSlackIntegration
+from polar.models import Benefit, BenefitSlackIntegration
 
 from .client import SlackClient
 from .manifest import BOT_SCOPES
-from .repository import OrganizationSlackIntegrationRepository
+from .repository import BenefitSlackIntegrationRepository
 from .schemas import SlackIntegrationCredentialsUpdate
 
 log = structlog.get_logger()
@@ -35,7 +35,7 @@ class SlackIntegrationInvalidCredentials(BadRequest):
 
 class SlackIntegrationNotConfigured(ResourceNotFound):
     def __init__(self) -> None:
-        super().__init__("Slack integration is not configured for this organization.")
+        super().__init__("Slack integration is not configured for this benefit.")
 
 
 class SlackIntegrationInvalidState(BadRequest):
@@ -45,35 +45,33 @@ class SlackIntegrationInvalidState(BadRequest):
 
 class SlackIntegrationAppIdAlreadyLinked(BadRequest):
     def __init__(self) -> None:
-        super().__init__(
-            "This Slack app is already linked to another Polar organization."
-        )
+        super().__init__("This Slack app is already linked to another Polar benefit.")
 
 
 # Errors that mean credentials parsed but code was rejected — credentials are OK.
 _VALID_CREDENTIALS_ERRORS = {"invalid_code", "bad_redirect_uri"}
 
 
-class OrganizationSlackIntegrationService:
+class BenefitSlackIntegrationService:
     def __init__(self) -> None:
         self._client = SlackClient()
 
     async def get(
-        self, session: AsyncReadSession, organization_id: UUID
-    ) -> OrganizationSlackIntegration | None:
-        repository = OrganizationSlackIntegrationRepository.from_session(session)
-        return await repository.get_by_organization(organization_id)
+        self, session: AsyncReadSession, benefit_id: UUID
+    ) -> BenefitSlackIntegration | None:
+        repository = BenefitSlackIntegrationRepository.from_session(session)
+        return await repository.get_by_benefit(benefit_id)
 
     async def set_credentials(
         self,
         session: AsyncSession,
-        organization: Organization,
+        benefit: Benefit,
         update: SlackIntegrationCredentialsUpdate,
         *,
         redirect_uri: str,
-    ) -> OrganizationSlackIntegration:
-        repository = OrganizationSlackIntegrationRepository.from_session(session)
-        existing = await repository.get_by_organization(organization.id)
+    ) -> BenefitSlackIntegration:
+        repository = BenefitSlackIntegrationRepository.from_session(session)
+        existing = await repository.get_by_benefit(benefit.id)
 
         # First time pasting credentials (no existing row, or only display_name
         # was persisted) requires both secrets.
@@ -111,12 +109,13 @@ class OrganizationSlackIntegrationService:
             )
 
         conflicting = await repository.get_by_app_id(update.slack_app_id)
-        if conflicting is not None and conflicting.organization_id != organization.id:
+        if conflicting is not None and conflicting.benefit_id != benefit.id:
             raise SlackIntegrationAppIdAlreadyLinked()
 
         if existing is None:
-            integration = OrganizationSlackIntegration(
-                organization_id=organization.id,
+            integration = BenefitSlackIntegration(
+                benefit_id=benefit.id,
+                organization_id=benefit.organization_id,
                 display_name=update.display_name,
                 slack_app_id=update.slack_app_id,
                 client_id=update.client_id,
@@ -161,7 +160,7 @@ class OrganizationSlackIntegrationService:
 
     def build_authorize_url(
         self,
-        integration: OrganizationSlackIntegration,
+        integration: BenefitSlackIntegration,
         *,
         subject_id: UUID,
         redirect_uri: str,
@@ -169,7 +168,7 @@ class OrganizationSlackIntegrationService:
     ) -> str:
         state = jwt.encode(
             data={
-                "organization_id": str(integration.organization_id),
+                "benefit_id": str(integration.benefit_id),
                 "subject_id": str(subject_id),
                 "return_to": return_to,
             },
@@ -197,7 +196,7 @@ class OrganizationSlackIntegrationService:
     async def delete(
         self,
         session: AsyncSession,
-        integration: OrganizationSlackIntegration,
+        integration: BenefitSlackIntegration,
     ) -> None:
         await session.delete(integration)
         await session.flush()
@@ -205,30 +204,31 @@ class OrganizationSlackIntegrationService:
     async def upsert_display_name(
         self,
         session: AsyncSession,
-        organization: Organization,
+        benefit: Benefit,
         display_name: str,
-    ) -> OrganizationSlackIntegration:
+    ) -> BenefitSlackIntegration:
         statement = (
-            pg_insert(OrganizationSlackIntegration)
+            pg_insert(BenefitSlackIntegration)
             .values(
-                organization_id=organization.id,
+                benefit_id=benefit.id,
+                organization_id=benefit.organization_id,
                 display_name=display_name,
             )
             .on_conflict_do_update(
-                index_elements=["organization_id"],
+                index_elements=["benefit_id"],
                 set_={"display_name": display_name},
             )
         )
         await session.execute(statement)
         await session.flush()
-        repository = OrganizationSlackIntegrationRepository.from_session(session)
-        integration = await repository.get_by_organization(organization.id)
+        repository = BenefitSlackIntegrationRepository.from_session(session)
+        integration = await repository.get_by_benefit(benefit.id)
         assert integration is not None
         return integration
 
     async def list_workspace_users(
         self,
-        integration: OrganizationSlackIntegration,
+        integration: BenefitSlackIntegration,
     ) -> list[dict[str, Any]]:
         if integration.bot_token is None:
             return []
@@ -266,13 +266,13 @@ class OrganizationSlackIntegrationService:
     async def complete_install(
         self,
         session: AsyncSession,
-        organization_id: UUID,
+        benefit_id: UUID,
         *,
         code: str,
         redirect_uri: str,
-    ) -> OrganizationSlackIntegration:
-        repository = OrganizationSlackIntegrationRepository.from_session(session)
-        integration = await repository.get_by_organization(organization_id)
+    ) -> BenefitSlackIntegration:
+        repository = BenefitSlackIntegrationRepository.from_session(session)
+        integration = await repository.get_by_benefit(benefit_id)
         if (
             integration is None
             or integration.client_id is None
@@ -293,7 +293,7 @@ class OrganizationSlackIntegrationService:
 
         # Slack returns the actual app_id that the client_id/secret authenticated;
         # reject if it doesn't match the slack_app_id submitted at credentials time,
-        # otherwise an org could squat on another org's slack_app_id.
+        # otherwise a benefit could squat on another benefit's slack_app_id.
         installed_app_id = result.get("app_id")
         if installed_app_id and installed_app_id != integration.slack_app_id:
             raise SlackIntegrationInvalidCredentials("app_id_mismatch")
@@ -321,7 +321,7 @@ class OrganizationSlackIntegrationService:
         event: dict[str, Any],
     ) -> None:
         event_type = event.get("type", "")
-        repository = OrganizationSlackIntegrationRepository.from_session(session)
+        repository = BenefitSlackIntegrationRepository.from_session(session)
         integration = await repository.get_by_app_id(api_app_id)
         if integration is None:
             log.info(
@@ -341,7 +341,7 @@ class OrganizationSlackIntegrationService:
             )
             log.info(
                 "slack.events.integration_revoked",
-                organization_id=str(integration.organization_id),
+                benefit_id=str(integration.benefit_id),
                 api_app_id=api_app_id,
                 event_type=event_type,
             )
@@ -363,7 +363,7 @@ class OrganizationSlackIntegrationService:
         self,
         session: AsyncSession,
         *,
-        integration: OrganizationSlackIntegration,
+        integration: BenefitSlackIntegration,
         event: dict[str, Any],
     ) -> None:
         channel_id = event.get("channel")
@@ -404,4 +404,4 @@ class OrganizationSlackIntegrationService:
         raise SlackIntegrationInvalidCredentials(error)
 
 
-organization_slack_integration = OrganizationSlackIntegrationService()
+benefit_slack_integration = BenefitSlackIntegrationService()

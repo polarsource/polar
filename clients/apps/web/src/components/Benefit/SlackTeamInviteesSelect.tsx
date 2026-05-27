@@ -19,18 +19,18 @@ import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface Props {
-  organizationId: string
+  benefitId: string
   value: string[]
   onChange: (value: string[]) => void
 }
 
 export const SlackTeamInviteesSelect = ({
-  organizationId,
+  benefitId,
   value,
   onChange,
 }: Props) => {
   const [open, setOpen] = useState(false)
-  const { data: users, isLoading } = useSlackWorkspaceUsers(organizationId)
+  const { data: users, isLoading } = useSlackWorkspaceUsers(benefitId)
 
   const selectedUsers = useMemo(
     () => (users ?? []).filter((u) => value.includes(u.id)),

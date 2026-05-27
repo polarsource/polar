@@ -14,8 +14,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { usePathname, useSearchParams } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { toast } from '../Toast/use-toast'
@@ -34,51 +33,20 @@ export const SlackSharedChannelBenefitForm = ({
   update = false,
   benefitId,
 }: Props) => {
-  const { data: integration, isLoading } = useSlackIntegration(organization.id)
-  const { control, watch } =
+  const { control } =
     useFormContext<schemas['BenefitSlackSharedChannelCreate']>()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const currentQueryString = searchParams.toString()
-  const description = watch('description')
-
-  const returnTo = useMemo(() => {
-    if (update) {
-      const params = new URLSearchParams(currentQueryString)
-      if (benefitId) {
-        params.set('edit_benefit', benefitId)
-      }
-      const queryString = params.toString()
-      return `${pathname}${queryString ? `?${queryString}` : ''}`
-    }
-
-    const params = new URLSearchParams()
-    params.set('create_benefit', 'true')
-    params.set('type', 'slack_shared_channel')
-    if (description) {
-      params.set('description', description)
-    }
-    return `${pathname}?${params.toString()}`
-  }, [pathname, currentQueryString, benefitId, description, update])
-
-  if (isLoading) return null
-
-  if (!integration?.team_id || integration.revoked_at) {
-    return (
-      <SlackIntegrationSetupPanel
-        organization={organization}
-        integration={integration ?? null}
-        returnTo={returnTo}
-      />
-    )
-  }
 
   return (
     <>
-      <SlackConnectedBanner
-        integration={integration}
-        organizationId={organization.id}
-      />
+      {update && benefitId ? (
+        <SlackSetupSection
+          benefitId={benefitId}
+          defaultDisplayName={organization.name}
+        />
+      ) : (
+        <SlackPendingSetupNotice />
+      )}
+
       <FormField
         control={control}
         name="properties.channel_name_template"
@@ -135,28 +103,30 @@ export const SlackSharedChannelBenefitForm = ({
         )}
       />
 
-      <FormField
-        control={control}
-        name="properties.team_invitees"
-        defaultValue={[]}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Team members to invite</FormLabel>
-            <FormControl>
-              <SlackTeamInviteesSelect
-                organizationId={organization.id}
-                value={field.value ?? []}
-                onChange={field.onChange}
-              />
-            </FormControl>
-            <FormDescription>
-              These users from your Slack workspace will be added to every
-              channel created for this benefit.
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      {update && benefitId && (
+        <FormField
+          control={control}
+          name="properties.team_invitees"
+          defaultValue={[]}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Team members to invite</FormLabel>
+              <FormControl>
+                <SlackTeamInviteesSelect
+                  benefitId={benefitId}
+                  value={field.value ?? []}
+                  onChange={field.onChange}
+                />
+              </FormControl>
+              <FormDescription>
+                These users from your Slack workspace will be added to every
+                channel created for this benefit.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
 
       <FormField
         control={control}
@@ -209,18 +179,61 @@ export const SlackSharedChannelBenefitForm = ({
   )
 }
 
+const SlackPendingSetupNotice = () => (
+  <Box
+    padding="m"
+    borderRadius="m"
+    backgroundColor="background-pending"
+    display="flex"
+    flexDirection="column"
+    rowGap="xs"
+  >
+    <Text variant="caption">Slack workspace</Text>
+    <Text color="muted" variant="caption">
+      Save this benefit first. You&apos;ll be able to connect a Slack workspace
+      from the benefit&apos;s settings.
+    </Text>
+  </Box>
+)
+
+const SlackSetupSection = ({
+  benefitId,
+  defaultDisplayName,
+}: {
+  benefitId: string
+  defaultDisplayName: string
+}) => {
+  const { data: integration, isLoading } = useSlackIntegration(benefitId)
+
+  if (isLoading) return null
+
+  if (!integration?.team_id || integration.revoked_at) {
+    return (
+      <SlackIntegrationSetupPanel
+        benefitId={benefitId}
+        defaultDisplayName={defaultDisplayName}
+        integration={integration ?? null}
+      />
+    )
+  }
+
+  return (
+    <SlackConnectedBanner integration={integration} benefitId={benefitId} />
+  )
+}
+
 const SlackConnectedBanner = ({
   integration,
-  organizationId,
+  benefitId,
 }: {
   integration: schemas['SlackIntegration']
-  organizationId: string
+  benefitId: string
 }) => {
   const disconnect = useDeleteSlackIntegration()
   const [showConfirm, setShowConfirm] = useState(false)
 
   const onDisconnect = async () => {
-    const result = await disconnect.mutateAsync({ organizationId })
+    const result = await disconnect.mutateAsync({ benefitId })
     if (result.error) {
       toast({ title: 'Could not disconnect Slack workspace.' })
       return

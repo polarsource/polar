@@ -34,22 +34,9 @@ reviews:
     - "!server/migrations/versions/**"
     - "!docs/openapi.yaml"
     - "!server/emails/src/types/openapi.ts"
-    - "!clients/packages/client/src/**"
+    - "!clients/packages/client/src/v1.ts"
     - "!**/__snapshots__/**"
     - "!**/*.snap"
-
-  path_instructions:
-    - path: "server/**/*.py"
-      instructions: |
-        Focus on correctness: async/await usage, SQLAlchemy query correctness
-        (N+1, missing awaits, session handling), Pydantic schema validation,
-        and FastAPI endpoint/auth logic. ruff handles linting/formatting and
-        mypy handles types — do not flag style or formatting nits.
-    - path: "clients/**/*.{ts,tsx}"
-      instructions: |
-        Focus on React/Next.js correctness: hooks rules, server vs client
-        component boundaries, data fetching, and type safety. Formatting is
-        handled by oxfmt and linting by ESLint — do not flag formatting nits.
 
   tools:
     ruff:

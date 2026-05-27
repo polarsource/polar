@@ -3,6 +3,7 @@ import { AuthContext } from '@/providers/auth'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import * as Sentry from '@sentry/nextjs'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useContext, useEffect } from 'react'
 
 export const useAuth = (): {
@@ -48,3 +49,35 @@ export const useAuth = (): {
     setUserOrganizations,
   }
 }
+
+export const useAuthSessionStart = () =>
+  useMutation({
+    mutationFn: (return_to?: string) =>
+      api.POST('/v1/auth/start', { body: { return_to } }),
+  })
+
+export const useAuthSessionStatus = () => {
+  return useQuery({
+    queryKey: ['auth', 'session'],
+    queryFn: () => api.GET('/v1/auth/status'),
+    retry: false,
+  })
+}
+
+export const useEmailOTPRequest = () =>
+  useMutation({
+    mutationFn: (email: string) =>
+      api.POST('/v1/auth/email-otp/request', { body: { email } }),
+  })
+
+export const useEmailOTPVerify = () =>
+  useMutation({
+    mutationFn: (code: string) =>
+      api.POST('/v1/auth/email-otp/verify', { body: { code } }),
+  })
+
+export const useTOTPVerify = () =>
+  useMutation({
+    mutationFn: (code: string) =>
+      api.POST('/v1/auth/totp/verify', { body: { code } }),
+  })

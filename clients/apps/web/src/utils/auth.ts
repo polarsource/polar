@@ -1,5 +1,6 @@
-import { getPublicServerURL } from '@/utils/api'
-import { operations } from '@polar-sh/client'
+import { getPublicServerURL, getServerURL } from '@/utils/api'
+import { Client, operations, schemas } from '@polar-sh/client'
+import { redirect } from 'next/navigation'
 
 export const getGitHubAuthorizeLoginURL = (
   params: NonNullable<
@@ -92,4 +93,26 @@ export const getGitHubRepositoryBenefitAuthorizeURL = (
     searchParams.set('return_to', params.return_to)
   }
   return `${getPublicServerURL()}/v1/integrations/github_repository_benefit/user/authorize?${searchParams}`
+}
+
+export const checkAuthenticationSession = async (
+  api: Client,
+): Promise<schemas['AuthenticationSession'] | null> => {
+  const { error, data: authenticationSession } =
+    await api.GET('/v1/auth/status')
+  if (error) {
+    if (error.error !== 'InvalidAuthenticationSession') {
+      throw new Error(`Failed to check authentication session: ${error.error}`)
+    }
+    return null
+  }
+
+  if (
+    authenticationSession.identity_id &&
+    authenticationSession.available_factors.length === 0
+  ) {
+    redirect(`${getServerURL()}/v1/auth/complete`)
+  }
+
+  return authenticationSession
 }

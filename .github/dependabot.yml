@@ -10,7 +10,7 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      all:
+      actions:
         patterns:
           - "*"
   - package-ecosystem: "uv"
@@ -20,7 +20,12 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      all:
+      server-production:
+        dependency-type: "production"
+        patterns:
+          - "*"
+      server-development:
+        dependency-type: "development"
         patterns:
           - "*"
   - package-ecosystem: "npm"
@@ -30,7 +35,12 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      all:
+      clients-production:
+        dependency-type: "production"
+        patterns:
+          - "*"
+      clients-development:
+        dependency-type: "development"
         patterns:
           - "*"
     ignore:
@@ -43,7 +53,12 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      all:
+      emails-production:
+        dependency-type: "production"
+        patterns:
+          - "*"
+      emails-development:
+        dependency-type: "development"
         patterns:
           - "*"
     ignore:
@@ -56,7 +71,12 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      all:
+      docs-production:
+        dependency-type: "production"
+        patterns:
+          - "*"
+      docs-development:
+        dependency-type: "development"
         patterns:
           - "*"
     ignore:
@@ -69,7 +89,12 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      all:
+      handbook-production:
+        dependency-type: "production"
+        patterns:
+          - "*"
+      handbook-development:
+        dependency-type: "development"
         patterns:
           - "*"
     ignore:

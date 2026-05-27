@@ -3,7 +3,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, ForeignKey, String, Text, Uuid
+from sqlalchemy import TIMESTAMP, ForeignKey, Index, String, Text, Uuid, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -26,13 +26,22 @@ class OrganizationReview(RecordModel):
         REJECTED = "rejected"
 
     __tablename__ = "organization_reviews"
+    __table_args__ = (
+        # Partial unique index: at most one live (non-soft-deleted) review
+        # per organization. Soft-deleted rows are allowed to coexist with
+        # a new live row, so a re-review after cleanup can INSERT cleanly.
+        Index(
+            "ix_organization_reviews_organization_id",
+            "organization_id",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
+    )
 
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
         nullable=False,
-        unique=True,
-        index=True,
     )
 
     verdict: Mapped[Verdict] = mapped_column(String, nullable=False)

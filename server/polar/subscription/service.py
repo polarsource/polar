@@ -1098,13 +1098,15 @@ class SubscriptionService:
 
         old_has_seat_prices = any(is_seat_price(p) for p in previous_prices)
         new_has_seat_prices = any(is_seat_price(p) for p in currency_prices)
-        if old_has_seat_prices != new_has_seat_prices:
+
+        # Seat → non-seat plan changes are not yet supported.
+        if old_has_seat_prices and not new_has_seat_prices:
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
                         "loc": ("body", "product_id"),
-                        "msg": "Can't switch between seat-based and non-seat-based products.",
+                        "msg": "Can't switch from a seat-based to a non-seat-based product.",
                         "input": product_id,
                     }
                 ]
@@ -1154,6 +1156,29 @@ class SubscriptionService:
         if proration_behavior is None:
             proration_behavior = organization.proration_behavior
 
+        # Non-seat → seat upgrades: promote `subscription.seats` to the new
+        # product's first seat-price tier minimum so the proration debit and
+        # `apply_update`'s product-branch rebuild both see a valid seat count.
+        # Block `next_period` because the post-apply seat auto-claim has to run
+        # immediately so the billing customer doesn't lose benefit access.
+        is_initial_seat_transition = not old_has_seat_prices and new_has_seat_prices
+        if is_initial_seat_transition:
+            if proration_behavior == SubscriptionProrationBehavior.next_period:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "proration_behavior"),
+                            "msg": "Switching from a non-seat to a seat-based product must apply immediately and can't use the 'next_period' proration behavior.",
+                            "input": proration_behavior,
+                        }
+                    ]
+                )
+            for price in currency_prices:
+                if is_seat_price(price):
+                    subscription.seats = price.get_minimum_seats()
+                    break
+
         subscription_update_repository = SubscriptionUpdateRepository.from_session(
             session
         )
@@ -1202,6 +1227,20 @@ class SubscriptionService:
             ):
                 # Invoice and attempt to pay immediately
                 await self._create_subscription_update_order(session, subscription)
+
+            # When transitioning from non-seat to seat-based pricing, promote
+            # the billing customer to a 'team' customer and claim a seat for
+            # them so they keep benefit access immediately after the switch.
+            if is_initial_seat_transition:
+                await self._maybe_upgrade_customer_to_team(
+                    session, subscription.customer
+                )
+                await seat_service.assign_seat(
+                    session,
+                    subscription,
+                    customer_id=subscription.customer_id,
+                    immediate_claim=True,
+                )
 
             await self.enqueue_benefits_grants(session, subscription)
 

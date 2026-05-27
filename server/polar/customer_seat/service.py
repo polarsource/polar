@@ -1107,5 +1107,34 @@ class SeatService:
             )
             index += 1
 
+    async def update_subscription_benefits_grants(
+        self, session: AsyncReadSession, subscription: Subscription
+    ) -> None:
+        """Re-sync benefit grants for claimed seats of a single subscription.
+
+        Used when a subscription's product changes mid-cycle: existing
+        seat holders must pick up the new product's benefits (and lose any
+        outdated grants from the previous product).
+        """
+        repository = CustomerSeatRepository.from_session(session)
+        seats = await repository.list_by_subscription_id(subscription.id)
+        claimed_seats = [
+            seat
+            for seat in seats
+            if seat.status == SeatStatus.claimed and seat.customer_id is not None
+        ]
+
+        calculate_delay = make_bulk_job_delay_calculator(len(claimed_seats))
+        for index, seat in enumerate(claimed_seats):
+            enqueue_job(
+                "benefit.enqueue_benefits_grants",
+                task="grant",
+                customer_id=seat.customer_id,
+                product_id=subscription.product_id,
+                member_id=seat.member_id,
+                subscription_id=seat.subscription_id,
+                delay=calculate_delay(index),
+            )
+
 
 seat_service = SeatService()

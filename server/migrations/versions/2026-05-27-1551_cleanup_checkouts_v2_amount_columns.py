@@ -101,6 +101,18 @@ def upgrade() -> None:
 
     op.execute(
         """
+        UPDATE checkouts
+        SET amount_v2 = COALESCE(amount_v2, amount::bigint),
+            net_amount_v2 = COALESCE(net_amount_v2, net_amount::bigint),
+            tax_amount_v2 = COALESCE(tax_amount_v2, tax_amount::bigint)
+        WHERE (amount_v2 IS NULL AND amount IS NOT NULL)
+           OR (net_amount_v2 IS NULL AND net_amount IS NOT NULL)
+           OR (tax_amount_v2 IS NULL AND tax_amount IS NOT NULL)
+        """
+    )
+
+    op.execute(
+        """
         ALTER TABLE checkouts
         ADD CONSTRAINT checkouts_amount_v2_not_null
         CHECK (amount_v2 IS NOT NULL) NOT VALID
@@ -129,8 +141,10 @@ def upgrade() -> None:
         existing_type=sa.BigInteger(),
         nullable=False,
     )
-    op.drop_constraint("checkouts_amount_v2_not_null", "checkouts", type_="check")
-    op.drop_constraint("checkouts_net_amount_v2_not_null", "checkouts", type_="check")
+    op.drop_constraint(op.f("checkouts_amount_v2_not_null"), "checkouts", type_="check")
+    op.drop_constraint(
+        op.f("checkouts_net_amount_v2_not_null"), "checkouts", type_="check"
+    )
 
     op.drop_entity(CHECKOUTS_SYNC_V2_AMOUNTS_TRIGGER)
     op.drop_entity(CHECKOUTS_SYNC_V2_AMOUNTS)

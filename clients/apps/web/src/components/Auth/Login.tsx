@@ -129,7 +129,10 @@ const Login = ({
           <div className="text-sm text-gray-500">or</div>
           <div className="dark:border-polar-700 grow border-t border-gray-200" />
         </div>
-        <LastUsedWrapper show={lastLoginMethod === 'email'}>
+        <LastUsedWrapper
+          // Both email_otp and email for backward compatibility since we renamed email to email_otp but some users might still have the old value in their cookies
+          show={lastLoginMethod === 'email_otp' || lastLoginMethod === 'email'}
+        >
           <LoginCodeForm {...loginProps} />
         </LastUsedWrapper>
       </div>

@@ -1,5 +1,6 @@
 import asyncio
 import logging.config
+from datetime import datetime
 from functools import wraps
 from typing import Any
 from uuid import UUID
@@ -70,6 +71,15 @@ async def create_subscription(
     product_id: UUID = typer.Argument(..., help="Product ID to subscribe to"),
     customer_id: UUID = typer.Argument(
         ..., help="Customer ID to create the subscription for"
+    ),
+    force_current_period_end: datetime | None = typer.Option(
+        None,
+        "--current-period-end",
+        help=(
+            "Override the computed current_period_end (ISO 8601, e.g. 2026-12-31T00:00:00). "
+            "The full amount is still charged; no proration is applied."
+        ),
+        formats=["%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d"],
     ),
 ) -> None:
     """Create a new subscription for a customer on a given product.
@@ -168,6 +178,9 @@ async def create_subscription(
                 current_period_start.day,
                 recurring_interval_count,
             )
+
+            if force_current_period_end is not None:
+                current_period_end = force_current_period_end
 
             subscription = Subscription(
                 status=SubscriptionStatus.active,

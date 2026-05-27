@@ -42,13 +42,7 @@ class InvoiceService:
         """Checksum over the mutable inputs to invoice generation, used to
         short-circuit regeneration when nothing affecting the rendered invoice
         has changed since the last generation.
-
-        Caller must ensure ``order.customer`` is loaded (e.g. via
-        ``OrderRepository.get_eager_options()``).
         """
-        assert "customer" in order.__dict__, (
-            "order.customer must be loaded before computing the invoice checksum"
-        )
         billing_address = (
             order.billing_address.model_dump(mode="json")
             if order.billing_address

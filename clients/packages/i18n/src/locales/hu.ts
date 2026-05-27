@@ -230,12 +230,12 @@ export default {
     confirmation: {
       confirmPayment: 'Fizetés megerősítése',
       processingTitle: 'Rendelését feldolgozzuk',
-      successTitle: 'Rendelése sikeres volt!',
       failedTitle: 'Probléma merült fel a rendelés feldolgozása során',
       processingDescription: 'Kérjük, várjon, amíg megerősítjük a fizetését.',
-      successDescription: 'Mostantól jogosult a {product} előnyeire.',
       failedDescription:
         'Kérjük, próbálja újra, vagy lépjen kapcsolatba az ügyfélszolgálattal.',
+      successTitle: 'Köszönjük a megrendelését!',
+      successDescription: 'Mostantól hozzáférése van ehhez: {product}.',
     },
     loading: {
       processingOrder: 'Rendelés feldolgozása...',

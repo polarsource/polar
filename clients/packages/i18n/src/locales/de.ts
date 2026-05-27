@@ -232,15 +232,14 @@ export default {
     confirmation: {
       confirmPayment: 'Zahlung bestätigen',
       processingTitle: 'Bestellung in Bearbeitung',
-      successTitle: 'Ihre Bestellung war erfolgreich!',
       failedTitle:
         'Bei der Bearbeitung Ihrer Bestellung ist ein Problem aufgetreten',
       processingDescription:
         'Bitte warten Sie, während wir Ihre Zahlung bestätigen.',
-      successDescription:
-        'Sie sind nun berechtigt, die Vorteile von {product} zu nutzen.',
       failedDescription:
         'Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      successTitle: 'Vielen Dank für Ihre Bestellung!',
+      successDescription: 'Sie haben jetzt Zugriff auf {product}.',
     },
     loading: {
       processingOrder: 'Bestellung wird bearbeitet...',

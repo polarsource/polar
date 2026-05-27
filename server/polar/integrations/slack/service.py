@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 from uuid import UUID
 
 import structlog
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.config import settings
@@ -207,18 +208,23 @@ class OrganizationSlackIntegrationService:
         organization: Organization,
         display_name: str,
     ) -> OrganizationSlackIntegration:
-        repository = OrganizationSlackIntegrationRepository.from_session(session)
-        existing = await repository.get_by_organization(organization.id)
-        if existing is None:
-            integration = OrganizationSlackIntegration(
-                organization_id=organization.id, display_name=display_name
+        statement = (
+            pg_insert(OrganizationSlackIntegration)
+            .values(
+                organization_id=organization.id,
+                display_name=display_name,
             )
-            return await repository.create(integration, flush=True)
-        if existing.display_name == display_name:
-            return existing
-        return await repository.update(
-            existing, update_dict={"display_name": display_name}
+            .on_conflict_do_update(
+                index_elements=["organization_id"],
+                set_={"display_name": display_name},
+            )
         )
+        await session.execute(statement)
+        await session.flush()
+        repository = OrganizationSlackIntegrationRepository.from_session(session)
+        integration = await repository.get_by_organization(organization.id)
+        assert integration is not None
+        return integration
 
     async def list_workspace_users(
         self,

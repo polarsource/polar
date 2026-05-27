@@ -1,8 +1,4 @@
-import {
-  usePreviewSlackChannelName,
-  useSlackIntegration,
-} from '@/hooks/queries'
-import { useDebouncedCallback } from '@/hooks/utils'
+import { useDeleteSlackIntegration, useSlackIntegration } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -18,66 +14,71 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { usePathname } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { usePathname, useSearchParams } from 'next/navigation'
+import { useMemo, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
+import { ConfirmModal } from '../Modal/ConfirmModal'
+import { toast } from '../Toast/use-toast'
+import { ChannelNamePreview } from './ChannelNamePreview'
+import { SlackIntegrationSetupPanel } from './SlackIntegrationSetupPanel'
 import { SlackTeamInviteesSelect } from './SlackTeamInviteesSelect'
 
 interface Props {
   organization: schemas['Organization']
+  update?: boolean
+  benefitId?: string
 }
 
-export const SlackSharedChannelBenefitForm = ({ organization }: Props) => {
+export const SlackSharedChannelBenefitForm = ({
+  organization,
+  update = false,
+  benefitId,
+}: Props) => {
   const { data: integration, isLoading } = useSlackIntegration(organization.id)
   const { control, watch } =
     useFormContext<schemas['BenefitSlackSharedChannelCreate']>()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const currentQueryString = searchParams.toString()
   const description = watch('description')
 
-  const connectHref = useMemo(() => {
+  const returnTo = useMemo(() => {
+    if (update) {
+      const params = new URLSearchParams(currentQueryString)
+      if (benefitId) {
+        params.set('edit_benefit', benefitId)
+      }
+      const queryString = params.toString()
+      return `${pathname}${queryString ? `?${queryString}` : ''}`
+    }
+
     const params = new URLSearchParams()
     params.set('create_benefit', 'true')
     params.set('type', 'slack_shared_channel')
     if (description) {
       params.set('description', description)
     }
-    const returnTo = `${pathname}?${params.toString()}`
-    return `/dashboard/${organization.slug}/settings/integrations/slack?return_to=${encodeURIComponent(returnTo)}`
-  }, [pathname, description, organization.slug])
+    return `${pathname}?${params.toString()}`
+  }, [pathname, currentQueryString, benefitId, description, update])
 
   if (isLoading) return null
 
   if (!integration?.team_id || integration.revoked_at) {
     return (
-      <Box
-        borderRadius="m"
-        borderWidth={1}
-        borderStyle="solid"
-        borderColor="border-primary"
-        backgroundColor="background-card"
-        padding="l"
-        display="flex"
-        flexDirection="column"
-        rowGap="m"
-      >
-        <Box display="flex" flexDirection="column" rowGap="xs">
-          <Text variant="heading-xs" as="h4">
-            Connect your Slack workspace
-          </Text>
-          <Text color="muted">
-            Set up the Slack integration first. We&apos;ll bring you back here
-            when it&apos;s done.
-          </Text>
-        </Box>
-        <Button asChild wrapperClassNames="self-start">
-          <a href={connectHref}>Connect Slack</a>
-        </Button>
-      </Box>
+      <SlackIntegrationSetupPanel
+        organization={organization}
+        integration={integration ?? null}
+        returnTo={returnTo}
+      />
     )
   }
 
   return (
     <>
+      <SlackConnectedBanner
+        integration={integration}
+        organizationId={organization.id}
+      />
       <FormField
         control={control}
         name="properties.channel_name_template"
@@ -208,61 +209,52 @@ export const SlackSharedChannelBenefitForm = ({ organization }: Props) => {
   )
 }
 
-const ChannelNamePreview = ({
-  template,
+const SlackConnectedBanner = ({
+  integration,
   organizationId,
 }: {
-  template: string
+  integration: schemas['SlackIntegration']
   organizationId: string
 }) => {
-  const preview = usePreviewSlackChannelName()
-  const [rendered, setRendered] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const disconnect = useDeleteSlackIntegration()
+  const [showConfirm, setShowConfirm] = useState(false)
 
-  const fetchPreview = useDebouncedCallback(
-    async (t: string) => {
-      if (!t) {
-        setRendered(null)
-        setError(null)
-        return
-      }
-      const result = await preview.mutateAsync({
-        organization_id: organizationId,
-        template: t,
-        customer_name: 'Sample Customer',
-        customer_email: 'customer@example.com',
-      })
-      if (result.error) {
-        const detail = result.error.detail?.[0]?.msg ?? 'Invalid template'
-        setError(detail)
-        setRendered(null)
-        return
-      }
-      setError(null)
-      setRendered(result.data?.channel_name ?? null)
-    },
-    250,
-    [organizationId],
-  )
-
-  useEffect(() => {
-    fetchPreview(template)
-  }, [template, fetchPreview])
-
-  if (!template) return null
+  const onDisconnect = async () => {
+    const result = await disconnect.mutateAsync({ organizationId })
+    if (result.error) {
+      toast({ title: 'Could not disconnect Slack workspace.' })
+      return
+    }
+    toast({ title: 'Slack workspace disconnected.' })
+  }
 
   return (
-    <Box marginTop="xs">
-      {error ? (
-        <Text variant="caption" color="danger">
-          {error}
+    <>
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="between"
+        padding="m"
+        borderRadius="m"
+        backgroundColor="background-success"
+        columnGap="m"
+      >
+        <Text variant="caption">
+          Connected to {integration.team_name ?? integration.team_id}
         </Text>
-      ) : rendered ? (
-        <Text variant="caption" color="muted">
-          Preview: <code>#{rendered}</code> (metadata placeholders shown as
-          their key name; real customers will use their actual values)
-        </Text>
-      ) : null}
-    </Box>
+        <Button variant="ghost" size="sm" onClick={() => setShowConfirm(true)}>
+          Disconnect
+        </Button>
+      </Box>
+      <ConfirmModal
+        isShown={showConfirm}
+        hide={() => setShowConfirm(false)}
+        title="Disconnect Slack workspace"
+        description="This removes the Slack integration from Polar. Existing channels stay in Slack but Polar can no longer manage them."
+        onConfirm={onDisconnect}
+        destructive
+        destructiveText="Disconnect"
+      />
+    </>
   )
 }

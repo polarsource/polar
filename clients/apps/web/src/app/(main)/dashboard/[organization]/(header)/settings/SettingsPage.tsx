@@ -11,7 +11,6 @@ import OrganizationNotificationSettings from '@/components/Settings/Organization
 import OrganizationPaymentSettings from '@/components/Settings/OrganizationPaymentSettings'
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
 import OrganizationSubscriptionSettings from '@/components/Settings/OrganizationSubscriptionSettings'
-import { OrganizationIntegrationsList } from '@/components/Settings/OrganizationIntegrationsList'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import { useHasPermission } from '@/hooks/permissions'
 import { CONFIG } from '@/utils/config'
@@ -101,16 +100,6 @@ export default function ClientPage({
             <OrganizationAccessTokensSettings organization={org} />
           )}
         </Section>
-
-        {org.feature_settings?.slack_benefit_enabled && (
-          <Section id="integrations">
-            <SectionDescription
-              title="Integrations"
-              description="Connect external services to your organization"
-            />
-            <OrganizationIntegrationsList organization={org} />
-          </Section>
-        )}
 
         <Section id="danger">
           <SectionDescription

@@ -48,12 +48,14 @@ export const NewBenefitForm = ({
 interface UpdateBenefitFormProps {
   organization: schemas['Organization']
   type: schemas['BenefitType']
+  benefitId: string
   onUploadingChange?: (uploading: boolean) => void
 }
 
 export const UpdateBenefitForm = ({
   organization,
   type,
+  benefitId,
   onUploadingChange,
 }: UpdateBenefitFormProps) => {
   return (
@@ -61,6 +63,7 @@ export const UpdateBenefitForm = ({
       organization={organization}
       type={type}
       update={true}
+      benefitId={benefitId}
       onUploadingChange={onUploadingChange}
     />
   )
@@ -70,6 +73,7 @@ interface BenefitFormProps {
   organization: schemas['Organization']
   type: schemas['BenefitType'] | 'usage'
   update?: boolean
+  benefitId?: string
   onUploadingChange?: (uploading: boolean) => void
 }
 
@@ -77,6 +81,7 @@ const BenefitForm = ({
   organization,
   type,
   update = false,
+  benefitId,
   onUploadingChange,
 }: BenefitFormProps) => {
   const { control } = useFormContext<schemas['BenefitCreate']>()
@@ -134,7 +139,11 @@ const BenefitForm = ({
       )}
       {type === 'feature_flag' && <FeatureFlagBenefitForm />}
       {type === 'slack_shared_channel' && (
-        <SlackSharedChannelBenefitForm organization={organization} />
+        <SlackSharedChannelBenefitForm
+          organization={organization}
+          update={update}
+          benefitId={benefitId}
+        />
       )}
     </>
   )

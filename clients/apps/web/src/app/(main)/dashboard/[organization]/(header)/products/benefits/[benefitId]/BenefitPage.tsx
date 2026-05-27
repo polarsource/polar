@@ -25,7 +25,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { useCallback, useRef } from 'react'
+import { parseAsString, useQueryState } from 'nuqs'
+import { useCallback, useEffect, useRef } from 'react'
 
 interface ClientPageProps {
   organization: schemas['Organization']
@@ -42,8 +43,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const {
     isShown: isEditShown,
     toggle: toggleEdit,
+    show: showEdit,
     hide: hideEdit,
   } = useModal()
+  const [editBenefitId, setEditBenefitId] = useQueryState(
+    'edit_benefit',
+    parseAsString,
+  )
 
   const {
     isShown: isDeleteShown,
@@ -75,6 +81,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const handleDirtyChange = useCallback((dirty: boolean) => {
     isDirtyRef.current = dirty
   }, [])
+
+  useEffect(() => {
+    if (editBenefitId !== benefit.id) {
+      return
+    }
+
+    showEdit()
+    setEditBenefitId(null)
+  }, [benefit.id, editBenefitId, setEditBenefitId, showEdit])
 
   const deleteBenefit = useDeleteBenefit(organization.id)
 

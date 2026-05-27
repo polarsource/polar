@@ -141,7 +141,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
               avatar_url={customer.avatar_url}
               name={customer.email ?? customer.name ?? '—'}
             />
-            <div className="fw-medium overflow-hidden text-ellipsis">
+            <div className="fw-medium overflow-hidden text-ellipsis whitespace-nowrap">
               {customer.name || customer.email || '—'}
             </div>
           </div>

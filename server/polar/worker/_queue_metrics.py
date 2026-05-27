@@ -19,14 +19,14 @@ QUEUE_SIZE = Gauge(
     "polar_queue_size",
     "Number of messages in the queue",
     ["queue"],
-    multiprocess_mode="mostrecent",
+    multiprocess_mode="sum",
 )
 
 QUEUE_OLDEST_MESSAGE_AGE = Gauge(
     "polar_queue_oldest_message_age_seconds",
     "Age of the oldest message in the queue in seconds",
     ["queue"],
-    multiprocess_mode="mostrecent",
+    multiprocess_mode="max",
 )
 
 

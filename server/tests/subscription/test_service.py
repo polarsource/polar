@@ -2728,6 +2728,78 @@ class TestUpdateProduct:
         assert updated_subscription.product == new_seat_product
         create_subscription_update_order_mock.assert_called_once()
 
+    async def test_seat_to_seat_product_change_resyncs_claimed_seat_benefits(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
+        old_seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        new_seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 2000, "usd")],
+        )
+
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=old_seat_product,
+            customer=customer,
+            seats=3,
+        )
+
+        seat_holder = await create_customer(
+            save_fixture, organization=organization, email="member@test.com"
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            customer=seat_holder,
+            status=SeatStatus.claimed,
+            claimed_at=utc_now(),
+        )
+        # Pending and revoked seats should be ignored
+        await create_customer_seat(save_fixture, subscription=subscription)
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.revoked,
+            revoked_at=utc_now(),
+        )
+
+        enqueue_job_mock = mocker.patch("polar.customer_seat.service.enqueue_job")
+
+        await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=new_seat_product.id,
+            proration_behavior=SubscriptionProrationBehavior.invoice,
+        )
+
+        benefit_grant_calls = [
+            c
+            for c in enqueue_job_mock.call_args_list
+            if c.args and c.args[0] == "benefit.enqueue_benefits_grants"
+        ]
+        assert len(benefit_grant_calls) == 1
+        call_kwargs = benefit_grant_calls[0].kwargs
+        assert call_kwargs["task"] == "grant"
+        assert call_kwargs["customer_id"] == seat_holder.id
+        assert call_kwargs["product_id"] == new_seat_product.id
+        assert call_kwargs["subscription_id"] == subscription.id
+
     async def test_unavailable_currency(
         self,
         session: AsyncSession,

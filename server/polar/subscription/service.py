@@ -1205,6 +1205,14 @@ class SubscriptionService:
 
             await self.enqueue_benefits_grants(session, subscription)
 
+            # Seat-based subscriptions short-circuit enqueue_benefits_grants
+            # while active, so existing claimed seats won't pick up the new
+            # product's benefits without an explicit re-sync.
+            if product.has_seat_based_price and subscription.active:
+                await seat_service.update_subscription_benefits_grants(
+                    session, subscription
+                )
+
             # Send product change email notification
             await self.send_subscription_updated_email(
                 session, subscription, product, proration_behavior

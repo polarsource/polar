@@ -1017,24 +1017,20 @@ class OrganizationService:
             OrganizationStatus.SNOOZED,
         ):
             raise OrganizationError(
-                "confirm_organization_reviewed requires REVIEW or SNOOZED "
-                f"status, got {organization.status.get_display_name()}.",
-                400,
+                f"Cannot confirm organization {organization.id}: requires "
+                f"REVIEW or SNOOZED status, got "
+                f"{organization.status.get_display_name()}.",
+                409,
             )
 
         repository = OrganizationRepository.from_session(session)
-        confirmed = await repository.confirm_review_atomic(
+        return await repository.confirm_review_atomic(
             organization.id,
             next_review_threshold=next_review_threshold,
             min_threshold=_MIN_REVIEW_THRESHOLD,
             active_capabilities={**STATUS_CAPABILITIES[OrganizationStatus.ACTIVE]},
             now=datetime.now(UTC),
         )
-        if not confirmed:
-            return None
-
-        await session.refresh(organization)
-        return organization
 
     async def _is_activation_ready(
         self, session: AsyncSession, organization: Organization

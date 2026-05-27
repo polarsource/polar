@@ -1,9 +1,8 @@
 from collections.abc import Sequence
 from datetime import datetime
-from typing import cast
 from uuid import UUID
 
-from sqlalchemy import CursorResult, Select, func, select, update
+from sqlalchemy import Select, func, select, update
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -289,12 +288,13 @@ class OrganizationRepository(
         min_threshold: int,
         active_capabilities: OrganizationCapabilities,
         now: datetime,
-    ) -> bool:
+    ) -> Organization | None:
         """Atomically transition a REVIEW or SNOOZED organization to ACTIVE.
 
-        Returns ``True`` if the row was updated, ``False`` if it was no
-        longer in a confirmable state (e.g. another worker already won the
-        race and set the org back to ACTIVE).
+        Returns the updated ``Organization`` (also merged into the session's
+        identity map via ``populate_existing``), or ``None`` if the row was
+        no longer in a confirmable state — typically because another worker
+        already won the race and flipped the org back to ACTIVE.
 
         When ``next_review_threshold`` is ``None``, the threshold is doubled
         server-side from the current row (floored at ``min_threshold``) so
@@ -324,10 +324,11 @@ class OrganizationRepository(
                     Organization.initially_reviewed_at, now
                 ),
             )
+            .returning(Organization)
+            .execution_options(populate_existing=True)
         )
-        # https://github.com/sqlalchemy/sqlalchemy/commit/67f62aac5b49b6d048ca39019e5bd123d3c9cfb2
-        result = cast(CursorResult[Organization], await self.session.execute(stmt))
-        return result.rowcount > 0
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def increment_customer_invoice_next_number(
         self, organization_id: UUID

@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+early_access: false
+
+reviews:
+  # "chill" surfaces only high-signal issues (bugs, security, logic) and stays
+  # quiet on style/naming — better suited to a high-volume repo (~600 PRs/mo).
+  profile: chill
+  # Keep reviews advisory; CodeRabbit comments but does not block merges.
+  request_changes_workflow: false
+  high_level_summary: true
+  review_status: true
+  collapse_walkthrough: true
+  poem: false
+  # Stop spending review cycles on PRs that get closed mid-review.
+  abort_on_close: true
+
+  auto_review:
+    enabled: true
+    drafts: false
+    auto_incremental_review: true
+    base_branches:
+      - "^main$"
+    ignore_title_keywords:
+      - "WIP"
+      - "DO NOT MERGE"
+
+  # Style/format is enforced by ruff (Python) and oxfmt/ESLint (TS); don't
+  # re-review generated, vendored, or lock files.
+  path_filters:
+    - "!**/pnpm-lock.yaml"
+    - "!server/uv.lock"
+    - "!flake.lock"
+    - "!docs/openapi.yaml"
+    - "!server/emails/src/types/openapi.ts"
+    - "!clients/packages/client/src/v1.ts"
+    - "!**/__snapshots__/**"
+    - "!**/*.snap"
+
+  tools:
+    ruff:
+      enabled: true
+    eslint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    actionlint:
+      enabled: true
+
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+
+chat:
+  auto_reply: true

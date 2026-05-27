@@ -7,7 +7,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-05-19T10:01:19.956003Z"
+exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
 exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
@@ -352,15 +352,15 @@ wheels = [
 
 [[package]]
 name = "boto3-stubs"
-version = "1.43.4"
+version = "1.43.11"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "botocore-stubs" },
     { name = "types-s3transfer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/40/bb/3766f6dcb09369732b575c49bd26458ee133348b07ae4b61c2feec1cae0d/boto3_stubs-1.43.4.tar.gz", hash = "sha256:09e6dfdc3b7db02b7c9bab2dae748b0179acad7ced72ee62b79a5e80fd588caa", size = 102637, upload-time = "2026-05-05T19:53:33.221Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e1/29/900ea04dfdc8997b5a11ceb5a2b49421ab13e8665ffd65539d2d881f2a0c/boto3_stubs-1.43.11.tar.gz", hash = "sha256:3d9f713e8d5e55116d402498087bd1b9b8fc9b5d5a6dbadca7bb89bacd248b41", size = 102681, upload-time = "2026-05-19T20:52:53.53Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/51/1a/7240678a9f4a71f99ef82da956f5bf3a60c3dda1a635548eac6e17a61e24/boto3_stubs-1.43.4-py3-none-any.whl", hash = "sha256:0e75ad1e15fd35017ff278bfd86b18cf1182610407cc20520049d66b515ba198", size = 70651, upload-time = "2026-05-05T19:53:27.804Z" },
+    { url = "https://files.pythonhosted.org/packages/df/ad/4fe1ae0ac735c965f293466f3c2fe3f8a6878c27ad49497354b65423494a/boto3_stubs-1.43.11-py3-none-any.whl", hash = "sha256:fbf1421b3d52b842a7fea2728cdb2d7a5a2c4d647db36140e7a7f34d72bab8d6", size = 70668, upload-time = "2026-05-19T20:52:48.679Z" },
 ]
 
 [package.optional-dependencies]
@@ -2292,7 +2292,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "boto3-stubs", extras = ["s3"], specifier = ">=1.43.4" },
+    { name = "boto3-stubs", extras = ["s3"], specifier = ">=1.43.11" },
     { name = "coverage", specifier = ">=7.14.0" },
     { name = "debugpy", specifier = ">=1.8.19" },
     { name = "fakeredis", extras = ["lua"], specifier = ">=2.26.1" },

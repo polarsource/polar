@@ -472,13 +472,42 @@ class OrderService:
         if order.billing_name is None or order.billing_address is None:
             raise MissingInvoiceBillingDetails(order)
 
+        if (
+            order.invoice_path is not None
+            and order.invoice_checksum == invoice_service.compute_order_checksum(order)
+        ):
+            log.info(
+                "order.invoice_generation.skipped",
+                order_id=order.id,
+                reason="checksum_match",
+                stage="trigger",
+            )
+            return
+
+        log.info("order.invoice_generation.scheduled", order_id=order.id)
         enqueue_job("order.invoice", order_id=order.id)
 
     async def generate_invoice(self, session: AsyncSession, order: Order) -> Order:
+        if (
+            order.invoice_path is not None
+            and order.invoice_checksum == invoice_service.compute_order_checksum(order)
+        ):
+            log.info(
+                "order.invoice_generation.skipped",
+                order_id=order.id,
+                reason="checksum_match",
+                stage="worker",
+            )
+            return order
+
         invoice_path = await invoice_service.create_order_invoice(order)
         repository = OrderRepository.from_session(session)
         order = await repository.update(
-            order, update_dict={"invoice_path": invoice_path}
+            order,
+            update_dict={
+                "invoice_path": invoice_path,
+                "invoice_checksum": invoice_service.compute_order_checksum(order),
+            },
         )
 
         await eventstream_publish(

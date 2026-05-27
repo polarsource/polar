@@ -154,5 +154,6 @@ def mock_invoice_service(mocker: MockerFixture) -> MagicMock:
     mock.get_order_invoice_url = AsyncMock(
         return_value=("https://mock-s3/invoices/mock-invoice.pdf", None)
     )
+    mock.compute_order_checksum = MagicMock(return_value="mock-checksum")
     mocker.patch("polar.order.service.invoice_service", new=mock)
     return mock

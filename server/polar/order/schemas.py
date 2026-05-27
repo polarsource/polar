@@ -11,13 +11,16 @@ from pydantic import (
 )
 from pydantic.json_schema import SkipJsonSchema
 
-from polar.custom_field.data import CustomFieldDataOutputMixin
+from polar.custom_field.data import (
+    CustomFieldDataInputMixin,
+    CustomFieldDataOutputMixin,
+)
 from polar.customer.schemas.customer import CustomerBase
 from polar.discount.schemas import DiscountMinimal
 from polar.exceptions import ResourceNotFound
 from polar.kit.address import Address, AddressInput
 from polar.kit.currency import format_currency
-from polar.kit.metadata import MetadataOutputMixin
+from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import IDSchema, MergeJSONSchema, Schema, TimestampedSchema
 from polar.models.order import (
     OrderBillingReason,
@@ -275,6 +278,30 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
     )
 
 
+class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
+    """Schema to create a draft order for an off-session charge."""
+
+    customer_id: UUID4 = Field(
+        description="The ID of the customer the order is for. "
+        "Must belong to the authenticated organization."
+    )
+    product_id: UUID4 = Field(
+        description="The ID of the one-time product to charge for. "
+        "Subscription products are not supported."
+    )
+    amount: int | None = Field(
+        None,
+        description=(
+            "Amount in the smallest currency unit. Required for "
+            "pay-what-you-want / custom-priced products; ignored otherwise."
+        ),
+    )
+    seats: int | None = Field(
+        None,
+        description="Number of seats, for seat-based products.",
+    )
+
+
 class OrderUpdateBase(Schema):
     billing_name: str | None = Field(
         None, description="The name of the customer that should appear on the invoice."
@@ -288,8 +315,34 @@ class OrderUpdateBase(Schema):
     )
 
 
-class OrderUpdate(OrderUpdateBase):
-    """Schema to update an order."""
+class OrderUpdate(OrderUpdateBase, MetadataInputMixin, CustomFieldDataInputMixin):
+    """
+    Schema to update an order.
+
+    For orders in `draft` status, additional fields (seats, metadata, custom
+    field data) can be updated before the order is finalized. Once an order
+    leaves draft, only billing details can be updated.
+    """
+
+    seats: int | None = Field(
+        None,
+        description=(
+            "Number of seats. Only updatable while the order is in `draft` status."
+        ),
+    )
+
+
+class OrderFinalize(Schema):
+    """Schema to finalize a draft order and trigger an off-session charge."""
+
+    payment_method_id: UUID4 | None = Field(
+        None,
+        description=(
+            "ID of the payment method to charge. Must belong to the order's "
+            "customer. Falls back to the customer's default payment method "
+            "when unset."
+        ),
+    )
 
 
 class OrderInvoice(Schema):

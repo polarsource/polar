@@ -13,7 +13,8 @@ All of these actions are available under **Sales → Subscriptions** in the dash
 Switch a subscription to a different recurring product — the standard upgrade or downgrade flow.
 
 - When the change takes effect depends on the [proration behavior](/features/subscriptions/proration): `invoice` and `prorate` apply the new product immediately, while `next_period` schedules a pending update that's only applied at the start of the next billing cycle.
-- The new product must share the subscription's currency and must either both be seat-based or both not be — you can't switch a flat subscription to a seat-based product or vice versa.
+- The new product must share the subscription's currency.
+- You can upgrade a non-seat subscription to a seat-based product — the billing customer is auto-promoted to a `team` customer and claims a seat — but you can't switch a seat-based subscription back to a non-seat product. Non-seat → seat changes must apply immediately, so `next_period` proration isn't allowed for that transition.
 - You can't change the plan on a subscription that's already canceled or scheduled to cancel — uncancel first.
 - Plan changes on a **trialing** subscription are allowed. The trial carries over with its end recomputed from the new product's trial length (anchored to the original `trial_start`). If the new product has no trial — or its trial would already have elapsed — the trial ends immediately and a fresh billing cycle starts on the new product.
 - Custom-priced products (pay-what-you-want) aren't valid destinations for a plan change.

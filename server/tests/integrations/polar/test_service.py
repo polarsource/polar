@@ -31,6 +31,7 @@ from polar.integrations.polar.exceptions import (
     TransactionFeeBenefitError,
 )
 from polar.integrations.polar.service import polar_self
+from polar.models.discount import Discount
 from polar.models.organization import Organization
 from polar.postgres import AsyncReadSession, AsyncSession
 
@@ -1139,6 +1140,202 @@ class TestStartCheckout:
             )
 
         client_mock.create_checkout.assert_not_awaited()
+
+    async def test_non_scale_plan_does_not_attach_discount(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
+        mocker: MockerFixture,
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="prod_pro", name="Pro", metadata={"order": 2}),
+        ]
+        client_mock.get_customer_by_external_id_or_none = AsyncMock()
+        discount_create_mock = mocker.patch(
+            "polar.integrations.polar.service.discount_service.create",
+            new_callable=AsyncMock,
+        )
+
+        await polar_self.start_checkout(
+            session=read_session_mock,
+            organization_id=ORG_A,
+            product_id="prod_pro",
+        )
+
+        client_mock.get_customer_by_external_id_or_none.assert_not_awaited()
+        discount_create_mock.assert_not_awaited()
+        client_mock.create_checkout.assert_awaited_once()
+        assert (
+            client_mock.create_checkout.await_args.kwargs["discount_id"] is None
+        )
+
+    async def test_scale_without_eligible_customer_does_not_attach_discount(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
+        mocker: MockerFixture,
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="prod_scale", name="Scale", metadata={"order": 4}),
+        ]
+        client_mock.get_customer_by_external_id_or_none = AsyncMock(
+            return_value=_make_customer(),
+        )
+        discount_create_mock = mocker.patch(
+            "polar.integrations.polar.service.discount_service.create",
+            new_callable=AsyncMock,
+        )
+
+        await polar_self.start_checkout(
+            session=read_session_mock,
+            organization_id=ORG_A,
+            product_id="prod_scale",
+        )
+
+        discount_create_mock.assert_not_awaited()
+        client_mock.create_checkout.assert_awaited_once()
+        assert (
+            client_mock.create_checkout.await_args.kwargs["discount_id"] is None
+        )
+
+    async def test_scale_without_polar_customer_does_not_attach_discount(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
+        mocker: MockerFixture,
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="prod_scale", name="Scale", metadata={"order": 4}),
+        ]
+        client_mock.get_customer_by_external_id_or_none = AsyncMock(return_value=None)
+        discount_create_mock = mocker.patch(
+            "polar.integrations.polar.service.discount_service.create",
+            new_callable=AsyncMock,
+        )
+
+        await polar_self.start_checkout(
+            session=read_session_mock,
+            organization_id=ORG_A,
+            product_id="prod_scale",
+        )
+
+        discount_create_mock.assert_not_awaited()
+        client_mock.create_checkout.assert_awaited_once()
+        assert (
+            client_mock.create_checkout.await_args.kwargs["discount_id"] is None
+        )
+
+    async def test_scale_eligible_customer_creates_discount(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
+        mocker: MockerFixture,
+    ) -> None:
+        scale_product_id = "11111111-1111-1111-1111-111111111111"
+        client_mock.list_recurring_products.return_value = [
+            _make_product(
+                id=scale_product_id, name="Scale", metadata={"order": 4}
+            ),
+        ]
+        eligible_customer = _make_customer()
+        eligible_customer.metadata = {"startup_program_eligible": True}
+        client_mock.get_customer_by_external_id_or_none = AsyncMock(
+            return_value=eligible_customer,
+        )
+
+        discount_repository = MagicMock()
+        discount_repository.get_redeemable_by_name_and_organization = AsyncMock(
+            return_value=None,
+        )
+        mocker.patch(
+            "polar.integrations.polar.service.DiscountRepository.from_session",
+            return_value=discount_repository,
+        )
+        created_discount = MagicMock(spec=Discount)
+        created_discount.id = uuid.UUID("22222222-2222-2222-2222-222222222222")
+        discount_create_mock = mocker.patch(
+            "polar.integrations.polar.service.discount_service.create",
+            new_callable=AsyncMock,
+            return_value=created_discount,
+        )
+
+        await polar_self.start_checkout(
+            session=read_session_mock,
+            organization_id=ORG_A,
+            product_id=scale_product_id,
+        )
+
+        discount_repository.get_redeemable_by_name_and_organization.assert_awaited_once_with(
+            name="Startup Program - Scale",
+            organization_id=SELF_ORG_ID,
+        )
+        discount_create_mock.assert_awaited_once()
+        create_call = discount_create_mock.await_args
+        assert create_call is not None
+        discount_create = create_call.args[1]
+        assert discount_create.name == "Startup Program - Scale"
+        assert discount_create.basis_points == 10000
+        assert discount_create.duration_in_months == 12
+        assert discount_create.max_redemptions == 1
+        assert discount_create.products == [uuid.UUID(scale_product_id)]
+        client_mock.create_checkout.assert_awaited_once()
+        assert client_mock.create_checkout.await_args.kwargs[
+            "discount_id"
+        ] == str(created_discount.id)
+
+    async def test_scale_eligible_customer_reuses_existing_discount(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
+        mocker: MockerFixture,
+    ) -> None:
+        scale_product_id = "11111111-1111-1111-1111-111111111111"
+        client_mock.list_recurring_products.return_value = [
+            _make_product(
+                id=scale_product_id, name="Scale", metadata={"order": 4}
+            ),
+        ]
+        eligible_customer = _make_customer()
+        eligible_customer.metadata = {"startup_program_eligible": True}
+        client_mock.get_customer_by_external_id_or_none = AsyncMock(
+            return_value=eligible_customer,
+        )
+
+        existing_discount = MagicMock(spec=Discount)
+        existing_discount.id = uuid.UUID("33333333-3333-3333-3333-333333333333")
+        discount_repository = MagicMock()
+        discount_repository.get_redeemable_by_name_and_organization = AsyncMock(
+            return_value=existing_discount,
+        )
+        mocker.patch(
+            "polar.integrations.polar.service.DiscountRepository.from_session",
+            return_value=discount_repository,
+        )
+        discount_create_mock = mocker.patch(
+            "polar.integrations.polar.service.discount_service.create",
+            new_callable=AsyncMock,
+        )
+
+        await polar_self.start_checkout(
+            session=read_session_mock,
+            organization_id=ORG_A,
+            product_id=scale_product_id,
+        )
+
+        discount_create_mock.assert_not_awaited()
+        assert client_mock.create_checkout.await_args.kwargs[
+            "discount_id"
+        ] == str(existing_discount.id)
 
 
 @pytest.mark.asyncio

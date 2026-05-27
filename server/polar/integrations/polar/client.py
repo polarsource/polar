@@ -316,12 +316,14 @@ class PolarSelfClient:
         success_url: str | None = None,
         return_url: str | None = None,
         embed_origin: str | None = None,
+        discount_id: str | None = None,
     ) -> Checkout:
         with logfire.span(
             "polar.create_checkout",
             product_id=product_id,
             external_customer_id=external_customer_id,
             subscription_id=subscription_id,
+            discount_id=discount_id,
         ) as span:
             try:
                 return await self._sdk.checkouts.create_async(
@@ -333,6 +335,7 @@ class PolarSelfClient:
                         success_url=success_url,
                         return_url=return_url,
                         embed_origin=embed_origin,
+                        discount_id=discount_id,
                     )
                 )
             except PolarError as e:

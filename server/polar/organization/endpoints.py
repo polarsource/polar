@@ -836,7 +836,7 @@ async def start_subscription_checkout(
     request: Request,
     authz: AuthorizeOrgManage,
     body: OrganizationCheckoutRequest,
-    session: AsyncReadSession = Depends(get_db_read_session),
+    session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationCheckoutResponse:
     """Create a Polar checkout session for an initial paid subscription."""
     customer_ip_address = request.client.host if request.client else None

@@ -16,7 +16,11 @@ from polar_sdk.models import (
 )
 
 from polar.account.repository import AccountRepository
+from polar.auth.models import AuthSubject
 from polar.config import settings
+from polar.discount.repository import DiscountRepository
+from polar.discount.schemas import DiscountPercentageCreate
+from polar.discount.service import discount as discount_service
 from polar.email.schemas import (
     EmailAdapter,
     PolarSelfSubscriptionConfirmationProps,
@@ -24,6 +28,8 @@ from polar.email.schemas import (
 )
 from polar.email.sender import Attachment, enqueue_email_template
 from polar.integrations.plain.service import plain as plain_service
+from polar.models import Discount, Organization
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.worker import enqueue_job
@@ -66,6 +72,10 @@ BenefitGrantWebhookPayload = (
     | WebhookBenefitGrantUpdatedPayload
     | WebhookBenefitGrantRevokedPayload
 )
+
+
+SCALE_PLAN_NAME = "Scale"
+STARTUP_PROGRAM_DISCOUNT_NAME = "Startup Program - Scale"
 
 
 class PolarSelfService:
@@ -246,7 +256,7 @@ class PolarSelfService:
     async def start_checkout(
         self,
         *,
-        session: AsyncReadSession,
+        session: AsyncSession,
         organization_id: uuid.UUID,
         product_id: str,
         customer_ip_address: str | None = None,
@@ -256,11 +266,14 @@ class PolarSelfService:
     ) -> "Checkout":
         if not self.is_configured:
             raise PolarSelfNotConfigured()
-        await self._ensure_plan(product_id)
+        plan = await self._ensure_plan(product_id)
         await self._require_approval(session, organization_id=organization_id)
         client = get_client()
         existing = await client.get_active_subscription(
             external_customer_id=str(organization_id)
+        )
+        discount_id = await self._resolve_startup_program_discount_id(
+            session, plan=plan, organization_id=organization_id
         )
         return await client.create_checkout(
             product_id=product_id,
@@ -270,6 +283,7 @@ class PolarSelfService:
             success_url=success_url,
             return_url=return_url,
             embed_origin=embed_origin,
+            discount_id=discount_id,
         )
 
     async def change_plan(
@@ -611,6 +625,67 @@ class PolarSelfService:
         if plan is None:
             raise PolarSelfPlanNotFound(product_id)
         return plan
+
+    async def _resolve_startup_program_discount_id(
+        self,
+        session: AsyncSession,
+        *,
+        plan: "Product",
+        organization_id: uuid.UUID,
+    ) -> str | None:
+        """For Scale checkouts by customers flagged ``startup_program_eligible``,
+        return the ID of a 12-month 100% discount to auto-attach. Returns None
+        for everyone else so non-eligible checkouts are unaffected."""
+        if plan.name.lower() != SCALE_PLAN_NAME.lower():
+            return None
+        customer = await get_client().get_customer_by_external_id_or_none(
+            str(organization_id)
+        )
+        if customer is None:
+            return None
+        metadata = customer.metadata or {}
+        if not metadata.get("startup_program_eligible"):
+            return None
+        discount = await self._get_or_create_startup_discount(
+            session, product_id=uuid.UUID(plan.id)
+        )
+        return str(discount.id)
+
+    async def _get_or_create_startup_discount(
+        self, session: AsyncSession, *, product_id: uuid.UUID
+    ) -> Discount:
+        polar_organization_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
+        discount_repository = DiscountRepository.from_session(session)
+        existing = await discount_repository.get_redeemable_by_name_and_organization(
+            name=STARTUP_PROGRAM_DISCOUNT_NAME,
+            organization_id=polar_organization_id,
+        )
+        if existing is not None:
+            return existing
+
+        organization_repository = OrganizationRepository.from_session(session)
+        polar_organization = await organization_repository.get_by_id(
+            polar_organization_id
+        )
+        if polar_organization is None:
+            raise PolarSelfNotConfigured()
+        auth_subject: AuthSubject[Organization] = AuthSubject(
+            subject=polar_organization, scopes=set(), session=None
+        )
+        return await discount_service.create(
+            session,
+            DiscountPercentageCreate(
+                name=STARTUP_PROGRAM_DISCOUNT_NAME,
+                type=DiscountType.percentage,
+                basis_points=10000,
+                duration=DiscountDuration.repeating,
+                duration_in_months=12,
+                max_redemptions=1,
+                products=[product_id],
+                organization_id=polar_organization_id,
+            ),
+            auth_subject,
+        )
 
     def _product_fixed_price_amount(self, product: "Product") -> int:
         for price in product.prices:

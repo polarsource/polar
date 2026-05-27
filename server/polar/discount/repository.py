@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.orm import raiseload
 
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
@@ -19,6 +19,22 @@ class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, U
             .where(Discount.id == discount_id, Discount.is_deleted.is_(False))
             .with_for_update(nowait=nowait)
             .options(raiseload(Discount.organization))
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_redeemable_by_name_and_organization(
+        self, *, name: str, organization_id: UUID
+    ) -> Discount | None:
+        """Return a non-deleted discount with the given name belonging to the
+        organization, only if it still has redemption capacity."""
+        statement = select(Discount).where(
+            Discount.name == name,
+            Discount.organization_id == organization_id,
+            Discount.is_deleted.is_(False),
+            or_(
+                Discount.max_redemptions.is_(None),
+                Discount.redemptions_count < Discount.max_redemptions,
+            ),
         )
         return await self.get_one_or_none(statement)
 

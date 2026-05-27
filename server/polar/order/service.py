@@ -2262,8 +2262,11 @@ class OrderService:
         now = utc_now()
         subscription = order.subscription
 
+        # failed_attempts includes the current failure (upserted by the Stripe
+        # webhook handler before we get here) and the initial cycle failure
+        # which _handle_first_dunning_attempt already paired with intervals[0].
         if (
-            failed_attempts >= len(settings.DUNNING_RETRY_INTERVALS)
+            failed_attempts > len(settings.DUNNING_RETRY_INTERVALS)
             or (
                 subscription is not None
                 and subscription.past_due_deadline
@@ -2282,7 +2285,7 @@ class OrderService:
             return order
 
         # Schedule next retry using the appropriate interval
-        next_interval = settings.DUNNING_RETRY_INTERVALS[failed_attempts]
+        next_interval = settings.DUNNING_RETRY_INTERVALS[failed_attempts - 1]
         next_retry_date = now + next_interval
 
         order = await repository.update(

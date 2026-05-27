@@ -266,8 +266,8 @@ class TestCountFailedPaymentsForOrder:
         count = await repository.count_failed_payments_for_order(order.id)
 
         # Only the original purchase + the cron-fired retry_dunning count.
-        # 2 < 4 (len of DUNNING_RETRY_INTERVALS), so the subscription stays
-        # in dunning instead of being revoked.
+        # 2 is not greater than 4 (len of DUNNING_RETRY_INTERVALS), so the
+        # subscription stays in dunning instead of being revoked.
         assert count == 2
 
 

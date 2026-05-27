@@ -141,6 +141,7 @@ async def account_custom_fees(save_fixture: SaveFixture, user: User) -> Account:
         processor_fees_applicable=True,
         fee_basis_points=389,
         fee_fixed=35,
+        subscription_fee_basis_points=50,
     )
 
 
@@ -170,32 +171,19 @@ class TestCreateFeesReversalBalances:
             )
         )
 
-        assert len(fees_reversal_balances) == 2
+        assert len(fees_reversal_balances) == 1
 
         # Payment fee
         reversal_outgoing, reversal_incoming = fees_reversal_balances[0]
 
-        assert reversal_outgoing.amount == -520
+        assert reversal_outgoing.amount == -650
         assert reversal_outgoing.account == incoming.account
         assert reversal_outgoing.platform_fee_type == PlatformFeeType.payment
         assert reversal_outgoing.incurred_by_transaction == incoming
 
-        assert reversal_incoming.amount == 520
+        assert reversal_incoming.amount == 650
         assert reversal_incoming.account is None
         assert reversal_incoming.platform_fee_type == PlatformFeeType.payment
-        assert reversal_incoming.incurred_by_transaction == outgoing
-
-        # Subscription fee
-        reversal_outgoing, reversal_incoming = fees_reversal_balances[1]
-
-        assert reversal_outgoing.amount == -60
-        assert reversal_outgoing.account == incoming.account
-        assert reversal_outgoing.platform_fee_type == PlatformFeeType.subscription
-        assert reversal_outgoing.incurred_by_transaction == incoming
-
-        assert reversal_incoming.amount == 60
-        assert reversal_incoming.account is None
-        assert reversal_incoming.platform_fee_type == PlatformFeeType.subscription
         assert reversal_incoming.incurred_by_transaction == outgoing
 
     async def test_subscription_with_custom_fees(
@@ -294,17 +282,17 @@ class TestCreateFeesReversalBalances:
             )
         )
 
-        assert len(fees_reversal_balances) == 3
+        assert len(fees_reversal_balances) == 2
 
         # Payment fee
         reversal_outgoing, reversal_incoming = fees_reversal_balances[0]
 
-        assert reversal_outgoing.amount == -520
+        assert reversal_outgoing.amount == -650
         assert reversal_outgoing.account == incoming.account
         assert reversal_outgoing.platform_fee_type == PlatformFeeType.payment
         assert reversal_outgoing.incurred_by_transaction == incoming
 
-        assert reversal_incoming.amount == 520
+        assert reversal_incoming.amount == 650
         assert reversal_incoming.account is None
         assert reversal_incoming.platform_fee_type == PlatformFeeType.payment
         assert reversal_incoming.incurred_by_transaction == outgoing
@@ -324,19 +312,6 @@ class TestCreateFeesReversalBalances:
         assert (
             reversal_incoming.platform_fee_type == PlatformFeeType.international_payment
         )
-        assert reversal_incoming.incurred_by_transaction == outgoing
-
-        # Subscription fee
-        reversal_outgoing, reversal_incoming = fees_reversal_balances[2]
-
-        assert reversal_outgoing.amount == -60
-        assert reversal_outgoing.account == incoming.account
-        assert reversal_outgoing.platform_fee_type == PlatformFeeType.subscription
-        assert reversal_outgoing.incurred_by_transaction == incoming
-
-        assert reversal_incoming.amount == 60
-        assert reversal_incoming.account is None
-        assert reversal_incoming.platform_fee_type == PlatformFeeType.subscription
         assert reversal_incoming.incurred_by_transaction == outgoing
 
     async def test_link_payment(
@@ -386,32 +361,19 @@ class TestCreateFeesReversalBalances:
             )
         )
 
-        assert len(fees_reversal_balances) == 2
+        assert len(fees_reversal_balances) == 1
 
         # Payment fee
         reversal_outgoing, reversal_incoming = fees_reversal_balances[0]
 
-        assert reversal_outgoing.amount == -520
+        assert reversal_outgoing.amount == -650
         assert reversal_outgoing.account == incoming.account
         assert reversal_outgoing.platform_fee_type == PlatformFeeType.payment
         assert reversal_outgoing.incurred_by_transaction == incoming
 
-        assert reversal_incoming.amount == 520
+        assert reversal_incoming.amount == 650
         assert reversal_incoming.account is None
         assert reversal_incoming.platform_fee_type == PlatformFeeType.payment
-        assert reversal_incoming.incurred_by_transaction == outgoing
-
-        # Subscription fee
-        reversal_outgoing, reversal_incoming = fees_reversal_balances[1]
-
-        assert reversal_outgoing.amount == -60
-        assert reversal_outgoing.account == incoming.account
-        assert reversal_outgoing.platform_fee_type == PlatformFeeType.subscription
-        assert reversal_outgoing.incurred_by_transaction == incoming
-
-        assert reversal_incoming.amount == 60
-        assert reversal_incoming.account is None
-        assert reversal_incoming.platform_fee_type == PlatformFeeType.subscription
         assert reversal_incoming.incurred_by_transaction == outgoing
 
 

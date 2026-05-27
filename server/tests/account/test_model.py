@@ -22,28 +22,28 @@ class TestAccountFeeCalulations:
         user: User,
     ) -> None:
         session.expunge_all()
-        # 4% + 40c
+        # 5% + 50c
         account = generate_account(
             user,
             fee_basis_points=None,
             fee_fixed=None,
         )
 
-        # $10 = $0.8 in fees (%: 0.4 + $: 0.4)
-        assert account.calculate_fee_in_cents(1_000) == 80
-        # $100 = $4.4 in fees (%: 4 + $: 0.4)
-        assert account.calculate_fee_in_cents(10_000) == 440
+        # $10 = $1.00 in fees (%: 0.5 + $: 0.5)
+        assert account.calculate_fee_in_cents(1_000) == 100
+        # $100 = $5.50 in fees (%: 5 + $: 0.5)
+        assert account.calculate_fee_in_cents(10_000) == 550
 
         # Test some Stripe-like rounding
 
-        # $87.3 = $3.89 (3.892) in fees (%: 3.492 + $: 0.4)
-        assert account.calculate_fee_in_cents(8_730) == 389
+        # $87.3 = $4.87 (4.865) in fees (%: 4.365 + $: 0.5)
+        assert account.calculate_fee_in_cents(8_730) == 487
 
-        # $87.49 = $3.90 (3.8996) in fees (%: 3.4996 + $: 0.4)
-        assert account.calculate_fee_in_cents(8_749) == 390
+        # $87.49 = $4.87 (4.8745) in fees (%: 4.3745 + $: 0.5)
+        assert account.calculate_fee_in_cents(8_749) == 487
 
-        # $87.6 = $3.90 (3.904) in fees (%: 3.504 + $: 0.4)
-        assert account.calculate_fee_in_cents(8_760) == 390
+        # $87.6 = $4.88 (4.88) in fees (%: 4.38 + $: 0.5)
+        assert account.calculate_fee_in_cents(8_760) == 488
 
     def test_custom(
         self,

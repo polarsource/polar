@@ -1,8 +1,9 @@
 from collections.abc import Sequence
 from datetime import datetime
+from typing import cast
 from uuid import UUID
 
-from sqlalchemy import Select, func, select, update
+from sqlalchemy import CursorResult, Select, func, select, update
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -29,7 +30,11 @@ from polar.models.discount import (
     DiscountPercentage,
     DiscountType,
 )
-from polar.models.organization import OrganizationStatus, SnoozeType
+from polar.models.organization import (
+    OrganizationCapabilities,
+    OrganizationStatus,
+    SnoozeType,
+)
 from polar.models.organization_review import OrganizationReview
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole
@@ -275,6 +280,54 @@ class OrganizationRepository(
         )
         result = await self.session.execute(statement)
         return result.scalar() or 0
+
+    async def confirm_review_atomic(
+        self,
+        organization_id: UUID,
+        *,
+        next_review_threshold: int | None,
+        min_threshold: int,
+        active_capabilities: OrganizationCapabilities,
+        now: datetime,
+    ) -> bool:
+        """Atomically transition a REVIEW or SNOOZED organization to ACTIVE.
+
+        Returns ``True`` if the row was updated, ``False`` if it was no
+        longer in a confirmable state (e.g. another worker already won the
+        race and set the org back to ACTIVE).
+
+        When ``next_review_threshold`` is ``None``, the threshold is doubled
+        server-side from the current row (floored at ``min_threshold``) so
+        that N concurrent confirms doubling at once cannot collapse onto a
+        shared stale snapshot.
+        """
+        threshold_expr = (
+            func.greatest(Organization.next_review_threshold * 2, min_threshold)
+            if next_review_threshold is None
+            else next_review_threshold
+        )
+
+        stmt = (
+            update(Organization)
+            .where(
+                Organization.id == organization_id,
+                Organization.status.in_(
+                    [OrganizationStatus.REVIEW, OrganizationStatus.SNOOZED]
+                ),
+            )
+            .values(
+                status=OrganizationStatus.ACTIVE,
+                status_updated_at=now,
+                capabilities=active_capabilities,
+                next_review_threshold=threshold_expr,
+                initially_reviewed_at=func.coalesce(
+                    Organization.initially_reviewed_at, now
+                ),
+            )
+        )
+        # https://github.com/sqlalchemy/sqlalchemy/commit/67f62aac5b49b6d048ca39019e5bd123d3c9cfb2
+        result = cast(CursorResult[Organization], await self.session.execute(stmt))
+        return result.rowcount > 0
 
     async def increment_customer_invoice_next_number(
         self, organization_id: UUID

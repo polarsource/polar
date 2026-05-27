@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock
 import pytest
 from pydantic import HttpUrl, ValidationError
 from pytest_mock import MockerFixture
+from sqlalchemy import update
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
@@ -929,6 +930,7 @@ class TestConfirmOrganizationReviewed:
         )
 
         # Then
+        assert result is not None
         assert result.status == OrganizationStatus.ACTIVE
         assert result.initially_reviewed_at is not None
         assert result.next_review_threshold == 15000
@@ -949,6 +951,7 @@ class TestConfirmOrganizationReviewed:
         )
 
         # Then
+        assert result is not None
         assert result.status == OrganizationStatus.ACTIVE
         assert result.initially_reviewed_at == initially_reviewed_at
         assert result.next_review_threshold == 15000
@@ -964,6 +967,81 @@ class TestConfirmOrganizationReviewed:
             await organization_service.confirm_organization_reviewed(
                 session, organization, 15000
             )
+
+    async def test_race_lost_returns_none(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Simulate another worker winning the confirm race.
+
+        The in-memory snapshot looks REVIEW (the value this worker saw
+        before its LLM call), but the DB row was flipped to ACTIVE by a
+        concurrent worker. The atomic UPDATE must match zero rows and the
+        service must return ``None``.
+        """
+        # Settle the org in REVIEW so the in-memory object is clean.
+        organization.status = OrganizationStatus.REVIEW
+        await session.flush()
+
+        # Another worker won: flip the DB row to ACTIVE without touching
+        # our session's identity-mapped snapshot.
+        await session.execute(
+            update(Organization)
+            .where(Organization.id == organization.id)
+            .values(
+                status=OrganizationStatus.ACTIVE,
+                capabilities={**STATUS_CAPABILITIES[OrganizationStatus.ACTIVE]},
+            )
+            .execution_options(synchronize_session=False)
+        )
+
+        # Stale on purpose — the assertion guards the test setup, not the
+        # service under test.
+        assert organization.status == OrganizationStatus.REVIEW
+
+        result = await organization_service.confirm_organization_reviewed(
+            session, organization
+        )
+
+        assert result is None
+
+    async def test_threshold_doubled_from_db_not_memory(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Doubling must read the current row, not the caller's snapshot.
+
+        Two parallel workers both loaded the org with threshold=50_000.
+        Worker A has already bumped the DB to 100_000 but worker B's
+        in-memory snapshot still says 50_000. Worker B's doubling must
+        compute from the DB (100_000 → 200_000), not from the snapshot
+        (50_000 → 100_000), so the doublings don't collapse.
+        """
+        organization.status = OrganizationStatus.REVIEW
+        organization.next_review_threshold = 50_000
+        await session.flush()
+
+        # Worker A wins first: bump DB threshold to 100_000 but keep DB
+        # status=REVIEW so worker B's UPDATE can still match.
+        await session.execute(
+            update(Organization)
+            .where(Organization.id == organization.id)
+            .values(next_review_threshold=100_000)
+            .execution_options(synchronize_session=False)
+        )
+
+        # Worker B's snapshot is still 50_000.
+        assert organization.next_review_threshold == 50_000
+
+        result = await organization_service.confirm_organization_reviewed(
+            session, organization
+        )
+
+        # Doubling reads the DB row (100_000), not the stale snapshot.
+        assert result is not None
+        assert result.next_review_threshold == 200_000
 
 
 @pytest.mark.asyncio

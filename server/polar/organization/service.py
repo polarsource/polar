@@ -996,11 +996,21 @@ class OrganizationService:
         session: AsyncSession,
         organization: Organization,
         next_review_threshold: int | None = None,
-    ) -> Organization:
-        """Confirm a REVIEW or SNOOZED organization and transition it to ACTIVE.
+    ) -> Organization | None:
+        """Atomically transition a REVIEW or SNOOZED organization to ACTIVE.
 
-        For DENIED/BLOCKED reactivation, use `backoffice_approve`. For
-        post-appeal-approval transitions, use `approve_appeal`.
+        Returns the (refreshed) organization, or ``None`` if the transition
+        did not happen — typically because another worker already confirmed
+        the org first. Callers in the auto-approve path should treat
+        ``None`` as "race lost, the other worker is canonical".
+
+        The threshold doubling is computed server-side so that concurrent
+        confirms cannot collapse onto each other's stale in-memory snapshot
+        (workers that loaded the org before a 30s LLM call would otherwise
+        all double from the same value).
+
+        For DENIED/BLOCKED reactivation, use ``backoffice_approve``. For
+        post-appeal-approval transitions, use ``approve_appeal``.
         """
         if organization.status not in (
             OrganizationStatus.REVIEW,
@@ -1012,19 +1022,18 @@ class OrganizationService:
                 400,
             )
 
-        if next_review_threshold is None:
-            next_review_threshold = max(
-                organization.next_review_threshold * 2, _MIN_REVIEW_THRESHOLD
-            )
+        repository = OrganizationRepository.from_session(session)
+        confirmed = await repository.confirm_review_atomic(
+            organization.id,
+            next_review_threshold=next_review_threshold,
+            min_threshold=_MIN_REVIEW_THRESHOLD,
+            active_capabilities={**STATUS_CAPABILITIES[OrganizationStatus.ACTIVE]},
+            now=datetime.now(UTC),
+        )
+        if not confirmed:
+            return None
 
-        organization.set_status(OrganizationStatus.ACTIVE)
-        organization.next_review_threshold = next_review_threshold
-
-        if organization.initially_reviewed_at is None:
-            organization.initially_reviewed_at = datetime.now(UTC)
-
-        session.add(organization)
-
+        await session.refresh(organization)
         return organization
 
     async def _is_activation_ready(
@@ -1212,20 +1221,20 @@ class OrganizationService:
     ) -> bool:
         """Handle AI agent verdict for an ongoing threshold review.
 
-        Returns True if auto-approved, False if the org must be handled by a
-        human operator in the backoffice.
-        Only auto-approves when: status is REVIEW and verdict is APPROVE.
+        Returns True if THIS worker auto-approved (won the race). Returns
+        False otherwise — either the verdict was not APPROVE, the org was
+        not in REVIEW, or another concurrent worker already confirmed it.
+        Only the winner should record the agent decision and side-effects.
         """
         is_eligible = (
             organization.status == OrganizationStatus.REVIEW
             and verdict == ReviewVerdict.APPROVE
         )
+        if not is_eligible:
+            return False
 
-        if is_eligible:
-            await self.confirm_organization_reviewed(session, organization)
-            return True
-
-        return False
+        confirmed = await self.confirm_organization_reviewed(session, organization)
+        return confirmed is not None
 
     async def deny_organization(
         self, session: AsyncSession, organization: Organization

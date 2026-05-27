@@ -152,6 +152,13 @@ class OrganizationFeatureSettings(Schema):
         False,
         description="If this organization has access to reset proration behavior.",
     )
+    off_session_charges_enabled: bool = Field(
+        False,
+        description=(
+            "If this organization can create and finalize draft orders via the API "
+            "(off-session charges against a saved payment method)."
+        ),
+    )
     billing_enabled: bool = Field(
         False, description="If this organization has billing enabled"
     )

@@ -90,8 +90,11 @@ class OrderBase(TimestampedSchema, IDSchema):
             return OrderBillingReason.subscription_cycle
         return OrderBillingReason(value)
 
-    invoice_number: str = Field(
-        description="The invoice number associated with this order."
+    invoice_number: str | None = Field(
+        description=(
+            "The invoice number associated with this order. "
+            "`null` while the order is in `draft` status; assigned at finalize."
+        )
     )
     is_invoice_generated: bool = Field(
         description="Whether an invoice has been generated for this order."

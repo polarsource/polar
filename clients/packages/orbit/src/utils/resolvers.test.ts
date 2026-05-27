@@ -5,13 +5,11 @@ vi.mock('@stylexjs/stylex', () => ({
     defineVars: <T extends Record<string, unknown>>(obj: T) => obj,
     defineConsts: <T extends Record<string, unknown>>(obj: T) => obj,
     create: <T extends Record<string, unknown>>(obj: T) => obj,
-    createTheme: <T extends Record<string, unknown>>(_: unknown, obj: T) => obj,
     props: () => ({ className: '', style: {} }),
   },
   defineVars: <T extends Record<string, unknown>>(obj: T) => obj,
   defineConsts: <T extends Record<string, unknown>>(obj: T) => obj,
   create: <T extends Record<string, unknown>>(obj: T) => obj,
-  createTheme: <T extends Record<string, unknown>>(_: unknown, obj: T) => obj,
   props: () => ({ className: '', style: {} }),
 }))
 

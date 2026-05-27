@@ -30,17 +30,24 @@ const VerifyPage = ({ intent = 'login' }: { intent?: 'login' | 'signup' }) => {
   const [loading, setLoading] = useState(false)
   const onSubmit: SubmitHandler<{ code: string }> = async ({ code }) => {
     setLoading(true)
-    const { error } = await emailOTPVerify.mutateAsync(code)
-    if (error) {
-      if (isValidationError(error.detail)) {
-        setValidationErrors(error.detail, setError)
-      } else if (error.detail) {
-        setError('code', { message: error.detail })
+    try {
+      const { error } = await emailOTPVerify.mutateAsync(code)
+      if (error) {
+        if (isValidationError(error.detail)) {
+          setValidationErrors(error.detail, setError)
+        } else if (error.detail) {
+          setError('code', { message: error.detail })
+        }
+        return
       }
+      router.push('/auth')
+    } catch {
+      setError('code', {
+        message: 'An unexpected error occurred. Please try again.',
+      })
+    } finally {
       setLoading(false)
-      return
     }
-    router.push('/auth')
   }
 
   return (

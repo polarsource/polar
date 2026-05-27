@@ -1,5 +1,6 @@
 import { useAuthSessionStart } from '@/hooks'
 import { usePostHog, type EventName } from '@/hooks/posthog'
+import { useToast } from '@/components/Toast/use-toast'
 import { getPublicServerURL } from '@/utils/api'
 import GitHub from '@mui/icons-material/GitHub'
 import { schemas } from '@polar-sh/client'
@@ -20,6 +21,7 @@ const GitHubLoginButton = ({
 }: GitHubLoginButtonProps) => {
   const posthog = usePostHog()
   const authSessionStart = useAuthSessionStart()
+  const { toast } = useToast()
 
   const onClick = async () => {
     let eventName: EventName = 'global:user:login:submit'
@@ -31,7 +33,16 @@ const GitHubLoginButton = ({
     })
 
     if (!authenticationSession) {
-      await authSessionStart.mutateAsync(returnTo)
+      try {
+        await authSessionStart.mutateAsync(returnTo)
+      } catch {
+        toast({
+          title: 'Sign in failed',
+          description:
+            'Could not start authentication session. Please try again.',
+        })
+        return
+      }
     }
     window.location.href = `${getPublicServerURL()}/v1/auth/github/authorize`
   }

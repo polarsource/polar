@@ -30,17 +30,24 @@ const VerifyPage = () => {
   const [loading, setLoading] = useState(false)
   const onSubmit: SubmitHandler<{ code: string }> = async ({ code }) => {
     setLoading(true)
-    const { error } = await totpVerify.mutateAsync(code)
-    if (error) {
-      if (isValidationError(error.detail)) {
-        setValidationErrors(error.detail, setError)
-      } else if (error.detail) {
-        setError('code', { message: error.detail })
+    try {
+      const { error } = await totpVerify.mutateAsync(code)
+      if (error) {
+        if (isValidationError(error.detail)) {
+          setValidationErrors(error.detail, setError)
+        } else if (error.detail) {
+          setError('code', { message: error.detail })
+        }
+        return
       }
+      router.push('/auth')
+    } catch {
+      setError('code', {
+        message: 'An unexpected error occurred. Please try again.',
+      })
+    } finally {
       setLoading(false)
-      return
     }
-    router.push('/auth')
   }
 
   return (
@@ -58,12 +65,13 @@ const VerifyPage = () => {
                 <FormControl>
                   <InputOTP
                     maxLength={6}
-                    pattern="^[a-zA-Z0-9]+$"
-                    inputMode="text"
+                    minLength={6}
+                    pattern="^\d{6}$"
+                    inputMode="numeric"
                     autoComplete="one-time-code"
                     {...field}
                     autoFocus={true}
-                    onChange={(value) => field.onChange(value.toUpperCase())}
+                    onChange={field.onChange}
                     onComplete={handleSubmit(onSubmit)}
                   >
                     <InputOTPGroup>

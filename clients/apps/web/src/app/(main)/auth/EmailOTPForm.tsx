@@ -42,32 +42,42 @@ const EmailOTPForm = ({
 
   const onSubmit: SubmitHandler<{ email: string }> = async ({ email }) => {
     setLoading(true)
-    let eventName: EventName = 'global:user:login:submit'
-    if (signup) {
-      eventName = 'global:user:signup:submit'
-    }
-
-    posthog.capture(eventName, {
-      method: 'email_otp',
-    })
-
-    if (!authenticationSession) {
-      await authSessionStart.mutateAsync(returnTo)
-    }
-
-    const { error } = await emailOTPRequest.mutateAsync(email)
-    if (error) {
-      if (isValidationError(error.detail)) {
-        setValidationErrors(error.detail, setError)
+    try {
+      let eventName: EventName = 'global:user:login:submit'
+      if (signup) {
+        eventName = 'global:user:signup:submit'
       }
-    }
-    setLoading(false)
 
-    const urlSearchParams = new URLSearchParams({
-      email,
-      intent: signup ? 'signup' : 'login',
-    })
-    router.push(`/auth/email-otp?${urlSearchParams.toString()}`)
+      posthog.capture(eventName, {
+        method: 'email_otp',
+      })
+
+      if (!authenticationSession) {
+        await authSessionStart.mutateAsync(returnTo)
+      }
+
+      const { error } = await emailOTPRequest.mutateAsync(email)
+      if (error) {
+        if (isValidationError(error.detail)) {
+          setValidationErrors(error.detail, setError)
+        } else if (error.detail) {
+          setError('email', { message: error.detail })
+        }
+        return
+      }
+
+      const urlSearchParams = new URLSearchParams({
+        email,
+        intent: signup ? 'signup' : 'login',
+      })
+      router.push(`/auth/email-otp?${urlSearchParams.toString()}`)
+    } catch {
+      setError('email', {
+        message: 'An unexpected error occurred. Please try again.',
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

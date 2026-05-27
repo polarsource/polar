@@ -82,7 +82,6 @@ from polar.subscription.service import (
     NotARecurringProduct,
     NotASeatBasedSubscription,
     SeatsAlreadyAssigned,
-    TrialingSubscription,
 )
 from polar.subscription.service import subscription as subscription_service
 from polar.subscription.update import generate_subscription_update
@@ -2379,21 +2378,240 @@ class TestList:
 
 @pytest.mark.asyncio
 class TestUpdateProduct:
-    async def test_trialing_subscription(
+    async def test_trial_to_equal_trial_succeeds(
         self,
-        save_fixture: SaveFixture,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         customer: Customer,
+        organization: Organization,
         product: Product,
     ) -> None:
         subscription = await create_trialing_subscription(
-            save_fixture, product=product, customer=customer
+            save_fixture,
+            product=product,
+            customer=customer,
+            trial_interval=TrialInterval.month,
+            trial_interval_count=1,
+        )
+        original_trial_end = subscription.trial_end
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            trial_interval=TrialInterval.month,
+            trial_interval_count=1,
         )
 
-        with pytest.raises(TrialingSubscription):
-            await subscription_service.update_product(
-                session, subscription, product_id=uuid.uuid4()
+        updated = await subscription_service.update_product(
+            session, subscription, product_id=new_product.id
+        )
+
+        assert updated.product == new_product
+        assert updated.status == SubscriptionStatus.trialing
+        assert updated.trial_end == original_trial_end
+        assert updated.current_period_end == original_trial_end
+
+    async def test_trial_to_longer_trial_extends(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+        )
+        trial_start = subscription.trial_start
+        assert trial_start is not None
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            trial_interval=TrialInterval.day,
+            trial_interval_count=14,
+        )
+
+        updated = await subscription_service.update_product(
+            session, subscription, product_id=new_product.id
+        )
+
+        expected_trial_end = TrialInterval.day.get_end(trial_start, 14)
+        assert updated.product == new_product
+        assert updated.status == SubscriptionStatus.trialing
+        assert updated.trial_end == expected_trial_end
+        assert updated.current_period_end == expected_trial_end
+
+    async def test_trial_to_shorter_trial_with_remaining_time_succeeds(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        trial_creation_time = datetime(2025, 1, 1, 12, 0, 0, tzinfo=UTC)
+        with freezegun.freeze_time(trial_creation_time):
+            subscription = await create_trialing_subscription(
+                save_fixture,
+                product=product,
+                customer=customer,
+                trial_interval=TrialInterval.day,
+                trial_interval_count=30,
             )
+        trial_start = subscription.trial_start
+        assert trial_start is not None
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+        )
+
+        with freezegun.freeze_time(trial_creation_time + timedelta(days=1)):
+            updated = await subscription_service.update_product(
+                session, subscription, product_id=new_product.id
+            )
+
+        expected_trial_end = TrialInterval.day.get_end(trial_start, 7)
+        assert updated.product == new_product
+        assert updated.status == SubscriptionStatus.trialing
+        assert updated.trial_end == expected_trial_end
+        assert updated.current_period_end == expected_trial_end
+
+    async def test_trial_to_shorter_trial_already_elapsed_ends_trial(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        trial_creation_time = datetime(2025, 1, 1, 12, 0, 0, tzinfo=UTC)
+        with freezegun.freeze_time(trial_creation_time):
+            subscription = await create_trialing_subscription(
+                save_fixture,
+                product=product,
+                customer=customer,
+                trial_interval=TrialInterval.day,
+                trial_interval_count=30,
+            )
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+        )
+
+        change_time = trial_creation_time + timedelta(days=10)
+        with freezegun.freeze_time(change_time):
+            updated = await subscription_service.update_product(
+                session, subscription, product_id=new_product.id
+            )
+
+        assert updated.product == new_product
+        assert updated.status == SubscriptionStatus.active
+        assert updated.trial_end == change_time
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            updated.id,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+        )
+
+    async def test_trial_to_no_trial_product_ends_trial(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            trial_interval=TrialInterval.month,
+            trial_interval_count=1,
+        )
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        updated = await subscription_service.update_product(
+            session, subscription, product_id=new_product.id
+        )
+
+        assert updated.product == new_product
+        assert updated.status == SubscriptionStatus.active
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            updated.id,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+        )
+
+    async def test_trial_product_change_skips_proration_billing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        create_subscription_update_order_mock = mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            trial_interval=TrialInterval.month,
+            trial_interval_count=1,
+        )
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            trial_interval=TrialInterval.month,
+            trial_interval_count=2,
+        )
+
+        await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=new_product.id,
+            proration_behavior=SubscriptionProrationBehavior.invoice,
+        )
+
+        create_subscription_update_order_mock.assert_not_called()
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        proration_entries = [
+            entry
+            for entry in billing_entries
+            if entry.type == BillingEntryType.proration
+        ]
+        assert proration_entries == []
 
     async def test_meters(
         self,

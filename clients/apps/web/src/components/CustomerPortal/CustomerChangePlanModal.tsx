@@ -6,6 +6,7 @@ import {
   useCustomerUpdateSubscription,
 } from '@/hooks/queries/customerPortal'
 import { hasLegacyRecurringPrices } from '@/utils/product'
+import { formatTrialEnd, useTrialChangeOutcome } from '@/utils/trial-change'
 import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
@@ -105,10 +106,15 @@ const CustomerChangePlanModal = ({
     [organization],
   )
 
+  const trialOutcome = useTrialChangeOutcome(subscription, selectedProduct)
+
+  const isTrialing = subscription.status === 'trialing'
+
   const [willTriggerImmediateCycle, nextInvoiceType] = useMemo(():
     | [false, null]
     | [true, 'charge' | 'credit'] => {
     if (!selectedProduct) return [false, null]
+    if (isTrialing) return [false, null]
 
     const willTrigger =
       prorationBehavior !== 'next_period' &&
@@ -130,10 +136,18 @@ const CustomerChangePlanModal = ({
     const chargeOrCredit = newPrice > currentPrice ? 'charge' : 'credit'
 
     return [willTrigger, chargeOrCredit]
-  }, [selectedProduct, prorationBehavior, subscription])
+  }, [selectedProduct, prorationBehavior, subscription, isTrialing])
 
   const invoicingMessage = useMemo(() => {
     if (!selectedProduct) return null
+
+    if (trialOutcome?.kind === 'continues') {
+      return `Your trial will continue until ${formatTrialEnd(trialOutcome.trialEnd)}. You won't be charged before then.`
+    }
+
+    if (trialOutcome?.kind === 'ends') {
+      return `This will end my trial and charge me immediately for ${selectedProduct.name}.`
+    }
 
     if (willTriggerImmediateCycle) {
       const newPeriod =
@@ -159,10 +173,13 @@ const CustomerChangePlanModal = ({
     prorationBehavior,
     willTriggerImmediateCycle,
     nextInvoiceType,
+    trialOutcome,
   ])
 
   const willIssueInvoice =
-    willTriggerImmediateCycle || prorationBehavior === 'invoice'
+    trialOutcome?.kind === 'ends' ||
+    willTriggerImmediateCycle ||
+    prorationBehavior === 'invoice'
   const [approveImmediateInvoice, setApproveImmediateInvoice] = useState(false)
 
   const canChangePlan = useMemo(() => {
@@ -305,17 +322,19 @@ const CustomerChangePlanModal = ({
             </div>
           )}
           {invoicingMessage && (
-            <label className="flex flex-row items-center gap-x-2">
+            <label className="flex flex-row items-start gap-x-2">
               {willIssueInvoice && (
-                <Checkbox
-                  checked={approveImmediateInvoice}
-                  onCheckedChange={(checked) =>
-                    setApproveImmediateInvoice(checked === true)
-                  }
-                />
+                <div>
+                  <Checkbox
+                    checked={approveImmediateInvoice}
+                    onCheckedChange={(checked) =>
+                      setApproveImmediateInvoice(checked === true)
+                    }
+                  />
+                </div>
               )}
 
-              <span className="dark:text-polar-500 text-sm text-gray-500">
+              <span className="dark:text-polar-500 text-sm text-pretty text-gray-500">
                 {invoicingMessage}
               </span>
             </label>
@@ -333,7 +352,9 @@ const CustomerChangePlanModal = ({
           onClick={onConfirm}
           size="lg"
         >
-          Change Plan
+          {trialOutcome?.kind === 'ends'
+            ? 'Change Plan & End Trial'
+            : 'Change Plan'}
         </Button>
       </div>
     </div>

@@ -14,7 +14,8 @@ Switch a subscription to a different recurring product — the standard upgrade 
 
 - When the change takes effect depends on the [proration behavior](/features/subscriptions/proration): `invoice` and `prorate` apply the new product immediately, while `next_period` schedules a pending update that's only applied at the start of the next billing cycle.
 - The new product must share the subscription's currency and must either both be seat-based or both not be — you can't switch a flat subscription to a seat-based product or vice versa.
-- You can't change the plan on a **trialing** subscription or on one that's already canceled or scheduled to cancel. End the trial or uncancel first.
+- You can't change the plan on a subscription that's already canceled or scheduled to cancel — uncancel first.
+- Plan changes on a **trialing** subscription are allowed. The trial carries over with its end recomputed from the new product's trial length (anchored to the original `trial_start`). If the new product has no trial — or its trial would already have elapsed — the trial ends immediately and a fresh billing cycle starts on the new product.
 - Custom-priced products (pay-what-you-want) aren't valid destinations for a plan change.
 
 <CodeGroup>

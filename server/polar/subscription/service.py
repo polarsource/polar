@@ -163,15 +163,6 @@ class AlreadyCanceledSubscription(SubscriptionError):
         super().__init__(message, 403)
 
 
-class TrialingSubscription(SubscriptionError):
-    def __init__(self, subscription: Subscription) -> None:
-        self.subscription = subscription
-        message = (
-            "This subscription is currently in a trial period and cannot be updated."
-        )
-        super().__init__(message, 403)
-
-
 class SubscriptionLocked(SubscriptionError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
@@ -1006,9 +997,6 @@ class SubscriptionService:
         if subscription.revoked or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
 
-        if subscription.trialing:
-            raise TrialingSubscription(subscription)
-
         previous_product = subscription.product
         previous_status = subscription.status
         previous_is_canceled = subscription.canceled
@@ -1122,6 +1110,22 @@ class SubscriptionService:
                 ]
             )
 
+        was_trialing = subscription.status == SubscriptionStatus.trialing
+        new_trial_end: datetime | None = None
+        ends_trial = False
+        if was_trialing:
+            assert subscription.trial_start is not None
+            if product.trial_interval is None or product.trial_interval_count is None:
+                ends_trial = True
+            else:
+                candidate_trial_end = product.trial_interval.get_end(
+                    subscription.trial_start, product.trial_interval_count
+                )
+                if candidate_trial_end <= utc_now():
+                    ends_trial = True
+                else:
+                    new_trial_end = candidate_trial_end
+
         # Add event for the subscription plan change
         event = await event_service.create_event(
             session,
@@ -1169,19 +1173,34 @@ class SubscriptionService:
             )
             subscription.pending_update = None
 
-            for entry in billing_entries:
-                entry.event = event
-                session.add(entry)
+            # Skip proration for trialing subscriptions - no billing during trial
+            if not was_trialing:
+                for entry in billing_entries:
+                    entry.event = event
+                    session.add(entry)
 
             interval_changed = subscription_update.is_interval_changed()
             subscription = subscription_update.apply_update()
+            if was_trialing:
+                if ends_trial:
+                    # End the trial immediately - cycle() below will transition
+                    # to active and bill the customer for the new period.
+                    subscription.trial_end = subscription.current_period_end = utc_now()
+                else:
+                    assert new_trial_end is not None
+                    subscription.trial_end = new_trial_end
+                    subscription.current_period_end = new_trial_end
             session.add(subscription)
             await session.flush()
 
-            # Invoice and attempt to pay immediately
-            if (
-                proration_behavior.is_immediate() or interval_changed
-            ) and billing_entries:
+            if was_trialing and ends_trial:
+                subscription = await self.cycle(session, subscription)
+            elif (
+                (proration_behavior.is_immediate() or interval_changed)
+                and not was_trialing
+                and billing_entries
+            ):
+                # Invoice and attempt to pay immediately
                 await self._create_subscription_update_order(session, subscription)
 
             await self.enqueue_benefits_grants(session, subscription)

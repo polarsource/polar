@@ -5,7 +5,9 @@ import { useUpdateSubscription } from '@/hooks/queries/subscriptions'
 import { setValidationErrors } from '@/utils/api/errors'
 import { getDiscountDisplay } from '@/utils/discount'
 import { hasLegacyRecurringPrices } from '@/utils/product'
+import { formatTrialEnd, useTrialChangeOutcome } from '@/utils/trial-change'
 import { isValidationError, schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'
 import DateTimePicker from '@polar-sh/ui/components/atoms/DateTimePicker'
@@ -81,29 +83,27 @@ const UpdateProduct = ({
     () => subscription.prices.map(({ id }) => id),
     [subscription],
   )
-  const products = useMemo(
-    () =>
-      allProducts
-        ? allProducts.items
-            .filter((product) => !hasLegacyRecurringPrices(product))
-            .filter((product) => {
-              // If it's a different product, include it
-              if (subscription.product_id !== product.id) {
-                return true
-              }
+  const products = useMemo(() => {
+    if (!allProducts) return []
 
-              // For the same product, only include if the price sets are different
-              const productPriceIds = product.prices.map(({ id }) => id)
+    return allProducts.items
+      .filter((product) => !hasLegacyRecurringPrices(product))
+      .filter((product) => {
+        // If it's a different product, include it
+        if (subscription.product_id !== product.id) {
+          return true
+        }
 
-              // Check if price sets are identical (same length and same IDs)
-              if (productPriceIds.length !== activePriceIds.length) {
-                return true
-              }
-              return !productPriceIds.every((id) => activePriceIds.includes(id))
-            })
-        : [],
-    [allProducts, activePriceIds, subscription],
-  )
+        // For the same product, only include if the price sets are different
+        const productPriceIds = product.prices.map(({ id }) => id)
+
+        // Check if price sets are identical (same length and same IDs)
+        if (productPriceIds.length !== activePriceIds.length) {
+          return true
+        }
+        return !productPriceIds.every((id) => activePriceIds.includes(id))
+      })
+  }, [allProducts, activePriceIds, subscription])
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const selectedProductId = watch('product_id')
@@ -111,6 +111,8 @@ const UpdateProduct = ({
     () => products.find((product) => product.id === selectedProductId),
     [products, selectedProductId],
   )
+
+  const trialOutcome = useTrialChangeOutcome(subscription, selectedProduct)
 
   const onSubmit = useCallback(
     async (body: schemas['SubscriptionUpdateProduct']) => {
@@ -157,81 +159,123 @@ const UpdateProduct = ({
               <FormItem>
                 <FormLabel>New product</FormLabel>
                 <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    disabled={subscription.status === 'trialing'}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a new product" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {products.map((product) => (
-                        <SelectItem key={product.id} value={product.id}>
-                          <div className="flex flex-row items-center justify-between gap-1">
-                            {product.name}
-                            {product.id === subscription.product_id && (
-                              <Pill color="green" className="px-3 py-1 text-xs">
-                                New Pricing
-                              </Pill>
-                            )}
-                          </div>
-                          <ProductPriceLabel
-                            product={product}
-                            currency={subscription.currency}
-                          />
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div>
+                    {/* We need an extra div or the space-y-2 from FormItem adds spacing between the Radix select button & the hidden select */}
+
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <SelectTrigger className="h-14">
+                        <SelectValue placeholder="Select a new product" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {products.map((product) => (
+                          <SelectItem key={product.id} value={product.id}>
+                            <div className="flex flex-row items-center justify-between gap-1">
+                              {product.name}
+                              {product.id === subscription.product_id && (
+                                <Pill
+                                  color="green"
+                                  className="px-3 py-1 text-xs"
+                                >
+                                  New Pricing
+                                </Pill>
+                              )}
+                            </div>
+                            <ProductPriceLabel
+                              product={product}
+                              currency={subscription.currency}
+                            />
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </FormControl>
-                {subscription.status === 'trialing' && (
-                  <FormDescription>
-                    Product changes are not supported during a trial period
-                  </FormDescription>
-                )}
                 <FormMessage />
               </FormItem>
             )}
           />
-          <FormField
-            control={control}
-            name="proration_behavior"
-            render={({ field }) => (
-              <FormItem className="flex flex-col gap-y-2">
-                <div className="flex flex-col gap-2">
+          {subscription.status !== 'trialing' && (
+            <FormField
+              control={control}
+              name="proration_behavior"
+              render={({ field }) => (
+                <FormItem>
                   <FormLabel>Proration behavior</FormLabel>
-                </div>
-                <FormControl>
-                  <ProrationBehavior
-                    organization={organization}
-                    value={field.value || defaultProrationBehavior}
-                    onValueChange={field.onChange}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  <FormControl>
+                    <div>
+                      {/* We need an extra div or the space-y-2 from FormItem adds spacing between the Radix select button & the hidden select */}
+                      <ProrationBehavior
+                        organization={organization}
+                        value={field.value || defaultProrationBehavior}
+                        onValueChange={field.onChange}
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
         <div className="flex flex-col gap-4">
-          {selectedProduct &&
-            selectedProduct.id !== subscription.product.id && (
-              <div className="rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
-                The customer will get access to {selectedProduct.name} benefits,
-                and lose access to {subscription.product.name} benefits.
-              </div>
-            )}
           <Button
             type="submit"
             size="lg"
             loading={updateSubscription.isPending}
-            disabled={
-              updateSubscription.isPending || subscription.status === 'trialing'
-            }
+            disabled={updateSubscription.isPending}
           >
-            Update Subscription
+            {trialOutcome?.kind === 'ends'
+              ? 'Update Subscription & End Trial'
+              : 'Update Subscription'}
           </Button>
+          {selectedProduct &&
+            selectedProduct.id !== subscription.product.id && (
+              <Box
+                padding="m"
+                borderRadius="m"
+                backgroundColor="background-warning"
+                display="flex"
+                flexDirection="column"
+                rowGap="s"
+              >
+                {trialOutcome?.kind === 'ends' && (
+                  <p className="text-sm text-yellow-700">
+                    This change will end the current trial and{' '}
+                    <strong className="font-medium">
+                      charge the customer immediately
+                    </strong>{' '}
+                    for the first billing period of{' '}
+                    <strong className="font-medium">
+                      {selectedProduct.name}
+                    </strong>
+                    .
+                  </p>
+                )}
+                {trialOutcome?.kind === 'continues' && (
+                  <p className="text-sm text-yellow-700">
+                    The trial will continue until{' '}
+                    <strong className="font-medium">
+                      {formatTrialEnd(trialOutcome.trialEnd)}
+                    </strong>
+                    . The customer won&apos;t be charged before then.
+                  </p>
+                )}
+                <p className="text-sm text-yellow-700">
+                  By updating this subscription, the customer will get access to{' '}
+                  <strong className="font-medium">
+                    {selectedProduct.name}
+                  </strong>{' '}
+                  benefits, and lose access to{' '}
+                  <strong className="font-medium">
+                    {subscription.product.name}
+                  </strong>{' '}
+                  benefits.
+                </p>
+              </Box>
+            )}
         </div>
       </form>
     </Form>

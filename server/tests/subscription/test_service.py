@@ -16,6 +16,7 @@ from sqlalchemy.util.typing import TypeAlias
 from polar.auth.models import AuthSubject
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.checkout.eventstream import CheckoutEvent
+from polar.customer_seat.repository import CustomerSeatRepository
 from polar.email.schemas import SubscriptionRevokedEmail
 from polar.enums import (
     PaymentProcessor,
@@ -3268,8 +3269,6 @@ class TestUpdateProduct:
         assert updated.product == seat_product
         assert updated.seats == 1
 
-        from polar.customer_seat.repository import CustomerSeatRepository
-
         seat_repository = CustomerSeatRepository.from_session(session)
         seats = await seat_repository.list_by_subscription_id(updated.id)
         claimed = [s for s in seats if s.status == SeatStatus.claimed]
@@ -3380,6 +3379,12 @@ class TestUpdateProduct:
         organization: Organization,
         product: Product,
     ) -> None:
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization)
+
         subscription = await create_active_subscription(
             save_fixture, product=product, customer=customer
         )
@@ -3391,13 +3396,20 @@ class TestUpdateProduct:
             prices=[("seat", 1500, "usd")],
         )
 
-        with pytest.raises(PolarRequestValidationError):
+        with pytest.raises(PolarRequestValidationError) as exc_info:
             await subscription_service.update_product(
                 session,
                 subscription,
                 product_id=seat_product.id,
                 proration_behavior=SubscriptionProrationBehavior.next_period,
             )
+
+        errors = exc_info.value.errors()
+        assert any(
+            error["loc"] == ("body", "proration_behavior")
+            and "next_period" in error["msg"]
+            for error in errors
+        )
 
 
 @pytest.mark.asyncio

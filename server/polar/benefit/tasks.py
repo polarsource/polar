@@ -98,7 +98,8 @@ async def enqueue_benefits_grants(
         )
 
 
-def _enqueue_grants(
+@actor(actor_name="benefit.enqueue_grants", priority=TaskPriority.MEDIUM)
+async def benefit_enqueue_grants(
     customer_id: uuid.UUID,
     grant_benefit_ids: list[uuid.UUID],
     member_id: uuid.UUID | None = None,
@@ -112,36 +113,6 @@ def _enqueue_grants(
             member_id=member_id,
             **scope,
         )
-
-
-@actor(actor_name="benefit.enqueue_grants", priority=TaskPriority.MEDIUM)
-async def benefit_enqueue_grants(
-    customer_id: uuid.UUID,
-    grant_benefit_ids: list[uuid.UUID],
-    member_id: uuid.UUID | None = None,
-    **scope: Unpack[BenefitGrantScopeArgs],
-) -> None:
-    _enqueue_grants(customer_id, grant_benefit_ids, member_id=member_id, **scope)
-
-
-# Deprecated alias. Kept registered to drain in-flight Dramatiq messages
-# enqueued before the rename. Remove once the queue is drained after deploy.
-# This task previously also reset meters; resets are now the responsibility
-# of order.service.create_subscription_order (cycle/cancel orders) and
-# meter_credit.cycle() per benefit grant.
-# Delegates to `_enqueue_grants` rather than `benefit_enqueue_grants` to avoid
-# nesting two `JobQueueManager.open()` contexts (the inner close() resets the
-# ContextVar to None, breaking the outer close).
-@actor(
-    actor_name="benefit.reset_meters_and_enqueue_grants", priority=TaskPriority.MEDIUM
-)
-async def benefit_reset_meters_and_enqueue_grants(
-    customer_id: uuid.UUID,
-    grant_benefit_ids: list[uuid.UUID],
-    member_id: uuid.UUID | None = None,
-    **scope: Unpack[BenefitGrantScopeArgs],
-) -> None:
-    _enqueue_grants(customer_id, grant_benefit_ids, member_id=member_id, **scope)
 
 
 @actor(actor_name="benefit.grant", priority=TaskPriority.MEDIUM)

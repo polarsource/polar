@@ -56,20 +56,28 @@ const SeatInvitationsPanel = ({
   customerSessionToken,
 }: SeatInvitationsPanelProps) => {
   const [emailInputs, setEmailInputs] = useState<EmailInput[]>(
-    customerEmail
-      ? [
-          { id: '1', value: customerEmail },
-          { id: '2', value: '' },
-        ]
-      : [{ id: '1', value: '' }],
+    [
+      {
+        id: '1',
+        value: customerEmail || '',
+      },
+      seats > 1 && customerEmail
+        ? {
+            id: '2',
+            value: '',
+          }
+        : null,
+    ].filter(Boolean) as EmailInput[],
   )
+
   const [isSending, setIsSending] = useState(false)
   const [sentCount, setSentCount] = useState(0)
 
   const assignSeat = useAssignSeatFromCheckout(checkoutId, customerSessionToken)
 
   const availableSeats = seats - sentCount
-  const canAddMore = emailInputs.length < availableSeats
+  const canAddMore =
+    emailInputs.filter((input) => !input.sent).length < availableSeats
 
   const addEmailInput = () => {
     if (canAddMore) {
@@ -91,12 +99,10 @@ const SeatInvitationsPanel = ({
 
   const sendInvitations = async () => {
     const validatedInputs = emailInputs.map((input) => {
-      if (!input.value.trim()) {
-        return { ...input, error: 'Email is required' }
-      }
-      if (!validateEmail(input.value)) {
+      if (input.value.trim() && !validateEmail(input.value)) {
         return { ...input, error: 'Invalid email format' }
       }
+
       return input
     })
 
@@ -110,6 +116,8 @@ const SeatInvitationsPanel = ({
 
     for (const input of emailInputs) {
       if (input.sent) continue
+
+      if (input.value.trim() === '') continue
 
       try {
         await assignSeat.mutateAsync({ email: input.value })
@@ -133,28 +141,28 @@ const SeatInvitationsPanel = ({
   }
 
   const validEmails = emailInputs.filter(
-    (input) => input.value.trim() && !input.error && !input.sent,
+    (input) =>
+      input.value.trim() &&
+      validateEmail(input.value.trim()) &&
+      !input.error &&
+      !input.sent,
   ).length
   const canSend = validEmails > 0 && !isSending
 
   return (
     <Well className="dark:border-polar-700 dark:bg-polar-800 w-full border border-gray-200 bg-white">
-      <WellHeader className="gap-y-4 text-left">
-        <h2 className="text-xl">Invite team members</h2>
+      <WellHeader className="gap-y-2 pb-4 text-center">
+        <h2 className="text-xl font-medium">Invite team members</h2>
         <p className="dark:text-polar-500 text-sm text-gray-500">
-          Invite team members to access your purchase.
+          Invite {seats > 1 ? `${seats} team members` : 'one team member'} to
+          access your purchase.
         </p>
-        <div className="flex items-center justify-between">
-          <p className="text-sm">
-            {availableSeats} {availableSeats === 1 ? 'seat' : 'seats'} available
-          </p>
-        </div>
       </WellHeader>
 
       <WellContent className="flex flex-col gap-6">
         <div className="flex flex-col gap-3">
           {emailInputs.map((input) => (
-            <div key={input.id} className="flex items-center gap-4">
+            <div key={input.id} className="flex items-center gap-2">
               <div className="flex-1">
                 <Input
                   type="email"
@@ -165,12 +173,17 @@ const SeatInvitationsPanel = ({
                   className={`${input.error ? 'border-red-500' : ''}`}
                 />
                 {input.error && (
-                  <p className="mt-1 text-xs text-red-500">{input.error}</p>
+                  <p className="mt-1 text-left text-xs text-red-500">
+                    {input.error}
+                  </p>
                 )}
               </div>
               {input.sent ? (
-                <div className="flex h-8 w-8 items-center justify-center">
-                  <MailCheckIcon className="dark:text-polar-400 h-5 w-5 text-gray-700" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-50 dark:bg-green-900">
+                  <MailCheckIcon
+                    className="h-4 w-4 text-green-500 dark:text-green-500"
+                    strokeWidth={1.5}
+                  />
                 </div>
               ) : (
                 emailInputs.length > 1 &&
@@ -191,11 +204,10 @@ const SeatInvitationsPanel = ({
 
           {canAddMore && (
             <Button
-              variant="secondary"
-              size="sm"
+              variant="ghost"
               onClick={addEmailInput}
               disabled={isSending}
-              className="self-start"
+              className="rounded-xl"
             >
               <PlusIcon className="mr-2 h-4 w-4" />
               Add another email
@@ -217,8 +229,8 @@ const SeatInvitationsPanel = ({
 
         {sentCount > 0 && (
           <p className="dark:text-polar-500 mx-auto max-w-xs text-center text-xs text-pretty text-gray-500">
-            Successfully assigned {sentCount}{' '}
-            {sentCount === 1 ? 'seat' : 'seats'}.
+            Successfully assigned{' '}
+            {sentCount === 1 ? 'one seat' : `${sentCount} seats`}.
             {availableSeats > 0 && (
               <>
                 {' '}

@@ -13,7 +13,7 @@ dependencies = [
   "structlog>=24.4.0",
   "githubkit==0.15.4",
   "redis>=5.0.4",
-  "sse-starlette>=2.0.0",
+  "sse-starlette>=3.4.4",
   "stripe>=14,<15",
   "pyjwt>=2.6.0",
   "pydantic>=2.13.0",

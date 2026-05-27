@@ -1,5 +1,28 @@
-from polar.organization_review.analyzer import _render_scraped_site
-from polar.organization_review.schemas import WebsiteData, WebsitePage
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock
+
+import httpx
+import pytest
+from pydantic_ai.exceptions import (
+    ConcurrencyLimitExceeded,
+    ModelHTTPError,
+    UnexpectedModelBehavior,
+    UserError,
+)
+from pytest_mock import MockerFixture
+
+from polar.organization_review.analyzer import _render_scraped_site, review_analyzer
+from polar.organization_review.schemas import (
+    DataSnapshot,
+    HistoryData,
+    OrganizationData,
+    PaymentMetrics,
+    PayoutAccountData,
+    ProductsData,
+    ReviewContext,
+    WebsiteData,
+    WebsitePage,
+)
 
 
 def _make_website_data(
@@ -83,3 +106,87 @@ class TestRenderScrapedSite:
             empty_message="nothing here",
         )
         assert "nothing here" not in parts
+
+
+def _minimal_snapshot() -> DataSnapshot:
+    return DataSnapshot(
+        context=ReviewContext.SUBMISSION,
+        organization=OrganizationData(name="Test Org", slug="test-org"),
+        products=ProductsData(),
+        account=PayoutAccountData(),
+        metrics=PaymentMetrics(),
+        history=HistoryData(),
+        collected_at=datetime.now(UTC),
+    )
+
+
+def _stub_analyzer_io(mocker: MockerFixture, run_side_effect: BaseException) -> None:
+    """Patch the heavy I/O around `analyze` so a test can target just the
+    exception-handling path: prompt building, AUP file read, and the LLM
+    agent call. The mocked `agent.run` raises `run_side_effect`.
+    """
+    mocker.patch.object(review_analyzer, "_build_prompt", return_value="test-prompt")
+    mocker.patch(
+        "polar.organization_review.analyzer.fetch_policy_content",
+        return_value="test-policy",
+    )
+    mocker.patch.object(
+        review_analyzer.agent,
+        "run",
+        new=AsyncMock(side_effect=run_side_effect),
+    )
+
+
+@pytest.mark.asyncio
+class TestAnalyzeReraisesOnError:
+    """ReviewAnalyzer re-raises every non-timeout failure so the Dramatiq
+    actor retries it and Sentry captures the final failure. Persisting a
+    synthetic DENY here would silently block merchants either on transient
+    gateway outages or on deterministic bugs (config/programming errors).
+    """
+
+    @pytest.mark.parametrize(
+        "exc",
+        [
+            # Transient classes
+            ModelHTTPError(
+                status_code=429,
+                model_name="gpt-5.5",
+                body={"message": "rate limited"},
+            ),
+            ModelHTTPError(
+                status_code=503,
+                model_name="gpt-5.5",
+                body={"message": "service unavailable"},
+            ),
+            httpx.ConnectError("connection refused"),
+            httpx.ReadTimeout("upstream slow"),
+            UnexpectedModelBehavior("output schema violation"),
+            ConcurrencyLimitExceeded("backpressure"),
+            # Per-run timeout (asyncio.wait_for raises TimeoutError)
+            TimeoutError("analysis exceeded 60s"),
+            # Deterministic classes (config / programming bugs)
+            UserError("invalid tool registration"),
+            AttributeError("'NoneType' object has no attribute 'output'"),
+            ValueError("bad usage shape"),
+        ],
+        ids=[
+            "model_http_error_429",
+            "model_http_error_503",
+            "httpx_connect_error",
+            "httpx_read_timeout",
+            "unexpected_model_behavior",
+            "concurrency_limit_exceeded",
+            "timeout_error",
+            "user_error",
+            "attribute_error",
+            "value_error",
+        ],
+    )
+    async def test_reraises(self, mocker: MockerFixture, exc: BaseException) -> None:
+        _stub_analyzer_io(mocker, exc)
+
+        with pytest.raises(type(exc)):
+            await review_analyzer.analyze(
+                _minimal_snapshot(), context=ReviewContext.SUBMISSION
+            )

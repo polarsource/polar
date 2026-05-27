@@ -244,6 +244,23 @@ class PaymentFailed(OrderError):
         super().__init__(message, 402)
 
 
+class PaymentActionRequired(OrderError):
+    """
+    Off-session charge needs customer interaction (typically 3DS / SCA).
+    The merchant should redirect the customer to the portal to reauthenticate
+    the card.
+    """
+
+    def __init__(self, order: Order, payment_intent_id: str) -> None:
+        self.order = order
+        self.payment_intent_id = payment_intent_id
+        message = (
+            f"Order {order.id} payment requires customer authentication "
+            "(e.g. 3DS challenge); off-session charge cannot complete."
+        )
+        super().__init__(message, 402)
+
+
 class PaymentRetryValidationError(OrderError):
     def __init__(self, message: str) -> None:
         super().__init__(message, 422)
@@ -1065,7 +1082,15 @@ class OrderService:
         *,
         payment_mode: PaymentMode = PaymentMode.background,
         payment_trigger: PaymentTrigger | None = None,
-    ) -> None:
+    ) -> stripe_lib.PaymentIntent | None:
+        """
+        Attempt an off-session charge for the order.
+
+        Returns the Stripe PaymentIntent on Stripe-card paths so callers in
+        synchronous mode can apply the success path inline without waiting for
+        the webhook. Returns None for the under-minimum / non-Stripe / disabled
+        branches that don't create a PaymentIntent.
+        """
         if order.status != OrderStatus.pending:
             raise OrderNotPending(order)
 
@@ -1089,7 +1114,7 @@ class OrderService:
                     else "checkout_payments"
                 ),
             )
-            return
+            return None
 
         if order.payment_lock_acquired_at is not None:
             log.warn("Payment already in progress", order_id=order.id)
@@ -1119,7 +1144,7 @@ class OrderService:
                 session, order, order.organization
             )
             await self._on_order_updated(session, order, previous_status)
-            return
+            return None
 
         async with self.acquire_payment_lock(session, order):
             if payment_method.processor == PaymentProcessor.stripe:
@@ -1140,13 +1165,14 @@ class OrderService:
                 assert stripe_customer_id is not None
 
                 try:
-                    await stripe_service.create_payment_intent(
+                    payment_intent = await stripe_service.create_payment_intent(
                         amount=order.due_amount,
                         currency=order.currency,
                         payment_method=payment_method.processor_id,
                         customer=stripe_customer_id,
                         confirm=True,
                         off_session=True,
+                        expand=["latest_charge"],
                         statement_descriptor_suffix=order.statement_descriptor_suffix,
                         description=f"{order.organization.name} — {order.description}",
                         metadata=metadata,
@@ -1192,6 +1218,29 @@ class OrderService:
                             raise PaymentFailed(PaymentFailedReason.card_error) from e
 
                     raise
+
+                # Off-session SCA / 3DS challenges return a non-raising intent
+                # in one of the `requires_*` statuses. Background callers
+                # (checkout / dunning) ignore the return value and just wait
+                # for the webhook; sync callers (draft-order finalize) check
+                # the return value and surface a typed error to the merchant.
+                if payment_intent.status in (
+                    "requires_action",
+                    "requires_confirmation",
+                    "requires_payment_method",
+                    "requires_source_action",
+                ):
+                    log.info(
+                        "Off-session payment requires customer action",
+                        order_id=order.id,
+                        payment_intent_id=payment_intent.id,
+                        payment_intent_status=payment_intent.status,
+                    )
+                    raise PaymentActionRequired(order, payment_intent.id)
+
+                return payment_intent
+
+        return None
 
     async def _mark_intent_as_failed_sync(self, error: stripe_lib.StripeError) -> None:
         payment_intent = getattr(error.error, "payment_intent", None)
@@ -1416,6 +1465,12 @@ class OrderService:
     async def handle_payment(
         self, session: AsyncSession, order: Order, payment: Payment | None
     ) -> Order:
+        # Idempotency: a charge.succeeded webhook can arrive after the
+        # finalize-order endpoint already applied the success path inline.
+        # In that case, the order is already paid and there's nothing to do.
+        if order.stripe_invoice_id is None and order.status == OrderStatus.paid:
+            return order
+
         # Stripe invoices may already have been marked as paid, so ignore the check
         if order.stripe_invoice_id is None and order.status != OrderStatus.pending:
             raise OrderNotPending(order)

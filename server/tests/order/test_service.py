@@ -2546,19 +2546,38 @@ class TestGenerateInvoice:
 
 @pytest.mark.asyncio
 class TestHandlePayment:
-    async def test_order_not_pending(
+    async def test_already_paid_is_idempotent(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
     ) -> None:
-        # Create an order that is already paid
+        # An already-paid order is a no-op: the success path may run inline
+        # (from finalize_order) and then again from charge.succeeded.
         order = await create_order(
             save_fixture,
             product=product,
             customer=customer,
             status=OrderStatus.paid,
+        )
+
+        result = await order_service.handle_payment(session, order, None)
+        assert result is order
+        assert result.status == OrderStatus.paid
+
+    async def test_order_not_pending_raises_for_non_paid(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.refunded,
         )
 
         with pytest.raises(OrderNotPending):

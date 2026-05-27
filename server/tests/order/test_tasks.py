@@ -1,5 +1,6 @@
 import uuid
 from datetime import timedelta
+from unittest.mock import MagicMock
 
 import pytest
 import stripe as stripe_lib
@@ -455,7 +456,7 @@ class TestTriggerPayment:
         # Mock the Stripe service instead of the order service
         mock_create_payment_intent = mocker.patch(
             "polar.order.service.stripe_service.create_payment_intent",
-            return_value=None,
+            return_value=MagicMock(status="succeeded", id="pi_test_success"),
         )
 
         # When
@@ -603,7 +604,7 @@ class TestTriggerPayment:
 
         mock_create_payment_intent = mocker.patch(
             "polar.order.service.stripe_service.create_payment_intent",
-            return_value=None,
+            return_value=MagicMock(status="succeeded", id="pi_test_success"),
         )
 
         # When
@@ -636,7 +637,7 @@ class TestTriggerPayment:
 
         mock_create_payment_intent = mocker.patch(
             "polar.order.service.stripe_service.create_payment_intent",
-            return_value=None,
+            return_value=MagicMock(status="succeeded", id="pi_test_success"),
         )
 
         # When — called without payment_trigger (default None)

@@ -287,6 +287,8 @@ class TestExportOrders:
         assert len(csv_lines) == 2  # Header + 1 order
 
         # Verify only the filtered order is in the export by checking invoice numbers
+        assert order1.invoice_number is not None
+        assert order2.invoice_number is not None
         assert order1.invoice_number in csv_lines[1]
         assert order2.invoice_number not in response.text
 

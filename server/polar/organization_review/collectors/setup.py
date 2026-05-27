@@ -3,6 +3,8 @@ from urllib.parse import urlparse
 
 import httpx
 import structlog
+from firecrawl.v2 import AsyncFirecrawlClient
+from firecrawl.v2.utils.error_handler import FirecrawlError
 from playwright.async_api import async_playwright
 
 from polar.kit.http import SSRFBlockedError, resolve_and_validate_ip
@@ -20,6 +22,7 @@ from ..schemas import (
     UrlRedirectInfo,
     WebhookEndpointData,
 )
+from .firecrawl_client import get_firecrawl_client
 
 log = structlog.get_logger(__name__)
 
@@ -154,6 +157,46 @@ def _pick_one_per_hostname(urls: list[str]) -> list[str]:
     return result
 
 
+async def _resolve_redirect_with_firecrawl(
+    client: AsyncFirecrawlClient,
+    semaphore: asyncio.Semaphore,
+    url: str,
+) -> UrlRedirectInfo:
+    """Use Firecrawl's /v2/scrape to detect client-side redirects.
+
+    Firecrawl renders the page server-side; `metadata.url` reflects where it
+    finally landed after any meta-refresh or JS redirects. We compare that to
+    the requested URL's domain.
+    """
+    try:
+        _validate_url_scheme(url)
+        await _validate_url_host(url)
+    except (ValueError, SSRFBlockedError):
+        return UrlRedirectInfo(original_url=url, error="blocked")
+
+    async with semaphore:
+        try:
+            result = await client.scrape(url, formats=["links"], timeout=15_000)
+        except FirecrawlError:
+            log.warning(
+                "setup_collector.firecrawl_redirect_error", url=url, exc_info=True
+            )
+            return UrlRedirectInfo(original_url=url, error="firecrawl_error")
+
+    metadata_url = result.metadata.url if result.metadata is not None else None
+    final_url = metadata_url or url
+    final_domain = _extract_domain(final_url)
+    original_domain = _extract_domain(url)
+    redirected = _is_cross_domain(original_domain, final_domain)
+
+    return UrlRedirectInfo(
+        original_url=url,
+        final_url=final_url,
+        final_domain=final_domain,
+        redirected=redirected,
+    )
+
+
 async def _resolve_redirect_with_browser(url: str) -> UrlRedirectInfo:
     """Use a headless browser to detect client-side redirects (meta refresh, JS).
 
@@ -263,14 +306,30 @@ async def resolve_url_redirects(urls: list[str]) -> list[UrlRedirectInfo]:
             )
         )
 
-    # Pass 2: browser check for URLs that HEAD didn't detect as redirected
-    needs_browser = [r for r in results if not r.redirected and r.error is None]
-    if needs_browser:
+    # Pass 2: client-side redirect check for URLs that HEAD didn't flag.
+    # Prefers Firecrawl when configured (parallel); falls back to a serial
+    # Playwright loop (each call spins up a browser, so we don't parallelize).
+    needs_check = [r for r in results if not r.redirected and r.error is None]
+    if needs_check:
         result_map = {r.original_url: r for r in results}
-        for info in needs_browser:
-            browser_result = await _resolve_redirect_with_browser(info.original_url)
-            if browser_result.redirected or browser_result.error:
-                result_map[info.original_url] = browser_result
+        firecrawl = get_firecrawl_client()
+        if firecrawl is not None:
+            second_passes = await asyncio.gather(
+                *[
+                    _resolve_redirect_with_firecrawl(
+                        firecrawl, semaphore, info.original_url
+                    )
+                    for info in needs_check
+                ]
+            )
+            for info, second_pass in zip(needs_check, second_passes, strict=True):
+                if second_pass.redirected or second_pass.error:
+                    result_map[info.original_url] = second_pass
+        else:
+            for info in needs_check:
+                second_pass = await _resolve_redirect_with_browser(info.original_url)
+                if second_pass.redirected or second_pass.error:
+                    result_map[info.original_url] = second_pass
         results = [result_map[url] for url in urls_to_check if url in result_map]
 
     redirected = [r for r in results if r.redirected]

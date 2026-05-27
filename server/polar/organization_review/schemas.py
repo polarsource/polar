@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import Field, computed_field
 
@@ -252,8 +252,8 @@ class WebsitePage(Schema):
     title: str | None = None
     content: str = Field(default="", description="Extracted text content")
     content_truncated: bool = False
-    method: str = Field(
-        default="http", description="How the page was fetched: 'http' or 'browser'"
+    method: Literal["http", "browser", "firecrawl"] = Field(
+        default="http", description="How the page was fetched"
     )
 
 

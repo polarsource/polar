@@ -273,6 +273,10 @@ class Settings(BaseSettings):
     TINYBIRD_BRANCH: str | None = None
     # Logo.dev (for company logo avatars)
     LOGO_DEV_PUBLISHABLE_KEY: str | None = None
+
+    # Firecrawl (website scraping for organization reviews)
+    FIRECRAWL_API_KEY: str | None = None
+    FIRECRAWL_API_URL: str = "https://api.firecrawl.dev"
     PERSONAL_EMAIL_DOMAINS: set[str] = {
         "gmail.com",
         "yahoo.com",

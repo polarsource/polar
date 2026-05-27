@@ -1,11 +1,16 @@
-from unittest.mock import MagicMock
+import asyncio
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from firecrawl.v2.types import Document, DocumentMetadata
+from firecrawl.v2.utils.error_handler import FirecrawlError
 from pytest_mock import MockerFixture
 
+from polar.kit.http import SSRFBlockedError
 from polar.organization_review.collectors.setup import (
     _extract_domain,
     _normalize_domain,
+    _resolve_redirect_with_firecrawl,
     collect_setup_data,
     resolve_url_redirects,
 )
@@ -574,3 +579,149 @@ class TestResolveUrlRedirects:
         assert len(results) == 1
         assert results[0].error == "browser_error"
         assert results[0].redirected is False
+
+
+class TestResolveRedirectWithFirecrawl:
+    """Firecrawl-backed Pass-2 redirect detection."""
+
+    @staticmethod
+    def _fake_client(scrape_return: object) -> AsyncMock:
+        client = AsyncMock()
+        if isinstance(scrape_return, BaseException):
+            client.scrape = AsyncMock(side_effect=scrape_return)
+        else:
+            client.scrape = AsyncMock(return_value=scrape_return)
+        return client
+
+    @pytest.mark.asyncio
+    async def test_no_redirect(self, mocker: MockerFixture) -> None:
+        mocker.patch(
+            "polar.organization_review.collectors.setup._validate_url_host",
+            return_value=None,
+        )
+        client = self._fake_client(
+            Document(metadata=DocumentMetadata(url="https://example.com/thanks"))
+        )
+
+        result = await _resolve_redirect_with_firecrawl(
+            client, asyncio.Semaphore(1), "https://example.com/thanks"
+        )
+
+        assert result.redirected is False
+        assert result.final_url == "https://example.com/thanks"
+        assert result.final_domain == "example.com"
+
+    @pytest.mark.asyncio
+    async def test_cross_domain_redirect(self, mocker: MockerFixture) -> None:
+        mocker.patch(
+            "polar.organization_review.collectors.setup._validate_url_host",
+            return_value=None,
+        )
+        client = self._fake_client(
+            Document(metadata=DocumentMetadata(url="https://scam.com/landing"))
+        )
+
+        result = await _resolve_redirect_with_firecrawl(
+            client, asyncio.Semaphore(1), "https://api.legit.com/success"
+        )
+
+        assert result.redirected is True
+        assert result.final_domain == "scam.com"
+
+    @pytest.mark.asyncio
+    async def test_firecrawl_error(self, mocker: MockerFixture) -> None:
+        mocker.patch(
+            "polar.organization_review.collectors.setup._validate_url_host",
+            return_value=None,
+        )
+        client = self._fake_client(FirecrawlError("boom"))
+
+        result = await _resolve_redirect_with_firecrawl(
+            client, asyncio.Semaphore(1), "https://example.com/"
+        )
+        assert result.error == "firecrawl_error"
+
+    @pytest.mark.asyncio
+    async def test_blocked_url_short_circuits(self, mocker: MockerFixture) -> None:
+        mocker.patch(
+            "polar.organization_review.collectors.setup._validate_url_host",
+            side_effect=SSRFBlockedError("private IP"),
+        )
+        client = self._fake_client(Document())
+
+        result = await _resolve_redirect_with_firecrawl(
+            client, asyncio.Semaphore(1), "https://internal/"
+        )
+
+        assert result.error == "blocked"
+        client.scrape.assert_not_called()
+
+
+class TestResolveUrlRedirectsDispatch:
+    """Pass-2 should dispatch to Firecrawl when configured, Playwright otherwise."""
+
+    @pytest.mark.asyncio
+    async def test_uses_firecrawl_when_configured(self, mocker: MockerFixture) -> None:
+        import respx
+
+        mocker.patch(
+            "polar.organization_review.collectors.setup._validate_url_host",
+            return_value=None,
+        )
+        mocker.patch(
+            "polar.organization_review.collectors.setup.get_firecrawl_client",
+            return_value=AsyncMock(),
+        )
+        firecrawl_resolver = mocker.patch(
+            "polar.organization_review.collectors.setup._resolve_redirect_with_firecrawl",
+            return_value=UrlRedirectInfo(
+                original_url="https://example.com/",
+                final_url="https://example.com/",
+                final_domain="example.com",
+                redirected=False,
+            ),
+        )
+        playwright_resolver = mocker.patch(
+            "polar.organization_review.collectors.setup._resolve_redirect_with_browser",
+        )
+
+        with respx.mock:
+            respx.get("https://example.com/").respond(200)
+            await resolve_url_redirects(["https://example.com/"])
+
+        firecrawl_resolver.assert_awaited_once()
+        playwright_resolver.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_uses_playwright_when_firecrawl_unavailable(
+        self, mocker: MockerFixture
+    ) -> None:
+        import respx
+
+        mocker.patch(
+            "polar.organization_review.collectors.setup._validate_url_host",
+            return_value=None,
+        )
+        mocker.patch(
+            "polar.organization_review.collectors.setup.get_firecrawl_client",
+            return_value=None,
+        )
+        firecrawl_resolver = mocker.patch(
+            "polar.organization_review.collectors.setup._resolve_redirect_with_firecrawl",
+        )
+        playwright_resolver = mocker.patch(
+            "polar.organization_review.collectors.setup._resolve_redirect_with_browser",
+            return_value=UrlRedirectInfo(
+                original_url="https://example.com/",
+                final_url="https://example.com/",
+                final_domain="example.com",
+                redirected=False,
+            ),
+        )
+
+        with respx.mock:
+            respx.get("https://example.com/").respond(200)
+            await resolve_url_redirects(["https://example.com/"])
+
+        playwright_resolver.assert_awaited_once()
+        firecrawl_resolver.assert_not_called()

@@ -5,6 +5,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
+from firecrawl.v2.types import Document, DocumentMetadata
+from firecrawl.v2.utils.error_handler import FirecrawlError
 
 from polar.kit.http import SSRFBlockedError
 from polar.organization_review.collectors.website import (
@@ -15,6 +17,8 @@ from polar.organization_review.collectors.website import (
     _build_tool_response,
     _extract_links_from_html,
     _is_allowed_origin,
+    _pick_pages_to_scrape,
+    _scrape_result_to_page,
     browse_page,
     collect_website_data,
     fetch_page,
@@ -784,3 +788,303 @@ class TestPlaywrightRouteInterceptor:
             await handler["handler"](route)
 
         route.abort.assert_called_once_with("blockedbyclient")
+
+
+# ---------------------------------------------------------------------------
+# Firecrawl path: URL picker
+# ---------------------------------------------------------------------------
+
+
+class TestPickPagesToScrape:
+    def test_keeps_homepage_first(self) -> None:
+        urls = ["https://example.com/about", "https://example.com/pricing"]
+        result = _pick_pages_to_scrape(
+            "https://example.com", urls, "example.com", max_pages=4
+        )
+        assert result[0] == "https://example.com"
+
+    def test_prefers_pricing_over_about(self) -> None:
+        urls = [
+            "https://example.com/about",
+            "https://example.com/pricing",
+            "https://example.com/blog",
+        ]
+        result = _pick_pages_to_scrape(
+            "https://example.com", urls, "example.com", max_pages=4
+        )
+        # Pricing should appear before About per the keyword ranking.
+        assert "https://example.com/pricing" in result
+        assert result.index("https://example.com/pricing") < result.index(
+            "https://example.com/about"
+        )
+
+    def test_dedupes_pricing_bucket(self) -> None:
+        urls = [
+            "https://example.com/pricing",
+            "https://example.com/pricing/team",
+            "https://example.com/about",
+        ]
+        result = _pick_pages_to_scrape(
+            "https://example.com", urls, "example.com", max_pages=4
+        )
+        pricing_urls = [u for u in result if "pricing" in u]
+        assert len(pricing_urls) == 1
+
+    def test_caps_at_max_pages(self) -> None:
+        urls = [
+            "https://example.com/pricing",
+            "https://example.com/about",
+            "https://example.com/products",
+            "https://example.com/features",
+            "https://example.com/services",
+            "https://example.com/faq",
+        ]
+        result = _pick_pages_to_scrape(
+            "https://example.com", urls, "example.com", max_pages=3
+        )
+        assert len(result) == 3
+
+    def test_skips_off_origin(self) -> None:
+        urls = ["https://evil.com/pricing", "https://example.com/about"]
+        result = _pick_pages_to_scrape(
+            "https://example.com", urls, "example.com", max_pages=4
+        )
+        assert all("evil.com" not in u for u in result)
+
+    def test_skips_irrelevant_paths(self) -> None:
+        urls = ["https://example.com/blog/post-1", "https://example.com/login"]
+        result = _pick_pages_to_scrape(
+            "https://example.com", urls, "example.com", max_pages=4
+        )
+        # Only the homepage matches — no relevant keywords elsewhere.
+        assert result == ["https://example.com"]
+
+
+# ---------------------------------------------------------------------------
+# Firecrawl path: SDK Document → WebsitePage
+# ---------------------------------------------------------------------------
+
+
+class TestScrapeResultToPage:
+    def test_basic_page(self) -> None:
+        result = Document(
+            markdown="# Hello",
+            metadata=DocumentMetadata(title="Home", url="https://example.com/"),
+        )
+        page = _scrape_result_to_page("https://example.com/", result, "example.com")
+        assert page is not None
+        assert page.url == "https://example.com/"
+        assert page.title == "Home"
+        assert page.content == "# Hello"
+        assert page.method == "firecrawl"
+        assert page.content_truncated is False
+
+    def test_off_origin_final_url_dropped(self) -> None:
+        """If Firecrawl reports a final URL on another domain, drop it."""
+        result = Document(
+            markdown="# Phishing",
+            metadata=DocumentMetadata(url="https://evil.com/landing"),
+        )
+        page = _scrape_result_to_page("https://example.com/", result, "example.com")
+        assert page is None
+
+    def test_truncation(self) -> None:
+        long_markdown = "x" * (MAX_CHARS_PER_PAGE + 1_000)
+        result = Document(
+            markdown=long_markdown,
+            metadata=DocumentMetadata(url="https://example.com/"),
+        )
+        page = _scrape_result_to_page("https://example.com/", result, "example.com")
+        assert page is not None
+        assert page.content_truncated is True
+        assert len(page.content) == MAX_CHARS_PER_PAGE
+
+    def test_falls_back_to_requested_url_when_metadata_missing(self) -> None:
+        result = Document(markdown="hi", metadata=DocumentMetadata())
+        page = _scrape_result_to_page(
+            "https://example.com/about", result, "example.com"
+        )
+        assert page is not None
+        assert page.url == "https://example.com/about"
+
+    def test_handles_missing_metadata(self) -> None:
+        """metadata is Optional in the SDK — gracefully fall back."""
+        result = Document(markdown="hi", metadata=None)
+        page = _scrape_result_to_page(
+            "https://example.com/about", result, "example.com"
+        )
+        assert page is not None
+        assert page.url == "https://example.com/about"
+        assert page.title is None
+
+
+# ---------------------------------------------------------------------------
+# Firecrawl path: end-to-end collect_website_data
+# ---------------------------------------------------------------------------
+
+
+class TestCollectWebsiteDataFirecrawl:
+    @pytest.mark.asyncio
+    async def test_uses_firecrawl_when_key_set(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from polar.config import settings
+
+        monkeypatch.setattr(settings, "FIRECRAWL_API_KEY", "test-key")
+
+        firecrawl_called = AsyncMock(
+            return_value=WebsiteData(base_url="https://example.com")
+        )
+        playwright_called = AsyncMock()
+
+        with (
+            patch(
+                "polar.organization_review.collectors.website._run_firecrawl_collector",
+                firecrawl_called,
+            ),
+            patch(
+                "polar.organization_review.collectors.website._run_website_agent",
+                playwright_called,
+            ),
+        ):
+            await collect_website_data("https://example.com")
+
+        firecrawl_called.assert_awaited_once()
+        playwright_called.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_falls_back_to_playwright_without_key(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from polar.config import settings
+
+        monkeypatch.setattr(settings, "FIRECRAWL_API_KEY", None)
+
+        firecrawl_called = AsyncMock()
+        playwright_called = AsyncMock(
+            return_value=WebsiteData(base_url="https://example.com")
+        )
+
+        with (
+            patch(
+                "polar.organization_review.collectors.website._run_firecrawl_collector",
+                firecrawl_called,
+            ),
+            patch(
+                "polar.organization_review.collectors.website._run_website_agent",
+                playwright_called,
+            ),
+        ):
+            await collect_website_data("https://example.com")
+
+        playwright_called.assert_awaited_once()
+        firecrawl_called.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_end_to_end_firecrawl_flow(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Map + parallel scrape + summary, all mocked at the Firecrawl SDK level."""
+        from firecrawl.v2.types import LinkResult, MapData
+
+        from polar.config import settings
+
+        monkeypatch.setattr(settings, "FIRECRAWL_API_KEY", "test-key")
+
+        fake_client = AsyncMock()
+        fake_client.map = AsyncMock(
+            return_value=MapData(
+                links=[
+                    LinkResult(url="https://example.com/pricing"),
+                    LinkResult(url="https://example.com/about"),
+                ]
+            )
+        )
+
+        def scrape_side_effect(url: str, **_kwargs: object) -> Document:
+            return Document(
+                markdown=f"# {url}",
+                metadata=DocumentMetadata(title="t", url=url),
+            )
+
+        fake_client.scrape = AsyncMock(side_effect=scrape_side_effect)
+
+        summary_result = MagicMock()
+        summary_result.output = "Site does X"
+        summary_result.usage = MagicMock(return_value=MagicMock())
+
+        with (
+            patch(
+                "polar.organization_review.collectors.website.get_firecrawl_client",
+                return_value=fake_client,
+            ),
+            patch(
+                "polar.organization_review.collectors.website.resolve_and_validate_ip",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "polar.organization_review.collectors.website._firecrawl_summary_agent.run",
+                new_callable=AsyncMock,
+                return_value=summary_result,
+            ),
+            patch(
+                "polar.organization_review.collectors.website.UsageInfo.from_agent_usage",
+                return_value=MagicMock(),
+            ),
+        ):
+            result = await collect_website_data("https://example.com")
+
+        fake_client.map.assert_awaited_once()
+        # Homepage + pricing + about = 3 scrapes
+        assert fake_client.scrape.await_count == 3
+        assert result.summary == "Site does X"
+        assert result.total_pages_attempted == 3
+        assert result.total_pages_succeeded == 3
+        assert all(p.method == "firecrawl" for p in result.pages)
+
+    @pytest.mark.asyncio
+    async def test_firecrawl_map_failure_returns_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from polar.config import settings
+
+        monkeypatch.setattr(settings, "FIRECRAWL_API_KEY", "test-key")
+
+        fake_client = AsyncMock()
+        fake_client.__aenter__.return_value = fake_client
+        fake_client.__aexit__.return_value = None
+        fake_client.map = AsyncMock(side_effect=FirecrawlError("rate limited"))
+
+        with (
+            patch(
+                "polar.organization_review.collectors.website.get_firecrawl_client",
+                return_value=fake_client,
+            ),
+            patch(
+                "polar.organization_review.collectors.website.resolve_and_validate_ip",
+                new_callable=AsyncMock,
+            ),
+        ):
+            result = await collect_website_data("https://example.com")
+
+        assert result.scrape_error is not None
+        assert "rate limited" in result.scrape_error
+        assert result.pages == []
+
+    @pytest.mark.asyncio
+    async def test_firecrawl_blocks_ssrf_input(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from polar.config import settings
+
+        monkeypatch.setattr(settings, "FIRECRAWL_API_KEY", "test-key")
+
+        with patch(
+            "polar.organization_review.collectors.website.resolve_and_validate_ip",
+            new_callable=AsyncMock,
+            side_effect=SSRFBlockedError("private IP"),
+        ):
+            result = await collect_website_data("https://internal.example.com")
+
+        assert result.scrape_error is not None
+        assert "private IP" in result.scrape_error

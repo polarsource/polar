@@ -50,6 +50,7 @@ from polar.kit.crypto import generate_token, generate_token_hash_pair
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.kit.utils import generate_uuid, utc_now
+from polar.kit.visibility import Visibility
 from polar.member.schemas import MemberOwnerCreate
 from polar.meter.aggregation import CountAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
@@ -70,7 +71,7 @@ from polar.models.organization import (
 from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_review import OrganizationReview
 from polar.models.payout_account import PayoutAccount
-from polar.models.product import Product, ProductVisibility
+from polar.models.product import Product
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceFixed,
@@ -940,9 +941,9 @@ async def _seed_polar_self_billing_catalog(
         benefit_descriptions = product_data["benefits"]
         visibility_value = product_data.get("visibility")
         visibility = (
-            ProductVisibility(visibility_value)
+            Visibility(visibility_value)
             if isinstance(visibility_value, str)
-            else ProductVisibility.public
+            else Visibility.public
         )
         assert isinstance(name, str)
         assert description is None or isinstance(description, str)

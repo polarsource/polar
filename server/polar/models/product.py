@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 from uuid import UUID
 
 from alembic_utils.pg_function import PGFunction
@@ -26,8 +26,9 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
 from polar.kit.metadata import MetadataMixin
+from polar.kit.schemas import SetSchemaReference
 from polar.kit.trial import TrialConfigurationMixin
-from polar.kit.visibility import VisibilityMixin
+from polar.kit.visibility import Visibility, VisibilityMixin
 from polar.models.product_price import ProductPriceAmountType, ProductPriceType
 from polar.tax.calculation import TaxCode
 
@@ -49,13 +50,9 @@ class ProductBillingType(StrEnum):
     recurring = "recurring"
 
 
-# Kept as a distinct enum (rather than reusing `Visibility`) so the public
-# OpenAPI/SDK component stays named `ProductVisibility`. The product schemas
-# reference this; the DB column comes from `VisibilityMixin` (`Visibility`).
-class ProductVisibility(StrEnum):
-    draft = "draft"
-    private = "private"
-    public = "public"
+# Alias over the shared `Visibility` enum that keeps the public OpenAPI/SDK
+# component named `ProductVisibility` for backwards compatibility.
+ProductVisibility = Annotated[Visibility, SetSchemaReference("ProductVisibility")]
 
 
 class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordModel):

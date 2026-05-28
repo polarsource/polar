@@ -75,7 +75,10 @@ export default function ChangePlanPage({
     )
     return currentInList ? data : [...data, subscription.plan]
   }, [plansQuery.data, subscription, isCurrentPlanCustom])
-  const isCurrentPlanFree = subscription?.amount === 0
+  // Use the plan's base price (not subscription.amount, which is the
+  // post-discount net) so a 100%-discounted paid plan isn't mistaken for the
+  // free plan — that misroutes downgrades through start_checkout and 422s.
+  const isCurrentPlanFree = (subscription?.plan.price?.amount ?? 0) === 0
 
   const selectedPlan = useMemo(() => {
     if (selectedPlanId === null) return null
@@ -89,9 +92,13 @@ export default function ChangePlanPage({
 
   const changeKind: 'upgrade' | 'downgrade' | null = useMemo(() => {
     if (!selectedPlan || !subscription) return null
+    // Compare gross plan prices, not subscription.amount — subscription.amount
+    // is the post-discount net (0 for a 100%-discounted Scale plan), which
+    // mislabels downgrades as upgrades.
     const targetAmount = selectedPlan.price?.amount ?? 0
-    if (targetAmount > subscription.amount) return 'upgrade'
-    if (targetAmount < subscription.amount) return 'downgrade'
+    const currentAmount = subscription.plan.price?.amount ?? 0
+    if (targetAmount > currentAmount) return 'upgrade'
+    if (targetAmount < currentAmount) return 'downgrade'
     return null
   }, [selectedPlan, subscription])
 
@@ -105,17 +112,26 @@ export default function ChangePlanPage({
 
   const confirmDescription = useMemo(() => {
     if (!selectedPlan) return ''
+    let base: string
     if (requiresCheckout) {
-      return `You'll be redirected to checkout to add a payment method and complete the upgrade to ${selectedPlan.name}.`
+      base = `You'll be redirected to checkout to add a payment method and complete the upgrade to ${selectedPlan.name}.`
+    } else if (isSelectedPlanFree) {
+      base = `Your subscription will be canceled at the end of the current period. You'll then be on the free plan with standard transaction fees.`
+    } else if (changeKind === 'upgrade') {
+      base = `You'll be charged a prorated amount for the rest of the current period and switched to ${selectedPlan.name}.`
+    } else {
+      base = `Your plan will switch to ${selectedPlan.name} at the end of the current period.`
     }
-    if (isSelectedPlanFree) {
-      return `Your subscription will be canceled at the end of the current period. You'll then be on the free plan with standard transaction fees.`
+    // Discounts are scoped to a product and don't follow a plan switch.
+    // Warn the admin so they don't expect the discount to carry over.
+    if (
+      subscription?.discount != null &&
+      subscription.product_id !== selectedPlan.product_id
+    ) {
+      base += ` Your current ${subscription.discount.name} discount will be removed.`
     }
-    if (changeKind === 'upgrade') {
-      return `You'll be charged a prorated amount for the rest of the current period and switched to ${selectedPlan.name}.`
-    }
-    return `Your plan will switch to ${selectedPlan.name} at the end of the current period.`
-  }, [selectedPlan, changeKind, requiresCheckout, isSelectedPlanFree])
+    return base
+  }, [selectedPlan, subscription, changeKind, requiresCheckout, isSelectedPlanFree])
 
   const performPlanChange = async () => {
     if (!selectedPlan) return
@@ -269,6 +285,13 @@ export default function ChangePlanPage({
               const currentKey = subscription
                 ? planKey(subscription.plan)
                 : null
+              // Highlight the Scale plan with "Free for 12 months" when the
+              // org has an unclaimed Startup Program invitation.
+              const isStartupProgramTarget =
+                subscription?.startup_program_status === 'invited' &&
+                subscription.startup_program_scale_product_id != null &&
+                plan.product_id ===
+                  subscription.startup_program_scale_product_id
               return (
                 <PlanCard
                   key={key}
@@ -277,6 +300,9 @@ export default function ChangePlanPage({
                   isLocked={blockChanges}
                   isSelected={key === selectedPlanId}
                   onSelect={() => setSelectedPlanId(key)}
+                  startupProgramOffer={
+                    isStartupProgramTarget ? { monthsFree: 12 } : undefined
+                  }
                 />
               )
             })}

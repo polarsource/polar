@@ -151,7 +151,9 @@ export const BillingPaymentMethods = ({
           title="Payment methods"
           description="Cards used to pay for your Polar subscription"
         />
-        <Button onClick={onAddPaymentMethod}>Add payment method</Button>
+        <Button onClick={onAddPaymentMethod} variant="secondary">
+          Add payment method
+        </Button>
       </Box>
       <Box
         display="flex"

@@ -2,7 +2,7 @@
 
 import { toast } from '@/components/Toast/use-toast'
 import { usePostHog } from '@/hooks/posthog'
-import { useStartSubscriptionCheckout } from '@/hooks/queries/billing'
+import { useClaimStartupProgram } from '@/hooks/queries/billing'
 import { useBillingPlanTelemetry } from '@/hooks/useBillingPlanTelemetry'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
@@ -11,11 +11,16 @@ import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 
 /**
- * Callout shown on the billing page when the organization is eligible for the
- * Polar Startup Program but isn't on the Scale plan yet. Clicking the CTA
- * starts the Scale checkout directly (with the 100% discount auto-attached
- * server-side via start_checkout) instead of routing through the change-plan
- * page.
+ * Callout shown on the billing page when the organization is invited to the
+ * Startup Program but isn't on the Scale plan yet. Clicking the CTA hits a
+ * single backend endpoint that dispatches:
+ *
+ * - **Free → Scale**: the response carries a `checkout` to redirect to
+ *   (regular Polar checkout to set up payment; the discount is already
+ *   attached).
+ * - **Paid → Scale**: the response carries a `subscription` — the existing
+ *   paid subscription was switched to Scale with the discount applied via
+ *   PATCH, no checkout step required.
  */
 export const StartupProgramCallout = ({
   organization,
@@ -32,7 +37,7 @@ export const StartupProgramCallout = ({
     scaleProductId != null && subscription.product_id === scaleProductId
 
   const posthog = usePostHog()
-  const startCheckout = useStartSubscriptionCheckout(organization.id)
+  const claim = useClaimStartupProgram(organization.id)
   const { buildUrls } = useBillingPlanTelemetry({
     source: 'startup_program',
     organizationId: organization.id,
@@ -65,19 +70,27 @@ export const StartupProgramCallout = ({
       from_plan_product_id: subscription.product_id ?? null,
       from_plan_amount_cents: subscription.amount,
     })
-    const result = await startCheckout.mutateAsync({
-      product_id: scaleProductId,
+    const result = await claim.mutateAsync({
       success_url: urls.success_url,
       return_url: urls.return_url,
     })
     if (result.error || !result.data) {
       toast({
-        title: 'Could not start checkout',
+        title: 'Could not switch to Scale',
         description: extractApiErrorMessage(result.error, 'Please try again.'),
       })
       return
     }
-    window.location.href = result.data.url
+    // Free → Scale: redirect through Polar checkout (discount pre-attached).
+    if (result.data.checkout) {
+      window.location.href = result.data.checkout.url
+      return
+    }
+    // Paid → Scale: subscription switched + discount applied in place.
+    toast({
+      title: `You're on ${planName}`,
+      description: 'Your discount is now applied.',
+    })
   }
 
   return (
@@ -98,10 +111,10 @@ export const StartupProgramCallout = ({
         </Text>
         <Text color="muted">
           Switch to the Scale plan to claim your 100% discount for the next 12
-          months. The discount applies automatically at checkout.
+          months. The discount applies automatically.
         </Text>
       </Box>
-      <Button onClick={onClaim} loading={startCheckout.isPending}>
+      <Button onClick={onClaim} loading={claim.isPending}>
         Switch to Scale
       </Button>
     </Box>

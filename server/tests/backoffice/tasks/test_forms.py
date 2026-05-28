@@ -80,8 +80,16 @@ def test_task_parameters_are_nested_to_avoid_task_collision() -> None:
     assert "customer_id" in parameters_model.model_fields
 
 
-def test_no_parameters_field_when_task_has_no_arguments() -> None:
+def test_no_parameters_field_when_no_task_selected() -> None:
     form_class = build_enqueue_task_form_class(_request(), None)
+
+    assert "task" in form_class.model_fields
+    assert "parameters" not in form_class.model_fields
+
+
+def test_no_parameters_field_when_selected_task_has_no_arguments() -> None:
+    # `auth.delete_expired` is a registered actor that takes no arguments.
+    form_class = build_enqueue_task_form_class(_request(), "auth.delete_expired")
 
     assert "task" in form_class.model_fields
     assert "parameters" not in form_class.model_fields

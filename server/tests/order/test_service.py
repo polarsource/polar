@@ -57,6 +57,7 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
+from polar.models.custom_field import CustomFieldType
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import Organization, OrganizationStatus
@@ -109,6 +110,7 @@ from tests.fixtures.random_objects import (
     create_billing_entry,
     create_canceled_subscription,
     create_checkout,
+    create_custom_field,
     create_customer,
     create_discount,
     create_event,
@@ -5248,6 +5250,65 @@ class TestCreateDraftOrder:
         )
         assert order.status == OrderStatus.draft
         assert order.subtotal_amount == 100
+
+    async def test_custom_field_data_validated_against_product(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        text_field = await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="note",
+            organization=off_session_organization,
+        )
+        product = await create_product(
+            save_fixture,
+            organization=off_session_organization,
+            recurring_interval=None,
+            attached_custom_fields=[(text_field, False)],
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+            custom_field_data={"note": "hello", "unknown": "dropme"},
+        )
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+        # Unknown keys are dropped; the product's field is kept.
+        assert order.custom_field_data == {"note": "hello"}
+
+    async def test_custom_field_wrong_type_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        number_field = await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.number,
+            slug="level",
+            organization=off_session_organization,
+        )
+        product = await create_product(
+            save_fixture,
+            organization=off_session_organization,
+            recurring_interval=None,
+            attached_custom_fields=[(number_field, False)],
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+            custom_field_data={"level": "not-a-number"},
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
 
 
 @pytest.mark.asyncio

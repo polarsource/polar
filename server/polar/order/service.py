@@ -18,6 +18,7 @@ from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.guard import has_product_checkout
 from polar.config import settings
+from polar.custom_field.data import validate_custom_field_data
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
 from polar.customer_portal.schemas.order import (
@@ -922,6 +923,15 @@ class OrderService:
                 ]
             )
 
+        # Validate custom field values against the product's attached fields,
+        # same as the checkout path. Unknown keys are dropped and values are
+        # type-checked; required fields aren't enforced at draft creation.
+        custom_field_data = validate_custom_field_data(
+            product.attached_custom_fields,
+            payload.custom_field_data,
+            validate_required=False,
+        )
+
         subtotal_amount = sum(item.amount for item in items)
         discount_amount = 0
 
@@ -974,7 +984,7 @@ class OrderService:
                 subscription=None,
                 checkout=None,
                 user_metadata=payload.metadata,
-                custom_field_data=payload.custom_field_data,
+                custom_field_data=custom_field_data,
                 items=items,
                 seats=payload.seats,
             ),

@@ -47634,6 +47634,8 @@ export interface operations {
         checkout_id?: string | string[] | null
         /** @description Filter by order ID. */
         order_id?: string | string[] | null
+        /** @description Filter by customer ID. */
+        customer_id?: string | string[] | null
         /** @description Filter by payment status. */
         status?:
           | components['schemas']['PaymentStatus']

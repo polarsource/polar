@@ -1,6 +1,7 @@
 from fastapi import Depends, Query
 from pydantic.types import UUID4
 
+from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -39,6 +40,9 @@ async def list(
     order_id: MultipleQueryFilter[UUID4] | None = Query(
         None, title="OrderID Filter", description="Filter by order ID."
     ),
+    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    ),
     status: MultipleQueryFilter[PaymentStatus] | None = Query(
         None, title="Status Filter", description="Filter by payment status."
     ),
@@ -57,6 +61,7 @@ async def list(
         organization_id=organization_id,
         checkout_id=checkout_id,
         order_id=order_id,
+        customer_id=customer_id,
         status=status,
         method=method,
         customer_email=customer_email,

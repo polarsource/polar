@@ -101,7 +101,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, checkout }) => {
               ),
             },
           ]}
-          data={(payments?.items ?? []) as unknown as schemas['Payment'][]}
+          data={payments?.items ?? []}
         />
       </div>
     </DashboardBody>

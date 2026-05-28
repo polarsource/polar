@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator, Sequence
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Select, String, cast, func, or_, update
+from sqlalchemy import ColumnElement, Select, String, cast, func, or_, select, update
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import InstanceState
 
@@ -16,7 +16,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import Customer
+from polar.models import Customer, Order
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.worker import enqueue_job
 
@@ -286,6 +286,15 @@ class CustomerRepository(
         statement = self.get_base_statement()
         statement = statement.where(Customer.organization_id.in_(org_ids))
         return statement
+
+    def get_active_clause(self, active: bool) -> ColumnElement[bool]:
+        """
+        Return a clause to filter customers by activity.
+
+        An active customer is one with at least one order.
+        """
+        order_exists = select(Order.id).where(Order.customer_id == Customer.id).exists()
+        return order_exists if active else ~order_exists
 
     async def increment_invoice_next_number(self, customer_id: UUID) -> int:
         """

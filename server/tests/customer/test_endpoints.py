@@ -19,6 +19,7 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_benefit_grant,
     create_customer,
+    create_order,
 )
 
 
@@ -107,6 +108,50 @@ class TestListCustomers:
         json = response.json()
         assert json["pagination"]["total_count"] == 1
         assert json["items"][0]["external_id"] == "ext_456"
+
+    @pytest.mark.auth
+    async def test_active_filter(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        customer_with_order = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="active@example.com",
+        )
+        await create_order(save_fixture, customer=customer_with_order, product=product)
+        customer_without_order = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="inactive@example.com",
+        )
+
+        # active=true returns only customers with at least one order
+        response = await client.get("/v1/customers/", params={"active": True})
+
+        assert response.status_code == 200
+        ids = {item["id"] for item in response.json()["items"]}
+        assert str(customer_with_order.id) in ids
+        assert str(customer_without_order.id) not in ids
+
+        # active=false excludes customers with at least one order
+        response = await client.get("/v1/customers/", params={"active": False})
+
+        assert response.status_code == 200
+        ids = {item["id"] for item in response.json()["items"]}
+        assert str(customer_without_order.id) in ids
+        assert str(customer_with_order.id) not in ids
+
+        # no filter returns all customers
+        response = await client.get("/v1/customers/")
+
+        assert response.status_code == 200
+        ids = {item["id"] for item in response.json()["items"]}
+        assert {str(customer_with_order.id), str(customer_without_order.id)} <= ids
 
 
 @pytest.mark.asyncio

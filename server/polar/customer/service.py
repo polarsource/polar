@@ -77,6 +77,7 @@ class CustomerService:
         email: str | None = None,
         metadata: MetadataQuery | None = None,
         query: str | None = None,
+        active: bool | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[CustomerSortProperty]] = [
             (CustomerSortProperty.created_at, True)
@@ -105,6 +106,9 @@ class CustomerService:
                     Customer.external_id.ilike(f"{query}%"),
                 )
             )
+
+        if active is not None:
+            statement = statement.where(repository.get_active_clause(active))
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

@@ -39,7 +39,6 @@ export const StartupProgramCallout = ({
     successPath: `/dashboard/${organization.slug}/settings/billing`,
   })
 
-
   if (!isInvited || !scaleProductId || alreadyOnScale) {
     return null
   }

@@ -22,7 +22,7 @@ def upgrade() -> None:
     # accounts is read on hot auth/balance paths. Bound the ACCESS EXCLUSIVE
     # wait so a busy lock queue fails the migration fast instead of stalling
     # every concurrent query behind it.
-    op.execute("SET lock_timeout = '2s'")
+    op.execute("SET LOCAL lock_timeout = '2s'")
     op.alter_column(
         "accounts",
         "credit_balance",
@@ -34,7 +34,9 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.execute("SET lock_timeout = '2s'")
+    op.execute("SET LOCAL lock_timeout = '2s'")
+    # WARNING: Rolling back this migration will FAIL if any credit_balance value
+    # exceeds INTEGER max (2,147,483,647). Check data before downgrading.
     op.alter_column(
         "accounts",
         "credit_balance",

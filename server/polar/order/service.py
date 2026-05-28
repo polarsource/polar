@@ -13,7 +13,7 @@ from sqlalchemy.orm import contains_eager, joinedload
 from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
-from polar.authz.service import assert_resource_permission, get_accessible_org_ids
+from polar.authz.service import get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
@@ -857,18 +857,20 @@ class OrderService:
 
         return order
 
-    async def create_draft_order(
+    async def get_chargeable_product(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
-        payload: OrderCreate,
-    ) -> Order:
+        product_id: uuid.UUID,
+    ) -> Product:
         """
-        Create a draft order for an off-session charge. The order is persisted
-        with `status=draft` and no invoice number; the merchant must call
-        finalize_order() to charge the customer's saved payment method.
+        Resolve a product that can be charged through the off-session order API,
+        validating that it exists and is a one-time (non-subscription) product.
+
+        The caller is responsible for asserting write permission on the returned
+        product before creating an order from it.
         """
-        product = await product_service.get(session, auth_subject, payload.product_id)
+        product = await product_service.get(session, auth_subject, product_id)
         if product is None:
             raise PolarRequestValidationError(
                 [
@@ -876,7 +878,7 @@ class OrderService:
                         "type": "value_error",
                         "loc": ("body", "product_id"),
                         "msg": "Product does not exist.",
-                        "input": payload.product_id,
+                        "input": product_id,
                     }
                 ]
             )
@@ -890,15 +892,27 @@ class OrderService:
                             "Subscription products are not supported by the "
                             "off-session charge API. Use a one-time product."
                         ),
-                        "input": payload.product_id,
+                        "input": product_id,
                     }
                 ]
             )
+        return product
 
-        await assert_resource_permission(
-            session, auth_subject, product, OrganizationPermission.sales_manage
-        )
+    async def create_draft_order(
+        self,
+        session: AsyncSession,
+        product: Product,
+        payload: OrderCreate,
+    ) -> Order:
+        """
+        Create a draft order for an off-session charge against `product`. The
+        order is persisted with `status=draft` and no invoice number; the
+        merchant must call finalize_order() to charge the customer's saved
+        payment method.
 
+        The caller (endpoint) is responsible for having resolved `product` via
+        get_chargeable_product() and asserted write permission on it.
+        """
         organization = product.organization
         if not organization.feature_settings.get("off_session_charges_enabled"):
             raise OffSessionChargesNotEnabled(organization.id)

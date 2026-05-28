@@ -5124,24 +5124,20 @@ async def off_session_organization(
 
 
 @pytest.mark.asyncio
-class TestCreateDraftOrder:
+class TestGetChargeableProduct:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
     )
-    async def test_feature_flag_disabled(
+    async def test_unknown_product_rejected(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
-        product_one_time: Product,
-        customer: Customer,
     ) -> None:
-        payload = OrderCreate(
-            customer_id=customer.id,
-            product_id=product_one_time.id,
-        )
-        with pytest.raises(OffSessionChargesNotEnabled):
-            await order_service.create_draft_order(session, auth_subject, payload)
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.get_chargeable_product(
+                session, auth_subject, uuid.uuid4()
+            )
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
@@ -5151,25 +5147,48 @@ class TestCreateDraftOrder:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
-        off_session_organization: Organization,
         product: Product,
-        customer: Customer,
     ) -> None:
-        payload = OrderCreate(
-            customer_id=customer.id,
-            product_id=product.id,
-        )
+        # The default `product` fixture is recurring monthly.
         with pytest.raises(PolarRequestValidationError):
-            await order_service.create_draft_order(session, auth_subject, payload)
+            await order_service.get_chargeable_product(
+                session, auth_subject, product.id
+            )
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
     )
-    async def test_unknown_customer_rejected(
+    async def test_one_time_product_returned(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        result = await order_service.get_chargeable_product(
+            session, auth_subject, product_one_time.id
+        )
+        assert result.id == product_one_time.id
+
+
+@pytest.mark.asyncio
+class TestCreateDraftOrder:
+    async def test_feature_flag_disabled(
+        self,
+        session: AsyncSession,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+        )
+        with pytest.raises(OffSessionChargesNotEnabled):
+            await order_service.create_draft_order(session, product_one_time, payload)
+
+    async def test_unknown_customer_rejected(
+        self,
+        session: AsyncSession,
         off_session_organization: Organization,
         product_one_time: Product,
     ) -> None:
@@ -5178,16 +5197,11 @@ class TestCreateDraftOrder:
             product_id=product_one_time.id,
         )
         with pytest.raises(PolarRequestValidationError):
-            await order_service.create_draft_order(session, auth_subject, payload)
+            await order_service.create_draft_order(session, product_one_time, payload)
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
-    )
     async def test_happy_path(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        user_organization: UserOrganization,
         off_session_organization: Organization,
         product_one_time: Product,
         customer: Customer,
@@ -5196,7 +5210,9 @@ class TestCreateDraftOrder:
             customer_id=customer.id,
             product_id=product_one_time.id,
         )
-        order = await order_service.create_draft_order(session, auth_subject, payload)
+        order = await order_service.create_draft_order(
+            session, product_one_time, payload
+        )
 
         assert order.status == OrderStatus.draft
         assert order.invoice_number is None

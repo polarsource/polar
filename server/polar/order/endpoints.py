@@ -216,7 +216,15 @@ async def create(
 
     The organization must have the `off_session_charges_enabled` feature flag.
     """
-    return await order_service.create_draft_order(session, auth_subject, order_create)
+    product = await order_service.get_chargeable_product(
+        session, auth_subject, order_create.product_id
+    )
+
+    await assert_resource_permission(
+        session, auth_subject, product, OrganizationPermission.sales_manage
+    )
+
+    return await order_service.create_draft_order(session, product, order_create)
 
 
 @router.patch(

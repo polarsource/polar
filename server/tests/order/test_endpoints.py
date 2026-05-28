@@ -487,6 +487,25 @@ class TestCreateOrder:
         assert response.status_code == 401
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_user_not_organization_member(
+        self,
+        client: AsyncClient,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        # The authenticated user is not a member of the product's organization,
+        # so the product is not resolvable and the order cannot be created.
+        response = await client.post(
+            "/v1/orders/",
+            json={
+                "customer_id": str(customer.id),
+                "product_id": str(product_one_time.id),
+            },
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
     async def test_feature_flag_disabled(
         self,
         client: AsyncClient,

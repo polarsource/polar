@@ -191,7 +191,11 @@ async def create_subscription(
             # When the period end is forced to an arbitrary date, anchor future
             # billing cycles to that date's day-of-month so subsequent periods
             # don't drift back to the start day.
-            anchor_day = current_period_end.day if force_current_period_end is not None else current_period_start.day
+            anchor_day = (
+                current_period_end.day
+                if force_current_period_end is not None
+                else current_period_start.day
+            )
 
             subscription = Subscription(
                 status=SubscriptionStatus.active,

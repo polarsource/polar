@@ -236,6 +236,26 @@ class OrderRepository(
             order, update_dict={"payment_lock_acquired_at": None}, flush=flush
         )
 
+    async def start_finalization(self, order_id: UUID) -> bool:
+        """
+        Atomically transition a draft order to `pending` so it can be charged.
+
+        Used to claim a draft order for finalization: only one concurrent
+        request wins the transition, so two finalize calls can't both proceed
+        (and consume two invoice numbers / race the order status).
+
+        Returns:
+            True if this call transitioned the order from draft to pending,
+            False if it was no longer a draft (already claimed / non-draft).
+        """
+        statement = (
+            update(Order)
+            .where(Order.id == order_id, Order.status == OrderStatus.draft)
+            .values(status=OrderStatus.pending)
+        )
+        result = cast(CursorResult[Order], await self.session.execute(statement))
+        return result.rowcount > 0
+
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[Order]]:

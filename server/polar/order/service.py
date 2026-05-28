@@ -53,7 +53,7 @@ from polar.integrations.stripe.service import (
 )
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.address import Address
-from polar.kit.currency import get_minimum_currency_amount
+from polar.kit.currency import format_currency, get_minimum_currency_amount
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
@@ -90,14 +90,16 @@ from polar.notifications.service import notifications as notifications_service
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
 from polar.payment.repository import PaymentRepository
+from polar.payment.service import payment as payment_service
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.product.guard import (
+    CustomPrice,
     is_custom_price,
     is_seat_price,
     is_static_price,
 )
-from polar.product.price_set import PriceSet
+from polar.product.price_set import NoPricesForCurrencies, PriceSet
 from polar.product.repository import ProductRepository
 from polar.receipt.service import receipt as receipt_service
 from polar.subscription.service import subscription as subscription_service
@@ -459,7 +461,7 @@ class OrderService:
 
         # Draft-only fields can only change while the order is still being
         # built. They share the same PATCH endpoint so we enforce here.
-        draft_only_fields = {"seats", "user_metadata", "custom_field_data"}
+        draft_only_fields = {"user_metadata", "custom_field_data"}
         if order.status != OrderStatus.draft and draft_only_fields & update_dict.keys():
             raise OrderNotDraft(order)
 
@@ -718,28 +720,31 @@ class OrderService:
         return items
 
     def _validate_purchase_pricing(
-        self, prices: Iterable[ProductPrice], payload: OrderCreate
+        self, prices: Iterable[ProductPrice], payload: OrderCreate, currency: str
     ) -> None:
         """
         Validate that the off-session purchase payload provides the values the
-        product's static prices require, returning friendly 4xx errors before
+        product's static prices require — and that a custom amount respects the
+        price's configured bounds — returning friendly 4xx errors before
         `_build_static_order_items` would otherwise hit an assertion.
         """
         for price in prices:
-            if is_custom_price(price) and payload.amount is None:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "amount"),
-                            "msg": (
-                                "Amount is required for "
-                                "pay-what-you-want / custom-priced products."
-                            ),
-                            "input": None,
-                        }
-                    ]
-                )
+            if is_custom_price(price):
+                if payload.amount is None:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "amount"),
+                                "msg": (
+                                    "Amount is required for "
+                                    "pay-what-you-want / custom-priced products."
+                                ),
+                                "input": None,
+                            }
+                        ]
+                    )
+                self._validate_custom_price_amount(price, payload.amount, currency)
             if is_seat_price(price) and (payload.seats is None or payload.seats <= 0):
                 raise PolarRequestValidationError(
                     [
@@ -754,6 +759,58 @@ class OrderService:
                         }
                     ]
                 )
+
+    def _validate_custom_price_amount(
+        self, price: CustomPrice, amount: int, currency: str
+    ) -> None:
+        """Validate a custom (pay-what-you-want) amount against the price's
+        configured minimum / maximum and the currency minimum."""
+        loc = ("body", "amount")
+        if price.minimum_amount == 0:
+            # Free is allowed: accept 0, or any amount >= the currency minimum.
+            if amount == 0:
+                return
+            currency_minimum = get_minimum_currency_amount(currency)
+            if 0 < amount < currency_minimum:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "invalid_amount",
+                            "loc": loc,
+                            "msg": (
+                                "Amount must be 0 or at least "
+                                f"{format_currency(currency_minimum, currency)}."
+                            ),
+                            "input": amount,
+                            "ctx": {"allowed": [0], "ge": currency_minimum},
+                        }
+                    ]
+                )
+        elif amount < price.minimum_amount:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "greater_than_equal",
+                        "loc": loc,
+                        "msg": "Amount is below minimum.",
+                        "input": amount,
+                        "ctx": {"ge": price.minimum_amount},
+                    }
+                ]
+            )
+
+        if price.maximum_amount is not None and amount > price.maximum_amount:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "less_than_equal",
+                        "loc": loc,
+                        "msg": "Amount is above maximum.",
+                        "input": amount,
+                        "ctx": {"le": price.maximum_amount},
+                    }
+                ]
+            )
 
     async def _create_order_from_checkout(
         self,
@@ -925,7 +982,7 @@ class OrderService:
         currency = organization.default_presentment_currency
         try:
             currency_prices = PriceSet.from_product(product, currency)
-        except Exception as e:
+        except NoPricesForCurrencies as e:
             raise PolarRequestValidationError(
                 [
                     {
@@ -940,7 +997,7 @@ class OrderService:
                 ]
             ) from e
 
-        self._validate_purchase_pricing(currency_prices, payload)
+        self._validate_purchase_pricing(currency_prices, payload, currency)
         items = list(
             self._build_static_order_items(
                 currency_prices, amount=payload.amount, seats=payload.seats
@@ -1027,12 +1084,13 @@ class OrderService:
         payment_method_id: uuid.UUID | None = None,
     ) -> Order:
         """
-        Finalize a draft order: resolve the payment method, assign an invoice
-        number, transition to pending, and synchronously attempt an off-session
-        charge. On success the order transitions to paid and benefit grants
-        fire before this method returns. On any failure, the order is reverted
-        to draft so the merchant can fix the situation and retry against the
-        same order ID.
+        Finalize a draft order: resolve the payment method, atomically claim the
+        draft, and synchronously attempt an off-session charge. On success the
+        order transitions to paid, gets an invoice number, and benefit grants
+        fire before this method returns. On any failure the order is reverted to
+        draft so the merchant can fix the situation and retry against the same
+        order ID. The invoice number is assigned only on success, so failed
+        attempts don't burn invoice numbers.
         """
         if order.status != OrderStatus.draft:
             raise OrderNotDraft(order)
@@ -1046,51 +1104,78 @@ class OrderService:
             session, customer, payment_method_id
         )
 
-        invoice_number = await organization_service.get_next_invoice_number(
-            session, organization, customer
-        )
+        # Atomically claim the draft (draft -> pending). If another request
+        # already claimed it, this returns False and we bail out so two
+        # finalizes can't both charge / race the order status.
         repository = OrderRepository.from_session(session)
-        order = await repository.update(
-            order,
-            update_dict={
-                "status": OrderStatus.pending,
-                "invoice_number": invoice_number,
-            },
-        )
+        if not await repository.start_finalization(order.id):
+            raise OrderNotDraft(order)
+        # Sync the in-memory status with the atomic transition (relationships
+        # stay loaded) so trigger_payment, which requires `pending`, sees it.
+        await session.refresh(order, ["status"])
 
-        # trigger_payment raises PaymentFailed / PaymentActionRequired on
-        # failure. In every failure path we revert the order to draft (and
-        # release the invoice number) so the merchant can retry against the
-        # same id without producing a paid order with a missing charge.
+        # Any failure from trigger_payment happens before a charge completes
+        # (declines raise, SCA returns requires_action, a concurrent lock raises
+        # PaymentAlreadyInProgress), so reverting to draft is always safe here.
         try:
             payment_intent = await self.trigger_payment(
                 session, order, payment_method, payment_mode=PaymentMode.sync
             )
-        except (PaymentFailed, PaymentActionRequired):
+        except Exception:
             await self._revert_to_draft(session, order)
             raise
 
-        # trigger_payment short-circuits (returns None) in a few cases:
-        #   - under-currency-minimum: it already marked the order paid
-        #   - organization capability disabled: nothing happened
-        # In both cases the order is no longer in `pending`, so we can rely
-        # on the current status.
-        await session.refresh(order)
-
         if payment_intent is None:
-            if order.status == OrderStatus.pending:
+            # trigger_payment short-circuited: under-currency-minimum already
+            # marked the order paid; organization-capability-disabled left it
+            # pending. Re-read for a clean status value.
+            settled = await repository.get_by_id(order.id)
+            if settled is not None and settled.status == OrderStatus.pending:
                 await self._revert_to_draft(session, order)
                 raise PaymentFailed(PaymentFailedReason.missing_payment_method)
-            return order
+            return await self._assign_invoice_number(session, order)
 
         # Apply the charge.succeeded path inline so the finalize HTTP response
-        # carries the paid order. The webhook will arrive shortly after and
-        # no-op via the idempotency guard in handle_payment.
-        from polar.integrations.stripe import payment as stripe_payment
+        # carries the paid order. The webhook arrives shortly after and no-ops
+        # via the idempotency guards in upsert_from_stripe_charge / handle_payment.
+        charge = self._get_intent_charge(payment_intent)
+        order = await self._assign_invoice_number(session, order)
+        payment = await payment_service.upsert_from_stripe_charge(
+            session, charge, organization, None, None, order
+        )
+        return await self.handle_payment(session, order, payment)
 
-        await stripe_payment.apply_successful_payment_intent(session, payment_intent)
-        await session.refresh(order)
-        return order
+    def _get_intent_charge(
+        self, payment_intent: stripe_lib.PaymentIntent
+    ) -> stripe_lib.Charge:
+        """Return the Charge from a confirmed PaymentIntent.
+
+        trigger_payment creates the intent with ``expand=["latest_charge"]``,
+        so this is a full Charge object. We raise (rather than assert) if it
+        isn't, since asserts are stripped under ``-O`` and this runs after the
+        customer has been charged.
+        """
+        charge = payment_intent.latest_charge
+        if not isinstance(charge, stripe_lib.Charge):
+            raise OrderError(
+                f"PaymentIntent {payment_intent.id} is missing its expanded "
+                "latest_charge; cannot settle the order synchronously."
+            )
+        return charge
+
+    async def _assign_invoice_number(
+        self, session: AsyncSession, order: Order
+    ) -> Order:
+        """Assign the next invoice number to an order that doesn't have one."""
+        if order.invoice_number is not None:
+            return order
+        invoice_number = await organization_service.get_next_invoice_number(
+            session, order.organization, order.customer
+        )
+        repository = OrderRepository.from_session(session)
+        return await repository.update(
+            order, update_dict={"invoice_number": invoice_number}
+        )
 
     async def _resolve_payment_method(
         self,
@@ -1121,10 +1206,11 @@ class OrderService:
 
     async def _revert_to_draft(self, session: AsyncSession, order: Order) -> Order:
         """
-        Roll a failed finalize back to a draft, releasing the invoice number so
-        the merchant can fix the situation and retry against the same order ID.
-        flush=True so the revert is persisted even as the request bubbles up
-        the failure exception.
+        Roll a failed finalize back to draft so the merchant can fix the
+        situation and retry against the same order ID. flush=True so the revert
+        is persisted even as the request bubbles up the failure exception. The
+        invoice number is only assigned on success, so there's nothing to
+        release here (cleared defensively).
         """
         repository = OrderRepository.from_session(session)
         return await repository.update(

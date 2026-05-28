@@ -5211,6 +5211,42 @@ class TestCreateDraftOrder:
         assert order.subtotal_amount > 0
         assert len(order.items) >= 1
 
+    async def test_custom_price_below_minimum_rejected(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time_custom_price: Product,
+        customer: Customer,
+    ) -> None:
+        # The custom-price fixture has a minimum_amount of 50.
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time_custom_price.id,
+            amount=10,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_custom_price_within_bounds(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time_custom_price: Product,
+        customer: Customer,
+    ) -> None:
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time_custom_price.id,
+            amount=100,
+        )
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+        assert order.status == OrderStatus.draft
+        assert order.subtotal_amount == 100
+
 
 @pytest.mark.asyncio
 class TestFinalizeOrder:
@@ -5371,7 +5407,7 @@ class TestUpdateDraftOrderFields:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
     )
-    async def test_seats_rejected_on_non_draft(
+    async def test_metadata_rejected_on_non_draft(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -5389,13 +5425,13 @@ class TestUpdateDraftOrderFields:
             await order_service.update(
                 session,
                 order,
-                OrderUpdate(seats=5),
+                OrderUpdate(metadata={"reference": "abc"}),
             )
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
     )
-    async def test_seats_updates_on_draft(
+    async def test_metadata_updates_on_draft(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -5413,6 +5449,6 @@ class TestUpdateDraftOrderFields:
         updated = await order_service.update(
             session,
             order,
-            OrderUpdate(seats=4),
+            OrderUpdate(metadata={"reference": "abc"}),
         )
-        assert updated.seats == 4
+        assert updated.user_metadata == {"reference": "abc"}

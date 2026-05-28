@@ -307,30 +307,7 @@ async def handle_failure(
         )
 
 
-async def apply_successful_payment_intent(
-    session: AsyncSession, payment_intent: stripe_lib.PaymentIntent
-) -> None:
-    """
-    Apply the order-success path for a PaymentIntent that completed off-session.
-
-    Used by the draft-order finalize endpoint to settle synchronously without
-    waiting for the charge.succeeded webhook. The webhook still fires later
-    and is a no-op thanks to idempotency in upsert_from_stripe_charge and
-    order_service.handle_payment.
-
-    The caller must create the PaymentIntent with ``expand=["latest_charge"]``
-    so we get the full Charge object inline.
-    """
-    latest_charge = payment_intent.latest_charge
-    assert isinstance(latest_charge, stripe_lib.Charge), (
-        "PaymentIntent.latest_charge must be a full Charge object "
-        "(use expand=['latest_charge'] on create_payment_intent)"
-    )
-    await handle_success(session, latest_charge)
-
-
 __all__ = [
-    "apply_successful_payment_intent",
     "handle_failure",
     "handle_success",
     "resolve_checkout",

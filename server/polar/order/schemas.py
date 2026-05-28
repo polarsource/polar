@@ -301,13 +301,16 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
     )
     amount: int | None = Field(
         None,
+        ge=0,
         description=(
             "Amount in the smallest currency unit. Required for "
-            "pay-what-you-want / custom-priced products; ignored otherwise."
+            "pay-what-you-want / custom-priced products; ignored otherwise. "
+            "Must respect the price's configured minimum and maximum."
         ),
     )
     seats: int | None = Field(
         None,
+        ge=1,
         description="Number of seats, for seat-based products.",
     )
 
@@ -329,17 +332,13 @@ class OrderUpdate(OrderUpdateBase, MetadataInputMixin, CustomFieldDataInputMixin
     """
     Schema to update an order.
 
-    For orders in `draft` status, additional fields (seats, metadata, custom
-    field data) can be updated before the order is finalized. Once an order
-    leaves draft, only billing details can be updated.
-    """
+    For orders in `draft` status, metadata and custom field data can be
+    updated before the order is finalized. Once an order leaves draft, only
+    billing details can be updated.
 
-    seats: int | None = Field(
-        None,
-        description=(
-            "Number of seats. Only updatable while the order is in `draft` status."
-        ),
-    )
+    `seats` is fixed at creation because it determines the charge amount; to
+    change it, recreate the draft.
+    """
 
 
 class OrderFinalize(Schema):

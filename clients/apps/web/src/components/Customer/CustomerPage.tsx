@@ -5,6 +5,8 @@ import { CustomerEventsView } from '@/components/Customer/CustomerEventsView'
 import { CustomerUsageView } from '@/components/Customer/CustomerUsageView'
 import { MembersSection } from '@/components/Customer/MembersSection'
 import CostsPage from '@/app/(main)/dashboard/[organization]/(header)/analytics/costs/CostsPage'
+import PaymentMethod from '@/components/PaymentMethod/PaymentMethod'
+import PaymentStatus from '@/components/PaymentStatus/PaymentStatus'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
@@ -16,6 +18,7 @@ import {
   useWallets,
 } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
+import { usePayments } from '@/hooks/queries/payments'
 import { useMemberModelEnabled } from '@/hooks/useMemberModelEnabled'
 import { formatCountry, formatPercentage } from '@/utils/formatters'
 import { getPreviousDateRange } from '@/utils/metrics'
@@ -64,6 +67,15 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     {
       customer_id: customer.id,
       limit: 999,
+      sorting: ['-created_at'],
+    },
+  )
+
+  const { data: payments, isLoading: paymentsLoading } = usePayments(
+    customer.organization_id,
+    {
+      customer_id: customer.id,
+      limit: 10,
       sorting: ['-created_at'],
     },
   )
@@ -395,6 +407,66 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
               },
             ]}
             isLoading={ordersLoading}
+            className="text-sm"
+          />
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <h3 className="text-lg">Recent Payments</h3>
+          <DataTable
+            data={payments?.items ?? []}
+            columns={[
+              {
+                header: 'Created At',
+                accessorKey: 'created_at',
+                cell: ({ row: { original } }) => (
+                  <span className="dark:text-polar-500 text-sm text-gray-500">
+                    <FormattedDateTime
+                      dateStyle="medium"
+                      resolution="time"
+                      datetime={original.created_at}
+                    />
+                  </span>
+                ),
+              },
+              {
+                header: 'Amount',
+                accessorKey: 'amount',
+                cell: ({ row: { original } }) =>
+                  formatCurrency('compact')(original.amount, original.currency),
+              },
+              {
+                header: 'Method',
+                accessorKey: 'method',
+                cell: ({ row: { original } }) => (
+                  <PaymentMethod payment={original} />
+                ),
+              },
+              {
+                header: 'Status',
+                accessorKey: 'status',
+                cell: ({ row: { original } }) => (
+                  <PaymentStatus payment={original} />
+                ),
+              },
+              {
+                header: '',
+                accessorKey: 'action',
+                cell: ({ row: { original } }) =>
+                  original.order_id ? (
+                    <div className="flex justify-end">
+                      <Link
+                        href={`/dashboard/${organization.slug}/sales/${original.order_id}`}
+                      >
+                        <Button variant="secondary" size="sm">
+                          View Order
+                        </Button>
+                      </Link>
+                    </div>
+                  ) : null,
+              },
+            ]}
+            isLoading={paymentsLoading}
             className="text-sm"
           />
         </div>

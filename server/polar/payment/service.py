@@ -51,6 +51,7 @@ class PaymentService:
         organization_id: Sequence[uuid.UUID] | None = None,
         checkout_id: Sequence[uuid.UUID] | None = None,
         order_id: Sequence[uuid.UUID] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
         status: Sequence[PaymentStatus] | None = None,
         method: Sequence[str] | None = None,
         customer_email: Sequence[str] | None = None,
@@ -73,6 +74,12 @@ class PaymentService:
 
         if order_id is not None:
             statement = statement.where(Payment.order_id.in_(order_id))
+
+        if customer_id is not None:
+            statement = statement.join(Order, Payment.order_id == Order.id).where(
+                Order.is_deleted.is_(False),
+                Order.customer_id.in_(customer_id),
+            )
 
         if status is not None:
             statement = statement.where(Payment.status.in_(status))

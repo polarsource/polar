@@ -407,7 +407,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
               ),
             },
           ]}
-          data={(payments?.items ?? []) as unknown as schemas['Payment'][]}
+          data={payments?.items ?? []}
         />
       </div>
 

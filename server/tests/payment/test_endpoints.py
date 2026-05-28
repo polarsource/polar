@@ -4,9 +4,9 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
-from polar.models import Organization, Payment, UserOrganization
+from polar.models import Customer, Organization, Payment, UserOrganization
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_payment
+from tests.fixtures.random_objects import create_order, create_payment
 
 
 @pytest_asyncio.fixture
@@ -35,6 +35,30 @@ class TestListPayments:
         assert response.status_code == 200
         json = response.json()
         assert json["pagination"]["total_count"] == 0
+
+    @pytest.mark.auth
+    async def test_filter_by_customer_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        order_second = await create_order(save_fixture, customer=customer_second)
+        payment = await create_payment(save_fixture, organization, order=order)
+        await create_payment(save_fixture, organization, order=order_second)
+
+        response = await client.get(
+            "/v1/payments/", params={"customer_id": str(customer.id)}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["id"] == str(payment.id)
 
 
 @pytest.mark.asyncio

@@ -231,22 +231,24 @@ export const OmniSearch = ({
       case 'customer':
         return (
           <Result
-            title={result.name || result.email}
-            description={result.name ? result.email : undefined}
+            title={result.name || result.email || 'Customer'}
+            description={
+              result.name ? (result.email ?? undefined) : undefined
+            }
           />
         )
       case 'order':
         return (
           <Result
             title={result.product_name}
-            description={`${result.customer_name || result.customer_email} • ${formatCurrency('compact')(result.amount, result.currency)}`}
+            description={`${result.customer_name || result.customer_email || 'Unknown customer'} • ${formatCurrency('compact')(result.amount, result.currency)}`}
           />
         )
       case 'subscription':
         return (
           <Result
             title={result.product_name}
-            description={`${result.customer_name || result.customer_email} • ${result.status}`}
+            description={`${result.customer_name || result.customer_email || 'Unknown customer'} • ${result.status}`}
           />
         )
     }

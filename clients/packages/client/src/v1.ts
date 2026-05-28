@@ -27785,7 +27785,7 @@ export interface components {
       /** Name */
       name: string | null
       /** Email */
-      email: string
+      email?: string | null
     }
     /** SearchResultOrder */
     SearchResultOrder: {
@@ -27802,7 +27802,7 @@ export interface components {
       /** Customer Name */
       customer_name: string | null
       /** Customer Email */
-      customer_email: string
+      customer_email?: string | null
       /** Product Name */
       product_name: string
       /** Amount */
@@ -27842,7 +27842,7 @@ export interface components {
       /** Customer Name */
       customer_name: string | null
       /** Customer Email */
-      customer_email: string
+      customer_email?: string | null
       /** Product Name */
       product_name: string
       /** Status */

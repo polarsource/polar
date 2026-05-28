@@ -19,6 +19,7 @@ from polar.kit.crypto import generate_token
 from polar.kit.pagination import PaginationParams
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
+from polar.kit.visibility import Visibility
 from polar.models import (
     CheckoutLink,
     CheckoutLinkProduct,
@@ -26,7 +27,6 @@ from polar.models import (
     Organization,
     Product,
     ProductPrice,
-    ProductVisibility,
     User,
 )
 from polar.postgres import AsyncSession
@@ -284,7 +284,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                 )
                 continue
 
-            if product.visibility == ProductVisibility.draft:
+            if product.visibility == Visibility.draft:
                 errors.append(
                     {
                         "type": "value_error",
@@ -362,7 +362,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                 ]
             )
 
-        if product.visibility == ProductVisibility.draft:
+        if product.visibility == Visibility.draft:
             raise PolarRequestValidationError(
                 [
                     {

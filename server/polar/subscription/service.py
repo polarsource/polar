@@ -58,6 +58,7 @@ from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
+from polar.kit.visibility import Visibility
 from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import (
@@ -80,7 +81,6 @@ from polar.models import (
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.customer import CustomerType
 from polar.models.order import OrderBillingReasonInternal
-from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPrice, ProductPriceSeatUnit
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
@@ -990,9 +990,7 @@ class SubscriptionService:
         *,
         product_id: uuid.UUID,
         proration_behavior: SubscriptionProrationBehavior | None = None,
-        allowed_visibilities: frozenset[ProductVisibility] = frozenset(
-            ProductVisibility
-        ),
+        allowed_visibilities: frozenset[Visibility] = frozenset(Visibility),
     ) -> Subscription:
         if subscription.revoked or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)

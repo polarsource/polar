@@ -27,6 +27,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
 from polar.kit.metadata import MetadataMixin
 from polar.kit.trial import TrialConfigurationMixin
+from polar.kit.visibility import VisibilityMixin
 from polar.models.product_price import ProductPriceAmountType, ProductPriceType
 from polar.tax.calculation import TaxCode
 
@@ -48,13 +49,16 @@ class ProductBillingType(StrEnum):
     recurring = "recurring"
 
 
+# Kept as a distinct enum (rather than reusing `Visibility`) so the public
+# OpenAPI/SDK component stays named `ProductVisibility`. The product schemas
+# reference this; the DB column comes from `VisibilityMixin` (`Visibility`).
 class ProductVisibility(StrEnum):
     draft = "draft"
     private = "private"
     public = "public"
 
 
-class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
+class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordModel):
     __tablename__ = "products"
     __table_args__ = (
         Index(
@@ -69,11 +73,6 @@ class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    visibility: Mapped[ProductVisibility] = mapped_column(
-        StringEnum(ProductVisibility),
-        nullable=False,
-        default=ProductVisibility.public,
-    )
     recurring_interval: Mapped[SubscriptionRecurringInterval | None] = mapped_column(
         StringEnum(SubscriptionRecurringInterval),
         nullable=True,

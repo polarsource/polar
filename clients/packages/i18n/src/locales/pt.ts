@@ -231,11 +231,11 @@ export default {
     confirmation: {
       confirmPayment: 'Confirmar pagamento',
       processingTitle: 'Estamos processando seu pedido',
-      successTitle: 'Seu pedido foi realizado com sucesso!',
       failedTitle: 'Ocorreu um problema ao processar seu pedido',
       processingDescription: 'Aguarde enquanto confirmamos seu pagamento.',
-      successDescription: 'Agora você tem acesso aos benefícios de {product}.',
       failedDescription: 'Tente novamente ou entre em contato com o suporte.',
+      successTitle: 'Obrigado pela sua compra!',
+      successDescription: 'Agora você tem acesso a {product}.',
     },
     loading: {
       processingOrder: 'Processando pedido...',

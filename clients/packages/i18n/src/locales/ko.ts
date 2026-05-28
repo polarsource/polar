@@ -230,11 +230,11 @@ export default {
     confirmation: {
       confirmPayment: '결제 확인',
       processingTitle: '주문을 처리하고 있습니다',
-      successTitle: '주문이 완료되었습니다!',
       failedTitle: '주문 처리 중 문제가 발생했습니다',
       processingDescription: '결제 확인 중입니다. 잠시만 기다려 주세요.',
-      successDescription: '이제 {product}의 혜택을 이용하실 수 있습니다.',
       failedDescription: '다시 시도하거나 고객지원팀에 문의해 주세요.',
+      successTitle: '주문해 주셔서 감사합니다!',
+      successDescription: '이제 {product}를 이용하실 수 있습니다.',
     },
     loading: {
       processingOrder: '주문 처리 중...',

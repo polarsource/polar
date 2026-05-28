@@ -231,13 +231,13 @@ export default {
     confirmation: {
       confirmPayment: 'Betaling bevestigen',
       processingTitle: 'We verwerken je bestelling',
-      successTitle: 'Je bestelling is geslaagd!',
       failedTitle:
         'Er is een probleem opgetreden bij het verwerken van je bestelling',
       processingDescription:
         'Een ogenblik geduld terwijl we je betaling bevestigen.',
-      successDescription: 'Je hebt nu toegang tot de voordelen van {product}.',
       failedDescription: 'Probeer het opnieuw of neem contact op met support.',
+      successTitle: 'Bedankt voor je bestelling!',
+      successDescription: 'Je hebt nu toegang tot {product}.',
     },
     loading: {
       processingOrder: 'Bestelling verwerken...',

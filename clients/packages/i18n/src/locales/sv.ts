@@ -230,11 +230,11 @@ export default {
     confirmation: {
       confirmPayment: 'Bekräfta betalning',
       processingTitle: 'Vi behandlar din beställning',
-      successTitle: 'Din order är klar!',
       failedTitle: 'Ett problem uppstod vid behandlingen av din beställning',
       processingDescription: 'Vänta medan vi bekräftar din betalning.',
-      successDescription: 'Du är nu berättigad till förmånerna med {product}.',
       failedDescription: 'Försök igen eller kontakta supporten.',
+      successTitle: 'Tack för din order!',
+      successDescription: 'Du har nu tillgång till {product}.',
     },
     loading: {
       processingOrder: 'Behandlar beställning...',

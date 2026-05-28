@@ -170,24 +170,26 @@ module "sandbox" {
   }
 
   backend_config = {
-    base_url                       = "https://sandbox-api.polar.sh"
-    user_session_cookie_domain     = "polar.sh"
-    user_session_cookie_key        = "polar_sandbox_session"
-    debug                          = "0"
-    email_sender                   = "resend"
-    email_from_name                = "[SANDBOX] Polar"
-    email_from_domain              = "notifications.sandbox.polar.sh"
-    frontend_base_url              = "https://sandbox.polar.sh"
-    checkout_base_url              = "https://sandbox-api.polar.sh/v1/checkout-links/{client_secret}/redirect"
-    jwks_path                      = "/etc/secrets/jwks.json"
-    log_level                      = "INFO"
-    testing                        = "0"
-    auth_cookie_domain             = "polar.sh"
-    auth_cookie_key                = "polar_sandbox_session"
-    tax_processors                 = "[\"numeral\",\"stripe\"]"
-    tax_record_processor           = "numeral"
-    customer_portal_url_overrides  = var.customer_portal_url_overrides
-    plain_default_tier_external_id = var.plain_default_tier_external_id
+    base_url                             = "https://sandbox-api.polar.sh"
+    user_session_cookie_domain           = "polar.sh"
+    user_session_cookie_key              = "polar_sandbox_session"
+    authentication_session_cookie_domain = "polar.sh"
+    oauth2_session_state_cookie_domain   = "polar.sh"
+    debug                                = "0"
+    email_sender                         = "resend"
+    email_from_name                      = "[SANDBOX] Polar"
+    email_from_domain                    = "notifications.sandbox.polar.sh"
+    frontend_base_url                    = "https://sandbox.polar.sh"
+    checkout_base_url                    = "https://sandbox-api.polar.sh/v1/checkout-links/{client_secret}/redirect"
+    jwks_path                            = "/etc/secrets/jwks.json"
+    log_level                            = "INFO"
+    testing                              = "0"
+    auth_cookie_domain                   = "polar.sh"
+    auth_cookie_key                      = "polar_sandbox_session"
+    tax_processors                       = "[\"numeral\",\"stripe\"]"
+    tax_record_processor                 = "numeral"
+    customer_portal_url_overrides        = var.customer_portal_url_overrides
+    plain_default_tier_external_id       = var.plain_default_tier_external_id
   }
 
   backend_secrets = {

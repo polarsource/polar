@@ -125,7 +125,7 @@ const SeatInvitationsPanel = ({
       if (input.value.trim() === '') continue
 
       try {
-        await assignSeat.mutateAsync({ email: input.value })
+        await assignSeat.mutateAsync({ email: input.value.trim() })
         setEmailInputs((prev) =>
           prev.map((i) => (i.id === input.id ? { ...i, sent: true } : i)),
         )

@@ -169,7 +169,7 @@ return (
 | `sessionToken` | `string`                            | —       | **Required.** Session token from `POST /v1/customer-sessions`.                             |
 | `theme`        | `'light' \| 'dark'`                 | `light` | Colour scheme.                                                                             |
 | `setAsDefault` | `boolean`                           | `true`  | Whether the new card should become the customer's default payment method.                  |
-| `locale`       | `string`                            | `'en'`  | BCP47 locale (e.g. `'en'`, `'fr-FR'`). Unsupported locales fall back to English.          |
+| `locale`       | `string`                            | `'en'`  | BCP47 locale (e.g. `'en'`, `'fr-FR'`). Unsupported locales fall back to English.           |
 | `onLoaded`     | `() => void`                        | —       | Fires once when the iframe finishes loading and the form becomes interactive.              |
 | `onConfirmed`  | `() => void`                        | —       | Fires when the customer submits and Stripe processing starts.                              |
 | `onSuccess`    | `(paymentMethodId: string) => void` | —       | Fires after the card has been attached to the customer.                                    |

@@ -3,6 +3,7 @@ import typing
 import uuid
 from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 
+import sentry_sdk
 import stripe as stripe_lib
 import structlog
 from pydantic import UUID4
@@ -1357,10 +1358,9 @@ class CheckoutService:
                 immediate_claim=True,
             )
         except Exception as e:
-            log.exception(
-                "Failed to auto-claim single seat after checkout",
-                checkout_id=str(checkout.id),
-                error=str(e),
+            sentry_sdk.capture_exception(
+                e,
+                extras={"checkout_id": str(checkout.id)},
             )
 
     async def handle_failure(

@@ -103,6 +103,7 @@ export default {
         updateFailed: 'Impossibile aggiornare le postazioni',
       },
       inclTax: 'IVA (inclusa)',
+      orderSummary: 'Riepilogo ordine',
     },
     trial: {
       ends: 'La prova termina il {endDate}',

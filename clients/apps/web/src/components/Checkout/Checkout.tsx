@@ -347,7 +347,7 @@ const Checkout = ({
       <div className="md:flex md:justify-end">
         <div className="mx-auto flex w-full max-w-[480px] flex-col gap-y-6 px-4 pt-6 pb-0 md:mx-0 md:py-12 md:pr-12 md:pl-4">
           {orgHeader}
-          <div className="flex flex-col gap-y-8 md:sticky md:top-8">
+          <div className="flex flex-col md:sticky md:top-8 md:gap-y-8">
             {hasProductCheckout(checkout) && (
               <>
                 {mobileLayout === 'collapsed-bar' && (
@@ -361,64 +361,61 @@ const Checkout = ({
                 )}
                 <div
                   className={twMerge(
-                    'flex flex-col gap-y-2',
-                    mobileCollapses && !mobileSummaryOpen && 'hidden md:flex',
-                  )}
-                >
-                  <div className="flex flex-row items-center gap-x-3">
-                    {hasMedia && checkout.product.medias[0]?.public_url && (
-                      <Dialog>
-                        <DialogTrigger
-                          asChild
-                          disabled={checkout.product.medias.length <= 1}
-                        >
-                          <button
-                            className={`relative h-10 w-10 shrink-0 ${checkout.product.medias.length > 1 ? 'cursor-pointer' : 'cursor-default'}`}
-                          >
-                            <UploadImage
-                              src={checkout.product.medias[0].public_url}
-                              approximateWidth={40}
-                              alt={checkout.product.name}
-                              className="h-10 w-10 rounded-lg object-cover"
-                            />
-                            {checkout.product.medias.length > 1 && (
-                              <span className="absolute right-0 bottom-0 rounded bg-black/60 px-1 py-0.5 text-[10px] leading-none font-medium text-white">
-                                +{checkout.product.medias.length - 1}
-                              </span>
-                            )}
-                          </button>
-                        </DialogTrigger>
-                        <DialogContent className="dark:bg-polar-900 max-w-2xl">
-                          <DialogHeader>
-                            <DialogTitle>{checkout.product.name}</DialogTitle>
-                            <DialogDescription className="sr-only">
-                              Product images
-                            </DialogDescription>
-                          </DialogHeader>
-                          <Slideshow
-                            images={checkout.product.medias.map((m) =>
-                              getResizedImage(m.public_url, 672),
-                            )}
-                          />
-                        </DialogContent>
-                      </Dialog>
-                    )}
-                    <div className="flex min-w-0 flex-col gap-y-1">
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {checkout.product.name}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="text-3xl font-medium">
-                    <CheckoutHeroPrice checkout={checkout} locale={locale} />
-                  </span>
-                </div>
-                <div
-                  className={twMerge(
                     'flex flex-col gap-y-8',
                     mobileCollapses && !mobileSummaryOpen && 'hidden md:flex',
+                    mobileCollapses &&
+                      'dark:border-polar-700 dark:bg-polar-800 -mx-4 border-b border-gray-200 bg-gray-50 px-4 pt-6 pb-6 md:mx-0 md:border-0 md:bg-transparent md:p-0 md:dark:bg-transparent',
                   )}
                 >
+                  <div className="flex flex-col gap-y-2">
+                    <div className="flex flex-row items-center gap-x-3">
+                      {hasMedia && checkout.product.medias[0]?.public_url && (
+                        <Dialog>
+                          <DialogTrigger
+                            asChild
+                            disabled={checkout.product.medias.length <= 1}
+                          >
+                            <button
+                              className={`relative h-10 w-10 shrink-0 ${checkout.product.medias.length > 1 ? 'cursor-pointer' : 'cursor-default'}`}
+                            >
+                              <UploadImage
+                                src={checkout.product.medias[0].public_url}
+                                approximateWidth={40}
+                                alt={checkout.product.name}
+                                className="h-10 w-10 rounded-lg object-cover"
+                              />
+                              {checkout.product.medias.length > 1 && (
+                                <span className="absolute right-0 bottom-0 rounded bg-black/60 px-1 py-0.5 text-[10px] leading-none font-medium text-white">
+                                  +{checkout.product.medias.length - 1}
+                                </span>
+                              )}
+                            </button>
+                          </DialogTrigger>
+                          <DialogContent className="dark:bg-polar-900 max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>{checkout.product.name}</DialogTitle>
+                              <DialogDescription className="sr-only">
+                                Product images
+                              </DialogDescription>
+                            </DialogHeader>
+                            <Slideshow
+                              images={checkout.product.medias.map((m) =>
+                                getResizedImage(m.public_url, 672),
+                              )}
+                            />
+                          </DialogContent>
+                        </Dialog>
+                      )}
+                      <div className="flex min-w-0 flex-col gap-y-1">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {checkout.product.name}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-3xl font-medium">
+                      <CheckoutHeroPrice checkout={checkout} locale={locale} />
+                    </span>
+                  </div>
                   <CheckoutProductSwitcher
                     checkout={checkout}
                     update={

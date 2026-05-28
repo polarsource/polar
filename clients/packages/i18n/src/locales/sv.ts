@@ -103,6 +103,7 @@ export default {
         updateFailed: 'Det gick inte att uppdatera platserna',
       },
       inclTax: 'Moms (ingår)',
+      orderSummary: 'Ordersammanfattning',
     },
     trial: {
       ends: 'Testperioden slutar {endDate}',

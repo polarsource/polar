@@ -103,6 +103,7 @@ export default {
         updateFailed: '좌석 수를 업데이트하지 못했습니다',
       },
       inclTax: '부가세 (포함)',
+      orderSummary: '주문 요약',
     },
     trial: {
       ends: '체험 종료일: {endDate}',

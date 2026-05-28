@@ -103,6 +103,7 @@ export default {
         updateFailed: 'Plätze konnten nicht aktualisiert werden',
       },
       inclTax: 'MwSt. (inklusive)',
+      orderSummary: 'Bestellübersicht',
     },
     trial: {
       ends: 'Testphase endet am {endDate}',

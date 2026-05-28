@@ -103,6 +103,7 @@ export default {
         updateFailed: 'Échec de la mise à jour des postes',
       },
       inclTax: 'TVA (incluse)',
+      orderSummary: 'Récapitulatif de la commande',
     },
     trial: {
       ends: "L'essai se termine le {endDate}",

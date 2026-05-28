@@ -29,13 +29,16 @@ export const MobileOrderSummaryBar = ({
       type="button"
       onClick={onToggle}
       aria-expanded={isOpen}
-      className="dark:border-polar-700 dark:bg-polar-800 -mx-4 flex items-center justify-between gap-x-4 border-y border-gray-200 bg-gray-50 px-4 py-4 text-sm md:hidden"
+      className={twMerge(
+        'dark:border-polar-700 dark:bg-polar-800 -mx-4 flex items-center justify-between gap-x-4 border-y border-gray-200 bg-gray-50 px-4 py-4 text-sm md:hidden',
+      )}
     >
       <span className="flex items-center gap-x-2 font-medium whitespace-nowrap text-gray-900 dark:text-white">
         {t('checkout.pricing.orderSummary')}
         <ChevronDown
           size={16}
-          className={twMerge('transition-transform', isOpen && 'rotate-180')}
+          className="transition-transform duration-200"
+          style={{ transform: `rotate(${isOpen ? 180 : 0}deg)` }}
         />
       </span>
       <span className="flex flex-col items-end text-right whitespace-nowrap text-gray-900 dark:text-white">

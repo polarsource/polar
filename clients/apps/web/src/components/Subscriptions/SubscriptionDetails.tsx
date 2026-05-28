@@ -12,6 +12,7 @@ import { useContext } from 'react'
 import { DetailRow } from '../Shared/DetailRow'
 import { ScheduledUpdateSection } from './ScheduledUpdateSection'
 import { SubscriptionStatus } from './SubscriptionStatus'
+import { twMerge } from 'tailwind-merge'
 
 const formatRecurringSchedule = (
   interval: schemas['SubscriptionRecurringInterval'],
@@ -138,10 +139,18 @@ const SubscriptionDetails = ({ subscription }: SubscriptionDetailsProps) => {
           value={
             subscription.discount ? (
               <div className="flex flex-row gap-x-2">
-                <span className="font-mono capitalize">
-                  {subscription.discount.code}
-                </span>
-                <span className="text-polar-500 dark:text-polar-500">
+                {subscription.discount.code ? (
+                  <span className="font-mono capitalize">
+                    {subscription.discount.code}
+                  </span>
+                ) : null}
+                <span
+                  className={twMerge(
+                    subscription.discount.code
+                      ? 'text-polar-500 dark:text-polar-500'
+                      : undefined,
+                  )}
+                >
                   {subscription.discount.name}
                 </span>
               </div>
@@ -181,7 +190,7 @@ const SubscriptionDetails = ({ subscription }: SubscriptionDetailsProps) => {
       )}
 
       {cancellationDate && (
-        <div className="flex flex-col gap-y-4">
+        <div className="mt-2 flex flex-col gap-y-4">
           <h3 className="text-lg">Cancellation Details</h3>
           <div className="flex flex-col gap-y-2">
             <DetailRow

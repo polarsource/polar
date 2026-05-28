@@ -139,9 +139,11 @@ export const CustomerContextView = ({
           <div className="flex flex-row items-center justify-between gap-2">
             <h3 className="text-lg">Metadata</h3>
           </div>
-          {Object.entries(customer.metadata).map(([key, value]) => (
-            <DetailRow key={key} label={key} value={value} />
-          ))}
+          <div className="flex flex-col">
+            {Object.entries(customer.metadata).map(([key, value]) => (
+              <DetailRow key={key} label={key} value={value} />
+            ))}
+          </div>
         </ContextCard>
       )}
     </div>

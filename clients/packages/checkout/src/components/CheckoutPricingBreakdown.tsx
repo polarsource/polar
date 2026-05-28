@@ -212,8 +212,17 @@ const CheckoutPricingBreakdown = ({
           {checkout.discount && (
             <>
               <DetailRow
-                title={`${checkout.discount.name}${checkout.discount.type === 'percentage' ? ` (${getDiscountDisplay(checkout.discount, locale)})` : ''}`}
-                subtitle={discountEndLabel || undefined}
+                title={checkout.discount.name}
+                subtitle={
+                  [
+                    checkout.discount.type === 'percentage'
+                      ? `(${getDiscountDisplay(checkout.discount, locale)})`
+                      : null,
+                    discountEndLabel,
+                  ]
+                    .filter(Boolean)
+                    .join(' ') || undefined
+                }
                 className="text-gray-600"
               >
                 {formatCurrency('standard', locale)(

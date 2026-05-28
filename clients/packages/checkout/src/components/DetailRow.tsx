@@ -22,14 +22,14 @@ const DetailRow = ({
         className,
       )}
     >
-      <span className="min-w-0 truncate">
-        {title}
+      <div className="flex min-w-0 flex-row items-baseline gap-x-1">
+        <span className="min-w-0 truncate">{title}</span>
         {subtitle && (
-          <span className="dark:text-polar-500 ml-1 text-gray-400">
+          <span className="dark:text-polar-500 shrink-0 text-gray-400">
             {subtitle}
           </span>
         )}
-      </span>
+      </div>
       <span className="shrink-0">{children}</span>
     </div>
   )

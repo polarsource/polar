@@ -232,9 +232,7 @@ export const OmniSearch = ({
         return (
           <Result
             title={result.name || result.email || 'Customer'}
-            description={
-              result.name ? (result.email ?? undefined) : undefined
-            }
+            description={result.name ? (result.email ?? undefined) : undefined}
           />
         )
       case 'order':

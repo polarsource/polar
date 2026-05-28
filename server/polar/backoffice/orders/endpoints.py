@@ -115,7 +115,9 @@ class ReceiptPDFItem(description_list.DescriptionListItem[Order]):
 @contextlib.contextmanager
 def order_status_badge(status: OrderStatus) -> Generator[None]:
     with tag.div(classes="badge"):
-        if status == OrderStatus.paid:
+        if status == OrderStatus.draft:
+            classes("badge-ghost")
+        elif status == OrderStatus.paid:
             classes("badge-success")
         elif status == OrderStatus.pending:
             classes("badge-warning")

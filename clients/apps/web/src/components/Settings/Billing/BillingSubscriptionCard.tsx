@@ -49,6 +49,35 @@ const formatFee = (fee: schemas['OrganizationPlanFee']) => {
   return `${percent}% + $${fixed}`
 }
 
+type SubscriptionDiscount = NonNullable<
+  schemas['OrganizationSubscription']['discount']
+>
+
+const formatDiscountAmount = (discount: SubscriptionDiscount) => {
+  if (discount.type === 'percentage' && discount.basis_points != null) {
+    const pct = discount.basis_points / 100
+    return `${pct % 1 === 0 ? pct.toFixed(0) : pct.toFixed(2)}% off`
+  }
+  if (discount.type === 'fixed' && discount.amounts) {
+    const entry = Object.entries(discount.amounts)[0]
+    if (entry) {
+      const [currency, amount] = entry
+      return `${formatPrice(amount, currency)} off`
+    }
+  }
+  return discount.name
+}
+
+const formatDiscountDuration = (discount: SubscriptionDiscount) => {
+  if (discount.duration === 'forever') return 'Applies forever'
+  if (discount.duration === 'once') return 'Applies to the first invoice only'
+  if (discount.duration === 'repeating' && discount.duration_in_months) {
+    const months = discount.duration_in_months
+    return `Applies for ${months} month${months === 1 ? '' : 's'}`
+  }
+  return ''
+}
+
 export const BillingSubscriptionCard = ({
   subscription,
   plans,
@@ -85,7 +114,7 @@ export const BillingSubscriptionCard = ({
         alignItems={{ md: 'start' }}
       >
         <Box display="flex" flexDirection="column" rowGap="s">
-          <Box display="flex" alignItems="center" columnGap="s">
+          <Box display="flex" alignItems="center" columnGap="m">
             <Text variant="heading-xxs" as="h3">
               {plan.name}
             </Text>
@@ -151,6 +180,36 @@ export const BillingSubscriptionCard = ({
               <FormattedDateTime datetime={subscription.current_period_end} />
             </Detail>
           )}
+        </Box>
+      )}
+
+      {subscription.discount && (
+        <Box
+          display="flex"
+          flexDirection="column"
+          rowGap="s"
+          borderRadius="m"
+          alignItems="start"
+          backgroundColor="background-card"
+          padding="l"
+        >
+          <Box display="flex" alignItems="center" columnGap="l">
+            <Text variant="body" as="h3">
+              {subscription.discount.name}
+            </Text>
+            <Pill color="green">
+              {formatDiscountAmount(subscription.discount)}
+            </Pill>
+          </Box>
+          <Text color="muted">
+            {formatDiscountDuration(subscription.discount)}
+            {subscription.discount.ends_at && (
+              <>
+                {' until '}
+                <FormattedDateTime datetime={subscription.discount.ends_at} />
+              </>
+            )}
+          </Text>
         </Box>
       )}
 

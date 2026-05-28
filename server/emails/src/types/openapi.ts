@@ -2025,6 +2025,25 @@ export interface components {
       /** Url */
       url: string
     }
+    /** PolarSelfStartupProgramWelcomeEmail */
+    PolarSelfStartupProgramWelcomeEmail: {
+      /**
+       * Template
+       * @default polar_self_startup_program_welcome
+       * @constant
+       */
+      template: 'polar_self_startup_program_welcome'
+      props: components['schemas']['PolarSelfStartupProgramWelcomeProps']
+    }
+    /** PolarSelfStartupProgramWelcomeProps */
+    PolarSelfStartupProgramWelcomeProps: {
+      /** Email */
+      email: string
+      /** Organization Name */
+      organization_name: string
+      /** Billing Url */
+      billing_url: string
+    }
     /** PolarSelfSubscriptionConfirmationEmail */
     PolarSelfSubscriptionConfirmationEmail: {
       /**

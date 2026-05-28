@@ -24653,6 +24653,61 @@ export interface components {
       pending_change?:
         | components['schemas']['OrganizationSubscriptionPendingChange']
         | null
+      discount?:
+        | components['schemas']['OrganizationSubscriptionDiscount']
+        | null
+      /**
+       * Startup Program Status
+       * @description Polar Startup Program status for this organization. Derived from the organization's Startup Program discount: 'invited' when the discount exists and hasn't been redeemed, 'consumed' once it has. Null when the feature is disabled or the organization hasn't been invited.
+       */
+      startup_program_status?: string | null
+      /**
+       * Startup Program Scale Product Id
+       * @description Polar product id of the Scale plan, against which the Startup Program discount applies. Null when the feature is disabled.
+       */
+      startup_program_scale_product_id?: string | null
+    }
+    /**
+     * OrganizationSubscriptionDiscount
+     * @description A discount currently applied to the organization's subscription.
+     */
+    OrganizationSubscriptionDiscount: {
+      /** Discount Id */
+      discount_id: string
+      /** Name */
+      name: string
+      /**
+       * Type
+       * @description Discount type: 'percentage' or 'fixed'.
+       */
+      type: string
+      /**
+       * Duration
+       * @description Discount duration: 'once', 'forever', or 'repeating'.
+       */
+      duration: string
+      /**
+       * Duration In Months
+       * @description Number of months the discount repeats; only set for 'repeating'.
+       */
+      duration_in_months?: number | null
+      /**
+       * Basis Points
+       * @description Percentage in basis points (10000 = 100%); only set for 'percentage'.
+       */
+      basis_points?: number | null
+      /**
+       * Amounts
+       * @description Per-currency fixed amount in cents; only set for 'fixed'.
+       */
+      amounts?: {
+        [key: string]: number
+      } | null
+      /**
+       * Ends At
+       * @description Estimated date the discount stops applying. Computed for 'repeating' discounts from the subscription's started_at + duration_in_months; null for 'once' and 'forever' durations.
+       */
+      ends_at?: string | null
     }
     /** OrganizationSubscriptionPendingChange */
     OrganizationSubscriptionPendingChange: {

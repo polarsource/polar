@@ -507,6 +507,7 @@ import { Button, Grid } from '@polar-sh/orbit'
 import { Avatar, SegmentedControl } from '@polar-sh/orbit'
 import { Alert } from '@polar-sh/orbit' // tinted callout (info/warning/danger/success)
 import { ButtonGroup } from '@polar-sh/orbit' // one or two primary/ghost actions
+import { Status, Input, DataTable, Truncated } from '@polar-sh/orbit'
 ```
 
 `Alert` takes a `variant` (`info` | `warning` | `danger` | `success`, default `info`), a
@@ -517,7 +518,8 @@ takes an `actions` tuple of at most two `{ text, onClick, loading?, disabled? }`
 renders as the primary button, the second as a ghost button.
 
 Prefer `Box` when you need full control; prefer the named primitive when one exists for
-your use case (Text for any text node, Button for actions, Grid for grid layouts).
+your use case (Card for card chrome, Text for any text node, Button for actions, Grid for
+grid layouts, Truncated for overflow text with an auto-appearing tooltip).
 
 ## Legacy Tailwind (deprecated)
 

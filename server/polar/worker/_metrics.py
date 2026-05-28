@@ -8,6 +8,10 @@ from polar.observability import (
     TASK_EXECUTIONS,
     TASK_RETRIES,
 )
+from polar.observability.memory_profile import (
+    start_memory_profiler,
+    stop_memory_profiler,
+)
 from polar.observability.remote_write import start_remote_write_pusher
 
 
@@ -24,7 +28,13 @@ class PrometheusMiddleware(dramatiq.Middleware):
         # Clearing here would break Counter metrics because they eagerly create .db
         # files during import (before this hook runs), and clearing would delete them.
         start_remote_write_pusher()
+        start_memory_profiler()
         # See commit d37c274 for Prometheus GC metrics
+
+    def after_worker_shutdown(
+        self, broker: dramatiq.Broker, worker: dramatiq.Worker
+    ) -> None:
+        stop_memory_profiler()
 
     def before_process_message(
         self, broker: dramatiq.Broker, message: dramatiq.MessageProxy

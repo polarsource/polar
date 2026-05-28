@@ -486,5 +486,5 @@ resource "render_env_group_link" "polar_self" {
 resource "render_env_group_link" "memory_profile" {
   count        = var.memory_profile_config != null ? 1 : 0
   env_group_id = render_env_group.memory_profile[0].id
-  service_ids  = [render_web_service.api.id]
+  service_ids  = concat([render_web_service.api.id], local.worker_ids)
 }

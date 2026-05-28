@@ -2644,7 +2644,7 @@ class TestHandlePayment:
         product: Product,
         organization: Organization,
     ) -> None:
-        # Create a customer with a billing address so that _calculate_subscription_order_tax
+        # Create a customer with a billing address so that _calculate_tax
         # will actually invoke tax_calculation_service.calculate and produce a non-zero amount.
         # The mocked calculate returns polar_round(amount * 0.20), so for net_amount=1000 → 200.
         customer_with_address = await create_customer(

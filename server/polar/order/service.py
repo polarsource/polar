@@ -506,7 +506,7 @@ class OrderService:
                 tax_calculation_processor_id,
                 tax_amount,
                 tax_breakdown,
-            ) = await self._calculate_subscription_order_tax(
+            ) = await self._calculate_tax(
                 reference=str(order.id),
                 taxable_amount=taxable_amount,
                 tax_behavior_option=(
@@ -1025,7 +1025,7 @@ class OrderService:
             tax_calculation_processor_id,
             tax_amount,
             tax_breakdown,
-        ) = await self._calculate_subscription_order_tax(
+        ) = await self._calculate_tax(
             reference=str(order_id),
             taxable_amount=subtotal_amount - discount_amount,
             tax_behavior_option=organization.default_tax_behavior,
@@ -1284,7 +1284,7 @@ class OrderService:
                 tax_calculation_processor_id,
                 tax_amount,
                 tax_breakdown,
-            ) = await self._calculate_subscription_order_tax(
+            ) = await self._calculate_tax(
                 reference=str(order_id),
                 taxable_amount=subtotal_amount - discount_amount,
                 tax_behavior_option=tax_behavior_option,
@@ -2044,7 +2044,7 @@ class OrderService:
                     tax_calculation_processor_id,
                     tax_amount,
                     tax_breakdown,
-                ) = await self._calculate_subscription_order_tax(
+                ) = await self._calculate_tax(
                     reference=str(order.id),
                     taxable_amount=order.net_amount,
                     currency=order.currency,
@@ -2856,7 +2856,7 @@ class OrderService:
 
         return order
 
-    async def _calculate_subscription_order_tax(
+    async def _calculate_tax(
         self,
         *,
         reference: str,

@@ -236,9 +236,8 @@ async def create(
     responses={404: OrderNotFound},
 )
 async def update(
-    id: OrderID,
     order_update: OrderUpdate,
-    auth_subject: auth.OrdersWrite,
+    authorized: auth.OrderSalesManage,
     session: AsyncSession = Depends(get_db_session),
 ) -> Order:
     """
@@ -248,16 +247,7 @@ async def update(
     (seats, metadata, custom field data) can only be updated while the order
     is in `draft` status.
     """
-    order = await order_service.get(session, auth_subject, id)
-
-    if order is None:
-        raise ResourceNotFound()
-
-    await assert_resource_permission(
-        session, auth_subject, order, OrganizationPermission.sales_manage
-    )
-
-    return await order_service.update(session, order, order_update)
+    return await order_service.update(session, authorized.order, order_update)
 
 
 @router.post(
@@ -267,9 +257,8 @@ async def update(
     responses={404: OrderNotFound},
 )
 async def finalize(
-    id: OrderID,
     finalize_payload: OrderFinalize,
-    auth_subject: auth.OrdersWrite,
+    authorized: auth.OrderSalesManage,
     session: AsyncSession = Depends(get_db_session),
 ) -> Order:
     """
@@ -281,18 +270,9 @@ async def finalize(
 
     The request fails with 412 if the order is not in `draft` status.
     """
-    order = await order_service.get(session, auth_subject, id)
-
-    if order is None:
-        raise ResourceNotFound()
-
-    await assert_resource_permission(
-        session, auth_subject, order, OrganizationPermission.sales_manage
-    )
-
     return await order_service.finalize_order(
         session,
-        order,
+        authorized.order,
         payment_method_id=finalize_payload.payment_method_id,
     )
 

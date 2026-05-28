@@ -234,7 +234,7 @@ export default {
       processingDescription: 'Vänta medan vi bekräftar din betalning.',
       failedDescription: 'Försök igen eller kontakta supporten.',
       successTitle: 'Tack för din order!',
-      successDescription: 'Nu har du tillgång till {product}.',
+      successDescription: 'Du har nu tillgång till {product}.',
     },
     loading: {
       processingOrder: 'Behandlar beställning...',

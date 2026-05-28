@@ -77,7 +77,8 @@ async def list(
     active: bool | None = Query(
         None,
         description=(
-            "Filter by active customers, i.e. customers with at least one order."
+            "Filter by active customers, i.e. customers with at least one "
+            "active or past_due subscription."
         ),
     ),
     session: AsyncReadSession = Depends(get_db_read_session),

@@ -16,7 +16,8 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import Customer, Order
+from polar.models import Customer, Subscription
+from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.worker import enqueue_job
 
@@ -291,10 +292,20 @@ class CustomerRepository(
         """
         Return a clause to filter customers by activity.
 
-        An active customer is one with at least one order.
+        An active customer is one with at least one active or past_due
+        subscription.
         """
-        order_exists = select(Order.id).where(Order.customer_id == Customer.id).exists()
-        return order_exists if active else ~order_exists
+        subscription_exists = (
+            select(Subscription.id)
+            .where(
+                Subscription.customer_id == Customer.id,
+                Subscription.status.in_(
+                    (SubscriptionStatus.active, SubscriptionStatus.past_due)
+                ),
+            )
+            .exists()
+        )
+        return subscription_exists if active else ~subscription_exists
 
     async def increment_invoice_next_number(self, customer_id: UUID) -> int:
         """

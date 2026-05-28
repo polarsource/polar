@@ -40186,7 +40186,7 @@ export interface operations {
         email?: string | null
         /** @description Filter by name, email, or external ID. */
         query?: string | null
-        /** @description Filter by active customers, i.e. customers with at least one order. */
+        /** @description Filter by active customers, i.e. customers with at least one active or past_due subscription. */
         active?: boolean | null
         /** @description Page number, defaults to 1. */
         page?: number

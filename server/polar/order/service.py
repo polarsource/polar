@@ -1,5 +1,5 @@
 import uuid
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator, Iterable, Sequence
 from contextlib import asynccontextmanager
 from enum import StrEnum
 from typing import Any, Literal
@@ -70,6 +70,7 @@ from polar.models import (
     Payment,
     PaymentMethod,
     Product,
+    ProductPrice,
     Subscription,
     Transaction,
     User,
@@ -692,6 +693,69 @@ class OrderService:
             session, checkout, billing_reason, payment, subscription
         )
 
+    def _build_static_order_items(
+        self,
+        prices: Iterable[ProductPrice],
+        *,
+        amount: int | None,
+        seats: int | None,
+    ) -> Sequence[OrderItem]:
+        """
+        Build order line items for the static prices of a product.
+
+        Metered prices are skipped (they're billed through usage). Custom
+        (pay-what-you-want) prices use `amount`; seat-based prices use `seats`.
+        Callers are responsible for validating that `amount` / `seats` are
+        present when the product requires them.
+        """
+        items: list[OrderItem] = []
+        for price in prices:
+            if not is_static_price(price):
+                continue
+            if is_custom_price(price):
+                items.append(OrderItem.from_price(price, 0, amount))
+            else:
+                items.append(OrderItem.from_price(price, 0, seats=seats))
+        return items
+
+    def _validate_purchase_pricing(
+        self, prices: Iterable[ProductPrice], payload: OrderCreate
+    ) -> None:
+        """
+        Validate that the off-session purchase payload provides the values the
+        product's static prices require, returning friendly 4xx errors before
+        `_build_static_order_items` would otherwise hit an assertion.
+        """
+        for price in prices:
+            if is_custom_price(price) and payload.amount is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "amount"),
+                            "msg": (
+                                "Amount is required for "
+                                "pay-what-you-want / custom-priced products."
+                            ),
+                            "input": None,
+                        }
+                    ]
+                )
+            if is_seat_price(price) and (payload.seats is None or payload.seats <= 0):
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "seats"),
+                            "msg": (
+                                "Positive seats count is required for "
+                                "seat-based products."
+                            ),
+                            "input": payload.seats,
+                        }
+                    ]
+                )
+
     async def _create_order_from_checkout(
         self,
         session: AsyncSession,
@@ -709,15 +773,11 @@ class OrderService:
             currency_prices = PriceSet.from_prices(
                 checkout.prices[checkout.product_id], checkout.currency
             )
-            for price in currency_prices:
-                # Don't create an item for metered prices
-                if not is_static_price(price):
-                    continue
-                if is_custom_price(price):
-                    item = OrderItem.from_price(price, 0, checkout.amount)
-                else:
-                    item = OrderItem.from_price(price, 0, seats=checkout.seats)
-                items.append(item)
+            items = list(
+                self._build_static_order_items(
+                    currency_prices, amount=checkout.amount, seats=checkout.seats
+                )
+            )
 
         discount_amount = checkout.discount_amount
 
@@ -887,45 +947,12 @@ class OrderService:
                 ]
             ) from e
 
-        items: list[OrderItem] = []
-        for price in currency_prices:
-            if not is_static_price(price):
-                continue
-            if is_custom_price(price):
-                if payload.amount is None:
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", "amount"),
-                                "msg": (
-                                    "Amount is required for "
-                                    "pay-what-you-want / custom-priced products."
-                                ),
-                                "input": None,
-                            }
-                        ]
-                    )
-                items.append(OrderItem.from_price(price, 0, payload.amount))
-            elif is_seat_price(price):
-                if payload.seats is None or payload.seats <= 0:
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", "seats"),
-                                "msg": (
-                                    "Positive seats count is required for "
-                                    "seat-based products."
-                                ),
-                                "input": payload.seats,
-                            }
-                        ]
-                    )
-                items.append(OrderItem.from_price(price, 0, seats=payload.seats))
-            else:
-                items.append(OrderItem.from_price(price, 0))
-
+        self._validate_purchase_pricing(currency_prices, payload)
+        items = list(
+            self._build_static_order_items(
+                currency_prices, amount=payload.amount, seats=payload.seats
+            )
+        )
         if not items:
             raise PolarRequestValidationError(
                 [
@@ -1022,22 +1049,9 @@ class OrderService:
             raise OffSessionChargesNotEnabled(organization.id)
 
         customer = order.customer
-
-        payment_method_repository = PaymentMethodRepository.from_session(session)
-        payment_method: PaymentMethod | None
-        if payment_method_id is not None:
-            payment_method = await payment_method_repository.get_by_id(
-                payment_method_id,
-                options=payment_method_repository.get_eager_options(),
-            )
-            if payment_method is None or payment_method.customer_id != customer.id:
-                raise PaymentFailed(PaymentFailedReason.missing_payment_method)
-        else:
-            payment_method = await payment_method_service.get_customer_payment_method(
-                session, customer
-            )
-            if payment_method is None:
-                raise PaymentFailed(PaymentFailedReason.missing_payment_method)
+        payment_method = await self._resolve_payment_method(
+            session, customer, payment_method_id
+        )
 
         invoice_number = await organization_service.get_next_invoice_number(
             session, organization, customer
@@ -1060,17 +1074,7 @@ class OrderService:
                 session, order, payment_method, payment_mode=PaymentMode.sync
             )
         except (PaymentFailed, PaymentActionRequired):
-            # flush=True commits the revert even though the request is
-            # about to bubble up an exception, so a subsequent GET reflects
-            # the rolled-back state.
-            await repository.update(
-                order,
-                update_dict={
-                    "status": OrderStatus.draft,
-                    "invoice_number": None,
-                },
-                flush=True,
-            )
+            await self._revert_to_draft(session, order)
             raise
 
         # trigger_payment short-circuits (returns None) in a few cases:
@@ -1082,14 +1086,7 @@ class OrderService:
 
         if payment_intent is None:
             if order.status == OrderStatus.pending:
-                await repository.update(
-                    order,
-                    update_dict={
-                        "status": OrderStatus.draft,
-                        "invoice_number": None,
-                    },
-                    flush=True,
-                )
+                await self._revert_to_draft(session, order)
                 raise PaymentFailed(PaymentFailedReason.missing_payment_method)
             return order
 
@@ -1101,6 +1098,47 @@ class OrderService:
         await stripe_payment.apply_successful_payment_intent(session, payment_intent)
         await session.refresh(order)
         return order
+
+    async def _resolve_payment_method(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        payment_method_id: uuid.UUID | None,
+    ) -> PaymentMethod:
+        """
+        Resolve the payment method to charge for an off-session order: the
+        explicitly requested one (which must belong to the customer), else the
+        customer's default. Raises PaymentFailed if none is usable.
+        """
+        repository = PaymentMethodRepository.from_session(session)
+        if payment_method_id is not None:
+            payment_method = await repository.get_by_id(
+                payment_method_id, options=repository.get_eager_options()
+            )
+            if payment_method is None or payment_method.customer_id != customer.id:
+                raise PaymentFailed(PaymentFailedReason.missing_payment_method)
+            return payment_method
+
+        payment_method = await payment_method_service.get_customer_payment_method(
+            session, customer
+        )
+        if payment_method is None:
+            raise PaymentFailed(PaymentFailedReason.missing_payment_method)
+        return payment_method
+
+    async def _revert_to_draft(self, session: AsyncSession, order: Order) -> Order:
+        """
+        Roll a failed finalize back to a draft, releasing the invoice number so
+        the merchant can fix the situation and retry against the same order ID.
+        flush=True so the revert is persisted even as the request bubbles up
+        the failure exception.
+        """
+        repository = OrderRepository.from_session(session)
+        return await repository.update(
+            order,
+            update_dict={"status": OrderStatus.draft, "invoice_number": None},
+            flush=True,
+        )
 
     async def create_subscription_order(
         self,

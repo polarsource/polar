@@ -353,7 +353,13 @@ class Settings(BaseSettings):
 
     @property
     def STARTUP_PROGRAM_ENABLED(self) -> bool:
-        return bool(self.POLAR_ORGANIZATION_ID and self.POLAR_SCALE_PRODUCT_ID)
+        # All three are required: org_id to scope reads, scale_product_id to
+        # attach the discount to, access_token so the SDK calls can auth.
+        return bool(
+            self.POLAR_ORGANIZATION_ID
+            and self.POLAR_SCALE_PRODUCT_ID
+            and self.POLAR_ACCESS_TOKEN
+        )
 
     # Customer portal URL overrides per organization
     CUSTOMER_PORTAL_URL_OVERRIDES: dict[str, str] = {}

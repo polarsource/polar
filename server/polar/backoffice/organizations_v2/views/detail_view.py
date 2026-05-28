@@ -10,7 +10,7 @@ from fastapi import Request
 from tagflow import classes, tag, text
 
 from polar.config import settings
-from polar.models import Customer, Organization, User
+from polar.models import Organization, User
 from polar.models.organization import OrganizationStatus, SnoozeType
 from polar.organization_review.schemas import ReviewVerdict
 from polar.startup_program.service import StartupProgramStatus
@@ -44,18 +44,15 @@ class OrganizationDetailView:
         ai_verdict: str = "",
         owner_email: str | None = None,
         impersonate_user: User | None = None,
-        polar_customer: Customer | None = None,
         startup_program_status: str | None = None,
     ):
         self.org = organization
         self.ai_verdict = ai_verdict
         self.owner_email = owner_email
         self.impersonate_user = impersonate_user
-        # The Polar-for-Polar customer (in Polar's own org, external_id=org.id).
-        # Used to surface a "no Polar customer yet" hint in the Startup Program
-        # card; the actual status is derived server-side from the customer's
-        # dedicated discount and passed in via ``startup_program_status``.
-        self.polar_customer = polar_customer
+        # Startup Program status string is derived via the Polar API and
+        # populated by the endpoint; ``None`` means "feature disabled" OR
+        # "not invited". The card collapses both into the same rendering.
         self.startup_program_status = startup_program_status
 
     @contextlib.contextmanager
@@ -135,22 +132,18 @@ class OrganizationDetailView:
                 text("Create Plain Ticket")
 
     def _render_startup_program_card(self, request: Request) -> None:
-        """Show Startup Program state and a Mark invited action.
+        """Show Startup Program state and an Invite action.
 
-        Status is derived server-side from the customer's dedicated discount
-        (none -> not in the program, redeemed -> consumed, else invited) and
-        passed in via ``startup_program_status``.
+        Status comes from the Polar API (customer + discount), pre-computed
+        by the endpoint and passed in as ``startup_program_status``. The
+        "no Polar customer" case shows up as ``None`` (same as "not invited")
+        — clicking Invite surfaces the specific error via toast.
         """
         if not settings.STARTUP_PROGRAM_ENABLED:
             return
         with card(bordered=True, classes="mb-4"):
             with tag.h3(classes="font-bold text-sm uppercase tracking-wide mb-3"):
                 text("Startup Program")
-
-            if self.polar_customer is None:
-                with tag.p(classes="text-sm text-base-content/60"):
-                    text("Organization has no Polar customer yet.")
-                return
 
             status_value = self.startup_program_status
             with tag.div(classes="flex items-center gap-2 mb-3 text-sm"):
@@ -187,7 +180,28 @@ class OrganizationDetailView:
                             "single use) will be created."
                         ),
                     ):
-                        text("Mark invited")
+                        text("Invite")
+            elif status_value == StartupProgramStatus.invited:
+                # Discount is still unused — safe to revoke. Once consumed
+                # the discount is part of billing history and can't be removed.
+                with tag.div(classes="w-full"):
+                    with button(
+                        variant="secondary",
+                        size="sm",
+                        outline=True,
+                        hx_post=str(
+                            request.url_for(
+                                "organizations:startup_program_uninvite",
+                                organization_id=self.org.id,
+                            )
+                        ),
+                        hx_confirm=(
+                            "Remove this organization's unused Startup "
+                            "Program discount? They will no longer be able "
+                            "to claim it."
+                        ),
+                    ):
+                        text("Uninvite")
 
     @contextlib.contextmanager
     def right_sidebar(self, request: Request) -> Generator[None]:

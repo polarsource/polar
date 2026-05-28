@@ -905,6 +905,7 @@ def _make_subscription(
     product_id: str = "prod_1",
     amount: int = 0,
     cancel_at_period_end: bool = False,
+    discount_id: str | None = None,
 ) -> Subscription:
     return Subscription.model_validate(
         {
@@ -927,7 +928,7 @@ def _make_subscription(
             "ended_at": None,
             "customer_id": _CUSTOMER_DICT["id"],
             "product_id": product_id,
-            "discount_id": None,
+            "discount_id": discount_id,
             "checkout_id": None,
             "customer_cancellation_reason": None,
             "customer_cancellation_comment": None,
@@ -956,6 +957,9 @@ def client_mock(mocker: MockerFixture) -> MagicMock:
     )
     client.uncancel_subscription = AsyncMock(
         return_value=_make_subscription(id="sub_existing")
+    )
+    client.update_subscription_discount = AsyncMock(
+        return_value=_make_subscription(id="sub_existing", discount_id=None)
     )
     mocker.patch("polar.integrations.polar.service.get_client", return_value=client)
     return client
@@ -1140,6 +1144,78 @@ class TestStartCheckout:
 
         client_mock.create_checkout.assert_not_awaited()
 
+    async def test_clears_existing_discount_before_checkout(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
+    ) -> None:
+        """A new checkout that switches an existing subscription's product
+        must not carry the previous discount — clear it first."""
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="prod_paid", metadata={"order": 1}),
+        ]
+        client_mock.get_active_subscription.return_value = _make_subscription(
+            id="sub_existing",
+            product_id="prod_scale",
+            discount_id="disc_startup",
+        )
+
+        await polar_self.start_checkout(
+            session=read_session_mock,
+            organization_id=ORG_A,
+            product_id="prod_paid",
+        )
+
+        client_mock.update_subscription_discount.assert_awaited_once_with(
+            subscription_id="sub_existing",
+            discount_id=None,
+        )
+        client_mock.create_checkout.assert_awaited_once()
+
+    async def test_does_not_clear_when_no_existing_subscription(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="prod_paid", metadata={"order": 1}),
+        ]
+        client_mock.get_active_subscription.return_value = None
+
+        await polar_self.start_checkout(
+            session=read_session_mock,
+            organization_id=ORG_A,
+            product_id="prod_paid",
+        )
+
+        client_mock.update_subscription_discount.assert_not_awaited()
+
+    async def test_does_not_clear_when_existing_has_no_discount(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="prod_paid", metadata={"order": 1}),
+        ]
+        client_mock.get_active_subscription.return_value = _make_subscription(
+            id="sub_existing", product_id="prod_pro", discount_id=None
+        )
+
+        await polar_self.start_checkout(
+            session=read_session_mock,
+            organization_id=ORG_A,
+            product_id="prod_paid",
+        )
+
+        client_mock.update_subscription_discount.assert_not_awaited()
+
 
 @pytest.mark.asyncio
 class TestChangePlan:
@@ -1289,6 +1365,319 @@ class TestChangePlan:
             )
 
         client_mock.update_subscription_product.assert_not_awaited()
+
+    async def test_clears_existing_discount_before_switching(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
+    ) -> None:
+        """Discounts are scoped to a product, so a plan change must clear
+        the existing discount first — otherwise the API rejects the update
+        on incompatible-discount grounds."""
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="prod_growth", metadata={"order": 2}, price_amount=10000),
+        ]
+        client_mock.get_active_subscription.return_value = _make_subscription(
+            id="sub_existing",
+            product_id="prod_scale",
+            amount=0,  # 100% discount → currently $0
+            discount_id="disc_startup",
+        )
+
+        await polar_self.change_plan(
+            session=read_session_mock,
+            organization_id=ORG_A,
+            product_id="prod_growth",
+        )
+
+        client_mock.update_subscription_discount.assert_awaited_once_with(
+            subscription_id="sub_existing",
+            discount_id=None,
+        )
+        # The clear must happen before the product update. ``mock_calls``
+        # captures the global call order across all mock attributes.
+        method_call_order = [
+            call[0] for call in client_mock.mock_calls if "()" not in call[0]
+        ]
+        clear_index = method_call_order.index("update_subscription_discount")
+        update_index = method_call_order.index("update_subscription_product")
+        assert clear_index < update_index
+        client_mock.update_subscription_product.assert_awaited_once_with(
+            subscription_id="sub_existing",
+            product_id="prod_growth",
+            proration_behavior=SubscriptionProrationBehavior.INVOICE,
+        )
+
+    async def test_does_not_clear_when_no_discount(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        read_session_mock: AsyncReadSession,
+    ) -> None:
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="prod_2", metadata={"order": 2}, price_amount=10000),
+        ]
+        client_mock.get_active_subscription.return_value = _make_subscription(
+            id="sub_existing",
+            product_id="prod_1",
+            amount=2000,
+            discount_id=None,
+        )
+
+        await polar_self.change_plan(
+            session=read_session_mock, organization_id=ORG_A, product_id="prod_2"
+        )
+
+        client_mock.update_subscription_discount.assert_not_awaited()
+
+    async def test_attaches_claimable_discount_after_product_switch(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        mocker: MockerFixture,
+        read_session_mock: AsyncReadSession,
+    ) -> None:
+        """Pro -> Scale via Change Plan: if the org is invited to the
+        Startup Program, attach the discount after switching products.
+        Mirrors what ``start_checkout`` does for Free -> Scale."""
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="prod_scale", metadata={"order": 4}, price_amount=40000),
+        ]
+        client_mock.get_active_subscription.return_value = _make_subscription(
+            id="sub_existing", product_id="prod_pro", amount=2000
+        )
+        mocker.patch(
+            "polar.integrations.polar.service.startup_program_service."
+            "resolve_checkout_discount_id",
+            AsyncMock(return_value="disc_startup"),
+        )
+
+        await polar_self.change_plan(
+            session=read_session_mock,
+            organization_id=ORG_A,
+            product_id="prod_scale",
+        )
+
+        client_mock.update_subscription_product.assert_awaited_once()
+        # The resolver gates on target product == Scale; the discount is
+        # attached to the post-switch subscription returned by
+        # update_subscription_product (default id "sub_2" from the mock).
+        client_mock.update_subscription_discount.assert_awaited_once_with(
+            subscription_id="sub_2",
+            discount_id="disc_startup",
+        )
+
+    async def test_does_not_attach_when_no_claimable_discount(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        mocker: MockerFixture,
+        read_session_mock: AsyncReadSession,
+    ) -> None:
+        """Pro -> Growth (or org not invited): no discount attached."""
+        client_mock.list_recurring_products.return_value = [
+            _make_product(id="prod_growth", metadata={"order": 3}, price_amount=10000),
+        ]
+        client_mock.get_active_subscription.return_value = _make_subscription(
+            id="sub_existing", product_id="prod_pro", amount=2000
+        )
+        mocker.patch(
+            "polar.integrations.polar.service.startup_program_service."
+            "resolve_checkout_discount_id",
+            AsyncMock(return_value=None),
+        )
+
+        await polar_self.change_plan(
+            session=read_session_mock,
+            organization_id=ORG_A,
+            product_id="prod_growth",
+        )
+
+        client_mock.update_subscription_product.assert_awaited_once()
+        client_mock.update_subscription_discount.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+class TestClaimStartupProgram:
+    """``claim_startup_program`` switches an existing paid subscription to
+    Scale and attaches the Startup Program discount via PATCH (no checkout).
+    """
+
+    async def test_not_configured_raises(
+        self, mocker: MockerFixture, read_session_mock: AsyncReadSession
+    ) -> None:
+        settings = mocker.patch("polar.integrations.polar.service.settings")
+        settings.POLAR_SELF_ENABLED = False
+
+        with pytest.raises(PolarSelfNotConfigured):
+            await polar_self.claim_startup_program(
+                session=read_session_mock, organization_id=ORG_A
+            )
+
+    async def test_free_org_returns_checkout(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        mocker: MockerFixture,
+        read_session_mock: AsyncReadSession,
+    ) -> None:
+        """Free plan → claim creates a checkout (no PATCH path)."""
+        mocker.patch(
+            "polar.integrations.polar.service.settings.STARTUP_PROGRAM_ENABLED",
+            True,
+        )
+        mocker.patch(
+            "polar.integrations.polar.service.settings.POLAR_SCALE_PRODUCT_ID",
+            "prod_scale",
+        )
+        mocker.patch(
+            "polar.integrations.polar.service.startup_program_service."
+            "resolve_checkout_discount_id",
+            AsyncMock(return_value="disc_startup"),
+        )
+        client_mock.get_active_subscription.return_value = None
+
+        subscription, checkout = await polar_self.claim_startup_program(
+            session=read_session_mock,
+            organization_id=ORG_A,
+            success_url="https://app.example/billing?ok=1",
+            return_url="https://app.example/billing?cancel=1",
+        )
+
+        assert subscription is None
+        assert checkout is not None
+        client_mock.create_checkout.assert_awaited_once_with(
+            product_id="prod_scale",
+            external_customer_id=str(ORG_A),
+            subscription_id=None,
+            customer_ip_address=None,
+            success_url="https://app.example/billing?ok=1",
+            return_url="https://app.example/billing?cancel=1",
+            embed_origin=None,
+            discount_id="disc_startup",
+        )
+        client_mock.update_subscription_product.assert_not_awaited()
+        client_mock.update_subscription_discount.assert_not_awaited()
+
+    async def test_raises_when_not_invited(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        mocker: MockerFixture,
+        read_session_mock: AsyncReadSession,
+    ) -> None:
+        from polar.startup_program.service import StartupProgramError
+
+        mocker.patch(
+            "polar.integrations.polar.service.settings.STARTUP_PROGRAM_ENABLED",
+            True,
+        )
+        mocker.patch(
+            "polar.integrations.polar.service.settings.POLAR_SCALE_PRODUCT_ID",
+            "prod_scale",
+        )
+        mocker.patch(
+            "polar.integrations.polar.service.startup_program_service."
+            "resolve_checkout_discount_id",
+            AsyncMock(return_value=None),
+        )
+
+        with pytest.raises(StartupProgramError, match="claimable"):
+            await polar_self.claim_startup_program(
+                session=read_session_mock, organization_id=ORG_A
+            )
+
+        client_mock.get_active_subscription.assert_not_awaited()
+        client_mock.update_subscription_product.assert_not_awaited()
+        client_mock.update_subscription_discount.assert_not_awaited()
+
+    async def test_switches_product_then_applies_discount(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        mocker: MockerFixture,
+        read_session_mock: AsyncReadSession,
+    ) -> None:
+        """Org on Growth → switches product to Scale, then applies the
+        Startup Program discount. Both calls happen via PATCH; no
+        ``create_checkout``."""
+        mocker.patch(
+            "polar.integrations.polar.service.settings.STARTUP_PROGRAM_ENABLED",
+            True,
+        )
+        mocker.patch(
+            "polar.integrations.polar.service.settings.POLAR_SCALE_PRODUCT_ID",
+            "prod_scale",
+        )
+        mocker.patch(
+            "polar.integrations.polar.service.startup_program_service."
+            "resolve_checkout_discount_id",
+            AsyncMock(return_value="disc_startup"),
+        )
+        client_mock.get_active_subscription.return_value = _make_subscription(
+            id="sub_existing", product_id="prod_growth", amount=10000
+        )
+
+        subscription, checkout = await polar_self.claim_startup_program(
+            session=read_session_mock, organization_id=ORG_A
+        )
+
+        assert subscription is not None
+        assert checkout is None
+        client_mock.update_subscription_product.assert_awaited_once_with(
+            subscription_id="sub_existing",
+            product_id="prod_scale",
+            proration_behavior=SubscriptionProrationBehavior.INVOICE,
+        )
+        client_mock.update_subscription_discount.assert_awaited_once_with(
+            subscription_id="sub_2",  # default id returned by update_subscription_product mock
+            discount_id="disc_startup",
+        )
+        client_mock.create_checkout.assert_not_awaited()
+
+    async def test_only_applies_discount_when_already_on_scale(
+        self,
+        configured: None,
+        client_mock: MagicMock,
+        organization_repository_mock: MagicMock,
+        mocker: MockerFixture,
+        read_session_mock: AsyncReadSession,
+    ) -> None:
+        mocker.patch(
+            "polar.integrations.polar.service.settings.STARTUP_PROGRAM_ENABLED",
+            True,
+        )
+        mocker.patch(
+            "polar.integrations.polar.service.settings.POLAR_SCALE_PRODUCT_ID",
+            "prod_scale",
+        )
+        mocker.patch(
+            "polar.integrations.polar.service.startup_program_service."
+            "resolve_checkout_discount_id",
+            AsyncMock(return_value="disc_startup"),
+        )
+        client_mock.get_active_subscription.return_value = _make_subscription(
+            id="sub_existing", product_id="prod_scale", amount=40000
+        )
+
+        subscription, checkout = await polar_self.claim_startup_program(
+            session=read_session_mock, organization_id=ORG_A
+        )
+
+        assert subscription is not None
+        assert checkout is None
+        client_mock.update_subscription_product.assert_not_awaited()
+        client_mock.update_subscription_discount.assert_awaited_once_with(
+            subscription_id="sub_existing", discount_id="disc_startup"
+        )
 
 
 def _order_dict(

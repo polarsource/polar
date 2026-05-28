@@ -26,7 +26,12 @@ from polar.email.sender import Attachment, enqueue_email_template
 from polar.integrations.plain.service import plain as plain_service
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
-from polar.startup_program.service import startup_program as startup_program_service
+from polar.startup_program.service import (
+    StartupProgramError,
+)
+from polar.startup_program.service import (
+    startup_program as startup_program_service,
+)
 from polar.worker import enqueue_job
 
 from .client import get_client
@@ -263,10 +268,18 @@ class PolarSelfService:
         existing = await client.get_active_subscription(
             external_customer_id=str(organization_id)
         )
+        # Discounts are scoped to a specific product. When switching the
+        # active subscription's product via a fresh checkout, the previous
+        # discount must be cleared first — otherwise the API rejects the
+        # checkout because the discount no longer applies.
+        if existing is not None and existing.discount_id is not None:
+            existing = await client.update_subscription_discount(
+                subscription_id=existing.id, discount_id=None
+            )
         # Auto-apply the Startup Program discount when an eligible organization
         # checks out the Scale plan.
         discount_id = await startup_program_service.resolve_checkout_discount_id(
-            session, organization_id=organization_id, product_id=product_id
+            organization_id=organization_id, product_id=product_id
         )
         return await client.create_checkout(
             product_id=product_id,
@@ -276,7 +289,7 @@ class PolarSelfService:
             success_url=success_url,
             return_url=return_url,
             embed_origin=embed_origin,
-            discount_id=str(discount_id) if discount_id is not None else None,
+            discount_id=discount_id,
         )
 
     async def change_plan(
@@ -300,17 +313,39 @@ class PolarSelfService:
             subscription = await client.uncancel_subscription(
                 subscription_id=subscription.id
             )
+        # Discounts are scoped to a specific product and never carry across
+        # a plan change. Clear it before switching the product so the API
+        # doesn't reject the update on incompatible-discount grounds.
+        if subscription.discount_id is not None:
+            subscription = await client.update_subscription_discount(
+                subscription_id=subscription.id, discount_id=None
+            )
         target_amount = self._product_fixed_price_amount(target_product)
         proration = (
             SubscriptionProrationBehavior.INVOICE
             if target_amount > subscription.amount
             else SubscriptionProrationBehavior.NEXT_PERIOD
         )
-        return await client.update_subscription_product(
+        subscription = await client.update_subscription_product(
             subscription_id=subscription.id,
             product_id=product_id,
             proration_behavior=proration,
         )
+
+        # Mirror ``start_checkout``: if the new product has a claimable
+        # discount for this org (e.g. the Startup Program's discount on
+        # Scale), attach it. Without this step a Pro/Growth -> Scale switch
+        # via the Change Plan page would skip the Startup Program discount
+        # even when the org is invited.
+        discount_id = await startup_program_service.resolve_checkout_discount_id(
+            organization_id=organization_id, product_id=product_id
+        )
+        if discount_id is not None:
+            subscription = await client.update_subscription_discount(
+                subscription_id=subscription.id, discount_id=discount_id
+            )
+
+        return subscription
 
     async def cancel_subscription(
         self, *, organization_id: uuid.UUID
@@ -324,6 +359,84 @@ class PolarSelfService:
         if subscription is None:
             raise PolarSelfNoActiveSubscription(organization_id)
         return await client.cancel_subscription(subscription_id=subscription.id)
+
+    async def claim_startup_program(
+        self,
+        *,
+        session: AsyncReadSession,
+        organization_id: uuid.UUID,
+        customer_ip_address: str | None = None,
+        success_url: str | None = None,
+        return_url: str | None = None,
+        embed_origin: str | None = None,
+    ) -> "tuple[Subscription | None, Checkout | None]":
+        """Claim the Startup Program discount on the Scale plan.
+
+        Single entry point for the "Switch to Scale" callout, regardless of
+        current plan:
+
+        - **Free → Scale**: returns ``(None, Checkout)`` — the org needs to
+          complete a Polar checkout to set up a payment method. The discount
+          is auto-attached at checkout creation.
+        - **Paid → Scale**: returns ``(Subscription, None)`` — the existing
+          subscription is switched to Scale via PATCH and the discount is
+          applied immediately. No checkout flow needed.
+        """
+        if not self.is_configured:
+            raise PolarSelfNotConfigured()
+        if not settings.STARTUP_PROGRAM_ENABLED:
+            raise StartupProgramError("Startup Program is not configured.")
+        await self._require_approval(session, organization_id=organization_id)
+
+        discount_id = await startup_program_service.resolve_checkout_discount_id(
+            organization_id=organization_id,
+            product_id=settings.POLAR_SCALE_PRODUCT_ID,
+        )
+        if discount_id is None:
+            raise StartupProgramError(
+                "Organization has no claimable Startup Program discount "
+                f"(organization_id={organization_id})."
+            )
+
+        client = get_client()
+        subscription = await client.get_active_subscription(
+            external_customer_id=str(organization_id)
+        )
+
+        if subscription is None:
+            # Free plan → needs checkout to set up a payment method. The
+            # discount auto-attaches because we pass discount_id explicitly.
+            checkout = await client.create_checkout(
+                product_id=settings.POLAR_SCALE_PRODUCT_ID,
+                external_customer_id=str(organization_id),
+                subscription_id=None,
+                customer_ip_address=customer_ip_address,
+                success_url=success_url,
+                return_url=return_url,
+                embed_origin=embed_origin,
+                discount_id=discount_id,
+            )
+            return (None, checkout)
+
+        if subscription.cancel_at_period_end:
+            subscription = await client.uncancel_subscription(
+                subscription_id=subscription.id
+            )
+
+        if subscription.product_id != settings.POLAR_SCALE_PRODUCT_ID:
+            # Upgrade-to-Scale always invoices immediately; with a 100%
+            # discount the API computes a $0 prorated charge anyway.
+            subscription = await client.update_subscription_product(
+                subscription_id=subscription.id,
+                product_id=settings.POLAR_SCALE_PRODUCT_ID,
+                proration_behavior=SubscriptionProrationBehavior.INVOICE,
+            )
+
+        subscription = await client.update_subscription_discount(
+            subscription_id=subscription.id,
+            discount_id=discount_id,
+        )
+        return (subscription, None)
 
     async def list_orders(
         self,

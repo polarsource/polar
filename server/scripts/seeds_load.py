@@ -2144,6 +2144,13 @@ TOKEN_SCOPES = " ".join(
         Scope.products_read,
         Scope.checkouts_write,
         Scope.benefits_read,
+        # Startup Program: claim flow creates/reads the per-customer
+        # discount via SDK and reads/updates the resulting subscription's
+        # discount + matching orders.
+        Scope.discounts_read,
+        Scope.discounts_write,
+        Scope.orders_read,
+        Scope.orders_write,
     ]
 )
 

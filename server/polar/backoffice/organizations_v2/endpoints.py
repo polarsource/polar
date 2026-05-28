@@ -43,7 +43,6 @@ from polar.backoffice.organizations.forms import (
 )
 from polar.backoffice.organizations.orders_import import orders_import_sse
 from polar.config import settings
-from polar.customer.repository import CustomerRepository
 from polar.enums import PayoutAccountType
 from polar.file.repository import FileRepository
 from polar.file.sorting import FileSortProperty
@@ -647,26 +646,13 @@ async def get_organization_detail(
     if not impersonate_user and members:
         impersonate_user = members[0].user
 
-    # Best-effort fetch of the Polar-for-Polar customer (the customer in
-    # Polar's own org whose external_id is this org's id) — used to show
-    # Startup Program state on the detail view. The status string is derived
-    # server-side from the customer's discount.
-    polar_customer: Customer | None = None
+    # Startup Program status is derived via the Polar API (customer +
+    # discount). The view only needs the resulting status string.
     startup_program_status: str | None = None
     if settings.STARTUP_PROGRAM_ENABLED:
-        try:
-            polar_organization_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
-        except ValueError:
-            polar_organization_id = None
-        if polar_organization_id is not None:
-            polar_customer = await CustomerRepository.from_session(
-                session
-            ).get_by_external_id_and_organization(
-                str(organization.id), polar_organization_id
-            )
-            startup_program_status = await startup_program_service.get_status(
-                session, organization.id
-            )
+        startup_program_status = await startup_program_service.get_status(
+            organization.id
+        )
 
     # Create views
     detail_view = OrganizationDetailView(
@@ -674,7 +660,6 @@ async def get_organization_detail(
         ai_verdict=ai_verdict,
         owner_email=owner_email,
         impersonate_user=impersonate_user,
-        polar_customer=polar_customer,
         startup_program_status=startup_program_status,
     )
 
@@ -1995,20 +1980,15 @@ async def startup_program_mark_invited(
         await add_toast(request, "Startup Program is not configured.", "error")
         return HXRedirectResponse(request, detail_url, 303)
 
-    try:
-        polar_organization_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
-    except (ValueError, TypeError):
-        await add_toast(request, "Startup Program is not configured.", "error")
-        return HXRedirectResponse(request, detail_url, 303)
-    customer = await CustomerRepository.from_session(
-        session
-    ).get_by_external_id_and_organization(str(organization_id), polar_organization_id)
-    if customer is None:
-        await add_toast(request, "Organization has no Polar customer yet.", "error")
+    organization = await OrganizationRepository.from_session(session).get_by_id(
+        organization_id, include_blocked=True
+    )
+    if organization is None:
+        await add_toast(request, "Organization not found.", "error")
         return HXRedirectResponse(request, detail_url, 303)
 
     try:
-        discount = await startup_program_service.mark_invited(session, customer)
+        discount = await startup_program_service.mark_invited(organization)
     except StartupProgramError as e:
         await add_toast(request, str(e), "error")
         return HXRedirectResponse(request, detail_url, 303)
@@ -2018,6 +1998,49 @@ async def startup_program_mark_invited(
         f"Invited. Created discount {discount.id}.",
         "success",
     )
+    return HXRedirectResponse(request, detail_url, 303)
+
+
+@router.post(
+    "/{organization_id}/startup-program/uninvite",
+    name="organizations:startup_program_uninvite",
+    response_model=None,
+)
+async def startup_program_uninvite(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> HXRedirectResponse:
+    """Revoke an organization's unused Startup Program discount.
+
+    Only valid while the discount is unused — once it's been redeemed the
+    discount is part of billing history and can't be removed.
+    """
+    del user_session  # admin gate only
+
+    detail_url = str(
+        request.url_for("organizations:detail", organization_id=organization_id)
+    )
+
+    if not settings.STARTUP_PROGRAM_ENABLED:
+        await add_toast(request, "Startup Program is not configured.", "error")
+        return HXRedirectResponse(request, detail_url, 303)
+
+    organization = await OrganizationRepository.from_session(session).get_by_id(
+        organization_id, include_blocked=True
+    )
+    if organization is None:
+        await add_toast(request, "Organization not found.", "error")
+        return HXRedirectResponse(request, detail_url, 303)
+
+    try:
+        await startup_program_service.uninvite(organization)
+    except StartupProgramError as e:
+        await add_toast(request, str(e), "error")
+        return HXRedirectResponse(request, detail_url, 303)
+
+    await add_toast(request, "Uninvited.", "success")
     return HXRedirectResponse(request, detail_url, 303)
 
 

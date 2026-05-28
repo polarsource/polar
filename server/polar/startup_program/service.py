@@ -1,29 +1,21 @@
 import uuid
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 import structlog
-from sqlalchemy import select
 
 from polar.config import settings
-from polar.customer.repository import CustomerRepository
-from polar.discount.repository import DiscountRepository
 from polar.email.schemas import (
     PolarSelfStartupProgramWelcomeEmail,
     PolarSelfStartupProgramWelcomeProps,
 )
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError
-from polar.kit.utils import utc_now
-from polar.member.repository import MemberRepository
-from polar.models import Customer, Discount, DiscountProduct
-from polar.models.discount import (
-    DiscountDuration,
-    DiscountPercentage,
-    DiscountType,
-)
-from polar.organization.repository import OrganizationRepository
-from polar.postgres import AsyncReadSession, AsyncSession
-from polar.product.repository import ProductRepository
+from polar.integrations.polar.client import get_client
+from polar.models import Organization
+
+if TYPE_CHECKING:
+    from polar_sdk.models import Discount
 
 log = structlog.get_logger()
 
@@ -33,18 +25,15 @@ class StartupProgramStatus(StrEnum):
     consumed = "consumed"
 
 
-# The only piece of state we store on the Polar-for-Polar customer (the
-# customer in Polar's own organization whose ``external_id`` is the
-# originating organization's id) is a pointer to the dedicated discount.
-# The status (``invited`` / ``consumed`` / ``None``) is derived from that
-# discount's redemption count, so there's no second source of truth that can
-# drift from the actual redemption state.
+# Customer metadata key holding the pointer to the customer's dedicated
+# Startup Program discount. Status is derived from the discount's
+# ``redemptions_count`` — no separate status field.
 DISCOUNT_ID_KEY = "startup_program_discount_id"
 
 # Discount metadata tag, so a Startup Program discount is recognizable.
 DISCOUNT_TAG_KEY = "startup_program"
 
-# 100% off (basis points are 1/100th of a percent), for a full year, once.
+# 100% off (basis points are 1/100th of a percent), for a full year, single use.
 DISCOUNT_BASIS_POINTS = 10_000
 DISCOUNT_DURATION_IN_MONTHS = 12
 DISCOUNT_MAX_REDEMPTIONS = 1
@@ -54,21 +43,119 @@ class StartupProgramError(PolarError): ...
 
 
 class StartupProgramService:
-    """Startup Program logic, driven entirely from the Polar-for-Polar side.
+    """Startup Program logic, driven entirely through the Polar API.
 
-    Status is derived from the customer's dedicated discount: no discount =>
-    not in the program; discount with redemptions_count >= 1 => consumed;
-    otherwise => invited. The "applied" / "rejected" lifecycle states from
-    the public apply flow live elsewhere and are out of scope here.
+    All reads and writes against billing-side entities (the Polar-for-Polar
+    customer and its dedicated discount) go through the SDK client, so the
+    API enforces auth scoping, soft-delete filtering, and tenancy. Status is
+    derived from the discount's ``redemptions_count``: no discount or 404 =>
+    not invited, ``redemptions_count >= 1`` => consumed, otherwise =>
+    invited.
     """
 
-    async def mark_invited(self, session: AsyncSession, customer: Customer) -> Discount:
-        """Invite a Polar-for-Polar customer to the Startup Program.
+    async def mark_invited(self, organization: Organization) -> "Discount":
+        """Invite an organization to the Startup Program.
 
         Eagerly creates the customer's dedicated 100% / 12 month / single-use
-        discount on the Scale plan and stores its id on the customer's
-        metadata. Idempotent: returns the existing discount when the
-        customer's pointer still resolves.
+        discount on the Scale plan and records its id on the
+        Polar-for-Polar customer's metadata. Idempotent: if the customer
+        already has a pointer to a live discount, returns that one. Any
+        underlying SDK / network failure is logged and re-raised as a
+        ``StartupProgramError`` so the caller (backoffice action) can toast
+        the reason instead of 500-ing.
+        """
+        if not settings.STARTUP_PROGRAM_ENABLED:
+            raise StartupProgramError(
+                "Startup Program is not configured "
+                "(POLAR_ORGANIZATION_ID / POLAR_SCALE_PRODUCT_ID / POLAR_ACCESS_TOKEN)."
+            )
+
+        try:
+            return await self._mark_invited_inner(organization)
+        except StartupProgramError:
+            raise
+        except Exception as e:
+            log.exception(
+                "startup_program.mark_invited_failed",
+                organization_id=str(organization.id),
+            )
+            raise StartupProgramError(
+                f"Failed to invite organization {organization.id}: {e}"
+            ) from e
+
+    async def _mark_invited_inner(self, organization: Organization) -> "Discount":
+        from polar_sdk.models import DiscountDuration
+
+        client = get_client()
+        customer = await client.get_customer_by_external_id_or_none(
+            str(organization.id)
+        )
+        if customer is None:
+            raise StartupProgramError(
+                "No Polar customer for organization "
+                f"(organization_id={organization.id})."
+            )
+
+        existing = await self._load_existing_discount(customer)
+        if existing is not None:
+            return existing
+
+        # ``organization_id`` is intentionally omitted: ``POLAR_ACCESS_TOKEN``
+        # is an organization-scoped token, and the API rejects any explicit
+        # ``organization_id`` on the request when that's the case.
+        discount = await client.create_percentage_discount(
+            name=self._discount_name(organization),
+            basis_points=DISCOUNT_BASIS_POINTS,
+            duration=DiscountDuration.REPEATING,
+            duration_in_months=DISCOUNT_DURATION_IN_MONTHS,
+            max_redemptions=DISCOUNT_MAX_REDEMPTIONS,
+            products=[settings.POLAR_SCALE_PRODUCT_ID],
+            metadata={
+                DISCOUNT_TAG_KEY: "true",
+                "customer_id": customer.id,
+            },
+        )
+
+        # ``update_customer_metadata`` replaces metadata wholesale, so merge
+        # the existing keys with our new pointer.
+        merged_metadata = {
+            **(customer.metadata or {}),
+            DISCOUNT_ID_KEY: discount.id,
+        }
+        await client.update_customer_metadata(
+            external_id=str(organization.id),
+            metadata=merged_metadata,
+        )
+
+        log.info(
+            "startup_program.mark_invited",
+            organization_id=str(organization.id),
+            customer_id=customer.id,
+            discount_id=discount.id,
+        )
+
+        try:
+            await self._send_welcome_email(
+                organization=organization, customer_id=customer.id
+            )
+        except Exception:
+            log.exception(
+                "startup_program.welcome_email_failed",
+                organization_id=str(organization.id),
+                customer_id=customer.id,
+            )
+
+        return discount
+
+    async def uninvite(self, organization: Organization) -> None:
+        """Remove the organization's unused Startup Program discount.
+
+        Only allowed when the discount hasn't been redeemed yet
+        (``redemptions_count == 0``). Once consumed the discount is part of
+        the customer's billing history and can't be revoked.
+
+        The customer's ``startup_program_discount_id`` pointer is cleared
+        on success so the status reads as "not invited" immediately.
         """
         if not settings.STARTUP_PROGRAM_ENABLED:
             raise StartupProgramError(
@@ -76,87 +163,57 @@ class StartupProgramService:
                 "(POLAR_ORGANIZATION_ID / POLAR_SCALE_PRODUCT_ID)."
             )
 
-        polar_organization_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
-        if customer.organization_id != polar_organization_id:
+        client = get_client()
+        customer = await client.get_customer_by_external_id_or_none(
+            str(organization.id)
+        )
+        if customer is None:
             raise StartupProgramError(
-                "Customer does not belong to the Polar organization "
-                f"(customer_id={customer.id}, "
-                f"customer_org_id={customer.organization_id}, "
-                f"expected_polar_org_id={polar_organization_id})."
+                "No Polar customer for organization "
+                f"(organization_id={organization.id})."
             )
 
-        metadata = dict(customer.user_metadata)
-        discount_repository = DiscountRepository.from_session(session)
-
-        existing = await self._load_active_discount(
-            session, metadata.get(DISCOUNT_ID_KEY)
-        )
-        if existing is not None:
-            return existing
-
-        product_repository = ProductRepository.from_session(session)
-        scale_product = await product_repository.get_by_id_and_organization(
-            uuid.UUID(settings.POLAR_SCALE_PRODUCT_ID), polar_organization_id
-        )
-        if scale_product is None:
+        raw = (customer.metadata or {}).get(DISCOUNT_ID_KEY)
+        if not isinstance(raw, str) or not raw:
             raise StartupProgramError(
-                f"Scale product {settings.POLAR_SCALE_PRODUCT_ID} not found."
+                "Organization has no Startup Program discount to remove."
             )
 
-        discount_percentage = DiscountPercentage(
-            name=self._discount_name(customer),
-            type=DiscountType.percentage,
-            code=None,
-            starts_at=None,
-            ends_at=None,
-            max_redemptions=DISCOUNT_MAX_REDEMPTIONS,
-            duration=DiscountDuration.repeating,
-            duration_in_months=DISCOUNT_DURATION_IN_MONTHS,
-            basis_points=DISCOUNT_BASIS_POINTS,
-            redemptions_count=0,
-            organization_id=polar_organization_id,
-            discount_products=[DiscountProduct(product=scale_product)],
-            discount_redemptions=[],
-            user_metadata={
-                DISCOUNT_TAG_KEY: "true",
-                "customer_id": str(customer.id),
-            },
-        )
-        discount = await discount_repository.create(discount_percentage, flush=True)
+        discount = await client.get_discount(discount_id=raw)
+        if discount is not None and discount.redemptions_count >= 1:
+            raise StartupProgramError(
+                "Startup Program discount has already been redeemed and "
+                "cannot be removed."
+            )
 
-        metadata[DISCOUNT_ID_KEY] = str(discount.id)
-        customer.user_metadata = metadata
-        session.add(customer)
-        await session.flush()
+        # ``get_discount`` returning None means the discount is already gone;
+        # we still clear the pointer below so the customer metadata catches up.
+        if discount is not None:
+            await client.delete_discount(discount_id=raw)
+
+        new_metadata = {k: v for k, v in (customer.metadata or {}).items() if k != DISCOUNT_ID_KEY}
+        await client.update_customer_metadata(
+            external_id=str(organization.id),
+            metadata=new_metadata,
+        )
 
         log.info(
-            "startup_program.mark_invited",
-            customer_id=str(customer.id),
-            discount_id=str(discount.id),
+            "startup_program.uninvited",
+            organization_id=str(organization.id),
+            customer_id=customer.id,
+            discount_id=raw,
         )
 
-        try:
-            await self._send_welcome_email(session, customer)
-        except Exception:
-            log.exception(
-                "startup_program.welcome_email_failed",
-                customer_id=str(customer.id),
-            )
-
-        return discount
-
-    async def get_status(
-        self, session: AsyncReadSession, organization_id: uuid.UUID
-    ) -> str | None:
+    async def get_status(self, organization_id: uuid.UUID) -> str | None:
         """Return the Startup Program status for an organization, if any.
 
-        Derived from the customer's stored discount. Returns ``None`` when
-        the feature is disabled, the customer doesn't exist, the customer has
-        no Startup Program discount, or the discount no longer exists.
-        Otherwise returns ``invited`` (discount unused) or ``consumed``
-        (discount redeemed).
+        ``None`` when the feature is disabled, the org has no Polar customer,
+        no discount pointer, or the discount has been deleted (the API
+        returns 404 → we treat as "not invited"). ``invited`` when the
+        discount exists with ``redemptions_count == 0``; ``consumed`` once
+        it's been redeemed.
         """
-        discount = await self._get_customer_discount(session, organization_id)
+        discount = await self._get_customer_discount(organization_id)
         if discount is None:
             return None
         if discount.redemptions_count >= 1:
@@ -164,55 +221,74 @@ class StartupProgramService:
         return StartupProgramStatus.invited.value
 
     async def resolve_checkout_discount_id(
-        self,
-        session: AsyncReadSession,
-        *,
-        organization_id: uuid.UUID,
-        product_id: str,
-    ) -> uuid.UUID | None:
+        self, *, organization_id: uuid.UUID, product_id: str
+    ) -> str | None:
         """Return the discount id to attach to a Polar-for-Polar checkout.
 
-        Returns ``None`` unless the feature is enabled, the product is the
-        Scale plan, the organization's customer has an invited (still
-        redeemable) Startup Program discount. Read-only.
+        ``None`` unless the feature is enabled, the product is the Scale
+        plan, and the organization has an invited (still redeemable)
+        Startup Program discount.
         """
         if not settings.STARTUP_PROGRAM_ENABLED:
             return None
         if product_id != settings.POLAR_SCALE_PRODUCT_ID:
             return None
-
-        discount = await self._get_customer_discount(session, organization_id)
-        if discount is None or not self._is_redeemable(discount):
+        discount = await self._get_customer_discount(organization_id)
+        if discount is None:
+            return None
+        max_redemptions = discount.max_redemptions
+        if max_redemptions is not None and discount.redemptions_count >= max_redemptions:
             return None
         return discount.id
 
+    async def _get_customer_discount(
+        self, organization_id: uuid.UUID
+    ) -> "Discount | None":
+        """Resolve the customer's Startup Program discount via the Polar API.
+
+        Best-effort: any SDK failure (auth, network, unexpected response) is
+        logged and returns ``None``. This method is on the billing-page read
+        path; we'd rather degrade to "not invited" than 500 the dashboard.
+        """
+        if not settings.STARTUP_PROGRAM_ENABLED:
+            return None
+        try:
+            client = get_client()
+            customer = await client.get_customer_by_external_id_or_none(
+                str(organization_id)
+            )
+            if customer is None:
+                return None
+            raw = (customer.metadata or {}).get(DISCOUNT_ID_KEY)
+            if not isinstance(raw, str) or not raw:
+                return None
+            return await client.get_discount(discount_id=raw)
+        except Exception:
+            log.exception(
+                "startup_program.get_status_failed",
+                organization_id=str(organization_id),
+            )
+            return None
+
+    async def _load_existing_discount(self, customer: object) -> "Discount | None":
+        raw = (getattr(customer, "metadata", None) or {}).get(DISCOUNT_ID_KEY)
+        if not isinstance(raw, str) or not raw:
+            return None
+        return await get_client().get_discount(discount_id=raw)
+
     async def _send_welcome_email(
-        self, session: AsyncSession, customer: Customer
+        self, *, organization: Organization, customer_id: str
     ) -> None:
         """Enqueue a "Welcome to the Startup Program" email to each team member.
 
-        The Polar-for-Polar customer is a team customer (no direct email), so
-        recipients come from the customer's members. Best-effort: caller
+        Recipients come from the Polar API's billing-contacts endpoint
+        (matches the order webhook's recipient pattern). Best-effort: caller
         wraps in try/except so any failure is logged but doesn't block the
         invite.
         """
-        if not customer.external_id:
-            return
-        try:
-            organization_id = uuid.UUID(customer.external_id)
-        except ValueError:
-            return
-
-        organization = await OrganizationRepository.from_session(session).get_by_id(
-            organization_id, include_blocked=True
-        )
-        if organization is None:
-            return
-
-        members = await MemberRepository.from_session(session).list_by_customer(
-            customer.id
-        )
-        recipients = sorted({m.email for m in members if m.email})
+        client = get_client()
+        contacts = await client.list_billing_contacts(customer_id=customer_id)
+        recipients = sorted({c.email for c in contacts if c.email})
         if not recipients:
             return
 
@@ -235,74 +311,8 @@ class StartupProgramService:
                 subject="Welcome to the Polar Startup Program",
             )
 
-    async def _get_customer_discount(
-        self, session: AsyncReadSession, organization_id: uuid.UUID
-    ) -> Discount | None:
-        """Load the Startup Program discount for the org, if any.
-
-        Resolves the Polar-for-Polar customer by ``external_id``, follows the
-        ``startup_program_discount_id`` pointer, and returns the discount.
-        Returns ``None`` when the feature is disabled, the customer or
-        pointer don't exist, or the discount has been (soft-)deleted —
-        deletion intentionally reads as "not invited" so admins can revoke an
-        invitation by deleting the discount.
-        """
-        if not settings.STARTUP_PROGRAM_ENABLED:
-            return None
-        customer = await self._get_polar_customer(session, organization_id)
-        if customer is None:
-            return None
-        return await self._load_active_discount(
-            session, customer.user_metadata.get(DISCOUNT_ID_KEY)
-        )
-
-    async def _load_active_discount(
-        self, session: AsyncReadSession, discount_id_raw: object
-    ) -> Discount | None:
-        """Load a non-deleted discount by id.
-
-        Used wherever we follow the customer's ``startup_program_discount_id``
-        pointer — ``DiscountRepository.get_by_id`` doesn't filter soft-deleted
-        rows, but for the Startup Program a deleted discount should read as
-        "no discount" so deletion can be used to revoke an invitation.
-        """
-        if not discount_id_raw:
-            return None
-        try:
-            discount_id = uuid.UUID(str(discount_id_raw))
-        except ValueError:
-            return None
-        statement = select(Discount).where(
-            Discount.id == discount_id,
-            Discount.is_deleted.is_(False),
-        )
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
-
-    async def _get_polar_customer(
-        self, session: AsyncReadSession, organization_id: uuid.UUID
-    ) -> Customer | None:
-        polar_organization_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
-        customer_repository = CustomerRepository.from_session(session)
-        return await customer_repository.get_by_external_id_and_organization(
-            str(organization_id), polar_organization_id
-        )
-
-    def _is_redeemable(self, discount: Discount) -> bool:
-        # Mirrors discount_service.is_redeemable_discount, read-only so it
-        # can run on start_checkout's read session.
-        now = utc_now()
-        if discount.starts_at is not None and discount.starts_at > now:
-            return False
-        if discount.ends_at is not None and discount.ends_at < now:
-            return False
-        if discount.max_redemptions is not None:
-            return discount.redemptions_count < discount.max_redemptions
-        return True
-
-    def _discount_name(self, customer: Customer) -> str:
-        label = customer.name or customer.email or str(customer.id)
-        return f"Startup Program: {label}"
+    def _discount_name(self, organization: Organization) -> str:
+        return f"Startup Program: {organization.name}"
 
 
 startup_program = StartupProgramService()

@@ -327,6 +327,33 @@ class OrganizationCheckoutResponse(Schema):
         )
 
 
+class OrganizationStartupProgramClaimRequest(Schema):
+    """Inputs for claiming the Startup Program discount.
+
+    The checkout URLs are only used when the org is on the Free plan and
+    needs a checkout to set up a payment method; they're ignored on the
+    PATCH path (already-paid orgs).
+    """
+
+    success_url: Annotated[str, AfterValidator(get_safe_return_url)] | None = None
+    return_url: Annotated[str, AfterValidator(get_safe_return_url)] | None = None
+    embed_origin: str | None = None
+
+
+class OrganizationStartupProgramClaimResponse(Schema):
+    """Result of claiming the Startup Program discount.
+
+    Exactly one field is set:
+    - ``checkout`` — Free → Scale: org needs to complete the checkout. The
+      discount is already attached.
+    - ``subscription`` — Paid → Scale: the existing paid subscription was
+      switched to Scale and the discount applied immediately.
+    """
+
+    checkout: OrganizationCheckoutResponse | None = None
+    subscription: OrganizationSubscription | None = None
+
+
 class OrganizationSubscriptionUpdate(Schema):
     product_id: str = Field(description="Polar product ID to switch the plan to.")
 

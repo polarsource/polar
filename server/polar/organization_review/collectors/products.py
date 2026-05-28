@@ -31,7 +31,7 @@ def collect_products_data(
                 billing_type=product.recurring_interval.value
                 if product.recurring_interval
                 else "one_time",
-                visibility=product.visibility.value if product.visibility else None,
+                visibility=product.visibility.value,
                 is_archived=product.is_archived,
                 prices=prices,
             )

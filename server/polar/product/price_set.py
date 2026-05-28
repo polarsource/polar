@@ -113,6 +113,19 @@ def validate_custom_price_amount(
     if not is_custom_price(price):
         return
 
+    if amount < 0:
+        raise PolarRequestValidationError(
+            [
+                {
+                    "type": "greater_than_equal",
+                    "loc": loc,
+                    "msg": "Amount must be at least 0.",
+                    "input": amount,
+                    "ctx": {"ge": 0},
+                }
+            ]
+        )
+
     if price.minimum_amount == 0:
         # Free is allowed: accept 0, or any amount >= the currency minimum.
         if amount == 0:

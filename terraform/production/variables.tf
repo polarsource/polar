@@ -381,6 +381,11 @@ variable "polar_free_product_id" {
   type        = string
 }
 
+variable "polar_scale_product_id" {
+  description = "Polar Scale-tier product ID"
+  type        = string
+}
+
 variable "customer_portal_url_overrides" {
   description = "JSON object mapping organization IDs to custom customer portal URLs"
   type        = string

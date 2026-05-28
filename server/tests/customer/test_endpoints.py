@@ -130,6 +130,17 @@ class TestListCustomers:
             customer=customer_active,
             status=SubscriptionStatus.active,
         )
+        customer_trialing = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="trialing@example.com",
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer_trialing,
+            status=SubscriptionStatus.trialing,
+        )
         customer_past_due = await create_customer(
             save_fixture,
             organization=organization,
@@ -153,22 +164,25 @@ class TestListCustomers:
             status=SubscriptionStatus.canceled,
         )
 
-        # active=true returns customers with an active or past_due subscription
+        # active=true returns customers with a trialing, active or past_due
+        # subscription
         response = await client.get("/v1/customers/", params={"active": True})
 
         assert response.status_code == 200
         ids = {item["id"] for item in response.json()["items"]}
         assert str(customer_active.id) in ids
+        assert str(customer_trialing.id) in ids
         assert str(customer_past_due.id) in ids
         assert str(customer_inactive.id) not in ids
 
-        # active=false excludes customers with an active or past_due subscription
+        # active=false excludes customers with a billable subscription
         response = await client.get("/v1/customers/", params={"active": False})
 
         assert response.status_code == 200
         ids = {item["id"] for item in response.json()["items"]}
         assert str(customer_inactive.id) in ids
         assert str(customer_active.id) not in ids
+        assert str(customer_trialing.id) not in ids
         assert str(customer_past_due.id) not in ids
 
         # no filter returns all customers
@@ -178,6 +192,7 @@ class TestListCustomers:
         ids = {item["id"] for item in response.json()["items"]}
         assert {
             str(customer_active.id),
+            str(customer_trialing.id),
             str(customer_past_due.id),
             str(customer_inactive.id),
         } <= ids

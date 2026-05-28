@@ -292,16 +292,14 @@ class CustomerRepository(
         """
         Return a clause to filter customers by activity.
 
-        An active customer is one with at least one active or past_due
-        subscription.
+        An active customer is one with at least one billable subscription,
+        i.e. a subscription in `trialing`, `active` or `past_due` status.
         """
         subscription_exists = (
             select(Subscription.id)
             .where(
                 Subscription.customer_id == Customer.id,
-                Subscription.status.in_(
-                    (SubscriptionStatus.active, SubscriptionStatus.past_due)
-                ),
+                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
             )
             .exists()
         )

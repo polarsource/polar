@@ -4,10 +4,10 @@ from uuid import UUID
 
 import stripe as stripe_lib
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     ColumnElement,
     ForeignKey,
-    Integer,
     String,
     Uuid,
     type_coerce,
@@ -118,8 +118,8 @@ class Refund(MetadataMixin, RecordModel):
 
     status: Mapped[RefundStatus] = mapped_column(String, nullable=False)
     reason: Mapped[RefundReason] = mapped_column(String, nullable=False)
-    amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    tax_amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
 
     comment: Mapped[str | None] = mapped_column(String, nullable=True)

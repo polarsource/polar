@@ -118,8 +118,24 @@ jobs:
         env:
           RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
 
-      - name: Sentry Release
-        uses: getsentry/action-release@v3.6.0
+  # Sentry release is split into its own job so that a Sentry hiccup (auth
+  # expired, rate limit) does not mark deploy-backend as failed. If they
+  # share a job, a Sentry failure causes update-backend-tag to skip (because
+  # it gates on deploy-backend.result == 'success'), which means the next
+  # push redundantly redeploys the same SHA — and via the workflow_call
+  # failure-propagation, would block production.
+  sentry-release:
+    name: "Backend: Sentry Release (${{ inputs.environment }})"
+    needs: deploy-backend
+    if: always() && needs.deploy-backend.result == 'success' && inputs.skip-backend != true
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    # Sentry release is best-effort: a missing release annotation is
+    # observability noise, not a deploy regression. Don't fail the workflow.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: getsentry/action-release@v3.6.0
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
@@ -173,10 +189,19 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    # Tag advancement is bookkeeping. If it fails (transient API, permission
+    # drift, tag-protection rule), the worst outcome is the next push
+    # redundantly redeploys the same SHA — safe and idempotent. Do NOT fail
+    # the workflow_call, otherwise the !failure() gate on deploy-production
+    # would turn this into a hard production-deploy outage.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v6
         with:
+          # Need depth >= 2 so we can fetch the target tag's remote ref
+          # for --force-with-lease without errors on the lease check.
           fetch-depth: 1
+          fetch-tags: true
 
       - name: Push deploy tag
         env:
@@ -184,21 +209,35 @@ jobs:
           DEPLOYED_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
+          shopt -s inherit_errexit
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # Retry a few times in case of transient push failures. A failed
-          # tag push means the next deploy will redundantly redeploy this
-          # SHA (safe, idempotent, but noisy) — worth retrying.
+          # Retry on transient push failures. Re-fetch the remote tag between
+          # attempts so --force-with-lease has the latest known-remote SHA
+          # (otherwise a concurrent unrelated tag advance would be silently
+          # overwritten on retry).
           for attempt in 1 2 3; do
+            # Refresh local view of the tag (if it exists remotely).
+            git fetch --force origin "refs/tags/${TAG}:refs/tags/${TAG}" 2>/dev/null || true
+            # Use force-with-lease so a concurrent push that advanced the
+            # tag is rejected rather than blindly overwritten.
+            REMOTE_SHA="$(git rev-parse --verify --quiet "refs/tags/${TAG}^{commit}" || true)"
             git tag -f "$TAG" "$DEPLOYED_SHA"
-            if git push -f origin "refs/tags/$TAG"; then
-              echo "Advanced $TAG -> $DEPLOYED_SHA"
+            if [ -n "$REMOTE_SHA" ]; then
+              push_args=(--force-with-lease="refs/tags/${TAG}:${REMOTE_SHA}")
+            else
+              # Tag doesn't exist remotely yet (first deploy after rollout
+              # or post-cleanup). A plain push creates it.
+              push_args=()
+            fi
+            if git push "${push_args[@]}" origin "refs/tags/${TAG}"; then
+              echo "Advanced ${TAG} -> ${DEPLOYED_SHA}"
               exit 0
             fi
-            echo "Push attempt $attempt failed; retrying..."
+            echo "Push attempt ${attempt} failed; retrying..."
             sleep 2
           done
-          echo "Failed to push $TAG after 3 attempts"
+          echo "Failed to push ${TAG} after 3 attempts (workflow continues; next push will redeploy)"
           exit 1
 
   update-frontend-tag:
@@ -208,10 +247,14 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    # See update-backend-tag for rationale: tag advance is bookkeeping and
+    # must not fail the workflow_call.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
+          fetch-tags: true
 
       - name: Push deploy tag
         env:
@@ -219,16 +262,24 @@ jobs:
           DEPLOYED_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
+          shopt -s inherit_errexit
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           for attempt in 1 2 3; do
+            git fetch --force origin "refs/tags/${TAG}:refs/tags/${TAG}" 2>/dev/null || true
+            REMOTE_SHA="$(git rev-parse --verify --quiet "refs/tags/${TAG}^{commit}" || true)"
             git tag -f "$TAG" "$DEPLOYED_SHA"
-            if git push -f origin "refs/tags/$TAG"; then
-              echo "Advanced $TAG -> $DEPLOYED_SHA"
+            if [ -n "$REMOTE_SHA" ]; then
+              push_args=(--force-with-lease="refs/tags/${TAG}:${REMOTE_SHA}")
+            else
+              push_args=()
+            fi
+            if git push "${push_args[@]}" origin "refs/tags/${TAG}"; then
+              echo "Advanced ${TAG} -> ${DEPLOYED_SHA}"
               exit 0
             fi
-            echo "Push attempt $attempt failed; retrying..."
+            echo "Push attempt ${attempt} failed; retrying..."
             sleep 2
           done
-          echo "Failed to push $TAG after 3 attempts"
+          echo "Failed to push ${TAG} after 3 attempts (workflow continues; next push will redeploy)"
           exit 1

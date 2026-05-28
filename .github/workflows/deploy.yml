@@ -15,15 +15,23 @@ on:
 concurrency:
   group: build-deploy
 
+# Tag-update jobs in deploy-environment.yml need contents: write to push
+# deployed/{component}-{environment} tags. Declared here at the workflow
+# level because a reusable workflow's per-job permissions are capped by
+# the caller's effective token scope.
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   changes:
     name: "Detect Changes 🔍"
     runs-on: ubuntu-latest
     outputs:
-      # Per-environment outputs: each diffs HEAD against the SHA of the last
-      # successful deploy for that component + environment (tracked via
-      # deployed/{component}-{environment} git tags). Falls back to
-      # github.event.before on first deploy or when the tag is missing.
+      # Per-component-per-environment outputs: each diffs HEAD against the
+      # SHA of the last successful deploy for that component + environment
+      # (tracked via deployed/{component}-{environment} git tags). Falls
+      # back to HEAD~1 if no tag exists and the push has no parent SHA.
       #
       # Why per-env: sandbox can be ahead of production (failed prod deploy
       # leaves sandbox tag advanced while prod tag stays). Each env needs its
@@ -31,12 +39,17 @@ jobs:
       #
       # Why per-component: a frontend-only push must not advance the backend
       # tag, otherwise a later cancelled backend run's commits would be lost.
-      backend-sandbox: ${{ steps.filter-sandbox.outputs.backend }}
-      frontend-sandbox: ${{ steps.filter-sandbox.outputs.frontend }}
-      migrations-sandbox: ${{ steps.filter-sandbox.outputs.migrations }}
-      backend-production: ${{ steps.filter-production.outputs.backend }}
-      frontend-production: ${{ steps.filter-production.outputs.frontend }}
-      migrations-production: ${{ steps.filter-production.outputs.migrations }}
+      # Crucially, the frontend FILTER must use the frontend tag (not backend
+      # tag) as its base — otherwise a frontend deploy that failed after a
+      # successful backend deploy would be permanently dropped from future
+      # diffs (its pending frontend changes sit "before" the backend tag).
+      # This is why each component has its own paths-filter invocation.
+      backend-sandbox: ${{ steps.filter-backend-sandbox.outputs.backend }}
+      migrations-sandbox: ${{ steps.filter-backend-sandbox.outputs.migrations }}
+      frontend-sandbox: ${{ steps.filter-frontend-sandbox.outputs.frontend }}
+      backend-production: ${{ steps.filter-backend-production.outputs.backend }}
+      migrations-production: ${{ steps.filter-backend-production.outputs.migrations }}
+      frontend-production: ${{ steps.filter-frontend-production.outputs.frontend }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -46,24 +59,44 @@ jobs:
       - name: Resolve deploy bases from tags
         id: bases
         env:
-          # github.event.before is the parent SHA before this push (or
-          # workflow_dispatch fallback). Bind via env to avoid any
+          # github.event.before is the parent SHA before this push. On
+          # workflow_dispatch it is empty; on the very first push to a
+          # branch it can be the zero SHA. Bind via env to avoid any
           # template-into-shell interpolation in the run: body.
           EVENT_BEFORE: ${{ github.event.before }}
+          ZERO_SHA: "0000000000000000000000000000000000000000"
         run: |
           set -euo pipefail
-          # Force-fetch tags in case checkout's cache is stale.
-          git fetch --tags --force origin
+          # Bash command substitution does NOT propagate set -e failures by
+          # default; without this, a transient git failure inside resolve()
+          # would silently emit "key=" (empty value) instead of aborting.
+          shopt -s inherit_errexit
+          # Re-fetch tags with prune so a remote-side deletion drops the
+          # local copy (defensive against cached/self-hosted runners).
+          git fetch --tags --force --prune --prune-tags origin
+          # Resolve the safe fallback once. We prefer event.before, but on
+          # workflow_dispatch / new-branch pushes it's empty or zero-SHA;
+          # fall back to HEAD~1 which always exists on a fetch-depth: 0
+          # checkout. Last resort: HEAD itself (zero diff vs HEAD, lets the
+          # workflow_dispatch override paths take over downstream).
+          fallback_base() {
+            if [ -n "${EVENT_BEFORE}" ] \
+               && [ "${EVENT_BEFORE}" != "${ZERO_SHA}" ] \
+               && git rev-parse --verify --quiet "${EVENT_BEFORE}^{commit}" >/dev/null; then
+              echo "${EVENT_BEFORE}"
+            elif git rev-parse --verify --quiet "HEAD~1^{commit}" >/dev/null; then
+              git rev-parse "HEAD~1"
+            else
+              git rev-parse "HEAD"
+            fi
+          }
+          FALLBACK="$(fallback_base)"
           resolve() {
             local tag="$1"
-            if git rev-parse --verify --quiet "refs/tags/${tag}" >/dev/null; then
-              git rev-parse "refs/tags/${tag}"
+            if git rev-parse --verify --quiet "refs/tags/${tag}^{commit}" >/dev/null; then
+              git rev-parse "refs/tags/${tag}^{commit}"
             else
-              # First deploy after rollout, or tag was deleted: fall back to
-              # the immediate parent (today's behavior). This is correct on
-              # the very first run and surfaces a one-time "missing tag"
-              # condition without breaking the pipeline.
-              echo "${EVENT_BEFORE}"
+              echo "${FALLBACK}"
             fi
           }
           {
@@ -73,9 +106,13 @@ jobs:
             echo "frontend-production=$(resolve deployed/frontend-production)"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Detect changes since last sandbox deploy
+      # Four paths-filter invocations: one per component per env. We can't
+      # combine them because dorny/paths-filter@v4 uses a single base for
+      # all filters in one invocation, but our design requires the frontend
+      # filter to diff against the frontend tag, not the backend tag.
+      - name: Detect backend changes since last sandbox backend deploy
         uses: dorny/paths-filter@v4
-        id: filter-sandbox
+        id: filter-backend-sandbox
         with:
           base: ${{ steps.bases.outputs.backend-sandbox }}
           filters: |
@@ -84,16 +121,23 @@ jobs:
               - '.github/workflows/deploy.yml'
               - '.github/workflows/deploy-environment.yml'
               - '.github/workflows/deploy_server.sh'
+            migrations:
+              - 'server/migrations/**'
+
+      - name: Detect frontend changes since last sandbox frontend deploy
+        uses: dorny/paths-filter@v4
+        id: filter-frontend-sandbox
+        with:
+          base: ${{ steps.bases.outputs.frontend-sandbox }}
+          filters: |
             frontend:
               - 'clients/**'
               - '.github/workflows/deploy.yml'
               - '.github/workflows/deploy-environment.yml'
-            migrations:
-              - 'server/migrations/**'
 
-      - name: Detect changes since last production deploy
+      - name: Detect backend changes since last production backend deploy
         uses: dorny/paths-filter@v4
-        id: filter-production
+        id: filter-backend-production
         with:
           base: ${{ steps.bases.outputs.backend-production }}
           filters: |
@@ -102,12 +146,19 @@ jobs:
               - '.github/workflows/deploy.yml'
               - '.github/workflows/deploy-environment.yml'
               - '.github/workflows/deploy_server.sh'
+            migrations:
+              - 'server/migrations/**'
+
+      - name: Detect frontend changes since last production frontend deploy
+        uses: dorny/paths-filter@v4
+        id: filter-frontend-production
+        with:
+          base: ${{ steps.bases.outputs.frontend-production }}
+          filters: |
             frontend:
               - 'clients/**'
               - '.github/workflows/deploy.yml'
               - '.github/workflows/deploy-environment.yml'
-            migrations:
-              - 'server/migrations/**'
 
   build:
     name: "Build Docker Image 🐳"

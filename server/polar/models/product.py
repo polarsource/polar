@@ -69,9 +69,9 @@ class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    visibility: Mapped[ProductVisibility | None] = mapped_column(
+    visibility: Mapped[ProductVisibility] = mapped_column(
         StringEnum(ProductVisibility),
-        nullable=True,
+        nullable=False,
         default=ProductVisibility.public,
     )
     recurring_interval: Mapped[SubscriptionRecurringInterval | None] = mapped_column(

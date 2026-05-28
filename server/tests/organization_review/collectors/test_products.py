@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock
 
+from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPriceAmountType
 from polar.organization_review.collectors.products import collect_products_data
 
@@ -28,7 +29,7 @@ def _build_product(
     product.name = name
     product.description = None
     product.recurring_interval = None
-    product.visibility = None
+    product.visibility = ProductVisibility.public
     product.is_archived = is_archived
     product.prices = prices or []
     return product

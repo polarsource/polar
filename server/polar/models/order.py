@@ -89,7 +89,7 @@ class RefundAmountTooHigh(OrderError):
 class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     __tablename__ = "orders"
     __table_args__ = (
-        Index("ix_total_amount", text("(net_amount + tax_amount)")),
+        Index("ix_total_amount", text("(net_amount_v2 + tax_amount_v2)")),
         Index(
             "ix_orders_search_vector",
             "search_vector",
@@ -110,38 +110,15 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         String, nullable=False, default=OrderStatus.pending, index=True
     )
     subtotal_amount: Mapped[int] = mapped_column(
-        "subtotal_amount_v2", BigInteger, nullable=True
+        "subtotal_amount_v2", BigInteger, nullable=False
     )
     discount_amount: Mapped[int] = mapped_column(
-        "discount_amount_v2", BigInteger, nullable=True, default=0
+        "discount_amount_v2", BigInteger, nullable=False, default=0
     )
-    net_amount: Mapped[int] = mapped_column("net_amount_v2", BigInteger, nullable=True)
-    tax_amount: Mapped[int] = mapped_column("tax_amount_v2", BigInteger, nullable=True)
+    net_amount: Mapped[int] = mapped_column("net_amount_v2", BigInteger, nullable=False)
+    tax_amount: Mapped[int] = mapped_column("tax_amount_v2", BigInteger, nullable=False)
     applied_balance_amount: Mapped[int] = mapped_column(
-        "applied_balance_amount_v2", BigInteger, nullable=True, default=0
-    )
-
-    # Legacy int4 columns retained while the dual-column sync trigger is active.
-    # Deferred so they never appear in default SELECTs. No default — that
-    # would force SQLAlchemy to include the column in every INSERT, which
-    # would break running pods once the cleanup migration drops the column.
-    # The bidirectional trigger fills these from the v2 columns on INSERT,
-    # so the NOT NULL constraints on legacy columns are still satisfied even
-    # when ORM code only sets the (v2-backed) primary attributes.
-    legacy_subtotal_amount: Mapped[int] = mapped_column(
-        "subtotal_amount", Integer, nullable=False, deferred=True
-    )
-    legacy_discount_amount: Mapped[int] = mapped_column(
-        "discount_amount", Integer, nullable=False, deferred=True
-    )
-    legacy_net_amount: Mapped[int] = mapped_column(
-        "net_amount", Integer, nullable=False, deferred=True
-    )
-    legacy_tax_amount: Mapped[int] = mapped_column(
-        "tax_amount", Integer, nullable=False, deferred=True
-    )
-    legacy_applied_balance_amount: Mapped[int] = mapped_column(
-        "applied_balance_amount", Integer, nullable=False, deferred=True
+        "applied_balance_amount_v2", BigInteger, nullable=False, default=0
     )
 
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
@@ -150,23 +127,14 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
 
     refunded_amount: Mapped[int] = mapped_column(
-        "refunded_amount_v2", BigInteger, nullable=True, default=0
+        "refunded_amount_v2", BigInteger, nullable=False, default=0
     )
     refunded_tax_amount: Mapped[int] = mapped_column(
-        "refunded_tax_amount_v2", BigInteger, nullable=True, default=0
-    )
-    legacy_refunded_amount: Mapped[int] = mapped_column(
-        "refunded_amount", Integer, nullable=False, deferred=True
-    )
-    legacy_refunded_tax_amount: Mapped[int] = mapped_column(
-        "refunded_tax_amount", Integer, nullable=False, deferred=True
+        "refunded_tax_amount_v2", BigInteger, nullable=False, default=0
     )
 
     platform_fee_amount: Mapped[int] = mapped_column(
-        "platform_fee_amount_v2", BigInteger, nullable=True, default=0
-    )
-    legacy_platform_fee_amount: Mapped[int] = mapped_column(
-        "platform_fee_amount", Integer, nullable=False, deferred=True
+        "platform_fee_amount_v2", BigInteger, nullable=False, default=0
     )
     platform_fee_currency: Mapped[str | None] = mapped_column(
         String(3), nullable=True, default=None
@@ -493,165 +461,9 @@ orders_search_vector_trigger = PGTrigger(
     """,
 )
 
-
-orders_sync_v2_amounts_function = PGFunction(
-    schema="public",
-    signature="orders_sync_v2_amounts()",
-    definition="""
-    RETURNS trigger AS $$
-    BEGIN
-        IF TG_OP = 'INSERT' THEN
-            IF NEW.subtotal_amount_v2 IS NULL AND NEW.subtotal_amount IS NOT NULL THEN
-                NEW.subtotal_amount_v2 := NEW.subtotal_amount;
-            END IF;
-            IF NEW.discount_amount_v2 IS NULL AND NEW.discount_amount IS NOT NULL THEN
-                NEW.discount_amount_v2 := NEW.discount_amount;
-            END IF;
-            IF NEW.net_amount_v2 IS NULL AND NEW.net_amount IS NOT NULL THEN
-                NEW.net_amount_v2 := NEW.net_amount;
-            END IF;
-            IF NEW.tax_amount_v2 IS NULL AND NEW.tax_amount IS NOT NULL THEN
-                NEW.tax_amount_v2 := NEW.tax_amount;
-            END IF;
-            IF NEW.applied_balance_amount_v2 IS NULL AND NEW.applied_balance_amount IS NOT NULL THEN
-                NEW.applied_balance_amount_v2 := NEW.applied_balance_amount;
-            END IF;
-            IF NEW.refunded_amount_v2 IS NULL AND NEW.refunded_amount IS NOT NULL THEN
-                NEW.refunded_amount_v2 := NEW.refunded_amount;
-            END IF;
-            IF NEW.refunded_tax_amount_v2 IS NULL AND NEW.refunded_tax_amount IS NOT NULL THEN
-                NEW.refunded_tax_amount_v2 := NEW.refunded_tax_amount;
-            END IF;
-            IF NEW.platform_fee_amount_v2 IS NULL AND NEW.platform_fee_amount IS NOT NULL THEN
-                NEW.platform_fee_amount_v2 := NEW.platform_fee_amount;
-            END IF;
-            IF NEW.subtotal_amount IS NULL
-               AND NEW.subtotal_amount_v2 IS NOT NULL
-               AND NEW.subtotal_amount_v2 <= 2147483647 THEN
-                NEW.subtotal_amount := NEW.subtotal_amount_v2::integer;
-            END IF;
-            IF NEW.discount_amount IS NULL
-               AND NEW.discount_amount_v2 IS NOT NULL
-               AND NEW.discount_amount_v2 <= 2147483647 THEN
-                NEW.discount_amount := NEW.discount_amount_v2::integer;
-            END IF;
-            IF NEW.net_amount IS NULL
-               AND NEW.net_amount_v2 IS NOT NULL
-               AND NEW.net_amount_v2 <= 2147483647 THEN
-                NEW.net_amount := NEW.net_amount_v2::integer;
-            END IF;
-            IF NEW.tax_amount IS NULL
-               AND NEW.tax_amount_v2 IS NOT NULL
-               AND NEW.tax_amount_v2 <= 2147483647 THEN
-                NEW.tax_amount := NEW.tax_amount_v2::integer;
-            END IF;
-            IF NEW.applied_balance_amount IS NULL
-               AND NEW.applied_balance_amount_v2 IS NOT NULL
-               AND NEW.applied_balance_amount_v2 <= 2147483647 THEN
-                NEW.applied_balance_amount := NEW.applied_balance_amount_v2::integer;
-            END IF;
-            IF NEW.refunded_amount IS NULL
-               AND NEW.refunded_amount_v2 IS NOT NULL
-               AND NEW.refunded_amount_v2 <= 2147483647 THEN
-                NEW.refunded_amount := NEW.refunded_amount_v2::integer;
-            END IF;
-            IF NEW.refunded_tax_amount IS NULL
-               AND NEW.refunded_tax_amount_v2 IS NOT NULL
-               AND NEW.refunded_tax_amount_v2 <= 2147483647 THEN
-                NEW.refunded_tax_amount := NEW.refunded_tax_amount_v2::integer;
-            END IF;
-            IF NEW.platform_fee_amount IS NULL
-               AND NEW.platform_fee_amount_v2 IS NOT NULL
-               AND NEW.platform_fee_amount_v2 <= 2147483647 THEN
-                NEW.platform_fee_amount := NEW.platform_fee_amount_v2::integer;
-            END IF;
-        ELSIF TG_OP = 'UPDATE' THEN
-            IF NEW.subtotal_amount IS DISTINCT FROM OLD.subtotal_amount THEN
-                NEW.subtotal_amount_v2 := NEW.subtotal_amount;
-            END IF;
-            IF NEW.discount_amount IS DISTINCT FROM OLD.discount_amount THEN
-                NEW.discount_amount_v2 := NEW.discount_amount;
-            END IF;
-            IF NEW.net_amount IS DISTINCT FROM OLD.net_amount THEN
-                NEW.net_amount_v2 := NEW.net_amount;
-            END IF;
-            IF NEW.tax_amount IS DISTINCT FROM OLD.tax_amount THEN
-                NEW.tax_amount_v2 := NEW.tax_amount;
-            END IF;
-            IF NEW.applied_balance_amount IS DISTINCT FROM OLD.applied_balance_amount THEN
-                NEW.applied_balance_amount_v2 := NEW.applied_balance_amount;
-            END IF;
-            IF NEW.refunded_amount IS DISTINCT FROM OLD.refunded_amount THEN
-                NEW.refunded_amount_v2 := NEW.refunded_amount;
-            END IF;
-            IF NEW.refunded_tax_amount IS DISTINCT FROM OLD.refunded_tax_amount THEN
-                NEW.refunded_tax_amount_v2 := NEW.refunded_tax_amount;
-            END IF;
-            IF NEW.platform_fee_amount IS DISTINCT FROM OLD.platform_fee_amount THEN
-                NEW.platform_fee_amount_v2 := NEW.platform_fee_amount;
-            END IF;
-            IF NEW.subtotal_amount_v2 IS DISTINCT FROM OLD.subtotal_amount_v2
-               AND NEW.subtotal_amount_v2 IS NOT NULL
-               AND NEW.subtotal_amount_v2 <= 2147483647 THEN
-                NEW.subtotal_amount := NEW.subtotal_amount_v2::integer;
-            END IF;
-            IF NEW.discount_amount_v2 IS DISTINCT FROM OLD.discount_amount_v2
-               AND NEW.discount_amount_v2 IS NOT NULL
-               AND NEW.discount_amount_v2 <= 2147483647 THEN
-                NEW.discount_amount := NEW.discount_amount_v2::integer;
-            END IF;
-            IF NEW.net_amount_v2 IS DISTINCT FROM OLD.net_amount_v2
-               AND NEW.net_amount_v2 IS NOT NULL
-               AND NEW.net_amount_v2 <= 2147483647 THEN
-                NEW.net_amount := NEW.net_amount_v2::integer;
-            END IF;
-            IF NEW.tax_amount_v2 IS DISTINCT FROM OLD.tax_amount_v2
-               AND NEW.tax_amount_v2 IS NOT NULL
-               AND NEW.tax_amount_v2 <= 2147483647 THEN
-                NEW.tax_amount := NEW.tax_amount_v2::integer;
-            END IF;
-            IF NEW.applied_balance_amount_v2 IS DISTINCT FROM OLD.applied_balance_amount_v2
-               AND NEW.applied_balance_amount_v2 IS NOT NULL
-               AND NEW.applied_balance_amount_v2 <= 2147483647 THEN
-                NEW.applied_balance_amount := NEW.applied_balance_amount_v2::integer;
-            END IF;
-            IF NEW.refunded_amount_v2 IS DISTINCT FROM OLD.refunded_amount_v2
-               AND NEW.refunded_amount_v2 IS NOT NULL
-               AND NEW.refunded_amount_v2 <= 2147483647 THEN
-                NEW.refunded_amount := NEW.refunded_amount_v2::integer;
-            END IF;
-            IF NEW.refunded_tax_amount_v2 IS DISTINCT FROM OLD.refunded_tax_amount_v2
-               AND NEW.refunded_tax_amount_v2 IS NOT NULL
-               AND NEW.refunded_tax_amount_v2 <= 2147483647 THEN
-                NEW.refunded_tax_amount := NEW.refunded_tax_amount_v2::integer;
-            END IF;
-            IF NEW.platform_fee_amount_v2 IS DISTINCT FROM OLD.platform_fee_amount_v2
-               AND NEW.platform_fee_amount_v2 IS NOT NULL
-               AND NEW.platform_fee_amount_v2 <= 2147483647 THEN
-                NEW.platform_fee_amount := NEW.platform_fee_amount_v2::integer;
-            END IF;
-        END IF;
-        RETURN NEW;
-    END
-    $$ LANGUAGE plpgsql;
-    """,
-)
-
-orders_sync_v2_amounts_trigger = PGTrigger(
-    schema="public",
-    signature="orders_sync_v2_amounts_trigger",
-    on_entity="orders",
-    definition="""
-    BEFORE INSERT OR UPDATE ON orders
-    FOR EACH ROW EXECUTE FUNCTION orders_sync_v2_amounts();
-    """,
-)
-
 register_entities(
     (
         orders_search_vector_update_function,
         orders_search_vector_trigger,
-        orders_sync_v2_amounts_function,
-        orders_sync_v2_amounts_trigger,
     )
 )

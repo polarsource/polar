@@ -257,6 +257,10 @@ module "sandbox" {
     password = var.grafana_cloud_prometheus_password
   }
 
+  memory_profile_config = {
+    s3_bucket_name = "polar-sandbox-logs"
+  }
+
   polar_self_config = {
     access_token    = var.polar_access_token
     webhook_secret  = var.polar_webhook_secret

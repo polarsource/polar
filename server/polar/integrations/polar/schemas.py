@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
+from dateutil.relativedelta import relativedelta
 from polar_sdk.models import (
     LegacyRecurringProductPriceFixed,
     PaymentMethodCard,
@@ -142,6 +143,78 @@ class OrganizationSubscriptionPendingChange(Schema):
     applies_at: datetime
 
 
+class OrganizationSubscriptionDiscount(Schema):
+    """A discount currently applied to the organization's subscription."""
+
+    discount_id: str
+    name: str
+    type: str = Field(description="Discount type: 'percentage' or 'fixed'.")
+    duration: str = Field(
+        description="Discount duration: 'once', 'forever', or 'repeating'."
+    )
+    duration_in_months: int | None = Field(
+        default=None,
+        description="Number of months the discount repeats; only set for 'repeating'.",
+    )
+    basis_points: int | None = Field(
+        default=None,
+        description="Percentage in basis points (10000 = 100%); only set for 'percentage'.",
+    )
+    amounts: dict[str, int] | None = Field(
+        default=None,
+        description="Per-currency fixed amount in cents; only set for 'fixed'.",
+    )
+    ends_at: datetime | None = Field(
+        default=None,
+        description=(
+            "Estimated date the discount stops applying. Computed for 'repeating' "
+            "discounts from the subscription's started_at + duration_in_months; "
+            "null for 'once' and 'forever' durations."
+        ),
+    )
+
+    @classmethod
+    def from_sdk(
+        cls, subscription: "Subscription"
+    ) -> "OrganizationSubscriptionDiscount | None":
+        discount = subscription.discount
+        if discount is None:
+            return None
+
+        # The SDK exposes a polymorphic discount union; introspect via getattr so
+        # we stay tolerant of future shape changes.
+        duration_raw = getattr(discount, "duration", None)
+        type_raw = getattr(discount, "type", None)
+        if duration_raw is None or type_raw is None:
+            return None
+        duration = (
+            duration_raw.value if hasattr(duration_raw, "value") else str(duration_raw)
+        )
+        discount_type = (
+            type_raw.value if hasattr(type_raw, "value") else str(type_raw)
+        )
+        duration_in_months = getattr(discount, "duration_in_months", None)
+
+        ends_at: datetime | None = None
+        if (
+            duration == "repeating"
+            and duration_in_months is not None
+            and subscription.started_at is not None
+        ):
+            ends_at = subscription.started_at + relativedelta(months=duration_in_months)
+
+        return cls(
+            discount_id=discount.id,
+            name=discount.name,
+            type=discount_type,
+            duration=duration,
+            duration_in_months=duration_in_months,
+            basis_points=getattr(discount, "basis_points", None),
+            amounts=getattr(discount, "amounts", None),
+            ends_at=ends_at,
+        )
+
+
 class OrganizationSubscription(Schema):
     subscription_id: str | None = Field(
         default=None,
@@ -164,6 +237,24 @@ class OrganizationSubscription(Schema):
     started_at: datetime | None = None
     ends_at: datetime | None = None
     pending_change: OrganizationSubscriptionPendingChange | None = None
+    discount: OrganizationSubscriptionDiscount | None = None
+    startup_program_status: str | None = Field(
+        default=None,
+        description=(
+            "Polar Startup Program status for this organization. Derived from "
+            "the organization's Startup Program discount: 'invited' when the "
+            "discount exists and hasn't been redeemed, 'consumed' once it has. "
+            "Null when the feature is disabled or the organization hasn't "
+            "been invited."
+        ),
+    )
+    startup_program_scale_product_id: str | None = Field(
+        default=None,
+        description=(
+            "Polar product id of the Scale plan, against which the Startup "
+            "Program discount applies. Null when the feature is disabled."
+        ),
+    )
 
     @classmethod
     def free(cls, *, plan: OrganizationPlan) -> "OrganizationSubscription":
@@ -184,6 +275,7 @@ class OrganizationSubscription(Schema):
             started_at=None,
             ends_at=None,
             pending_change=None,
+            discount=None,
         )
 
     @classmethod
@@ -212,6 +304,7 @@ class OrganizationSubscription(Schema):
                 if pending is not None and pending.product_id is not None
                 else None
             ),
+            discount=OrganizationSubscriptionDiscount.from_sdk(subscription),
         )
 
 

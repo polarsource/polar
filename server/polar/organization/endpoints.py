@@ -60,6 +60,7 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.routing import APIRouter
+from polar.startup_program.service import startup_program as startup_program_service
 from polar.user.service import user as user_service
 from polar.user_organization.schemas import (
     OrganizationMember,
@@ -796,6 +797,23 @@ async def list_plans(
     return [free_plan, *(OrganizationPlan.from_sdk(product) for product in products)]
 
 
+async def _enrich_subscription(
+    subscription_obj: OrganizationSubscription,
+    *,
+    session: AsyncReadSession,
+    organization_id: UUID,
+) -> OrganizationSubscription:
+    """Annotate the subscription with Startup Program state when configured."""
+    if settings.STARTUP_PROGRAM_ENABLED:
+        subscription_obj.startup_program_scale_product_id = (
+            settings.POLAR_SCALE_PRODUCT_ID
+        )
+        subscription_obj.startup_program_status = (
+            await startup_program_service.get_status(session, organization_id)
+        )
+    return subscription_obj
+
+
 @router.get(
     "/{id}/subscription",
     response_model=OrganizationSubscription,
@@ -817,8 +835,14 @@ async def get_subscription(
         free_plan = await polar_self_service.resolve_free_plan(
             session, authz.organization.id, subscription=None
         )
-        return OrganizationSubscription.free(plan=free_plan)
-    return OrganizationSubscription.from_sdk(subscription)
+        subscription_obj = OrganizationSubscription.free(plan=free_plan)
+    else:
+        subscription_obj = OrganizationSubscription.from_sdk(subscription)
+    return await _enrich_subscription(
+        subscription_obj,
+        session=session,
+        organization_id=authz.organization.id,
+    )
 
 
 @router.post(
@@ -876,7 +900,11 @@ async def change_subscription_plan(
         organization_id=authz.organization.id,
         product_id=body.product_id,
     )
-    return OrganizationSubscription.from_sdk(subscription)
+    return await _enrich_subscription(
+        OrganizationSubscription.from_sdk(subscription),
+        session=session,
+        organization_id=authz.organization.id,
+    )
 
 
 @router.delete(
@@ -894,6 +922,7 @@ async def change_subscription_plan(
 )
 async def cancel_subscription_endpoint(
     authz: AuthorizeOrgManage,
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationSubscription:
     """Cancel the organization's active subscription at the end of the current period.
 
@@ -903,7 +932,11 @@ async def cancel_subscription_endpoint(
     subscription = await polar_self_service.cancel_subscription(
         organization_id=authz.organization.id,
     )
-    return OrganizationSubscription.from_sdk(subscription)
+    return await _enrich_subscription(
+        OrganizationSubscription.from_sdk(subscription),
+        session=session,
+        organization_id=authz.organization.id,
+    )
 
 
 @router.get(

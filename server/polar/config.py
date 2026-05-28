@@ -337,6 +337,8 @@ class Settings(BaseSettings):
     POLAR_WEBHOOK_SECRET: str = ""
     POLAR_ORGANIZATION_ID: str = ""
     POLAR_FREE_PRODUCT_ID: str = ""
+    # Scale plan product, used by the Startup Program to grant a 100% discount
+    POLAR_SCALE_PRODUCT_ID: str = ""
     POLAR_API_URL: str = "https://api.polar.sh"
 
     @property
@@ -348,6 +350,10 @@ class Settings(BaseSettings):
                 self.POLAR_FREE_PRODUCT_ID,
             ]
         )
+
+    @property
+    def STARTUP_PROGRAM_ENABLED(self) -> bool:
+        return bool(self.POLAR_ORGANIZATION_ID and self.POLAR_SCALE_PRODUCT_ID)
 
     # Customer portal URL overrides per organization
     CUSTOMER_PORTAL_URL_OVERRIDES: dict[str, str] = {}

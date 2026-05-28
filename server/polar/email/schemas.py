@@ -49,6 +49,7 @@ class EmailTemplate(StrEnum):
     notification_credits_granted = "notification_credits_granted"
     polar_self_subscription_confirmation = "polar_self_subscription_confirmation"
     polar_self_subscription_cycled = "polar_self_subscription_cycled"
+    polar_self_startup_program_welcome = "polar_self_startup_program_welcome"
 
 
 class SubscriptionEmail(SubscriptionBase): ...
@@ -408,6 +409,18 @@ class PolarSelfSubscriptionCycledEmail(BaseModel):
     props: PolarSelfSubscriptionCycledProps
 
 
+class PolarSelfStartupProgramWelcomeProps(EmailProps):
+    organization_name: str
+    billing_url: str
+
+
+class PolarSelfStartupProgramWelcomeEmail(BaseModel):
+    template: Literal[EmailTemplate.polar_self_startup_program_welcome] = (
+        EmailTemplate.polar_self_startup_program_welcome
+    )
+    props: PolarSelfStartupProgramWelcomeProps
+
+
 class OrganizationAccountUnlinkProps(EmailProps):
     organization_kept_name: str
     organizations_unlinked: list[str]
@@ -451,7 +464,8 @@ Email = Annotated[
     | NotificationCreateAccountEmail
     | NotificationCreditsGrantedEmail
     | PolarSelfSubscriptionConfirmationEmail
-    | PolarSelfSubscriptionCycledEmail,
+    | PolarSelfSubscriptionCycledEmail
+    | PolarSelfStartupProgramWelcomeEmail,
     Discriminator("template"),
 ]
 

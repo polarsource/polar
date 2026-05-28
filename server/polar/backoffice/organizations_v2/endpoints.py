@@ -42,6 +42,8 @@ from polar.backoffice.organizations.forms import (
     UpdateRateLimitGroupForm,
 )
 from polar.backoffice.organizations.orders_import import orders_import_sse
+from polar.config import settings
+from polar.customer.repository import CustomerRepository
 from polar.enums import PayoutAccountType
 from polar.file.repository import FileRepository
 from polar.file.sorting import FileSortProperty
@@ -87,6 +89,12 @@ from polar.organization_review.schemas import (
 )
 from polar.payout_account.service import payout_account as payout_account_service
 from polar.postgres import AsyncSession, get_db_session
+from polar.startup_program.service import (
+    StartupProgramError,
+)
+from polar.startup_program.service import (
+    startup_program as startup_program_service,
+)
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.worker import enqueue_job
 
@@ -639,12 +647,35 @@ async def get_organization_detail(
     if not impersonate_user and members:
         impersonate_user = members[0].user
 
+    # Best-effort fetch of the Polar-for-Polar customer (the customer in
+    # Polar's own org whose external_id is this org's id) — used to show
+    # Startup Program state on the detail view. The status string is derived
+    # server-side from the customer's discount.
+    polar_customer: Customer | None = None
+    startup_program_status: str | None = None
+    if settings.STARTUP_PROGRAM_ENABLED:
+        try:
+            polar_organization_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
+        except ValueError:
+            polar_organization_id = None
+        if polar_organization_id is not None:
+            polar_customer = await CustomerRepository.from_session(
+                session
+            ).get_by_external_id_and_organization(
+                str(organization.id), polar_organization_id
+            )
+            startup_program_status = await startup_program_service.get_status(
+                session, organization.id
+            )
+
     # Create views
     detail_view = OrganizationDetailView(
         organization,
         ai_verdict=ai_verdict,
         owner_email=owner_email,
         impersonate_user=impersonate_user,
+        polar_customer=polar_customer,
+        startup_program_status=startup_program_status,
     )
 
     # Fetch analytics data for overview section
@@ -1935,6 +1966,57 @@ async def unsnooze(
         str(request.url_for("organizations:detail", organization_id=organization_id)),
         303,
     )
+
+
+@router.post(
+    "/{organization_id}/startup-program/mark-invited",
+    name="organizations:startup_program_mark_invited",
+    response_model=None,
+)
+async def startup_program_mark_invited(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> HXRedirectResponse:
+    """Invite the organization to the Startup Program.
+
+    Resolves the Polar-for-Polar customer (in Polar's org, with
+    ``external_id`` equal to the organization id) and eagerly creates its
+    dedicated 100% Scale discount.
+    """
+    del user_session  # admin gate only
+
+    detail_url = str(
+        request.url_for("organizations:detail", organization_id=organization_id)
+    )
+
+    if not settings.STARTUP_PROGRAM_ENABLED:
+        await add_toast(request, "Startup Program is not configured.", "error")
+        return HXRedirectResponse(request, detail_url, 303)
+
+    polar_organization_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
+    customer = await CustomerRepository.from_session(
+        session
+    ).get_by_external_id_and_organization(str(organization_id), polar_organization_id)
+    if customer is None:
+        await add_toast(
+            request, "Organization has no Polar customer yet.", "error"
+        )
+        return HXRedirectResponse(request, detail_url, 303)
+
+    try:
+        discount = await startup_program_service.mark_invited(session, customer)
+    except StartupProgramError as e:
+        await add_toast(request, str(e), "error")
+        return HXRedirectResponse(request, detail_url, 303)
+
+    await add_toast(
+        request,
+        f"Invited. Created discount {discount.id}.",
+        "success",
+    )
+    return HXRedirectResponse(request, detail_url, 303)
 
 
 @router.api_route(

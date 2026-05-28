@@ -26,6 +26,7 @@ from polar.email.sender import Attachment, enqueue_email_template
 from polar.integrations.plain.service import plain as plain_service
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.startup_program.service import startup_program as startup_program_service
 from polar.worker import enqueue_job
 
 from .client import get_client
@@ -262,6 +263,11 @@ class PolarSelfService:
         existing = await client.get_active_subscription(
             external_customer_id=str(organization_id)
         )
+        # Auto-apply the Startup Program discount when an eligible organization
+        # checks out the Scale plan.
+        discount_id = await startup_program_service.resolve_checkout_discount_id(
+            session, organization_id=organization_id, product_id=product_id
+        )
         return await client.create_checkout(
             product_id=product_id,
             external_customer_id=str(organization_id),
@@ -270,6 +276,7 @@ class PolarSelfService:
             success_url=success_url,
             return_url=return_url,
             embed_origin=embed_origin,
+            discount_id=str(discount_id) if discount_id is not None else None,
         )
 
     async def change_plan(

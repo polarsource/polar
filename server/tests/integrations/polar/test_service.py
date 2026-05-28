@@ -1302,6 +1302,7 @@ def _order_dict(
     billing_name: str | None = None,
     billing_address: dict[str, Any] | None = None,
     is_invoice_generated: bool = True,
+    discount_id: str | None = None,
 ) -> dict[str, Any]:
     return {
         "id": id,
@@ -1329,7 +1330,7 @@ def _order_dict(
         "is_invoice_generated": is_invoice_generated,
         "customer_id": customer_id,
         "product_id": product_id,
-        "discount_id": None,
+        "discount_id": discount_id,
         "subscription_id": "00000000-0000-0000-0000-000000000001",
         "checkout_id": None,
         "metadata": {},

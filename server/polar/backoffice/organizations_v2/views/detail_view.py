@@ -7,11 +7,13 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import Request
-from tagflow import tag, text
+from tagflow import classes, tag, text
 
-from polar.models import Organization, User
+from polar.config import settings
+from polar.models import Customer, Organization, User
 from polar.models.organization import OrganizationStatus, SnoozeType
 from polar.organization_review.schemas import ReviewVerdict
+from polar.startup_program.service import StartupProgramStatus
 
 from ...components import (
     Tab,
@@ -42,11 +44,19 @@ class OrganizationDetailView:
         ai_verdict: str = "",
         owner_email: str | None = None,
         impersonate_user: User | None = None,
+        polar_customer: Customer | None = None,
+        startup_program_status: str | None = None,
     ):
         self.org = organization
         self.ai_verdict = ai_verdict
         self.owner_email = owner_email
         self.impersonate_user = impersonate_user
+        # The Polar-for-Polar customer (in Polar's own org, external_id=org.id).
+        # Used to surface a "no Polar customer yet" hint in the Startup Program
+        # card; the actual status is derived server-side from the customer's
+        # dedicated discount and passed in via ``startup_program_status``.
+        self.polar_customer = polar_customer
+        self.startup_program_status = startup_program_status
 
     @contextlib.contextmanager
     def section_tabs(
@@ -123,6 +133,61 @@ class OrganizationDetailView:
                 hx_target="#modal",
             ):
                 text("Create Plain Ticket")
+
+    def _render_startup_program_card(self, request: Request) -> None:
+        """Show Startup Program state and a Mark invited action.
+
+        Status is derived server-side from the customer's dedicated discount
+        (none -> not in the program, redeemed -> consumed, else invited) and
+        passed in via ``startup_program_status``.
+        """
+        if not settings.STARTUP_PROGRAM_ENABLED:
+            return
+        with card(bordered=True, classes="mb-4"):
+            with tag.h3(classes="font-bold text-sm uppercase tracking-wide mb-3"):
+                text("Startup Program")
+
+            if self.polar_customer is None:
+                with tag.p(classes="text-sm text-base-content/60"):
+                    text("Organization has no Polar customer yet.")
+                return
+
+            status_value = self.startup_program_status
+            with tag.div(classes="flex items-center gap-2 mb-3 text-sm"):
+                with tag.span(classes="text-base-content/60"):
+                    text("Status")
+                with tag.div(classes="badge"):
+                    if status_value == StartupProgramStatus.invited:
+                        classes("badge-success")
+                        text("Invited")
+                    elif status_value == StartupProgramStatus.consumed:
+                        classes("badge-neutral")
+                        text("Consumed")
+                    else:
+                        classes("badge-ghost")
+                        text("Not invited")
+
+            if status_value not in (
+                StartupProgramStatus.invited,
+                StartupProgramStatus.consumed,
+            ):
+                with tag.div(classes="w-full"):
+                    with button(
+                        variant="primary",
+                        size="sm",
+                        hx_post=str(
+                            request.url_for(
+                                "organizations:startup_program_mark_invited",
+                                organization_id=self.org.id,
+                            )
+                        ),
+                        hx_confirm=(
+                            "Invite this organization to the Startup "
+                            "Program? A 100% discount on Scale (12 months, "
+                            "single use) will be created."
+                        ),
+                    ):
+                        text("Mark invited")
 
     @contextlib.contextmanager
     def right_sidebar(self, request: Request) -> Generator[None]:
@@ -615,6 +680,8 @@ class OrganizationDetailView:
                             hx_target="#modal",
                         ):
                             text("Block Organization")
+
+            self._render_startup_program_card(request)
 
             yield
 

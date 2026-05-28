@@ -153,7 +153,8 @@ describe('CheckoutPricingBreakdown', () => {
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
       expect(getRowValue('Subtotal')).toBe('$20')
-      expect(getRowValue('20% off (-20%)')).toBe('-$4')
+      expect(getRowValue('20% off')).toBe('-$4')
+      expect(screen.getByText('(-20%)')).toBeInTheDocument()
       expect(getRowValue('Taxable amount')).toBe('$16')
       expect(getRowValue('Taxes')).toBe('—')
       expect(getRowValue('Total')).toBe('$16')
@@ -181,7 +182,8 @@ describe('CheckoutPricingBreakdown', () => {
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
       expect(getRowValue('Subtotal')).toBe('$20')
-      expect(getRowValue('20% off (-20%)')).toBe('-$4')
+      expect(getRowValue('20% off')).toBe('-$4')
+      expect(screen.getByText('(-20%)')).toBeInTheDocument()
       expect(getRowValue('Taxable amount')).toBe('$16')
       expect(getRowValue('Taxes')).toBe('$4')
       expect(getRowValue('Total')).toBe('$20')
@@ -339,7 +341,7 @@ describe('CheckoutPricingBreakdown', () => {
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
-      expect(screen.getByText(/Until/i)).toBeInTheDocument()
+      expect(screen.getByText(/^\(-20%\) Until/)).toBeInTheDocument()
     })
 
     it('shows "Until" date for repeating discount', () => {
@@ -368,7 +370,7 @@ describe('CheckoutPricingBreakdown', () => {
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
-      expect(screen.getByText(/Until/i)).toBeInTheDocument()
+      expect(screen.getByText(/^\(-20%\) Until/)).toBeInTheDocument()
     })
 
     it('does not show "Until" for forever discount', () => {

@@ -153,3 +153,82 @@ jobs:
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  # Tag-advance jobs: after a successful deploy of a component, push a
+  # lightweight git tag deployed/{component}-{environment} pointing at the
+  # SHA we just deployed. The next workflow run's `changes` job uses this
+  # tag as the diff base, so cancelled intermediate runs never cause a
+  # commit to be skipped silently — the next run still sees the pending
+  # changes because the tag hasn't advanced.
+  #
+  # Each component has its own job, gated only on its own deploy's success.
+  # This way a frontend failure doesn't pin the backend tag at a stale SHA
+  # (which would cause Render to be re-deployed redundantly on the next
+  # push), and vice versa.
+
+  update-backend-tag:
+    name: "Update deployed/backend-${{ inputs.environment }} tag"
+    needs: deploy-backend
+    if: always() && needs.deploy-backend.result == 'success' && inputs.skip-backend != true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Push deploy tag
+        env:
+          TAG: deployed/backend-${{ inputs.environment }}
+          DEPLOYED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Retry a few times in case of transient push failures. A failed
+          # tag push means the next deploy will redundantly redeploy this
+          # SHA (safe, idempotent, but noisy) — worth retrying.
+          for attempt in 1 2 3; do
+            git tag -f "$TAG" "$DEPLOYED_SHA"
+            if git push -f origin "refs/tags/$TAG"; then
+              echo "Advanced $TAG -> $DEPLOYED_SHA"
+              exit 0
+            fi
+            echo "Push attempt $attempt failed; retrying..."
+            sleep 2
+          done
+          echo "Failed to push $TAG after 3 attempts"
+          exit 1
+
+  update-frontend-tag:
+    name: "Update deployed/frontend-${{ inputs.environment }} tag"
+    needs: promote-frontend
+    if: always() && needs.promote-frontend.result == 'success' && inputs.skip-frontend != true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Push deploy tag
+        env:
+          TAG: deployed/frontend-${{ inputs.environment }}
+          DEPLOYED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            git tag -f "$TAG" "$DEPLOYED_SHA"
+            if git push -f origin "refs/tags/$TAG"; then
+              echo "Advanced $TAG -> $DEPLOYED_SHA"
+              exit 0
+            fi
+            echo "Push attempt $attempt failed; retrying..."
+            sleep 2
+          done
+          echo "Failed to push $TAG after 3 attempts"
+          exit 1

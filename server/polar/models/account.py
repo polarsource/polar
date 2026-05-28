@@ -2,7 +2,16 @@ from datetime import timedelta
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Interval, String, Text, Uuid
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    ForeignKey,
+    Integer,
+    Interval,
+    String,
+    Text,
+    Uuid,
+)
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
@@ -59,7 +68,7 @@ class Account(RecordModel):
     )
     billing_notes: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
 
-    credit_balance: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    credit_balance: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
 
     @declared_attr
     def users(cls) -> Mapped[list["User"]]:

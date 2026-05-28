@@ -94,9 +94,10 @@ async def enqueue(request: Request, task: str | None = Query(None)) -> Any:
         data = await request.form()
         try:
             enqueue_task_payload = form_class.model_validate_form(data)
+            parameters = getattr(enqueue_task_payload, "parameters", None)
             enqueue_job(
                 enqueue_task_payload.task,
-                **enqueue_task_payload.model_dump(exclude={"task"}),
+                **(parameters.model_dump() if parameters is not None else {}),
             )
             await add_toast(request, "Task has been enqueued.", "success")
             return

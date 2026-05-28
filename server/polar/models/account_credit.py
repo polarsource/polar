@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, ForeignKey, Index, Integer, String, Text, Uuid
+from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, Index, String, Text, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
@@ -32,8 +32,8 @@ class AccountCredit(MetadataMixin, RecordModel):
         Uuid, ForeignKey("campaigns.id", ondelete="set null"), nullable=True, index=True
     )
     title: Mapped[str] = mapped_column(String, nullable=False)
-    amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    used: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    used: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
 
     granted_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=datetime.utcnow

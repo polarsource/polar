@@ -46,6 +46,7 @@ from polar.models import (
     BillingEntry,
     Customer,
     Discount,
+    Order,
     PaymentMethod,
     Product,
     ProductPriceFixed,
@@ -5400,3 +5401,73 @@ class TestFinalizeOrder:
 
         await session.refresh(order)
         assert order.status == OrderStatus.draft
+
+    async def test_happy_path_charges_and_settles_inline(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+        mocker: MockerFixture,
+    ) -> None:
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+
+        # A succeeded off-session charge with an expanded Charge, as
+        # trigger_payment requests via expand=["latest_charge"].
+        payment_intent = stripe_lib.PaymentIntent.construct_from(
+            {
+                "id": "pi_finalize_success",
+                "status": "succeeded",
+                "latest_charge": {"object": "charge", "id": "ch_finalize_success"},
+            },
+            None,
+        )
+        stripe_service_mock.create_payment_intent.return_value = payment_intent
+
+        # The charge -> payment -> benefit-grant pipeline has its own coverage;
+        # here we only assert finalize's orchestration drives it with a paid
+        # order, rather than leaving settlement to the webhook.
+        def _settle(_session: AsyncSession, settled: Order, _payment: object) -> Order:
+            settled.status = OrderStatus.paid
+            return settled
+
+        upsert_mock = mocker.patch(
+            "polar.order.service.payment_service.upsert_from_stripe_charge",
+            new=AsyncMock(return_value=MagicMock()),
+        )
+        handle_payment_mock = mocker.patch.object(
+            order_service, "handle_payment", new=AsyncMock(side_effect=_settle)
+        )
+
+        result = await order_service.finalize_order(
+            session, order, payment_method_id=payment_method.id
+        )
+
+        assert result.status == OrderStatus.paid
+        # The invoice number is assigned inline, and only on success.
+        assert result.invoice_number is not None
+
+        # The charge is keyed for idempotency (sync/finalize path only) so a
+        # retry after a lost response can't double-charge.
+        call_kwargs = stripe_service_mock.create_payment_intent.call_args[1]
+        assert (
+            call_kwargs["idempotency_key"]
+            == f"order_finalize:{order.id}:{payment_method.processor_id}"
+        )
+
+        # The success path is applied inline: the expanded charge is extracted
+        # and handed to the payment + settlement pipeline.
+        upsert_mock.assert_awaited_once()
+        charge_arg = upsert_mock.call_args.args[1]
+        assert isinstance(charge_arg, stripe_lib.Charge)
+        assert charge_arg.id == "ch_finalize_success"
+        handle_payment_mock.assert_awaited_once()

@@ -1561,6 +1561,20 @@ class OrderService:
                 stripe_customer_id = order.customer.stripe_customer_id
                 assert stripe_customer_id is not None
 
+                # Off-session finalize is retried by the merchant against the
+                # same order (which reverts to draft on failure), so the charge
+                # must be idempotent: if it succeeds but the response/commit is
+                # lost, a retry returns the cached PaymentIntent instead of
+                # double-charging. Scoping the key to the payment method keeps a
+                # retry with a *different* card a genuinely fresh attempt. Only
+                # the sync path sets this — background dunning relies on Stripe
+                # attempting a brand-new charge on each retry.
+                idempotency_key: str | None = None
+                if payment_mode == PaymentMode.sync:
+                    idempotency_key = (
+                        f"order_finalize:{order.id}:{payment_method.processor_id}"
+                    )
+
                 try:
                     payment_intent = await stripe_service.create_payment_intent(
                         amount=order.due_amount,
@@ -1573,6 +1587,7 @@ class OrderService:
                         statement_descriptor_suffix=order.statement_descriptor_suffix,
                         description=f"{order.organization.name} — {order.description}",
                         metadata=metadata,
+                        idempotency_key=idempotency_key,
                     )
                 except stripe_lib.CardError as e:
                     # Card errors (declines, expired cards, etc.) should not be retried
@@ -1617,11 +1632,13 @@ class OrderService:
                     raise
 
                 # Off-session SCA / 3DS challenges return a non-raising intent
-                # in one of the `requires_*` statuses. Background callers
-                # (checkout / dunning) ignore the return value and just wait
-                # for the webhook; sync callers (draft-order finalize) check
-                # the return value and surface a typed error to the merchant.
-                if payment_intent.status in (
+                # in one of the `requires_*` statuses. Only sync callers
+                # (draft-order finalize) surface a typed error so the merchant
+                # can re-authenticate the customer; background callers (checkout
+                # / dunning) must keep waiting for the webhook to drive dunning,
+                # exactly as before this path existed — raising here would break
+                # those flows.
+                if payment_mode == PaymentMode.sync and payment_intent.status in (
                     "requires_action",
                     "requires_confirmation",
                     "requires_payment_method",

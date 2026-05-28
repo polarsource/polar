@@ -5124,67 +5124,53 @@ async def off_session_organization(
 
 
 @pytest.mark.asyncio
-class TestGetChargeableProduct:
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
-    )
-    async def test_unknown_product_rejected(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        user_organization: UserOrganization,
-    ) -> None:
-        with pytest.raises(PolarRequestValidationError):
-            await order_service.get_chargeable_product(
-                session, auth_subject, uuid.uuid4()
-            )
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
-    )
-    async def test_recurring_product_rejected(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        user_organization: UserOrganization,
-        product: Product,
-    ) -> None:
-        # The default `product` fixture is recurring monthly.
-        with pytest.raises(PolarRequestValidationError):
-            await order_service.get_chargeable_product(
-                session, auth_subject, product.id
-            )
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
-    )
-    async def test_one_time_product_returned(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        user_organization: UserOrganization,
-        product_one_time: Product,
-    ) -> None:
-        result = await order_service.get_chargeable_product(
-            session, auth_subject, product_one_time.id
-        )
-        assert result.id == product_one_time.id
-
-
-@pytest.mark.asyncio
 class TestCreateDraftOrder:
     async def test_feature_flag_disabled(
         self,
         session: AsyncSession,
+        organization: Organization,
         product_one_time: Product,
         customer: Customer,
     ) -> None:
+        # `organization` does not have the off_session_charges flag set.
         payload = OrderCreate(
             customer_id=customer.id,
             product_id=product_one_time.id,
         )
         with pytest.raises(OffSessionChargesNotEnabled):
-            await order_service.create_draft_order(session, product_one_time, payload)
+            await order_service.create_draft_order(session, organization, payload)
+
+    async def test_unknown_product_rejected(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=uuid.uuid4(),
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_recurring_product_rejected(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # The default `product` fixture is recurring monthly.
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
 
     async def test_unknown_customer_rejected(
         self,
@@ -5197,7 +5183,9 @@ class TestCreateDraftOrder:
             product_id=product_one_time.id,
         )
         with pytest.raises(PolarRequestValidationError):
-            await order_service.create_draft_order(session, product_one_time, payload)
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
 
     async def test_happy_path(
         self,
@@ -5211,7 +5199,7 @@ class TestCreateDraftOrder:
             product_id=product_one_time.id,
         )
         order = await order_service.create_draft_order(
-            session, product_one_time, payload
+            session, off_session_organization, payload
         )
 
         assert order.status == OrderStatus.draft

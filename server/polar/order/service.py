@@ -14,7 +14,6 @@ from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
-from polar.authz.types import AccessibleOrganizationID
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.guard import has_product_checkout
@@ -100,7 +99,6 @@ from polar.product.guard import (
 )
 from polar.product.price_set import PriceSet
 from polar.product.repository import ProductRepository
-from polar.product.service import product as product_service
 from polar.receipt.service import receipt as receipt_service
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import (
@@ -857,20 +855,31 @@ class OrderService:
 
         return order
 
-    async def get_chargeable_product(
+    async def create_draft_order(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        product_id: uuid.UUID,
-    ) -> Product:
+        organization: Organization,
+        payload: OrderCreate,
+    ) -> Order:
         """
-        Resolve a product that can be charged through the off-session order API,
-        validating that it exists and is a one-time (non-subscription) product.
+        Create a draft order for an off-session charge in `organization`. The
+        order is persisted with `status=draft` and no invoice number; the
+        merchant must call finalize_order() to charge the customer's saved
+        payment method.
 
-        The caller is responsible for asserting write permission on the returned
-        product before creating an order from it.
+        The caller (endpoint) is responsible for having resolved `organization`
+        and asserted `sales_manage` permission on it. The product and customer
+        are looked up scoped to that organization.
         """
-        product = await product_service.get(session, auth_subject, product_id)
+        if not organization.feature_settings.get("off_session_charges_enabled"):
+            raise OffSessionChargesNotEnabled(organization.id)
+
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id_and_organization(
+            payload.product_id,
+            organization.id,
+            options=product_repository.get_eager_options(),
+        )
         if product is None:
             raise PolarRequestValidationError(
                 [
@@ -878,7 +887,7 @@ class OrderService:
                         "type": "value_error",
                         "loc": ("body", "product_id"),
                         "msg": "Product does not exist.",
-                        "input": product_id,
+                        "input": payload.product_id,
                     }
                 ]
             )
@@ -892,36 +901,14 @@ class OrderService:
                             "Subscription products are not supported by the "
                             "off-session charge API. Use a one-time product."
                         ),
-                        "input": product_id,
+                        "input": payload.product_id,
                     }
                 ]
             )
-        return product
-
-    async def create_draft_order(
-        self,
-        session: AsyncSession,
-        product: Product,
-        payload: OrderCreate,
-    ) -> Order:
-        """
-        Create a draft order for an off-session charge against `product`. The
-        order is persisted with `status=draft` and no invoice number; the
-        merchant must call finalize_order() to charge the customer's saved
-        payment method.
-
-        The caller (endpoint) is responsible for having resolved `product` via
-        get_chargeable_product() and asserted write permission on it.
-        """
-        organization = product.organization
-        if not organization.feature_settings.get("off_session_charges_enabled"):
-            raise OffSessionChargesNotEnabled(organization.id)
 
         customer_repository = CustomerRepository.from_session(session)
-        customer = await customer_repository.get_readable_by_id(
-            {AccessibleOrganizationID(organization.id)},
-            payload.customer_id,
-            options=(joinedload(Customer.organization),),
+        customer = await customer_repository.get_by_id_and_organization(
+            payload.customer_id, organization.id
         )
         if customer is None:
             raise PolarRequestValidationError(

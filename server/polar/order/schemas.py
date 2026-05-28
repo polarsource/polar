@@ -27,6 +27,7 @@ from polar.models.order import (
     OrderBillingReasonInternal,
     OrderStatus,
 )
+from polar.organization.schemas import OrganizationID
 from polar.product.schemas import ProductBase, ProductPrice
 from polar.subscription.schemas import SubscriptionBase
 
@@ -281,12 +282,21 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
 class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
     """Schema to create a draft order for an off-session charge."""
 
+    organization_id: OrganizationID | None = Field(
+        default=None,
+        description=(
+            "The ID of the organization the order belongs to. "
+            "**Required unless you use an organization token.** "
+            "The customer and product must belong to this organization."
+        ),
+    )
     customer_id: UUID4 = Field(
         description="The ID of the customer the order is for. "
-        "Must belong to the authenticated organization."
+        "Must belong to the order's organization."
     )
     product_id: UUID4 = Field(
         description="The ID of the one-time product to charge for. "
+        "Must belong to the order's organization. "
         "Subscription products are not supported."
     )
     amount: int | None = Field(

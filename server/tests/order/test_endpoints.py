@@ -494,11 +494,12 @@ class TestCreateOrder:
         product_one_time: Product,
         customer: Customer,
     ) -> None:
-        # The authenticated user is not a member of the product's organization,
-        # so the product is not resolvable and the order cannot be created.
+        # The authenticated user is not a member of the target organization
+        # (no user_organization fixture), so it isn't resolvable.
         response = await client.post(
             "/v1/orders/",
             json={
+                "organization_id": str(off_session_organization.id),
                 "customer_id": str(customer.id),
                 "product_id": str(product_one_time.id),
             },
@@ -509,6 +510,7 @@ class TestCreateOrder:
     async def test_feature_flag_disabled(
         self,
         client: AsyncClient,
+        organization: Organization,
         user_organization: UserOrganization,
         product_one_time: Product,
         customer: Customer,
@@ -516,6 +518,7 @@ class TestCreateOrder:
         response = await client.post(
             "/v1/orders/",
             json={
+                "organization_id": str(organization.id),
                 "customer_id": str(customer.id),
                 "product_id": str(product_one_time.id),
             },
@@ -534,6 +537,7 @@ class TestCreateOrder:
         response = await client.post(
             "/v1/orders/",
             json={
+                "organization_id": str(off_session_organization.id),
                 "customer_id": str(customer.id),
                 "product_id": str(product_one_time.id),
             },
@@ -544,6 +548,25 @@ class TestCreateOrder:
         assert body["invoice_number"] is None
         assert body["customer_id"] == str(customer.id)
         assert body["product_id"] == str(product_one_time.id)
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_missing_organization_id(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        # User tokens must specify which organization the order belongs to.
+        response = await client.post(
+            "/v1/orders/",
+            json={
+                "customer_id": str(customer.id),
+                "product_id": str(product_one_time.id),
+            },
+        )
+        assert response.status_code == 422
 
 
 @pytest.mark.asyncio

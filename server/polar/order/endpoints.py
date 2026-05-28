@@ -5,7 +5,10 @@ from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
 from polar.auth.permission import OrganizationPermission
-from polar.authz.service import assert_resource_permission
+from polar.authz.service import (
+    assert_organization_permission,
+    assert_resource_permission,
+)
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import IterableCSVWriter
@@ -15,6 +18,7 @@ from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Order
 from polar.models.product import ProductBillingType
 from polar.openapi import APITag
+from polar.organization.resolver import get_payload_organization
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -216,15 +220,13 @@ async def create(
 
     The organization must have the `off_session_charges_enabled` feature flag.
     """
-    product = await order_service.get_chargeable_product(
-        session, auth_subject, order_create.product_id
+    organization = await get_payload_organization(session, auth_subject, order_create)
+
+    await assert_organization_permission(
+        session, auth_subject, organization.id, OrganizationPermission.sales_manage
     )
 
-    await assert_resource_permission(
-        session, auth_subject, product, OrganizationPermission.sales_manage
-    )
-
-    return await order_service.create_draft_order(session, product, order_create)
+    return await order_service.create_draft_order(session, organization, order_create)
 
 
 @router.patch(

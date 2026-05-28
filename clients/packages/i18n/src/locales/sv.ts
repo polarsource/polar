@@ -233,7 +233,7 @@ export default {
       failedTitle: 'Ett problem uppstod vid behandlingen av din beställning',
       processingDescription: 'Vänta medan vi bekräftar din betalning.',
       failedDescription: 'Försök igen eller kontakta supporten.',
-      successTitle: 'Tack för din beställning!',
+      successTitle: 'Tack för din order!',
       successDescription: 'Nu har du tillgång till {product}.',
     },
     loading: {

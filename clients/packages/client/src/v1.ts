@@ -40188,6 +40188,8 @@ export interface operations {
         email?: string | null
         /** @description Filter by name, email, or external ID. */
         query?: string | null
+        /** @description Filter by active customers, i.e. customers with at least one order. */
+        active?: boolean | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

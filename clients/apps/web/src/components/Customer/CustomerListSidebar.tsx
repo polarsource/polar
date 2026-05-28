@@ -11,6 +11,8 @@ import { getServerURL } from '@/utils/api'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import ArrowDownward from '@mui/icons-material/ArrowDownward'
 import ArrowUpward from '@mui/icons-material/ArrowUpward'
+import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import FilterList from '@mui/icons-material/FilterList'
 import MoreVert from '@mui/icons-material/MoreVert'
 import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
@@ -51,12 +53,17 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
     ] as const).withDefault('-created_at'),
   )
   const [query, setQuery] = useQueryState('query', parseAsString)
+  const [activeFilter, setActiveFilter] = useQueryState(
+    'filter',
+    parseAsStringLiteral(['all', 'active'] as const).withDefault('all'),
+  )
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useCustomers(
     organization.id,
     {
       query: query ?? undefined,
       sorting: [sorting],
+      active: activeFilter === 'all' ? undefined : true,
     },
   )
 
@@ -101,7 +108,7 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
       const queryString = new URLSearchParams()
 
       for (const [key, value] of searchParams.entries()) {
-        if (['query', 'sorting'].includes(key)) {
+        if (['query', 'sorting', 'filter'].includes(key)) {
           queryString.append(key, value)
         }
       }
@@ -121,6 +128,34 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
         <div className="flex flex-row items-center justify-between gap-6 px-4 py-4">
           <div>Customers</div>
           <div className="flex flex-row items-center gap-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" className="h-6 w-6" variant="ghost">
+                  <FilterList fontSize="small" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setActiveFilter('all')}>
+                  <CheckOutlined
+                    className={twMerge(
+                      'h-4 w-4',
+                      activeFilter !== 'all' && 'invisible',
+                    )}
+                  />
+                  <span>All</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveFilter('active')}>
+                  <CheckOutlined
+                    className={twMerge(
+                      'h-4 w-4',
+                      activeFilter !== 'active' && 'invisible',
+                    )}
+                  />
+                  <span>Active</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <Button
               variant="ghost"
               size="icon"

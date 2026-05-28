@@ -21716,6 +21716,17 @@ export interface components {
      * @enum {string}
      */
     OAuthPlatform: 'github' | 'github_repository_benefit' | 'google' | 'apple'
+    /** OffSessionChargesNotEnabled */
+    OffSessionChargesNotEnabled: {
+      /**
+       * Error
+       * @example OffSessionChargesNotEnabled
+       * @constant
+       */
+      error: 'OffSessionChargesNotEnabled'
+      /** Detail */
+      detail: string
+    }
     /** Order */
     Order: {
       /**
@@ -22122,6 +22133,17 @@ export interface components {
        * @description Associated price ID, if any.
        */
       product_price_id: string | null
+    }
+    /** OrderNotDraft */
+    OrderNotDraft: {
+      /**
+       * Error
+       * @example OrderNotDraft
+       * @constant
+       */
+      error: 'OrderNotDraft'
+      /** Detail */
+      detail: string
     }
     /** OrderNotEligibleForRetry */
     OrderNotEligibleForRetry: {
@@ -25443,6 +25465,17 @@ export interface components {
     Payment:
       | components['schemas']['CardPayment']
       | components['schemas']['GenericPayment']
+    /** PaymentActionRequired */
+    PaymentActionRequired: {
+      /**
+       * Error
+       * @example PaymentActionRequired
+       * @constant
+       */
+      error: 'PaymentActionRequired'
+      /** Detail */
+      detail: string
+    }
     /** PaymentAlreadyInProgress */
     PaymentAlreadyInProgress: {
       /**
@@ -36695,6 +36728,26 @@ export interface operations {
           'application/json': components['schemas']['Order']
         }
       }
+      /** @description The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session. */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['PaymentFailed']
+            | components['schemas']['PaymentActionRequired']
+        }
+      }
+      /** @description Off-session charges are not enabled for this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OffSessionChargesNotEnabled']
+        }
+      }
       /** @description Order not found. */
       404: {
         headers: {
@@ -36702,6 +36755,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The order is not in `draft` status. */
+      412: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrderNotDraft']
         }
       }
       /** @description Validation Error */

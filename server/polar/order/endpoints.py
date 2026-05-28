@@ -41,7 +41,14 @@ from .schemas import (
     OrderReceipt,
     OrderUpdate,
 )
-from .service import MissingInvoiceBillingDetails, NotPaidOrder
+from .service import (
+    MissingInvoiceBillingDetails,
+    NotPaidOrder,
+    OffSessionChargesNotEnabled,
+    OrderNotDraft,
+    PaymentActionRequired,
+    PaymentFailed,
+)
 from .service import order as order_service
 
 router = APIRouter(prefix="/orders", tags=["orders", APITag.public, APITag.mcp])
@@ -248,7 +255,24 @@ async def update(
     "/{id}/finalize",
     summary="Finalize Order",
     response_model=OrderSchema,
-    responses={404: OrderNotFound},
+    responses={
+        402: {
+            "description": (
+                "The charge failed, or requires customer authentication "
+                "(e.g. a 3DS challenge) that can't be completed off-session."
+            ),
+            "model": PaymentFailed.schema() | PaymentActionRequired.schema(),
+        },
+        403: {
+            "description": "Off-session charges are not enabled for this organization.",
+            "model": OffSessionChargesNotEnabled.schema(),
+        },
+        404: OrderNotFound,
+        412: {
+            "description": "The order is not in `draft` status.",
+            "model": OrderNotDraft.schema(),
+        },
+    },
 )
 async def finalize(
     finalize_payload: OrderFinalize,

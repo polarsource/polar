@@ -44,6 +44,8 @@ export type {
 } from './components/Status'
 export { Text } from './components/Text'
 export type { TextColor, TextStyleProps, TextVariant } from './components/Text'
+export { Truncated } from './components/Truncated'
+export type { Props as TruncatedProps } from './components/Truncated'
 
 // ─── Primitives ───────────────────────────────────────────────────────────────
 export { createText } from './primitives/createText'

@@ -17,6 +17,7 @@ import { getChartRangeParams } from '@/utils/metrics'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
+import { Truncated } from '@polar-sh/orbit'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -141,9 +142,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
               avatar_url={customer.avatar_url}
               name={customer.email ?? customer.name ?? '—'}
             />
-            <div className="fw-medium overflow-hidden text-ellipsis whitespace-nowrap">
-              {customer.name || customer.email || '—'}
-            </div>
+            <Truncated>{customer.name || customer.email || '—'}</Truncated>
           </div>
         )
       },

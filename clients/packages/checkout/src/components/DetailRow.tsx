@@ -1,5 +1,6 @@
 import { cn } from '@polar-sh/ui/lib/utils'
 import { PropsWithChildren } from 'react'
+import Truncated from './Truncated'
 
 const DetailRow = ({
   title,
@@ -23,7 +24,7 @@ const DetailRow = ({
       )}
     >
       <div className="flex min-w-0 flex-row items-baseline gap-x-1">
-        <span className="min-w-0 truncate">{title}</span>
+        <Truncated>{title}</Truncated>
         {subtitle && (
           <span className="dark:text-polar-500 shrink-0 text-gray-400">
             {subtitle}

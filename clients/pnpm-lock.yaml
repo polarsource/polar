@@ -787,6 +787,9 @@ importers:
 
   packages/orbit:
     dependencies:
+      '@radix-ui/react-tooltip':
+        specifier: ^1.2.8
+        version: 1.2.8(@types/react-dom@19.2.3(@types/react@19.2.13))(@types/react@19.2.13)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@stylexjs/stylex':
         specifier: ^0.18.2
         version: 0.18.2

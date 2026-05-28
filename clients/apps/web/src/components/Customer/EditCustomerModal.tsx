@@ -107,10 +107,14 @@ export const EditCustomerModal = ({
               control={form.control}
               name="email"
               rules={{
-                required: 'Email is required',
-                pattern: {
-                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                  message: 'Invalid email address',
+                required:
+                  customer.type === 'team' ? false : 'Email is required',
+                validate: (value) => {
+                  if (!value) return true
+                  return (
+                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ||
+                    'Invalid email address'
+                  )
                 },
               }}
               render={({ field }) => (

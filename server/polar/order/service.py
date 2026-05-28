@@ -53,7 +53,7 @@ from polar.integrations.stripe.service import (
 )
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.address import Address
-from polar.kit.currency import format_currency, get_minimum_currency_amount
+from polar.kit.currency import get_minimum_currency_amount
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
@@ -94,12 +94,15 @@ from polar.payment.service import payment as payment_service
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.product.guard import (
-    CustomPrice,
     is_custom_price,
     is_seat_price,
     is_static_price,
 )
-from polar.product.price_set import NoPricesForCurrencies, PriceSet
+from polar.product.price_set import (
+    NoPricesForCurrencies,
+    PriceSet,
+    validate_custom_price_amount,
+)
 from polar.product.repository import ProductRepository
 from polar.receipt.service import receipt as receipt_service
 from polar.subscription.service import subscription as subscription_service
@@ -434,16 +437,13 @@ class OrderService:
         id: uuid.UUID,
     ) -> Order | None:
         repository = OrderRepository.from_session(session)
-        statement = (
-            repository.get_readable_statement(auth_subject)
-            .options(
-                *repository.get_eager_options(
-                    product_load=joinedload(Order.product),
-                )
-            )
-            .where(Order.id == id)
+        return await repository.get_readable_by_id(
+            auth_subject,
+            id,
+            options=repository.get_eager_options(
+                product_load=joinedload(Order.product),
+            ),
         )
-        return await repository.get_one_or_none(statement)
 
     async def update(
         self,
@@ -744,7 +744,7 @@ class OrderService:
                             }
                         ]
                     )
-                self._validate_custom_price_amount(price, payload.amount, currency)
+                validate_custom_price_amount(price, payload.amount, currency)
             if is_seat_price(price) and (payload.seats is None or payload.seats <= 0):
                 raise PolarRequestValidationError(
                     [
@@ -759,58 +759,6 @@ class OrderService:
                         }
                     ]
                 )
-
-    def _validate_custom_price_amount(
-        self, price: CustomPrice, amount: int, currency: str
-    ) -> None:
-        """Validate a custom (pay-what-you-want) amount against the price's
-        configured minimum / maximum and the currency minimum."""
-        loc = ("body", "amount")
-        if price.minimum_amount == 0:
-            # Free is allowed: accept 0, or any amount >= the currency minimum.
-            if amount == 0:
-                return
-            currency_minimum = get_minimum_currency_amount(currency)
-            if 0 < amount < currency_minimum:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "invalid_amount",
-                            "loc": loc,
-                            "msg": (
-                                "Amount must be 0 or at least "
-                                f"{format_currency(currency_minimum, currency)}."
-                            ),
-                            "input": amount,
-                            "ctx": {"allowed": [0], "ge": currency_minimum},
-                        }
-                    ]
-                )
-        elif amount < price.minimum_amount:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "greater_than_equal",
-                        "loc": loc,
-                        "msg": "Amount is below minimum.",
-                        "input": amount,
-                        "ctx": {"ge": price.minimum_amount},
-                    }
-                ]
-            )
-
-        if price.maximum_amount is not None and amount > price.maximum_amount:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "less_than_equal",
-                        "loc": loc,
-                        "msg": "Amount is above maximum.",
-                        "input": amount,
-                        "ctx": {"le": price.maximum_amount},
-                    }
-                ]
-            )
 
     async def _create_order_from_checkout(
         self,
@@ -1110,9 +1058,10 @@ class OrderService:
         repository = OrderRepository.from_session(session)
         if not await repository.start_finalization(order.id):
             raise OrderNotDraft(order)
-        # Sync the in-memory status with the atomic transition (relationships
-        # stay loaded) so trigger_payment, which requires `pending`, sees it.
-        await session.refresh(order, ["status"])
+        # Sync the in-memory status with the atomic transition (deterministic on
+        # a successful claim) so trigger_payment, which requires `pending`, sees
+        # it — without a refresh round-trip or expiring loaded relationships.
+        order.status = OrderStatus.pending
 
         # Any failure from trigger_payment happens before a charge completes
         # (declines raise, SCA returns requires_action, a concurrent lock raises

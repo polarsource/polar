@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Annotated, Any
 
 from fastapi import Depends
+from sqlalchemy.orm import joinedload
 
 from polar.auth.dependencies import Authenticator
 from polar.auth.models import AuthSubject, Organization, User
@@ -12,8 +13,8 @@ from polar.exceptions import ResourceNotFound
 from polar.models import Order
 from polar.postgres import AsyncSession, get_db_session
 
+from .repository import OrderRepository
 from .schemas import OrderID
-from .service import order as order_service
 
 _OrdersRead = Authenticator(
     required_scopes={Scope.orders_read},
@@ -58,7 +59,14 @@ def OrderPolicyGuard(permission: OrganizationPermission) -> Any:
         auth_subject: OrdersWrite,
         session: AsyncSession = Depends(get_db_session),
     ) -> AuthorizedOrder:
-        order = await order_service.get(session, auth_subject, id)
+        repository = OrderRepository.from_session(session)
+        order = await repository.get_readable_by_id(
+            auth_subject,
+            id,
+            options=repository.get_eager_options(
+                product_load=joinedload(Order.product),
+            ),
+        )
         if order is None:
             raise ResourceNotFound()
         await assert_resource_permission(session, auth_subject, order, permission)

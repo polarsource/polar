@@ -1,6 +1,6 @@
 import asyncio
 import logging.config
-from datetime import datetime
+from datetime import UTC, datetime
 from functools import wraps
 from typing import Any
 from uuid import UUID
@@ -180,12 +180,23 @@ async def create_subscription(
             )
 
             if force_current_period_end is not None:
+                # Typer parses datetime as naive; attach UTC so the value is
+                # timezone-aware and consistent with the rest of the codebase.
+                if force_current_period_end.tzinfo is None:
+                    force_current_period_end = force_current_period_end.replace(
+                        tzinfo=UTC
+                    )
                 current_period_end = force_current_period_end
+
+            # When the period end is forced to an arbitrary date, anchor future
+            # billing cycles to that date's day-of-month so subsequent periods
+            # don't drift back to the start day.
+            anchor_day = current_period_end.day if force_current_period_end is not None else current_period_start.day
 
             subscription = Subscription(
                 status=SubscriptionStatus.active,
                 started_at=current_period_start,
-                anchor_day=current_period_start.day,
+                anchor_day=anchor_day,
                 current_period_start=current_period_start,
                 current_period_end=current_period_end,
                 cancel_at_period_end=False,

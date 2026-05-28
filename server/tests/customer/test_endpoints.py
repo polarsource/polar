@@ -11,6 +11,7 @@ from polar.models import (
     Product,
     UserOrganization,
 )
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.auth import AuthSubjectFixture
@@ -19,7 +20,7 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_benefit_grant,
     create_customer,
-    create_order,
+    create_subscription,
 )
 
 
@@ -118,40 +119,68 @@ class TestListCustomers:
         user_organization: UserOrganization,
         product: Product,
     ) -> None:
-        customer_with_order = await create_customer(
+        customer_active = await create_customer(
             save_fixture,
             organization=organization,
             email="active@example.com",
         )
-        await create_order(save_fixture, customer=customer_with_order, product=product)
-        customer_without_order = await create_customer(
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer_active,
+            status=SubscriptionStatus.active,
+        )
+        customer_past_due = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="past-due@example.com",
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer_past_due,
+            status=SubscriptionStatus.past_due,
+        )
+        customer_inactive = await create_customer(
             save_fixture,
             organization=organization,
             email="inactive@example.com",
         )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer_inactive,
+            status=SubscriptionStatus.canceled,
+        )
 
-        # active=true returns only customers with at least one order
+        # active=true returns customers with an active or past_due subscription
         response = await client.get("/v1/customers/", params={"active": True})
 
         assert response.status_code == 200
         ids = {item["id"] for item in response.json()["items"]}
-        assert str(customer_with_order.id) in ids
-        assert str(customer_without_order.id) not in ids
+        assert str(customer_active.id) in ids
+        assert str(customer_past_due.id) in ids
+        assert str(customer_inactive.id) not in ids
 
-        # active=false excludes customers with at least one order
+        # active=false excludes customers with an active or past_due subscription
         response = await client.get("/v1/customers/", params={"active": False})
 
         assert response.status_code == 200
         ids = {item["id"] for item in response.json()["items"]}
-        assert str(customer_without_order.id) in ids
-        assert str(customer_with_order.id) not in ids
+        assert str(customer_inactive.id) in ids
+        assert str(customer_active.id) not in ids
+        assert str(customer_past_due.id) not in ids
 
         # no filter returns all customers
         response = await client.get("/v1/customers/")
 
         assert response.status_code == 200
         ids = {item["id"] for item in response.json()["items"]}
-        assert {str(customer_with_order.id), str(customer_without_order.id)} <= ids
+        assert {
+            str(customer_active.id),
+            str(customer_past_due.id),
+            str(customer_inactive.id),
+        } <= ids
 
 
 @pytest.mark.asyncio

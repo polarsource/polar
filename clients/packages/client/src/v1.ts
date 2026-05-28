@@ -24215,6 +24215,17 @@ export interface components {
        */
       role: 'admin' | 'member'
     }
+    /** OrganizationNotReadyForPayments */
+    OrganizationNotReadyForPayments: {
+      /**
+       * Error
+       * @example OrganizationNotReadyForPayments
+       * @constant
+       */
+      error: 'OrganizationNotReadyForPayments'
+      /** Detail */
+      detail: string
+    }
     /** OrganizationNotificationSettings */
     OrganizationNotificationSettings: {
       /** New Order */
@@ -36739,13 +36750,15 @@ export interface operations {
             | components['schemas']['PaymentActionRequired']
         }
       }
-      /** @description Off-session charges are not enabled for this organization. */
+      /** @description Off-session charges are not enabled for this organization, or its account can't currently accept payments. */
       403: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['OffSessionChargesNotEnabled']
+          'application/json':
+            | components['schemas']['OffSessionChargesNotEnabled']
+            | components['schemas']['OrganizationNotReadyForPayments']
         }
       }
       /** @description Order not found. */

@@ -46,6 +46,7 @@ from .service import (
     NotPaidOrder,
     OffSessionChargesNotEnabled,
     OrderNotDraft,
+    OrganizationNotReadyForPayments,
     PaymentActionRequired,
     PaymentFailed,
 )
@@ -264,8 +265,12 @@ async def update(
             "model": PaymentFailed.schema() | PaymentActionRequired.schema(),
         },
         403: {
-            "description": "Off-session charges are not enabled for this organization.",
-            "model": OffSessionChargesNotEnabled.schema(),
+            "description": (
+                "Off-session charges are not enabled for this organization, "
+                "or its account can't currently accept payments."
+            ),
+            "model": OffSessionChargesNotEnabled.schema()
+            | OrganizationNotReadyForPayments.schema(),
         },
         404: OrderNotFound,
         412: {

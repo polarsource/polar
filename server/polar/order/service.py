@@ -279,6 +279,19 @@ class OffSessionChargesNotEnabled(OrderError):
         )
 
 
+class OrganizationNotReadyForPayments(OrderError):
+    """The organization's account can't currently accept payments (e.g. not yet
+    onboarded or under review), so an off-session charge can't be attempted."""
+
+    def __init__(self, organization_id: uuid.UUID) -> None:
+        self.organization_id = organization_id
+        super().__init__(
+            "This organization can't accept payments yet. Its account may be "
+            "pending onboarding or under review.",
+            403,
+        )
+
+
 class OrderNotDraft(OrderError):
     """Operation only valid on orders in `draft` status."""
 
@@ -993,6 +1006,12 @@ class OrderService:
         if not organization.feature_settings.get("off_session_charges_enabled"):
             raise OffSessionChargesNotEnabled(organization.id)
 
+        # Surface the real reason up front: trigger_payment would otherwise
+        # short-circuit on this same capability and leave the order pending,
+        # which the None-handling below can only report as a generic failure.
+        if not organization.can_accept_payments:
+            raise OrganizationNotReadyForPayments(organization.id)
+
         customer = order.customer
         payment_method = await self._resolve_payment_method(
             session, customer, payment_method_id
@@ -1021,9 +1040,12 @@ class OrderService:
             raise
 
         if payment_intent is None:
-            # trigger_payment short-circuited: under-currency-minimum already
-            # marked the order paid; organization-capability-disabled left it
-            # pending. Re-read for a clean status value.
+            # trigger_payment short-circuited without a charge. The expected
+            # case is under-currency-minimum, which already marked the order
+            # paid (org capability was checked above), so re-read for a clean
+            # status: paid -> assign the invoice number and return. A still
+            # `pending` order here means no Stripe charge could be attempted
+            # (e.g. a non-Stripe payment method), so revert and report failure.
             settled = await repository.get_by_id(order.id)
             if settled is not None and settled.status == OrderStatus.pending:
                 await self._revert_to_draft(session, order)

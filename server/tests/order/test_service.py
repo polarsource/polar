@@ -77,6 +77,7 @@ from polar.order.service import (
     OrderNotDraft,
     OrderNotEligibleForRetry,
     OrderNotPending,
+    OrganizationNotReadyForPayments,
     PaymentActionRequired,
     PaymentAlreadyInProgress,
     PaymentFailed,
@@ -5285,6 +5286,36 @@ class TestFinalizeOrder:
         )
         with pytest.raises(OffSessionChargesNotEnabled):
             await order_service.finalize_order(session, order)
+
+    async def test_organization_cannot_accept_payments(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Flag is enabled, but the org's account can't accept payments yet
+        # (e.g. pending onboarding / under review).
+        off_session_organization.capabilities = {
+            **off_session_organization.capabilities,
+            "checkout_payments": False,
+        }
+        await save_fixture(off_session_organization)
+
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+        with pytest.raises(OrganizationNotReadyForPayments):
+            await order_service.finalize_order(session, order)
+
+        await session.refresh(order)
+        # Rejected before any state change — the order stays a draft.
+        assert order.status == OrderStatus.draft
 
     async def test_missing_payment_method(
         self,

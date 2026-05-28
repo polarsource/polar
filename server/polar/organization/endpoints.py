@@ -926,7 +926,6 @@ async def change_subscription_plan(
 )
 async def cancel_subscription_endpoint(
     authz: AuthorizeOrgManage,
-    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationSubscription:
     """Cancel the organization's active subscription at the end of the current period.
 

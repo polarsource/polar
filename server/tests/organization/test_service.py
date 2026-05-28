@@ -1285,6 +1285,115 @@ class TestMaybeActivate:
         assert result is True
         assert organization.status == OrganizationStatus.ACTIVE
 
+    async def test_activates_when_owner_verified_but_payout_admin_unverified(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        user_second: User,
+    ) -> None:
+        """Activation keys off the org owner's identity verification, not the
+        (static) payout account admin's.
+
+        Scenario: ``user`` (A) created the org and payout account (A is the
+        admin) but never completed identity verification. Ownership was
+        transferred to ``user_second`` (B), who is verified. Activation must
+        succeed because the owner is verified.
+        """
+        await _setup_passing_org(save_fixture, organization, user)
+        organization.status = OrganizationStatus.CREATED
+        organization.details_submitted_at = datetime.now(UTC)
+        await save_fixture(organization)
+
+        # A (payout account admin) is NOT identity-verified.
+        user.identity_verification_status = IdentityVerificationStatus.unverified
+        await save_fixture(user)
+
+        # Transfer ownership: demote A, promote verified B to owner.
+        owner_uo = await user_organization_service.get_by_user_and_org(
+            session, user.id, organization.id
+        )
+        assert owner_uo is not None
+        owner_uo.role = OrganizationRole.admin
+        await save_fixture(owner_uo)
+
+        user_second.identity_verification_status = IdentityVerificationStatus.verified
+        await save_fixture(user_second)
+        await save_fixture(
+            UserOrganization(
+                user_id=user_second.id,
+                organization_id=organization.id,
+                role=OrganizationRole.owner,
+            )
+        )
+
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.PASS,
+            risk_score=10.0,
+            violated_sections=[],
+            reason="Clean",
+            model_used="test",
+        )
+        session.add(review)
+        await session.flush()
+
+        result = await organization_service.maybe_activate(session, organization)
+
+        assert result is True
+        assert organization.status == OrganizationStatus.ACTIVE
+
+    async def test_does_not_activate_when_owner_unverified_but_payout_admin_verified(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        user_second: User,
+    ) -> None:
+        """The reverse: a verified payout account admin must not unlock
+        activation when the current owner is unverified.
+        """
+        await _setup_passing_org(save_fixture, organization, user)
+        organization.status = OrganizationStatus.CREATED
+        organization.details_submitted_at = datetime.now(UTC)
+        await save_fixture(organization)
+
+        # A (payout account admin) stays verified, but the new owner B isn't.
+        owner_uo = await user_organization_service.get_by_user_and_org(
+            session, user.id, organization.id
+        )
+        assert owner_uo is not None
+        owner_uo.role = OrganizationRole.admin
+        await save_fixture(owner_uo)
+
+        user_second.identity_verification_status = IdentityVerificationStatus.unverified
+        await save_fixture(user_second)
+        await save_fixture(
+            UserOrganization(
+                user_id=user_second.id,
+                organization_id=organization.id,
+                role=OrganizationRole.owner,
+            )
+        )
+
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.PASS,
+            risk_score=10.0,
+            violated_sections=[],
+            reason="Clean",
+            model_used="test",
+        )
+        session.add(review)
+        await session.flush()
+
+        result = await organization_service.maybe_activate(session, organization)
+
+        assert result is False
+        assert organization.status == OrganizationStatus.CREATED
+
 
 @pytest.mark.asyncio
 class TestBackofficeApprove:
@@ -2401,6 +2510,13 @@ class TestApproveAppeal:
 
         user.identity_verification_status = IdentityVerificationStatus.verified
         await save_fixture(user)
+        await save_fixture(
+            UserOrganization(
+                user_id=user.id,
+                organization_id=organization.id,
+                role=OrganizationRole.owner,
+            )
+        )
 
         await create_payout_account(save_fixture, organization, user)
 
@@ -3728,6 +3844,13 @@ class TestStatusTransitions:
 
         user.identity_verification_status = IdentityVerificationStatus.verified
         await save_fixture(user)
+        await save_fixture(
+            UserOrganization(
+                user_id=user.id,
+                organization_id=organization.id,
+                role=OrganizationRole.owner,
+            )
+        )
 
         await create_payout_account(save_fixture, organization, user)
 

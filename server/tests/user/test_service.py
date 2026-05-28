@@ -1,4 +1,5 @@
 import pytest
+import stripe as stripe_lib
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
@@ -10,7 +11,8 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.user import OAuthPlatform
+from polar.models.user import IdentityVerificationStatus, OAuthPlatform
+from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncSession
 from polar.user.schemas import UserDeletionBlockedReason, UserUpdate
 from polar.user.service import user as user_service
@@ -18,6 +20,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_notification_recipient,
     create_oauth_account,
+    create_payout_account,
 )
 
 
@@ -275,3 +278,65 @@ class TestRequestDeletion:
         recipients = result.scalars().all()
         assert len(recipients) == 2
         assert all(r.deleted_at is not None for r in recipients)
+
+
+@pytest.mark.asyncio
+class TestIdentityVerificationVerified:
+    async def test_activates_organizations_owned_by_user(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        """The webhook activates orgs where the verified user is the owner,
+        not orgs where they are merely the (static) payout account admin.
+        """
+        user.identity_verification_id = "vs_owner_test"
+        await save_fixture(user)
+
+        # User owns `organization`.
+        await save_fixture(
+            UserOrganization(
+                user_id=user.id,
+                organization_id=organization.id,
+                role=OrganizationRole.owner,
+            )
+        )
+
+        # User is only the payout account admin of `organization_second`
+        # (not the owner) — the old behavior would have tried to activate it.
+        await save_fixture(
+            UserOrganization(
+                user_id=user.id,
+                organization_id=organization_second.id,
+                role=OrganizationRole.member,
+            )
+        )
+        await create_payout_account(save_fixture, organization_second, user)
+
+        maybe_activate_mock = mocker.patch(
+            "polar.user.service.organization_service.maybe_activate",
+            new_callable=mocker.AsyncMock,
+        )
+
+        verification_session = stripe_lib.identity.VerificationSession.construct_from(
+            {"id": "vs_owner_test", "status": "verified"}, None
+        )
+
+        updated_user = await user_service.identity_verification_verified(
+            session, verification_session
+        )
+
+        assert (
+            updated_user.identity_verification_status
+            == IdentityVerificationStatus.verified
+        )
+
+        activated_org_ids = {
+            call.args[1].id for call in maybe_activate_mock.call_args_list
+        }
+        assert organization.id in activated_org_ids
+        assert organization_second.id not in activated_org_ids

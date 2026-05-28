@@ -367,18 +367,17 @@ class OrganizationRepository(
         )
         return await self.get_all(statement)
 
-    async def get_all_by_payout_account_admin(
-        self, user_id: UUID
-    ) -> Sequence[Organization]:
+    async def get_all_by_owner_user(self, user_id: UUID) -> Sequence[Organization]:
         statement = (
             self.get_base_statement()
             .join(
-                PayoutAccount,
-                PayoutAccount.id == Organization.payout_account_id,
+                UserOrganization,
+                UserOrganization.organization_id == Organization.id,
             )
             .where(
-                PayoutAccount.admin_id == user_id,
-                PayoutAccount.deleted_at.is_(None),
+                UserOrganization.user_id == user_id,
+                UserOrganization.role == OrganizationRole.owner,
+                UserOrganization.is_deleted.is_(False),
             )
         )
         return await self.get_all(statement)

@@ -11,7 +11,6 @@ import structlog
 from pydantic import BaseModel, Field, TypeAdapter
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import joinedload
 
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
@@ -1050,15 +1049,16 @@ class OrganizationService:
         payout_account_repository = PayoutAccountRepository.from_session(session)
         payout_account = await payout_account_repository.get_by_id(
             organization.payout_account_id,
-            options=(joinedload(PayoutAccount.admin),),
         )
         if payout_account is None or not payout_account.is_payout_ready:
             return False
 
-        admin = payout_account.admin
+        organization_repository = OrganizationRepository.from_session(session)
+        owner_user = await organization_repository.get_owner_user(organization)
         if (
-            admin is None
-            or admin.identity_verification_status != IdentityVerificationStatus.verified
+            owner_user is None
+            or owner_user.identity_verification_status
+            != IdentityVerificationStatus.verified
         ):
             return False
 
@@ -1073,7 +1073,7 @@ class OrganizationService:
           1. Status is CREATED.
           2. Review is approved: verdict PASS, or verdict FAIL with an
              APPROVED appeal.
-          3. Details submitted, payout account ready, admin identity
+          3. Details submitted, payout account ready, owner identity
              verified (see `_is_activation_ready`).
 
         Idempotent — safe to call from automated triggers (AI review, Stripe

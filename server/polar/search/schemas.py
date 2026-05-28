@@ -18,14 +18,14 @@ class SearchResultCustomer(Schema):
     type: Literal["customer"] = "customer"
     id: UUID4
     name: str | None
-    email: str
+    email: str | None = None
 
 
 class SearchResultOrder(Schema):
     type: Literal["order"] = "order"
     id: UUID4
     customer_name: str | None
-    customer_email: str
+    customer_email: str | None = None
     product_name: str
     amount: int
     currency: str
@@ -35,7 +35,7 @@ class SearchResultSubscription(Schema):
     type: Literal["subscription"] = "subscription"
     id: UUID4
     customer_name: str | None
-    customer_email: str
+    customer_email: str | None = None
     product_name: str
     status: str
     amount: int

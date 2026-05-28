@@ -1,7 +1,7 @@
 """make product visibility non-nullable
 
 Revision ID: 0c12d2aaab31
-Revises: 8f4d6b9a2c31
+Revises: 706d2bab5ee4
 Create Date: 2026-05-28 12:06:22.931905
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "0c12d2aaab31"
-down_revision = "8f4d6b9a2c31"
+down_revision = "706d2bab5ee4"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

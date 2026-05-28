@@ -236,22 +236,12 @@ async def create(
     responses={404: OrderNotFound},
 )
 async def update(
-    id: OrderID,
     order_update: OrderUpdate,
-    auth_subject: auth.OrdersWrite,
+    authorized: auth.OrderSalesManage,
     session: AsyncSession = Depends(get_db_session),
 ) -> Order:
     """Update an order."""
-    order = await order_service.get(session, auth_subject, id)
-
-    if order is None:
-        raise ResourceNotFound()
-
-    await assert_resource_permission(
-        session, auth_subject, order, OrganizationPermission.sales_manage
-    )
-
-    return await order_service.update(session, order, order_update)
+    return await order_service.update(session, authorized.order, order_update)
 
 
 @router.post(

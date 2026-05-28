@@ -52,7 +52,6 @@ from polar.integrations.stripe.service import (
     stripe as stripe_service,
 )
 from polar.invoice.service import invoice as invoice_service
-from polar.kit.address import Address
 from polar.kit.currency import get_minimum_currency_amount
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
@@ -453,18 +452,6 @@ class OrderService:
     ) -> Order:
         repository = OrderRepository.from_session(session)
 
-        update_dict = order_update.model_dump(exclude_unset=True)
-        # Pydantic schemas expose the field as `metadata` for the public API,
-        # but the model column is `user_metadata`.
-        if "metadata" in update_dict:
-            update_dict["user_metadata"] = update_dict.pop("metadata")
-
-        # Draft-only fields can only change while the order is still being
-        # built. They share the same PATCH endpoint so we enforce here.
-        draft_only_fields = {"user_metadata", "custom_field_data"}
-        if order.status != OrderStatus.draft and draft_only_fields & update_dict.keys():
-            raise OrderNotDraft(order)
-
         errors: list[ValidationError] = []
 
         billing_address = order_update.billing_address
@@ -491,50 +478,9 @@ class OrderService:
         if errors:
             raise PolarRequestValidationError(errors)
 
-        # Recompute tax when the billing address of a draft order changes —
-        # the cached calculation no longer reflects the new shipping jurisdiction.
-        if (
-            order.status == OrderStatus.draft
-            and order.product is not None
-            and "billing_address" in update_dict
-        ):
-            new_billing_address: Address | None = order_update.billing_address
-            taxable_amount = order.subtotal_amount - order.discount_amount
-            (
-                tax_processor,
-                tax_behavior,
-                tax_calculation_processor_id,
-                tax_amount,
-                tax_breakdown,
-            ) = await self._calculate_tax(
-                reference=str(order.id),
-                taxable_amount=taxable_amount,
-                tax_behavior_option=(
-                    order.tax_behavior.to_option()
-                    if order.tax_behavior is not None
-                    else order.organization.default_tax_behavior
-                ),
-                currency=order.currency,
-                customer=order.customer,
-                product=order.product,
-                tax_exempted=False,
-                billing_address_override=new_billing_address,
-            )
-            net_amount = taxable_amount - (
-                tax_amount if tax_behavior == TaxBehavior.inclusive else 0
-            )
-            update_dict.update(
-                {
-                    "tax_processor": tax_processor,
-                    "tax_behavior": tax_behavior,
-                    "tax_calculation_processor_id": tax_calculation_processor_id,
-                    "tax_amount": tax_amount,
-                    "tax_breakdown": tax_breakdown or None,
-                    "net_amount": net_amount,
-                }
-            )
-
-        order = await repository.update(order, update_dict=update_dict)
+        order = await repository.update(
+            order, update_dict=order_update.model_dump(exclude_unset=True)
+        )
 
         await self.send_webhook(session, order, WebhookEventType.order_updated)
 
@@ -2815,7 +2761,6 @@ class OrderService:
         customer: Customer,
         product: Product,
         tax_exempted: bool,
-        billing_address_override: Address | None = None,
     ) -> tuple[
         TaxProcessor | None,
         TaxBehavior | None,
@@ -2823,11 +2768,7 @@ class OrderService:
         int,
         Sequence[TaxBreakdownItem],
     ]:
-        billing_address = (
-            billing_address_override
-            if billing_address_override is not None
-            else customer.billing_address
-        )
+        billing_address = customer.billing_address
         tax_id = customer.tax_id
 
         tax_processor: TaxProcessor | None = None

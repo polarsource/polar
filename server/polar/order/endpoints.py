@@ -236,18 +236,22 @@ async def create(
     responses={404: OrderNotFound},
 )
 async def update(
+    id: OrderID,
     order_update: OrderUpdate,
-    authorized: auth.OrderSalesManage,
+    auth_subject: auth.OrdersWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Order:
-    """
-    Update an order.
+    """Update an order."""
+    order = await order_service.get(session, auth_subject, id)
 
-    Billing details (name, address) can be updated on any order. Other fields
-    (seats, metadata, custom field data) can only be updated while the order
-    is in `draft` status.
-    """
-    return await order_service.update(session, authorized.order, order_update)
+    if order is None:
+        raise ResourceNotFound()
+
+    await assert_resource_permission(
+        session, auth_subject, order, OrganizationPermission.sales_manage
+    )
+
+    return await order_service.update(session, order, order_update)
 
 
 @router.post(

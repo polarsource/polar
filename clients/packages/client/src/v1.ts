@@ -2072,10 +2072,6 @@ export interface paths {
      * Update Order
      * @description Update an order.
      *
-     *     Billing details (name, address) can be updated on any order. Other fields
-     *     (seats, metadata, custom field data) can only be updated while the order
-     *     is in `draft` status.
-     *
      *     **Scopes**: `orders:write`
      */
     patch: operations['orders:update']
@@ -22565,39 +22561,8 @@ export interface components {
     /**
      * OrderUpdate
      * @description Schema to update an order.
-     *
-     *     For orders in `draft` status, metadata and custom field data can be
-     *     updated before the order is finalized. Once an order leaves draft, only
-     *     billing details can be updated.
-     *
-     *     `seats` is fixed at creation because it determines the charge amount; to
-     *     change it, recreate the draft.
      */
     OrderUpdate: {
-      /**
-       * Custom Field Data
-       * @description Key-value object storing custom field values.
-       */
-      custom_field_data?: {
-        [key: string]: string | number | boolean | null
-      }
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
       /**
        * Billing Name
        * @description The name of the customer that should appear on the invoice.

@@ -328,17 +328,8 @@ class OrderUpdateBase(Schema):
     )
 
 
-class OrderUpdate(OrderUpdateBase, MetadataInputMixin, CustomFieldDataInputMixin):
-    """
-    Schema to update an order.
-
-    For orders in `draft` status, metadata and custom field data can be
-    updated before the order is finalized. Once an order leaves draft, only
-    billing details can be updated.
-
-    `seats` is fixed at creation because it determines the charge amount; to
-    change it, recreate the draft.
-    """
+class OrderUpdate(OrderUpdateBase):
+    """Schema to update an order."""
 
 
 class OrderFinalize(Schema):

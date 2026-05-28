@@ -9,11 +9,13 @@ from reauth.factors import FactorBase
 from reauth.factors.oauth2.base import (
     OAuth2CallbackException,
     OAuth2Factor,
+    OAuth2IdentityMismatchException,
     OAuth2TokenException,
 )
 
+from polar.authz.dependencies import AuthorizeWebUserWrite
 from polar.config import settings
-from polar.kit.http import is_localhost
+from polar.kit.http import ReturnTo, is_localhost
 from polar.user.service import user as user_service
 
 from ..authentication_session import (
@@ -49,7 +51,7 @@ def _check_factor(
     raise PolarAuthRedirectionError("Factor not available for this session")
 
 
-def get_oauth_router(
+def get_oauth_login_router(
     factor_dependency: typing.Callable[..., Awaitable[OAuth2Factor[typing.Any]]],
     identifier: str,
     *,
@@ -176,6 +178,103 @@ def get_oauth_router(
         response = RedirectResponse(
             settings.generate_frontend_url("/auth"), status_code=303
         )
+        _set_state_cookie(request, response, "", 0)
+        return response
+
+    return router
+
+
+def get_oauth_link_router(
+    factor_dependency: typing.Callable[..., Awaitable[OAuth2Factor[typing.Any]]],
+    identifier: str,
+) -> APIRouter:
+    router = APIRouter(prefix=f"/{identifier}/link", include_in_schema=False)
+
+    @router.get("/authorize", name=f"auth.{identifier}.link_authorize")
+    async def _authorize(
+        request: Request,
+        auth_subject: AuthorizeWebUserWrite,
+        return_to: ReturnTo,
+        factor: OAuth2Factor[typing.Any] = Depends(factor_dependency),
+    ) -> RedirectResponse:
+        redirect_uri = str(request.url_for(f"auth.{identifier}.link_callback"))
+
+        authorization_url, state, oauth2_state = await factor.start(
+            redirect_uri=redirect_uri,
+            scope=typing.cast(OAuth2FactorMixin, factor).SCOPE,
+            identity_id=auth_subject.subject.id,
+            nonce=secrets.token_urlsafe(16),
+            extra={"prompt": "select_account"},
+            return_to=return_to,
+        )
+
+        response = RedirectResponse(authorization_url, status_code=303)
+        _set_state_cookie(request, response, state, oauth2_state.expires_at)
+        return response
+
+    @router.get("/callback", name=f"auth.{identifier}.link_callback")
+    async def _callback(
+        request: Request,
+        auth_subject: AuthorizeWebUserWrite,
+        code: str | None = Query(None),
+        error: str | None = Query(None),
+        error_description: str | None = Query(None),
+        error_uri: str | None = Query(None),
+        state: str | None = Query(None),
+        factor: OAuth2Factor[typing.Any] = Depends(factor_dependency),
+    ) -> RedirectResponse:
+        default_return_to = settings.generate_frontend_url(
+            "/dashboard/account/preferences"
+        )
+        error_parameters = {"type": "oauth_link_error", "factor": identifier}
+        if state is None:
+            raise PolarAuthRedirectionError(
+                "Missing OAuth2 state", url=default_return_to, **error_parameters
+            )
+
+        state_cookie = request.cookies.get(settings.OAUTH2_SESSION_STATE_COOKIE_KEY)
+        if state_cookie is None:
+            raise PolarAuthRedirectionError(
+                "Missing OAuth2 state cookie", url=default_return_to, **error_parameters
+            )
+
+        if state != state_cookie:
+            raise PolarAuthRedirectionError(
+                "Invalid OAuth2 state", url=default_return_to, **error_parameters
+            )
+
+        try:
+            _, _, oauth_state = await factor.callback(
+                code=code,
+                state=state,
+                error=error,
+                error_description=error_description,
+                error_uri=error_uri,
+            )
+        except OAuth2IdentityMismatchException as e:
+            return_to = e.state.context.get("return_to") if e.state.context else None
+            raise PolarAuthRedirectionError(
+                "This account is already linked to another user",
+                url=return_to or default_return_to,
+                **error_parameters,
+            ) from e
+        except OAuth2CallbackException as e:
+            return_to = e.state.context.get("return_to") if e.state.context else None
+            raise PolarAuthRedirectionError(
+                e.message or "OAuth2 callback error",
+                url=return_to or default_return_to,
+                **error_parameters,
+            ) from e
+        except OAuth2TokenException as e:
+            return_to = e.state.context.get("return_to") if e.state.context else None
+            raise PolarAuthRedirectionError(
+                "OAuth2 error", url=return_to or default_return_to, **error_parameters
+            ) from e
+
+        return_to = (
+            oauth_state.context.get("return_to") if oauth_state.context else None
+        )
+        response = RedirectResponse(return_to or default_return_to, status_code=303)
         _set_state_cookie(request, response, "", 0)
         return response
 

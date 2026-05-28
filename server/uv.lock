@@ -7,7 +7,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
+exclude-newer = "2026-05-21T11:44:10.166212Z"
 exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
@@ -2437,7 +2437,7 @@ requires-dist = [
     { name = "python-slugify", specifier = ">=8.0.1" },
     { name = "python-snappy", specifier = ">=0.7.3" },
     { name = "python-stdnum", specifier = ">=2.1" },
-    { name = "reauth", specifier = "==0.1.5" },
+    { name = "reauth", specifier = "==0.1.6" },
     { name = "redis", specifier = ">=5.0.4" },
     { name = "safe-redirect-url", specifier = ">=0.1.1" },
     { name = "sentry-sdk", extras = ["fastapi", "sqlalchemy"], specifier = ">=2.60.0" },
@@ -3158,7 +3158,7 @@ wheels = [
 
 [[package]]
 name = "reauth"
-version = "0.1.5"
+version = "0.1.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -3166,9 +3166,9 @@ dependencies = [
     { name = "httpx" },
     { name = "pyjwt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d1/5e/6b501ad2afee295d11eb6137220711789a53bcaf2259e922929cadea3333/reauth-0.1.5.tar.gz", hash = "sha256:88c487b0337dd2f93d0843e92e9fa6306a7dac0d6c22beb06fd28d17fa4e60a2", size = 501053, upload-time = "2026-05-26T09:54:02.422Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/15/72/289a0dcadf0f7bdbc9da06e4f6f7e33ceb1080125b0bf1a60aba4e3b9649/reauth-0.1.6.tar.gz", hash = "sha256:579611d54dd3ffda4fe590e5905ef816a847edaedfdbec9b569369183741b2e2", size = 501342, upload-time = "2026-05-28T09:46:32.567Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/27/bf/add4f1b7538c5fd92275d44e40f849e8bf5c8dfe1f0b3dda5eb719ee1fb4/reauth-0.1.5-py3-none-any.whl", hash = "sha256:5957bc388c62905bc148255efdeb2a8b1c20d730ce89d52f23d70c4826c9faee", size = 34878, upload-time = "2026-05-26T09:54:01.151Z" },
+    { url = "https://files.pythonhosted.org/packages/5a/1b/706e336b4fc939fcc4ba19c0760baff33361810fa0b4d8ad2b5acb84492f/reauth-0.1.6-py3-none-any.whl", hash = "sha256:8f26ad08f6e719fe8570cb26a11c5cb96043effbd293d46f4b449d8c8ccac91f", size = 35035, upload-time = "2026-05-28T09:46:31.385Z" },
 ]
 
 [[package]]

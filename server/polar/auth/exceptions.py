@@ -1,3 +1,4 @@
+from polar.config import settings
 from polar.exceptions import PolarError
 
 
@@ -24,6 +25,21 @@ class PolarAuthRedirectionError(PolarError):
     Exception class for authentication errors
     that should be displayed nicely to the user through our UI.
 
-    A specific exception handler will redirect to `/auth` page in the client app
-    with an error message.
+    Args:
+        message (str): The error message to display to the user.
+        url (str, optional): The path to redirect to in the client app. Defaults to "/auth".
+        **extra: Additional keyword arguments that'll be added as query parameters to the redirection URL.
+
+    A specific exception handler will redirect to the specified path in the client app
+    with the provided error message.
     """
+
+    def __init__(
+        self,
+        message: str,
+        url: str = settings.generate_frontend_url("/auth"),
+        **extra: str,
+    ) -> None:
+        super().__init__(message)
+        self.url = url
+        self.extra = extra

@@ -38,7 +38,7 @@ from .factors import (
     get_totp_factor,
 )
 from .oauth2.apple import get_apple_factor
-from .oauth2.router import get_oauth_router
+from .oauth2.router import get_oauth_link_router, get_oauth_login_router
 from .schemas import AuthenticationSession as AuthenticationSessionSchema
 from .schemas import (
     AuthenticationSessionStart,
@@ -51,10 +51,12 @@ from .service import auth as auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth", APITag.private])
 router.include_router(
-    get_oauth_router(get_apple_factor, "apple", callback_method="POST")
+    get_oauth_login_router(get_apple_factor, "apple", callback_method="POST")
 )
-router.include_router(get_oauth_router(get_github_factor, "github"))
-router.include_router(get_oauth_router(get_google_factor, "google"))
+router.include_router(get_oauth_login_router(get_github_factor, "github"))
+router.include_router(get_oauth_link_router(get_github_factor, "github"))
+router.include_router(get_oauth_login_router(get_google_factor, "google"))
+router.include_router(get_oauth_link_router(get_google_factor, "google"))
 
 
 @router.get("/logout")

@@ -26,25 +26,32 @@ const AuthenticationMethod = ({
   subtitle,
   action,
   hideTitle = false,
+  error,
 }: {
   icon: React.ReactNode
   title: React.ReactNode
   subtitle: React.ReactNode
   action: React.ReactNode
   hideTitle?: boolean
+  error?: string
 }) => {
   return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-center">
-      <div className="self-start">{icon}</div>
-      {!hideTitle && (
-        <div className="grow">
-          <div className="font-medium">{title}</div>
-          <div className="dark:text-polar-500 text-sm text-gray-500">
-            {subtitle}
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-center">
+        <div className="self-start">{icon}</div>
+        {!hideTitle && (
+          <div className="grow">
+            <div className="font-medium">{title}</div>
+            <div className="dark:text-polar-500 text-sm text-gray-500">
+              {subtitle}
+            </div>
           </div>
-        </div>
+        )}
+        <div className={hideTitle ? 'w-full' : 'flex-0'}>{action}</div>
+      </div>
+      {error && (
+        <div className="flex justify-end text-sm text-red-500">{error}</div>
       )}
-      <div className={hideTitle ? 'w-full' : 'flex-0'}>{action}</div>
     </div>
   )
 }
@@ -54,13 +61,15 @@ const GitHubAuthenticationMethod = ({
   returnTo,
   onDisconnect,
   isDisconnecting,
+  error,
 }: {
   oauthAccount: schemas['OAuthAccountRead'] | undefined
   returnTo: string
   onDisconnect: () => void
   isDisconnecting: boolean
+  error?: string
 }) => {
-  const authorizeURL = getGitHubAuthorizeLinkURL({ return_to: returnTo })
+  const authorizeURL = getGitHubAuthorizeLinkURL(returnTo)
 
   return (
     <AuthenticationMethod
@@ -92,6 +101,7 @@ const GitHubAuthenticationMethod = ({
           </Button>
         )
       }
+      error={error}
     />
   )
 }
@@ -101,13 +111,15 @@ const GoogleAuthenticationMethod = ({
   returnTo,
   onDisconnect,
   isDisconnecting,
+  error,
 }: {
   oauthAccount: schemas['OAuthAccountRead'] | undefined
   returnTo: string
   onDisconnect: () => void
   isDisconnecting: boolean
+  error?: string
 }) => {
-  const authorizeURL = getGoogleAuthorizeLinkURL({ return_to: returnTo })
+  const authorizeURL = getGoogleAuthorizeLinkURL(returnTo)
 
   return (
     <AuthenticationMethod
@@ -133,6 +145,7 @@ const GoogleAuthenticationMethod = ({
           </Button>
         )
       }
+      error={error}
     />
   )
 }
@@ -143,6 +156,7 @@ const AuthenticationSettings = () => {
   const githubAccount = useGitHubAccount()
   const googleAccount = useGoogleAccount()
   const disconnectOAuth = useDisconnectOAuthAccount()
+  const listGroupRef = useRef<HTMLDivElement>(null)
 
   const searchParams = useSearchParams()
   const [updateEmailStage, setUpdateEmailStage] = useState<
@@ -150,12 +164,27 @@ const AuthenticationSettings = () => {
   >((searchParams.get('update_email') as 'verified' | null) || 'off')
   const userReloaded = useRef(false)
 
+  const oauthLinkError =
+    searchParams.get('type') === 'oauth_link_error' && searchParams.get('error')
+  const oauthLinkFactor = searchParams.get('factor')
+
   useEffect(() => {
     if (!userReloaded.current && updateEmailStage === 'verified') {
       reloadUser()
       userReloaded.current = true
     }
   }, [updateEmailStage, reloadUser])
+
+  useEffect(() => {
+    if (oauthLinkError && listGroupRef.current) {
+      requestAnimationFrame(() => {
+        listGroupRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        })
+      })
+    }
+  }, [oauthLinkError])
 
   const updateEmailContent: Record<
     'off' | 'form' | 'request' | 'verified',
@@ -190,35 +219,47 @@ const AuthenticationSettings = () => {
   }
 
   return (
-    <ListGroup>
-      <ListGroup.Item>
-        <GitHubAuthenticationMethod
-          oauthAccount={githubAccount}
-          returnTo={pathname || '/start'}
-          onDisconnect={() => disconnectOAuth.mutate('github')}
-          isDisconnecting={disconnectOAuth.isPending}
-        />
-      </ListGroup.Item>
+    <div ref={listGroupRef}>
+      <ListGroup>
+        <ListGroup.Item>
+          <GitHubAuthenticationMethod
+            oauthAccount={githubAccount}
+            returnTo={pathname || '/start'}
+            onDisconnect={() => disconnectOAuth.mutate('github')}
+            isDisconnecting={disconnectOAuth.isPending}
+            error={
+              oauthLinkError && oauthLinkFactor === 'github'
+                ? oauthLinkError
+                : undefined
+            }
+          />
+        </ListGroup.Item>
 
-      <ListGroup.Item>
-        <GoogleAuthenticationMethod
-          oauthAccount={googleAccount}
-          returnTo={pathname || '/start'}
-          onDisconnect={() => disconnectOAuth.mutate('google')}
-          isDisconnecting={disconnectOAuth.isPending}
-        />
-      </ListGroup.Item>
+        <ListGroup.Item>
+          <GoogleAuthenticationMethod
+            oauthAccount={googleAccount}
+            returnTo={pathname || '/start'}
+            onDisconnect={() => disconnectOAuth.mutate('google')}
+            isDisconnecting={disconnectOAuth.isPending}
+            error={
+              oauthLinkError && oauthLinkFactor === 'google'
+                ? oauthLinkError
+                : undefined
+            }
+          />
+        </ListGroup.Item>
 
-      <ListGroup.Item>
-        <AuthenticationMethod
-          icon={<AlternateEmailOutlined />}
-          title={currentUser?.email}
-          subtitle="You can sign in with OTP codes sent to your email."
-          action={updateEmailContent[updateEmailStage]}
-          hideTitle={updateEmailStage !== 'off'}
-        />
-      </ListGroup.Item>
-    </ListGroup>
+        <ListGroup.Item>
+          <AuthenticationMethod
+            icon={<AlternateEmailOutlined />}
+            title={currentUser?.email}
+            subtitle="You can sign in with OTP codes sent to your email."
+            action={updateEmailContent[updateEmailStage]}
+            hideTitle={updateEmailStage !== 'off'}
+          />
+        </ListGroup.Item>
+      </ListGroup>
+    </div>
   )
 }
 

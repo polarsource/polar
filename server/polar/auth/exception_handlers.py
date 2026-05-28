@@ -1,9 +1,7 @@
-from urllib.parse import urlencode
-
 from fastapi import Request, Response
 from fastapi.responses import RedirectResponse
 
-from polar.config import settings
+from polar.kit.http import add_query_parameters
 
 from .exceptions import PolarAuthRedirectionError
 
@@ -12,8 +10,7 @@ async def auth_redirection_error_exception_handler(
     request: Request, exc: Exception
 ) -> Response:
     assert isinstance(exc, PolarAuthRedirectionError)
-    error_url_params = urlencode({"error": exc.message})
-    error_url = f"{settings.generate_frontend_url('/auth')}?{error_url_params}"
+    error_url = add_query_parameters(exc.url, error=exc.message, **exc.extra)
     return RedirectResponse(error_url, 303)
 
 

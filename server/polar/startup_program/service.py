@@ -62,9 +62,7 @@ class StartupProgramService:
     the public apply flow live elsewhere and are out of scope here.
     """
 
-    async def mark_invited(
-        self, session: AsyncSession, customer: Customer
-    ) -> Discount:
+    async def mark_invited(self, session: AsyncSession, customer: Customer) -> Discount:
         """Invite a Polar-for-Polar customer to the Startup Program.
 
         Eagerly creates the customer's dedicated 100% / 12 month / single-use
@@ -81,7 +79,10 @@ class StartupProgramService:
         polar_organization_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
         if customer.organization_id != polar_organization_id:
             raise StartupProgramError(
-                "Customer does not belong to the Polar organization."
+                "Customer does not belong to the Polar organization "
+                f"(customer_id={customer.id}, "
+                f"customer_org_id={customer.organization_id}, "
+                f"expected_polar_org_id={polar_organization_id})."
             )
 
         metadata = dict(customer.user_metadata)

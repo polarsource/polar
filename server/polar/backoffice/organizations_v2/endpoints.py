@@ -1995,14 +1995,16 @@ async def startup_program_mark_invited(
         await add_toast(request, "Startup Program is not configured.", "error")
         return HXRedirectResponse(request, detail_url, 303)
 
-    polar_organization_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
+    try:
+        polar_organization_id = uuid.UUID(settings.POLAR_ORGANIZATION_ID)
+    except (ValueError, TypeError):
+        await add_toast(request, "Startup Program is not configured.", "error")
+        return HXRedirectResponse(request, detail_url, 303)
     customer = await CustomerRepository.from_session(
         session
     ).get_by_external_id_and_organization(str(organization_id), polar_organization_id)
     if customer is None:
-        await add_toast(
-            request, "Organization has no Polar customer yet.", "error"
-        )
+        await add_toast(request, "Organization has no Polar customer yet.", "error")
         return HXRedirectResponse(request, detail_url, 303)
 
     try:

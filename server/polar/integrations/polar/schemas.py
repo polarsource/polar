@@ -190,9 +190,7 @@ class OrganizationSubscriptionDiscount(Schema):
         duration = (
             duration_raw.value if hasattr(duration_raw, "value") else str(duration_raw)
         )
-        discount_type = (
-            type_raw.value if hasattr(type_raw, "value") else str(type_raw)
-        )
+        discount_type = type_raw.value if hasattr(type_raw, "value") else str(type_raw)
         duration_in_months = getattr(discount, "duration_in_months", None)
 
         ends_at: datetime | None = None

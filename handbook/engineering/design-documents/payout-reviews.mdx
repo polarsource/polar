@@ -204,7 +204,7 @@ For non-USD payouts, the `account_amount` is set at `transfer_stripe` time, base
 **1. Metabase alert.** A Metabase question runs once a day and posts to the payouts Slack channel if any row comes back:
 
 ```sql
-SELECT id, organization_id, created_at
+SELECT id, account_id, created_at
 FROM payouts
 WHERE status = 'pending_review'
   AND created_at < now() - interval '5 days';

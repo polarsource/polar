@@ -65,6 +65,8 @@ export const colors = {
   statusRedBg: palette.redDark,
   statusBlue: palette.indigo,
   statusBlueBg: palette.indigoDark,
+  statusGray: palette.gray100,
+  statusGrayBg: palette.gray600,
 } as const
 
 export const dimension = {

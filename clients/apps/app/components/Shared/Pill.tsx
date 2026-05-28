@@ -3,7 +3,7 @@ import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import { StyleProp, TextStyle, ViewStyle } from 'react-native'
 
-type PillColor = 'green' | 'yellow' | 'red' | 'blue'
+type PillColor = 'green' | 'yellow' | 'red' | 'blue' | 'gray'
 
 const getColorTokens = (color: PillColor) => {
   switch (color) {
@@ -15,6 +15,8 @@ const getColorTokens = (color: PillColor) => {
       return { text: 'statusRed', bg: 'statusRedBg' } as const
     case 'blue':
       return { text: 'statusBlue', bg: 'statusBlueBg' } as const
+    case 'gray':
+      return { text: 'statusGray', bg: 'statusGrayBg' } as const
   }
 }
 

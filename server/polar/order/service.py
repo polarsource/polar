@@ -13,7 +13,7 @@ from sqlalchemy.orm import contains_eager, joinedload
 from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
-from polar.authz.service import get_accessible_org_ids
+from polar.authz.service import assert_resource_permission, get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
@@ -100,6 +100,7 @@ from polar.product.guard import (
 )
 from polar.product.price_set import PriceSet
 from polar.product.repository import ProductRepository
+from polar.product.service import product as product_service
 from polar.receipt.service import receipt as receipt_service
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import (
@@ -867,45 +868,36 @@ class OrderService:
         with `status=draft` and no invoice number; the merchant must call
         finalize_order() to charge the customer's saved payment method.
         """
-        org_ids = await get_accessible_org_ids(
-            session,
-            auth_subject,
-            permission=OrganizationPermission.sales_manage,
-        )
-
-        errors: list[ValidationError] = []
-
-        product_repository = ProductRepository.from_session(session)
-        product = await product_repository.get_one_or_none(
-            product_repository.get_statement_by_org_ids(org_ids)
-            .where(Product.id == payload.product_id)
-            .options(*product_repository.get_eager_options())
-        )
+        product = await product_service.get(session, auth_subject, payload.product_id)
         if product is None:
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", "product_id"),
-                    "msg": "Product does not exist.",
-                    "input": payload.product_id,
-                }
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product does not exist.",
+                        "input": payload.product_id,
+                    }
+                ]
             )
-        elif product.is_recurring:
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", "product_id"),
-                    "msg": (
-                        "Subscription products are not supported by the "
-                        "off-session charge API. Use a one-time product."
-                    ),
-                    "input": payload.product_id,
-                }
+        if product.is_recurring:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": (
+                            "Subscription products are not supported by the "
+                            "off-session charge API. Use a one-time product."
+                        ),
+                        "input": payload.product_id,
+                    }
+                ]
             )
 
-        if errors:
-            raise PolarRequestValidationError(errors)
-        assert product is not None
+        await assert_resource_permission(
+            session, auth_subject, product, OrganizationPermission.sales_manage
+        )
 
         organization = product.organization
         if not organization.feature_settings.get("off_session_charges_enabled"):

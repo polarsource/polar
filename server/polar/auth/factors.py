@@ -135,7 +135,7 @@ class TOTPFactor(TOTPFactorBase):
         self.session = session
         super().__init__()
 
-    async def get_enrollment(
+    async def get_by_identity_id(
         self, identity_id: uuid.UUID
     ) -> TOTPEnrollmentDataclass | None:
         statement = select(TOTPEnrollment).where(
@@ -173,6 +173,11 @@ class TOTPFactor(TOTPFactorBase):
                 last_verified_time_step=totp.last_verified_time_step,
             )
         )
+        await self.session.execute(statement)
+        await self.session.flush()
+
+    async def delete(self, totp: TOTPEnrollmentDataclass) -> None:
+        statement = delete(TOTPEnrollment).where(TOTPEnrollment.id == totp.id)
         await self.session.execute(statement)
         await self.session.flush()
 

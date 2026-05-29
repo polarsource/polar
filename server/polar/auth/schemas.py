@@ -51,6 +51,10 @@ class TOTPEnrollment(Schema):
     provisioning_uri: str
 
 
+class TOTPStatus(Schema):
+    enabled: bool
+
+
 class TOTPEnable(Schema):
     code: str
 

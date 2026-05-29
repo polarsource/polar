@@ -109,45 +109,64 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     status: Mapped[OrderStatus] = mapped_column(
         String, nullable=False, default=OrderStatus.pending, index=True
     )
-    subtotal_amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    subtotal_amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
+    subtotal_amount: Mapped[int] = mapped_column(
+        "subtotal_amount_v2", BigInteger, nullable=True
     )
-    discount_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    discount_amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
+    discount_amount: Mapped[int] = mapped_column(
+        "discount_amount_v2", BigInteger, nullable=True, default=0
     )
-    net_amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    net_amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
-    )
-    tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    tax_amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
-    )
+    net_amount: Mapped[int] = mapped_column("net_amount_v2", BigInteger, nullable=True)
+    tax_amount: Mapped[int] = mapped_column("tax_amount_v2", BigInteger, nullable=True)
     applied_balance_amount: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=0
+        "applied_balance_amount_v2", BigInteger, nullable=True, default=0
     )
-    applied_balance_amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
+
+    # Legacy int4 columns retained while the dual-column sync trigger is active.
+    # Deferred so they never appear in default SELECTs. No default — that
+    # would force SQLAlchemy to include the column in every INSERT, which
+    # would break running pods once the cleanup migration drops the column.
+    # The bidirectional trigger fills these from the v2 columns on INSERT,
+    # so the NOT NULL constraints on legacy columns are still satisfied even
+    # when ORM code only sets the (v2-backed) primary attributes.
+    legacy_subtotal_amount: Mapped[int] = mapped_column(
+        "subtotal_amount", Integer, nullable=False, deferred=True
     )
+    legacy_discount_amount: Mapped[int] = mapped_column(
+        "discount_amount", Integer, nullable=False, deferred=True
+    )
+    legacy_net_amount: Mapped[int] = mapped_column(
+        "net_amount", Integer, nullable=False, deferred=True
+    )
+    legacy_tax_amount: Mapped[int] = mapped_column(
+        "tax_amount", Integer, nullable=False, deferred=True
+    )
+    legacy_applied_balance_amount: Mapped[int] = mapped_column(
+        "applied_balance_amount", Integer, nullable=False, deferred=True
+    )
+
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     billing_reason: Mapped[OrderBillingReasonInternal] = mapped_column(
         String, nullable=False, index=True
     )
 
-    refunded_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    refunded_amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
+    refunded_amount: Mapped[int] = mapped_column(
+        "refunded_amount_v2", BigInteger, nullable=True, default=0
     )
-    refunded_tax_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    refunded_tax_amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
+    refunded_tax_amount: Mapped[int] = mapped_column(
+        "refunded_tax_amount_v2", BigInteger, nullable=True, default=0
+    )
+    legacy_refunded_amount: Mapped[int] = mapped_column(
+        "refunded_amount", Integer, nullable=False, deferred=True
+    )
+    legacy_refunded_tax_amount: Mapped[int] = mapped_column(
+        "refunded_tax_amount", Integer, nullable=False, deferred=True
     )
 
-    platform_fee_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    platform_fee_amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
+    platform_fee_amount: Mapped[int] = mapped_column(
+        "platform_fee_amount_v2", BigInteger, nullable=True, default=0
+    )
+    legacy_platform_fee_amount: Mapped[int] = mapped_column(
+        "platform_fee_amount", Integer, nullable=False, deferred=True
     )
     platform_fee_currency: Mapped[str | None] = mapped_column(
         String(3), nullable=True, default=None

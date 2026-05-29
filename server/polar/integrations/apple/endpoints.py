@@ -119,7 +119,7 @@ async def apple_callback(
             signup_attribution=state_signup_attribution,
         )
     except AppleServiceError as e:
-        raise OAuthCallbackError(e.message, e.status_code, return_to=return_to) from e
+        raise OAuthCallbackError(e.message, return_to=return_to) from e
 
     if is_signup:
         posthog.user_signup(user, "apple")

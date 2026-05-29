@@ -4,4 +4,4 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-"$SCRIPT_DIR/cli/dev" docker cleanup -f
+"$SCRIPT_DIR/cli/dev" docker cleanup --force

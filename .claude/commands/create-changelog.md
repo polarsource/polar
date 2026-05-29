@@ -7,11 +7,13 @@ Produce a polished changelog entry for `docs/changelog/recent.mdx` covering rece
 `$ARGUMENTS` may contain a time range and an optional `--confirm` flag.
 
 Time range (optional):
+
 - Nothing (default: last 7 days)
 - A number of days (e.g. `14`)
 - A date range (e.g. `2026-04-15..2026-04-22`)
 
 Confirmation flag (optional):
+
 - `--confirm` enables the user confirmation step (step 3). **Off by default.** When omitted, proceed straight from research to screenshots with the subagent's chosen classifications.
 
 ## Style Rules (non-negotiable)
@@ -26,6 +28,7 @@ Confirmation flag (optional):
 ## What to Include
 
 High-signal, externally visible changes:
+
 - New merchant features (dashboard, API, webhooks, invoicing).
 - New customer features (checkout, customer portal, seats).
 - New localization, currency, or i18n coverage.
@@ -46,7 +49,7 @@ When in doubt, leave it out. It is much better to ship a short changelog than a 
 
 ## Verifying scope claims
 
-PR descriptions and design docs frequently list the *eventual* scope of a feature alongside what was actually shipped in that PR. If you take the prose at face value, you will hallucinate scope. Before writing copy that names specific surfaces (checkout, customer portal, emails, dashboard, mobile app, API, webhooks, invoices, etc.):
+PR descriptions and design docs frequently list the _eventual_ scope of a feature alongside what was actually shipped in that PR. If you take the prose at face value, you will hallucinate scope. Before writing copy that names specific surfaces (checkout, customer portal, emails, dashboard, mobile app, API, webhooks, invoices, etc.):
 
 1. List the changed files in the PR (`gh pr view <n> --json files`).
 2. Confirm each surface you name has a matching file in the diff. Customer portal copy lives under `clients/apps/web/src/components/CustomerPortal` and similar; emails live under `server/emails` and `clients/packages/email`; checkout under `clients/packages/checkout` and `clients/apps/web/src/app/(checkout)`; etc.
@@ -74,7 +77,7 @@ Launch a `general-purpose` subagent with the full commit list. Also pass it the 
 - For each candidate, run `gh pr view <n> --json files,body` and inspect the actual changed files to confirm the feature is real, user-visible, and shipped in this window (not a docs update for a feature that shipped earlier).
 - **Apply the smell test**: would a merchant or customer notice this in their week? Items that pass on technicality but read as filler (e.g. "delete account from web" matching mobile, "full description on checkout" removing a truncation, "name your webhook endpoints" labels) should be dropped. Prefer 4 sharp items to 10 mixed ones.
 - **Verify scope by reading the diff.** Do not paraphrase the PR description if it lists multiple surfaces (checkout, portal, emails, mobile, etc.). Confirm each surface you name has matching files in the diff. See the "Verifying scope claims" section above.
-- **Dedupe against the monthly log**: drop anything already announced. An *enhancement* to a previously-announced feature is fine to include if it is materially new (e.g. new filters added to a list that shipped last month), but say so clearly and frame it as an enhancement.
+- **Dedupe against the monthly log**: drop anything already announced. An _enhancement_ to a previously-announced feature is fine to include if it is materially new (e.g. new filters added to a list that shipped last month), but say so clearly and frame it as an enhancement.
 - **Cap is 10, not a target.** If only 3 items pass the bar, return 3.
 - Decide which are **MAJOR** (warrants a screenshot) and which are **MINOR**. Decide yourself, do not ask the user.
 - For MAJOR items, describe the exact URL to screenshot and what must be visible on screen.
@@ -111,7 +114,7 @@ docker exec polar-dev-<N>-api-1 bash -c "cd /app/server && uv run python -m scri
 
 Launch a `general-purpose` subagent with the list of accepted MAJOR features. Tell it:
 
-- Log in at `http://localhost:<web-port>/login` as `admin@polar.sh`. The email domain must be real (polar.sh works) or login validation rejects it. Grab the login code with `docker logs polar-dev-<N>-api-1 --since 30s 2>&1 | grep -oE 'LOGIN CODE: [A-Z0-9]+' | tail -1`.
+- Log in at `http://localhost:<web-port>/auth` as `admin@polar.sh`. The email domain must be real (polar.sh works) or login validation rejects it. Grab the login code with `docker logs polar-dev-<N>-api-1 --since 30s 2>&1 | grep -oE 'LOGIN CODE: [A-Z0-9]+' | tail -1`.
 - If a feature lives in an org that `admin@polar.sh` is not a member of, rename the seeded owner's email to a real `@polar.sh` domain (e.g. `UPDATE users SET email='merchant@polar.sh' WHERE email='support@meltedsql.com'`) and restart the web container so Next.js re-fetches the user's org list: `docker restart polar-dev-<N>-web-1`.
 - **Prefer clicking through the UI or calling documented API endpoints to create the state you need.** That path exercises real validation and produces screenshots that will not drift when schemas change. Fall back to direct SQL only for states the product does not let you reach through normal flows (e.g. placing a subscription into a pre-scheduled update that is applied by a cron job), or for minor tidy-up so the UI reads clearly (e.g. removing placeholder rows that distract from what the screenshot is about).
 - Read the relevant frontend component first to understand what data the screenshot actually needs, then pick the shortest path to get there.
@@ -135,6 +138,7 @@ Order: MAJOR features (with screenshots) first, then MINOR features.
 ### 7. Verify
 
 Inside the new block only:
+
 - `grep -nE '—|–'` must return nothing.
 - `grep -nE '[Ss]tripe'` must return nothing.
 - Every `<img src=...>` path must exist on disk.

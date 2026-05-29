@@ -66,7 +66,6 @@ const VerifyPage = () => {
                   <InputOTP
                     maxLength={6}
                     minLength={6}
-                    pattern="^\d{6}$"
                     inputMode="numeric"
                     autoComplete="one-time-code"
                     {...field}

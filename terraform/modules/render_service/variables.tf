@@ -267,11 +267,12 @@ variable "memory_profile_config" {
 variable "polar_self_config" {
   description = "Polar self-billing integration"
   type = object({
-    access_token    = string
-    webhook_secret  = string
-    organization_id = string
-    free_product_id = string
-    api_url         = string
+    access_token     = string
+    webhook_secret   = string
+    organization_id  = string
+    free_product_id  = string
+    scale_product_id = string
+    api_url          = string
   })
   default   = null
   sensitive = true

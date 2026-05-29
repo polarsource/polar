@@ -221,11 +221,12 @@ resource "render_env_group" "polar_self" {
   environment_id = var.render_environment_id
   name           = "polar-self-${var.environment}"
   env_vars = {
-    POLAR_POLAR_ACCESS_TOKEN    = { value = var.polar_self_config.access_token }
-    POLAR_POLAR_WEBHOOK_SECRET  = { value = var.polar_self_config.webhook_secret }
-    POLAR_POLAR_ORGANIZATION_ID = { value = var.polar_self_config.organization_id }
-    POLAR_POLAR_FREE_PRODUCT_ID = { value = var.polar_self_config.free_product_id }
-    POLAR_POLAR_API_URL         = { value = var.polar_self_config.api_url }
+    POLAR_POLAR_ACCESS_TOKEN     = { value = var.polar_self_config.access_token }
+    POLAR_POLAR_WEBHOOK_SECRET   = { value = var.polar_self_config.webhook_secret }
+    POLAR_POLAR_ORGANIZATION_ID  = { value = var.polar_self_config.organization_id }
+    POLAR_POLAR_FREE_PRODUCT_ID  = { value = var.polar_self_config.free_product_id }
+    POLAR_POLAR_API_URL          = { value = var.polar_self_config.api_url }
+    POLAR_POLAR_SCALE_PRODUCT_ID = { value = var.polar_self_config.scale_product_id }
   }
 }
 

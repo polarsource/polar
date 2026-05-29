@@ -264,11 +264,12 @@ module "sandbox" {
   }
 
   polar_self_config = {
-    access_token    = var.polar_access_token
-    webhook_secret  = var.polar_webhook_secret
-    organization_id = var.polar_organization_id
-    free_product_id = var.polar_free_product_id
-    api_url         = "https://sandbox-api.polar.sh"
+    access_token     = var.polar_access_token
+    webhook_secret   = var.polar_webhook_secret
+    organization_id  = var.polar_organization_id
+    free_product_id  = var.polar_free_product_id
+    scale_product_id = var.polar_scale_product_id
+    api_url          = "https://sandbox-api.polar.sh"
   }
 
   tinybird_config = {

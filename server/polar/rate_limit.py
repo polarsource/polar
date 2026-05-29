@@ -135,6 +135,36 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
             zone="login-code",
         ),
     ],
+    "^/v1/auth/email-otp": [
+        Rule(minute=6, hour=12, block_time=900, zone="auth-email-otp"),
+        Rule(
+            group=RateLimitGroup.pending_auth,
+            minute=6,
+            hour=12,
+            block_time=900,
+            zone="auth-email-otp",
+        ),
+    ],
+    "^/v1/auth/totp": [
+        Rule(minute=6, hour=12, block_time=900, zone="auth-totp"),
+        Rule(
+            group=RateLimitGroup.pending_auth,
+            minute=6,
+            hour=12,
+            block_time=900,
+            zone="auth-totp",
+        ),
+    ],
+    "^/v1/auth/backup-codes": [
+        Rule(minute=6, hour=12, block_time=900, zone="auth-backup-codes"),
+        Rule(
+            group=RateLimitGroup.pending_auth,
+            minute=6,
+            hour=12,
+            block_time=900,
+            zone="auth-backup-codes",
+        ),
+    ],
     "^/v1/customer-portal/customer-session/(request|authenticate)": [
         Rule(minute=6, hour=12, block_time=900, zone="customer-session-login"),
         Rule(

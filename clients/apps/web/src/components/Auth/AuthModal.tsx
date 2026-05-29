@@ -1,22 +1,18 @@
-import { schemas } from '@polar-sh/client'
-import Login from './Login'
+import Auth from '@/app/(main)/auth/Auth'
+import { type schemas } from '@polar-sh/client'
 
 interface AuthModalProps {
   returnTo?: string
-  returnParams?: Record<string, string>
-  signup?: schemas['UserSignupAttribution']
+  signup?: boolean
 }
 
-export const AuthModal = ({
-  returnTo,
-  returnParams,
-  signup,
-}: AuthModalProps) => {
+export const AuthModal = ({ returnTo, signup }: AuthModalProps) => {
   const isSignup = signup !== undefined
 
   const lastLoginMethod =
     typeof document !== 'undefined'
-      ? (document.cookie.match(/polar_last_login_method=(\w+)/)?.[1] ?? null)
+      ? ((document.cookie.match(/polar_last_login_method=(\w+)/)?.[1] ??
+          null) as schemas['Factor'])
       : null
 
   return (
@@ -32,9 +28,9 @@ export const AuthModal = ({
         )}
 
         <div className="flex flex-col gap-y-12">
-          <Login
+          <Auth
+            authenticationSession={null}
             returnTo={returnTo}
-            returnParams={returnParams}
             signup={signup}
             lastLoginMethod={lastLoginMethod}
           />

@@ -5,6 +5,9 @@ import { usePathname } from 'next/navigation'
 const PUBLIC_PAGES = [
   '/',
   '/login',
+  '/auth',
+  '/auth/email-otp',
+  '/auth/totp',
   '/onboarding/sandbox',
   '/login/code/verify',
 ]

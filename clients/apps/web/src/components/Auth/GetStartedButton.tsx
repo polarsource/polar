@@ -12,13 +12,11 @@ import { AuthModal } from './AuthModal'
 
 interface GetStartedButtonProps extends ComponentProps<typeof Button> {
   text?: string
-  orgSlug?: string
 }
 
 const GetStartedButton = ({
   text: _text,
   wrapperClassNames,
-  orgSlug: slug,
   size = 'lg',
   ...props
 }: GetStartedButtonProps) => {
@@ -48,7 +46,7 @@ const GetStartedButton = ({
       { mode: 'sandbox', source: 'landing_modal' },
       { send_instantly: true },
     )
-    window.location.href = `${CONFIG.SANDBOX_FRONTEND_BASE_URL}/login?return_to=/onboarding/start&from=onboarding`
+    window.location.href = `${CONFIG.SANDBOX_FRONTEND_BASE_URL}/auth?return_to=/onboarding/start`
   }
 
   const handleGetStarted = () => {
@@ -74,13 +72,7 @@ const GetStartedButton = ({
         onLogin={() => setView('login')}
       />
     ),
-    signup: (
-      <AuthModal
-        returnTo="/onboarding/personal"
-        returnParams={slug ? { slug, auto: 'true' } : {}}
-        signup={{ intent: 'creator' }}
-      />
-    ),
+    signup: <AuthModal returnTo="/onboarding/personal" signup />,
     login: <AuthModal returnTo="/dashboard" />,
   }
   const modalContent = modalContents[view]

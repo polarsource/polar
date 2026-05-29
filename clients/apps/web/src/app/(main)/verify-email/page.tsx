@@ -21,7 +21,7 @@ export default async function Page(props: {
 
   if (!user) {
     const returnTo = `/verify-email?${new URLSearchParams({ token, ...(return_to && { return_to }) })}`
-    const loginHref = `/login?${new URLSearchParams({ return_to: returnTo })}`
+    const loginHref = `/auth?${new URLSearchParams({ return_to: returnTo })}`
 
     return (
       <div className="dark:bg-polar-950 flex h-screen w-full grow items-center justify-center bg-white px-4">

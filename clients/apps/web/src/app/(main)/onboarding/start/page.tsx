@@ -24,7 +24,7 @@ export default function Page() {
       { mode: 'sandbox', source: 'onboarding_start' },
       { send_instantly: true },
     )
-    window.location.href = `${CONFIG.SANDBOX_FRONTEND_BASE_URL}/login?return_to=/onboarding/sandbox&from=onboarding`
+    window.location.href = `${CONFIG.SANDBOX_FRONTEND_BASE_URL}/auth?return_to=/onboarding/sandbox&from=onboarding`
   }
 
   const handleGetStarted = () => {

@@ -40,7 +40,9 @@ const buildEntryValues = (
   if (data.paymentVolume) values.payment_volume = data.paymentVolume
   if (data.location) values.location = data.location
   if (data.pitch) values.pitch = data.pitch
-  if (data.polarOrgSlug) values.polar_org_slug = data.polarOrgSlug
+  if (data.currentBillingPlatform === 'Polar' && data.polarOrgSlug) {
+    values.polar_org_slug = data.polarOrgSlug
+  }
 
   // Select attributes — option titles must match the choices configured on
   // the Attio list (mirrors FUNDING_OPTIONS / PARTNER_OPTIONS / TEAM_SIZE_OPTIONS

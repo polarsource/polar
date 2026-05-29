@@ -24,6 +24,15 @@ const FUNDING_OPTIONS = [
 
 const TEAM_SIZE_OPTIONS = ['1', '2 to 5', '6 to 15', '16 to 50', '50+']
 
+const BILLING_PLATFORM_OPTIONS = [
+  'None',
+  'Polar',
+  'Stripe',
+  'Paddle',
+  'Lemon Squeezy',
+  'Other',
+]
+
 const PARTNER_OPTIONS = [
   'Accel',
   'Andreessen Horowitz',
@@ -70,6 +79,9 @@ interface FormState {
   partner: string
   partnerOther: string
   paymentVolume: string
+  currentBillingPlatform: string
+  currentBillingPlatformOther: string
+  polarOrgSlug: string
   teamSize: string
   location: string
   pitch: string
@@ -88,6 +100,9 @@ const INITIAL: FormState = {
   partner: '',
   partnerOther: '',
   paymentVolume: '',
+  currentBillingPlatform: 'Polar',
+  currentBillingPlatformOther: '',
+  polarOrgSlug: '',
   teamSize: '',
   location: '',
   pitch: '',
@@ -219,6 +234,42 @@ export const StartupProgramForm = () => {
           placeholder="e.g. $0, $10K/mo, $100K/mo"
         />
       </Field>
+
+      <Field label="Current Billing Platform" htmlFor="currentBillingPlatform">
+        <Select
+          value={form.currentBillingPlatform}
+          onValueChange={set('currentBillingPlatform')}
+        >
+          <SelectTrigger id="currentBillingPlatform">
+            <SelectValue placeholder="Select..." />
+          </SelectTrigger>
+          <SelectContent>
+            {BILLING_PLATFORM_OPTIONS.map((opt) => (
+              <SelectItem key={opt} value={opt}>
+                {opt}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {form.currentBillingPlatform === 'Other' && (
+          <Input
+            value={form.currentBillingPlatformOther}
+            onChange={(e) => set('currentBillingPlatformOther')(e.target.value)}
+            placeholder="Which platform?"
+          />
+        )}
+      </Field>
+
+      {form.currentBillingPlatform === 'Polar' && (
+        <Field label="Polar Organization Slug" htmlFor="polarOrgSlug">
+          <Input
+            id="polarOrgSlug"
+            value={form.polarOrgSlug}
+            onChange={(e) => set('polarOrgSlug')(e.target.value)}
+            placeholder="acme-inc"
+          />
+        </Field>
+      )}
 
       <Field label="Team Size" htmlFor="teamSize">
         <Select value={form.teamSize} onValueChange={set('teamSize')}>

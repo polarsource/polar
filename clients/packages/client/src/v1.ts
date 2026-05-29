@@ -1547,18 +1547,20 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/auth/totp/enroll': {
+  '/v1/auth/totp': {
     parameters: {
       query?: never
       header?: never
       path?: never
       cookie?: never
     }
-    get?: never
+    /** Totp Status */
+    get: operations['auth:totp_status']
     put?: never
     /** Totp Enroll */
     post: operations['auth:totp_enroll']
-    delete?: never
+    /** Totp Delete */
+    delete: operations['auth:totp_delete']
     options?: never
     head?: never
     patch?: never
@@ -30034,6 +30036,11 @@ export interface components {
       /** Provisioning Uri */
       provisioning_uri: string
     }
+    /** TOTPStatus */
+    TOTPStatus: {
+      /** Enabled */
+      enabled: boolean
+    }
     /**
      * TaxBehavior
      * @enum {string}
@@ -35397,6 +35404,33 @@ export interface operations {
       }
     }
   }
+  'auth:totp_status': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TOTPStatus']
+        }
+      }
+      /** @description TOTP factor not enrolled */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
   'auth:totp_enroll': {
     parameters: {
       query?: never
@@ -35414,6 +35448,24 @@ export interface operations {
         content: {
           'application/json': components['schemas']['TOTPEnrollment']
         }
+      }
+    }
+  }
+  'auth:totp_delete': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
       }
     }
   }

@@ -81,3 +81,9 @@ export const useTOTPVerify = () =>
     mutationFn: (code: string) =>
       api.POST('/v1/auth/totp/verify', { body: { code } }),
   })
+
+export const useBackupCodesVerify = () =>
+  useMutation({
+    mutationFn: (body: { code: string }) =>
+      api.POST('/v1/auth/backup-codes/verify', { body }),
+  })

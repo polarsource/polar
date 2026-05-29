@@ -12,6 +12,7 @@ from reauth.factors.oauth2.base import (
     OAuth2IdentityMismatchException,
     OAuth2TokenException,
 )
+from reauth.factors.oauth2.state import ExpiredStateException, InvalidStateException
 
 from polar.authz.dependencies import AuthorizeWebUserWrite
 from polar.config import settings
@@ -128,6 +129,8 @@ def get_oauth_login_router(
                 error_description=error_description,
                 error_uri=error_uri,
             )
+        except (ExpiredStateException, InvalidStateException) as e:
+            raise PolarAuthRedirectionError("OAuth2 session expired") from e
         except OAuth2CallbackException as e:
             raise PolarAuthRedirectionError(e.message or "OAuth2 callback error") from e
         except OAuth2TokenException as e:
@@ -251,6 +254,10 @@ def get_oauth_link_router(
                 error_description=error_description,
                 error_uri=error_uri,
             )
+        except (ExpiredStateException, InvalidStateException) as e:
+            raise PolarAuthRedirectionError(
+                "OAuth2 session expired", url=default_return_to, **error_parameters
+            ) from e
         except OAuth2IdentityMismatchException as e:
             return_to = e.state.context.get("return_to") if e.state.context else None
             raise PolarAuthRedirectionError(

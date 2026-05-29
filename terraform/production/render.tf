@@ -217,6 +217,7 @@ module "production" {
       image_url          = data.render_web_service.production_worker["worker-tinybird"].runtime_source.image.image_url
       image_digest       = data.render_web_service.production_worker["worker-tinybird"].runtime_source.image.digest
       dramatiq_prom_port = "10002"
+      database_pool_size = "32"
     }
     "worker-invoices-receipts" = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 3 --queues invoices_and_receipts"

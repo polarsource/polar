@@ -158,7 +158,7 @@ module "test" {
     image_digest           = data.render_web_service.test_api[0].runtime_source.image.digest
     web_concurrency        = "2"
     forwarded_allow_ips    = "*"
-    database_pool_size     = "20"
+    database_pool_size     = "10"
     postgres_database      = local.db_name
     postgres_read_database = local.db_name
     redis_db               = "0"

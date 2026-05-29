@@ -120,7 +120,7 @@ module "sandbox" {
     image_digest           = data.render_web_service.sandbox_api.runtime_source.image.digest
     web_concurrency        = "2"
     forwarded_allow_ips    = "*"
-    database_pool_size     = "20"
+    database_pool_size     = "10"
     postgres_database      = "polar_sandbox"
     postgres_read_database = "polar_sandbox"
     redis_db               = "1"

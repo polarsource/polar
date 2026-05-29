@@ -6,6 +6,10 @@ import structlog
 from fastapi import Depends
 from reauth.authentication_session import AuthenticationSession
 from reauth.factors import FactorBase
+from reauth.factors.backup_codes import (
+    BackupCodesEnrollment as BackupCodesEnrollmentDataclass,
+)
+from reauth.factors.backup_codes import BackupCodesFactor as BackupCodesFactorBase
 from reauth.factors.email_otp import EmailOTP as EmailOTPDataclass
 from reauth.factors.email_otp import EmailOTPEnrollment
 from reauth.factors.email_otp import EmailOTPFactor as EmailOTPFactorBase
@@ -18,7 +22,7 @@ from polar.email.schemas import LoginCodeEmail, LoginCodeProps
 from polar.email.sender import enqueue_email_template
 from polar.kit.utils import utc_now
 from polar.logging import Logger
-from polar.models import EmailOTP, TOTPEnrollment
+from polar.models import BackupCodesEnrollment, EmailOTP, TOTPEnrollment
 from polar.postgres import AsyncSession, get_db_session
 from polar.user.repository import UserRepository
 
@@ -182,6 +186,52 @@ class TOTPFactor(TOTPFactorBase):
         await self.session.flush()
 
 
+class BackupCodesFactor(BackupCodesFactorBase):
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+        super().__init__(hash_secret=settings.SECRET)
+
+    async def get_enrollment(
+        self, identity_id: typing.Any
+    ) -> BackupCodesEnrollmentDataclass | None:
+        statement = select(BackupCodesEnrollment).where(
+            BackupCodesEnrollment.identity_id == identity_id
+        )
+        result = await self.session.execute(statement)
+        backup_codes_orm = result.scalar_one_or_none()
+        if backup_codes_orm is None:
+            return None
+        return backup_codes_orm.to_dataclass()
+
+    async def insert(self, backup_codes: BackupCodesEnrollmentDataclass) -> uuid.UUID:
+        backup_codes_orm = BackupCodesEnrollment(
+            identity_id=backup_codes.identity_id,
+            codes_hashes=backup_codes.codes_hashes,
+            used_codes_hashes=backup_codes.used_codes_hashes,
+        )
+        self.session.add(backup_codes_orm)
+        await self.session.flush()
+        return backup_codes_orm.id
+
+    async def update(self, backup_codes: BackupCodesEnrollmentDataclass) -> None:
+        statement = (
+            update(BackupCodesEnrollment)
+            .where(BackupCodesEnrollment.id == backup_codes.id)
+            .values(
+                used_codes_hashes=backup_codes.used_codes_hashes,
+            )
+        )
+        await self.session.execute(statement)
+        await self.session.flush()
+
+    async def delete(self, backup_codes: BackupCodesEnrollmentDataclass) -> None:
+        statement = delete(BackupCodesEnrollment).where(
+            BackupCodesEnrollment.id == backup_codes.id
+        )
+        await self.session.execute(statement)
+        await self.session.flush()
+
+
 async def get_email_otp_factor(
     session: AsyncSession = Depends(get_db_session),
 ) -> EmailOTPFactor:
@@ -194,11 +244,25 @@ async def get_totp_factor(
     return TOTPFactor(session)
 
 
+async def get_backup_codes_factor(
+    session: AsyncSession = Depends(get_db_session),
+) -> BackupCodesFactor:
+    return BackupCodesFactor(session)
+
+
 async def get_factors(
     email_otp_factor: EmailOTPFactor = Depends(get_email_otp_factor),
     totp_factor: TOTPFactor = Depends(get_totp_factor),
+    backup_codes_factor: BackupCodesFactor = Depends(get_backup_codes_factor),
     apple_factor: AppleFactor = Depends(get_apple_factor),
     github_factor: GitHubFactor = Depends(get_github_factor),
     google_factor: GoogleFactor = Depends(get_google_factor),
 ) -> set[FactorBase[typing.Any]]:
-    return {email_otp_factor, totp_factor, apple_factor, github_factor, google_factor}
+    return {
+        email_otp_factor,
+        totp_factor,
+        backup_codes_factor,
+        apple_factor,
+        github_factor,
+        google_factor,
+    }

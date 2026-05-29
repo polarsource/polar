@@ -1600,6 +1600,41 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/auth/backup-codes': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Backup Codes Status */
+    get: operations['auth:backup_codes_status']
+    put?: never
+    /** Backup Codes Enroll */
+    post: operations['auth:backup_codes_enroll']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/auth/backup-codes/verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Backup Codes Verify */
+    post: operations['auth:backup_codes_verify']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/oauth2/': {
     parameters: {
       query?: never
@@ -6959,6 +6994,23 @@ export interface components {
       | 'notification_recipients:write'
       | 'organization_access_tokens:read'
       | 'organization_access_tokens:write'
+    /** BackupCodesEnrollment */
+    BackupCodesEnrollment: {
+      /** Codes */
+      codes: string[]
+    }
+    /** BackupCodesStatus */
+    BackupCodesStatus: {
+      /** Codes */
+      codes: number
+      /** Used Codes */
+      used_codes: number
+    }
+    /** BackupCodesVerify */
+    BackupCodesVerify: {
+      /** Code */
+      code: string
+    }
     /**
      * BalanceCreditOrderEvent
      * @description An event created by Polar when an order is paid via customer balance.
@@ -19015,7 +19067,13 @@ export interface components {
       detail: string
     }
     /** @enum {string} */
-    Factor: 'email_otp' | 'totp' | 'apple' | 'github' | 'google'
+    Factor:
+      | 'email_otp'
+      | 'totp'
+      | 'backup_codes'
+      | 'apple'
+      | 'github'
+      | 'google'
     /** Feedback */
     Feedback: {
       /**
@@ -35512,6 +35570,86 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['TOTPEnable']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AuthenticationSession']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'auth:backup_codes_status': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BackupCodesStatus']
+        }
+      }
+      /** @description Backup codes factor not enrolled */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  'auth:backup_codes_enroll': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BackupCodesEnrollment']
+        }
+      }
+    }
+  }
+  'auth:backup_codes_verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BackupCodesVerify']
       }
     }
     responses: {
@@ -55450,7 +55588,7 @@ export const eventTypesSortPropertyValues: ReadonlyArray<
 ]
 export const factorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Factor']
-> = ['email_otp', 'totp', 'apple', 'github', 'google']
+> = ['email_otp', 'totp', 'backup_codes', 'apple', 'github', 'google']
 export const feedbackStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['FeedbackStatus']
 > = ['new', 'triaged']

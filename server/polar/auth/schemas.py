@@ -10,7 +10,9 @@ from reauth.factors import FactorBase
 from polar.kit.http import ReturnTo
 from polar.kit.schemas import Schema
 
-type Factor = typing.Literal["email_otp", "totp", "apple", "github", "google"]
+type Factor = typing.Literal[
+    "email_otp", "totp", "backup_codes", "apple", "github", "google"
+]
 
 
 class AuthenticationSessionStart(Schema):
@@ -61,3 +63,16 @@ class TOTPEnable(Schema):
 
 class TOTPVerify(Schema):
     code: str
+
+
+class BackupCodesEnrollment(Schema):
+    codes: list[str]
+
+
+class BackupCodesVerify(Schema):
+    code: str
+
+
+class BackupCodesStatus(Schema):
+    codes: int
+    used_codes: int

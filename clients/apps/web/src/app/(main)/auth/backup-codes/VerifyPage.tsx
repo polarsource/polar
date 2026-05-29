@@ -1,16 +1,11 @@
 'use client'
 
-import Link from 'next/link'
-import { useTOTPVerify } from '@/hooks'
+import { useBackupCodesVerify } from '@/hooks'
 import { setValidationErrors } from '@/utils/api/errors'
 import { CONFIG } from '@/utils/config'
 import { isValidationError } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from '@polar-sh/ui/components/atoms/InputOTP'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Form,
   FormControl,
@@ -25,14 +20,14 @@ import { SubmitHandler, useForm } from 'react-hook-form'
 const VerifyPage = () => {
   const form = useForm<{ code: string }>()
   const { control, handleSubmit, setError } = form
-  const totpVerify = useTOTPVerify()
+  const backupCodesVerify = useBackupCodesVerify()
   const router = useRouter()
 
   const [loading, setLoading] = useState(false)
   const onSubmit: SubmitHandler<{ code: string }> = async ({ code }) => {
     setLoading(true)
     try {
-      const { error } = await totpVerify.mutateAsync(code)
+      const { error } = await backupCodesVerify.mutateAsync({ code })
       if (error) {
         if (isValidationError(error.detail)) {
           setValidationErrors(error.detail, setError)
@@ -62,28 +57,16 @@ const VerifyPage = () => {
           name="code"
           render={({ field }) => {
             return (
-              <FormItem>
+              <FormItem className="w-full">
                 <FormControl>
-                  <InputOTP
-                    maxLength={6}
-                    minLength={6}
-                    inputMode="numeric"
+                  <Input
+                    type="text"
+                    placeholder="Backup code"
                     autoComplete="one-time-code"
+                    className="text-center"
                     {...field}
                     autoFocus={true}
-                    onChange={field.onChange}
-                    onComplete={handleSubmit(onSubmit)}
-                  >
-                    <InputOTPGroup>
-                      {Array.from({ length: 6 }).map((_, index) => (
-                        <InputOTPSlot
-                          key={index}
-                          index={index}
-                          className="dark:border-polar-600 h-12 w-12 border-gray-300 text-xl md:h-16 md:w-16 md:text-2xl"
-                        />
-                      ))}
-                    </InputOTPGroup>
-                  </InputOTP>
+                  />
                 </FormControl>
                 <FormMessage className="text-center" />
               </FormItem>
@@ -94,14 +77,6 @@ const VerifyPage = () => {
           Sign in
           {CONFIG.IS_SANDBOX && ' to Sandbox'}
         </Button>
-        <div className="mt-4 text-center">
-          <Link
-            href="/auth/backup-codes"
-            className="dark:text-polar-300 text-sm text-gray-600 hover:underline"
-          >
-            Use a backup code instead
-          </Link>
-        </div>
       </form>
     </Form>
   )

@@ -11,7 +11,6 @@ export function SubscriptionPastDue({
   email,
   organization,
   product,
-  subscription,
   url,
   payment_url,
 }: schemas['SubscriptionPastDueProps']) {

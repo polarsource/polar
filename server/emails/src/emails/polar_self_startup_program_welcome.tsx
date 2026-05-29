@@ -18,21 +18,22 @@ export function PolarSelfStartupProgramWelcome({
         Scale.
       </Preview>
       <Intro headline="Welcome to the Polar Startup Program">
-        We&apos;re excited to have <strong>{organization_name}</strong> join the next generation of startups building with Polar. You get the Scale plan{' '}
+        We&apos;re excited to have <strong>{organization_name}</strong> join the
+        next generation of startups building with Polar. You get the Scale plan{' '}
         <strong>free for 12 months</strong>.
       </Intro>
       <BodyText>
-        To claim it, head to your billing settings and switch to the Scale
-        plan. The 100% discount is already attached to your account and will
-        apply automatically at checkout, no code needed.
+        To claim it, head to your billing settings and switch to the Scale plan.
+        The 100% discount is already attached to your account and will apply
+        automatically at checkout, no code needed.
       </BodyText>
       <Section className="my-12">
         <Button href={billing_url}>Go to billing</Button>
       </Section>
       <BodyText>
         The discount applies for 12 months from the day you upgrade, then your
-        plan rolls over to the standard Scale pricing. You can manage or
-        cancel anytime from the same billing page.
+        plan rolls over to the standard Scale pricing. You can manage or cancel
+        anytime from the same billing page.
       </BodyText>
       <Footer email={email} />
     </WrapperPolar>

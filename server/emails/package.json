@@ -11,7 +11,8 @@
     "types": "uv --directory .. run python -m polar.email.schemas | openapi-typescript --output src/types/openapi.ts && oxfmt src/types/openapi.ts",
     "build": "pnpm run clean && tsup && pkg package.json",
     "typecheck": "tsc --noEmit",
-    "lint": "oxfmt src"
+    "format": "oxfmt src",
+    "lint": "oxfmt --check src && eslint ."
   },
   "packageManager": "pnpm@10.28.1",
   "dependencies": {
@@ -26,10 +27,12 @@
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
     "@yao-pkg/pkg": "^6.19.0",
+    "eslint": "^10.4.0",
     "openapi-typescript": "^7.13.0",
     "oxfmt": "^0.51.0",
     "tsup": "^8.5.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.60.0"
   },
   "pkg": {
     "targets": [

@@ -11,7 +11,6 @@ export function SubscriptionRenewalReminder({
   email,
   organization,
   product,
-  subscription,
   url,
   renewal_date,
 }: schemas['SubscriptionRenewalReminderProps']) {

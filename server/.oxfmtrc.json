@@ -7,5 +7,5 @@
   "useTabs": false,
   "sortTailwindcss": {},
   "sortPackageJson": false,
-  "ignorePatterns": []
+  "ignorePatterns": ["node_modules", ".venv", "dist", "bin", "__pycache__"]
 }

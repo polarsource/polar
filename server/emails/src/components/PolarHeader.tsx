@@ -1,7 +1,5 @@
 import { Img, Section } from 'react-email'
 
-interface HeaderProps {}
-
 const Header = () => (
   <Section>
     <div className="relative h-[48px]">

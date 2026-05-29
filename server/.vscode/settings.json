@@ -26,5 +26,13 @@
     },
     "editor.defaultFormatter": "charliermarsh.ruff"
   },
+  "[typescript]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
   "mypy-type-checker.preferDaemon": true
 }

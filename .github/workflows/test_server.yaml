@@ -21,6 +21,7 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       server: ${{ steps.filter.outputs.server }}
+      emails: ${{ steps.filter.outputs.emails }}
       migrations: ${{ steps.filter.outputs.migrations }}
       tinybird: ${{ steps.filter.outputs.tinybird }}
       server_files: ${{ steps.filter.outputs.server_files }}
@@ -33,6 +34,9 @@ jobs:
           filters: |
             server:
               - 'server/**'
+              - '.github/workflows/test_server.yaml'
+            emails:
+              - 'server/emails/**'
               - '.github/workflows/test_server.yaml'
             migrations:
               - 'server/migrations/versions/**'
@@ -78,6 +82,38 @@ jobs:
       - name: 🛟 Type Check Server (mypy)
         working-directory: ./server
         run: uv run task lint_types
+
+  emails:
+    name: "Server: Emails 📬"
+    needs: changes
+    if: needs.changes.outputs.emails == 'true'
+    timeout-minutes: 10
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6.0.8
+        with:
+          package_json_file: server/emails/package.json
+
+      - name: 📬 Setup Node.js environment for server/emails
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version-file: server/emails/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "server/emails/pnpm-lock.yaml"
+
+      - name: 🔧 pnpm install
+        working-directory: server/emails
+        run: pnpm install --frozen-lockfile
+
+      - name: 📝 Lint
+        working-directory: server/emails
+        run: pnpm lint
+
+      - name: 🛟 Type Check
+        working-directory: server/emails
+        run: pnpm typecheck
 
   tinybird-check:
     name: "Server: Tinybird Schema 🐦"

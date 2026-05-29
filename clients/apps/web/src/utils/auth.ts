@@ -90,8 +90,19 @@ export const getGitHubRepositoryBenefitAuthorizeURL = (
 export const checkAuthenticationSession = async (
   api: Client,
 ): Promise<schemas['AuthenticationSession'] | null> => {
-  const { error, data: authenticationSession } =
-    await api.GET('/v1/auth/status')
+  const {
+    error,
+    data: authenticationSession,
+    response,
+  } = await api.GET('/v1/auth/status')
+
+  // Handle 429 errors which return empty responses and no error object
+  if (!response.ok && !error) {
+    throw new Error(
+      `Unexpected response from /v1/auth/status: ${response.status}`,
+    )
+  }
+
   if (error) {
     if (error.error !== 'InvalidAuthenticationSession') {
       throw new Error(`Failed to check authentication session: ${error.error}`)

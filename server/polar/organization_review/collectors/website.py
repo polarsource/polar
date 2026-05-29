@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import functools
 import re
 from dataclasses import dataclass, field
 from urllib.parse import urljoin, urlparse
@@ -199,18 +200,24 @@ class WebsiteDeps:
 
 
 # ---------------------------------------------------------------------------
-# Module-level singleton agent
+# Lazily-built singleton agent
 # ---------------------------------------------------------------------------
 
 
-model_instance, model_provider, model_name = settings.get_pydantic_gateway_model()
-_website_agent: Agent[WebsiteDeps, str] = Agent(
-    model_instance,
-    output_type=str,
-    deps_type=WebsiteDeps,
-    system_prompt=SYSTEM_PROMPT,
-    retries=0,
-)
+@functools.cache
+def _get_website_agent() -> tuple[Agent[WebsiteDeps, str], str, str]:
+    """Build the agent lazily so importing this module doesn't touch gateway config."""
+    model_instance, model_provider, model_name = settings.get_pydantic_gateway_model()
+    agent: Agent[WebsiteDeps, str] = Agent(
+        model_instance,
+        output_type=str,
+        deps_type=WebsiteDeps,
+        system_prompt=SYSTEM_PROMPT,
+        retries=0,
+    )
+    agent.tool(fetch_page)
+    agent.tool(browse_page)
+    return agent, model_provider, model_name
 
 
 # ---------------------------------------------------------------------------
@@ -292,7 +299,6 @@ def _build_tool_response(
 # ---------------------------------------------------------------------------
 
 
-@_website_agent.tool
 async def fetch_page(ctx: RunContext[WebsiteDeps], url: str) -> str:
     """Fetch a URL via HTTP. Fast and lightweight — works for most websites \
 with server-side rendering. Use this by default."""
@@ -377,7 +383,6 @@ with server-side rendering. Use this by default."""
     )
 
 
-@_website_agent.tool
 async def browse_page(ctx: RunContext[WebsiteDeps], url: str) -> str:
     """Open a URL in a headless browser with full JavaScript rendering. \
 Slower but handles SPAs and JS-heavy sites. Use when fetch_page returns empty content."""
@@ -519,6 +524,7 @@ async def _run_website_agent(
     organization_slug: str | None = None,
 ) -> WebsiteData:
     """Run the AI agent with both HTTP and browser tools available."""
+    agent, model_provider, model_name = _get_website_agent()
     allowed_domain = urlparse(base_url).hostname or ""
     # Strip www. so redirects between www and non-www are both allowed
     if allowed_domain.startswith("www."):
@@ -535,7 +541,7 @@ async def _run_website_agent(
                 organization_id=organization_id,
                 organization_slug=organization_slug,
             ):
-                result = await _website_agent.run(
+                result = await agent.run(
                     f"Analyze the website at: {base_url}",
                     deps=deps,
                 )

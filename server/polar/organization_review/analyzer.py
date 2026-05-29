@@ -1,4 +1,5 @@
 import asyncio
+import functools
 
 import structlog
 from pydantic_ai import Agent
@@ -1089,5 +1090,7 @@ class ReviewAnalyzer:
         return "\n".join(parts)
 
 
-# Module-level singleton
-review_analyzer = ReviewAnalyzer()
+# Lazily-built singleton — defers gateway model resolution out of module import.
+@functools.cache
+def get_review_analyzer() -> ReviewAnalyzer:
+    return ReviewAnalyzer()

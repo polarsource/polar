@@ -1,9 +1,9 @@
-import { Preview, Section } from 'react-email'
-import BodyText from '../components/BodyText'
-import Button from '../components/Button'
-import FooterCustomer from '../components/FooterCustomer'
-import Intro from '../components/Intro'
-import WrapperOrganization from '../components/WrapperOrganization'
+import Button from '../components/layout/Button'
+import CTASection from '../components/layout/CTASection'
+import FooterCustomer from '../components/layout/FooterCustomer'
+import Intro from '../components/text/Intro'
+import Text from '../components/text/Text'
+import WrapperOrganization from '../components/layout/WrapperOrganization'
 import { organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -21,21 +21,21 @@ export function SubscriptionCancellation({
   })
 
   return (
-    <WrapperOrganization organization={organization}>
-      <Preview>
-        Your subscription to {product.name} will end on {endDate}
-      </Preview>
+    <WrapperOrganization
+      organization={organization}
+      preview={`Your subscription to ${product.name} will end on ${endDate}`}
+    >
       <Intro headline="Your subscription has been canceled">
-        Your subscription to <span className="font-medium">{product.name}</span>{' '}
+        Your subscription to{' '}
+        <Text as="span" weight="medium">
+          {product.name}
+        </Text>{' '}
         has been canceled. You still have full access until {endDate}.
       </Intro>
-      <BodyText>
-        If you change your mind, you can renew anytime before then.
-      </BodyText>
-      <Section className="my-8 text-center">
+      <Text>If you change your mind, you can renew anytime before then.</Text>
+      <CTASection>
         <Button href={url}>Renew subscription</Button>
-      </Section>
-
+      </CTASection>
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
   )

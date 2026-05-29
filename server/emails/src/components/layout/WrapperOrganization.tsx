@@ -1,17 +1,19 @@
 import { Container } from 'react-email'
-import { schemas } from '../types'
+import { schemas } from '../../types'
 import OrganizationHeader from './OrganizationHeader'
 import WrapperBase from './WrapperBase'
 
 const WrapperOrganization = ({
   children,
   organization,
+  preview,
 }: {
   children: React.ReactNode
   organization: schemas['Organization']
+  preview?: string
 }) => {
   return (
-    <WrapperBase>
+    <WrapperBase preview={preview}>
       <Container className="px-[20px] pt-[20px] pb-[10px]">
         <OrganizationHeader organization={organization} />
       </Container>

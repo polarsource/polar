@@ -1,7 +1,9 @@
-import { Link, Preview, Section, Text } from 'react-email'
-import Footer from '../components/Footer'
-import InfoBox from '../components/InfoBox'
-import WrapperPolar from '../components/WrapperPolar'
+import Footer from '../components/layout/Footer'
+import Intro from '../components/text/Intro'
+import LeakDetails from '../components/LeakDetails'
+import SecurityFaqNote from '../components/SecurityFaqNote'
+import Text from '../components/text/Text'
+import WrapperPolar from '../components/layout/WrapperPolar'
 import type { schemas } from '../types'
 
 export function OrganizationAccessTokenLeaked({
@@ -11,60 +13,32 @@ export function OrganizationAccessTokenLeaked({
   organization_access_token,
 }: schemas['OrganizationAccessTokenLeakedProps']) {
   return (
-    <WrapperPolar>
-      <Preview>
-        Important security notice: Your organization access token has been
-        leaked
-      </Preview>
-      <Section>
-        <Text className="text-xl font-bold text-gray-900">
-          Important security notice
+    <WrapperPolar preview="Important security notice: Your organization access token has been leaked">
+      <Intro headline="Important security notice">
+        We've been notified that one of your organization access token has been
+        leaked. For your security, we've automatically revoked this access
+        token.{' '}
+        <Text as="span" weight="bold">
+          You'll need to create a new one and update your existing integrations
+          so they continue working.
         </Text>
-        <Text>
-          We've been notified that one of your organization access token has
-          been leaked. For your security, we've automatically revoked this
-          access token.{' '}
-          <span className="font-bold">
-            You'll need to create a new one and update your existing
-            integrations so they continue working.
-          </span>
-        </Text>
-        <Text>
-          In the coming days, be extra careful about any suspicious activity on
-          your account and get in touch with us if you have any doubt.
-        </Text>
-      </Section>
-      <InfoBox title="Leak details" variant="info">
-        <ul className="list-disc space-y-1 pl-6">
-          <li>Notifier: {notifier}</li>
-          <li>URL: {url}</li>
-          <li>Organization Access Token: {organization_access_token}</li>
-        </ul>
-        <Text className="mt-4 mb-0 text-sm text-gray-600">
-          As a reminder, organization access tokens are super sensitive values
-          that shouldn't be shared publicly on the web or in a code repository.
-          Use dedicated features to safely store secrets, like{' '}
-          <Link
-            href="https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions"
-            className="text-blue-600 underline"
-          >
-            GitHub Actions secrets
-          </Link>
-          .
-        </Text>
-      </InfoBox>
-      <Section className="mt-6 border-t border-gray-200 pt-4 pb-2">
-        <Text className="m-0 text-sm text-gray-600">
-          You can read more about why you received this alert in our{' '}
-          <Link
-            href="https://polar.sh/docs/documentation/integration-guides/authenticating-with-polar#security"
-            className="text-blue-600 underline"
-          >
-            FAQ
-          </Link>
-          .
-        </Text>
-      </Section>
+      </Intro>
+      <Text>
+        In the coming days, be extra careful about any suspicious activity on
+        your account and get in touch with us if you have any doubt.
+      </Text>
+      <LeakDetails
+        secretName="organization access tokens"
+        rows={[
+          { label: 'Notifier', value: notifier },
+          { label: 'URL', value: url },
+          {
+            label: 'Organization Access Token',
+            value: organization_access_token,
+          },
+        ]}
+      />
+      <SecurityFaqNote />
       <Footer email={email} />
     </WrapperPolar>
   )

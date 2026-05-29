@@ -1,10 +1,11 @@
-import { Hr, Preview, Section } from 'react-email'
 import Benefits from '../components/Benefits'
-import Button from '../components/Button'
-import FooterCustomer from '../components/FooterCustomer'
-import Intro from '../components/Intro'
+import Button from '../components/layout/Button'
+import CTASection from '../components/layout/CTASection'
+import Divider from '../components/layout/Divider'
+import FooterCustomer from '../components/layout/FooterCustomer'
+import Intro from '../components/text/Intro'
 import OrderSummary from '../components/OrderSummary'
-import WrapperOrganization from '../components/WrapperOrganization'
+import WrapperOrganization from '../components/layout/WrapperOrganization'
 import { order, organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -17,8 +18,10 @@ export function SubscriptionUpdated({
   url,
 }: schemas['SubscriptionUpdatedProps']) {
   return (
-    <WrapperOrganization organization={organization}>
-      <Preview>You&rsquo;re now subscribed to {product.name}</Preview>
+    <WrapperOrganization
+      organization={organization}
+      preview={`You're now subscribed to ${product.name}`}
+    >
       <Intro headline={`You're now subscribed to ${product.name}`}>
         This change is effective immediately and you'll be billed at your new
         rate going forward.{' '}
@@ -29,10 +32,10 @@ export function SubscriptionUpdated({
         )}
       </Intro>
       {product.benefits.length > 0 && <Benefits benefits={product.benefits} />}
-      <Section className="my-8 text-center">
+      <CTASection>
         <Button href={url}>View subscription</Button>
-      </Section>
-      <Hr />
+      </CTASection>
+      <Divider />
 
       {order ? <OrderSummary order={order} /> : null}
 

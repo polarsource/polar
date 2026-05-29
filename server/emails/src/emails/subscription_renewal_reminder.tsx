@@ -1,9 +1,9 @@
-import { Preview, Section } from 'react-email'
-import BodyText from '../components/BodyText'
-import Button from '../components/Button'
-import FooterCustomer from '../components/FooterCustomer'
-import Intro from '../components/Intro'
-import WrapperOrganization from '../components/WrapperOrganization'
+import Button from '../components/layout/Button'
+import CTASection from '../components/layout/CTASection'
+import FooterCustomer from '../components/layout/FooterCustomer'
+import Intro from '../components/text/Intro'
+import Text from '../components/text/Text'
+import WrapperOrganization from '../components/layout/WrapperOrganization'
 import { organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -16,25 +16,30 @@ export function SubscriptionRenewalReminder({
   renewal_date,
 }: schemas['SubscriptionRenewalReminderProps']) {
   return (
-    <WrapperOrganization organization={organization}>
-      <Preview>
-        Your {product.name} subscription renews on {renewal_date}
-      </Preview>
-
+    <WrapperOrganization
+      organization={organization}
+      preview={`Your ${product.name} subscription renews on ${renewal_date}`}
+    >
       <Intro headline="Upcoming subscription renewal">
-        Your <span className="font-medium">{product.name}</span> subscription
-        will automatically renew on{' '}
-        <span className="font-medium">{renewal_date}</span>.
+        Your{' '}
+        <Text as="span" weight="medium">
+          {product.name}
+        </Text>{' '}
+        subscription will automatically renew on{' '}
+        <Text as="span" weight="medium">
+          {renewal_date}
+        </Text>
+        .
       </Intro>
 
-      <BodyText>
+      <Text>
         If you&rsquo;d like to make any changes to your subscription, you can do
         so from your customer portal.
-      </BodyText>
+      </Text>
 
-      <Section className="my-8 text-center">
+      <CTASection>
         <Button href={url}>Manage subscription</Button>
-      </Section>
+      </CTASection>
 
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>

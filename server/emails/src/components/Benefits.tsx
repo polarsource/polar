@@ -36,11 +36,11 @@ const Benefit = ({ benefit }: { benefit: schemas['Benefit'] }) => {
           <BenefitIcon benefit={benefit} width={12} height={12} />
         </div>
         <div>
-          <Heading as="h2" className="mt-[1px] mb-0 text-[18px] text-gray-900">
+          <Heading as="h2" className="mt-px mb-0 text-lg text-gray-900">
             {description}
           </Heading>
           {type === 'custom' && properties.note && (
-            <div className="mt-[8px] text-[14px] leading-[24px] text-gray-500">
+            <div className="mt-[8px] text-sm leading-[24px] text-gray-500">
               <Markdown>{properties.note}</Markdown>
             </div>
           )}

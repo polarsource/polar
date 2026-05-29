@@ -1,7 +1,7 @@
-import { Preview } from 'react-email'
-import Footer from '../components/Footer'
-import Intro from '../components/Intro'
-import WrapperPolar from '../components/WrapperPolar'
+import Text from '../components/text/Text'
+import Footer from '../components/layout/Footer'
+import Intro from '../components/text/Intro'
+import WrapperPolar from '../components/layout/WrapperPolar'
 import type { schemas } from '../types'
 
 export function PolarSelfSubscriptionCycled({
@@ -9,11 +9,13 @@ export function PolarSelfSubscriptionCycled({
   product_name,
 }: schemas['PolarSelfSubscriptionCycledProps']) {
   return (
-    <WrapperPolar>
-      <Preview>Your {product_name} subscription renewed</Preview>
+    <WrapperPolar preview={`Your ${product_name} subscription renewed`}>
       <Intro headline={`${product_name} renewed`}>
-        Your <span className="font-medium">{product_name}</span> subscription
-        renewed for another cycle. The latest invoice is attached.
+        Your{' '}
+        <Text as="span" weight="medium">
+          {product_name}
+        </Text>{' '}
+        subscription renewed for another cycle. The latest invoice is attached.
       </Intro>
       <Footer email={email} />
     </WrapperPolar>

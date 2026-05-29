@@ -1,5 +1,5 @@
 import { Column, Img, Link, Row, Section, Text } from 'react-email'
-import type { schemas } from '../types'
+import type { schemas } from '../../types'
 
 const S3_TO_CDN: Record<string, string> = {
   'polar-public-files.s3.amazonaws.com': 'uploads.polar.sh',

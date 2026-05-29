@@ -1,8 +1,9 @@
-import { Preview, Section } from 'react-email'
-import Button from '../components/Button'
-import FooterCustomer from '../components/FooterCustomer'
-import Intro from '../components/Intro'
-import WrapperOrganization from '../components/WrapperOrganization'
+import Text from '../components/text/Text'
+import Button from '../components/layout/Button'
+import CTASection from '../components/layout/CTASection'
+import FooterCustomer from '../components/layout/FooterCustomer'
+import Intro from '../components/text/Intro'
+import WrapperOrganization from '../components/layout/WrapperOrganization'
 import { organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -14,15 +15,21 @@ export function SubscriptionRevoked({
   url,
 }: schemas['SubscriptionRevokedProps']) {
   return (
-    <WrapperOrganization organization={organization}>
-      <Preview>Your {product.name} subscription has ended</Preview>
+    <WrapperOrganization
+      organization={organization}
+      preview={`Your ${product.name} subscription has ended`}
+    >
       <Intro headline="Your subscription has ended">
-        Your <span className="font-medium">{product.name}</span> subscription
-        has ended. If you&rsquo;d like to resubscribe, you can do so anytime.
+        Your{' '}
+        <Text as="span" weight="medium">
+          {product.name}
+        </Text>{' '}
+        subscription has ended. If you&rsquo;d like to resubscribe, you can do
+        so anytime.
       </Intro>
-      <Section className="my-4 text-center">
+      <CTASection>
         <Button href={url}>View subscription</Button>
-      </Section>
+      </CTASection>
 
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>

@@ -1,8 +1,9 @@
-import { Preview, Section } from 'react-email'
-import Button from '../components/Button'
-import Footer from '../components/Footer'
-import Intro from '../components/Intro'
-import WrapperPolar from '../components/WrapperPolar'
+import Text from '../components/text/Text'
+import Button from '../components/layout/Button'
+import CTASection from '../components/layout/CTASection'
+import Footer from '../components/layout/Footer'
+import Intro from '../components/text/Intro'
+import WrapperPolar from '../components/layout/WrapperPolar'
 import type { schemas } from '../types'
 
 export function EmailUpdate({
@@ -11,19 +12,18 @@ export function EmailUpdate({
   url,
 }: schemas['EmailUpdateProps']) {
   return (
-    <WrapperPolar>
-      <Preview>Here is the verification link to update your email</Preview>
+    <WrapperPolar preview="Here is the verification link to update your email">
       <Intro>
         Here is the verification link to update your email. Click the button
         below to complete the update process.{' '}
-        <span className="font-bold">
+        <Text as="span" weight="bold">
           This link is only valid for the next {token_lifetime_minutes} minutes.
-        </span>
+        </Text>
       </Intro>
 
-      <Section className="my-8 text-center">
+      <CTASection>
         <Button href={url}>Update email</Button>
-      </Section>
+      </CTASection>
 
       <Footer email={email} />
     </WrapperPolar>

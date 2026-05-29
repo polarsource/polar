@@ -1,7 +1,7 @@
-import { Preview } from 'react-email'
-import Footer from '../components/Footer'
-import Intro from '../components/Intro'
-import WrapperPolar from '../components/WrapperPolar'
+import Text from '../components/text/Text'
+import Footer from '../components/layout/Footer'
+import Intro from '../components/text/Intro'
+import WrapperPolar from '../components/layout/WrapperPolar'
 import type { schemas } from '../types'
 
 export function PolarSelfSubscriptionConfirmation({
@@ -9,12 +9,13 @@ export function PolarSelfSubscriptionConfirmation({
   product_name,
 }: schemas['PolarSelfSubscriptionConfirmationProps']) {
   return (
-    <WrapperPolar>
-      <Preview>We're happy to have you selling on Polar!</Preview>
+    <WrapperPolar preview="We're happy to have you selling on Polar!">
       <Intro headline="Thanks for choosing Polar!">
         You're now subscribed to{' '}
-        <span className="font-medium">{product_name}</span>. Your invoice is
-        attached for your records.
+        <Text as="span" weight="medium">
+          {product_name}
+        </Text>
+        . Your invoice is attached for your records.
       </Intro>
       <Footer email={email} />
     </WrapperPolar>

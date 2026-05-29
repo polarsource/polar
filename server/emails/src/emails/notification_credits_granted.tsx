@@ -1,8 +1,8 @@
-import { Preview, Section, Text } from 'react-email'
-import BodyText from '../components/BodyText'
-import Footer from '../components/Footer'
-import Intro from '../components/Intro'
-import WrapperPolar from '../components/WrapperPolar'
+import CreditSummaryTable from '../components/CreditSummaryTable'
+import Footer from '../components/layout/Footer'
+import Intro from '../components/text/Intro'
+import Text from '../components/text/Text'
+import WrapperPolar from '../components/layout/WrapperPolar'
 import type { schemas } from '../types'
 
 export function NotificationCreditsGranted({
@@ -10,47 +10,29 @@ export function NotificationCreditsGranted({
   formatted_amount,
 }: schemas['MaintainerAccountCreditsGrantedNotificationPayload']) {
   return (
-    <WrapperPolar>
-      <Preview>
-        {organization_name} has received {formatted_amount} in fee credits
-      </Preview>
+    <WrapperPolar
+      preview={`${organization_name} has received ${formatted_amount} in fee credits`}
+    >
       <Intro>
-        Great news! <strong>{organization_name}</strong> has received{' '}
-        <strong>{formatted_amount}</strong> in fee credits!
+        Great news!{' '}
+        <Text as="span" weight="bold">
+          {organization_name}
+        </Text>{' '}
+        has received{' '}
+        <Text as="span" weight="bold">
+          {formatted_amount}
+        </Text>{' '}
+        in fee credits!
       </Intro>
-      <BodyText>
+      <Text>
         These credits will be automatically applied to reduce your transaction
         fees on future orders. You can view your credit balance and usage
         history in your organization's finance settings.
-      </BodyText>
-      <Section className="mt-6">
-        <table className="w-full rounded-lg border border-gray-200">
-          <tbody>
-            <tr className="border-b border-gray-200 bg-gray-50">
-              <td className="p-4">
-                <Text className="m-0 text-sm font-semibold text-gray-900">
-                  Credit Amount
-                </Text>
-              </td>
-              <td className="p-4 text-right">
-                <Text className="m-0 text-sm font-semibold text-gray-900">
-                  {formatted_amount}
-                </Text>
-              </td>
-            </tr>
-            <tr>
-              <td className="p-4">
-                <Text className="m-0 text-sm text-gray-600">Organization</Text>
-              </td>
-              <td className="p-4 text-right">
-                <Text className="m-0 text-sm text-gray-900">
-                  {organization_name}
-                </Text>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </Section>
+      </Text>
+      <CreditSummaryTable
+        formatted_amount={formatted_amount}
+        organization_name={organization_name}
+      />
       <Footer email={null} />
     </WrapperPolar>
   )

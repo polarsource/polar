@@ -1,9 +1,13 @@
-import { Preview, Section, Text } from 'react-email'
-import Button from '../components/Button'
-import Footer from '../components/Footer'
+import Button from '../components/layout/Button'
+import CTASection from '../components/layout/CTASection'
+import Footer from '../components/layout/Footer'
+import Heading from '../components/text/Heading'
 import InfoBox from '../components/InfoBox'
-import Intro from '../components/Intro'
-import WrapperPolar from '../components/WrapperPolar'
+import Intro from '../components/text/Intro'
+import List from '../components/List'
+import ListItem from '../components/ListItem'
+import Text from '../components/text/Text'
+import WrapperPolar from '../components/layout/WrapperPolar'
 import type { schemas } from '../types'
 
 export function WebhookEndpointDisabled({
@@ -13,42 +17,40 @@ export function WebhookEndpointDisabled({
   dashboard_url,
 }: schemas['WebhookEndpointDisabledProps']) {
   return (
-    <WrapperPolar>
-      <Preview>
-        Webhook endpoint disabled for {organization.name} due to continuous
-        failures
-      </Preview>
+    <WrapperPolar
+      preview={`Webhook endpoint disabled for ${organization.name} due to continuous failures`}
+    >
       <Intro>
         We've automatically disabled a webhook endpoint for{' '}
-        <span className="font-bold">{organization.name}</span> due to continuous
-        delivery failures.
+        <Text as="span" weight="bold">
+          {organization.name}
+        </Text>{' '}
+        due to continuous delivery failures.
       </Intro>
-      <Section>
-        <Text>
-          After multiple consecutive failed delivery attempts, we've disabled
-          your webhook endpoint to prevent further issues. This typically
-          happens when the endpoint URL is unreachable or returns errors.
-        </Text>
-      </Section>
+      <Text>
+        After multiple consecutive failed delivery attempts, we've disabled your
+        webhook endpoint to prevent further issues. This typically happens when
+        the endpoint URL is unreachable or returns errors.
+      </Text>
       <InfoBox title="Disabled Endpoint" variant="warning">
-        <Text className="mb-0 font-mono text-sm">{webhook_endpoint_url}</Text>
+        <Text variant="mono">{webhook_endpoint_url}</Text>
       </InfoBox>
-      <Section>
-        <Text className="text-xl font-bold text-gray-900">What to do next</Text>
-        <Text>
-          To resume receiving webhooks, please verify that your endpoint is
-          working correctly and then re-enable it manually from the dashboard.
-        </Text>
-        <ul className="list-disc space-y-1 pl-6">
-          <li>Check that your endpoint URL is accessible</li>
-          <li>Ensure your server is responding with 2xx status codes</li>
-          <li>Review your server logs for any errors</li>
-          <li>Re-enable the webhook from your dashboard</li>
-        </ul>
-      </Section>
-      <Section className="text-center">
+      <Heading>What to do next</Heading>
+      <Text>
+        To resume receiving webhooks, please verify that your endpoint is
+        working correctly and then re-enable it manually from the dashboard.
+      </Text>
+      <List>
+        <ListItem>Check that your endpoint URL is accessible</ListItem>
+        <ListItem>
+          Ensure your server is responding with 2xx status codes
+        </ListItem>
+        <ListItem>Review your server logs for any errors</ListItem>
+        <ListItem>Re-enable the webhook from your dashboard</ListItem>
+      </List>
+      <CTASection>
         <Button href={dashboard_url}>Manage webhooks</Button>
-      </Section>
+      </CTASection>
       <Footer email={email} />
     </WrapperPolar>
   )

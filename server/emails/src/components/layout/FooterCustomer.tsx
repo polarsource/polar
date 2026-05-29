@@ -1,5 +1,5 @@
 import { Hr, Section, Text } from 'react-email'
-import { schemas } from '../types'
+import { schemas } from '../../types'
 
 const FooterCustomer = ({
   organization,

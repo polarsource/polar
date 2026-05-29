@@ -1,6 +1,12 @@
-import { Font, Head, Html, Tailwind } from 'react-email'
+import { Font, Head, Html, Preview, Tailwind } from 'react-email'
 
-const WrapperBase = ({ children }: { children: React.ReactNode }) => {
+const WrapperBase = ({
+  children,
+  preview,
+}: {
+  children: React.ReactNode
+  preview?: string
+}) => {
   return (
     <Tailwind
       config={{
@@ -26,6 +32,7 @@ const WrapperBase = ({ children }: { children: React.ReactNode }) => {
             }}
           />
         </Head>
+        {preview && <Preview>{preview}</Preview>}
         {children}
       </Html>
     </Tailwind>

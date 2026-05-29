@@ -1,8 +1,11 @@
-import { Link, Preview, Section, Text } from 'react-email'
-import BodyText from '../components/BodyText'
-import Footer from '../components/Footer'
-import Intro from '../components/Intro'
-import WrapperPolar from '../components/WrapperPolar'
+import EmailLink from '../components/text/EmailLink'
+import Footer from '../components/layout/Footer'
+import InfoBox from '../components/InfoBox'
+import Intro from '../components/text/Intro'
+import List from '../components/List'
+import ListItem from '../components/ListItem'
+import Text from '../components/text/Text'
+import WrapperPolar from '../components/layout/WrapperPolar'
 import type { schemas } from '../types'
 
 export function OrganizationAccountUnlink({
@@ -11,10 +14,9 @@ export function OrganizationAccountUnlink({
   organizations_unlinked,
 }: schemas['OrganizationAccountUnlinkProps']) {
   return (
-    <WrapperPolar>
-      <Preview>
-        Important: Organization Account Update for {organization_kept_name}
-      </Preview>
+    <WrapperPolar
+      preview={`Important: Organization Account Update for ${organization_kept_name}`}
+    >
       <Intro>
         We'd like to inform you that some of your Stripe payout accounts
         associated with organizations in Polar have been detached. This update
@@ -22,70 +24,79 @@ export function OrganizationAccountUnlink({
         compliance, as sharing the same Stripe account across multiple
         organizations will no longer be permitted going forward.
       </Intro>
-      <Section>
-        <BodyText>
-          Your organization{' '}
-          <span className="font-bold">{organization_kept_name}</span> has
-          retained the connected Stripe payout account, and{' '}
-          <span className="font-bold">no data has been lost</span>.
-        </BodyText>
-      </Section>
-      <Section className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-        <Text className="m-0 text-[16px] font-bold text-blue-900">
-          What This Means
+      <Text>
+        Your organization{' '}
+        <Text as="span" weight="bold">
+          {organization_kept_name}
+        </Text>{' '}
+        has retained the connected Stripe payout account, and{' '}
+        <Text as="span" weight="bold">
+          no data has been lost
         </Text>
-        <ul className="ml-4 list-disc p-0 text-[14px] text-blue-900">
-          <li className="">
-            <span className="font-bold">{organization_kept_name}</span> keeps
-            the existing Stripe payout account with no changes required on your
-            end.
-          </li>
-          <li className="mt-2">
+        .
+      </Text>
+      <InfoBox title="What This Means" variant="info">
+        <List>
+          <ListItem>
+            <Text as="span" weight="bold">
+              {organization_kept_name}
+            </Text>{' '}
+            keeps the existing Stripe payout account with no changes required on
+            your end.
+          </ListItem>
+          <ListItem>
             The following organizations require you to connect a new Stripe
             payout account:
-            <ul className="ml-4 list-disc p-0">
+            <List>
               {organizations_unlinked.map((org: string) => (
-                <li key={org} className="mt-2">
-                  <span className="font-bold">{org}</span> at{' '}
-                  <Link
+                <ListItem key={org}>
+                  <Text as="span" weight="bold">
+                    {org}
+                  </Text>{' '}
+                  at{' '}
+                  <EmailLink
                     href={`https://polar.com/dashboard/${org}/finance/account`}
                   >
                     https://polar.com/dashboard/{org}/finance/account
-                  </Link>
-                </li>
+                  </EmailLink>
+                </ListItem>
               ))}
-            </ul>
-          </li>
-        </ul>
-      </Section>
-      <Section className="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-        <Text className="m-0 text-[16px] font-bold text-yellow-900">
-          Important Information
-        </Text>
-        <ul className="ml-4 list-disc p-0 text-[14px] text-yellow-900">
-          <li className="">
-            <span className="font-bold">Payments:</span> This update does not
-            affect your ability to receive payments - customers can continue
-            making payments as usual.
-          </li>
-          <li className="mt-2">
-            <span className="font-bold">Withdrawals:</span> Withdrawals can be
-            resumed as soon as the new Stripe payout account is connected.
-          </li>
-          <li className="mt-2">
-            <span className="font-bold">Payout history:</span> All payout
-            history is still available on{' '}
-            <span className="font-bold">{organization_kept_name}</span>{' '}
+            </List>
+          </ListItem>
+        </List>
+      </InfoBox>
+      <InfoBox title="Important Information" variant="warning">
+        <List>
+          <ListItem>
+            <Text as="span" weight="bold">
+              Payments:
+            </Text>{' '}
+            This update does not affect your ability to receive payments -
+            customers can continue making payments as usual.
+          </ListItem>
+          <ListItem>
+            <Text as="span" weight="bold">
+              Withdrawals:
+            </Text>{' '}
+            Withdrawals can be resumed as soon as the new Stripe payout account
+            is connected.
+          </ListItem>
+          <ListItem>
+            <Text as="span" weight="bold">
+              Payout history:
+            </Text>{' '}
+            All payout history is still available on{' '}
+            <Text as="span" weight="bold">
+              {organization_kept_name}
+            </Text>{' '}
             organization.
-          </li>
-        </ul>
-      </Section>
-      <Section>
-        <BodyText>
-          If you have any questions or concerns, please don't hesitate to reach
-          out to our support team.
-        </BodyText>
-      </Section>
+          </ListItem>
+        </List>
+      </InfoBox>
+      <Text>
+        If you have any questions or concerns, please don't hesitate to reach
+        out to our support team.
+      </Text>
       <Footer email={email} />
     </WrapperPolar>
   )

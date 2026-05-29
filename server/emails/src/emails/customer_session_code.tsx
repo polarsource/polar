@@ -1,8 +1,9 @@
-import { Link, Preview, Text } from 'react-email'
-import FooterCustomer from '../components/FooterCustomer'
-import Intro from '../components/Intro'
+import EmailLink from '../components/text/EmailLink'
+import FooterCustomer from '../components/layout/FooterCustomer'
+import Intro from '../components/text/Intro'
 import OTPCode from '../components/OTPCode'
-import WrapperOrganization from '../components/WrapperOrganization'
+import Text from '../components/text/Text'
+import WrapperOrganization from '../components/layout/WrapperOrganization'
 import { organization } from '../preview'
 import type { schemas } from '../types'
 
@@ -15,22 +16,19 @@ export function CustomerSessionCode({
   domain,
 }: schemas['CustomerSessionCodeProps']) {
   return (
-    <WrapperOrganization organization={organization}>
-      <Preview>Your verification code for {organization.name}</Preview>
+    <WrapperOrganization
+      organization={organization}
+      preview={`Your verification code for ${organization.name}`}
+    >
       <Intro>
         You can use the following code to access your purchases on the{' '}
-        <Link href={url} className="text-blue-500 underline">
-          {organization.name} Customer Portal
-        </Link>
-        .
+        <EmailLink href={url}>{organization.name} Customer Portal</EmailLink>.
       </Intro>
 
       <OTPCode code={code} domain={domain} />
 
-      <Text className="mt-2 text-center text-sm text-gray-500">
-        This&nbsp;code&nbsp;expires&nbsp;in&nbsp;
-        {code_lifetime_minutes}
-        &nbsp;minutes.
+      <Text variant="caption" align="center">
+        This code expires in {code_lifetime_minutes} minutes.
       </Text>
 
       <FooterCustomer organization={organization} email={email} />

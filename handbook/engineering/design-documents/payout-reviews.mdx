@@ -158,8 +158,6 @@ We need a few small copy edits. Two public doc pages and one frontend component 
 
 PRs 2 to 5 can land in any order after PR 1, with the only constraint that PR 4 lands after PR 2.
 
-For the initial rollout we gate `PayoutService.create` behind a per-org flag in `Organization.feature_settings` (the same mechanism as `account_review_v2_enabled`). This lets us enable held payouts for one or two test orgs on prod first, then turn it on for everyone and remove the flag. Only `create` is gated. The release and cancel jobs are never gated, so any held payout that already exists always drains.
-
 On volume: opening the flow to REVIEW and SNOOZED will increase the daily payout volume. Most of that increase will replace support tickets, which moves work from Plain to the backoffice queue, where the held-payout signal pulls the org to the top.
 
 ## Open questions

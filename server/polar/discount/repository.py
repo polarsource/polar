@@ -1,10 +1,10 @@
 from uuid import UUID
 
-from sqlalchemy import func, select, update
+from sqlalchemy import ColumnExpressionArgument, distinct, func, or_, select, update
 from sqlalchemy.orm import raiseload
 
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
-from polar.models import Discount, DiscountRedemption
+from polar.models import Checkout, Discount, DiscountRedemption, Payment
 
 
 class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, UUID]):
@@ -57,3 +57,69 @@ class DiscountRedemptionRepository(
             .where(DiscountRedemption.checkout_id == checkout_id)
         )
         await self.session.execute(statement)
+
+    async def count_redemptions_by_customer(
+        self,
+        discount_id: UUID,
+        *,
+        exclude_checkout_id: UUID,
+        customer_id: UUID | None = None,
+        customer_email: str | None = None,
+        payment_method_fingerprint: str | None = None,
+    ) -> int:
+        """
+        Count past redemptions of a discount attributable to a given customer.
+
+        The customer is identified by any of the provided hints (OR logic), mirroring
+        the trial-abuse feature: customer ID, unaliased email, or payment method
+        fingerprint. Identity is derived by joining the redemption's linked checkout
+        (customer ID + email) and payment (card fingerprint, only present when a charge
+        occurred).
+
+        The current, in-progress redemption is excluded via ``exclude_checkout_id``.
+        """
+        clauses: list[ColumnExpressionArgument[bool]] = []
+
+        if customer_id is not None:
+            clauses.append(Checkout.customer_id == customer_id)
+
+        if customer_email is not None:
+            # Strip the `+alias` suffix from the local part in SQL, mirroring
+            # `polar.kit.email.unalias_email`. The provided `customer_email` is
+            # expected to be already unaliased and lowercased.
+            clauses.append(
+                func.regexp_replace(
+                    func.lower(Checkout.customer_email), r"\+[^@]*", ""
+                )
+                == customer_email
+            )
+
+        if payment_method_fingerprint is not None:
+            clauses.append(
+                Payment.method_metadata["fingerprint"].astext
+                == payment_method_fingerprint
+            )
+
+        # No hints to match against: nothing can be attributed to the customer.
+        if not clauses:
+            return 0
+
+        statement = (
+            select(func.count(distinct(DiscountRedemption.id)))
+            .join(Checkout, Checkout.id == DiscountRedemption.checkout_id)
+            .where(
+                DiscountRedemption.discount_id == discount_id,
+                DiscountRedemption.checkout_id != exclude_checkout_id,
+                or_(*clauses),
+            )
+        )
+
+        if payment_method_fingerprint is not None:
+            statement = statement.join(
+                Payment,
+                Payment.checkout_id == DiscountRedemption.checkout_id,
+                isouter=True,
+            )
+
+        result = await self.session.execute(statement)
+        return result.scalar_one()

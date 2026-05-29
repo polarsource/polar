@@ -210,6 +210,16 @@ class TrialAlreadyRedeemed(CheckoutError):
         super().__init__(message, 403)
 
 
+class DiscountRedemptionLimitReached(CheckoutError):
+    def __init__(self, checkout: Checkout) -> None:
+        self.checkout = checkout
+        message = (
+            "You have already redeemed this discount the maximum number of "
+            "times allowed per customer."
+        )
+        super().__init__(message, 403)
+
+
 class CheckoutLocked(CheckoutError):
     """Raised when checkout is locked by another transaction."""
 
@@ -1062,6 +1072,40 @@ class CheckoutService:
                     **checkout.payment_processor_metadata,
                     "customer_id": stripe_customer_id,
                 }
+
+                # Enforce the per-customer discount redemption limit *before* creating
+                # any payment intent, so we never charge a customer we're about to
+                # reject. The card fingerprint is read from the confirmation token's
+                # payment method preview (no intent/charge required yet).
+                if (
+                    checkout.discount is not None
+                    and checkout.discount.max_redemptions_per_customer is not None
+                ):
+                    payment_method_fingerprint: str | None = None
+                    if checkout_confirm.confirmation_token_id is not None:
+                        try:
+                            confirmation_token = (
+                                await stripe_service.get_confirmation_token(
+                                    checkout_confirm.confirmation_token_id
+                                )
+                            )
+                            if confirmation_token.payment_method_preview is not None:
+                                payment_method_fingerprint = get_fingerprint(
+                                    typing.cast(
+                                        stripe_lib.PaymentMethod,
+                                        confirmation_token.payment_method_preview,
+                                    )
+                                )
+                        except stripe_lib.StripeError:
+                            pass
+                    if await discount_service.check_per_customer_limit_reached(
+                        session,
+                        checkout.discount,
+                        checkout=checkout,
+                        customer=customer,
+                        payment_method_fingerprint=payment_method_fingerprint,
+                    ):
+                        raise DiscountRedemptionLimitReached(checkout)
 
                 intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent | None = None
                 if checkout.is_payment_form_required:

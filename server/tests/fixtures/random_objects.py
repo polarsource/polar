@@ -37,6 +37,7 @@ from polar.models import (
     CustomField,
     Discount,
     DiscountProduct,
+    DiscountRedemption,
     Dispute,
     Event,
     EventType,
@@ -744,6 +745,7 @@ async def create_discount(
     starts_at: datetime | None = None,
     ends_at: datetime | None = None,
     max_redemptions: int | None = None,
+    max_redemptions_per_customer: int | None = None,
     products: list[Product] | None = None,
 ) -> DiscountFixed: ...
 @typing.overload
@@ -760,6 +762,7 @@ async def create_discount(
     starts_at: datetime | None = None,
     ends_at: datetime | None = None,
     max_redemptions: int | None = None,
+    max_redemptions_per_customer: int | None = None,
     products: list[Product] | None = None,
 ) -> DiscountPercentage: ...
 async def create_discount(
@@ -776,6 +779,7 @@ async def create_discount(
     starts_at: datetime | None = None,
     ends_at: datetime | None = None,
     max_redemptions: int | None = None,
+    max_redemptions_per_customer: int | None = None,
     products: list[Product] | None = None,
 ) -> Discount:
     model = type.get_model()
@@ -790,6 +794,7 @@ async def create_discount(
         ends_at=ends_at,
         discount_products=[],
         max_redemptions=max_redemptions,
+        max_redemptions_per_customer=max_redemptions_per_customer,
         redemptions_count=0,
     )
     if isinstance(custom_field, DiscountFixed):
@@ -805,6 +810,22 @@ async def create_discount(
 
     await save_fixture(custom_field)
     return custom_field
+
+
+async def create_discount_redemption(
+    save_fixture: SaveFixture,
+    *,
+    discount: Discount,
+    checkout: Checkout | None = None,
+    subscription: Subscription | None = None,
+) -> DiscountRedemption:
+    discount_redemption = DiscountRedemption(
+        discount=discount,
+        checkout=checkout,
+        subscription=subscription,
+    )
+    await save_fixture(discount_redemption)
+    return discount_redemption
 
 
 @pytest_asyncio.fixture

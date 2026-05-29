@@ -191,7 +191,9 @@ class StartupProgramService:
         if discount is not None:
             await client.delete_discount(discount_id=raw)
 
-        new_metadata = {k: v for k, v in (customer.metadata or {}).items() if k != DISCOUNT_ID_KEY}
+        new_metadata = {
+            k: v for k, v in (customer.metadata or {}).items() if k != DISCOUNT_ID_KEY
+        }
         await client.update_customer_metadata(
             external_id=str(organization.id),
             metadata=new_metadata,
@@ -237,7 +239,10 @@ class StartupProgramService:
         if discount is None:
             return None
         max_redemptions = discount.max_redemptions
-        if max_redemptions is not None and discount.redemptions_count >= max_redemptions:
+        if (
+            max_redemptions is not None
+            and discount.redemptions_count >= max_redemptions
+        ):
             return None
         return discount.id
 

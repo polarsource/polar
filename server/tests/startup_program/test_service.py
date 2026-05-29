@@ -68,15 +68,11 @@ def client_mock(mocker: MockerFixture) -> MagicMock:
     client = MagicMock()
     client.get_customer_by_external_id_or_none = AsyncMock(return_value=None)
     client.get_discount = AsyncMock(return_value=None)
-    client.create_percentage_discount = AsyncMock(
-        return_value=_make_sdk_discount()
-    )
+    client.create_percentage_discount = AsyncMock(return_value=_make_sdk_discount())
     client.delete_discount = AsyncMock(return_value=None)
     client.update_customer_metadata = AsyncMock(return_value=None)
     client.list_billing_contacts = AsyncMock(return_value=[])
-    mocker.patch(
-        "polar.startup_program.service.get_client", return_value=client
-    )
+    mocker.patch("polar.startup_program.service.get_client", return_value=client)
     return client
 
 
@@ -176,8 +172,8 @@ class TestMarkInvited:
             )
         )
         client_mock.get_discount.return_value = None
-        client_mock.create_percentage_discount.return_value = (
-            _make_sdk_discount(discount_id="disc_fresh")
+        client_mock.create_percentage_discount.return_value = _make_sdk_discount(
+            discount_id="disc_fresh"
         )
 
         result = await startup_program_service.mark_invited(organization)
@@ -254,9 +250,7 @@ class TestUninvite:
 
         await startup_program_service.uninvite(organization)
 
-        client_mock.delete_discount.assert_awaited_once_with(
-            discount_id="disc_unused"
-        )
+        client_mock.delete_discount.assert_awaited_once_with(discount_id="disc_unused")
         # Pointer is cleared; other metadata keys preserved.
         update_kwargs = client_mock.update_customer_metadata.call_args.kwargs
         assert update_kwargs["external_id"] == str(organization.id)
@@ -336,9 +330,7 @@ class TestGetStatus:
     async def test_none_when_no_customer(self, client_mock: MagicMock) -> None:
         client_mock.get_customer_by_external_id_or_none.return_value = None
 
-        assert (
-            await startup_program_service.get_status(uuid.uuid4()) is None
-        )
+        assert await startup_program_service.get_status(uuid.uuid4()) is None
 
     @pytest.mark.usefixtures("configure_startup_program")
     async def test_none_when_no_pointer(self, client_mock: MagicMock) -> None:
@@ -346,14 +338,10 @@ class TestGetStatus:
             _make_sdk_customer(external_id=str(uuid.uuid4()), metadata={})
         )
 
-        assert (
-            await startup_program_service.get_status(uuid.uuid4()) is None
-        )
+        assert await startup_program_service.get_status(uuid.uuid4()) is None
 
     @pytest.mark.usefixtures("configure_startup_program")
-    async def test_none_when_discount_returns_404(
-        self, client_mock: MagicMock
-    ) -> None:
+    async def test_none_when_discount_returns_404(self, client_mock: MagicMock) -> None:
         # API returned 404 for the pointed-to discount (deleted or missing).
         client_mock.get_customer_by_external_id_or_none.return_value = (
             _make_sdk_customer(
@@ -363,23 +351,17 @@ class TestGetStatus:
         )
         client_mock.get_discount.return_value = None
 
-        assert (
-            await startup_program_service.get_status(uuid.uuid4()) is None
-        )
+        assert await startup_program_service.get_status(uuid.uuid4()) is None
 
     @pytest.mark.usefixtures("configure_startup_program")
-    async def test_invited_when_redemptions_zero(
-        self, client_mock: MagicMock
-    ) -> None:
+    async def test_invited_when_redemptions_zero(self, client_mock: MagicMock) -> None:
         client_mock.get_customer_by_external_id_or_none.return_value = (
             _make_sdk_customer(
                 external_id=str(uuid.uuid4()),
                 metadata={DISCOUNT_ID_KEY: SDK_DISCOUNT_ID},
             )
         )
-        client_mock.get_discount.return_value = _make_sdk_discount(
-            redemptions_count=0
-        )
+        client_mock.get_discount.return_value = _make_sdk_discount(redemptions_count=0)
 
         assert (
             await startup_program_service.get_status(uuid.uuid4())
@@ -390,13 +372,11 @@ class TestGetStatus:
     async def test_none_when_sdk_raises(self, client_mock: MagicMock) -> None:
         # The backoffice / billing-page reads must not 500 if the SDK errors;
         # they degrade to "not invited" and log.
-        client_mock.get_customer_by_external_id_or_none.side_effect = (
-            RuntimeError("SDK boom")
+        client_mock.get_customer_by_external_id_or_none.side_effect = RuntimeError(
+            "SDK boom"
         )
 
-        assert (
-            await startup_program_service.get_status(uuid.uuid4()) is None
-        )
+        assert await startup_program_service.get_status(uuid.uuid4()) is None
 
     @pytest.mark.usefixtures("configure_startup_program")
     async def test_consumed_when_redemptions_at_least_one(
@@ -408,9 +388,7 @@ class TestGetStatus:
                 metadata={DISCOUNT_ID_KEY: SDK_DISCOUNT_ID},
             )
         )
-        client_mock.get_discount.return_value = _make_sdk_discount(
-            redemptions_count=1
-        )
+        client_mock.get_discount.return_value = _make_sdk_discount(redemptions_count=1)
 
         assert (
             await startup_program_service.get_status(uuid.uuid4())
@@ -421,9 +399,7 @@ class TestGetStatus:
 @pytest.mark.asyncio
 class TestResolveCheckoutDiscountId:
     @pytest.mark.usefixtures("configure_startup_program")
-    async def test_returns_id_when_invited(
-        self, client_mock: MagicMock
-    ) -> None:
+    async def test_returns_id_when_invited(self, client_mock: MagicMock) -> None:
         client_mock.get_customer_by_external_id_or_none.return_value = (
             _make_sdk_customer(
                 external_id=str(uuid.uuid4()),
@@ -441,9 +417,7 @@ class TestResolveCheckoutDiscountId:
         assert resolved == "disc_match"
 
     @pytest.mark.usefixtures("configure_startup_program")
-    async def test_none_when_not_scale_product(
-        self, client_mock: MagicMock
-    ) -> None:
+    async def test_none_when_not_scale_product(self, client_mock: MagicMock) -> None:
         resolved = await startup_program_service.resolve_checkout_discount_id(
             organization_id=uuid.uuid4(), product_id="prod_other"
         )
@@ -453,9 +427,7 @@ class TestResolveCheckoutDiscountId:
         client_mock.get_customer_by_external_id_or_none.assert_not_called()
 
     @pytest.mark.usefixtures("configure_startup_program")
-    async def test_none_when_fully_redeemed(
-        self, client_mock: MagicMock
-    ) -> None:
+    async def test_none_when_fully_redeemed(self, client_mock: MagicMock) -> None:
         client_mock.get_customer_by_external_id_or_none.return_value = (
             _make_sdk_customer(
                 external_id=str(uuid.uuid4()),

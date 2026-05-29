@@ -131,7 +131,13 @@ export default function ChangePlanPage({
       base += ` Your current ${subscription.discount.name} discount will be removed.`
     }
     return base
-  }, [selectedPlan, subscription, changeKind, requiresCheckout, isSelectedPlanFree])
+  }, [
+    selectedPlan,
+    subscription,
+    changeKind,
+    requiresCheckout,
+    isSelectedPlanFree,
+  ])
 
   const performPlanChange = async () => {
     if (!selectedPlan) return

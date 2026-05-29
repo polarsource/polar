@@ -124,6 +124,8 @@ On cancellation, we reverse the gross payout amount and the per-payout fees, so 
 
 A held payout consumes the `account.payout_interval` cooldown like any other payout. If the payout is canceled, the cooldown clears immediately because `canceled` is excluded from `get_latest_by_account`. We do not send any notification on cancellation as the org review is already communicated by the reviewer via Plain.
 
+We do not enforce a single in-flight payout. The only limit is the 24h cooldown, so a long org review can accumulate more than one held payout. Every held payout has it's own reserved amount, and every held payout is realeased when the org is approved.
+
 ### Review-queue boost
 
 We add a new signal `has_held_payouts` to `review_priority.compute(...)`. The signal adds `+25` to the org's priority score per held payout. The boost is additive so an org with strong risk signals but no held payout can still outrank an org with one.

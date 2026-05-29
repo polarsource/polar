@@ -175,16 +175,7 @@ async def get_auth_subject(
 
     user_session = await get_user_session(request, session)
     if user_session is not None:
-        scopes = set(user_session.scopes)
-        # Upgrade legacy web sessions to have all scopes.
-        # Old sessions were created with exactly {web_read, web_write}.
-        # New sessions get all scopes. This ensures old sessions work
-        # until they expire. Safe to remove after 2026-05-22 (31 days).
-        # Only match the exact legacy set — read-only impersonation
-        # sessions ({web_read} only) must NOT be upgraded.
-        if scopes == {Scope.web_read, Scope.web_write}:
-            scopes = set(Scope)
-        return AuthSubject(user_session.user, scopes, user_session)
+        return AuthSubject(user_session.user, set(user_session.scopes), user_session)
 
     return AuthSubject(Anonymous(), set(), None)
 

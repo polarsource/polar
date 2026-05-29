@@ -12,9 +12,6 @@ class Scope(StrEnum):
     user_read = "user:read"
     user_write = "user:write"
 
-    web_read = "web:read"  # Read-only web access
-    web_write = "web:write"  # Write web access
-
     organizations_read = "organizations:read"
     organizations_write = "organizations:write"
 
@@ -147,10 +144,7 @@ READ_ONLY_SCOPES: set[Scope] = {
     Scope.organization_access_tokens_read,
 }
 
-# web_read/web_write are legacy — kept in Scope enum for session upgrade
-# but excluded from public-facing scope lists.
-_LEGACY_SCOPES = {Scope.web_read, Scope.web_write}
-SCOPES_SUPPORTED = [s.value for s in Scope if s not in _LEGACY_SCOPES]
+SCOPES_SUPPORTED = [s.value for s in Scope]
 SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.openid: "OpenID",
     Scope.profile: "Read your profile",

@@ -90,7 +90,7 @@ async def first_party_oauth2_client(
             "token_endpoint_auth_method": "client_secret_post",
             "grant_types": ["authorization_code", "refresh_token"],
             "response_types": ["code"],
-            "scope": "openid profile email web:read web:write",
+            "scope": "openid profile email",
             "default_sub_type": "user",
         }
     )

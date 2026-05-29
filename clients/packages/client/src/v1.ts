@@ -27711,8 +27711,6 @@ export interface components {
       | 'email'
       | 'user:read'
       | 'user:write'
-      | 'web:read'
-      | 'web:write'
       | 'organizations:read'
       | 'organizations:write'
       | 'custom_fields:read'
@@ -57069,8 +57067,6 @@ export const scopeValues: ReadonlyArray<
   'email',
   'user:read',
   'user:write',
-  'web:read',
-  'web:write',
   'organizations:read',
   'organizations:write',
   'custom_fields:read',

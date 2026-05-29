@@ -7,8 +7,12 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Self, TypeVar
 from uuid import UUID
 
+from alembic_utils.pg_function import PGFunction
+from alembic_utils.pg_trigger import PGTrigger
+from alembic_utils.replaceable_entity import register_entities
 from sqlalchemy import (
     TIMESTAMP,
+    BigInteger,
     Boolean,
     ColumnElement,
     ForeignKey,
@@ -116,7 +120,13 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
 
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount_v2: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True, default=None
+    )
     net_amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    net_amount_v2: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True, default=None
+    )
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     recurring_interval: Mapped[SubscriptionRecurringInterval] = mapped_column(
         StringEnum(SubscriptionRecurringInterval), nullable=False, index=True
@@ -490,3 +500,68 @@ def _discount_set(
     # expiration will be tracked from its first use in a billing cycle
     if value != oldvalue:
         target.discount_applied_at = None
+
+
+subscriptions_sync_v2_amounts_function = PGFunction(
+    schema="public",
+    signature="subscriptions_sync_v2_amounts()",
+    definition="""
+    RETURNS trigger AS $$
+    BEGIN
+        IF TG_OP = 'INSERT' THEN
+            IF NEW.amount_v2 IS NULL AND NEW.amount IS NOT NULL THEN
+                NEW.amount_v2 := NEW.amount;
+            END IF;
+            IF NEW.net_amount_v2 IS NULL AND NEW.net_amount IS NOT NULL THEN
+                NEW.net_amount_v2 := NEW.net_amount;
+            END IF;
+            IF NEW.amount IS NULL
+               AND NEW.amount_v2 IS NOT NULL
+               AND NEW.amount_v2 <= 2147483647 THEN
+                NEW.amount := NEW.amount_v2::integer;
+            END IF;
+            IF NEW.net_amount IS NULL
+               AND NEW.net_amount_v2 IS NOT NULL
+               AND NEW.net_amount_v2 <= 2147483647 THEN
+                NEW.net_amount := NEW.net_amount_v2::integer;
+            END IF;
+        ELSIF TG_OP = 'UPDATE' THEN
+            IF NEW.amount IS DISTINCT FROM OLD.amount THEN
+                NEW.amount_v2 := NEW.amount;
+            END IF;
+            IF NEW.net_amount IS DISTINCT FROM OLD.net_amount THEN
+                NEW.net_amount_v2 := NEW.net_amount;
+            END IF;
+            IF NEW.amount_v2 IS DISTINCT FROM OLD.amount_v2
+               AND NEW.amount_v2 IS NOT NULL
+               AND NEW.amount_v2 <= 2147483647 THEN
+                NEW.amount := NEW.amount_v2::integer;
+            END IF;
+            IF NEW.net_amount_v2 IS DISTINCT FROM OLD.net_amount_v2
+               AND NEW.net_amount_v2 IS NOT NULL
+               AND NEW.net_amount_v2 <= 2147483647 THEN
+                NEW.net_amount := NEW.net_amount_v2::integer;
+            END IF;
+        END IF;
+        RETURN NEW;
+    END
+    $$ LANGUAGE plpgsql;
+    """,
+)
+
+subscriptions_sync_v2_amounts_trigger = PGTrigger(
+    schema="public",
+    signature="subscriptions_sync_v2_amounts_trigger",
+    on_entity="subscriptions",
+    definition="""
+    BEFORE INSERT OR UPDATE ON subscriptions
+    FOR EACH ROW EXECUTE FUNCTION subscriptions_sync_v2_amounts();
+    """,
+)
+
+register_entities(
+    (
+        subscriptions_sync_v2_amounts_function,
+        subscriptions_sync_v2_amounts_trigger,
+    )
+)

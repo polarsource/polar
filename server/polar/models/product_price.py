@@ -3,16 +3,12 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Literal, TypedDict
 from uuid import UUID
 
-from alembic_utils.pg_function import PGFunction
-from alembic_utils.pg_trigger import PGTrigger
-from alembic_utils.replaceable_entity import register_entities
 from babel.numbers import format_decimal
 from sqlalchemy import (
     BigInteger,
     Boolean,
     ColumnElement,
     ForeignKey,
-    Integer,
     Numeric,
     String,
     Uuid,
@@ -241,15 +237,6 @@ class _ProductPriceFixed(ProductPrice):
     price_amount: Mapped[int] = mapped_column(
         "price_amount_v2", BigInteger, nullable=True
     )
-
-    # Legacy int4 columns retained while the dual-column sync trigger is active.
-    # Deferred so they never appear in default SELECTs. No default — that
-    # would force SQLAlchemy to include the column in every INSERT, which
-    # would break running pods once the cleanup migration drops the column.
-    # The bidirectional trigger keeps these in sync with the v2 columns.
-    legacy_price_amount: Mapped[int] = mapped_column(
-        "price_amount", Integer, nullable=True, deferred=True
-    )
     amount_type: Mapped[Literal[ProductPriceAmountType.fixed]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.fixed
     )
@@ -286,15 +273,6 @@ class _ProductPriceCustom(ProductPrice):
     )
     preset_amount: Mapped[int | None] = mapped_column(
         "preset_amount_v2", BigInteger, nullable=True
-    )
-    legacy_minimum_amount: Mapped[int] = mapped_column(
-        "minimum_amount", Integer, nullable=True, deferred=True
-    )
-    legacy_maximum_amount: Mapped[int | None] = mapped_column(
-        "maximum_amount", Integer, nullable=True, deferred=True
-    )
-    legacy_preset_amount: Mapped[int | None] = mapped_column(
-        "preset_amount", Integer, nullable=True, deferred=True
     )
 
     __mapper_args__ = {
@@ -359,9 +337,6 @@ class ProductPriceMeteredUnit(ProductPrice, NewProductPrice):
     )
     cap_amount: Mapped[int | None] = mapped_column(
         "cap_amount_v2", BigInteger, nullable=True
-    )
-    legacy_cap_amount: Mapped[int | None] = mapped_column(
-        "cap_amount", Integer, nullable=True, deferred=True
     )
     meter_id: Mapped[UUID] = mapped_column(
         Uuid,
@@ -496,116 +471,3 @@ def set_identity(instance: ProductPrice, *arg: Any, **kw: Any) -> None:
         instance.recurring_interval = None
 
     instance.amount_type = ProductPriceAmountType(identity)
-
-
-product_prices_sync_v2_amounts_function = PGFunction(
-    schema="public",
-    signature="product_prices_sync_v2_amounts()",
-    definition="""
-    RETURNS trigger AS $$
-    BEGIN
-        IF TG_OP = 'INSERT' THEN
-            IF NEW.price_amount_v2 IS NULL AND NEW.price_amount IS NOT NULL THEN
-                NEW.price_amount_v2 := NEW.price_amount;
-            END IF;
-            IF NEW.minimum_amount_v2 IS NULL AND NEW.minimum_amount IS NOT NULL THEN
-                NEW.minimum_amount_v2 := NEW.minimum_amount;
-            END IF;
-            IF NEW.maximum_amount_v2 IS NULL AND NEW.maximum_amount IS NOT NULL THEN
-                NEW.maximum_amount_v2 := NEW.maximum_amount;
-            END IF;
-            IF NEW.preset_amount_v2 IS NULL AND NEW.preset_amount IS NOT NULL THEN
-                NEW.preset_amount_v2 := NEW.preset_amount;
-            END IF;
-            IF NEW.cap_amount_v2 IS NULL AND NEW.cap_amount IS NOT NULL THEN
-                NEW.cap_amount_v2 := NEW.cap_amount;
-            END IF;
-            IF NEW.price_amount IS NULL
-               AND NEW.price_amount_v2 IS NOT NULL
-               AND NEW.price_amount_v2 <= 2147483647 THEN
-                NEW.price_amount := NEW.price_amount_v2::integer;
-            END IF;
-            IF NEW.minimum_amount IS NULL
-               AND NEW.minimum_amount_v2 IS NOT NULL
-               AND NEW.minimum_amount_v2 <= 2147483647 THEN
-                NEW.minimum_amount := NEW.minimum_amount_v2::integer;
-            END IF;
-            IF NEW.maximum_amount IS NULL
-               AND NEW.maximum_amount_v2 IS NOT NULL
-               AND NEW.maximum_amount_v2 <= 2147483647 THEN
-                NEW.maximum_amount := NEW.maximum_amount_v2::integer;
-            END IF;
-            IF NEW.preset_amount IS NULL
-               AND NEW.preset_amount_v2 IS NOT NULL
-               AND NEW.preset_amount_v2 <= 2147483647 THEN
-                NEW.preset_amount := NEW.preset_amount_v2::integer;
-            END IF;
-            IF NEW.cap_amount IS NULL
-               AND NEW.cap_amount_v2 IS NOT NULL
-               AND NEW.cap_amount_v2 <= 2147483647 THEN
-                NEW.cap_amount := NEW.cap_amount_v2::integer;
-            END IF;
-        ELSIF TG_OP = 'UPDATE' THEN
-            IF NEW.price_amount IS DISTINCT FROM OLD.price_amount THEN
-                NEW.price_amount_v2 := NEW.price_amount;
-            END IF;
-            IF NEW.minimum_amount IS DISTINCT FROM OLD.minimum_amount THEN
-                NEW.minimum_amount_v2 := NEW.minimum_amount;
-            END IF;
-            IF NEW.maximum_amount IS DISTINCT FROM OLD.maximum_amount THEN
-                NEW.maximum_amount_v2 := NEW.maximum_amount;
-            END IF;
-            IF NEW.preset_amount IS DISTINCT FROM OLD.preset_amount THEN
-                NEW.preset_amount_v2 := NEW.preset_amount;
-            END IF;
-            IF NEW.cap_amount IS DISTINCT FROM OLD.cap_amount THEN
-                NEW.cap_amount_v2 := NEW.cap_amount;
-            END IF;
-            IF NEW.price_amount_v2 IS DISTINCT FROM OLD.price_amount_v2
-               AND NEW.price_amount_v2 IS NOT NULL
-               AND NEW.price_amount_v2 <= 2147483647 THEN
-                NEW.price_amount := NEW.price_amount_v2::integer;
-            END IF;
-            IF NEW.minimum_amount_v2 IS DISTINCT FROM OLD.minimum_amount_v2
-               AND NEW.minimum_amount_v2 IS NOT NULL
-               AND NEW.minimum_amount_v2 <= 2147483647 THEN
-                NEW.minimum_amount := NEW.minimum_amount_v2::integer;
-            END IF;
-            IF NEW.maximum_amount_v2 IS DISTINCT FROM OLD.maximum_amount_v2
-               AND NEW.maximum_amount_v2 IS NOT NULL
-               AND NEW.maximum_amount_v2 <= 2147483647 THEN
-                NEW.maximum_amount := NEW.maximum_amount_v2::integer;
-            END IF;
-            IF NEW.preset_amount_v2 IS DISTINCT FROM OLD.preset_amount_v2
-               AND NEW.preset_amount_v2 IS NOT NULL
-               AND NEW.preset_amount_v2 <= 2147483647 THEN
-                NEW.preset_amount := NEW.preset_amount_v2::integer;
-            END IF;
-            IF NEW.cap_amount_v2 IS DISTINCT FROM OLD.cap_amount_v2
-               AND NEW.cap_amount_v2 IS NOT NULL
-               AND NEW.cap_amount_v2 <= 2147483647 THEN
-                NEW.cap_amount := NEW.cap_amount_v2::integer;
-            END IF;
-        END IF;
-        RETURN NEW;
-    END
-    $$ LANGUAGE plpgsql;
-    """,
-)
-
-product_prices_sync_v2_amounts_trigger = PGTrigger(
-    schema="public",
-    signature="product_prices_sync_v2_amounts_trigger",
-    on_entity="product_prices",
-    definition="""
-    BEFORE INSERT OR UPDATE ON product_prices
-    FOR EACH ROW EXECUTE FUNCTION product_prices_sync_v2_amounts();
-    """,
-)
-
-register_entities(
-    (
-        product_prices_sync_v2_amounts_function,
-        product_prices_sync_v2_amounts_trigger,
-    )
-)

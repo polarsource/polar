@@ -11,6 +11,7 @@ from polar.models import (
     Product,
     UserOrganization,
 )
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.auth import AuthSubjectFixture
@@ -19,6 +20,7 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_benefit_grant,
     create_customer,
+    create_subscription,
 )
 
 
@@ -107,6 +109,93 @@ class TestListCustomers:
         json = response.json()
         assert json["pagination"]["total_count"] == 1
         assert json["items"][0]["external_id"] == "ext_456"
+
+    @pytest.mark.auth
+    async def test_active_filter(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        customer_active = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="active@example.com",
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer_active,
+            status=SubscriptionStatus.active,
+        )
+        customer_trialing = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="trialing@example.com",
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer_trialing,
+            status=SubscriptionStatus.trialing,
+        )
+        customer_past_due = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="past-due@example.com",
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer_past_due,
+            status=SubscriptionStatus.past_due,
+        )
+        customer_inactive = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="inactive@example.com",
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer_inactive,
+            status=SubscriptionStatus.canceled,
+        )
+
+        # active=true returns customers with a trialing, active or past_due
+        # subscription
+        response = await client.get("/v1/customers/", params={"active": True})
+
+        assert response.status_code == 200
+        ids = {item["id"] for item in response.json()["items"]}
+        assert str(customer_active.id) in ids
+        assert str(customer_trialing.id) in ids
+        assert str(customer_past_due.id) in ids
+        assert str(customer_inactive.id) not in ids
+
+        # active=false excludes customers with a billable subscription
+        response = await client.get("/v1/customers/", params={"active": False})
+
+        assert response.status_code == 200
+        ids = {item["id"] for item in response.json()["items"]}
+        assert str(customer_inactive.id) in ids
+        assert str(customer_active.id) not in ids
+        assert str(customer_trialing.id) not in ids
+        assert str(customer_past_due.id) not in ids
+
+        # no filter returns all customers
+        response = await client.get("/v1/customers/")
+
+        assert response.status_code == 200
+        ids = {item["id"] for item in response.json()["items"]}
+        assert {
+            str(customer_active.id),
+            str(customer_trialing.id),
+            str(customer_past_due.id),
+            str(customer_inactive.id),
+        } <= ids
 
 
 @pytest.mark.asyncio

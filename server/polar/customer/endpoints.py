@@ -74,6 +74,13 @@ async def list(
     query: str | None = Query(
         None, description="Filter by name, email, or external ID."
     ),
+    active: bool | None = Query(
+        None,
+        description=(
+            "Filter by active customers, i.e. customers with at least one "
+            "trialing, active or past_due subscription."
+        ),
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[CustomerSchema]:
     """List customers."""
@@ -84,6 +91,7 @@ async def list(
         email=email,
         metadata=metadata,
         query=query,
+        active=active,
         pagination=pagination,
         sorting=sorting,
     )

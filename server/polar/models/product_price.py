@@ -238,9 +238,17 @@ class NewProductPrice:
 
 
 class _ProductPriceFixed(ProductPrice):
-    price_amount: Mapped[int] = mapped_column(Integer, nullable=True)
-    price_amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
+    price_amount: Mapped[int] = mapped_column(
+        "price_amount_v2", BigInteger, nullable=True
+    )
+
+    # Legacy int4 columns retained while the dual-column sync trigger is active.
+    # Deferred so they never appear in default SELECTs. No default — that
+    # would force SQLAlchemy to include the column in every INSERT, which
+    # would break running pods once the cleanup migration drops the column.
+    # The bidirectional trigger keeps these in sync with the v2 columns.
+    legacy_price_amount: Mapped[int] = mapped_column(
+        "price_amount", Integer, nullable=True, deferred=True
     )
     amount_type: Mapped[Literal[ProductPriceAmountType.fixed]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.fixed
@@ -270,21 +278,23 @@ class _ProductPriceCustom(ProductPrice):
     amount_type: Mapped[Literal[ProductPriceAmountType.custom]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.custom
     )
-    minimum_amount: Mapped[int] = mapped_column(Integer, nullable=True, default=None)
-    minimum_amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
+    minimum_amount: Mapped[int] = mapped_column(
+        "minimum_amount_v2", BigInteger, nullable=True
     )
     maximum_amount: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, default=None
-    )
-    maximum_amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
+        "maximum_amount_v2", BigInteger, nullable=True
     )
     preset_amount: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, default=None
+        "preset_amount_v2", BigInteger, nullable=True
     )
-    preset_amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
+    legacy_minimum_amount: Mapped[int] = mapped_column(
+        "minimum_amount", Integer, nullable=True, deferred=True
+    )
+    legacy_maximum_amount: Mapped[int | None] = mapped_column(
+        "maximum_amount", Integer, nullable=True, deferred=True
+    )
+    legacy_preset_amount: Mapped[int | None] = mapped_column(
+        "preset_amount", Integer, nullable=True, deferred=True
     )
 
     __mapper_args__ = {
@@ -347,9 +357,11 @@ class ProductPriceMeteredUnit(ProductPrice, NewProductPrice):
         # Polymorphic columns must be nullable, as they don't apply to other types
         nullable=True,
     )
-    cap_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
-    cap_amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
+    cap_amount: Mapped[int | None] = mapped_column(
+        "cap_amount_v2", BigInteger, nullable=True
+    )
+    legacy_cap_amount: Mapped[int | None] = mapped_column(
+        "cap_amount", Integer, nullable=True, deferred=True
     )
     meter_id: Mapped[UUID] = mapped_column(
         Uuid,

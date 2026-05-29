@@ -7,7 +7,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-05-21T11:44:10.166212Z"
+exclude-newer = "2026-05-22T12:27:39.872887Z"
 exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
@@ -2437,7 +2437,7 @@ requires-dist = [
     { name = "python-slugify", specifier = ">=8.0.1" },
     { name = "python-snappy", specifier = ">=0.7.3" },
     { name = "python-stdnum", specifier = ">=2.1" },
-    { name = "reauth", specifier = "==0.1.6" },
+    { name = "reauth", specifier = "==0.1.8" },
     { name = "redis", specifier = ">=5.0.4" },
     { name = "safe-redirect-url", specifier = ">=0.1.1" },
     { name = "sentry-sdk", extras = ["fastapi", "sqlalchemy"], specifier = ">=2.60.0" },
@@ -3158,7 +3158,7 @@ wheels = [
 
 [[package]]
 name = "reauth"
-version = "0.1.6"
+version = "0.1.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -3166,9 +3166,9 @@ dependencies = [
     { name = "httpx" },
     { name = "pyjwt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/15/72/289a0dcadf0f7bdbc9da06e4f6f7e33ceb1080125b0bf1a60aba4e3b9649/reauth-0.1.6.tar.gz", hash = "sha256:579611d54dd3ffda4fe590e5905ef816a847edaedfdbec9b569369183741b2e2", size = 501342, upload-time = "2026-05-28T09:46:32.567Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/99/74/43df2e2723f88232a2b25ece9d5a22938259b49b8a771e5a2d01a00f5217/reauth-0.1.8.tar.gz", hash = "sha256:d9354bc66d515e70c0a1e6a03cdf2789550a2e07c59fe711de766d726b9b555c", size = 504550, upload-time = "2026-05-29T08:45:30.204Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5a/1b/706e336b4fc939fcc4ba19c0760baff33361810fa0b4d8ad2b5acb84492f/reauth-0.1.6-py3-none-any.whl", hash = "sha256:8f26ad08f6e719fe8570cb26a11c5cb96043effbd293d46f4b449d8c8ccac91f", size = 35035, upload-time = "2026-05-28T09:46:31.385Z" },
+    { url = "https://files.pythonhosted.org/packages/2e/18/ac25364926e995936c92039b15b9dfc5177f1c97dfd27f3e19c3699717ca/reauth-0.1.8-py3-none-any.whl", hash = "sha256:5f45b738ddbfe147448e4361db8e9d5992b9e5cc6adf9ca337f227b322d79cbc", size = 37983, upload-time = "2026-05-29T08:45:31.413Z" },
 ]
 
 [[package]]

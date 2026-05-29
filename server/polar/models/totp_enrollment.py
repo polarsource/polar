@@ -19,7 +19,7 @@ class TOTPEnrollment(RecordModel):
     last_verified_time_step: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     identity_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("users.id", ondelete="cascade"), nullable=False, index=True
+        Uuid, ForeignKey("users.id", ondelete="cascade"), nullable=False, unique=True
     )
 
     def to_dataclass(self) -> TOTPEnrollmentDataclass:

@@ -18,8 +18,8 @@ from reauth.factors.totp import (
 from polar.auth.exceptions import PolarAuthError, PolarAuthRedirectionError
 from polar.auth.oauth2.github import get_github_factor
 from polar.auth.oauth2.google import get_google_factor
-from polar.authz.dependencies import AuthorizeWebUserWrite
-from polar.exceptions import NotPermitted
+from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWrite
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.models import UserSession as UserSession
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
@@ -49,6 +49,7 @@ from .schemas import (
     Factor,
     TOTPEnable,
     TOTPEnrollment,
+    TOTPStatus,
 )
 from .service import auth as auth_service
 
@@ -205,7 +206,19 @@ async def email_otp_verify(
     return await authentication_session_service.to_schema(authentication_session)
 
 
-@router.post("/totp/enroll", status_code=201)
+@router.get("/totp", responses={404: {"description": "TOTP factor not enrolled"}})
+async def totp_status(
+    auth_subject: AuthorizeWebUserRead,
+    totp_factor: TOTPFactor = Depends(get_totp_factor),
+) -> TOTPStatus:
+    user = auth_subject.subject
+    enrollment = await totp_factor.get_enrollment(user.id)
+    if enrollment is None:
+        raise ResourceNotFound()
+    return TOTPStatus(enabled=enrollment.enabled)
+
+
+@router.post("/totp", status_code=201)
 async def totp_enroll(
     auth_subject: AuthorizeWebUserWrite,
     totp_factor: TOTPFactor = Depends(get_totp_factor),
@@ -241,6 +254,19 @@ async def totp_enable(
         raise PolarAuthError("TOTP factor already enabled") from e
     except InvalidTOTPCodeException as e:
         raise PolarAuthError("Invalid TOTP code") from e
+    return None
+
+
+@router.delete("/totp", status_code=204)
+async def totp_delete(
+    auth_subject: AuthorizeWebUserWrite,
+    totp_factor: TOTPFactor = Depends(get_totp_factor),
+) -> None:
+    user = auth_subject.subject
+    enrollment = await totp_factor.get_enrollment(user.id)
+    if enrollment is None:
+        raise ResourceNotFound()
+    await totp_factor.delete(enrollment)
     return None
 
 

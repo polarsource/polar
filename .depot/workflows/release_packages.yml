@@ -1,0 +1,48 @@
+# Depot CI Migration
+# Source: .github/workflows/release_packages.yml
+#
+# Changes made:
+# - Changed GitHub runs-on labels to their Depot equivalents
+
+name: Release packages
+on:
+  push:
+    branches:
+      - main
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+jobs:
+  release:
+    runs-on: depot-ubuntu-latest # was: ubuntu-latest. Mapped standard GitHub runner to Depot equivalent.
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}/clients
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6.0.8
+        with:
+          package_json_file: clients/package.json
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version-file: clients/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+          registry-url: "https://registry.npmjs.org"
+      - name: Install dependencies
+        run: pnpm install
+      - name: Create Release Pull Request or Publish to npm
+        id: changesets
+        # Pin to last known working version (see: https://github.com/changesets/action/issues/501)
+        uses: changesets/action@v1.8.0
+        with:
+          # This expects you to have a script called release which does a build for your packages and calls changeset publish
+          publish: pnpm release-packages
+          cwd: ${{ github.workspace }}/clients
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS: "https://polar.sh,https://sandbox.polar.sh"

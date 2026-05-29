@@ -1,0 +1,38 @@
+# Depot CI Migration
+# Source: .github/workflows/enable_maintenance_mode.yml
+#
+# Changes made:
+# - Rewrote .github/ path references to .depot/
+# - Changed GitHub runs-on labels to their Depot equivalents
+
+name: Enable Maintenance Mode
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  enable_maintenance:
+    name: Enable Maintenance Mode
+    runs-on: depot-ubuntu-latest # was: ubuntu-latest. Mapped standard GitHub runner to Depot equivalent.
+    environment: maintenance
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Enable Frontend Maintenance Rule
+        uses: ./.depot/actions/maintenance-mode
+        with:
+          enable: "true"
+          cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          cloudflare_ruleset_id: ${{ secrets.CLOUDFLARE_RULESET_ID }}
+          rule_id: ${{ secrets.FRONTEND_MAINTENANCE_RULE_ID }}
+          rule_name: "Frontend"
+      - name: Enable API Maintenance Rule
+        uses: ./.depot/actions/maintenance-mode
+        with:
+          enable: "true"
+          cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          cloudflare_ruleset_id: ${{ secrets.CLOUDFLARE_RULESET_ID }}
+          rule_id: ${{ secrets.API_MAINTENANCE_RULE_ID }}
+          rule_name: "API"

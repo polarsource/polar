@@ -1,0 +1,47 @@
+# Depot CI Migration
+# Source: .github/workflows/test_dev_cli.yaml
+#
+# Changes made:
+# - Rewrote .github/ path references to .depot/
+# - Changed runs-on from "blacksmith-4vcpu-ubuntu-2404" to "depot-ubuntu-latest" throughout
+
+name: Dev CLI
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    types: [opened, synchronize, edited]
+  merge_group:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  changes:
+    name: "Detect changes"
+    runs-on: depot-ubuntu-latest # was: blacksmith-4vcpu-ubuntu-2404. Nonstandard GitHub runner label detected, changed to default Depot runner.
+    outputs:
+      dev_cli: ${{ steps.filter.outputs.dev_cli }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            dev_cli:
+              - 'dev/cli/**'
+              - '.depot/workflows/test_dev_cli.yaml'
+  lint:
+    name: "Dev CLI: Lint \U0001F4DD"
+    needs: changes
+    if: needs.changes.outputs.dev_cli == 'true'
+    timeout-minutes: 5
+    runs-on: depot-ubuntu-latest # was: blacksmith-4vcpu-ubuntu-2404. Nonstandard GitHub runner label detected, changed to default Depot runner.
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+      - name: "\U0001F436 Lint (ruff)"
+        working-directory: ./dev/cli
+        run: uv run --with ruff ruff check .

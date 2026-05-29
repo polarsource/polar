@@ -1,0 +1,51 @@
+# Depot CI Migration
+# Source: .github/workflows/i18n_translate.yml
+#
+# Changes made:
+# - Changed GitHub runs-on labels to their Depot equivalents
+
+name: Generate Translations
+on:
+  pull_request:
+    paths:
+      - "clients/packages/i18n/src/locales/en.ts"
+      - "clients/packages/i18n/src/config.ts"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  translate:
+    runs-on: depot-ubuntu-latest # was: ubuntu-latest. Mapped standard GitHub runner to Depot equivalent.
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}/clients
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: pnpm/action-setup@v6.0.8
+        with:
+          package_json_file: clients/package.json
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version-file: clients/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+      - name: Install dependencies
+        run: pnpm install --ignore-scripts
+      - name: Generate translations
+        env:
+          PYDANTIC_AI_GATEWAY_API_KEY: ${{ secrets.PYDANTIC_AI_GATEWAY_API_KEY }}
+        run: pnpm --filter @polar-sh/i18n translate
+      - name: Commit translations
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add packages/i18n/
+          git diff --staged --quiet || git commit -m "chore(i18n): update translations"
+          git push

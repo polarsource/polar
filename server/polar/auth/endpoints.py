@@ -7,6 +7,10 @@ from reauth.authentication_session import (
     FactorsRemainingException,
     IdentityNotAttachedException,
 )
+from reauth.factors.backup_codes import (
+    AlreadyUsedBackupCodeException,
+    InvalidBackupCodeException,
+)
 from reauth.factors.email_otp import ExpiredOTPException, InvalidOTPException
 from reauth.factors.totp import (
     AlreadyEnabledTOTPException,
@@ -34,8 +38,10 @@ from .authentication_session import (
     get_authentication_session_service,
 )
 from .factors import (
+    BackupCodesFactor,
     EmailOTPFactor,
     TOTPFactor,
+    get_backup_codes_factor,
     get_email_otp_factor,
     get_totp_factor,
 )
@@ -44,6 +50,9 @@ from .oauth2.router import get_oauth_link_router, get_oauth_login_router
 from .schemas import AuthenticationSession as AuthenticationSessionSchema
 from .schemas import (
     AuthenticationSessionStart,
+    BackupCodesEnrollment,
+    BackupCodesStatus,
+    BackupCodesVerify,
     EmailOTPRequest,
     EmailOTPVerify,
     Factor,
@@ -294,5 +303,60 @@ async def totp_verify(
 
     authentication_session = await authentication_session_service.advance(
         authentication_session, authentication_session.identity_id, totp_factor
+    )
+    return await authentication_session_service.to_schema(authentication_session)
+
+
+@router.get(
+    "/backup-codes",
+    responses={404: {"description": "Backup codes factor not enrolled"}},
+)
+async def backup_codes_status(
+    auth_subject: AuthorizeWebUserRead,
+    backup_codes_factor: BackupCodesFactor = Depends(get_backup_codes_factor),
+) -> BackupCodesStatus:
+    user = auth_subject.subject
+    enrollment = await backup_codes_factor.get_enrollment(user.id)
+    if enrollment is None:
+        raise ResourceNotFound()
+    return BackupCodesStatus(
+        codes=len(enrollment.codes_hashes), used_codes=len(enrollment.used_codes_hashes)
+    )
+
+
+@router.post("/backup-codes", status_code=201)
+async def backup_codes_enroll(
+    auth_subject: AuthorizeWebUserWrite,
+    backup_codes_factor: BackupCodesFactor = Depends(get_backup_codes_factor),
+) -> BackupCodesEnrollment:
+    user = auth_subject.subject
+    codes, _ = await backup_codes_factor.enroll(user.id)
+    return BackupCodesEnrollment(codes=codes)
+
+
+@router.post("/backup-codes/verify")
+async def backup_codes_verify(
+    verify: BackupCodesVerify,
+    authentication_session: AuthenticationSession = Depends(get_authentication_session),
+    authentication_session_service: AuthenticationSessionService = Depends(
+        get_authentication_session_service
+    ),
+    backup_codes_factor: BackupCodesFactor = Depends(get_backup_codes_factor),
+) -> AuthenticationSessionSchema:
+    factors = await authentication_session_service.get_available_factors(
+        authentication_session
+    )
+    if backup_codes_factor not in factors:
+        raise PolarAuthError("Backup codes factor not available for this session", 400)
+
+    try:
+        await backup_codes_factor.verify(
+            authentication_session.identity_id, verify.code
+        )
+    except (InvalidBackupCodeException, AlreadyUsedBackupCodeException) as e:
+        raise PolarAuthError("Invalid or expired backup code", 400) from e
+
+    authentication_session = await authentication_session_service.advance(
+        authentication_session, authentication_session.identity_id, backup_codes_factor
     )
     return await authentication_session_service.to_schema(authentication_session)

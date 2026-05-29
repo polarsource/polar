@@ -174,6 +174,7 @@ class OrganizationDetailView:
                                 organization_id=self.org.id,
                             )
                         ),
+                        hx_swap="none",
                         hx_confirm=(
                             "Invite this organization to the Startup "
                             "Program? A 100% discount on Scale (12 months, "
@@ -195,6 +196,7 @@ class OrganizationDetailView:
                                 organization_id=self.org.id,
                             )
                         ),
+                        hx_swap="none",
                         hx_confirm=(
                             "Remove this organization's unused Startup "
                             "Program discount? They will no longer be able "

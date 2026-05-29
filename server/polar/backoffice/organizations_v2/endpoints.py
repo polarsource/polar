@@ -1963,7 +1963,7 @@ async def startup_program_mark_invited(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
     user_session: UserSession = Depends(get_admin),
-) -> HXRedirectResponse:
+) -> HXRedirectResponse | None:
     """Invite the organization to the Startup Program.
 
     Resolves the Polar-for-Polar customer (in Polar's org, with
@@ -1978,20 +1978,20 @@ async def startup_program_mark_invited(
 
     if not settings.STARTUP_PROGRAM_ENABLED:
         await add_toast(request, "Startup Program is not configured.", "error")
-        return HXRedirectResponse(request, detail_url, 303)
+        return None
 
     organization = await OrganizationRepository.from_session(session).get_by_id(
         organization_id, include_blocked=True
     )
     if organization is None:
         await add_toast(request, "Organization not found.", "error")
-        return HXRedirectResponse(request, detail_url, 303)
+        return None
 
     try:
         discount = await startup_program_service.mark_invited(organization)
     except StartupProgramError as e:
         await add_toast(request, str(e), "error")
-        return HXRedirectResponse(request, detail_url, 303)
+        return None
 
     await add_toast(
         request,
@@ -2011,7 +2011,7 @@ async def startup_program_uninvite(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
     user_session: UserSession = Depends(get_admin),
-) -> HXRedirectResponse:
+) -> HXRedirectResponse | None:
     """Revoke an organization's unused Startup Program discount.
 
     Only valid while the discount is unused — once it's been redeemed the
@@ -2025,20 +2025,20 @@ async def startup_program_uninvite(
 
     if not settings.STARTUP_PROGRAM_ENABLED:
         await add_toast(request, "Startup Program is not configured.", "error")
-        return HXRedirectResponse(request, detail_url, 303)
+        return None
 
     organization = await OrganizationRepository.from_session(session).get_by_id(
         organization_id, include_blocked=True
     )
     if organization is None:
         await add_toast(request, "Organization not found.", "error")
-        return HXRedirectResponse(request, detail_url, 303)
+        return None
 
     try:
         await startup_program_service.uninvite(organization)
     except StartupProgramError as e:
         await add_toast(request, str(e), "error")
-        return HXRedirectResponse(request, detail_url, 303)
+        return None
 
     await add_toast(request, "Uninvited.", "success")
     return HXRedirectResponse(request, detail_url, 303)

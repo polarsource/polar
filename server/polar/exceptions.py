@@ -74,7 +74,7 @@ class PolarRedirectionError(PolarError):
     """
 
     def __init__(
-        self, message: str, status_code: int = 400, return_to: str | None = None
+        self, message: str, status_code: int = 303, return_to: str | None = None
     ) -> None:
         self.return_to = return_to
         super().__init__(message, status_code)

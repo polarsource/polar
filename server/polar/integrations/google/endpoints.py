@@ -117,7 +117,7 @@ async def login_callback(
             signup_attribution=state_signup_attribution,
         )
     except GoogleServiceError as e:
-        raise OAuthCallbackError(e.message, e.status_code, return_to=return_to) from e
+        raise OAuthCallbackError(e.message, return_to=return_to) from e
 
     if is_signup:
         posthog.user_signup(user, "google")
@@ -180,7 +180,7 @@ async def link_callback(
             session, user=auth_subject.subject, token=token_data
         )
     except GoogleServiceError as e:
-        raise OAuthCallbackError(e.message, e.status_code, return_to=return_to) from e
+        raise OAuthCallbackError(e.message, return_to=return_to) from e
 
     return_url = get_safe_return_url(return_to)
     response = RedirectResponse(return_url, 303)

@@ -44,7 +44,7 @@ async def polar_redirection_exception_handler(
         }
     )
     error_url = f"{settings.generate_frontend_url('/error')}?{error_url_params}"
-    return RedirectResponse(error_url, 303)
+    return RedirectResponse(error_url, exc.status_code)
 
 
 async def polar_not_modified_handler(request: Request, exc: Exception) -> Response:

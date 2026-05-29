@@ -4,6 +4,7 @@ from fastapi import Depends
 from reauth.factors.oauth2.apple import AppleOAuth2Factor as AppleOAuth2FactorBase
 from reauth.factors.oauth2.base import OAuth2Account
 from reauth.factors.oauth2.base import OAuth2Enrollment as OAuth2EnrollmentDataclass
+from sqlalchemy import update
 
 from polar.config import settings
 from polar.models import OAuthAccount
@@ -51,6 +52,25 @@ class AppleFactor(OAuth2FactorMixin, AppleOAuth2FactorBase):
         self.session.add(enrollment_orm)
         await self.session.flush()
         return enrollment_orm.id
+
+    async def update(self, enrollment: OAuth2EnrollmentDataclass) -> None:
+        statement = (
+            update(OAuthAccount)
+            .where(
+                OAuthAccount.user_id == enrollment.identity_id,
+                OAuthAccount.platform == OAuthPlatform(self.identifier),
+            )
+            .values(
+                access_token=enrollment.access_token,
+                expires_at=enrollment.expires_at,
+                refresh_token=enrollment.refresh_token,
+                refresh_token_expires_at=enrollment.refresh_token_expires_at,
+                # Apple doesn't provide profile information on subsequent login,
+                # so we don't update account_email and account_username on update.
+            )
+        )
+        await self.session.execute(statement)
+        await self.session.flush()
 
     async def get_email(
         self, callback_result: OAuth2EnrollmentDataclass | OAuth2Account

@@ -1,3 +1,5 @@
+import typing
+
 from fastapi import Depends, Request, Response
 from fastapi.responses import RedirectResponse
 from reauth.authentication_session import (
@@ -44,6 +46,7 @@ from .schemas import (
     AuthenticationSessionStart,
     EmailOTPRequest,
     EmailOTPVerify,
+    Factor,
     TOTPEnable,
     TOTPEnrollment,
 )
@@ -137,6 +140,7 @@ async def complete(
         request,
         user,
         return_to=return_to,
+        factor=typing.cast(Factor, authentication_session.used_factors[0]),
     )
     await authentication_session_service.set_cookie(request, response, "", 0)
     return response

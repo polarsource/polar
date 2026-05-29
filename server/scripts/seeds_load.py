@@ -2144,6 +2144,13 @@ TOKEN_SCOPES = " ".join(
         Scope.products_read,
         Scope.checkouts_write,
         Scope.benefits_read,
+        # Startup Program: claim flow creates/reads the per-customer
+        # discount via SDK and reads/updates the resulting subscription's
+        # discount + matching orders.
+        Scope.discounts_read,
+        Scope.discounts_write,
+        Scope.orders_read,
+        Scope.orders_write,
     ]
 )
 
@@ -2158,6 +2165,7 @@ WEBHOOK_EVENTS: list[WebhookEventType] = [
 ]
 SERVER_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 WEBHOOK_SECRET_ENV_KEY = "POLAR_POLAR_WEBHOOK_SECRET"
+SCALE_PRODUCT_NAME = str(POLAR_SELF_PRODUCTS[-1]["name"])
 
 
 def _write_webhook_secret_to_env(secret: str) -> None:
@@ -2387,6 +2395,17 @@ def polar_self_env() -> None:
             if org is None:
                 raise typer.Exit(1)
 
+            scale_product = (
+                await session.execute(
+                    select(Product).where(
+                        Product.organization_id == org.id,
+                        Product.name == SCALE_PRODUCT_NAME,
+                    )
+                )
+            ).scalar_one_or_none()
+            if scale_product is None:
+                raise typer.Exit(1)
+
             # Delete any existing dev seed token
             existing = (
                 (
@@ -2447,6 +2466,7 @@ def polar_self_env() -> None:
             _write_webhook_secret_to_env(webhook_secret)
 
             print(f"POLAR_POLAR_ORGANIZATION_ID={org.id}")
+            print(f"POLAR_POLAR_SCALE_PRODUCT_ID={scale_product.id}")
             print(f"POLAR_POLAR_ACCESS_TOKEN={token}")
             print(f"{WEBHOOK_SECRET_ENV_KEY}={webhook_secret}")
             print("POLAR_POLAR_API_URL=http://127.0.0.1:8000")

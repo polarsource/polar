@@ -1106,6 +1106,38 @@ export interface paths {
     patch: operations['organizations:change_subscription_plan']
     trace?: never
   }
+  '/v1/organizations/{id}/startup-program/claim': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Claim Startup Program Discount
+     * @description Claim the Startup Program discount on the Scale plan.
+     *
+     *     Single entry point for the "Switch to Scale" callout regardless of
+     *     current plan:
+     *
+     *     - Free orgs receive a checkout to set up payment (discount attached).
+     *     - Paid orgs get their subscription switched to Scale + discount applied
+     *       directly via PATCH, no checkout needed.
+     *
+     *     Caller passes ``success_url`` / ``return_url`` defensively; they're only
+     *     used on the Free-plan branch.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['organizations:claim_startup_program']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organizations/{id}/orders': {
     parameters: {
       query?: never
@@ -24604,6 +24636,36 @@ export interface components {
       | 'days_in_status'
       | '-days_in_status'
     /**
+     * OrganizationStartupProgramClaimRequest
+     * @description Inputs for claiming the Startup Program discount.
+     *
+     *     The checkout URLs are only used when the org is on the Free plan and
+     *     needs a checkout to set up a payment method; they're ignored on the
+     *     PATCH path (already-paid orgs).
+     */
+    OrganizationStartupProgramClaimRequest: {
+      /** Success Url */
+      success_url?: string | null
+      /** Return Url */
+      return_url?: string | null
+      /** Embed Origin */
+      embed_origin?: string | null
+    }
+    /**
+     * OrganizationStartupProgramClaimResponse
+     * @description Result of claiming the Startup Program discount.
+     *
+     *     Exactly one field is set:
+     *     - ``checkout`` — Free → Scale: org needs to complete the checkout. The
+     *       discount is already attached.
+     *     - ``subscription`` — Paid → Scale: the existing paid subscription was
+     *       switched to Scale and the discount applied immediately.
+     */
+    OrganizationStartupProgramClaimResponse: {
+      checkout?: components['schemas']['OrganizationCheckoutResponse'] | null
+      subscription?: components['schemas']['OrganizationSubscription'] | null
+    }
+    /**
      * OrganizationStatus
      * @enum {string}
      */
@@ -24653,6 +24715,61 @@ export interface components {
       pending_change?:
         | components['schemas']['OrganizationSubscriptionPendingChange']
         | null
+      discount?:
+        | components['schemas']['OrganizationSubscriptionDiscount']
+        | null
+      /**
+       * Startup Program Status
+       * @description Polar Startup Program status for this organization. Derived from the organization's Startup Program discount: 'invited' when the discount exists and hasn't been redeemed, 'consumed' once it has. Null when the feature is disabled or the organization hasn't been invited.
+       */
+      startup_program_status?: string | null
+      /**
+       * Startup Program Scale Product Id
+       * @description Polar product id of the Scale plan, against which the Startup Program discount applies. Null when the feature is disabled.
+       */
+      startup_program_scale_product_id?: string | null
+    }
+    /**
+     * OrganizationSubscriptionDiscount
+     * @description A discount currently applied to the organization's subscription.
+     */
+    OrganizationSubscriptionDiscount: {
+      /** Discount Id */
+      discount_id: string
+      /** Name */
+      name: string
+      /**
+       * Type
+       * @description Discount type: 'percentage' or 'fixed'.
+       */
+      type: string
+      /**
+       * Duration
+       * @description Discount duration: 'once', 'forever', or 'repeating'.
+       */
+      duration: string
+      /**
+       * Duration In Months
+       * @description Number of months the discount repeats; only set for 'repeating'.
+       */
+      duration_in_months?: number | null
+      /**
+       * Basis Points
+       * @description Percentage in basis points (10000 = 100%); only set for 'percentage'.
+       */
+      basis_points?: number | null
+      /**
+       * Amounts
+       * @description Per-currency fixed amount in cents; only set for 'fixed'.
+       */
+      amounts?: {
+        [key: string]: number
+      } | null
+      /**
+       * Ends At
+       * @description Estimated date the discount stops applying. Computed for 'repeating' discounts from the subscription's started_at + duration_in_months; null for 'once' and 'forever' durations.
+       */
+      ends_at?: string | null
     }
     /** OrganizationSubscriptionPendingChange */
     OrganizationSubscriptionPendingChange: {
@@ -34308,6 +34425,50 @@ export interface operations {
         }
       }
       /** @description Organization or subscription not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:claim_startup_program': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationStartupProgramClaimRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationStartupProgramClaimResponse']
+        }
+      }
+      /** @description Organization not found. */
       404: {
         headers: {
           [name: string]: unknown

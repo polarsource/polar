@@ -77,7 +77,9 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
     const plans = plansQuery.data
     const metrics = metricsQuery.data
     if (!subscription || !plans || !metrics) return null
-    if (subscription.amount > 0) return null
+    // Plan price (not subscription.amount) so a 100%-discounted paid user
+    // isn't shown an upsell as if they were on the free plan.
+    if ((subscription.plan.price?.amount ?? 0) > 0) return null
     if (subscription.plan.custom) return null
     if (!subscription.plan.transaction_fee) return null
     if (monthlyRevenue <= 0) return null

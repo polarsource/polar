@@ -17,7 +17,10 @@ import type { JsonType } from '@posthog/core'
  * checkout. Persisted as `source` on the redirect URLs and re-emitted on
  * the explicit complete/cancel events so funnels filter cleanly.
  */
-export type BillingPlanSource = 'plan_upsell' | 'change_plan'
+export type BillingPlanSource =
+  | 'plan_upsell'
+  | 'change_plan'
+  | 'startup_program'
 
 export interface BillingPlanAttribution {
   /** Target plan name (the one the user is upgrading to). */

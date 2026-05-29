@@ -9,6 +9,7 @@ import { BillingAddressSection } from '@/components/Settings/Billing/BillingAddr
 import { BillingOrdersTable } from '@/components/Settings/Billing/BillingOrdersTable'
 import { BillingPaymentMethods } from '@/components/Settings/Billing/BillingPaymentMethods'
 import { BillingSubscriptionCard } from '@/components/Settings/Billing/BillingSubscriptionCard'
+import { StartupProgramCallout } from '@/components/Settings/Billing/StartupProgramCallout'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { toast } from '@/components/Toast/use-toast'
@@ -133,11 +134,18 @@ export default function BillingPage({
           {subscriptionQuery.isLoading || !subscriptionQuery.data ? (
             <LoadingBox height={240} borderRadius="l" />
           ) : (
-            <BillingSubscriptionCard
-              subscription={subscriptionQuery.data}
-              plans={plansQuery.data ?? []}
-              onChangePlan={onChangePlan}
-            />
+            <Box display="flex" flexDirection="column" rowGap="xl">
+              <StartupProgramCallout
+                organization={organization}
+                subscription={subscriptionQuery.data}
+                plans={plansQuery.data ?? []}
+              />
+              <BillingSubscriptionCard
+                subscription={subscriptionQuery.data}
+                plans={plansQuery.data ?? []}
+                onChangePlan={onChangePlan}
+              />
+            </Box>
           )}
         </Section>
 

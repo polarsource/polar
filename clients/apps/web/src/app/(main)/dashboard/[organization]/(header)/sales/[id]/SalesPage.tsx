@@ -162,10 +162,18 @@ const ClientPage: React.FC<ClientPageProps> = ({
               value={
                 order.discount ? (
                   <div className="flex flex-row gap-x-2">
-                    <span className="font-mono capitalize">
-                      {order.discount.code}
-                    </span>
-                    <span className="text-polar-500 dark:text-polar-500">
+                    {order.discount.code ? (
+                      <span className="font-mono capitalize">
+                        {order.discount.code}
+                      </span>
+                    ) : null}
+                    <span
+                      className={twMerge(
+                        order.discount.code
+                          ? 'text-polar-500 dark:text-polar-500'
+                          : undefined,
+                      )}
+                    >
                       {order.discount.name}
                     </span>
                   </div>

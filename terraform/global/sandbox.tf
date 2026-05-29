@@ -298,6 +298,13 @@ resource "tfe_variable" "polar_free_product_id_sandbox" {
   }
 }
 
+resource "tfe_variable" "polar_scale_product_id_sandbox" {
+  key             = "polar_scale_product_id"
+  category        = "terraform"
+  description     = "Polar Scale-tier product ID for sandbox"
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
 resource "tfe_variable" "tinybird_api_token_sandbox" {
   key             = "tinybird_api_token"
   category        = "terraform"

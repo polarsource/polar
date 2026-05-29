@@ -39,6 +39,8 @@ from polar.integrations.polar.schemas import (
     OrganizationOrderInvoice,
     OrganizationPaymentMethod,
     OrganizationPlan,
+    OrganizationStartupProgramClaimRequest,
+    OrganizationStartupProgramClaimResponse,
     OrganizationSubscription,
     OrganizationSubscriptionUpdate,
     organization_payment_method_from_sdk,
@@ -60,6 +62,12 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.routing import APIRouter
+from polar.startup_program.service import (
+    StartupProgramError,
+)
+from polar.startup_program.service import (
+    startup_program as startup_program_service,
+)
 from polar.user.service import user as user_service
 from polar.user_organization.schemas import (
     OrganizationMember,
@@ -796,6 +804,22 @@ async def list_plans(
     return [free_plan, *(OrganizationPlan.from_sdk(product) for product in products)]
 
 
+async def _enrich_subscription(
+    subscription_obj: OrganizationSubscription,
+    *,
+    organization_id: UUID,
+) -> OrganizationSubscription:
+    """Annotate the subscription with Startup Program state when configured."""
+    if settings.STARTUP_PROGRAM_ENABLED:
+        subscription_obj.startup_program_scale_product_id = (
+            settings.POLAR_SCALE_PRODUCT_ID
+        )
+        subscription_obj.startup_program_status = (
+            await startup_program_service.get_status(organization_id)
+        )
+    return subscription_obj
+
+
 @router.get(
     "/{id}/subscription",
     response_model=OrganizationSubscription,
@@ -817,8 +841,13 @@ async def get_subscription(
         free_plan = await polar_self_service.resolve_free_plan(
             session, authz.organization.id, subscription=None
         )
-        return OrganizationSubscription.free(plan=free_plan)
-    return OrganizationSubscription.from_sdk(subscription)
+        subscription_obj = OrganizationSubscription.free(plan=free_plan)
+    else:
+        subscription_obj = OrganizationSubscription.from_sdk(subscription)
+    return await _enrich_subscription(
+        subscription_obj,
+        organization_id=authz.organization.id,
+    )
 
 
 @router.post(
@@ -876,7 +905,10 @@ async def change_subscription_plan(
         organization_id=authz.organization.id,
         product_id=body.product_id,
     )
-    return OrganizationSubscription.from_sdk(subscription)
+    return await _enrich_subscription(
+        OrganizationSubscription.from_sdk(subscription),
+        organization_id=authz.organization.id,
+    )
 
 
 @router.delete(
@@ -903,7 +935,68 @@ async def cancel_subscription_endpoint(
     subscription = await polar_self_service.cancel_subscription(
         organization_id=authz.organization.id,
     )
-    return OrganizationSubscription.from_sdk(subscription)
+    return await _enrich_subscription(
+        OrganizationSubscription.from_sdk(subscription),
+        organization_id=authz.organization.id,
+    )
+
+
+@router.post(
+    "/{id}/startup-program/claim",
+    response_model=OrganizationStartupProgramClaimResponse,
+    summary="Claim Startup Program Discount",
+    responses={404: OrganizationNotFound},
+    tags=[APITag.private],
+)
+async def claim_startup_program(
+    request: Request,
+    authz: AuthorizeOrgManage,
+    body: OrganizationStartupProgramClaimRequest,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> OrganizationStartupProgramClaimResponse:
+    """Claim the Startup Program discount on the Scale plan.
+
+    Single entry point for the "Switch to Scale" callout regardless of
+    current plan:
+
+    - Free orgs receive a checkout to set up payment (discount attached).
+    - Paid orgs get their subscription switched to Scale + discount applied
+      directly via PATCH, no checkout needed.
+
+    Caller passes ``success_url`` / ``return_url`` defensively; they're only
+    used on the Free-plan branch.
+    """
+    customer_ip_address = request.client.host if request.client else None
+    try:
+        subscription, checkout = await polar_self_service.claim_startup_program(
+            session=session,
+            organization_id=authz.organization.id,
+            customer_ip_address=customer_ip_address,
+            success_url=body.success_url,
+            return_url=body.return_url,
+            embed_origin=body.embed_origin,
+        )
+    except StartupProgramError as e:
+        raise PolarRequestValidationError(
+            [
+                {
+                    "type": "value_error",
+                    "loc": ("body",),
+                    "msg": str(e),
+                    "input": None,
+                }
+            ]
+        ) from e
+
+    response = OrganizationStartupProgramClaimResponse()
+    if checkout is not None:
+        response.checkout = OrganizationCheckoutResponse.from_sdk(checkout)
+    if subscription is not None:
+        response.subscription = await _enrich_subscription(
+            OrganizationSubscription.from_sdk(subscription),
+            organization_id=authz.organization.id,
+        )
+    return response
 
 
 @router.get(

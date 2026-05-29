@@ -85,6 +85,7 @@ type TextProps<E extends TextTag = 'p'> = TextStyleProps & {
   loading?: boolean
   placeholderText?: string
   placeholderNumberOfLines?: number
+  lineThrough?: boolean
 } & Omit<
     ComponentPropsWithoutRef<E>,
     keyof TextStyleProps | 'className' | 'loading'
@@ -139,6 +140,7 @@ function Text<E extends TextTag = 'p'>({
   loading,
   placeholderText,
   placeholderNumberOfLines,
+  lineThrough,
   ...props
 }: TextProps<E> & { style?: React.CSSProperties }): JSX.Element {
   const Tag = (as ?? 'p') as ElementType
@@ -163,6 +165,7 @@ function Text<E extends TextTag = 'p'>({
 
   const mergedStyle: React.CSSProperties = {
     ...(isHeading && { fontFeatureSettings: HEADING_FONT_FEATURES }),
+    ...(lineThrough ? { textDecoration: 'line-through' } : {}),
     ...style,
     ...loadingStyle,
   }

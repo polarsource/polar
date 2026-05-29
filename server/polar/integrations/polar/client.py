@@ -23,6 +23,9 @@ from polar_sdk.models import (
     CustomerSessionCustomerExternalIDCreate,
     CustomerTeamCreate,
     CustomerUpdateExternalID,
+    Discount,
+    DiscountDuration,
+    DiscountPercentageCreate,
     EventCreateCustomer,
     EventCreateExternalCustomer,
     EventsIngest,
@@ -39,6 +42,7 @@ from polar_sdk.models import (
     Subscription,
     SubscriptionCancel,
     SubscriptionProrationBehavior,
+    SubscriptionUpdateDiscount,
     SubscriptionUpdateProduct,
 )
 from polar_sdk.models.polarerror import PolarError
@@ -316,12 +320,14 @@ class PolarSelfClient:
         success_url: str | None = None,
         return_url: str | None = None,
         embed_origin: str | None = None,
+        discount_id: str | None = None,
     ) -> Checkout:
         with logfire.span(
             "polar.create_checkout",
             product_id=product_id,
             external_customer_id=external_customer_id,
             subscription_id=subscription_id,
+            discount_id=discount_id,
         ) as span:
             try:
                 return await self._sdk.checkouts.create_async(
@@ -333,6 +339,7 @@ class PolarSelfClient:
                         success_url=success_url,
                         return_url=return_url,
                         embed_origin=embed_origin,
+                        discount_id=discount_id,
                     )
                 )
             except PolarError as e:
@@ -364,6 +371,32 @@ class PolarSelfClient:
                 _raise_error(span, e, "update_subscription_product")
             except httpx.RequestError as e:
                 _raise_network_error(span, e, "update_subscription_product")
+
+    async def update_subscription_discount(
+        self, *, subscription_id: str, discount_id: str | None
+    ) -> Subscription:
+        """Apply or clear the discount on a subscription.
+
+        ``discount_id=None`` removes any current discount; passing a
+        discount id attaches it. Either way the change takes effect on the
+        next billing cycle per the API.
+        """
+        with logfire.span(
+            "polar.update_subscription_discount",
+            subscription_id=subscription_id,
+            discount_id=discount_id,
+        ) as span:
+            try:
+                return await self._sdk.subscriptions.update_async(
+                    id=subscription_id,
+                    subscription_update=SubscriptionUpdateDiscount(
+                        discount_id=discount_id,
+                    ),
+                )
+            except PolarError as e:
+                _raise_error(span, e, "update_subscription_discount")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "update_subscription_discount")
 
     async def get_member_by_external_id(
         self, *, external_customer_id: str, external_id: str
@@ -463,6 +496,67 @@ class PolarSelfClient:
                 _raise_error(span, e, "update_customer_metadata")
             except httpx.RequestError as e:
                 _raise_network_error(span, e, "update_customer_metadata")
+
+    async def create_percentage_discount(
+        self,
+        *,
+        name: str,
+        basis_points: int,
+        duration: DiscountDuration,
+        duration_in_months: int | None,
+        max_redemptions: int | None,
+        products: list[str] | None,
+        organization_id: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> Discount:
+        with logfire.span(
+            "polar.create_percentage_discount",
+            name=name,
+            basis_points=basis_points,
+            organization_id=organization_id,
+        ) as span:
+            try:
+                return await self._sdk.discounts.create_async(
+                    request=DiscountPercentageCreate(
+                        name=name,
+                        basis_points=basis_points,
+                        duration=duration,
+                        duration_in_months=duration_in_months,
+                        max_redemptions=max_redemptions,
+                        products=products,
+                        organization_id=organization_id,
+                        metadata=metadata,
+                    )
+                )
+            except PolarError as e:
+                _raise_error(span, e, "create_percentage_discount")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "create_percentage_discount")
+
+    async def get_discount(self, *, discount_id: str) -> Discount | None:
+        with logfire.span("polar.get_discount", discount_id=discount_id) as span:
+            try:
+                return await self._sdk.discounts.get_async(id=discount_id)
+            except PolarError as e:
+                if e.status_code == 404:
+                    span.set_attribute("not_found", True)
+                    return None
+                _raise_error(span, e, "get_discount")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "get_discount")
+
+    async def delete_discount(self, *, discount_id: str) -> None:
+        """Soft-delete a discount. Idempotent on 404 (already deleted)."""
+        with logfire.span("polar.delete_discount", discount_id=discount_id) as span:
+            try:
+                await self._sdk.discounts.delete_async(id=discount_id)
+            except PolarError as e:
+                if e.status_code == 404:
+                    span.set_attribute("not_found", True)
+                    return
+                _raise_error(span, e, "delete_discount")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "delete_discount")
 
     async def remove_member(
         self, *, external_customer_id: str, external_id: str

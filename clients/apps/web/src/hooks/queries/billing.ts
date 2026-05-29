@@ -75,6 +75,21 @@ export const useStartSubscriptionCheckout = (organizationId: string) =>
       }),
   })
 
+export const useClaimStartupProgram = (organizationId: string) =>
+  useMutation({
+    mutationFn: (body: schemas['OrganizationStartupProgramClaimRequest']) =>
+      api.POST('/v1/organizations/{id}/startup-program/claim', {
+        params: { path: { id: organizationId } },
+        body,
+      }),
+    onSuccess: (result) => {
+      if (result.error) return
+      getQueryClient().invalidateQueries({
+        queryKey: ['organization-billing', organizationId, 'subscription'],
+      })
+    },
+  })
+
 export const useChangeSubscriptionPlan = (organizationId: string) =>
   useMutation({
     mutationFn: (body: schemas['OrganizationSubscriptionUpdate']) =>

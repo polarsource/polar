@@ -17,16 +17,22 @@ export const PlanCard = ({
   isLocked,
   isSelected,
   onSelect,
+  startupProgramOffer,
 }: {
   plan: schemas['OrganizationPlan']
   isCurrent: boolean
   isLocked: boolean
   isSelected: boolean
   onSelect: () => void
+  /** When set, this plan is the org's Startup Program target — render the
+   * free-for-N-months highlight on top of the normal plan card. */
+  startupProgramOffer?: { monthsFree: number }
 }) => {
   const amount = plan.price?.amount ?? 0
   const currency = plan.price?.currency ?? 'usd'
   const disabled = isCurrent || isLocked
+  const hasOffer = startupProgramOffer != null && !isCurrent
+  const offerMonths = startupProgramOffer?.monthsFree ?? 0
   return (
     <button
       type="button"
@@ -42,27 +48,51 @@ export const PlanCard = ({
       )}
     >
       <Box display="flex" flexDirection="column" rowGap="s">
-        <Box display="flex" alignItems="center" columnGap="s">
+        <Box display="flex" alignItems="center" columnGap="m">
           <Text variant="heading-xs" as="h3">
             {plan.name}
           </Text>
           {isCurrent && <Pill color="gray">Current</Pill>}
-          {plan.highlight && !isCurrent && <Pill color="blue">Popular</Pill>}
+          {hasOffer && <Pill color="green">Free for {offerMonths} months</Pill>}
+          {plan.highlight && !isCurrent && !hasOffer && (
+            <Pill color="blue">Popular</Pill>
+          )}
         </Box>
         {plan.description && <Text color="muted">{plan.description}</Text>}
       </Box>
 
       <Box display="flex" flexDirection="column" rowGap="s">
         <Box display="flex" alignItems="baseline" columnGap="m">
-          <Text variant="heading-s" as="span">
-            {amount === 0 ? 'Free' : formatPrice(amount, currency)}
-          </Text>
-          {amount > 0 && plan.recurring_interval && (
-            <Text color="muted" as="span">
-              / {plan.recurring_interval}
-            </Text>
+          {hasOffer ? (
+            <>
+              <Text variant="heading-s" as="span">
+                Free
+              </Text>
+              {amount > 0 && plan.recurring_interval && (
+                <Text color="muted" as="span" lineThrough>
+                  {formatPrice(amount, currency)} / {plan.recurring_interval}
+                </Text>
+              )}
+            </>
+          ) : (
+            <>
+              <Text variant="heading-s" as="span">
+                {amount === 0 ? 'Free' : formatPrice(amount, currency)}
+              </Text>
+              {amount > 0 && plan.recurring_interval && (
+                <Text color="muted" as="span">
+                  / {plan.recurring_interval}
+                </Text>
+              )}
+            </>
           )}
         </Box>
+        {hasOffer && amount > 0 && plan.recurring_interval && (
+          <Text color="muted">
+            Then {formatPrice(amount, currency)} / {plan.recurring_interval}{' '}
+            after {offerMonths} months
+          </Text>
+        )}
         {plan.transaction_fee && (
           <Text color="muted">
             {formatFee(plan.transaction_fee)} per transaction

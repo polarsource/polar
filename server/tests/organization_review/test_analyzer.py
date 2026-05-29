@@ -9,9 +9,11 @@ from pydantic_ai.exceptions import (
     UnexpectedModelBehavior,
     UserError,
 )
+from pydantic_ai.models.test import TestModel
 from pytest_mock import MockerFixture
 
-from polar.organization_review.analyzer import _render_scraped_site, review_analyzer
+from polar.config import settings
+from polar.organization_review.analyzer import ReviewAnalyzer, _render_scraped_site
 from polar.organization_review.schemas import (
     DataSnapshot,
     HistoryData,
@@ -120,7 +122,22 @@ def _minimal_snapshot() -> DataSnapshot:
     )
 
 
-def _stub_analyzer_io(mocker: MockerFixture, run_side_effect: BaseException) -> None:
+@pytest.fixture
+def review_analyzer(mocker: MockerFixture) -> ReviewAnalyzer:
+    # Stub the gateway model so the agent builds without real gateway creds.
+    mocker.patch.object(
+        settings,
+        "get_pydantic_gateway_model",
+        return_value=(TestModel(), "openai", "gpt-test"),
+    )
+    return ReviewAnalyzer()
+
+
+def _stub_analyzer_io(
+    mocker: MockerFixture,
+    review_analyzer: ReviewAnalyzer,
+    run_side_effect: BaseException,
+) -> None:
     """Patch the heavy I/O around `analyze` so a test can target just the
     exception-handling path: prompt building, AUP file read, and the LLM
     agent call. The mocked `agent.run` raises `run_side_effect`.
@@ -183,8 +200,13 @@ class TestAnalyzeReraisesOnError:
             "value_error",
         ],
     )
-    async def test_reraises(self, mocker: MockerFixture, exc: BaseException) -> None:
-        _stub_analyzer_io(mocker, exc)
+    async def test_reraises(
+        self,
+        mocker: MockerFixture,
+        review_analyzer: ReviewAnalyzer,
+        exc: BaseException,
+    ) -> None:
+        _stub_analyzer_io(mocker, review_analyzer, exc)
 
         with pytest.raises(type(exc)):
             await review_analyzer.analyze(

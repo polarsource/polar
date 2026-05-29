@@ -15,7 +15,7 @@ from polar.organization_review.collectors.payout_account import (
 from polar.postgres import AsyncSession
 from polar.worker import AsyncReadSessionMaker
 
-from .analyzer import review_analyzer
+from .analyzer import get_review_analyzer
 from .collectors import (
     collect_feedback_data,
     collect_history_data,
@@ -72,6 +72,7 @@ async def run_organization_review(
         if appeal_updates:
             snapshot = snapshot.model_copy(update=appeal_updates)
 
+        review_analyzer = get_review_analyzer()
         report, analyzer_usage = await review_analyzer.analyze(
             snapshot, context=context
         )

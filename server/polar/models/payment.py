@@ -2,7 +2,10 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Literal, Self
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, ForeignKey, SmallInteger, String, Uuid
+from alembic_utils.pg_function import PGFunction
+from alembic_utils.pg_trigger import PGTrigger
+from alembic_utils.replaceable_entity import register_entities
+from sqlalchemy import BigInteger, ColumnElement, ForeignKey, SmallInteger, String, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
@@ -107,6 +110,9 @@ class Payment(RecordModel):
         StrEnumType(PaymentStatus), index=True, nullable=False
     )
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount_v2: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True, default=None
+    )
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     method: Mapped[str] = mapped_column(String, index=True, nullable=False)
     method_metadata: Mapped[dict[str, Any]] = mapped_column(
@@ -206,3 +212,52 @@ class Payment(RecordModel):
             self.decline_reason is not None
             and self.decline_reason in UNRECOVERABLE_DECLINE_CODES
         )
+
+
+payments_sync_v2_amounts_function = PGFunction(
+    schema="public",
+    signature="payments_sync_v2_amounts()",
+    definition="""
+    RETURNS trigger AS $$
+    BEGIN
+        IF TG_OP = 'INSERT' THEN
+            IF NEW.amount_v2 IS NULL AND NEW.amount IS NOT NULL THEN
+                NEW.amount_v2 := NEW.amount;
+            END IF;
+            IF NEW.amount IS NULL
+               AND NEW.amount_v2 IS NOT NULL
+               AND NEW.amount_v2 <= 2147483647 THEN
+                NEW.amount := NEW.amount_v2::integer;
+            END IF;
+        ELSIF TG_OP = 'UPDATE' THEN
+            IF NEW.amount IS DISTINCT FROM OLD.amount THEN
+                NEW.amount_v2 := NEW.amount;
+            END IF;
+            IF NEW.amount_v2 IS DISTINCT FROM OLD.amount_v2
+               AND NEW.amount_v2 IS NOT NULL
+               AND NEW.amount_v2 <= 2147483647 THEN
+                NEW.amount := NEW.amount_v2::integer;
+            END IF;
+        END IF;
+        RETURN NEW;
+    END
+    $$ LANGUAGE plpgsql;
+    """,
+)
+
+payments_sync_v2_amounts_trigger = PGTrigger(
+    schema="public",
+    signature="payments_sync_v2_amounts_trigger",
+    on_entity="payments",
+    definition="""
+    BEFORE INSERT OR UPDATE ON payments
+    FOR EACH ROW EXECUTE FUNCTION payments_sync_v2_amounts();
+    """,
+)
+
+register_entities(
+    (
+        payments_sync_v2_amounts_function,
+        payments_sync_v2_amounts_trigger,
+    )
+)

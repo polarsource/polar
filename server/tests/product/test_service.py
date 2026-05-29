@@ -1680,6 +1680,32 @@ class TestUpdateBenefits:
 
         assert len(product.product_benefits) == len(benefits)
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="user"))
+    async def test_benefit_from_another_organization(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user: User,
+        user_organization: UserOrganization,
+        organization_second: Organization,
+        product: Product,
+    ) -> None:
+        benefit_other_organization = await create_benefit(
+            save_fixture, organization=organization_second
+        )
+        await save_fixture(
+            UserOrganization(user=user, organization=organization_second)
+        )
+
+        with pytest.raises(PolarRequestValidationError, match="same organization"):
+            await product_service.update_benefits(
+                session,
+                product,
+                [benefit_other_organization.id],
+                auth_subject,
+            )
+
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),

@@ -464,6 +464,17 @@ class ProductService:
                         }
                     ]
                 )
+            if benefit.organization_id != product.organization_id:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "benefits", order),
+                            "msg": "Benefit must be on the same organization as the product.",
+                            "input": benefit_id,
+                        }
+                    ]
+                )
             if not benefit.selectable and benefit not in previous_benefits:
                 raise PolarRequestValidationError(
                     [

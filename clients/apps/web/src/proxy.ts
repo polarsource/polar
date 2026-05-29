@@ -20,6 +20,7 @@ const IS_SANDBOX =
 // Strings match by prefix, RegExps are tested directly
 const SANDBOX_ALLOWED_PATHS: (string | RegExp)[] = [
   '/login',
+  '/auth',
   '/dashboard',
   '/start',
   '/onboarding',
@@ -87,7 +88,7 @@ const requiresAuthentication = (request: NextRequest): boolean => {
 
 const getLoginResponse = (request: NextRequest): NextResponse => {
   const redirectURL = request.nextUrl.clone()
-  redirectURL.pathname = '/login'
+  redirectURL.pathname = '/auth'
   redirectURL.search = ''
   const returnTo = `${request.nextUrl.pathname}${request.nextUrl.search}`
   redirectURL.searchParams.set('return_to', returnTo)
@@ -125,7 +126,7 @@ export async function proxy(request: NextRequest) {
 
     if (pathname === '/') {
       const url = request.nextUrl.clone()
-      url.pathname = '/login'
+      url.pathname = '/auth'
       url.search = ''
       return NextResponse.redirect(url)
     }

@@ -183,7 +183,7 @@ const nextConfig = {
       // dashboard.polar.sh redirections
       {
         source: '/',
-        destination: '/login',
+        destination: '/auth',
         has: [
           {
             type: 'host',
@@ -401,7 +401,7 @@ const nextConfig = {
 
       {
         source: '/signup',
-        destination: '/login',
+        destination: '/auth',
         permanent: false,
       },
     ]

@@ -18,7 +18,7 @@ const defaults = {
   AUTH_COOKIE_KEY: process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session',
   AUTH_MCP_COOKIE_KEY:
     process.env.POLAR_AUTH_MCP_COOKIE_KEY || 'polar_mcp_session',
-  LOGIN_PATH: process.env.NEXT_PUBLIC_LOGIN_PATH || '/login',
+  LOGIN_PATH: process.env.NEXT_PUBLIC_LOGIN_PATH || '/auth',
   GOOGLE_ANALYTICS_ID: process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID || undefined,
   GITHUB_APP_NAMESPACE:
     process.env.NEXT_PUBLIC_GITHUB_APP_NAMESPACE || 'polar-sh',

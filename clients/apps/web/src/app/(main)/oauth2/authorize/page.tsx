@@ -47,7 +47,7 @@ export default async function Page(props: {
     if (searchParams.do_not_track) {
       locationSearchParam.set('do_not_track', searchParams.do_not_track)
     }
-    const location = `/login?${locationSearchParam.toString()}`
+    const location = `/auth?${locationSearchParam.toString()}`
     redirect(location)
   }
 

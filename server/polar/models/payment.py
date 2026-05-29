@@ -2,14 +2,10 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Literal, Self
 from uuid import UUID
 
-from alembic_utils.pg_function import PGFunction
-from alembic_utils.pg_trigger import PGTrigger
-from alembic_utils.replaceable_entity import register_entities
 from sqlalchemy import BigInteger, ColumnElement, ForeignKey, SmallInteger, String, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
-from sqlalchemy.sql.sqltypes import Integer
 
 from polar.enums import PaymentProcessor
 from polar.kit.db.models import RecordModel
@@ -109,18 +105,7 @@ class Payment(RecordModel):
     status: Mapped[PaymentStatus] = mapped_column(
         StrEnumType(PaymentStatus), index=True, nullable=False
     )
-    amount: Mapped[int] = mapped_column("amount_v2", BigInteger, nullable=True)
-
-    # Legacy int4 columns retained while the dual-column sync trigger is active.
-    # Deferred so they never appear in default SELECTs. No default — that
-    # would force SQLAlchemy to include the column in every INSERT, which
-    # would break running pods once the cleanup migration drops the column.
-    # The bidirectional trigger fills these from the v2 columns on INSERT,
-    # so the NOT NULL constraints on legacy columns are still satisfied even
-    # when ORM code only sets the (v2-backed) primary attributes.
-    legacy_amount: Mapped[int] = mapped_column(
-        "amount", Integer, nullable=False, deferred=True
-    )
+    amount: Mapped[int] = mapped_column("amount_v2", BigInteger, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     method: Mapped[str] = mapped_column(String, index=True, nullable=False)
     method_metadata: Mapped[dict[str, Any]] = mapped_column(
@@ -220,52 +205,3 @@ class Payment(RecordModel):
             self.decline_reason is not None
             and self.decline_reason in UNRECOVERABLE_DECLINE_CODES
         )
-
-
-payments_sync_v2_amounts_function = PGFunction(
-    schema="public",
-    signature="payments_sync_v2_amounts()",
-    definition="""
-    RETURNS trigger AS $$
-    BEGIN
-        IF TG_OP = 'INSERT' THEN
-            IF NEW.amount_v2 IS NULL AND NEW.amount IS NOT NULL THEN
-                NEW.amount_v2 := NEW.amount;
-            END IF;
-            IF NEW.amount IS NULL
-               AND NEW.amount_v2 IS NOT NULL
-               AND NEW.amount_v2 <= 2147483647 THEN
-                NEW.amount := NEW.amount_v2::integer;
-            END IF;
-        ELSIF TG_OP = 'UPDATE' THEN
-            IF NEW.amount IS DISTINCT FROM OLD.amount THEN
-                NEW.amount_v2 := NEW.amount;
-            END IF;
-            IF NEW.amount_v2 IS DISTINCT FROM OLD.amount_v2
-               AND NEW.amount_v2 IS NOT NULL
-               AND NEW.amount_v2 <= 2147483647 THEN
-                NEW.amount := NEW.amount_v2::integer;
-            END IF;
-        END IF;
-        RETURN NEW;
-    END
-    $$ LANGUAGE plpgsql;
-    """,
-)
-
-payments_sync_v2_amounts_trigger = PGTrigger(
-    schema="public",
-    signature="payments_sync_v2_amounts_trigger",
-    on_entity="payments",
-    definition="""
-    BEFORE INSERT OR UPDATE ON payments
-    FOR EACH ROW EXECUTE FUNCTION payments_sync_v2_amounts();
-    """,
-)
-
-register_entities(
-    (
-        payments_sync_v2_amounts_function,
-        payments_sync_v2_amounts_trigger,
-    )
-)

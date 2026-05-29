@@ -40,6 +40,6 @@ class PolarAuthRedirectionError(PolarError):
         url: str = settings.generate_frontend_url("/auth"),
         **extra: str,
     ) -> None:
-        super().__init__(message, status_code=302)
+        super().__init__(message, status_code=303)
         self.url = url
         self.extra = extra

@@ -12,6 +12,7 @@ from sqlalchemy import (
     Boolean,
     ColumnElement,
     ForeignKey,
+    Index,
     Integer,
     SmallInteger,
     String,
@@ -110,6 +111,9 @@ class CustomerCancellationReason(StrEnum):
 
 class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     __tablename__ = "subscriptions"
+    __table_args__ = (
+        Index("ix_subscriptions_customer_id_status", "customer_id", "status"),
+    )
 
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
     net_amount: Mapped[int] = mapped_column(Integer, nullable=False)

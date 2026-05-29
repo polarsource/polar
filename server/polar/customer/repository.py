@@ -300,6 +300,7 @@ class CustomerRepository(
             .where(
                 Subscription.customer_id == Customer.id,
                 Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+                Subscription.deleted_at.is_(None),
             )
             .exists()
         )

@@ -69,7 +69,7 @@ export const PlanCard = ({
                 Free
               </Text>
               {amount > 0 && plan.recurring_interval && (
-                <Text color="muted" as="span" className="line-through">
+                <Text color="muted" as="span" lineThrough>
                   {formatPrice(amount, currency)} / {plan.recurring_interval}
                 </Text>
               )}

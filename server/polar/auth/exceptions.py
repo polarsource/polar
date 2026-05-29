@@ -10,6 +10,18 @@ class PolarAuthError(PolarError):
     pass
 
 
+class UnavailableFactorError(PolarAuthError):
+    """
+    Exception raised when a requested authentication factor is unavailable for the
+    given authentication session.
+    """
+
+    def __init__(self, factor: str) -> None:
+        self.factor = factor
+        message = "The requested authentication factor is not available for this authentication session"
+        super().__init__(message, 403)
+
+
 class GetEmailError(PolarAuthError):
     """
     Exception raised when there's an error getting the email from an OAuth2 provider.
@@ -17,7 +29,7 @@ class GetEmailError(PolarAuthError):
 
     def __init__(self) -> None:
         message = "An error occurred while retrieving your email from the authentication provider. Please try again."
-        super().__init__(message)
+        super().__init__(message, 400)
 
 
 class PolarAuthRedirectionError(PolarError):

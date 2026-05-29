@@ -19,7 +19,11 @@ from reauth.factors.totp import (
     NotEnrolledTOTPException,
 )
 
-from polar.auth.exceptions import PolarAuthError, PolarAuthRedirectionError
+from polar.auth.exceptions import (
+    PolarAuthError,
+    PolarAuthRedirectionError,
+    UnavailableFactorError,
+)
 from polar.auth.oauth2.github import get_github_factor
 from polar.auth.oauth2.google import get_google_factor
 from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWrite
@@ -169,7 +173,7 @@ async def email_otp_request(
         authentication_session
     )
     if email_otp_factor not in factors:
-        raise PolarAuthError("Email OTP factor not available for this session")
+        raise UnavailableFactorError(email_otp_factor.identifier)
 
     await email_otp_factor.request(email_otp_request, authentication_session)
 
@@ -193,14 +197,14 @@ async def email_otp_verify(
         authentication_session
     )
     if email_otp_factor not in factors:
-        raise PolarAuthError("Email OTP factor not available for this session")
+        raise UnavailableFactorError(email_otp_factor.identifier)
 
     try:
         identity_id, email = await email_otp_factor.consume(
             email_otp_verify.code, authentication_session.id
         )
     except (InvalidOTPException, ExpiredOTPException) as e:
-        raise PolarAuthError("Invalid or expired OTP") from e
+        raise PolarAuthError("Invalid or expired OTP", 403) from e
 
     # New user
     if identity_id is None:
@@ -237,7 +241,7 @@ async def totp_enroll(
     try:
         enrollment = await totp_factor.enroll(user.id)
     except AlreadyEnrolledTOTPException as e:
-        raise PolarAuthError("TOTP factor already enrolled", status_code=409) from e
+        raise PolarAuthError("TOTP factor already enrolled", 409) from e
 
     return TOTPEnrollment(
         secret=enrollment.secret,
@@ -258,11 +262,11 @@ async def totp_enable(
     try:
         await totp_factor.enable(user.id, enable.code)
     except NotEnrolledTOTPException as e:
-        raise PolarAuthError("TOTP factor not enrolled") from e
+        raise PolarAuthError("TOTP factor not enrolled", 403) from e
     except AlreadyEnabledTOTPException as e:
-        raise PolarAuthError("TOTP factor already enabled") from e
+        raise PolarAuthError("TOTP factor already enabled", 409) from e
     except InvalidTOTPCodeException as e:
-        raise PolarAuthError("Invalid TOTP code") from e
+        raise PolarAuthError("Invalid TOTP code", 403) from e
     return None
 
 
@@ -292,14 +296,14 @@ async def totp_verify(
         authentication_session
     )
     if totp_factor not in factors:
-        raise PolarAuthError("TOTP factor not available for this session")
+        raise UnavailableFactorError(totp_factor.identifier)
 
     try:
         await totp_factor.verify(authentication_session.identity_id, enable.code)
     except NotEnrolledTOTPException as e:
-        raise PolarAuthError("TOTP factor not enrolled") from e
+        raise PolarAuthError("TOTP factor not enrolled", 403) from e
     except InvalidTOTPCodeException as e:
-        raise PolarAuthError("Invalid TOTP code") from e
+        raise PolarAuthError("Invalid TOTP code", 403) from e
 
     authentication_session = await authentication_session_service.advance(
         authentication_session, authentication_session.identity_id, totp_factor
@@ -347,7 +351,7 @@ async def backup_codes_verify(
         authentication_session
     )
     if backup_codes_factor not in factors:
-        raise PolarAuthError("Backup codes factor not available for this session", 400)
+        raise UnavailableFactorError(backup_codes_factor.identifier)
 
     try:
         await backup_codes_factor.verify(

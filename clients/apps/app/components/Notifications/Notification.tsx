@@ -49,22 +49,6 @@ export const Notification = ({
             color={theme.colors.text}
           />
         )
-      case 'MaintainerAccountUnderReviewNotification':
-        return (
-          <MaterialIcons
-            name="person-outline"
-            size={20}
-            color={theme.colors.text}
-          />
-        )
-      case 'MaintainerAccountReviewedNotification':
-        return (
-          <MaterialIcons
-            name="person-outline"
-            size={20}
-            color={theme.colors.text}
-          />
-        )
       case 'MaintainerCreateAccountNotification':
         return (
           <MaterialIcons
@@ -92,10 +76,6 @@ export const Notification = ({
         return 'New Subscription'
       case 'MaintainerNewProductSaleNotification':
         return 'New Product Sale'
-      case 'MaintainerAccountUnderReviewNotification':
-        return 'Account Under Review'
-      case 'MaintainerAccountReviewedNotification':
-        return 'Account Reviewed'
       case 'MaintainerCreateAccountNotification':
         return 'New Account Created'
       case 'MaintainerAccountCreditsGrantedNotification':
@@ -121,10 +101,6 @@ export const Notification = ({
         return `${customer_name} bought ${product_name} for ${formatCurrency(
           'compact',
         )(product_price_amount, saleCurrency || 'usd')}`
-      case 'MaintainerAccountUnderReviewNotification':
-        return 'Your account is under review'
-      case 'MaintainerAccountReviewedNotification':
-        return 'Your account has been reviewed'
       case 'MaintainerCreateAccountNotification':
         return 'A new account has been created'
       case 'MaintainerAccountCreditsGrantedNotification':

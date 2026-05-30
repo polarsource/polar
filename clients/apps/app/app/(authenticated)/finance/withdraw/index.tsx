@@ -12,11 +12,10 @@ import { useStoreReview } from '@/hooks/useStoreReview'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { formatCurrency } from '@polar-sh/currency'
 import { Stack, useRouter } from 'expo-router'
-import React, { useContext, useMemo, useRef } from 'react'
-import { SafeAreaView, ScrollView } from 'react-native'
+import React, { useContext, useMemo } from 'react'
+import { SafeAreaView } from 'react-native'
 
 export default function Index() {
-  const scrollRef = useRef<ScrollView>(null)
   const { organization } = useContext(OrganizationContext)
   const { data: account } = useOrganizationAccount(organization?.id)
   const { data: estimate } = usePayoutEstimate(organization?.id)
@@ -71,12 +70,6 @@ export default function Index() {
           text="Slide To Withdraw"
           loadingText="Withdrawing..."
           successText="Withdrawal Complete!"
-          onSlideStart={() => {
-            scrollRef.current?.setNativeProps({ isEnabled: false })
-          }}
-          onSlideEnd={() => {
-            scrollRef.current?.setNativeProps({ isEnabled: true })
-          }}
           onSlideComplete={async () => {
             await withdrawFunds({ accountId: account?.id })
           }}

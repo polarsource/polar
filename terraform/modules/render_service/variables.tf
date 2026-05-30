@@ -32,7 +32,7 @@ variable "api_service_config" {
     image_digest           = string
     web_concurrency        = optional(string, "2")
     forwarded_allow_ips    = optional(string, "*")
-    database_pool_size     = optional(string, "20")
+    database_pool_size     = optional(string, "10")
     postgres_database      = optional(string, "polar_cpit")
     postgres_read_database = optional(string, "polar_cpit")
     redis_db               = optional(string, "0")

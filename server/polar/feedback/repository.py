@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import Select
+from sqlalchemy import Select, func, select
 
 from polar.kit.repository import (
     RepositoryBase,
@@ -8,7 +8,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.models import Feedback
-from polar.models.feedback import FeedbackStatus
+from polar.models.feedback import FeedbackStatus, FeedbackType
 
 
 class FeedbackRepository(
@@ -26,3 +26,15 @@ class FeedbackRepository(
             .where(Feedback.status == status)
             .order_by(Feedback.created_at.desc())
         )
+
+    async def get_type_counts(self, status: FeedbackStatus) -> dict[FeedbackType, int]:
+        """Return the number of (non-deleted) feedbacks per type for a status."""
+        statement = (
+            select(Feedback.type, func.count(Feedback.id))
+            .where(Feedback.status == status, Feedback.deleted_at.is_(None))
+            .group_by(Feedback.type)
+        )
+        result = await self.session.execute(statement)
+        return {
+            FeedbackType(feedback_type): count for feedback_type, count in result.all()
+        }

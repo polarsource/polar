@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 from pydantic import UUID4, Field, ValidationError
 from sqlalchemy.orm import joinedload
@@ -62,19 +62,58 @@ def _status_badge(status: FeedbackStatus) -> None:
         text(str(status))
 
 
-def _list_tabs(request: Request, *, active: FeedbackStatus) -> list[Tab]:
+def _with_type(url: str, feedback_type: FeedbackType | None) -> str:
+    if feedback_type is None:
+        return url
+    return f"{url}?type={feedback_type.value}"
+
+
+def _list_tabs(
+    request: Request,
+    *,
+    active: FeedbackStatus,
+    feedback_type: FeedbackType | None,
+) -> list[Tab]:
     return [
         Tab(
             "Inbox",
-            url=str(request.url_for("feedbacks:list")),
+            url=_with_type(str(request.url_for("feedbacks:list")), feedback_type),
             active=active == FeedbackStatus.new,
         ),
         Tab(
             "Triaged",
-            url=str(request.url_for("feedbacks:list_triaged")),
+            url=_with_type(
+                str(request.url_for("feedbacks:list_triaged")), feedback_type
+            ),
             active=active == FeedbackStatus.triaged,
         ),
     ]
+
+
+def _type_tabs(
+    *,
+    list_url: str,
+    active_type: FeedbackType | None,
+    counts: dict[FeedbackType, int],
+) -> list[Tab]:
+    tabs = [
+        Tab(
+            "All",
+            url=list_url,
+            active=active_type is None,
+            count=sum(counts.values()),
+        )
+    ]
+    for feedback_type in FeedbackType:
+        tabs.append(
+            Tab(
+                str(feedback_type).capitalize(),
+                url=_with_type(list_url, feedback_type),
+                active=active_type == feedback_type,
+                count=counts.get(feedback_type, 0),
+            )
+        )
+    return tabs
 
 
 async def _render_list(
@@ -85,14 +124,18 @@ async def _render_list(
     status: FeedbackStatus,
     route_name: str,
     breadcrumb_label: str,
+    feedback_type: FeedbackType | None,
 ) -> None:
     repository = FeedbackRepository.from_session(session)
     statement = repository.get_by_status_statement(status).options(
         joinedload(Feedback.user), joinedload(Feedback.organization)
     )
+    if feedback_type is not None:
+        statement = statement.where(Feedback.type == feedback_type)
     items, count = await repository.paginate(
         statement, limit=pagination.limit, page=pagination.page
     )
+    type_counts = await repository.get_type_counts(status)
 
     with layout(
         request,
@@ -105,8 +148,19 @@ async def _render_list(
         with tag.div(classes="flex flex-col gap-4"):
             with tag.h1(classes="text-4xl"):
                 text("Feedback")
-            with tab_nav(_list_tabs(request, active=status)):
+            with tab_nav(
+                _list_tabs(request, active=status, feedback_type=feedback_type)
+            ):
                 pass
+            with tag.div(classes="flex"):
+                with tab_nav(
+                    _type_tabs(
+                        list_url=str(request.url_for(route_name)),
+                        active_type=feedback_type,
+                        counts=type_counts,
+                    )
+                ):
+                    pass
             if items:
                 _render_table(request, items)
             else:
@@ -169,6 +223,7 @@ def _render_row(request: Request, feedback: Feedback) -> None:
 async def list_inbox(
     request: Request,
     pagination: PaginationParamsQuery,
+    feedback_type: Annotated[FeedbackType | None, Query(alias="type")] = None,
     session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
     await _render_list(
@@ -178,6 +233,7 @@ async def list_inbox(
         status=FeedbackStatus.new,
         route_name="feedbacks:list",
         breadcrumb_label="Inbox",
+        feedback_type=feedback_type,
     )
 
 
@@ -185,6 +241,7 @@ async def list_inbox(
 async def list_triaged(
     request: Request,
     pagination: PaginationParamsQuery,
+    feedback_type: Annotated[FeedbackType | None, Query(alias="type")] = None,
     session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
     await _render_list(
@@ -194,6 +251,7 @@ async def list_triaged(
         status=FeedbackStatus.triaged,
         route_name="feedbacks:list_triaged",
         breadcrumb_label="Triaged",
+        feedback_type=feedback_type,
     )
 
 
@@ -387,29 +445,39 @@ async def get(
                                                 "%Y-%m-%d %H:%M UTC"
                                             )
                                         )
+                            note_post_url = str(
+                                request.url_for("feedbacks:update_note", id=feedback.id)
+                            )
                             with UpdateFeedbackNoteForm.render(
                                 data={"internal_note": feedback.internal_note or ""},
-                                hx_post=str(
-                                    request.url_for(
-                                        "feedbacks:update_note", id=feedback.id
-                                    )
-                                ),
+                                hx_post=note_post_url,
                                 classes="flex flex-col gap-2",
                             ):
                                 with tag.div(classes="flex justify-end gap-2"):
+                                    # Each action posts explicitly with its own
+                                    # `action` value rather than relying on the
+                                    # submit button being detected as the form's
+                                    # submitter (which is brittle, especially with
+                                    # the global "disable submit buttons during
+                                    # request" behaviour). `hx-include` pulls in the
+                                    # textarea value alongside the action.
                                     with button(
-                                        type="submit",
-                                        name="action",
-                                        value="save",
+                                        type="button",
+                                        hx_post=note_post_url,
+                                        hx_include="closest form",
+                                        hx_vals='{"action": "save"}',
+                                        hx_disabled_elt="this",
                                         size="sm",
                                         ghost=True,
                                     ):
                                         text("Save note")
                                     if feedback.status == FeedbackStatus.new:
                                         with button(
-                                            type="submit",
-                                            name="action",
-                                            value="save_and_triage",
+                                            type="button",
+                                            hx_post=note_post_url,
+                                            hx_include="closest form",
+                                            hx_vals='{"action": "save_and_triage"}',
+                                            hx_disabled_elt="this",
                                             variant="primary",
                                             size="sm",
                                         ):

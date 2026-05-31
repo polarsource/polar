@@ -237,7 +237,17 @@ export async function proxy(request: NextRequest) {
     const { data, response } = await api.GET('/v1/users/me', {
       cache: 'no-cache',
     })
-    if (!response.ok && response.status !== 401) {
+
+    // A 429 means resolving the session was rate-limited upstream (the session
+    // cookie is being counted in the API's `pending_auth` bucket). We can't
+    // determine the user, so we proceed as anonymous rather than turning a
+    // transient rate-limit into a hard 500 for the user. It's still logged so
+    // we keep visibility on how often this happens.
+    if (response.status === 429) {
+      console.error(
+        `Rate limited while fetching authenticated user: status=429, headers=${JSON.stringify(Object.fromEntries(response.headers.entries()))}`,
+      )
+    } else if (!response.ok && response.status !== 401) {
       console.error(
         `Error response: status=${response.status}, headers=${JSON.stringify(Object.fromEntries(response.headers.entries()))}`,
       )
@@ -245,6 +255,7 @@ export async function proxy(request: NextRequest) {
         'Unexpected response status while fetching authenticated user',
       )
     }
+
     user = data
   }
 

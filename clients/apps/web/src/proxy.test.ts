@@ -282,6 +282,30 @@ describe('middleware function', () => {
     expect(response.headers.get('location')).toContain('/auth')
   })
 
+  it('should handle 429 rate-limit responses gracefully', async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+
+    createServerSideAPI.mockResolvedValue({
+      GET: vi.fn().mockResolvedValue({
+        data: undefined,
+        response: { ok: false, status: 429, headers: new Headers() },
+      }),
+    })
+
+    const request = new NextRequest('https://example.com/dashboard')
+    request.cookies.set('polar_session', 'rate-limited-session-token')
+
+    // Must not throw: a 429 should be treated as "couldn't determine the user"
+    // and proceed as anonymous (protected route -> redirect to login).
+    const response = await proxy(request)
+
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toContain('/auth')
+    consoleErrorSpy.mockRestore()
+  })
+
   it('should redirect unauthenticated /to/* requests to login preserving the deep link', async () => {
     const request = new NextRequest(
       'https://example.com/to/dashboard/settings/billing',

@@ -186,6 +186,8 @@ jobs:
     env:
       POLAR_ENV: testing
       POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
+      # Depot sandbox affinity reports 2 CPUs; force xdist to use the full 4-vCPU runner
+      PYTEST_XDIST_AUTO_NUM_WORKERS: "4"
     services:
       postgres:
         image: postgres:15.1-bullseye

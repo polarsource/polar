@@ -57,8 +57,7 @@ class AppleFactor(OAuth2FactorMixin, AppleOAuth2FactorBase):
         statement = (
             update(OAuthAccount)
             .where(
-                OAuthAccount.user_id == enrollment.identity_id,
-                OAuthAccount.platform == OAuthPlatform(self.identifier),
+                OAuthAccount.id == enrollment.id,
             )
             .values(
                 access_token=enrollment.access_token,

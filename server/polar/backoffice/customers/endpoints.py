@@ -15,6 +15,7 @@ from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer.schemas.customer import CustomerUpdate
 from polar.customer.service import customer as customer_service
+from polar.customer_session.service import customer_session as customer_session_service
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParamsQuery
 from polar.member.repository import MemberRepository
@@ -338,6 +339,18 @@ async def get(
                 with tag.div(classes="flex items-center gap-4 mb-4"):
                     with tag.h2(classes="text-2xl font-bold"):
                         text(f"Members ({len(members)})")
+                    if not members:
+                        with button(
+                            hx_get=str(
+                                request.url_for(
+                                    "customers:generate_portal_link_modal",
+                                    id=customer.id,
+                                )
+                            ),
+                            hx_target="#modal",
+                            variant="primary",
+                        ):
+                            text("Generate Portal Link")
 
                 with datatable.Datatable[Member, Any](
                     datatable.DatatableAttrColumn("email", "Email", clipboard=True),
@@ -438,6 +451,93 @@ async def get(
                         text("No granted benefits found")
 
 
+def _render_portal_link_modal(
+    *, title: str, recipient_message: str, portal_url: str
+) -> HTMLResponse:
+    expires_in_hours = int(settings.CUSTOMER_SESSION_TTL.total_seconds() / 3600)
+    if expires_in_hours < 1:
+        expires_in_minutes = int(settings.CUSTOMER_SESSION_TTL.total_seconds() / 60)
+        expiration_message = f"{expires_in_minutes} minutes"
+    else:
+        expiration_message = (
+            f"{expires_in_hours} hour{'s' if expires_in_hours != 1 else ''}"
+        )
+
+    with document() as doc:
+        with tag.div(id="modal"):
+            with modal(title, open=True):
+                with tag.div(classes="alert alert-info mb-4"):
+                    with tag.div():
+                        with tag.p(classes="text-sm"):
+                            text(
+                                f"This link will expire in {expiration_message}. "
+                                f"{recipient_message}"
+                            )
+
+                with tag.div(classes="form-control w-full mb-4"):
+                    with tag.label(classes="label"):
+                        with tag.span(classes="label-text font-semibold"):
+                            text("Portal URL")
+                    with tag.div(classes="flex gap-2 items-center"):
+                        with tag.input(
+                            type="text",
+                            value=portal_url,
+                            readonly=True,
+                            classes="input input-bordered flex-1 font-mono text-sm",
+                        ):
+                            pass
+                        with tag.a(
+                            href=portal_url,
+                            target="_blank",
+                            rel="noopener noreferrer",
+                            classes="btn btn-primary",
+                        ):
+                            text("Open Portal")
+
+                with tag.div(classes="modal-action"):
+                    with tag.form(method="dialog"):
+                        with button(variant="primary"):
+                            text("Done")
+
+    return HTMLResponse(str(doc))
+
+
+@router.get(
+    "/{id}/generate_portal_link_modal",
+    name="customers:generate_portal_link_modal",
+)
+async def generate_portal_link_modal(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    customer_repository = CustomerRepository.from_session(session)
+    customer = await customer_repository.get_by_id(
+        id, options=(joinedload(Customer.organization),)
+    )
+
+    if customer is None:
+        raise HTTPException(status_code=404)
+
+    if not customer.organization:
+        raise HTTPException(
+            status_code=500, detail="Customer organization not properly loaded"
+        )
+
+    token, _ = await customer_session_service.create_customer_session(session, customer)
+
+    frontend_base_url = str(settings.FRONTEND_BASE_URL).rstrip("/")
+    org_slug = customer.organization.slug
+    query_string = urlencode({"customer_session_token": token})
+    portal_url = f"{frontend_base_url}/{org_slug}/portal?{query_string}"
+
+    return _render_portal_link_modal(
+        title="Customer Portal Link Generated",
+        recipient_message="The customer can use this link to access their portal.",
+        portal_url=portal_url,
+    )
+
+
 @router.get(
     "/{id}/members/{member_id}/generate_portal_link_modal",
     name="customers:generate_member_portal_link_modal",
@@ -474,53 +574,13 @@ async def generate_member_portal_link_modal(
     query_string = urlencode({"member_session_token": token, "email": member.email})
     portal_url = f"{frontend_base_url}/{org_slug}/portal?{query_string}"
 
-    expires_in_hours = int(settings.CUSTOMER_SESSION_TTL.total_seconds() / 3600)
-    if expires_in_hours < 1:
-        expires_in_minutes = int(settings.CUSTOMER_SESSION_TTL.total_seconds() / 60)
-        expiration_message = f"{expires_in_minutes} minutes"
-    else:
-        expiration_message = (
-            f"{expires_in_hours} hour{'s' if expires_in_hours != 1 else ''}"
-        )
-
-    with document() as doc:
-        with tag.div(id="modal"):
-            with modal("Member Portal Link Generated", open=True):
-                with tag.div(classes="alert alert-info mb-4"):
-                    with tag.div():
-                        with tag.p(classes="text-sm"):
-                            text(
-                                f"This link will expire in {expiration_message}. "
-                                f"{member.email} can use this link to access the "
-                                "customer portal."
-                            )
-
-                with tag.div(classes="form-control w-full mb-4"):
-                    with tag.label(classes="label"):
-                        with tag.span(classes="label-text font-semibold"):
-                            text("Portal URL")
-                    with tag.div(classes="flex gap-2 items-center"):
-                        with tag.input(
-                            type="text",
-                            value=portal_url,
-                            readonly=True,
-                            classes="input input-bordered flex-1 font-mono text-sm",
-                        ):
-                            pass
-                        with tag.a(
-                            href=portal_url,
-                            target="_blank",
-                            rel="noopener noreferrer",
-                            classes="btn btn-primary",
-                        ):
-                            text("Open Portal")
-
-                with tag.div(classes="modal-action"):
-                    with tag.form(method="dialog"):
-                        with button(variant="primary"):
-                            text("Done")
-
-    return HTMLResponse(str(doc))
+    return _render_portal_link_modal(
+        title="Member Portal Link Generated",
+        recipient_message=(
+            f"{member.email} can use this link to access the customer portal."
+        ),
+        portal_url=portal_url,
+    )
 
 
 @router.api_route(

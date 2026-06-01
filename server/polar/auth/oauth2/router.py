@@ -12,6 +12,7 @@ from reauth.factors.oauth2.base import (
     OAuth2IdentityMismatchException,
     OAuth2TokenException,
 )
+from reauth.factors.oauth2.oidc import OIDCException
 from reauth.factors.oauth2.state import ExpiredStateException, InvalidStateException
 
 from polar.authz.dependencies import AuthorizeWebUserWrite
@@ -27,6 +28,8 @@ from ..authentication_session import (
 )
 from ..exceptions import GetEmailError, PolarAuthRedirectionError
 from .factor import OAuth2FactorMixin
+
+OIDC_ERROR_MESSAGE = "An authentication error occurred. Please try again."
 
 
 def _set_state_cookie(
@@ -78,12 +81,15 @@ def get_oauth_login_router(
 
         redirect_uri = str(request.url_for(f"auth.{identifier}.callback"))
 
-        authorization_url, state, oauth2_state = await factor.start(
-            redirect_uri=redirect_uri,
-            scope=typing.cast(OAuth2FactorMixin, factor).SCOPE,
-            nonce=secrets.token_urlsafe(16),
-            authentication_session_token_hash=authentication_session.token_hash,
-        )
+        try:
+            authorization_url, state, oauth2_state = await factor.start(
+                redirect_uri=redirect_uri,
+                scope=typing.cast(OAuth2FactorMixin, factor).SCOPE,
+                nonce=secrets.token_urlsafe(16),
+                authentication_session_token_hash=authentication_session.token_hash,
+            )
+        except OIDCException as e:
+            raise PolarAuthRedirectionError(OIDC_ERROR_MESSAGE) from e
 
         response = RedirectResponse(authorization_url, status_code=303)
         _set_state_cookie(request, response, state, oauth2_state.expires_at)
@@ -135,6 +141,8 @@ def get_oauth_login_router(
             raise PolarAuthRedirectionError(e.message or "OAuth2 callback error") from e
         except OAuth2TokenException as e:
             raise PolarAuthRedirectionError("OAuth2 error") from e
+        except OIDCException as e:
+            raise PolarAuthRedirectionError(OIDC_ERROR_MESSAGE) from e
 
         # In POST callback flows, we can't rely on cookies for state management,
         # so we need to retrieve the authentication session using the token hash stored in the state.
@@ -202,14 +210,22 @@ def get_oauth_link_router(
     ) -> RedirectResponse:
         redirect_uri = str(request.url_for(f"auth.{identifier}.link_callback"))
 
-        authorization_url, state, oauth2_state = await factor.start(
-            redirect_uri=redirect_uri,
-            scope=typing.cast(OAuth2FactorMixin, factor).SCOPE,
-            identity_id=auth_subject.subject.id,
-            nonce=secrets.token_urlsafe(16),
-            extra={"prompt": "select_account"},
-            return_to=return_to,
-        )
+        try:
+            authorization_url, state, oauth2_state = await factor.start(
+                redirect_uri=redirect_uri,
+                scope=typing.cast(OAuth2FactorMixin, factor).SCOPE,
+                identity_id=auth_subject.subject.id,
+                nonce=secrets.token_urlsafe(16),
+                extra={"prompt": "select_account"},
+                return_to=return_to,
+            )
+        except OIDCException as e:
+            raise PolarAuthRedirectionError(
+                OIDC_ERROR_MESSAGE,
+                url=return_to,
+                type="oauth_link_error",
+                factor=identifier,
+            ) from e
 
         response = RedirectResponse(authorization_url, status_code=303)
         _set_state_cookie(request, response, state, oauth2_state.expires_at)
@@ -276,6 +292,10 @@ def get_oauth_link_router(
             return_to = e.state.context.get("return_to") if e.state.context else None
             raise PolarAuthRedirectionError(
                 "OAuth2 error", url=return_to or default_return_to, **error_parameters
+            ) from e
+        except OIDCException as e:
+            raise PolarAuthRedirectionError(
+                OIDC_ERROR_MESSAGE, url=default_return_to, **error_parameters
             ) from e
 
         return_to = (

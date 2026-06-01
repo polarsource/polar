@@ -279,6 +279,13 @@ export const OrderPaymentRetry = ({
           })
 
         if (confirmPaymentError) {
+          if (
+            'error' in confirmPaymentError &&
+            confirmPaymentError.error === 'OrderNotEligibleForRetry'
+          ) {
+            onClose()
+            return
+          }
           const errorMessage =
             confirmPaymentError.detail || 'Payment failed. Please try again.'
           handlePaymentCompletion(false, errorMessage)
@@ -305,6 +312,7 @@ export const OrderPaymentRetry = ({
       confirmOrderPayment,
       handlePaymentCompletion,
       handlePaymentStatus,
+      onClose,
     ],
   )
 
@@ -323,6 +331,13 @@ export const OrderPaymentRetry = ({
         })
 
       if (confirmPaymentError) {
+        if (
+          'error' in confirmPaymentError &&
+          confirmPaymentError.error === 'OrderNotEligibleForRetry'
+        ) {
+          onClose()
+          return
+        }
         const errorMessage =
           confirmPaymentError.detail || 'Payment failed. Please try again.'
         handlePaymentCompletion(false, errorMessage)
@@ -346,6 +361,7 @@ export const OrderPaymentRetry = ({
     order.id,
     handlePaymentCompletion,
     handlePaymentStatus,
+    onClose,
   ])
 
   // Cleanup on unmount

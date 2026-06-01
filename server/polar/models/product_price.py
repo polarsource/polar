@@ -406,19 +406,26 @@ class ProductPriceSeatUnit(NewProductPrice, ProductPrice):
     def _calculate_graduated(self, seats: int) -> int:
         total = 0
         remaining = seats
+        # Tier capacity is measured from the previous tier's upper bound, not the
+        # tier's own min_seats. The first tier's min_seats doubles as the minimum
+        # order quantity (see get_minimum_seats), so it may be > 1; the first tier
+        # must still bill from seat 1, otherwise seats below it spill into cheaper
+        # tiers (T-28449).
+        previous_max = 0
         for tier in sorted(
             self.seat_tiers.get("tiers", []), key=lambda t: t["min_seats"]
         ):
             if remaining <= 0:
                 break
-            min_seats = tier["min_seats"]
             max_seats = tier.get("max_seats")
             tier_capacity = (
-                (max_seats - min_seats + 1) if max_seats is not None else remaining
+                (max_seats - previous_max) if max_seats is not None else remaining
             )
             seats_in_tier = min(remaining, tier_capacity)
             total += seats_in_tier * tier["price_per_seat"]
             remaining -= seats_in_tier
+            if max_seats is not None:
+                previous_max = max_seats
         return total
 
     def get_minimum_seats(self) -> int:

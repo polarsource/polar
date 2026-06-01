@@ -3,9 +3,9 @@ from typing import TYPE_CHECKING, Literal
 from uuid import UUID
 
 from sqlalchemy import (
+    BigInteger,
     ColumnElement,
     ForeignKey,
-    Integer,
     String,
     UniqueConstraint,
     Uuid,
@@ -78,8 +78,8 @@ class Dispute(RecordModel):
     status: Mapped[DisputeStatus] = mapped_column(
         StringEnum(DisputeStatus), nullable=False
     )
-    amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    tax_amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
 
     payment_processor: Mapped[PaymentProcessor | None] = mapped_column(

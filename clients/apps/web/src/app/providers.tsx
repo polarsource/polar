@@ -39,6 +39,24 @@ export function PolarPostHogProvider({
   return <PostHogProvider client={posthog}>{children}</PostHogProvider>
 }
 
+const FORCED_DARK_PREFIXES = [
+  '/features',
+  '/customers',
+  '/blog',
+  '/resources',
+  '/company',
+  '/startup-program',
+  '/downloads',
+  '/legal',
+  '/midday/portal',
+]
+
+const isForcedDarkPath = (pathname: string): boolean =>
+  pathname === '/' ||
+  FORCED_DARK_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  )
+
 export function PolarThemeProvider({
   children,
   forceTheme,
@@ -50,12 +68,7 @@ export function PolarThemeProvider({
   const searchParams = useSearchParams()
   const theme = searchParams.get('theme')
 
-  const PAGES_WITH_FORCED_DARK_THEME: string[] = ['/midday/portal']
-  const forcedTheme = PAGES_WITH_FORCED_DARK_THEME.some((path) =>
-    pathname.includes(path),
-  )
-    ? 'dark'
-    : forceTheme
+  const forcedTheme = isForcedDarkPath(pathname) ? 'dark' : forceTheme
 
   return (
     <ThemeProvider

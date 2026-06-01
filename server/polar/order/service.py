@@ -681,9 +681,7 @@ class OrderService:
             if is_custom_price(price):
                 items.append(OrderItem.from_price(price, 0, amount, label=label))
             else:
-                items.append(
-                    OrderItem.from_price(price, 0, seats=seats, label=label)
-                )
+                items.append(OrderItem.from_price(price, 0, seats=seats, label=label))
         return items
 
     def _validate_purchase_pricing(
@@ -934,8 +932,7 @@ class OrderService:
         # authoring the charge — i.e. for set-on-order products. For fixed-price
         # products the amount and label are predetermined.
         is_set_on_order = any(
-            is_custom_price(price) and price.merchant_priced
-            for price in static_prices
+            is_custom_price(price) and price.merchant_priced for price in static_prices
         )
         if payload.description is not None and not is_set_on_order:
             raise PolarRequestValidationError(
@@ -970,9 +967,7 @@ class OrderService:
 
         # Resolve the charge currency. When the product is priced in more than
         # one currency, the merchant must say which one to use.
-        available_currencies = sorted(
-            {price.price_currency for price in static_prices}
-        )
+        available_currencies = sorted({price.price_currency for price in static_prices})
         if payload.currency is not None:
             requested_currency = payload.currency.lower()
             if requested_currency not in available_currencies:

@@ -5312,9 +5312,7 @@ class TestCreateDraftOrder:
         product = await self._create_set_on_order_product(
             save_fixture, session, off_session_organization
         )
-        payload = OrderCreate(
-            customer_id=customer.id, product_id=product.id, amount=0
-        )
+        payload = OrderCreate(customer_id=customer.id, product_id=product.id, amount=0)
         with pytest.raises(PolarRequestValidationError):
             await order_service.create_draft_order(
                 session, off_session_organization, payload

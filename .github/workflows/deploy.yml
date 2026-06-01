@@ -27,6 +27,11 @@ jobs:
   changes:
     name: "Detect Changes 🔍"
     runs-on: ubuntu-latest
+    # Read-only: this job only checks out, fetches tags, and runs paths-filter.
+    # Narrow it explicitly so it doesn't inherit the workflow-level
+    # contents: write (which exists only for the tag-push jobs).
+    permissions:
+      contents: read
     outputs:
       # Per-component-per-environment outputs: each diffs HEAD against the
       # SHA of the last successful deploy for that component + environment
@@ -73,7 +78,10 @@ jobs:
           shopt -s inherit_errexit
           # Re-fetch tags with prune so a remote-side deletion drops the
           # local copy (defensive against cached/self-hosted runners).
-          git fetch --tags --force --prune --prune-tags origin
+          # Non-fatal: checkout (fetch-depth: 0) already fetched all tags, so
+          # this is belt-and-suspenders. A transient failure here must NOT
+          # abort the changes job, otherwise it would block ALL deploys.
+          git fetch --tags --force --prune --prune-tags origin || true
           # Resolve the safe fallback once. We prefer event.before, but on
           # workflow_dispatch / new-branch pushes it's empty or zero-SHA;
           # fall back to HEAD~1 which always exists on a fetch-depth: 0

@@ -25,7 +25,6 @@ from polar.logging import Logger
 from polar.models import BackupCodesEnrollment, EmailOTP, TOTPEnrollment
 from polar.postgres import AsyncSession, get_db_session
 from polar.user.repository import UserRepository
-from polar.user.service import user as user_service
 
 from .oauth2.apple import AppleFactor, get_apple_factor
 from .oauth2.github import GitHubFactor, get_github_factor
@@ -95,10 +94,12 @@ class EmailOTPFactor(EmailOTPFactorBase):
     async def request(
         self, request: "EmailOTPRequest", authentication_session: AuthenticationSession
     ) -> None:
-        user, _ = await user_service.get_by_email_or_create(self.session, request.email)
+        user_repository = UserRepository.from_session(self.session)
+        user = await user_repository.get_by_email(request.email)
+        signup = user is None
 
         code, email_otp = await self.create(
-            identity_id=user.id,
+            identity_id=user.id if user else None,
             email=request.email,
             authentication_session_id=authentication_session.id,
         )
@@ -107,7 +108,7 @@ class EmailOTPFactor(EmailOTPFactorBase):
         code_lifetime_minutes = int(ceil(delta / 60))
 
         domain = settings.frontend_hostname
-        subject = "Sign in to Polar"
+        subject = "Sign up to Polar" if signup else "Sign in to Polar"
         enqueue_email_template(
             LoginCodeEmail(
                 props=LoginCodeProps(

@@ -8,11 +8,9 @@ from plain_client import (
     CustomerByEmailCustomerByEmail,
     UpsertCustomerUpsertCustomer,
 )
-from plain_client.exceptions import GraphQLClientHttpError
 from pytest_mock import MockerFixture
 
 from polar.integrations.plain.service import (
-    FeedbackThreadCreationError,
     PlainCustomerError,
     PlainService,
 )
@@ -184,37 +182,6 @@ class TestCreateFeedbackThread:
         note_input = feedback_thread_client.create_note.call_args.args[0]
         assert note_input.text.startswith("The dashboard is broken.")
         assert f"/feedbacks/{_FEEDBACK_ID}" in note_input.markdown
-
-    async def test_wraps_plain_http_error(
-        self,
-        mocker: MockerFixture,
-        plain_service: PlainService,
-        feedback_thread_client: MagicMock,
-    ) -> None:
-        mocker.patch.object(
-            type(plain_service), "enabled", True
-        )  # keep PLAIN_TOKEN fingerprint logic happy
-        mocker.patch(
-            "polar.integrations.plain.service.settings.PLAIN_TOKEN",
-            "plainApiKey_secret_D9J0",
-        )
-        # Plain returns 403 with a body naming the missing permission.
-        response = MagicMock()
-        response.text = '{"error":{"message":"Forbidden: missing thread:reply"}}'
-        response.request.content = b'{"operationName":"replyToThread"}'
-        feedback_thread_client.customer_by_email.side_effect = GraphQLClientHttpError(
-            status_code=403, response=response
-        )
-        feedback = _feedback(message="The dashboard is broken.", type=FeedbackType.bug)
-
-        with pytest.raises(FeedbackThreadCreationError) as excinfo:
-            await plain_service.create_feedback_thread(feedback)
-
-        message = str(excinfo.value)
-        assert "HTTP 403" in message
-        assert "replyToThread" in message  # which operation failed
-        assert "thread:reply" in message  # Plain's actual reason
-        assert "D9J0" in message  # token fingerprint actually used
 
 
 @pytest.mark.asyncio

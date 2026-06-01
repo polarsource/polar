@@ -1,7 +1,6 @@
 # pyright: reportCallIssue=false
 import asyncio
 import contextlib
-import json
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 
@@ -49,10 +48,7 @@ from plain_client import (
     UpsertCustomerUpsertCustomer,
     UpsertTenantInput,
 )
-from plain_client.exceptions import (
-    GraphQLClientGraphQLMultiError,
-    GraphQLClientHttpError,
-)
+from plain_client.exceptions import GraphQLClientGraphQLMultiError
 from pydantic_ai import Agent
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
@@ -155,38 +151,6 @@ Rules:
 - No surrounding quotes, no "Subject:" prefix, no trailing punctuation.
 - Output only the subject line, nothing else.
 """
-
-
-def _format_plain_http_error(e: GraphQLClientHttpError) -> str:
-    """
-    Build a diagnostic message from a Plain HTTP error: which GraphQL operation
-    failed, Plain's own response body (which names the missing permission), and
-    a fingerprint of the token actually sent — so a 403 points at the real cause
-    instead of a generic permissions checklist.
-    """
-    operation = ""
-    try:
-        payload = json.loads(e.response.request.content)
-        operation = payload.get("operationName") or ""
-    except Exception:
-        pass
-
-    body = ""
-    try:
-        body = e.response.text[:600]
-    except Exception:
-        pass
-
-    token = settings.PLAIN_TOKEN or ""
-    fingerprint = f"…{token[-4:]} (len {len(token)})" if token else "<unset>"
-
-    parts = [f"Plain API HTTP {e.status_code}"]
-    if operation:
-        parts.append(f"on `{operation}`")
-    parts.append(f"using token {fingerprint}")
-    if body:
-        parts.append(f"— response: {body}")
-    return " ".join(parts)
 
 
 async def _generate_thread_subject(content: str, fallback: str) -> str:
@@ -1460,90 +1424,78 @@ class PlainService:
 
         async with self._get_plain_client() as plain:
             try:
-                try:
-                    customer_id = await self._upsert_customer_id_for_user(
-                        plain, feedback.user
-                    )
-                except PlainCustomerError as e:
-                    raise FeedbackThreadCreationError(feedback.id, e.message) from e
-
-                thread_result = await plain.create_thread(
-                    CreateThreadInput(
-                        customer_identifier=CustomerIdentifierInput(
-                            customer_id=customer_id
-                        ),
-                        title=title,
-                    )
+                customer_id = await self._upsert_customer_id_for_user(
+                    plain, feedback.user
                 )
-                if thread_result.error is not None:
-                    raise FeedbackThreadCreationError(
-                        feedback.id, thread_result.error.message
-                    )
-                if thread_result.thread is None:
-                    raise FeedbackThreadCreationError(
-                        feedback.id, "No thread returned by create_thread"
-                    )
-                thread_id = thread_result.thread.id
+            except PlainCustomerError as e:
+                raise FeedbackThreadCreationError(feedback.id, e.message) from e
 
-                if transcript is not None:
-                    # Chat escalation: post the customer's message as if it came
-                    # from them, falling back to their original question when no
-                    # extra note was added.
-                    customer_message = note or _first_user_message(transcript)
-                    if customer_message:
-                        reply_result = await plain.reply_to_thread(
-                            ReplyToThreadInput(
-                                thread_id=thread_id,
-                                text_content=customer_message,
-                                impersonation=ImpersonationInput(
-                                    as_customer=CustomerImpersonationInput(
-                                        customer_identifier=CustomerIdentifierInput(
-                                            customer_id=customer_id
-                                        )
-                                    )
-                                ),
-                            )
-                        )
-                        if reply_result.error is not None:
-                            raise FeedbackThreadCreationError(
-                                feedback.id, reply_result.error.message
-                            )
-                    note_text = transcript
-                else:
-                    # Direct submission (e.g. manual backoffice reply for a bug
-                    # or feedback report): keep the message itself as the note.
-                    note_text = feedback.message
-
-                # Link back to the backoffice feedback record so whoever picks
-                # up the thread can jump straight to it.
-                backoffice_url = settings.generate_backoffice_url(
-                    f"/feedbacks/{feedback.id}"
+            thread_result = await plain.create_thread(
+                CreateThreadInput(
+                    customer_identifier=CustomerIdentifierInput(
+                        customer_id=customer_id
+                    ),
+                    title=title,
                 )
-                note_result = await plain.create_note(
-                    CreateNoteInput(
-                        customer_id=customer_id,
-                        thread_id=thread_id,
-                        text=f"{note_text}\n\nView in backoffice: {backoffice_url}",
-                        markdown=(
-                            f"{note_text}\n\n[View in backoffice]({backoffice_url})"
-                        ),
-                    )
-                )
-                if note_result.error is not None:
-                    raise FeedbackThreadCreationError(
-                        feedback.id, note_result.error.message
-                    )
-
-                return plain_thread_url(thread_id)
-            except GraphQLClientHttpError as e:
-                # HTTP-level failures (e.g. 403 when the token lacks a required
-                # permission, or 5xx) aren't surfaced as GraphQL `.error`
-                # fields — wrap them with the failing operation, Plain's
-                # response body, and the token fingerprint so the real cause is
-                # visible instead of a generic guess.
+            )
+            if thread_result.error is not None:
                 raise FeedbackThreadCreationError(
-                    feedback.id, _format_plain_http_error(e)
-                ) from e
+                    feedback.id, thread_result.error.message
+                )
+            if thread_result.thread is None:
+                raise FeedbackThreadCreationError(
+                    feedback.id, "No thread returned by create_thread"
+                )
+            thread_id = thread_result.thread.id
+
+            if transcript is not None:
+                # Chat escalation: post the customer's message as if it came
+                # from them, falling back to their original question when no
+                # extra note was added.
+                customer_message = note or _first_user_message(transcript)
+                if customer_message:
+                    reply_result = await plain.reply_to_thread(
+                        ReplyToThreadInput(
+                            thread_id=thread_id,
+                            text_content=customer_message,
+                            impersonation=ImpersonationInput(
+                                as_customer=CustomerImpersonationInput(
+                                    customer_identifier=CustomerIdentifierInput(
+                                        customer_id=customer_id
+                                    )
+                                )
+                            ),
+                        )
+                    )
+                    if reply_result.error is not None:
+                        raise FeedbackThreadCreationError(
+                            feedback.id, reply_result.error.message
+                        )
+                note_text = transcript
+            else:
+                # Direct submission (e.g. manual backoffice reply for a bug
+                # or feedback report): keep the message itself as the note.
+                note_text = feedback.message
+
+            # Link back to the backoffice feedback record so whoever picks
+            # up the thread can jump straight to it.
+            backoffice_url = settings.generate_backoffice_url(
+                f"/feedbacks/{feedback.id}"
+            )
+            note_result = await plain.create_note(
+                CreateNoteInput(
+                    customer_id=customer_id,
+                    thread_id=thread_id,
+                    text=f"{note_text}\n\nView in backoffice: {backoffice_url}",
+                    markdown=(f"{note_text}\n\n[View in backoffice]({backoffice_url})"),
+                )
+            )
+            if note_result.error is not None:
+                raise FeedbackThreadCreationError(
+                    feedback.id, note_result.error.message
+                )
+
+            return plain_thread_url(thread_id)
 
     async def check_thread_exists(
         self, customer_email: str, thread_title: str, fuzzy: bool = False

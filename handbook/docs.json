@@ -87,7 +87,8 @@
               "engineering/design-documents/platform-api",
               "engineering/design-documents/rbac",
               "engineering/design-documents/polar-for-polar",
-              "engineering/design-documents/api-versioning"
+              "engineering/design-documents/api-versioning",
+              "engineering/design-documents/payout-reviews"
             ]
           },
           "engineering/tech-notes",

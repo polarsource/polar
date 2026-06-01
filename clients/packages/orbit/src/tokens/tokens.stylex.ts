@@ -21,90 +21,44 @@ export const spacing = stylex.defineVars({
 })
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
-// Light values are the default. Dark values are applied via prefers-color-scheme.
+// Set with https://stylexjs.com/docs/learn/recipes/light-dark-themes/
 // ──────────────────────────────────────────────────────────────────────────────
 
-const DARK = '@media (prefers-color-scheme: dark)'
-
 export const backgroundColors = stylex.defineVars({
-  'background-primary': {
-    default: '#ffffff',
-    [DARK]: 'hsl(233, 4%, 3.5%)',
-  },
-  'background-secondary': {
-    default: 'oklch(0.985 0.002 247.839)',
-    [DARK]: 'hsl(233, 4%, 6.5%)',
-  },
-  'background-card': {
-    default: 'oklch(96.7% 0.003 264.54)',
-    [DARK]: 'hsl(233, 4%, 9.5%)',
-  },
-  'background-inverse': {
-    default: 'oklch(0.21 0.034 264.665)',
-    [DARK]: 'oklch(1.000 0.000 263.3)',
-  },
-  'background-warning': {
-    default: 'oklch(0.97 0.026 102.5)',
-    [DARK]: 'oklch(0.445 0.1 82.5 / 0.2)',
-  },
-  'background-success': {
-    default: 'oklch(0.97 0.04 162)',
-    [DARK]: 'oklch(0.696 0.17 162 / 0.2)',
-  },
-  'background-danger': {
-    default: 'oklch(0.97 0.04 25)',
-    [DARK]: 'oklch(0.637 0.237 25 / 0.2)',
-  },
-  'background-pending': {
-    default: 'oklch(0.96 0.005 264)',
-    [DARK]: 'oklch(0.6 0.02 264 / 0.2)',
-  },
+  'background-primary': 'light-dark(#ffffff, hsl(233, 4%, 3.5%))',
+  'background-secondary':
+    'light-dark(oklch(0.985 0.002 247.839), hsl(233, 4%, 6.5%))',
+  'background-card':
+    'light-dark(oklch(96.7% 0.003 264.54), hsl(233, 4%, 9.5%))',
+  'background-inverse':
+    'light-dark(oklch(0.21 0.034 264.665), oklch(1.000 0.000 263.3))',
+  'background-warning':
+    'light-dark(oklch(0.97 0.026 102.5), oklch(0.445 0.1 82.5 / 0.2))',
+  'background-success':
+    'light-dark(oklch(0.97 0.04 162), oklch(0.696 0.17 162 / 0.2))',
+  'background-danger':
+    'light-dark(oklch(0.97 0.04 25), oklch(0.637 0.237 25 / 0.2))',
+  'background-pending':
+    'light-dark(oklch(0.96 0.005 264), oklch(0.6 0.02 264 / 0.2))',
+  'background-card-raised': 'light-dark(transparent, hsl(233, 4%, 9.5%))',
 })
 
 export const textColors = stylex.defineVars({
-  'text-primary': {
-    default: '#000000',
-    [DARK]: '#ffffff',
-  },
-  'text-secondary': {
-    default: 'oklch(0.551 0.027 264.364)',
-    [DARK]: 'oklch(0.599 0.020 279.8)',
-  },
-  'text-tertiary': {
-    default: 'oklch(0.707 0.022 261.325)',
-    [DARK]: 'hsl(233, 4%, 46%)',
-  },
-  'text-success': {
-    default: 'oklch(0.696 0.17 162)',
-    [DARK]: 'oklch(0.696 0.17 162)',
-  },
-  'text-danger': {
-    default: 'oklch(0.637 0.237 25)',
-    [DARK]: 'oklch(0.637 0.237 25)',
-  },
-  'text-warning': {
-    default: 'oklch(0.769 0.188 70)',
-    [DARK]: 'oklch(0.769 0.188 70)',
-  },
-  'text-pending': {
-    default: 'oklch(0.65 0.02 264)',
-    [DARK]: 'oklch(0.7 0.02 264)',
-  },
+  'text-primary': 'light-dark(#000000, #ffffff)',
+  'text-secondary':
+    'light-dark(oklch(0.551 0.027 264.364), oklch(0.599 0.020 279.8))',
+  'text-tertiary': 'light-dark(oklch(0.707 0.022 261.325), hsl(233, 4%, 46%))',
+  'text-success': 'light-dark(oklch(0.696 0.17 162), oklch(0.696 0.17 162))',
+  'text-danger': 'light-dark(oklch(0.637 0.237 25), oklch(0.637 0.237 25))',
+  'text-warning': 'light-dark(oklch(0.769 0.188 70), oklch(0.769 0.188 70))',
+  'text-pending': 'light-dark(oklch(0.65 0.02 264), oklch(0.7 0.02 264))',
 })
 
 export const borderColors = stylex.defineVars({
-  'border-primary': {
-    default: 'oklch(0.928 0.006 264.531)',
-    [DARK]: 'hsl(233, 4%, 12%)',
-  },
-  'border-secondary': {
-    default: '#f6f6f6',
-    [DARK]: 'oklch(0.206 0.005 279.9)',
-  },
-  'border-warning': {
-    default: 'oklch(0.836 0.138 100)',
-    [DARK]: 'oklch(0.572 0.14 91)',
-  },
+  'border-primary': 'light-dark(oklch(0.928 0.006 264.531), hsl(233, 4%, 12%))',
+  'border-secondary': 'light-dark(#f6f6f6, oklch(0.206 0.005 279.9))',
+  'border-warning': 'light-dark(oklch(0.836 0.138 100), oklch(0.572 0.14 91))',
+  'border-card': 'light-dark(oklch(0.928 0.006 264.531), transparent)',
 })
 
 // ─── Border Radius ────────────────────────────────────────────────────────────

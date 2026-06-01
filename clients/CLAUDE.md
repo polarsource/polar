@@ -70,8 +70,9 @@ arbitrary values for things the design system already defines.
 ## The `<Box />` Component
 
 Box is the canonical layout/style primitive. It compiles your typed props into StyleX
-styles + scoped CSS at build time. Tokens are CSS variables that auto-swap on
-`prefers-color-scheme`, so you author one styling pass and dark mode is free.
+styles + scoped CSS at build time. Tokens use the CSS `light-dark()` function to
+auto-swap between light and dark mode, so you author one styling pass and dark mode
+is free.
 
 ### Importing
 

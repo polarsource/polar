@@ -82,8 +82,8 @@ prompt: |
   - Use `get_readable_statement(auth_subject)` for auth-aware queries
 
   **Frontend Conventions (clients/):**
-  - Use design tokens: blue-500, gray-100, polar-800 (dark mode)
-  - Always provide dark: variants for colors
+  - Use Orbit design tokens for colors (auto-resolve light/dark): background-primary, text-secondary, border-primary
+  - Never use Tailwind `dark:` variants — tokens handle dark mode automatically
   - Border radius: rounded-xl (default), rounded-2xl (large cards)
   - TanStack Query for data fetching
   - Zustand for state management

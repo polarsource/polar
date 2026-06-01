@@ -1,5 +1,6 @@
 'use client'
 
+import { useTheme } from 'next-themes'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { BundledLanguage } from 'shiki'
 import { createHighlighterCore, HighlighterCore } from 'shiki/core'
@@ -117,19 +118,29 @@ export const SyntaxHighlighterClient = ({
   customThemeConfig?: typeof themeConfig
 }) => {
   const { highlighter, loadLanguage } = useContext(SyntaxHighlighterContext)
+  const { resolvedTheme } = useTheme()
   const [highlightedCode, setHighlightedCode] = useState<string | null>(null)
 
   useEffect(() => {
     if (!highlighter) return
 
+    const effectiveThemeConfig = customThemeConfig
+      ? customThemeConfig
+      : resolvedTheme === 'dark' || resolvedTheme === 'light'
+        ? {
+            light: themeConfig[resolvedTheme],
+            dark: themeConfig[resolvedTheme],
+          }
+        : themeConfig
+
     loadLanguage(lang).then((success) => {
       const highlightedCode = highlighter.codeToHtml(code, {
         lang: success ? lang : 'text',
-        themes: customThemeConfig ?? themeConfig,
+        themes: effectiveThemeConfig,
       })
       setHighlightedCode(highlightedCode)
     })
-  }, [highlighter, loadLanguage, customThemeConfig, lang, code])
+  }, [highlighter, loadLanguage, customThemeConfig, lang, code, resolvedTheme])
 
   return highlightedCode ? (
     // eslint-disable-next-line react/no-danger

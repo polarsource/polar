@@ -109,8 +109,8 @@ jobs:
       - name: Deploy Backend to Render
         run: |
           ./.github/workflows/deploy_server.sh \
-            ${{ inputs.docker-digest }} \
-            ${{ inputs.has-migrations }} \
+            "${{ inputs.docker-digest }}" \
+            "${{ inputs.has-migrations }}" \
             "${{ inputs.render-api-service-id }}" \
             "${{ inputs.render-worker-service-ids }}" \
             "${{ inputs.docker-digest-playwright }}" \

@@ -58,8 +58,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          # fetch-depth: 0 already fetches all tags, so no separate
+          # fetch-tags is needed here.
           fetch-depth: 0
-          fetch-tags: true
 
       - name: Resolve deploy bases from tags
         id: bases
@@ -253,7 +254,11 @@ jobs:
   deploy-sandbox:
     name: "Deploy to Sandbox 🧪"
     needs: [changes, build]
-    if: always() && (needs.build.result == 'success' || needs.build.result == 'skipped') && (needs.changes.outputs.backend-sandbox == 'true' || needs.changes.outputs.frontend-sandbox == 'true' || github.event_name == 'workflow_dispatch')
+    # `!failure() && !cancelled()` mirrors deploy-production: if the `changes`
+    # job fails, `build` is skipped (no `if: always()`), and on a
+    # workflow_dispatch the OR-clause below would otherwise let this job run
+    # with an EMPTY docker-digest. Guarding on !failure() blocks that path.
+    if: always() && !failure() && !cancelled() && (needs.build.result == 'success' || needs.build.result == 'skipped') && (needs.changes.outputs.backend-sandbox == 'true' || needs.changes.outputs.frontend-sandbox == 'true' || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/deploy-environment.yml
     with:
       environment: sandbox

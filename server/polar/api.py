@@ -21,7 +21,6 @@ from polar.event_type.endpoints import router as event_type_router
 from polar.eventstream.endpoints import router as stream_router
 from polar.feedback.endpoints import router as feedback_router
 from polar.file.endpoints import router as files_router
-from polar.integrations.apple.endpoints import router as apple_router
 from polar.integrations.chargeback_stop.endpoints import (
     router as chargeback_stop_router,
 )
@@ -30,13 +29,11 @@ from polar.integrations.github.endpoints import router as github_router
 from polar.integrations.github_repository_benefit.endpoints import (
     router as github_repository_benefit_router,
 )
-from polar.integrations.google.endpoints import router as google_router
 from polar.integrations.plain.endpoints import router as plain_router
 from polar.integrations.polar.endpoints import router as polar_self_router
 from polar.integrations.resend.endpoints import router as resend_router
 from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.license_key.endpoints import router as license_key_router
-from polar.login_code.endpoints import router as login_code_router
 from polar.member.endpoints import router as member_router
 from polar.meter.endpoints import router as meter_router
 from polar.metrics.endpoints import router as metrics_router
@@ -71,10 +68,6 @@ router.include_router(github_repository_benefit_router)
 router.include_router(stripe_router)
 # /integrations/discord
 router.include_router(discord_router)
-# /integrations/apple
-router.include_router(apple_router)
-# /login-code
-router.include_router(login_code_router)
 # /notifications
 router.include_router(notifications_router)
 # /personal_access_tokens
@@ -115,8 +108,6 @@ router.include_router(cli_router)
 router.include_router(files_router)
 # /metrics
 router.include_router(metrics_router)
-# /integrations/google
-router.include_router(google_router)
 # /license-keys
 router.include_router(license_key_router)
 # /checkout-links

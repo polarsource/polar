@@ -17,11 +17,11 @@ export default function AccessRestricted({ message }: AccessRestrictedProps) {
       rowGap="m"
     >
       <BrickWallShieldIcon
-        className="dark:text-polar-500 size-8 shrink-0 text-gray-500"
+        className="dark:text-polar-500 size-6 shrink-0 text-gray-500"
         strokeWidth={1.5}
       />
-      <h2 className="text-xl font-medium">Restricted access</h2>
-      <p className="dark:text-polar-500 max-w-sm text-center text-balance text-gray-500">
+      <h2 className="text-lg font-medium">Restricted access</h2>
+      <p className="dark:text-polar-500 max-w-xs text-center text-sm text-balance text-gray-500">
         {message}
       </p>
     </Box>

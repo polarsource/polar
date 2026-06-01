@@ -87,12 +87,12 @@ payout_status_update_function = PGFunction(
         new_status TEXT;
         current_status TEXT;
     BEGIN
-        -- Don't update canceled payouts
+        -- Don't update canceled or held payouts
         SELECT status INTO current_status
         FROM payouts
         WHERE id = NEW.payout_id;
 
-        IF current_status = 'canceled' THEN
+        IF current_status IN ('canceled', 'held') THEN
             RETURN NEW;
         END IF;
 

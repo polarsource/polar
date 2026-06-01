@@ -12,7 +12,6 @@ export function NotificationNewSubscription({
   tier_name,
   tier_price_amount,
   tier_price_recurring_interval,
-  tier_organization_name,
 }: schemas['MaintainerNewPaidSubscriptionNotificationPayload']) {
   const formattedName = subscriber_email ? (
     <>

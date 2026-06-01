@@ -5,6 +5,7 @@ from math import ceil
 import structlog
 from fastapi import Depends
 from reauth.authentication_session import AuthenticationSession
+from reauth.crypto import get_token_hash
 from reauth.factors import FactorBase
 from reauth.factors.backup_codes import (
     BackupCodesEnrollment as BackupCodesEnrollmentDataclass,
@@ -64,6 +65,21 @@ class EmailOTPFactor(EmailOTPFactorBase):
         await self.session.flush()
         return email_otp_orm.id
 
+    async def update(self, email_otp: EmailOTPDataclass) -> None:
+        statement = (
+            update(EmailOTP)
+            .where(EmailOTP.id == email_otp.id)
+            .values(
+                code_hash=email_otp.code_hash,
+                expires_at=email_otp.expires_at,
+                email=email_otp.email,
+                identity_id=email_otp.identity_id,
+                authentication_session_id=email_otp.authentication_session_id,
+            )
+        )
+        await self.session.execute(statement)
+        await self.session.flush()
+
     async def get_by_code_hash_and_authentication_session_id(
         self, code_hash: str, authentication_session_id: uuid.UUID
     ) -> EmailOTPDataclass | None:
@@ -96,20 +112,28 @@ class EmailOTPFactor(EmailOTPFactorBase):
     ) -> None:
         user_repository = UserRepository.from_session(self.session)
         user = await user_repository.get_by_email(request.email)
-        if user is None:
-            return
+        signup = user is None
 
         code, email_otp = await self.create(
-            identity_id=user.id,
+            identity_id=user.id if user else None,
             email=request.email,
             authentication_session_id=authentication_session.id,
         )
+
+        if (
+            email_otp.email == settings.APP_REVIEW_EMAIL
+            and settings.APP_REVIEW_OTP_CODE is not None
+        ):
+            log.info("App review login, hard-coding OTP code")
+            code = settings.APP_REVIEW_OTP_CODE
+            email_otp.code_hash = get_token_hash(code, secret=self.hash_secret)
+            await self.update(email_otp)
 
         delta = email_otp.expires_at - int(utc_now().timestamp())
         code_lifetime_minutes = int(ceil(delta / 60))
 
         domain = settings.frontend_hostname
-        subject = "Sign in to Polar"
+        subject = "Sign up to Polar" if signup else "Sign in to Polar"
         enqueue_email_template(
             LoginCodeEmail(
                 props=LoginCodeProps(

@@ -5,10 +5,10 @@ from uuid import UUID
 
 from babel.numbers import format_decimal
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     ColumnElement,
     ForeignKey,
-    Integer,
     Numeric,
     String,
     Uuid,
@@ -234,7 +234,9 @@ class NewProductPrice:
 
 
 class _ProductPriceFixed(ProductPrice):
-    price_amount: Mapped[int] = mapped_column(Integer, nullable=True)
+    price_amount: Mapped[int] = mapped_column(
+        "price_amount_v2", BigInteger, nullable=True
+    )
     amount_type: Mapped[Literal[ProductPriceAmountType.fixed]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.fixed
     )
@@ -263,12 +265,14 @@ class _ProductPriceCustom(ProductPrice):
     amount_type: Mapped[Literal[ProductPriceAmountType.custom]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.custom
     )
-    minimum_amount: Mapped[int] = mapped_column(Integer, nullable=True, default=None)
+    minimum_amount: Mapped[int] = mapped_column(
+        "minimum_amount_v2", BigInteger, nullable=True
+    )
     maximum_amount: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, default=None
+        "maximum_amount_v2", BigInteger, nullable=True
     )
     preset_amount: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, default=None
+        "preset_amount_v2", BigInteger, nullable=True
     )
 
     __mapper_args__ = {
@@ -331,7 +335,9 @@ class ProductPriceMeteredUnit(ProductPrice, NewProductPrice):
         # Polymorphic columns must be nullable, as they don't apply to other types
         nullable=True,
     )
-    cap_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    cap_amount: Mapped[int | None] = mapped_column(
+        "cap_amount_v2", BigInteger, nullable=True
+    )
     meter_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("meters.id"),

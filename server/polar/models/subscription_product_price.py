@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Self
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Integer, Uuid
+from sqlalchemy import BigInteger, ForeignKey, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
@@ -31,7 +31,7 @@ class SubscriptionProductPrice(RecordModel):
         ForeignKey("product_prices.id", ondelete="restrict"),
         primary_key=True,
     )
-    amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount: Mapped[int] = mapped_column("amount_v2", BigInteger, nullable=False)
 
     @declared_attr
     def product_price(cls) -> Mapped["ProductPrice"]:

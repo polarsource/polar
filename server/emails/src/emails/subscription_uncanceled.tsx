@@ -10,7 +10,6 @@ export function SubscriptionUncanceled({
   email,
   organization,
   product,
-  subscription,
   url,
 }: schemas['SubscriptionUncanceledProps']) {
   return (

@@ -22,6 +22,7 @@ from polar.kit.address import Address
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
+from polar.kit.visibility import Visibility
 from polar.meter.aggregation import Aggregation, CountAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import (
@@ -63,7 +64,6 @@ from polar.models import (
     ProductPriceFree,
     ProductPriceMeteredUnit,
     ProductPriceSeatUnit,
-    ProductVisibility,
     Refund,
     Subscription,
     SubscriptionProductPrice,
@@ -434,7 +434,7 @@ async def create_product(
     recurring_interval_count: int | None = 1,
     name: str = "Product",
     is_archived: bool = False,
-    visibility: ProductVisibility = ProductVisibility.public,
+    visibility: Visibility = Visibility.public,
     prices: Sequence[PriceFixtureType] = [(1000, "usd")],
     attached_custom_fields: Sequence[tuple[CustomField, bool]] = [],
     trial_interval: TrialInterval | None = None,

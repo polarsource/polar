@@ -11,7 +11,6 @@ export function SubscriptionTrialConversionReminder({
   email,
   organization,
   product,
-  subscription,
   url,
   conversion_date,
 }: schemas['SubscriptionTrialConversionReminderProps']) {

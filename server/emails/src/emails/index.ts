@@ -31,7 +31,7 @@ import { SubscriptionUncanceled } from './subscription_uncanceled'
 import { SubscriptionUpdated } from './subscription_updated'
 import { WebhookEndpointDisabled } from './webhook_endpoint_disabled'
 
-const TEMPLATES: Record<string, React.FC<any>> = {
+const TEMPLATES: Record<string, React.FC<never>> = {
   login_code: LoginCode,
   customer_email_changed_notification: CustomerEmailChangedNotification,
   customer_email_update_verification: CustomerEmailUpdateVerification,

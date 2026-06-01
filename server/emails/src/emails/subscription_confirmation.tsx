@@ -12,7 +12,6 @@ export function SubscriptionConfirmation({
   email,
   organization,
   product,
-  subscription,
   order,
   url,
 }: schemas['SubscriptionConfirmationProps']) {

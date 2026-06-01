@@ -1,5 +1,6 @@
 'use client'
 
+import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import FeatureSettings from '@/components/Settings/FeatureSettings'
 import OrganizationAccessTokensSettings from '@/components/Settings/OrganizationAccessTokensSettings'
@@ -11,6 +12,7 @@ import OrganizationPaymentSettings from '@/components/Settings/OrganizationPayme
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
 import OrganizationSubscriptionSettings from '@/components/Settings/OrganizationSubscriptionSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
+import { useHasPermission } from '@/hooks/permissions'
 import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
 import Alert from '@polar-sh/ui/components/atoms/Alert'
@@ -21,6 +23,8 @@ export default function ClientPage({
 }: {
   organization: schemas['Organization']
 }) {
+  const canManageOrganization = useHasPermission(org.id, 'organization:manage')
+
   return (
     <DashboardBody
       wrapperClassName="max-w-(--breakpoint-sm)!"
@@ -90,7 +94,11 @@ export default function ClientPage({
             title="Developers"
             description="Manage access tokens to authenticate with the Polar API"
           />
-          <OrganizationAccessTokensSettings organization={org} />
+          {canManageOrganization === false ? (
+            <AccessRestricted message="You don't have permission to manage access tokens for this organization. Ask an admin if you need access." />
+          ) : (
+            <OrganizationAccessTokensSettings organization={org} />
+          )}
         </Section>
 
         <Section id="danger">

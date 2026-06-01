@@ -27550,7 +27550,7 @@ export interface components {
         | null
     }
     /**
-     * ProductVisibility
+     * Visibility
      * @enum {string}
      */
     ProductVisibility: 'draft' | 'private' | 'public'
@@ -31128,6 +31128,11 @@ export interface components {
         [key: string]: string
       }
     }
+    /**
+     * Visibility
+     * @enum {string}
+     */
+    Visibility: 'draft' | 'private' | 'public'
     /**
      * Wallet
      * @description A wallet represents a customer's balance in your organization.
@@ -58070,6 +58075,9 @@ export const userUpdateCountryAnyOf0Values: ReadonlyArray<
   'ZM',
   'ZW',
 ]
+export const visibilityValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['Visibility']
+> = ['draft', 'private', 'public']
 export const walletSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WalletSortProperty']
 > = ['created_at', '-created_at', 'balance', '-balance']

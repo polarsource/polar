@@ -2,11 +2,10 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Literal, Self
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, ForeignKey, SmallInteger, String, Uuid
+from sqlalchemy import BigInteger, ColumnElement, ForeignKey, SmallInteger, String, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
-from sqlalchemy.sql.sqltypes import Integer
 
 from polar.enums import PaymentProcessor
 from polar.kit.db.models import RecordModel
@@ -106,7 +105,7 @@ class Payment(RecordModel):
     status: Mapped[PaymentStatus] = mapped_column(
         StrEnumType(PaymentStatus), index=True, nullable=False
     )
-    amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount: Mapped[int] = mapped_column("amount_v2", BigInteger, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     method: Mapped[str] = mapped_column(String, index=True, nullable=False)
     method_metadata: Mapped[dict[str, Any]] = mapped_column(

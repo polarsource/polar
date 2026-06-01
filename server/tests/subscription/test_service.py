@@ -16,6 +16,7 @@ from sqlalchemy.util.typing import TypeAlias
 from polar.auth.models import AuthSubject
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.checkout.eventstream import CheckoutEvent
+from polar.customer_seat.repository import CustomerSeatRepository
 from polar.email.schemas import SubscriptionRevokedEmail
 from polar.enums import (
     PaymentProcessor,
@@ -2903,39 +2904,6 @@ class TestUpdateProduct:
                 product_id=fixed_product.id,
             )
 
-    async def test_fixed_to_seat_based_not_allowed(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        fixed_product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(20000, "usd")],
-        )
-        seat_product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 10000, "usd")],
-        )
-
-        subscription = await create_active_subscription(
-            save_fixture,
-            product=fixed_product,
-            customer=customer,
-        )
-
-        with pytest.raises(PolarRequestValidationError):
-            await subscription_service.update_product(
-                session,
-                subscription,
-                product_id=seat_product.id,
-            )
-
     async def test_upgrade_from_legacy_recurring_product_to_new_recurring_product(
         self,
         session: AsyncSession,
@@ -3249,6 +3217,199 @@ class TestUpdateProduct:
         assert pending is not None
         assert pending.product_id == product_b.id
         assert pending.seats == 8
+
+    async def test_non_seat_to_seat_upgrade_succeeds(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization)
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        seat_price = ProductPriceSeatUnit(
+            price_currency=PresentmentCurrency.usd,
+            seat_tiers={
+                "tiers": [
+                    {"min_seats": 1, "max_seats": None, "price_per_seat": 1500},
+                ]
+            },
+            product=seat_product,
+        )
+        await save_fixture(seat_price)
+        seat_product.prices.append(seat_price)
+        await save_fixture(seat_product)
+
+        updated = await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=seat_product.id,
+            proration_behavior=SubscriptionProrationBehavior.invoice,
+        )
+
+        assert updated.product == seat_product
+        assert updated.seats == 1
+
+        seat_repository = CustomerSeatRepository.from_session(session)
+        seats = await seat_repository.list_by_subscription_id(updated.id)
+        claimed = [s for s in seats if s.status == SeatStatus.claimed]
+        assert len(claimed) == 1
+        assert claimed[0].customer_id == customer.id
+
+    async def test_non_seat_to_seat_upgrade_promotes_customer_to_team(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization)
+
+        customer.type = CustomerType.individual
+        await save_fixture(customer)
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1500, "usd")],
+        )
+
+        updated = await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=seat_product.id,
+            proration_behavior=SubscriptionProrationBehavior.invoice,
+        )
+
+        await session.refresh(updated.customer)
+        assert updated.customer.type == CustomerType.team
+
+    async def test_non_seat_to_seat_upgrade_generates_seat_debit_proration(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization)
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 2000, "usd")],
+        )
+
+        updated = await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=seat_product.id,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        entries = await billing_entry_repository.get_pending_by_subscription(updated.id)
+        seat_price_id = next(
+            spp.product_price_id
+            for spp in updated.subscription_product_prices
+            if spp.product_price.amount_type == ProductPriceAmountType.seat_based
+        )
+        seat_debits = [
+            e
+            for e in entries
+            if e.product_price_id == seat_price_id
+            and e.direction == BillingEntryDirection.debit
+            and e.type == BillingEntryType.proration
+        ]
+        assert len(seat_debits) == 1
+        assert seat_debits[0].amount is not None
+        assert seat_debits[0].amount > 0
+
+    async def test_non_seat_to_seat_upgrade_rejects_next_period(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization)
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1500, "usd")],
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=seat_product.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
+
+        errors = exc_info.value.errors()
+        assert any(
+            error["loc"] == ("body", "proration_behavior")
+            and "next_period" in error["msg"]
+            for error in errors
+        )
 
 
 @pytest.mark.asyncio

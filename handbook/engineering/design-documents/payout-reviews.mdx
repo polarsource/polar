@@ -1,0 +1,260 @@
+<Info>
+  **Created**: 2026-05-27
+
+  **Last Updated**: 2026-05-29
+</Info>
+
+## Summary
+
+An organization under review cannot request a payout today. Merchants open Plain tickets to escalate the review just to access their money. This RFC removes the block. Orgs in `REVIEW` or `SNOOZED` can request payouts, which are held as `held` until the org is approved, then released automatically. Held payouts also boost their org's review priority. On the dashboard, a held payout shows a distinct "Pending review" status with a tooltip, so the merchant knows it is on the way.
+
+## Goals
+
+- REVIEW and SNOOZED orgs can request a payout with the same request flow as an ACTIVE org. The resulting payout shows as "Pending review" until it is released.
+- The requested amount is reserved at request time, exactly as it is today for ACTIVE orgs.
+- The Stripe transfer only runs after the org has been approved.
+- A held payout boosts the org's priority in the backoffice review queue.
+- When the org is approved, every held payout is released and follows the regular Stripe flow.
+- When the org is denied, blocked or offboarded, every in-flight payout is canceled and funds return to the available balance.
+
+## Non-goals
+
+- No per-payout review queue. Hold transitions follow the org review outcome.
+- No new payout-related webhook events.
+- No signal-based gating on `ACTIVE` orgs (that fits into [#121](https://github.com/polarsource/feedback/issues/121)).
+- No appeal flow for held payouts. A canceled payout returns funds, and the merchant can request again if they get approved.
+- No merchant-facing cancel endpoint. Backoffice cancel is enough for now.
+- No change to `CREATED`, `DENIED` or `OFFBOARDING` orgs. OFFBOARDING in particular needs its own end-of-life flow, so we explicitly leave it out of this RFC.
+
+## Design
+
+### The change in one paragraph
+
+We add a new value `held` to `PayoutStatus`. Inside `PayoutService.create`, we branch on the org status. An `ACTIVE` org follows today's path: the payout is created as `pending` and the Stripe transfer is kicked off. A `REVIEW` or `SNOOZED` org takes the new path: the payout is created as `held` and we skip the Stripe transfer for now. We also split today's `payout.created` task in two, so `payout.created` becomes a plain event (it fires for held payouts too, and gives us a hook for things like confirmation emails later) and a new `payout.transfer` task does the actual Stripe transfer. We then wire two jobs into the org status changes. `organization.release_held_payouts` runs when the org is approved, moves held payouts back to `pending`, and enqueues `payout.transfer`. `organization.cancel_pending_payouts` runs when the org is denied, blocked or offboarded, and cancels any in-flight payout on the account. Finally, we add a priority boost to the backoffice review queue so orgs with held payouts are reviewed sooner.
+
+### Capability flip
+
+Today, the capability map `STATUS_CAPABILITIES` only has `payouts: True` for `ACTIVE`. We flip it to `True` for `REVIEW` and `SNOOZED` as well. This changes the meaning of `organization.capabilities.payouts`: from now on, it means "the merchant is allowed to request a payout". The distinction between held and immediate now lives inside `PayoutService.create`, based on the org status:
+
+| Org status | `PayoutService.create` behavior |
+|---|---|
+| `ACTIVE` | Today's path. The payout is created as `pending`, and we enqueue `payout.created` (event) and `payout.transfer` (Stripe transfer). |
+| `REVIEW`, `SNOOZED` | New path. The payout is created as `held`. We enqueue `payout.created` but **not** `payout.transfer`. The balance reservation is identical to today. |
+| `CREATED`, `DENIED`, `OFFBOARDING`, `BLOCKED` | These are still blocked. The exception is renamed from `OrganizationUnderReview` to `OrganizationCannotPayout`, with a message that matches the actual status (today's message says "under review" for all of them, which has always been incorrect). |
+
+### Sequence diagrams
+
+The three flows below cover the lifecycle of a held payout: request, release on approval, and cancellation.
+
+**1. Request, while the org is in REVIEW or SNOOZED:**
+
+```mermaid
+sequenceDiagram
+    actor M as Merchant
+    participant API as PayoutService
+    participant L as transactions
+    participant P as payouts
+    participant Q as Job queue
+
+    M->>API: POST /v1/payouts/
+    API->>P: SELECT org FOR UPDATE
+    API->>L: get_summary
+    L-->>API: available balance
+    API->>L: create_payout_fees_balances
+    API->>P: INSERT payout (held)
+    API->>L: payout_transaction.create (-amount)
+    API->>Q: enqueue payout.created (event only)
+    API-->>M: 201 Payout
+    Note over API,Q: payout.transfer is NOT enqueued while held
+```
+
+**2. Release on approval (REVIEW or SNOOZED to ACTIVE):**
+
+```mermaid
+sequenceDiagram
+    actor R as Reviewer
+    participant API as PayoutService
+    participant P as payouts
+    participant Q as Job queue
+
+    R->>API: confirm_organization_reviewed
+    API->>P: UPDATE org SET status=ACTIVE
+    API->>Q: enqueue release_held_payouts
+    Q->>API: release job runs
+    API->>P: UPDATE payouts SET status=pending<br/>WHERE status=held<br/>RETURNING id
+    API->>Q: enqueue payout.transfer per id
+    Q->>API: payout.transfer
+    API->>API: transfer_stripe (platform to Connect)
+```
+
+**3. Cancel (org denied, blocked, offboarded, or backoffice cancel):**
+
+```mermaid
+sequenceDiagram
+    actor R as Reviewer
+    participant API as PayoutService
+    participant L as transactions
+    participant P as payouts
+    participant Q as Job queue
+
+    R->>API: deny_organization
+    API->>P: UPDATE org SET status=DENIED
+    API->>Q: enqueue cancel_pending_payouts
+    Q->>API: cancel job runs
+    loop status IN (pending, held)
+        API->>L: payout_transaction.reverse (+amount)
+        API->>L: reverse fee balance rows
+        API->>L: reset payout_transaction_id
+        API->>P: UPDATE payout SET status=canceled
+    end
+    Note over API,L: a held payout never ran a Stripe transfer,<br/>so gross and fees are both returned
+```
+
+### Concurrency
+
+There is one race we have to handle. A merchant could click Withdraw at almost the same time as a reviewer approves the org. If the approval lands between the moment `PayoutService.create` reads the org status and the moment it inserts the payout, the new payout could end up as `held` on an org that is already `ACTIVE`, and nothing would ever release it.
+
+To prevent this, `PayoutService.create` starts with `SELECT ... FOR UPDATE` on the org row. If an approval transaction is in flight, the create waits until the approval commits, then re-reads the org row, sees `status=ACTIVE`, and takes the regular path.
+
+### Balance mechanics
+
+Polar does not store the merchant's "available balance" anywhere. Instead, it is computed on every read by `TransactionService.get_summary`, as a filtered `SUM(amount)` over the `transactions` table. When `PayoutService.create` runs, it writes a few negative-amount rows that reduce that sum right away, whether the payout is `pending` or `held`. The hold does not change ledger behavior at all, it only changes whether we run `payout.transfer`.
+
+On cancellation, we reverse the gross payout amount and the per-payout fees, so the full reserved amount returns to the available balance. Today's cancel path does not reverse the fees, but a held payout never ran a Stripe transfer, so no fee was actually paid to Stripe. Reversing them keeps the merchant whole. The full ledger details are in [Appendix A](#appendix-a-balance-mechanics).
+
+A held payout consumes the `account.payout_interval` cooldown like any other payout. If the payout is canceled, the cooldown clears immediately because `canceled` is excluded from `get_latest_by_account`. We do not send any notification on cancellation as the org review is already communicated by the reviewer via Plain.
+
+We do not enforce a single in-flight payout. The only limit is the 24h cooldown, so a long org review can accumulate more than one held payout. Every held payout has it's own reserved amount, and every held payout is realeased when the org is approved.
+
+### Review-queue boost
+
+We add a new signal `has_held_payouts` to `review_priority.compute(...)`. The signal adds `+25` to the org's priority score per held payout. The boost is additive so an org with strong risk signals but no held payout can still outrank an org with one.
+
+In addition, the backoffice payouts list gets a status badge for `held`, and the "Set Under Review" dialog bullet is rewritten from "Block payouts while the organization is under review" to represent the new behavior (it holds payouts, it does not block them).
+
+### Stuck-hold recovery and SLA
+
+A held payout should only exist while its org is in `REVIEW` or `SNOOZED`, and it should not sit there for long. A normal payout already takes about 3 to 4 days end to end: Stripe makes the transferred funds available after an opaque, country-dependent delay, then the bank settlement takes a few more days. A review hold stacks on top of that. To keep held payouts inside the 4 to 7 business day window merchants already expect, the review should clear within about 2 days. We set the alert at 2 days. A daily Metabase query flags any held payout older than that, whether it is a slow review or a row stuck on a failed job. The full description is in [Appendix B](#appendix-b-stuck-hold-recovery-and-sla).
+
+### Merchant UX
+
+The request flow is the same as today. The Withdraw button, the modal, the estimate, and the confirmation step do not change. The blocker copy in `WithdrawModal` is updated so it no longer says "under review" for everyone, because the blocker now only catches `CREATED`, `DENIED`, `OFFBOARDING` and `BLOCKED`.
+
+Once the payout exists, we do surface the hold. `PayoutStatus.tsx` maps the new `held` value to a distinct "Pending review" pill, with its own color so it reads differently from a normal `pending` payout. On hover, a tooltip gives a short, calm explanation, for example: "We are reviewing this payout. It will be paid out once the review is complete, usually within a couple of days." So the merchant can tell a held payout from a normal one and knows it is on the way, without us exposing the internal review machinery.
+
+The enum value stays `held`; only the merchant-facing label is "Pending review".
+
+Payout endpoints are private and not part of the public SDK, so the `held` status is only visible in the dashboard, never to API integrators.
+
+### Documentation
+
+We need a few small copy edits. Two public doc pages and one frontend component still say payouts are "paused" during review, which is no longer accurate. The edits land in PR 5.
+
+## What ships, in order
+
+| PR | Scope |
+|---|---|
+| 1 | Add `PayoutStatus.held` to the Python enum. Extend the `payout_status_update` trigger guard via an `alembic_utils` revision. No behavior change yet. |
+| 2 | Backend: capability flip, three-way branch in `PayoutService.create` with `SELECT ... FOR UPDATE`, split `payout.created` into an event task plus a new `payout.transfer` task, reverse fees on cancel, repository query fixes (see [Appendix E](#appendix-e-repository-queries-to-fix)), the `OrganizationUnderReview` to `OrganizationCannotPayout` rename plus the test parametrization update, and the release/cancel jobs wired into `confirm_organization_reviewed`, `deny_organization`, `block_organization`, and `set_organization_offboarding`. |
+| 3 | Backoffice: status badge, priority signal, "Release" recovery action, the rewritten "Set Under Review" dialog bullet, and a Metabase question with a daily Slack alert that flags any held payout older than 2 days. |
+| 4 | Frontend: `WithdrawModal` blocker copy, `AIValidationResult` PASS copy, and a new `PayoutStatus` variant for `held` (a "Pending review" label, distinct color, and a hover tooltip). |
+| 5 | Docs: the two public doc pages and the AIValidationResult component copy, plus a changelog entry for the `capabilities.payouts` change. |
+
+PRs 2 to 5 can land in any order after PR 1, with the only constraint that PR 4 lands after PR 2.
+
+On volume: opening the flow to REVIEW and SNOOZED will increase the daily payout volume. Most of that increase will replace support tickets, which moves work from Plain to the backoffice queue, where the held-payout signal pulls the org to the top.
+
+## Open questions
+
+- **Cancellation telemetry.** Should we record a `cancel_reason` enum on every cancellation (`org_denied`, `org_blocked`, `org_offboarded`, `backoffice_manual`)? The value it provides is low.
+- **Naming.** We use `held` for the status. Note Polar already uses "Held balance" and an `on_hold` transaction availability status for balance concepts, so keep the payout `held` status mentally separate from those.
+- **Connect-account swap during the hold window.** `Payout.payout_account_id` is set at creation. If a merchant rebinds their Stripe Connect account while a held payout is sitting, the release flow would transfer to the old account. The proposed behavior is to cancel held payouts on `set_payout_account` and let the merchant request again. Since canceled held payouts now return their fees too, re-requesting does not double-charge. We need to confirm this during PR 2.
+- **Organization-token requests.** The create endpoint is `User`-only today, and the hold flow does not change that. We just want to confirm we are not accidentally widening the surface.
+
+---
+
+## Appendix A: Balance mechanics
+
+### How the available balance is computed
+
+Polar does not have a balance column anywhere. The available balance is computed on demand by `TransactionService.get_summary`, as a filtered `SUM(Transaction.amount)` over the `transactions` table for the merchant's account. A transaction row counts toward the available balance if any of these is true:
+
+- `type == payout`
+- `platform_fee_type IN (account, cross_border_transfer, payout)`
+- `created_at + account.payout_transaction_delay <= now()`
+
+### How `PayoutService.create` deducts the balance
+
+When a merchant requests a payout, `PayoutService.create` writes three groups of rows on the ledger, all before the function returns. This is the same whether the payout ends up as `pending` or `held`.
+
+1. **Fee debits.** `create_payout_fees_balances` ([server/polar/transaction/service/platform_fee.py](server/polar/transaction/service/platform_fee.py)) inserts up to three balance pairs, one per applicable fee (`account`, `cross_border_transfer`, `payout`). Each pair is a merchant-side debit and a Polar-side credit. The merchant-side rows count toward the available balance via the `platform_fee_type` arm.
+2. **The Payout row.** A row is inserted in the `payouts` table with `amount = balance_after_fees` and `fees_amount = balance - balance_after_fees`.
+3. **The payout transaction.** `payout_transaction_service.create` inserts one `Transaction(type=payout, amount=-payout.amount)`. This row counts toward the available balance via the `type == payout` arm.
+
+### What happens on cancel
+
+`PayoutService.cancel` inserts a `payout_reversal` row equal to `+payout.amount`, reverses the fee balance rows from step 1, and unlinks the previously-settled balance rows. This returns the full reserved amount (gross plus fees) to the available balance.
+
+Reversing the fees is a change from today's behavior. We do it because a held payout never ran `payout.transfer`, so no fee was actually paid to Stripe. The reserved fees are only a ledger reservation, and canceling the payout should return them in full. We chose this over deferring fee creation to the release step, because every fee is a row in the `transactions` table and the balance is a `SUM` over them, so reversing on cancel is simpler than moving fee creation around.
+
+---
+
+## Appendix B: Stuck-hold recovery and SLA
+
+**Invariant.** A `held` payout should only exist while its org is in `REVIEW` or `SNOOZED`, and should not stay that way for more than about 2 days. This is enforced by the `SELECT ... FOR UPDATE` in `PayoutService.create`, the release and cancel jobs, and the two safeguards below.
+
+**1. Metabase alert.** A Metabase question runs once a day and posts to the payouts Slack channel if any row comes back:
+
+```sql
+SELECT id, account_id, created_at
+FROM payouts
+WHERE status = 'held'
+  AND created_at < now() - interval '2 days';
+```
+
+The query is intentionally simple: any held payout older than 2 days is either a stuck row or a review that is taking too long. Both cases need a human to look at them, so we route them to the same alert.
+
+**2. Backoffice Release action.** The backoffice payout detail page gets a new "Release" action. It is only available when the payout is `held` and the org is `ACTIVE`. When clicked, it re-enqueues `organization.release_held_payouts` for that one payout. For non-ACTIVE stuck states the right action is Cancel, which is already on the page.
+
+---
+
+## Appendix C: Trigger and schema
+
+`Payout.status` is a `sa.String()` column backed by a Python `StringEnum`, not a Postgres ENUM. This means adding `held` is a code-only change. There is no `ALTER TYPE`, no column rewrite, and no data migration.
+
+The `payout_status_update_trigger` Postgres trigger ([server/polar/models/payout_attempt.py](server/polar/models/payout_attempt.py)) keeps `payouts.status` in sync with the latest `payout_attempt`. It already has one early-return guard preserving `canceled`:
+
+```sql
+IF current_status = 'canceled' THEN
+    RETURN NEW;
+END IF;
+```
+
+PR 1 extends the guard via an `alembic_utils` revision:
+
+```sql
+IF current_status IN ('canceled', 'held') THEN
+    RETURN NEW;
+END IF;
+```
+
+The trigger itself never produces `held`. The new value is only set by application code at creation, and only cleared by application code on release.
+
+---
+
+## Appendix D: Public API contract change
+
+This RFC introduces one change that is observable from the public API. It is not breaking, but it deserves a changelog line so integrators are not surprised.
+
+- **`Organization.capabilities.payouts` flips from `false` to `true` for orgs in REVIEW or SNOOZED.** Any integration that used this field as a proxy for "the org is under review" loses that signal. The correct signal going forward is `Organization.status`, which already exposes `review` and `snoozed` directly.
+
+The new `held` payout status is **not** a public change: payout endpoints are private and not in the SDK.
+
+---
+
+## Appendix E: Repository queries to fix
+
+Both fixes live in [server/polar/payout/repository.py](server/polar/payout/repository.py) and land in PR 2:
+
+- **`get_all_stripe_pending`.** We tighten the status filter from `not_in([canceled, succeeded])` to `== pending`. Otherwise the hourly Stripe-transfer cron picks up `held` rows and wastes one `retrieve_balance` call per hour for each held payout.
+- **`count_pending_by_payout_account`.** We extend the count to also include `held`. Otherwise `PayoutAccountService.delete` would let a merchant delete a payout account that still has funds reserved against it.

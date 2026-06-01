@@ -6,6 +6,7 @@ import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.visibility import Visibility
 from polar.models import (
     Customer,
     Organization,
@@ -14,7 +15,6 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.customer_seat import SeatStatus
-from polar.models.product import ProductVisibility
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -469,7 +469,7 @@ class TestSubscriptionProductUpdate:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            visibility=ProductVisibility.private,
+            visibility=Visibility.private,
         )
         subscription = await create_active_subscription(
             save_fixture,

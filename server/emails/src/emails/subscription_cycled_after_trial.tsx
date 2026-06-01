@@ -11,7 +11,6 @@ export function SubscriptionCycledAfterTrial({
   email,
   organization,
   product,
-  subscription,
   order,
   url,
 }: schemas['SubscriptionCycledAfterTrialProps']) {

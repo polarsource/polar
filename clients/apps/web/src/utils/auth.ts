@@ -96,3 +96,21 @@ export const checkAuthenticationSession = async (
 
   return authenticationSession
 }
+
+export const getAuthenticationSessionRedirectPath = (
+  authenticationSession: schemas['AuthenticationSession'] | null,
+): '/auth/totp' | '/auth/backup-codes' | null => {
+  if (!authenticationSession) {
+    return null
+  }
+
+  if (authenticationSession.available_factors.includes('totp')) {
+    return '/auth/totp'
+  }
+
+  if (authenticationSession.available_factors.includes('backup_codes')) {
+    return '/auth/backup-codes'
+  }
+
+  return null
+}

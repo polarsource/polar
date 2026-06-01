@@ -30,7 +30,7 @@ jobs:
       (github.event_name == 'workflow_dispatch') || (github.event_name == 'workflow_run' &&
 
        github.event.workflow_run.conclusion == 'failure')
-    runs-on: depot-ubuntu-latest # was: blacksmith-4vcpu-ubuntu-2404. Nonstandard GitHub runner label detected, changed to default Depot runner.
+    runs-on: depot-ubuntu-24.04-4 # was: blacksmith-4vcpu-ubuntu-2404 (4 vCPU)
     timeout-minutes: 20
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

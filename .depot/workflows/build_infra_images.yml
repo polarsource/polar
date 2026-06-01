@@ -50,7 +50,7 @@ jobs:
     strategy:
       matrix:
         image: ${{ fromJson(needs.detect.outputs.images) }}
-    runs-on: depot-ubuntu-latest # was: blacksmith-2vcpu-ubuntu-2404. Nonstandard GitHub runner label detected, changed to default Depot runner.
+    runs-on: depot-ubuntu-24.04 # was: blacksmith-2vcpu-ubuntu-2404 (2 vCPU)
     permissions:
       contents: read
       packages: write

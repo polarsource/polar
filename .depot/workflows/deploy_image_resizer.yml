@@ -16,7 +16,7 @@ on:
 jobs:
   deploy:
     name: "Build & Upload Lambda Package"
-    runs-on: depot-ubuntu-latest # was: blacksmith-2vcpu-ubuntu-2404. Nonstandard GitHub runner label detected, changed to default Depot runner.
+    runs-on: depot-ubuntu-24.04 # was: blacksmith-2vcpu-ubuntu-2404 (2 vCPU)
     permissions:
       id-token: write
       contents: read

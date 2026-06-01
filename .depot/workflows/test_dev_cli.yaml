@@ -20,7 +20,7 @@ permissions:
 jobs:
   changes:
     name: "Detect changes"
-    runs-on: depot-ubuntu-latest # was: blacksmith-4vcpu-ubuntu-2404. Nonstandard GitHub runner label detected, changed to default Depot runner.
+    runs-on: depot-ubuntu-24.04-4 # was: blacksmith-4vcpu-ubuntu-2404 (4 vCPU)
     outputs:
       dev_cli: ${{ steps.filter.outputs.dev_cli }}
     steps:
@@ -37,7 +37,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.dev_cli == 'true'
     timeout-minutes: 5
-    runs-on: depot-ubuntu-latest # was: blacksmith-4vcpu-ubuntu-2404. Nonstandard GitHub runner label detected, changed to default Depot runner.
+    runs-on: depot-ubuntu-24.04-4 # was: blacksmith-4vcpu-ubuntu-2404 (4 vCPU)
     steps:
       - uses: actions/checkout@v6
       - name: Install uv

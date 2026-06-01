@@ -24,7 +24,7 @@ permissions:
 jobs:
   changes:
     name: "Detect changes"
-    runs-on: depot-ubuntu-latest # was: blacksmith-4vcpu-ubuntu-2404. Nonstandard GitHub runner label detected, changed to default Depot runner.
+    runs-on: depot-ubuntu-24.04-4 # was: blacksmith-4vcpu-ubuntu-2404 (4 vCPU)
     outputs:
       server: ${{ steps.filter.outputs.server }}
       migrations: ${{ steps.filter.outputs.migrations }}
@@ -46,7 +46,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.lambda == 'true'
     timeout-minutes: 10
-    runs-on: depot-ubuntu-latest # was: blacksmith-2vcpu-ubuntu-2404. Nonstandard GitHub runner label detected, changed to default Depot runner.
+    runs-on: depot-ubuntu-24.04 # was: blacksmith-2vcpu-ubuntu-2404 (2 vCPU)
     strategy:
       matrix:
         lambda: [image-resizer]
@@ -74,7 +74,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.lambda == 'true'
     timeout-minutes: 10
-    runs-on: depot-ubuntu-latest # was: blacksmith-2vcpu-ubuntu-2404. Nonstandard GitHub runner label detected, changed to default Depot runner.
+    runs-on: depot-ubuntu-24.04 # was: blacksmith-2vcpu-ubuntu-2404 (2 vCPU)
     strategy:
       matrix:
         lambda: [image-resizer]

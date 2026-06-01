@@ -22,7 +22,7 @@ permissions:
 jobs:
   fmt:
     name: "Terraform: Lint \U0001F4DD"
-    runs-on: depot-ubuntu-latest # was: blacksmith-2vcpu-ubuntu-2404. Nonstandard GitHub runner label detected, changed to default Depot runner.
+    runs-on: depot-ubuntu-24.04 # was: blacksmith-2vcpu-ubuntu-2404 (2 vCPU)
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6

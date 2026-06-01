@@ -81,6 +81,7 @@
     "nuqs": "^2.8.9",
     "posthog-js": "^1.369.1",
     "posthog-node": "^5.29.2",
+    "react-qr-code": "^2.0.11",
     "react": "19.2.5",
     "react-dom": "19.2.5",
     "react-dropzone": "^14.4.1",

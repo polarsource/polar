@@ -6,11 +6,11 @@
 
 ## Summary
 
-An organization under review cannot request a payout today. Merchants open Plain tickets to escalate the review just to access their money. This RFC removes the block. Orgs in `REVIEW` or `SNOOZED` can request payouts, which are held as `held` until the org is approved, then released automatically. Held payouts also boost their org's review priority. The merchant dashboard does not differentiate held from immediate payouts, the hold is an internal state.
+An organization under review cannot request a payout today. Merchants open Plain tickets to escalate the review just to access their money. This RFC removes the block. Orgs in `REVIEW` or `SNOOZED` can request payouts, which are held as `held` until the org is approved, then released automatically. Held payouts also boost their org's review priority. On the dashboard, a held payout shows a distinct "Pending review" status with a tooltip, so the merchant knows it is on the way.
 
 ## Goals
 
-- REVIEW and SNOOZED orgs can request a payout with the same UX as an ACTIVE org.
+- REVIEW and SNOOZED orgs can request a payout with the same request flow as an ACTIVE org. The resulting payout shows as "Pending review" until it is released.
 - The requested amount is reserved at request time, exactly as it is today for ACTIVE orgs.
 - The Stripe transfer only runs after the org has been approved.
 - A held payout boosts the org's priority in the backoffice review queue.
@@ -136,13 +136,15 @@ In addition, the backoffice payouts list gets a status badge for `held`, and the
 
 A held payout should only exist while its org is in `REVIEW` or `SNOOZED`, and it should not sit there for long. A normal payout already takes about 3 to 4 days end to end: Stripe makes the transferred funds available after an opaque, country-dependent delay, then the bank settlement takes a few more days. A review hold stacks on top of that. To keep held payouts inside the 4 to 7 business day window merchants already expect, the review should clear within about 2 days. We set the alert at 2 days. A daily Metabase query flags any held payout older than that, whether it is a slow review or a row stuck on a failed job. The full description is in [Appendix B](#appendix-b-stuck-hold-recovery-and-sla).
 
-### Merchant UX (transparent)
+### Merchant UX
 
-The merchant dashboard does not differentiate held payouts from normal ones. The Withdraw button, the modal, and the Pending pill in the payouts table are the same. The blocker copy in `WithdrawModal` is updated so it no longer says "under review" for everyone, because the blocker now only catches `CREATED`, `DENIED`, `OFFBOARDING` and `BLOCKED`.
+The request flow is the same as today. The Withdraw button, the modal, the estimate, and the confirmation step do not change. The blocker copy in `WithdrawModal` is updated so it no longer says "under review" for everyone, because the blocker now only catches `CREATED`, `DENIED`, `OFFBOARDING` and `BLOCKED`.
 
-In the frontend, `PayoutStatus.tsx` maps the new `held` value to the same "Pending" label and amber color as `pending`. The merchant sees one status, not two.
+Once the payout exists, we do surface the hold. `PayoutStatus.tsx` maps the new `held` value to a distinct "Pending review" pill, with its own color so it reads differently from a normal `pending` payout. On hover, a tooltip gives a short, calm explanation, for example: "We are reviewing this payout. It will be paid out once the review is complete, usually within a couple of days." So the merchant can tell a held payout from a normal one and knows it is on the way, without us exposing the internal review machinery.
 
-Payout endpoints are private and not part of the public SDK, so the new `held` status is not visible to integrators either. The hold is fully internal: neither the dashboard nor the API exposes it as distinct from a normal pending payout.
+The enum value stays `held`; only the merchant-facing label is "Pending review".
+
+Payout endpoints are private and not part of the public SDK, so the `held` status is only visible in the dashboard, never to API integrators.
 
 ### Documentation
 
@@ -155,7 +157,7 @@ We need a few small copy edits. Two public doc pages and one frontend component 
 | 1 | Add `PayoutStatus.held` to the Python enum. Extend the `payout_status_update` trigger guard via an `alembic_utils` revision. No behavior change yet. |
 | 2 | Backend: capability flip, three-way branch in `PayoutService.create` with `SELECT ... FOR UPDATE`, split `payout.created` into an event task plus a new `payout.transfer` task, reverse fees on cancel, repository query fixes (see [Appendix E](#appendix-e-repository-queries-to-fix)), the `OrganizationUnderReview` to `OrganizationCannotPayout` rename plus the test parametrization update, and the release/cancel jobs wired into `confirm_organization_reviewed`, `deny_organization`, `block_organization`, and `set_organization_offboarding`. |
 | 3 | Backoffice: status badge, priority signal, "Release" recovery action, the rewritten "Set Under Review" dialog bullet, and a Metabase question with a daily Slack alert that flags any held payout older than 2 days. |
-| 4 | Frontend: `WithdrawModal` blocker copy, `AIValidationResult` PASS copy, and the `PayoutStatus` mapping for the new enum value. |
+| 4 | Frontend: `WithdrawModal` blocker copy, `AIValidationResult` PASS copy, and a new `PayoutStatus` variant for `held` (a "Pending review" label, distinct color, and a hover tooltip). |
 | 5 | Docs: the two public doc pages and the AIValidationResult component copy, plus a changelog entry for the `capabilities.payouts` change. |
 
 PRs 2 to 5 can land in any order after PR 1, with the only constraint that PR 4 lands after PR 2.

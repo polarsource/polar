@@ -70,15 +70,14 @@ async def scrape_markdown(url: str) -> ScrapeResult:
         timeout=_SCRAPE_TIMEOUT_MS,
     )
 
-    # The SDK snake_cases the camelCase API. `metadata.url` is the post-redirect
-    # final URL; `metadata.source_url` is the URL we requested. Fall through both
-    # to the requested URL so callers always get a usable value.
+    # `metadata.url` is the final URL after any redirects; fall back to the
+    # requested URL when Firecrawl doesn't report one.
     metadata = doc.metadata
     final_url = url
     status_code: int | None = None
     title: str | None = None
     if metadata is not None:
-        final_url = metadata.url or metadata.source_url or url
+        final_url = metadata.url or url
         status_code = metadata.status_code
         title = metadata.title
 

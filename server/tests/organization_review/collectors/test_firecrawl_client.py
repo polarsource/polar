@@ -16,16 +16,13 @@ def _doc(
     *,
     markdown: str | None = None,
     url: str | None = None,
-    source_url: str | None = None,
     status_code: int | None = None,
     title: str | None = None,
     with_metadata: bool = True,
 ) -> SimpleNamespace:
     """Build a stand-in for firecrawl.v2.types.Document."""
     metadata = (
-        SimpleNamespace(
-            url=url, source_url=source_url, status_code=status_code, title=title
-        )
+        SimpleNamespace(url=url, status_code=status_code, title=title)
         if with_metadata
         else None
     )
@@ -40,12 +37,11 @@ def _patch_client(doc: SimpleNamespace) -> Any:
 
 class TestScrapeMarkdown:
     @pytest.mark.asyncio
-    async def test_prefers_metadata_url_as_final_url(self) -> None:
-        """metadata.url is the post-redirect final URL and wins over source_url."""
+    async def test_uses_metadata_url_as_final_url(self) -> None:
+        """metadata.url is the post-redirect final URL, used in preference to the request."""
         doc = _doc(
             markdown="# Hi",
             url="https://final.example.com/",
-            source_url="https://requested.example.com/",
             status_code=200,
             title="Title",
         )
@@ -68,17 +64,12 @@ class TestScrapeMarkdown:
         assert "timeout" in kwargs
 
     @pytest.mark.asyncio
-    async def test_falls_back_to_source_url_when_url_missing(self) -> None:
-        doc = _doc(
-            markdown="x",
-            url=None,
-            source_url="https://source.example.com/",
-            status_code=200,
-        )
+    async def test_falls_back_to_requested_url_when_metadata_url_missing(self) -> None:
+        doc = _doc(markdown="x", url=None, status_code=200)
         with _patch_client(doc):
             result = await scrape_markdown("https://requested.example.com/")
 
-        assert result.url == "https://source.example.com/"
+        assert result.url == "https://requested.example.com/"
 
     @pytest.mark.asyncio
     async def test_falls_back_to_requested_url_when_metadata_missing(self) -> None:

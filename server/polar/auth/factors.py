@@ -96,11 +96,10 @@ class EmailOTPFactor(EmailOTPFactorBase):
     ) -> None:
         user_repository = UserRepository.from_session(self.session)
         user = await user_repository.get_by_email(request.email)
-        if user is None:
-            return
+        signup = user is None
 
         code, email_otp = await self.create(
-            identity_id=user.id,
+            identity_id=user.id if user else None,
             email=request.email,
             authentication_session_id=authentication_session.id,
         )
@@ -109,7 +108,7 @@ class EmailOTPFactor(EmailOTPFactorBase):
         code_lifetime_minutes = int(ceil(delta / 60))
 
         domain = settings.frontend_hostname
-        subject = "Sign in to Polar"
+        subject = "Sign up to Polar" if signup else "Sign in to Polar"
         enqueue_email_template(
             LoginCodeEmail(
                 props=LoginCodeProps(

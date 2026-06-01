@@ -1,24 +1,24 @@
 import { useAuthSessionStart } from '@/hooks'
 import { usePostHog, type EventName } from '@/hooks/posthog'
 import { useToast } from '@/components/Toast/use-toast'
-import { getPublicServerURL } from '@/utils/api'
-import Apple from '@mui/icons-material/Apple'
+import GitHub from '@mui/icons-material/GitHub'
 import { schemas } from '@polar-sh/client'
 import Button, { type ButtonProps } from '@polar-sh/ui/components/atoms/Button'
+import { getGitHubAuthorizeLoginURL } from '@/utils/auth'
 
-interface AppleLoginButtonProps {
+interface GitHubLoginButtonProps {
   authenticationSession: schemas['AuthenticationSession'] | null
   returnTo?: string
   signup?: boolean
   variant?: ButtonProps['variant']
 }
 
-const AppleLoginButton = ({
+const GitHubLoginButton = ({
   authenticationSession,
   returnTo,
   signup,
   variant,
-}: AppleLoginButtonProps) => {
+}: GitHubLoginButtonProps) => {
   const posthog = usePostHog()
   const authSessionStart = useAuthSessionStart()
   const { toast } = useToast()
@@ -29,7 +29,7 @@ const AppleLoginButton = ({
       eventName = 'global:user:signup:submit'
     }
     posthog.capture(eventName, {
-      method: 'apple',
+      method: 'github',
     })
 
     if (!authenticationSession) {
@@ -44,7 +44,7 @@ const AppleLoginButton = ({
         return
       }
     }
-    window.location.href = `${getPublicServerURL()}/v1/auth/apple/authorize`
+    window.location.href = getGitHubAuthorizeLoginURL()
   }
 
   return (
@@ -54,13 +54,13 @@ const AppleLoginButton = ({
         wrapperClassNames="space-x-2 p-2.5 px-5"
         fullWidth
       >
-        <Apple />
+        <GitHub />
         <div className="w-32 text-left">
-          {signup ? 'Sign up with Apple' : 'Sign in with Apple'}
+          {signup ? 'Sign up with GitHub' : 'Sign in with GitHub'}
         </div>
       </Button>
     </a>
   )
 }
 
-export default AppleLoginButton
+export default GitHubLoginButton

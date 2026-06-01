@@ -1,4 +1,4 @@
-import Auth from '@/app/(main)/auth/Auth'
+import Auth from '@/components/Auth/Auth'
 import { type schemas } from '@polar-sh/client'
 
 interface AuthModalProps {

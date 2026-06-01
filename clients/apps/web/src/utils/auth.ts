@@ -2,19 +2,8 @@ import { getPublicServerURL, getServerURL } from '@/utils/api'
 import { Client, operations, schemas } from '@polar-sh/client'
 import { redirect } from 'next/navigation'
 
-export const getGitHubAuthorizeLoginURL = (
-  params: NonNullable<
-    operations['integrations_github:integrations_github_login:integrations.github.login.authorize']['parameters']['query']
-  >,
-): string => {
-  const searchParams = new URLSearchParams()
-  if (params.return_to) {
-    searchParams.set('return_to', params.return_to)
-  }
-  if (params.attribution) {
-    searchParams.set('attribution', params.attribution)
-  }
-  return `${getPublicServerURL()}/v1/integrations/github/login/authorize?${searchParams}`
+export const getGitHubAuthorizeLoginURL = (): string => {
+  return `${getPublicServerURL()}/v1/auth/github/authorize`
 }
 
 export const getGitHubAuthorizeLinkURL = (return_to?: string): string => {
@@ -25,19 +14,8 @@ export const getGitHubAuthorizeLinkURL = (return_to?: string): string => {
   return `${getPublicServerURL()}/v1/auth/github/link/authorize?${searchParams}`
 }
 
-export const getGoogleAuthorizeLoginURL = (
-  params: NonNullable<
-    operations['integrations_google:integrations_google_login:integrations.google.login.authorize']['parameters']['query']
-  >,
-): string => {
-  const searchParams = new URLSearchParams()
-  if (params.return_to) {
-    searchParams.set('return_to', params.return_to)
-  }
-  if (params.attribution) {
-    searchParams.set('attribution', params.attribution)
-  }
-  return `${getPublicServerURL()}/v1/integrations/google/login/authorize?${searchParams}`
+export const getGoogleAuthorizeLoginURL = (): string => {
+  return `${getPublicServerURL()}/v1/auth/google/authorize`
 }
 
 export const getGoogleAuthorizeLinkURL = (return_to?: string): string => {
@@ -48,19 +26,8 @@ export const getGoogleAuthorizeLinkURL = (return_to?: string): string => {
   return `${getPublicServerURL()}/v1/auth/google/link/authorize?${searchParams}`
 }
 
-export const getAppleAuthorizeURL = (
-  params: NonNullable<
-    operations['integrations_apple:integrations.apple.authorize']['parameters']['query']
-  >,
-): string => {
-  const searchParams = new URLSearchParams()
-  if (params.return_to) {
-    searchParams.set('return_to', params.return_to)
-  }
-  if (params.attribution) {
-    searchParams.set('attribution', params.attribution)
-  }
-  return `${getPublicServerURL()}/v1/integrations/apple/authorize?${searchParams}`
+export const getAppleAuthorizeURL = (): string => {
+  return `${getPublicServerURL()}/v1/auth/apple/authorize`
 }
 
 export const getBotDiscordAuthorizeURL = (

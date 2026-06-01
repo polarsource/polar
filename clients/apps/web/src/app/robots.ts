@@ -15,7 +15,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/dashboard/', '/login/', '/auth/', '/verify-email/'],
+      disallow: ['/dashboard/', '/auth/', '/verify-email/'],
     },
     sitemap: 'https://polar.sh/sitemap.xml',
   }

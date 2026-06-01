@@ -890,7 +890,7 @@ class TestBrowsePageFirecrawl:
             response = await browse_page(ctx, "https://example.com/")
 
         assert "off-origin" in response
-        assert "evil.com" in response
+        assert "https://evil.com/landing" in response
         assert deps.pages_visited == []
 
     @pytest.mark.asyncio

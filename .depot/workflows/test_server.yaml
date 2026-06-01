@@ -181,13 +181,13 @@ jobs:
     name: "Server: Tests \U0001F40D"
     needs: changes
     if: needs.changes.outputs.server == 'true'
-    runs-on: depot-ubuntu-24.04-4 # was: blacksmith-4vcpu-ubuntu-2404 (4 vCPU)
+    runs-on: depot-ubuntu-24.04-8 # 8 vCPU — testing whether more cores offsets Depot's slower per-core speed
     timeout-minutes: 15
     env:
       POLAR_ENV: testing
       POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
-      # Depot sandbox affinity reports 2 CPUs; force xdist to use the full 4-vCPU runner
-      PYTEST_XDIST_AUTO_NUM_WORKERS: "4"
+      # Depot sandbox affinity under-reports CPUs; force xdist to use all 8 vCPUs
+      PYTEST_XDIST_AUTO_NUM_WORKERS: "8"
     services:
       postgres:
         image: postgres:15.1-bullseye

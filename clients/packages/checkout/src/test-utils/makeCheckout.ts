@@ -44,6 +44,7 @@ export function createCustomPrice(
     minimum_amount: 500,
     maximum_amount: null,
     preset_amount: 1500,
+    merchant_priced: false,
     ...overrides,
   }
 }

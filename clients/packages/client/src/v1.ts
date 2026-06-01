@@ -25928,7 +25928,13 @@ export interface components {
      * PayoutStatus
      * @enum {string}
      */
-    PayoutStatus: 'pending' | 'in_transit' | 'succeeded' | 'failed' | 'canceled'
+    PayoutStatus:
+      | 'pending'
+      | 'in_transit'
+      | 'succeeded'
+      | 'failed'
+      | 'canceled'
+      | 'held'
     /**
      * PendingSubscriptionUpdate
      * @description Pending update to be applied to a subscription at the beginning of the next period.
@@ -57178,7 +57184,7 @@ export const payoutSortPropertyValues: ReadonlyArray<
 ]
 export const payoutStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PayoutStatus']
-> = ['pending', 'in_transit', 'succeeded', 'failed', 'canceled']
+> = ['pending', 'in_transit', 'succeeded', 'failed', 'canceled', 'held']
 export const platformFeeTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PlatformFeeType']
 > = [

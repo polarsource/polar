@@ -20,6 +20,8 @@ const statusColors: Record<
   'green' | 'yellow' | 'red' | 'blue'
 > = {
   pending: 'blue',
+  // `held` is an internal state; render it like a regular pending payout.
+  held: 'blue',
   in_transit: 'yellow',
   succeeded: 'green',
   failed: 'red',

@@ -4,7 +4,10 @@ import { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import Auth from '@/components/Auth/Auth'
 import { getServerSideAPI } from '@/utils/client/serverside'
-import { checkAuthenticationSession } from '@/utils/auth'
+import {
+  checkAuthenticationSession,
+  getAuthenticationSessionRedirectPath,
+} from '@/utils/auth'
 import { schemas } from '@polar-sh/client'
 import { redirect } from 'next/navigation'
 
@@ -23,11 +26,11 @@ export default async function Page(props: {
   const authenticationSession = await checkAuthenticationSession(api)
   const searchParams = await props.searchParams
 
-  if (
-    authenticationSession &&
-    authenticationSession.available_factors.includes('totp')
-  ) {
-    redirect('/auth/totp')
+  const redirectPath = getAuthenticationSessionRedirectPath(
+    authenticationSession,
+  )
+  if (redirectPath) {
+    redirect(redirectPath)
   }
 
   const { return_to } = searchParams

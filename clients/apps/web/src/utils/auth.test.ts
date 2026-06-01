@@ -1,6 +1,9 @@
-import type { Client } from '@polar-sh/client'
+import type { Client, schemas } from '@polar-sh/client'
 import { describe, expect, it, vi } from 'vitest'
-import { checkAuthenticationSession } from './auth'
+import {
+  checkAuthenticationSession,
+  getAuthenticationSessionRedirectPath,
+} from './auth'
 
 const makeApi = (
   status: number,
@@ -15,6 +18,13 @@ const makeApi = (
       response: { ok, status, headers: new Headers() },
     }),
   }) as unknown as Client
+
+const makeAuthenticationSession = (
+  available_factors: schemas['Factor'][],
+): schemas['AuthenticationSession'] =>
+  ({
+    available_factors,
+  }) as schemas['AuthenticationSession']
 
 describe('checkAuthenticationSession', () => {
   it('returns null on 429 instead of throwing', async () => {
@@ -37,5 +47,33 @@ describe('checkAuthenticationSession', () => {
         makeApi(401, false, { error: 'InvalidAuthenticationSession' }),
       ),
     ).resolves.toBeNull()
+  })
+})
+
+describe('getAuthenticationSessionRedirectPath', () => {
+  it('returns null when there is no authentication session', () => {
+    expect(getAuthenticationSessionRedirectPath(null)).toBeNull()
+  })
+
+  it('redirects to TOTP when available', () => {
+    expect(
+      getAuthenticationSessionRedirectPath(makeAuthenticationSession(['totp'])),
+    ).toBe('/auth/totp')
+  })
+
+  it('redirects to backup codes when that is the only available step-1 factor', () => {
+    expect(
+      getAuthenticationSessionRedirectPath(
+        makeAuthenticationSession(['backup_codes']),
+      ),
+    ).toBe('/auth/backup-codes')
+  })
+
+  it('prioritizes TOTP when both TOTP and backup codes are available', () => {
+    expect(
+      getAuthenticationSessionRedirectPath(
+        makeAuthenticationSession(['backup_codes', 'totp']),
+      ),
+    ).toBe('/auth/totp')
   })
 })

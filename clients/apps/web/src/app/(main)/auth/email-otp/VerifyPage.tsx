@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 
 const VerifyPage = ({ intent = 'login' }: { intent?: 'login' | 'signup' }) => {
@@ -28,7 +28,10 @@ const VerifyPage = ({ intent = 'login' }: { intent?: 'login' | 'signup' }) => {
   const router = useRouter()
 
   const [loading, setLoading] = useState(false)
+  const submittingRef = useRef(false)
   const onSubmit: SubmitHandler<{ code: string }> = async ({ code }) => {
+    if (submittingRef.current) return
+    submittingRef.current = true
     setLoading(true)
     try {
       const { error } = await emailOTPVerify.mutateAsync(code)
@@ -47,6 +50,7 @@ const VerifyPage = ({ intent = 'login' }: { intent?: 'login' | 'signup' }) => {
       })
     } finally {
       setLoading(false)
+      submittingRef.current = false
     }
   }
 

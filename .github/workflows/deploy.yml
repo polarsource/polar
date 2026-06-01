@@ -15,36 +15,168 @@ on:
 concurrency:
   group: build-deploy
 
+# Tag-update jobs in deploy-environment.yml need contents: write to push
+# deployed/{component}-{environment} tags. Declared here at the workflow
+# level because a reusable workflow's per-job permissions are capped by
+# the caller's effective token scope.
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   changes:
     name: "Detect Changes 🔍"
     runs-on: ubuntu-latest
+    # Read-only: this job only checks out, fetches tags, and runs paths-filter.
+    # Narrow it explicitly so it doesn't inherit the workflow-level
+    # contents: write (which exists only for the tag-push jobs).
+    permissions:
+      contents: read
     outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      frontend: ${{ steps.filter.outputs.frontend }}
-      migrations: ${{ steps.filter.outputs.migrations }}
+      # Per-component-per-environment outputs: each diffs HEAD against the
+      # SHA of the last successful deploy for that component + environment
+      # (tracked via deployed/{component}-{environment} git tags). Falls
+      # back to HEAD~1 if no tag exists and the push has no parent SHA.
+      #
+      # Why per-env: sandbox can be ahead of production (failed prod deploy
+      # leaves sandbox tag advanced while prod tag stays). Each env needs its
+      # own diff base to compute its own pending changes correctly.
+      #
+      # Why per-component: a frontend-only push must not advance the backend
+      # tag, otherwise a later cancelled backend run's commits would be lost.
+      # Crucially, the frontend FILTER must use the frontend tag (not backend
+      # tag) as its base — otherwise a frontend deploy that failed after a
+      # successful backend deploy would be permanently dropped from future
+      # diffs (its pending frontend changes sit "before" the backend tag).
+      # This is why each component has its own paths-filter invocation.
+      backend-sandbox: ${{ steps.filter-backend-sandbox.outputs.backend }}
+      migrations-sandbox: ${{ steps.filter-backend-sandbox.outputs.migrations }}
+      frontend-sandbox: ${{ steps.filter-frontend-sandbox.outputs.frontend }}
+      backend-production: ${{ steps.filter-backend-production.outputs.backend }}
+      migrations-production: ${{ steps.filter-backend-production.outputs.migrations }}
+      frontend-production: ${{ steps.filter-frontend-production.outputs.frontend }}
     steps:
       - uses: actions/checkout@v6
-      - uses: dorny/paths-filter@v4
-        id: filter
         with:
+          # fetch-depth: 0 already fetches all tags, so no separate
+          # fetch-tags is needed here.
+          fetch-depth: 0
+
+      - name: Resolve deploy bases from tags
+        id: bases
+        env:
+          # github.event.before is the parent SHA before this push. On
+          # workflow_dispatch it is empty; on the very first push to a
+          # branch it can be the zero SHA. Bind via env to avoid any
+          # template-into-shell interpolation in the run: body.
+          EVENT_BEFORE: ${{ github.event.before }}
+          ZERO_SHA: "0000000000000000000000000000000000000000"
+        run: |
+          set -euo pipefail
+          # Bash command substitution does NOT propagate set -e failures by
+          # default; without this, a transient git failure inside resolve()
+          # would silently emit "key=" (empty value) instead of aborting.
+          shopt -s inherit_errexit
+          # Re-fetch tags with prune so a remote-side deletion drops the
+          # local copy (defensive against cached/self-hosted runners).
+          # Non-fatal: checkout (fetch-depth: 0) already fetched all tags, so
+          # this is belt-and-suspenders. A transient failure here must NOT
+          # abort the changes job, otherwise it would block ALL deploys.
+          git fetch --tags --force --prune --prune-tags origin || true
+          # Resolve the safe fallback once. We prefer event.before, but on
+          # workflow_dispatch / new-branch pushes it's empty or zero-SHA;
+          # fall back to HEAD~1 which always exists on a fetch-depth: 0
+          # checkout. Last resort: HEAD itself (zero diff vs HEAD, lets the
+          # workflow_dispatch override paths take over downstream).
+          fallback_base() {
+            if [ -n "${EVENT_BEFORE}" ] \
+               && [ "${EVENT_BEFORE}" != "${ZERO_SHA}" ] \
+               && git rev-parse --verify --quiet "${EVENT_BEFORE}^{commit}" >/dev/null; then
+              echo "${EVENT_BEFORE}"
+            elif git rev-parse --verify --quiet "HEAD~1^{commit}" >/dev/null; then
+              git rev-parse "HEAD~1"
+            else
+              git rev-parse "HEAD"
+            fi
+          }
+          FALLBACK="$(fallback_base)"
+          resolve() {
+            local tag="$1"
+            if git rev-parse --verify --quiet "refs/tags/${tag}^{commit}" >/dev/null; then
+              git rev-parse "refs/tags/${tag}^{commit}"
+            else
+              echo "${FALLBACK}"
+            fi
+          }
+          {
+            echo "backend-sandbox=$(resolve deployed/backend-sandbox)"
+            echo "frontend-sandbox=$(resolve deployed/frontend-sandbox)"
+            echo "backend-production=$(resolve deployed/backend-production)"
+            echo "frontend-production=$(resolve deployed/frontend-production)"
+          } >> "$GITHUB_OUTPUT"
+
+      # Four paths-filter invocations: one per component per env. We can't
+      # combine them because dorny/paths-filter@v4 uses a single base for
+      # all filters in one invocation, but our design requires the frontend
+      # filter to diff against the frontend tag, not the backend tag.
+      - name: Detect backend changes since last sandbox backend deploy
+        uses: dorny/paths-filter@v4
+        id: filter-backend-sandbox
+        with:
+          base: ${{ steps.bases.outputs.backend-sandbox }}
           filters: |
             backend:
               - 'server/**'
               - '.github/workflows/deploy.yml'
               - '.github/workflows/deploy-environment.yml'
               - '.github/workflows/deploy_server.sh'
+            migrations:
+              - 'server/migrations/**'
+
+      - name: Detect frontend changes since last sandbox frontend deploy
+        uses: dorny/paths-filter@v4
+        id: filter-frontend-sandbox
+        with:
+          base: ${{ steps.bases.outputs.frontend-sandbox }}
+          filters: |
             frontend:
               - 'clients/**'
               - '.github/workflows/deploy.yml'
               - '.github/workflows/deploy-environment.yml'
+
+      - name: Detect backend changes since last production backend deploy
+        uses: dorny/paths-filter@v4
+        id: filter-backend-production
+        with:
+          base: ${{ steps.bases.outputs.backend-production }}
+          filters: |
+            backend:
+              - 'server/**'
+              - '.github/workflows/deploy.yml'
+              - '.github/workflows/deploy-environment.yml'
+              - '.github/workflows/deploy_server.sh'
             migrations:
               - 'server/migrations/**'
+
+      - name: Detect frontend changes since last production frontend deploy
+        uses: dorny/paths-filter@v4
+        id: filter-frontend-production
+        with:
+          base: ${{ steps.bases.outputs.frontend-production }}
+          filters: |
+            frontend:
+              - 'clients/**'
+              - '.github/workflows/deploy.yml'
+              - '.github/workflows/deploy-environment.yml'
 
   build:
     name: "Build Docker Image 🐳"
     needs: changes
-    if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+    # Build if EITHER environment needs backend deployed. Most common case is
+    # both flip together (sandbox and prod tags advance in lockstep), but if a
+    # sandbox deploy succeeded and prod failed previously, only prod still
+    # needs the build.
+    if: needs.changes.outputs.backend-sandbox == 'true' || needs.changes.outputs.backend-production == 'true' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 20
     runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
@@ -122,7 +254,11 @@ jobs:
   deploy-sandbox:
     name: "Deploy to Sandbox 🧪"
     needs: [changes, build]
-    if: always() && (needs.build.result == 'success' || needs.build.result == 'skipped') && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch')
+    # `!failure() && !cancelled()` mirrors deploy-production: if the `changes`
+    # job fails, `build` is skipped (no `if: always()`), and on a
+    # workflow_dispatch the OR-clause below would otherwise let this job run
+    # with an EMPTY docker-digest. Guarding on !failure() blocks that path.
+    if: always() && !failure() && !cancelled() && (needs.build.result == 'success' || needs.build.result == 'skipped') && (needs.changes.outputs.backend-sandbox == 'true' || needs.changes.outputs.frontend-sandbox == 'true' || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/deploy-environment.yml
     with:
       environment: sandbox
@@ -131,9 +267,9 @@ jobs:
       render-worker-service-ids: "srv-d62q7vh4tr6s73fk44ng,srv-d733cp15pdvs73f6vqng,srv-d7unnjhj2pic73c2vr60"
       docker-digest-playwright: ${{ needs.build.outputs.digest-playwright }}
       render-playwright-worker-service-ids: "srv-d089jj7diees73934kgg"
-      has-migrations: ${{ needs.changes.outputs.migrations == 'true' || github.event_name == 'workflow_dispatch' }}
-      skip-backend: ${{ needs.changes.outputs.backend != 'true' && github.event_name != 'workflow_dispatch' }}
-      skip-frontend: ${{ needs.changes.outputs.frontend != 'true' && github.event_name != 'workflow_dispatch' }}
+      has-migrations: ${{ needs.changes.outputs.migrations-sandbox == 'true' || github.event_name == 'workflow_dispatch' }}
+      skip-backend: ${{ needs.changes.outputs.backend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
+      skip-frontend: ${{ needs.changes.outputs.frontend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
     secrets:
       RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -145,7 +281,7 @@ jobs:
   deploy-production:
     name: "Deploy to Production 🚀"
     needs: [changes, build, deploy-sandbox]
-    if: always() && !failure() && !cancelled() && (needs.build.result == 'success' || needs.build.result == 'skipped') && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch')
+    if: always() && !failure() && !cancelled() && (needs.build.result == 'success' || needs.build.result == 'skipped') && (needs.changes.outputs.backend-production == 'true' || needs.changes.outputs.frontend-production == 'true' || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/deploy-environment.yml
     with:
       environment: production
@@ -154,9 +290,9 @@ jobs:
       render-worker-service-ids: "srv-d4k62svpm1nc73af5e3g,srv-d3hrh1j3fgac73a1t4r0,srv-d4uto5ili9vc73dd37tg,srv-d5l0oekhg0os73clofm0,srv-d733djuuk2gs73e98h1g,srv-d7us9je7r5hc73be5ieg"
       docker-digest-playwright: ${{ needs.build.outputs.digest-playwright }}
       render-playwright-worker-service-ids: "srv-d4k6otfgi27c73cicnpg"
-      has-migrations: ${{ needs.changes.outputs.migrations == 'true' || github.event_name == 'workflow_dispatch' }}
-      skip-backend: ${{ needs.changes.outputs.backend != 'true' && github.event_name != 'workflow_dispatch' }}
-      skip-frontend: ${{ needs.changes.outputs.frontend != 'true' && github.event_name != 'workflow_dispatch' }}
+      has-migrations: ${{ needs.changes.outputs.migrations-production == 'true' || github.event_name == 'workflow_dispatch' }}
+      skip-backend: ${{ needs.changes.outputs.backend-production != 'true' && github.event_name != 'workflow_dispatch' }}
+      skip-frontend: ${{ needs.changes.outputs.frontend-production != 'true' && github.event_name != 'workflow_dispatch' }}
     secrets:
       RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}

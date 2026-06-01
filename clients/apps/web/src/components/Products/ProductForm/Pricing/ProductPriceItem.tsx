@@ -24,17 +24,14 @@ import { ProductPriceCustomItem } from './ProductPriceCustomItem'
 import { ProductPriceFixedItem } from './ProductPriceFixedItem'
 import { ProductPriceMeteredUnitItem } from './ProductPriceMeteredUnitItem'
 import { ProductPriceSeatBasedItem } from './ProductPriceSeatBasedItem'
-import { hasPriceCurrency, ProductPrice, ProductPriceCreate } from './utils'
+import { hasPriceCurrency, PriceTypeOption, ProductPrice } from './utils'
 
 interface ProductPriceItemProps {
   organization: schemas['Organization']
   index: number
   currency: string
   onRemove: (index: number) => void
-  onAmountTypeChange: (
-    index: number,
-    amountType: ProductPriceCreate['amount_type'],
-  ) => void
+  onAmountTypeChange: (index: number, amountType: PriceTypeOption) => void
   canRemove: boolean
 }
 
@@ -48,7 +45,13 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
 }) => {
   const { register, control, watch } = useFormContext<ProductFormType>()
   const amountType = watch(`prices.${index}.amount_type`)
+  const merchantPriced = watch(`prices.${index}.merchant_priced`)
   const recurringInterval = watch('recurring_interval')
+
+  // "Set on order" is a custom price flagged as merchant-priced. Surface it as a
+  // distinct option in the selector even though it shares the `custom` amount_type.
+  const selectedOption: PriceTypeOption | undefined =
+    amountType === 'custom' && merchantPriced ? 'set_on_order' : amountType
 
   const prices = watch('prices')
   const pricesForCurrency = (prices || []).filter(
@@ -93,14 +96,10 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                 <div className="flex flex-row items-center gap-2">
                   <FormControl>
                     <Select
-                      value={field.value}
-                      onValueChange={(v) => {
-                        field.onChange(v)
-                        onAmountTypeChange(
-                          index,
-                          v as ProductPriceCreate['amount_type'],
-                        )
-                      }}
+                      value={selectedOption}
+                      onValueChange={(v) =>
+                        onAmountTypeChange(index, v as PriceTypeOption)
+                      }
                     >
                       <SelectTrigger ref={field.ref}>
                         <SelectValue placeholder="Select a price type" />
@@ -110,6 +109,11 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                         <SelectItem value="custom">
                           Pay what you want
                         </SelectItem>
+                        {recurringInterval === null && (
+                          <SelectItem value="set_on_order">
+                            Set on order
+                          </SelectItem>
+                        )}
                         <SelectItem value="free">Free</SelectItem>
                         {organization.feature_settings
                           ?.seat_based_pricing_enabled && (

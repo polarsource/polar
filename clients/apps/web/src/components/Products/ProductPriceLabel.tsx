@@ -68,7 +68,11 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
     }
     return null
   } else if (staticPrice.amount_type === 'custom') {
-    return <div className="text-[min(1em,24px)]">Pay what you want</div>
+    return (
+      <div className="text-[min(1em,24px)]">
+        {staticPrice.merchant_priced ? 'Set on order' : 'Pay what you want'}
+      </div>
+    )
   } else {
     return <div className="text-[min(1em,24px)]">Free</div>
   }

@@ -551,6 +551,7 @@ async def create_product_price_custom(
     minimum_amount: int = 50,
     maximum_amount: int | None = None,
     preset_amount: int | None = None,
+    merchant_priced: bool = False,
     currency: str = "usd",
     tax_behavior: TaxBehavior | None = None,
 ) -> ProductPriceCustom:
@@ -560,6 +561,7 @@ async def create_product_price_custom(
         minimum_amount=minimum_amount,
         maximum_amount=maximum_amount,
         preset_amount=preset_amount,
+        merchant_priced=merchant_priced,
         product=product,
     )
     await save_fixture(price)

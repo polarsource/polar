@@ -378,6 +378,8 @@ class CheckoutService:
                     ]
                 ) from e
 
+        self._assert_purchasable_price(price, ("body",))
+
         if not product.organization.can_authenticate:
             raise NotPermitted()
 
@@ -712,6 +714,8 @@ class CheckoutService:
 
         price = currency_prices.get_default_price()
         currency = currency_prices.currency
+
+        self._assert_purchasable_price(price, ("body", "products"))
 
         amount = 0
         seats = None
@@ -1420,6 +1424,32 @@ class CheckoutService:
 
         return checkout
 
+    def _assert_purchasable_price(
+        self, price: ProductPrice, loc: tuple[str | int, ...]
+    ) -> None:
+        """
+        Merchant-priced custom prices are charged exclusively through the
+        off-session order API, where the merchant sets the amount at order
+        creation. They must never back a customer-facing checkout — otherwise the
+        amount would silently default to 0. Reject them at every checkout
+        price-resolution point.
+        """
+        if is_custom_price(price) and price.merchant_priced:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": loc,
+                        "msg": (
+                            "This price is set by the merchant at order creation "
+                            "and can only be charged through the off-session order "
+                            "API; it cannot be used in a checkout."
+                        ),
+                        "input": str(price.id),
+                    }
+                ]
+            )
+
     async def _get_validated_price(
         self,
         session: AsyncSession,
@@ -2121,6 +2151,7 @@ class CheckoutService:
         checkout_update: CheckoutUpdate | CheckoutUpdatePublic | CheckoutConfirmStripe,
         price: ProductPrice,
     ) -> Checkout:
+        self._assert_purchasable_price(price, ("body", "product_id"))
         checkout.product_price = price
         checkout.amount = 0
         checkout.seats = None

@@ -22,7 +22,10 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
   index,
   currency,
 }) => {
-  const { control, setValue, getValues } = useFormContext<ProductFormType>()
+  const { control, setValue, getValues, watch } =
+    useFormContext<ProductFormType>()
+
+  const merchantPriced = watch(`prices.${index}.merchant_priced`)
 
   const validatePWYWAmount = (
     value: number | null | undefined,
@@ -38,6 +41,17 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
     }
 
     return 'Must be 0 (for free) or a positive amount'
+  }
+
+  // "Set on order": the merchant decides the amount when creating the order, so
+  // there are no customer-facing minimum / suggested amounts to configure.
+  if (merchantPriced) {
+    return (
+      <p className="dark:text-polar-500 text-sm text-gray-500">
+        You set the amount when you create the order. This product can only be
+        charged off-session via the API, so it must stay private.
+      </p>
+    )
   }
 
   return (

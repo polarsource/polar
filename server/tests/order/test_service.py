@@ -118,6 +118,7 @@ from tests.fixtures.random_objects import (
     create_payment,
     create_payment_method,
     create_product,
+    create_product_price_custom,
     create_subscription,
     create_trialing_subscription,
     create_wallet,
@@ -5237,41 +5238,168 @@ class TestCreateDraftOrder:
         assert order.subtotal_amount > 0
         assert len(order.items) >= 1
 
-    async def test_custom_price_below_minimum_rejected(
+    async def test_pay_what_you_want_product_rejected(
         self,
         session: AsyncSession,
         off_session_organization: Organization,
         product_one_time_custom_price: Product,
         customer: Customer,
     ) -> None:
-        # The custom-price fixture has a minimum_amount of 50.
+        # A regular pay-what-you-want (non merchant-priced) product is not a
+        # fixed-price or set-on-order product, so it can't be charged off-session.
         payload = OrderCreate(
             customer_id=customer.id,
             product_id=product_one_time_custom_price.id,
-            amount=10,
+            amount=100,
         )
         with pytest.raises(PolarRequestValidationError):
             await order_service.create_draft_order(
                 session, off_session_organization, payload
             )
 
-    async def test_custom_price_within_bounds(
+    async def _create_set_on_order_product(
         self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        *,
+        currencies: tuple[str, ...] = ("usd",),
+    ) -> Product:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[],
+        )
+        for currency in currencies:
+            await create_product_price_custom(
+                save_fixture,
+                product=product,
+                minimum_amount=0,
+                merchant_priced=True,
+                currency=currency,
+            )
+        # The price relationships were populated empty at product creation;
+        # refresh so `product.prices` reflects the prices we just added.
+        await session.refresh(product, attribute_names=["prices", "all_prices"])
+        return product
+
+    async def test_set_on_order_requires_amount(
+        self,
+        save_fixture: SaveFixture,
         session: AsyncSession,
         off_session_organization: Organization,
-        product_one_time_custom_price: Product,
         customer: Customer,
     ) -> None:
+        product = await self._create_set_on_order_product(
+            save_fixture, session, off_session_organization
+        )
+        payload = OrderCreate(customer_id=customer.id, product_id=product.id)
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_set_on_order_zero_amount_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # A set-on-order charge can't be 0 (it would fail at finalize); the amount
+        # must be at least the currency minimum.
+        product = await self._create_set_on_order_product(
+            save_fixture, session, off_session_organization
+        )
         payload = OrderCreate(
-            customer_id=customer.id,
-            product_id=product_one_time_custom_price.id,
-            amount=100,
+            customer_id=customer.id, product_id=product.id, amount=0
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_set_on_order_with_amount(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await self._create_set_on_order_product(
+            save_fixture, session, off_session_organization
+        )
+        payload = OrderCreate(
+            customer_id=customer.id, product_id=product.id, amount=4200
         )
         order = await order_service.create_draft_order(
             session, off_session_organization, payload
         )
         assert order.status == OrderStatus.draft
-        assert order.subtotal_amount == 100
+        assert order.subtotal_amount == 4200
+
+    async def test_multi_currency_requires_currency(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await self._create_set_on_order_product(
+            save_fixture, session, off_session_organization, currencies=("usd", "eur")
+        )
+        payload = OrderCreate(
+            customer_id=customer.id, product_id=product.id, amount=4200
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_multi_currency_with_currency(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await self._create_set_on_order_product(
+            save_fixture, session, off_session_organization, currencies=("usd", "eur")
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+            amount=4200,
+            currency="eur",
+        )
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+        assert order.status == OrderStatus.draft
+        assert order.currency == "eur"
+        assert order.subtotal_amount == 4200
+
+    async def test_unknown_currency_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await self._create_set_on_order_product(
+            save_fixture, session, off_session_organization
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+            amount=4200,
+            currency="gbp",
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
 
     async def test_custom_field_data_validated_against_product(
         self,

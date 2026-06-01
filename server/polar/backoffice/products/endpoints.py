@@ -33,6 +33,8 @@ def _format_price_display(price: ProductPrice) -> str:
     if is_free_price(price):
         return "Free"
     elif is_custom_price(price):
+        if price.merchant_priced:
+            return "Set on order"
         parts = []
         if price.minimum_amount is not None:
             parts.append(

@@ -297,15 +297,23 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
     product_id: UUID4 = Field(
         description="The ID of the one-time product to charge for. "
         "Must belong to the order's organization. "
-        "Subscription products and seat-based products are not supported."
+        "Only fixed-price and set-on-order products are supported."
+    )
+    currency: str | None = Field(
+        None,
+        description=(
+            "The currency to charge in (ISO 4217, lowercase, e.g. `usd`). "
+            "**Required when the product has prices in more than one currency**; "
+            "otherwise the product's single currency is used."
+        ),
     )
     amount: int | None = Field(
         None,
         ge=0,
         description=(
-            "Amount in the smallest currency unit. Required for "
-            "pay-what-you-want / custom-priced products; ignored otherwise. "
-            "Must respect the price's configured minimum and maximum."
+            "Amount in the smallest currency unit. **Required for set-on-order "
+            "products** (the merchant sets the amount); ignored for fixed-price "
+            "products."
         ),
     )
 

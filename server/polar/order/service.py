@@ -53,7 +53,7 @@ from polar.integrations.stripe.service import (
     stripe as stripe_service,
 )
 from polar.invoice.service import invoice as invoice_service
-from polar.kit.currency import get_minimum_currency_amount
+from polar.kit.currency import format_currency, get_minimum_currency_amount
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
@@ -95,11 +95,11 @@ from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.product.guard import (
     is_custom_price,
+    is_fixed_price,
     is_seat_price,
     is_static_price,
 )
 from polar.product.price_set import (
-    NoPricesForCurrencies,
     PriceSet,
     validate_custom_price_amount,
 )
@@ -696,11 +696,27 @@ class OrderService:
                             {
                                 "type": "value_error",
                                 "loc": ("body", "amount"),
-                                "msg": (
-                                    "Amount is required for "
-                                    "pay-what-you-want / custom-priced products."
-                                ),
+                                "msg": "Amount is required for set-on-order products.",
                                 "input": None,
+                            }
+                        ]
+                    )
+                # Unlike a customer-facing pay-what-you-want price, a set-on-order
+                # charge can't be 0: it must be a real, chargeable amount or the
+                # off-session charge would be rejected at finalize.
+                currency_minimum = get_minimum_currency_amount(currency)
+                if payload.amount < currency_minimum:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "greater_than_equal",
+                                "loc": ("body", "amount"),
+                                "msg": (
+                                    "Amount must be at least "
+                                    f"{format_currency(currency_minimum, currency)}."
+                                ),
+                                "input": payload.amount,
+                                "ctx": {"ge": currency_minimum},
                             }
                         ]
                     )
@@ -871,6 +887,42 @@ class OrderService:
                 ]
             )
 
+        # Off-session charges only support fixed-price and set-on-order
+        # (merchant-priced) products — the amount must be either predetermined or
+        # supplied by the merchant, never chosen by the customer.
+        static_prices = [price for price in product.prices if is_static_price(price)]
+        if not static_prices:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product has no chargeable static prices.",
+                        "input": payload.product_id,
+                    }
+                ]
+            )
+        if any(
+            not (
+                is_fixed_price(price)
+                or (is_custom_price(price) and price.merchant_priced)
+            )
+            for price in static_prices
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": (
+                            "Off-session charges only support fixed-price and "
+                            "set-on-order products."
+                        ),
+                        "input": payload.product_id,
+                    }
+                ]
+            )
+
         customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_id_and_organization(
             payload.customer_id, organization.id
@@ -887,23 +939,46 @@ class OrderService:
                 ]
             )
 
-        currency = organization.default_presentment_currency
-        try:
-            currency_prices = PriceSet.from_product(product, currency)
-        except NoPricesForCurrencies as e:
+        # Resolve the charge currency. When the product is priced in more than
+        # one currency, the merchant must say which one to use.
+        available_currencies = sorted(
+            {price.price_currency for price in static_prices}
+        )
+        if payload.currency is not None:
+            requested_currency = payload.currency.lower()
+            if requested_currency not in available_currencies:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "currency"),
+                            "msg": (
+                                "Product has no price in currency "
+                                f"'{requested_currency}'."
+                            ),
+                            "input": payload.currency,
+                        }
+                    ]
+                )
+            currency = requested_currency
+        elif len(available_currencies) > 1:
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_id"),
+                        "loc": ("body", "currency"),
                         "msg": (
-                            "Product has no chargeable prices in the "
-                            f"organization currency ({currency})."
+                            "This product is priced in multiple currencies; "
+                            "specify the currency to charge in."
                         ),
-                        "input": payload.product_id,
+                        "input": None,
                     }
                 ]
-            ) from e
+            )
+        else:
+            currency = available_currencies[0]
+
+        currency_prices = PriceSet.from_product(product, currency)
 
         self._validate_purchase_pricing(currency_prices, payload, currency)
         items = list(
@@ -911,17 +986,6 @@ class OrderService:
                 currency_prices, amount=payload.amount, seats=None
             )
         )
-        if not items:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_id"),
-                        "msg": "Product has no chargeable static prices.",
-                        "input": payload.product_id,
-                    }
-                ]
-            )
 
         # Validate custom field values against the product's attached fields,
         # same as the checkout path. Unknown keys are dropped and values are

@@ -623,6 +623,23 @@ class ProductService:
                             }
                         )
                         continue
+                if (
+                    is_custom_price(price)
+                    and price.merchant_priced
+                    and recurring_interval is not None
+                ):
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": (*error_prefix, index),
+                            "msg": (
+                                "Merchant-priced ('set on order') pricing is only "
+                                "supported on one-time products."
+                            ),
+                            "input": price_schema,
+                        }
+                    )
+                    continue
                 if is_metered_price(price) and isinstance(
                     price_schema, ProductPriceMeteredCreateBase
                 ):

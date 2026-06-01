@@ -107,6 +107,7 @@ from tests.fixtures.random_objects import (
     create_customer,
     create_discount,
     create_product,
+    create_product_price_custom,
     create_product_price_fixed,
     create_product_price_seat_unit,
     create_subscription,
@@ -527,6 +528,47 @@ class TestCreate:
                     product_price_id=product_one_time_custom_price.prices[0].id,
                     amount=amount,
                 ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_merchant_priced_price_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        # A merchant-priced ("set on order") price can only be charged through the
+        # off-session order API, never via a checkout.
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[],
+        )
+        price = await create_product_price_custom(
+            save_fixture,
+            product=product,
+            minimum_amount=0,
+            merchant_priced=True,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutPriceCreate(product_price_id=price.id),
+                auth_subject,
+            )
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutProductCreate(product_id=product.id),
                 auth_subject,
             )
 

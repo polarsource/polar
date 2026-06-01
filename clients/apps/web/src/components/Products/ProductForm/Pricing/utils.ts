@@ -6,6 +6,14 @@ export type ProductPriceCreate = schemas['ProductCreate']['prices'][number]
 export type AnyPrice = NonNullable<ProductFormType['prices']>[number]
 export type PriceEntry = { price: AnyPrice; index: number }
 
+/**
+ * The options shown in the per-price "Price Type" selector. `set_on_order` is a
+ * virtual option (not a real `amount_type`): it maps to a custom price with
+ * `merchant_priced` set, i.e. the merchant decides the amount at order-creation
+ * time for off-session charges.
+ */
+export type PriceTypeOption = ProductPriceCreate['amount_type'] | 'set_on_order'
+
 export const hasPriceCurrency = (
   price: AnyPrice,
 ): price is AnyPrice & { price_currency: string } => {

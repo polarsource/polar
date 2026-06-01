@@ -75,7 +75,7 @@ export const ProductCustomerPortalSection = ({
                       </div>
                       <p className="dark:text-polar-500 text-sm text-gray-500">
                         {isMerchantPriced
-                          ? 'Not available for arbitrary-price products'
+                          ? 'Not available when the price is set on order'
                           : 'Shown in the Customer Portal'}
                       </p>
                     </Label>

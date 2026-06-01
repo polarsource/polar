@@ -756,6 +756,33 @@ class TestCreate:
             )
 
     @pytest.mark.auth
+    async def test_merchant_priced_rejected_on_recurring(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(
+                session,
+                ProductCreateRecurring(
+                    name="Merchant-priced recurring",
+                    recurring_interval=SubscriptionRecurringInterval.month,
+                    visibility=ProductVisibility.private,
+                    prices=[
+                        ProductPriceCustomCreate(
+                            amount_type=ProductPriceAmountType.custom,
+                            merchant_priced=True,
+                            price_currency=PresentmentCurrency.usd,
+                        ),
+                    ],
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
     async def test_invalid_metered_not_existing_meter(
         self,
         auth_subject: AuthSubject[User],

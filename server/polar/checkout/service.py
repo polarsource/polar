@@ -61,6 +61,7 @@ from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
+from polar.kit.visibility import Visibility
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
@@ -74,7 +75,6 @@ from polar.models import (
     PaymentMethod,
     Product,
     ProductPrice,
-    ProductVisibility,
     Subscription,
     User,
 )
@@ -662,10 +662,7 @@ class CheckoutService:
     ) -> Checkout:
         products: list[Product] = []
         for product in checkout_link.products:
-            if (
-                not product.is_archived
-                and product.visibility != ProductVisibility.draft
-            ):
+            if not product.is_archived and product.visibility != Visibility.draft:
                 products.append(product)
 
         if len(products) == 0:
@@ -1518,7 +1515,7 @@ class CheckoutService:
                 ]
             )
 
-        if product.visibility == ProductVisibility.draft:
+        if product.visibility == Visibility.draft:
             raise PolarRequestValidationError(
                 [
                     {
@@ -1586,7 +1583,7 @@ class CheckoutService:
                 )
                 continue
 
-            if product.visibility == ProductVisibility.draft:
+            if product.visibility == Visibility.draft:
                 errors.append(
                     {
                         "type": "value_error",

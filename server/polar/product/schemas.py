@@ -45,6 +45,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
+from polar.kit.visibility import Visibility
 from polar.meter.unit import MeterUnit
 from polar.models.product import ProductVisibility
 from polar.models.product_price import (
@@ -402,7 +403,7 @@ class ProductCreateBase(MetadataInputMixin, Schema):
     name: ProductName
     description: ProductDescription = None
     visibility: ProductVisibility = Field(
-        default=ProductVisibility.public,
+        default=Visibility.public,
         description="The visibility of the product.",
     )
     prices: ProductPriceCreateList = Field(

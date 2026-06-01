@@ -12,13 +12,13 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
+from polar.kit.visibility import Visibility
 from polar.models import (
     Organization,
     Product,
     Subscription,
     SubscriptionMeter,
 )
-from polar.models.product import ProductVisibility
 from polar.models.subscription import CustomerCancellationReason
 from polar.subscription.service import subscription as subscription_service
 
@@ -196,7 +196,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             session,
             subscription,
             product_id=product_id,
-            allowed_visibilities=frozenset({ProductVisibility.public}),
+            allowed_visibilities=frozenset({Visibility.public}),
         )
 
     async def uncancel(

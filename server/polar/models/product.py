@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 from uuid import UUID
 
 from alembic_utils.pg_function import PGFunction
@@ -26,7 +26,9 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
 from polar.kit.metadata import MetadataMixin
+from polar.kit.schemas import SetSchemaReference
 from polar.kit.trial import TrialConfigurationMixin
+from polar.kit.visibility import Visibility, VisibilityMixin
 from polar.models.product_price import ProductPriceAmountType, ProductPriceType
 from polar.tax.calculation import TaxCode
 
@@ -48,13 +50,12 @@ class ProductBillingType(StrEnum):
     recurring = "recurring"
 
 
-class ProductVisibility(StrEnum):
-    draft = "draft"
-    private = "private"
-    public = "public"
+# Alias over the shared `Visibility` enum that keeps the public OpenAPI/SDK
+# component named `ProductVisibility` for backwards compatibility.
+ProductVisibility = Annotated[Visibility, SetSchemaReference("ProductVisibility")]
 
 
-class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
+class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordModel):
     __tablename__ = "products"
     __table_args__ = (
         Index(
@@ -69,11 +70,6 @@ class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    visibility: Mapped[ProductVisibility] = mapped_column(
-        StringEnum(ProductVisibility),
-        nullable=False,
-        default=ProductVisibility.public,
-    )
     recurring_interval: Mapped[SubscriptionRecurringInterval | None] = mapped_column(
         StringEnum(SubscriptionRecurringInterval),
         nullable=True,

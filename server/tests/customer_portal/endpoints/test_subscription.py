@@ -4,8 +4,8 @@ import pytest
 from httpx import AsyncClient
 
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.visibility import Visibility
 from polar.models import Customer, Member, Organization, Product, Subscription
-from polar.models.product import ProductVisibility
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import (
@@ -89,7 +89,7 @@ class TestCustomerSubscriptionProductUpdate:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            visibility=ProductVisibility.private,
+            visibility=Visibility.private,
         )
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",

@@ -30,17 +30,25 @@ class OrderItem(RecordModel):
     __tablename__ = "order_items"
 
     label: Mapped[str] = mapped_column(String, nullable=False)
-    amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
+    amount: Mapped[int] = mapped_column("amount_v2", BigInteger, nullable=True)
+    net_amount: Mapped[int] = mapped_column("net_amount_v2", BigInteger, nullable=True)
+    tax_amount: Mapped[int] = mapped_column("tax_amount_v2", BigInteger, nullable=True)
+
+    # Legacy int4 columns retained while the dual-column sync trigger is active.
+    # Deferred so they never appear in default SELECTs. No default — that
+    # would force SQLAlchemy to include the column in every INSERT, which
+    # would break running pods once the cleanup migration drops the column.
+    # The bidirectional trigger fills these from the v2 columns on INSERT,
+    # so the NOT NULL constraints on legacy columns are still satisfied even
+    # when ORM code only sets the (v2-backed) primary attributes.
+    legacy_amount: Mapped[int] = mapped_column(
+        "amount", Integer, nullable=False, deferred=True
     )
-    net_amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    net_amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
+    legacy_net_amount: Mapped[int] = mapped_column(
+        "net_amount", Integer, nullable=False, deferred=True
     )
-    tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    tax_amount_v2: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
+    legacy_tax_amount: Mapped[int] = mapped_column(
+        "tax_amount", Integer, nullable=False, deferred=True
     )
     proration: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     order_id: Mapped[UUID] = mapped_column(

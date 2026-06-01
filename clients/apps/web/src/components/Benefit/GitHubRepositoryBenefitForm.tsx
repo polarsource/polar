@@ -23,7 +23,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { usePathname } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 
 interface GitHubRepositoryBenefitFormProps {
@@ -57,9 +57,14 @@ export const GitHubRepositoryBenefitForm = ({
 
   useEffect(() => {
     if (repositoriesError) {
+      const errorDetail = repositoriesError.error
       setError('properties.repository_owner', {
-        message: repositoriesError.error['detail'] as string | undefined,
-        type: repositoriesError.error['type'] as string | undefined,
+        message: errorDetail
+          ? (errorDetail['detail'] as string | undefined)
+          : 'Failed to load repositories.',
+        type: errorDetail
+          ? (errorDetail['type'] as string | undefined)
+          : undefined,
       })
     } else {
       clearErrors('properties.repository_owner')
@@ -162,10 +167,10 @@ export const GitHubRepositoryBenefitForm = ({
   }, [formRepoOwner, repositories, clearErrors, setError])
 
   // Set selected on load
-  const didSetOnLoad = useRef(false)
+  const [didSetOnLoad, setDidSetOnLoad] = useState(false)
   /* eslint-disable react-hooks/set-state-in-effect -- one-time form init when repositories load */
   useEffect(() => {
-    if (didSetOnLoad.current || isFetchingRepositories) {
+    if (didSetOnLoad || isFetchingRepositories) {
       return
     }
 
@@ -178,14 +183,17 @@ export const GitHubRepositoryBenefitForm = ({
     ) {
       const key = `${defaultProperties.repository_owner}/${defaultProperties.repository_name}`
       const repo = repos.find((r) => r.key === key)
+      setDidSetOnLoad(true)
       if (repo) {
-        didSetOnLoad.current = true
         onRepositoryChange(key, (v: string) =>
           setValue('properties.repository_name', v),
         )
       }
+    } else {
+      setDidSetOnLoad(true)
     }
   }, [
+    didSetOnLoad,
     repositories?.repositories,
     isFetchingRepositories,
     defaultValues,
@@ -256,8 +264,7 @@ export const GitHubRepositoryBenefitForm = ({
                 <FormLabel>Repository</FormLabel>
               </div>
               <div className="flex items-center gap-2">
-                {(update && selectedRepository?.key === undefined) ||
-                isFetchingRepositories ? (
+                {(update && !didSetOnLoad) || isFetchingRepositories ? (
                   <FormControl>
                     <Select disabled={true}>
                       <SelectTrigger>

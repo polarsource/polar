@@ -298,10 +298,10 @@ export const config = {
      * - ingest (Posthog)
      * - monitoring (Sentry)
      * - docs, _mintlify, mintlify-assets (Mintlify)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
+     * - assets (static asset files)
+     * - _next (Next.js internals: static files, image optimization, data)
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
      */
-    '/((?!api|fonts|ingest|monitoring|docs|_mintlify|mintlify-assets|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
+    '/((?!api|fonts|ingest|monitoring|docs|_mintlify|mintlify-assets|assets|_next|favicon.ico|sitemap.xml|robots.txt).*)',
   ],
 }

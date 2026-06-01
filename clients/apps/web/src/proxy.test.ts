@@ -130,6 +130,16 @@ describe('proxy matcher configuration', () => {
     ).toBe(false)
   })
 
+  it('should NOT run for static asset routes', () => {
+    expect(
+      unstable_doesMiddlewareMatch({
+        config,
+        nextConfig,
+        url: '/assets/images/logo.png',
+      }),
+    ).toBe(false)
+  })
+
   it('should NOT run for favicon', () => {
     expect(
       unstable_doesMiddlewareMatch({

@@ -197,3 +197,20 @@ class TestGraduatedPricing:
         assert price.calculate_amount(5) == 0
         assert price.calculate_amount(8) == 3 * 1000
         assert price.calculate_amount(15) == 10 * 1000
+
+    def test_first_tier_min_seats_above_one(self) -> None:
+        # Regression for T-28449: a merchant enforcing a 10-seat minimum sets the
+        # first tier's min_seats to 10. The first 10 seats should all be priced at
+        # the first tier's rate ($200/seat = $2000), then cheaper after.
+        # Reproduces the exact sandbox config of product 231d03ca.
+        price = _make_seat_price(
+            [
+                {"min_seats": 10, "max_seats": 10, "price_per_seat": 20000},
+                {"min_seats": 11, "max_seats": None, "price_per_seat": 6000},
+            ],
+            SeatTierType.graduated,
+        )
+        # All 10 seats fall in the first tier.
+        assert price.calculate_amount(10) == 10 * 20000
+        # 10 at first tier + 5 at second tier.
+        assert price.calculate_amount(15) == 10 * 20000 + 5 * 6000

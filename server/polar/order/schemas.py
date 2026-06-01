@@ -297,7 +297,7 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
     product_id: UUID4 = Field(
         description="The ID of the one-time product to charge for. "
         "Must belong to the order's organization. "
-        "Subscription products are not supported."
+        "Subscription products and seat-based products are not supported."
     )
     amount: int | None = Field(
         None,
@@ -307,11 +307,6 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
             "pay-what-you-want / custom-priced products; ignored otherwise. "
             "Must respect the price's configured minimum and maximum."
         ),
-    )
-    seats: int | None = Field(
-        None,
-        ge=1,
-        description="Number of seats, for seat-based products.",
     )
 
 

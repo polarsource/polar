@@ -5176,6 +5176,28 @@ class TestCreateDraftOrder:
                 session, off_session_organization, payload
             )
 
+    async def test_seat_based_product_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=off_session_organization,
+            recurring_interval=None,
+            prices=[("seat", 1000, "usd")],
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
     async def test_unknown_customer_rejected(
         self,
         session: AsyncSession,

@@ -705,20 +705,6 @@ class OrderService:
                         ]
                     )
                 validate_custom_price_amount(price, payload.amount, currency)
-            if is_seat_price(price) and (payload.seats is None or payload.seats <= 0):
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "seats"),
-                            "msg": (
-                                "Positive seats count is required for "
-                                "seat-based products."
-                            ),
-                            "input": payload.seats,
-                        }
-                    ]
-                )
 
     async def _create_order_from_checkout(
         self,
@@ -870,6 +856,20 @@ class OrderService:
                     }
                 ]
             )
+        if product.has_seat_based_price:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": (
+                            "Seat-based products are not supported by the "
+                            "off-session charge API."
+                        ),
+                        "input": payload.product_id,
+                    }
+                ]
+            )
 
         customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_id_and_organization(
@@ -908,7 +908,7 @@ class OrderService:
         self._validate_purchase_pricing(currency_prices, payload, currency)
         items = list(
             self._build_static_order_items(
-                currency_prices, amount=payload.amount, seats=payload.seats
+                currency_prices, amount=payload.amount, seats=None
             )
         )
         if not items:
@@ -986,7 +986,7 @@ class OrderService:
                 user_metadata=payload.metadata,
                 custom_field_data=custom_field_data,
                 items=items,
-                seats=payload.seats,
+                seats=None,
             ),
             flush=True,
         )

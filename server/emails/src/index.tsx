@@ -16,9 +16,8 @@ program
         console.error(`Template ${template} not found`)
         process.exit(1)
       }
-      render(<TemplateComponent {...parsedProps} />).then((html) =>
-        console.log(html),
-      )
+      const Component = TemplateComponent as React.FC<Record<string, unknown>>
+      render(<Component {...parsedProps} />).then((html) => console.log(html))
     } catch (error) {
       console.error('Error parsing JSON string:', error)
       process.exit(1)

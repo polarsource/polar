@@ -11,7 +11,6 @@ export function SubscriptionFinalInvoice({
   email,
   organization,
   product,
-  subscription,
   order,
   url,
 }: schemas['SubscriptionFinalInvoiceProps']) {

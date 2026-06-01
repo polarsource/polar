@@ -12,7 +12,6 @@ export function SubscriptionUpdated({
   email,
   organization,
   product,
-  subscription,
   order,
   url,
 }: schemas['SubscriptionUpdatedProps']) {

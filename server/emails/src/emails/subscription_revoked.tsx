@@ -10,7 +10,6 @@ export function SubscriptionRevoked({
   email,
   organization,
   product,
-  subscription,
   url,
 }: schemas['SubscriptionRevokedProps']) {
   return (

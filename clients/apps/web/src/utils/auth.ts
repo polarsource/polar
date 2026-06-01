@@ -63,7 +63,17 @@ export const checkAuthenticationSession = async (
     response,
   } = await api.GET('/v1/auth/status')
 
-  // Handle 429 errors which return empty responses and no error object
+  // A 429 (rate limited) returns an empty body with no structured error. We
+  // can't determine the auth session, so treat it as "no active session" and
+  // let the page render the login form instead of throwing. This matters
+  // because the proxy redirects a rate-limited user to /auth, so /auth itself
+  // must not 500 on the same rate-limit.
+  if (response.status === 429) {
+    return null
+  }
+
+  // Any other unexpected non-OK response (e.g. 5xx) also has no structured
+  // error object; surface it loudly.
   if (!response.ok && !error) {
     throw new Error(
       `Unexpected response from /v1/auth/status: ${response.status}`,

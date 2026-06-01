@@ -231,7 +231,7 @@ _SANDBOX_RULES: dict[str, Sequence[Rule]] = {
         Rule(group=RateLimitGroup.default, minute=100, zone="api"),
         Rule(group=RateLimitGroup.web, second=50, zone="api"),
         Rule(group=RateLimitGroup.elevated, second=50, zone="api"),
-        Rule(group=RateLimitGroup.pending_auth, minute=10, zone="api"),
+        Rule(group=RateLimitGroup.pending_auth, minute=60, zone="api"),
     ],
 }
 
@@ -242,7 +242,7 @@ _PRODUCTION_RULES: dict[str, Sequence[Rule]] = {
         Rule(group=RateLimitGroup.default, minute=500, zone="api"),
         Rule(group=RateLimitGroup.web, second=100, zone="api"),
         Rule(group=RateLimitGroup.elevated, second=100, zone="api"),
-        Rule(group=RateLimitGroup.pending_auth, minute=10, zone="api"),
+        Rule(group=RateLimitGroup.pending_auth, minute=60, zone="api"),
     ],
 }
 

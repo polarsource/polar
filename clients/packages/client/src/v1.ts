@@ -21991,6 +21991,11 @@ export interface components {
        * @description Amount in the smallest currency unit. **Required for set-on-order products** (the merchant sets the amount); ignored for fixed-price products.
        */
       amount?: number | null
+      /**
+       * Description
+       * @description A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Only supported for set-on-order products; defaults to the product name.
+       */
+      description?: string | null
     }
     /** OrderCustomer */
     OrderCustomer: {

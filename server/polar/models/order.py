@@ -16,6 +16,7 @@ from sqlalchemy import (
     String,
     Uuid,
     func,
+    inspect,
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
@@ -30,6 +31,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
 from polar.models.order_item import OrderItem
+from polar.models.product_price import ProductPriceCustom
 from polar.tax.calculation import TaxBreakdownItem
 from polar.tax.tax_id import TaxID, TaxIDType
 
@@ -407,6 +409,17 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @property
     def description(self) -> str:
+        # For set-on-order charges the merchant authors the line-item label
+        # (e.g. "5,000 tokens") at order creation; surface it as the summary too.
+        # Guard against the price not being loaded (it's lazy="raise_on_sql").
+        first_item = self.items[0] if self.items else None
+        if (
+            first_item is not None
+            and "product_price" not in inspect(first_item).unloaded
+        ):
+            price = first_item.product_price
+            if isinstance(price, ProductPriceCustom) and price.merchant_priced:
+                return first_item.label
         if self.product is not None:
             return self.product.name
         return self.items[0].label

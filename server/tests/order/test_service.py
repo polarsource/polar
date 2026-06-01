@@ -5338,6 +5338,50 @@ class TestCreateDraftOrder:
         )
         assert order.status == OrderStatus.draft
         assert order.subtotal_amount == 4200
+        # No description provided: line item and summary fall back to product name.
+        assert order.items[0].label == product.name
+        assert order.description == product.name
+
+    async def test_set_on_order_custom_description(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await self._create_set_on_order_product(
+            save_fixture, session, off_session_organization
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+            amount=4200,
+            description="5,000 tokens",
+        )
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+        # The line item (rendered on invoice/receipt) uses the custom description,
+        # and so does the order summary.
+        assert order.items[0].label == "5,000 tokens"
+        assert order.description == "5,000 tokens"
+
+    async def test_description_rejected_for_fixed_price(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+            description="5,000 tokens",
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
 
     async def test_multi_currency_requires_currency(
         self,

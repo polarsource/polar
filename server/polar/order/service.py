@@ -660,6 +660,7 @@ class OrderService:
         *,
         amount: int | None,
         seats: int | None,
+        label: str | None = None,
     ) -> Sequence[OrderItem]:
         """
         Build order line items for the static prices of a product.
@@ -668,15 +669,21 @@ class OrderService:
         (pay-what-you-want) prices use `amount`; seat-based prices use `seats`.
         Callers are responsible for validating that `amount` / `seats` are
         present when the product requires them.
+
+        `label` overrides the line item's description (defaults to the product
+        name); used for set-on-order charges where the merchant names what was
+        purchased at order-creation time.
         """
         items: list[OrderItem] = []
         for price in prices:
             if not is_static_price(price):
                 continue
             if is_custom_price(price):
-                items.append(OrderItem.from_price(price, 0, amount))
+                items.append(OrderItem.from_price(price, 0, amount, label=label))
             else:
-                items.append(OrderItem.from_price(price, 0, seats=seats))
+                items.append(
+                    OrderItem.from_price(price, 0, seats=seats, label=label)
+                )
         return items
 
     def _validate_purchase_pricing(
@@ -923,6 +930,28 @@ class OrderService:
                 ]
             )
 
+        # A custom line-item description only makes sense when the merchant is
+        # authoring the charge — i.e. for set-on-order products. For fixed-price
+        # products the amount and label are predetermined.
+        is_set_on_order = any(
+            is_custom_price(price) and price.merchant_priced
+            for price in static_prices
+        )
+        if payload.description is not None and not is_set_on_order:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "description"),
+                        "msg": (
+                            "A custom description is only supported for "
+                            "set-on-order products."
+                        ),
+                        "input": payload.description,
+                    }
+                ]
+            )
+
         customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_id_and_organization(
             payload.customer_id, organization.id
@@ -983,7 +1012,10 @@ class OrderService:
         self._validate_purchase_pricing(currency_prices, payload, currency)
         items = list(
             self._build_static_order_items(
-                currency_prices, amount=payload.amount, seats=None
+                currency_prices,
+                amount=payload.amount,
+                seats=None,
+                label=payload.description,
             )
         )
 

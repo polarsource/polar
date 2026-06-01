@@ -8,6 +8,7 @@ from pydantic import (
     Field,
     computed_field,
     field_serializer,
+    field_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
 
@@ -316,6 +317,23 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
             "products."
         ),
     )
+    description: str | None = Field(
+        None,
+        max_length=500,
+        description=(
+            "A custom description for the order's line item, shown on the "
+            "invoice and receipt (e.g. `5,000 tokens`). Only supported for "
+            "set-on-order products; defaults to the product name."
+        ),
+    )
+
+    @field_validator("description")
+    @classmethod
+    def strip_description(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        return value or None
 
 
 class OrderUpdateBase(Schema):

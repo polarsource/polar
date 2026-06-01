@@ -1,0 +1,75 @@
+'use client'
+
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import Link from 'next/link'
+import type { Insight, InsightCategory } from './types'
+import { twMerge } from 'tailwind-merge'
+
+const categoryColor: Record<InsightCategory, string> = {
+  growth: 'bg-green-500',
+  product: 'bg-indigo-500',
+  retention: 'bg-teal-500',
+  revenue: 'bg-green-500',
+  risk: 'bg-red-500',
+}
+
+export const InsightCard = ({
+  insight,
+  onDismiss,
+}: {
+  insight: Insight
+  onDismiss: () => void
+}) => {
+  return (
+    <Box
+      as="article"
+      display="flex"
+      flexDirection="column"
+      rowGap="xl"
+      height="100%"
+      justifyContent="between"
+    >
+      <Box display="flex" flexDirection="column" rowGap="l">
+        <Box display="flex" alignItems="center" columnGap="m">
+          <div
+            className={twMerge(
+              'size-2 rounded-full',
+              categoryColor[insight.category],
+            )}
+          />
+          <Text variant="body">{insight.categoryLabel}</Text>
+        </Box>
+        <Text variant="heading-xxs" as="h3" wrap="balance">
+          {insight.title}
+        </Text>
+        <Text color="muted">{insight.body}</Text>
+      </Box>
+
+      <Box
+        display="flex"
+        flexDirection="row"
+        flexWrap="wrap"
+        alignItems="center"
+        columnGap="xl"
+        rowGap="s"
+      >
+        {insight.primaryAction && (
+          <Link href={insight.primaryAction.href}>
+            <Button variant="secondary" size="sm">
+              {insight.primaryAction.label}
+            </Button>
+          </Link>
+        )}
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="dark:hover:text-polar-200 cursor-pointer bg-transparent p-0 text-xs text-gray-500 hover:text-gray-700"
+        >
+          Dismiss
+        </button>
+      </Box>
+    </Box>
+  )
+}

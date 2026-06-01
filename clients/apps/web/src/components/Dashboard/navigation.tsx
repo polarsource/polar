@@ -7,6 +7,7 @@ import DiamondOutlined from '@mui/icons-material/DiamondOutlined'
 import DiscountOutlined from '@mui/icons-material/DiscountOutlined'
 import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
 import HiveOutlined from '@mui/icons-material/HiveOutlined'
+import InsightsOutlined from '@mui/icons-material/InsightsOutlined'
 import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined'
 import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
@@ -231,6 +232,16 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
     link: `/dashboard/${org?.slug}/customers`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org?.slug}/customers`)
+    },
+    if: true,
+  },
+  {
+    id: 'insights',
+    title: 'Insights',
+    icon: <InsightsOutlined fontSize="inherit" />,
+    link: `/dashboard/${org?.slug}/insights`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/dashboard/${org?.slug}/insights`)
     },
     if: true,
   },

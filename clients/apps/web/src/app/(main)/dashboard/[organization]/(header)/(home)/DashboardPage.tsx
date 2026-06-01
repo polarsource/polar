@@ -1,6 +1,7 @@
 'use client'
 
 import { OverviewSection } from '@/components/DashboardOverview/OverviewSection'
+import { InsightsWidget } from '@/components/Insights/InsightsWidget'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { PlanUpsell } from '@/components/Upsell/PlanUpsell'
 import { AccountWidget } from '@/components/Widgets/AccountWidget'
@@ -22,6 +23,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
       <PlanUpsell organization={organization} />
       <OrganizationStatusBanner organization={organization} />
       <OverviewSection organization={organization} />
+      <InsightsWidget organization={organization} limit={3} />
 
       <div className="dark:border-polar-700 overflow-hidden rounded-xl border border-gray-200">
         <div className="grid grid-cols-1 [clip-path:inset(1px_1px_1px_1px)] lg:grid-cols-3">

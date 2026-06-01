@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, ForeignKey, String, Uuid
+from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
@@ -27,7 +27,9 @@ class Meter(RecordModel, MetadataMixin):
     custom_label: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
     )
-    custom_multiplier: Mapped[int | None] = mapped_column(nullable=True, default=None)
+    custom_multiplier: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True, default=None
+    )
     filter: Mapped[Filter] = mapped_column(FilterType, nullable=False)
     aggregation: Mapped[Aggregation] = mapped_column(AggregationType, nullable=False)
     last_billed_event_id: Mapped[UUID | None] = mapped_column(

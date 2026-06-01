@@ -116,9 +116,9 @@ class FilterClause(BaseModel):
         elif self.operator == FilterOperator.lte:
             return attr <= value
         elif self.operator == FilterOperator.like:
-            return attr.like(f"%{value}%")
+            return attr.contains(value, autoescape=True)
         elif self.operator == FilterOperator.not_like:
-            return attr.notlike(f"%{value}%")
+            return ~attr.contains(value, autoescape=True)
         raise ValueError(f"Unsupported operator: {self.operator}")
 
     def _get_str_value(self) -> str:

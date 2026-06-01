@@ -332,6 +332,87 @@ class TestFilter:
         assert len(matching_events) == 1
         assert matching_events[0].id == events[1].id
 
+    async def test_like_treats_wildcards_as_literal(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """`_` must be matched literally, not as a SQL LIKE wildcard, so the
+        SQL path agrees with `FilterClause.matches()`."""
+        literal_match = await create_event(
+            save_fixture, organization=organization, name="api_test"
+        )
+        wildcard_only = await create_event(
+            save_fixture, organization=organization, name="apiXtest"
+        )
+
+        clause = FilterClause(
+            property="name", operator=FilterOperator.like, value="api_test"
+        )
+        filter = Filter(conjunction=FilterConjunction.and_, clauses=[clause])
+
+        repository = EventRepository.from_session(session)
+        statement = repository.get_base_statement().where(filter.get_sql_clause(Event))
+        matching_events = await repository.get_all(statement)
+
+        assert {e.id for e in matching_events} == {literal_match.id}
+        assert clause.matches(literal_match) is True
+        assert clause.matches(wildcard_only) is False
+
+    async def test_not_like_treats_wildcards_as_literal(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        literal_match = await create_event(
+            save_fixture, organization=organization, name="api_test"
+        )
+        wildcard_only = await create_event(
+            save_fixture, organization=organization, name="apiXtest"
+        )
+
+        clause = FilterClause(
+            property="name", operator=FilterOperator.not_like, value="api_test"
+        )
+        filter = Filter(conjunction=FilterConjunction.and_, clauses=[clause])
+
+        repository = EventRepository.from_session(session)
+        statement = repository.get_base_statement().where(filter.get_sql_clause(Event))
+        matching_events = await repository.get_all(statement)
+
+        assert {e.id for e in matching_events} == {wildcard_only.id}
+        assert clause.matches(literal_match) is False
+        assert clause.matches(wildcard_only) is True
+
+    async def test_like_treats_percent_as_literal_in_metadata(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """`%` must be matched literally on metadata properties too."""
+        literal_match = await create_event(
+            save_fixture, organization=organization, metadata={"path": "/a%b"}
+        )
+        wildcard_only = await create_event(
+            save_fixture, organization=organization, metadata={"path": "/axxb"}
+        )
+
+        clause = FilterClause(
+            property="path", operator=FilterOperator.like, value="a%b"
+        )
+        filter = Filter(conjunction=FilterConjunction.and_, clauses=[clause])
+
+        repository = EventRepository.from_session(session)
+        statement = repository.get_base_statement().where(filter.get_sql_clause(Event))
+        matching_events = await repository.get_all(statement)
+
+        assert {e.id for e in matching_events} == {literal_match.id}
+        assert clause.matches(literal_match) is True
+        assert clause.matches(wildcard_only) is False
+
 
 class TestFilterClauseMatches:
     def test_matches_name_eq(self, organization: Organization) -> None:

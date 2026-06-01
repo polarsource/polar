@@ -368,3 +368,11 @@ resource "tfe_variable" "plain_default_tier_external_id_sandbox" {
   sensitive       = false
   variable_set_id = tfe_variable_set.sandbox.id
 }
+
+resource "tfe_variable" "firecrawl_api_key_sandbox" {
+  key             = "firecrawl_api_key"
+  category        = "terraform"
+  description     = "Firecrawl Cloud API key for sandbox"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}

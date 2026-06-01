@@ -3,7 +3,9 @@ from __future__ import annotations
 import asyncio
 import functools
 import re
+import time
 from dataclasses import dataclass, field
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import httpx
@@ -17,6 +19,7 @@ from polar.kit.http import SSRFBlockedError, resolve_and_validate_ip
 from polar.observability.baggage import organization_baggage
 
 from ..schemas import UsageInfo, WebsiteData, WebsitePage
+from .firecrawl_client import scrape_markdown
 
 log = structlog.get_logger(__name__)
 
@@ -393,6 +396,16 @@ Slower but handles SPAs and JS-heavy sites. Use when fetch_page returns empty co
     if not _is_allowed_origin(url, deps.allowed_domain):
         return f"Error: URL is off-origin (only {deps.allowed_domain} is allowed)"
 
+    scraper = settings.ORGANIZATION_REVIEW_SCRAPER
+    if scraper == "firecrawl":
+        return await _browse_page_firecrawl(deps, url)
+    if scraper == "shadow":
+        return await _browse_page_shadow(deps, url)
+    return await _browse_page_playwright(deps, url)
+
+
+async def _browse_page_playwright(deps: WebsiteDeps, url: str) -> str:
+    """Render a page with the in-house headless browser (Playwright)."""
     # SSRF pre-check (defense-in-depth — interceptor also blocks)
     initial_host = urlparse(url).hostname
     if initial_host:
@@ -465,6 +478,115 @@ Slower but handles SPAs and JS-heavy sites. Use when fetch_page returns empty co
         truncated=truncated,
         links=links,
     )
+
+
+async def _browse_page_firecrawl(deps: WebsiteDeps, url: str) -> str:
+    """Render a page via Firecrawl Cloud.
+
+    Firecrawl's browser egress is external, so the per-hop SSRF interceptor is
+    dropped — the cheap origin pre-flight (already done by the caller) plus the
+    origin-lock on the returned final URL remain.
+    """
+    deps.pages_navigated += 1
+
+    try:
+        result = await scrape_markdown(url)
+    except Exception as e:
+        return f"Error navigating to {url}: {str(e)[:100]}"
+
+    if result.status_code is not None and result.status_code >= 400:
+        return f"Error: HTTP {result.status_code} for {url}"
+
+    # Post-navigation origin check — catch JS-driven redirects
+    current_url = result.url
+    if not _is_allowed_origin(current_url, deps.allowed_domain):
+        return (
+            f"Error: page redirected to off-origin URL {current_url} "
+            f"(only {deps.allowed_domain} is allowed)"
+        )
+
+    content = result.markdown
+    title = result.title or None
+
+    truncated = len(content) > MAX_CHARS_PER_PAGE
+    if truncated:
+        content = content[:MAX_CHARS_PER_PAGE]
+
+    deps.pages_visited.append(
+        WebsitePage(
+            url=current_url,
+            title=title,
+            content=content,
+            content_truncated=truncated,
+            method="browser",
+        )
+    )
+
+    return _build_tool_response(
+        title=title,
+        current_url=current_url,
+        pages_navigated=deps.pages_navigated,
+        content=content,
+        truncated=truncated,
+        links=[],
+    )
+
+
+async def _browse_page_shadow(deps: WebsiteDeps, url: str) -> str:
+    """Run Firecrawl alongside Playwright, log a comparison, return Playwright's.
+
+    Observational: the Firecrawl scrape never raises and never touches
+    `pages_navigated` / `pages_visited` — only Playwright's result is used. The
+    two run concurrently so the shadow scrape never adds to the live verdict's
+    latency (which is bounded by `OVERALL_TIMEOUT_S`).
+    """
+    pages_before = len(deps.pages_visited)
+    observation, response = await asyncio.gather(
+        _firecrawl_observe(url),
+        _browse_page_playwright(deps, url),
+    )
+
+    # Only attribute a page to this call if Playwright actually appended one;
+    # otherwise pages_visited[-1] would be a stale page from an earlier call.
+    playwright_page = (
+        deps.pages_visited[-1] if len(deps.pages_visited) > pages_before else None
+    )
+    log.info(
+        "website_collector.shadow_compare",
+        url=url,
+        playwright_markdown_length=(
+            len(playwright_page.content) if playwright_page else 0
+        ),
+        playwright_final_url=playwright_page.url if playwright_page else None,
+        **observation,
+    )
+    return response
+
+
+async def _firecrawl_observe(url: str) -> dict[str, Any]:
+    """Scrape via Firecrawl for shadow comparison. Never raises; returns log fields.
+
+    Success and failure return the same set of keys so the `shadow_compare` log
+    event has a stable schema for downstream comparison queries.
+    """
+    start = time.monotonic()
+    try:
+        result = await scrape_markdown(url)
+    except Exception as e:
+        return {
+            "firecrawl_markdown_length": 0,
+            "firecrawl_final_url": None,
+            "firecrawl_status_code": None,
+            "firecrawl_latency_ms": int((time.monotonic() - start) * 1000),
+            "firecrawl_error": str(e)[:200],
+        }
+    return {
+        "firecrawl_markdown_length": len(result.markdown),
+        "firecrawl_final_url": result.url,
+        "firecrawl_status_code": result.status_code,
+        "firecrawl_latency_ms": int((time.monotonic() - start) * 1000),
+        "firecrawl_error": None,
+    }
 
 
 # ---------------------------------------------------------------------------

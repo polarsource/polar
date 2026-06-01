@@ -216,12 +216,23 @@
 
 @layer base {
   html {
+    color-scheme: light dark;
     @apply text-gray-900;
     font-feature-settings: 'cv01', 'cv03', 'cv04', 'cv06', 'cv11', 'ss03';
   }
 
   html.dark {
     @apply text-gray-200;
+  }
+
+  html:not(.dark) {
+    --lightningcss-light: initial;
+    --lightningcss-dark: ;
+  }
+
+  html.dark {
+    --lightningcss-light: ;
+    --lightningcss-dark: initial;
   }
 
   input[type='email'] {

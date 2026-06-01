@@ -1,7 +1,7 @@
 """add held to payout_status_update trigger guard
 
 Revision ID: 35e9e6992886
-Revises: 5f832e2ae1da
+Revises: dccf7215745f
 Create Date: 2026-06-01 11:28:39.518795
 
 """
@@ -15,7 +15,7 @@ from sqlalchemy import text as sql_text
 
 # revision identifiers, used by Alembic.
 revision = "35e9e6992886"
-down_revision = "5f832e2ae1da"
+down_revision = "dccf7215745f"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

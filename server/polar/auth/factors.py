@@ -42,8 +42,8 @@ class EmailOTPFactor(EmailOTPFactorBase):
         self.session = session
         super().__init__(
             hash_secret=settings.SECRET,
-            code_length=settings.LOGIN_CODE_LENGTH,
-            lifetime=settings.LOGIN_CODE_TTL,
+            code_length=settings.EMAIL_OTP_CODE_LENGTH,
+            lifetime=settings.EMAIL_OTP_TTL,
         )
 
     async def get_enrollment(self, identity_id: uuid.UUID) -> EmailOTPEnrollment | None:

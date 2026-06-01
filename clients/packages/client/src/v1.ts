@@ -120,74 +120,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/integrations/github/login/authorize': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /** Integrations.Github.Login.Authorize */
-    get: operations['integrations_github:integrations_github_login:integrations.github.login.authorize']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/integrations/github/login/callback': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /** Integrations.Github.Login.Callback */
-    get: operations['integrations_github:integrations_github_login:integrations.github.login.callback']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/integrations/github/link/authorize': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /** Integrations.Github.Link.Authorize */
-    get: operations['integrations_github:integrations_github_link:integrations.github.link.authorize']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/integrations/github/link/callback': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /** Integrations.Github.Link.Callback */
-    get: operations['integrations_github:integrations_github_link:integrations.github.link.callback']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/integrations/github_repository_benefit/user/authorize': {
     parameters: {
       query?: never
@@ -321,80 +253,6 @@ export interface paths {
     get: operations['integrations_discord:discord_guild_lookup']
     put?: never
     post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/integrations/apple/authorize': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /** Integrations.Apple.Authorize */
-    get: operations['integrations_apple:integrations.apple.authorize']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/integrations/apple/callback': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /** Integrations.Apple.Callback */
-    post: operations['integrations_apple:integrations.apple.callback']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/login-code/request': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Request Login Code
-     * @description Request a login code.
-     */
-    post: operations['login_code:request_login_code']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/login-code/authenticate': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Authenticate Login Code
-     * @description Authenticate with a login code.
-     */
-    post: operations['login_code:authenticate_login_code']
     delete?: never
     options?: never
     head?: never
@@ -2659,74 +2517,6 @@ export interface paths {
      *     **Scopes**: `metrics:write`
      */
     patch: operations['metrics:update_dashboard']
-    trace?: never
-  }
-  '/v1/integrations/google/login/authorize': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /** Integrations.Google.Login.Authorize */
-    get: operations['integrations_google:integrations_google_login:integrations.google.login.authorize']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/integrations/google/login/callback': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /** Integrations.Google.Login.Callback */
-    get: operations['integrations_google:integrations_google_login:integrations.google.login.callback']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/integrations/google/link/authorize': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /** Integrations.Google.Link.Authorize */
-    get: operations['integrations_google:integrations_google_link:integrations.google.link.authorize']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/integrations/google/link/callback': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /** Integrations.Google.Link.Callback */
-    get: operations['integrations_google:integrations_google_link:integrations.google.link.callback']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
     trace?: never
   }
   '/v1/license-keys/': {
@@ -10297,11 +10087,6 @@ export interface components {
     'Body_email-update_verify_email_update': {
       /** Token */
       token: string
-    }
-    /** Body_login_code:authenticate_login_code */
-    Body_login_code_authenticate_login_code: {
-      /** Code */
-      code: string
     }
     /** Body_oauth2:consent */
     Body_oauth2_consent: {
@@ -20398,17 +20183,6 @@ export interface components {
        * @description Outlier events ordered by value descending.
        */
       items: components['schemas']['VarianceEvent'][]
-    }
-    /** LoginCodeRequest */
-    LoginCodeRequest: {
-      /**
-       * Email
-       * Format: email
-       */
-      email: string
-      /** Return To */
-      return_to?: string | null
-      attribution?: components['schemas']['UserSignupAttribution'] | null
     }
     /** MaintainerAccountCreditsGrantedNotification */
     MaintainerAccountCreditsGrantedNotification: {
@@ -30716,37 +30490,6 @@ export interface components {
       /** Scopes */
       scopes: components['schemas']['Scope'][]
     }
-    /** UserSignupAttribution */
-    UserSignupAttribution: {
-      /** Intent */
-      intent?:
-        | (
-            | 'creator'
-            | 'pledge'
-            | 'purchase'
-            | 'subscription'
-            | 'newsletter_subscription'
-          )
-        | null
-      /** Order */
-      order?: string | null
-      /** Subscription */
-      subscription?: string | null
-      /** Pledge */
-      pledge?: string | null
-      /** Path */
-      path?: string | null
-      /** Host */
-      host?: string | null
-      /** Utm Source */
-      utm_source?: string | null
-      /** Utm Medium */
-      utm_medium?: string | null
-      /** Utm Campaign */
-      utm_campaign?: string | null
-      /** Campaign */
-      campaign?: string | null
-    }
     /** UserUpdate */
     UserUpdate: {
       /** First Name */
@@ -32228,17 +31971,6 @@ export interface components {
       timestamp: string
       data: components['schemas']['Subscription']
     }
-    /** Body_integrations_apple:integrations.apple.callback */
-    callback: {
-      /** Code */
-      code?: string | null
-      /** Code Verifier */
-      code_verifier?: string | null
-      /** State */
-      state?: string | null
-      /** Error */
-      error?: string | null
-    }
     /** MetadataQuery */
     MetadataQuery: {
       [key: string]: string | number | boolean | string[] | number[] | boolean[]
@@ -32535,138 +32267,6 @@ export interface operations {
       }
     }
   }
-  'integrations_github:integrations_github_login:integrations.github.login.authorize': {
-    parameters: {
-      query?: {
-        payment_intent_id?: string | null
-        return_to?: string | null
-        attribution?: string | null
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'integrations_github:integrations_github_login:integrations.github.login.callback': {
-    parameters: {
-      query?: {
-        code?: string | null
-        code_verifier?: string | null
-        state?: string | null
-        error?: string | null
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'integrations_github:integrations_github_link:integrations.github.link.authorize': {
-    parameters: {
-      query?: {
-        return_to?: string | null
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'integrations_github:integrations_github_link:integrations.github.link.callback': {
-    parameters: {
-      query?: {
-        code?: string | null
-        code_verifier?: string | null
-        state?: string | null
-        error?: string | null
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
   'integrations_github_repository_benefit:integrations.github_repository_benefit.user_authorize': {
     parameters: {
       query?: {
@@ -32875,140 +32475,6 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['DiscordGuild']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'integrations_apple:integrations.apple.authorize': {
-    parameters: {
-      query?: {
-        return_to?: string | null
-        attribution?: string | null
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'integrations_apple:integrations.apple.callback': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: {
-      content: {
-        'application/x-www-form-urlencoded': components['schemas']['callback']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'login_code:request_login_code': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['LoginCodeRequest']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      202: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'login_code:authenticate_login_code': {
-    parameters: {
-      query: {
-        email: string
-        return_to?: string | null
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/x-www-form-urlencoded': components['schemas']['Body_login_code_authenticate_login_code']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
         }
       }
       /** @description Validation Error */
@@ -39450,137 +38916,6 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['MetricDashboardSchema']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'integrations_google:integrations_google_login:integrations.google.login.authorize': {
-    parameters: {
-      query?: {
-        return_to?: string | null
-        attribution?: string | null
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'integrations_google:integrations_google_login:integrations.google.login.callback': {
-    parameters: {
-      query?: {
-        code?: string | null
-        code_verifier?: string | null
-        state?: string | null
-        error?: string | null
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'integrations_google:integrations_google_link:integrations.google.link.authorize': {
-    parameters: {
-      query?: {
-        return_to?: string | null
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'integrations_google:integrations_google_link:integrations.google.link.callback': {
-    parameters: {
-      query?: {
-        code?: string | null
-        code_verifier?: string | null
-        state?: string | null
-        error?: string | null
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
         }
       }
       /** @description Validation Error */
@@ -57824,9 +57159,6 @@ export const userDeletionBlockedReasonValues: ReadonlyArray<
 export const userEventSourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['UserEvent']['source']
 > = ['user']
-export const userSignupAttributionIntentAnyOf0Values: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['UserSignupAttribution']['intent']
-> = ['creator', 'pledge', 'purchase', 'subscription', 'newsletter_subscription']
 export const userUpdateCountryAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['UserUpdate']['country']
 > = [

@@ -126,6 +126,14 @@ class Settings(BaseSettings):
     AUTHENTICATION_SESSION_COOKIE_KEY: str = "polar_auth_session"
     AUTHENTICATION_SESSION_COOKIE_DOMAIN: str = "127.0.0.1"
 
+    # Email OTP
+    EMAIL_OTP_TTL: timedelta = timedelta(minutes=30)
+    EMAIL_OTP_CODE_LENGTH: int = 6
+
+    # App Review bypass (for testing login flow during Apple/Google app reviews)
+    APP_REVIEW_EMAIL: str | None = None
+    APP_REVIEW_OTP_CODE: str | None = None
+
     # OAuth2 session state
     OAUTH2_SESSION_STATE_TTL: timedelta = timedelta(minutes=10)
     OAUTH2_SESSION_STATE_COOKIE_KEY: str = "polar_oauth2_state"
@@ -144,18 +152,6 @@ class Settings(BaseSettings):
     # Impersonation session
     IMPERSONATION_COOKIE_KEY: str = "polar_original_session"
     IMPERSONATION_INDICATOR_COOKIE_KEY: str = "polar_is_impersonating"
-
-    # Login code
-    LOGIN_CODE_TTL: timedelta = timedelta(minutes=30)
-    LOGIN_CODE_LENGTH: int = 6
-
-    # OAuth state
-    OAUTH_STATE_TTL: timedelta = timedelta(minutes=10)
-    OAUTH_STATE_COOKIE_KEY: str = "polar_oauth_state"
-
-    # App Review bypass (for testing login flow during Apple/Google app reviews)
-    APP_REVIEW_EMAIL: str | None = None
-    APP_REVIEW_OTP_CODE: str | None = None
 
     # Email verification
     EMAIL_VERIFICATION_TTL_SECONDS: int = 60 * 30  # 30 minutes

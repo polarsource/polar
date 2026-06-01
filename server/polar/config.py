@@ -323,6 +323,15 @@ class Settings(BaseSettings):
     AWS_REGION: str = "us-east-2"
     AWS_SIGNATURE_VERSION: str = "v4"
 
+    # Worker SQS/Lambda execution engine (POC)
+    # When enabled, jobs enqueued for an allowlisted actor are routed to a
+    # per-actor SQS queue (consumed by a Lambda) instead of the Redis broker.
+    WORKER_SQS_ENABLED: bool = False
+    WORKER_SQS_ACTORS: set[str] = set()
+    WORKER_SQS_QUEUE_PREFIX: str = "polar-tasks"
+    # Override to http://127.0.0.1:4566 in .env to target LocalStack
+    SQS_ENDPOINT_URL: str | None = None
+
     # Downloadable files
     S3_FILES_BUCKET_NAME: str = "polar-s3"
     S3_FILES_PUBLIC_BUCKET_NAME: str = "polar-s3-public"

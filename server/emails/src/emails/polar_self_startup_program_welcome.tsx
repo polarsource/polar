@@ -24,7 +24,7 @@ export function PolarSelfStartupProgramWelcome({
       </Intro>
       <BodyText>
         To claim it, head to your billing settings and switch to the Scale plan.
-        The 100% discount is already attached to your account and will apply
+        The 100% discount is available on your account and will apply
         automatically at checkout, no code needed.
       </BodyText>
       <Section className="my-12">

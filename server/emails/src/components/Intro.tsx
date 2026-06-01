@@ -8,8 +8,8 @@ interface IntroProps {
 export function Intro({ headline, children }: PropsWithChildren<IntroProps>) {
   return (
     <>
-      {headline && <Heading className="text-lg font-bold">{headline}</Heading>}
-      {children && <Text className="text-base">{children}</Text>}
+      {headline && <Heading className="text-xl font-bold">{headline}</Heading>}
+      {children && <Text className="text-[16px]">{children}</Text>}
     </>
   )
 }

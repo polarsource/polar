@@ -48,7 +48,7 @@ const FAQS: FAQItem[] = [
   {
     question: 'What happens after the year ends?',
     answer:
-      'We send a 30-day notice before the program ends so you can pick the plan that fits where the business is by then. Nothing auto-charges without you confirming the next step.',
+      'We send a 30-day notice before the program ends so you can pick the plan that fits where the business is by then.',
   },
   {
     question: 'I have more questions.',
@@ -67,7 +67,7 @@ export const StartupProgramFAQ = () => {
         Questions and answers
       </Text>
       <Box gridColumn={{ md: 'span 2' }}>
-        <Accordion type="single" collapsible className="flex flex-col">
+        <Accordion type="multiple" className="flex flex-col">
           {FAQS.map((faq, i) => (
             <AccordionItem
               key={faq.question}

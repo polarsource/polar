@@ -26769,12 +26769,29 @@ export interface components {
        *     - YER: 200
        *     - ZAR: 9
        *     - ZMW: 10
+       *     - Other currencies: 0.5
        * @default 50
        */
       minimum_amount: number
       /**
        * Maximum Amount
-       * @description The maximum amount the customer can pay.
+       * @description The maximum amount the customer can pay. Maximum per currency:
+       *     - USD: 999,999.99
+       *     - EUR: 999,999.99
+       *     - GBP: 999,999.99
+       *     - ARS: 1,400,000
+       *     - CDF: 2,800,000
+       *     - COP: 4,000,000
+       *     - IDR: 16,000,000
+       *     - KHR: 4,000,000
+       *     - LAK: 21,000,000
+       *     - MNT: 3,500,000
+       *     - MWK: 1,750,000
+       *     - NGN: 1,550,000
+       *     - TZS: 2,500,000
+       *     - UGX: 3,700,000
+       *     - UZS: 12,500,000
+       *     - Other currencies: 999,999.99
        */
       maximum_amount?: number | null
       /**
@@ -26906,6 +26923,7 @@ export interface components {
        *     - YER: 200
        *     - ZAR: 9
        *     - ZMW: 10
+       *     - Other currencies: 0.5
        */
       preset_amount?: number | null
     }
@@ -27109,6 +27127,7 @@ export interface components {
        *     - YER: 200
        *     - ZAR: 9
        *     - ZMW: 10
+       *     - Other currencies: 0.5
        */
       price_amount: number
     }

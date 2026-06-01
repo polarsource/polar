@@ -7,10 +7,7 @@
 
 name: Preview Environments
 on:
-  pull_request:
-    types: [opened, reopened, synchronize]
-  pull_request_target:
-    types: [closed]
+  # Auto-deploy disabled during Depot trial to avoid colliding with GitHub Actions. Manual dispatch only.
   workflow_dispatch:
     inputs:
       action:

@@ -7,16 +7,8 @@
 
 name: Terraform
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "terraform/**"
-      - ".depot/workflows/terraform.yaml"
-  pull_request:
-    types: [opened, synchronize]
-    paths:
-      - "terraform/**"
-      - ".depot/workflows/terraform.yaml"
+  # Auto-run disabled during Depot trial to avoid colliding with GitHub Actions. Manual dispatch only.
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:

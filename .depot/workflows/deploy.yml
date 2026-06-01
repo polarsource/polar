@@ -8,15 +8,7 @@
 
 name: Build and Deploy
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "server/**"
-      - "clients/**"
-      - "!clients/apps/app/**"
-      - ".depot/workflows/deploy.yml"
-      - ".depot/workflows/deploy-environment.yml"
-      - ".github/workflows/deploy_server.sh"
+  # Auto-deploy disabled during Depot trial to avoid colliding with GitHub Actions. Manual dispatch only.
   workflow_dispatch:
 concurrency:
   group: build-deploy

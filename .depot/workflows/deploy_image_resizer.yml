@@ -7,11 +7,7 @@
 
 name: Deploy Image Resizer
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "lambda/image-resizer/**"
-      - ".depot/workflows/deploy_image_resizer.yml"
+  # Auto-deploy disabled during Depot trial to avoid colliding with GitHub Actions. Manual dispatch only.
   workflow_dispatch:
 jobs:
   deploy:

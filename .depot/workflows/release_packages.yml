@@ -6,9 +6,8 @@
 
 name: Release packages
 on:
-  push:
-    branches:
-      - main
+  # Auto-release disabled during Depot trial to avoid colliding with GitHub Actions. Manual dispatch only.
+  workflow_dispatch:
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 permissions:
   contents: write

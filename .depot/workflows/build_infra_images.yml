@@ -8,11 +8,7 @@
 
 name: Build Infrastructure Images
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "infra/**"
-      - ".depot/workflows/build_infra_images.yml"
+  # Auto-build disabled during Depot trial to avoid colliding with GitHub Actions. Manual dispatch only.
   workflow_dispatch:
 permissions:
   contents: read

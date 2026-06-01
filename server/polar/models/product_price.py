@@ -274,6 +274,16 @@ class _ProductPriceCustom(ProductPrice):
     preset_amount: Mapped[int | None] = mapped_column(
         "preset_amount_v2", BigInteger, nullable=True
     )
+    merchant_priced: Mapped[bool] = mapped_column(
+        Boolean, nullable=True, default=False
+    )
+    """
+    When True, the amount is set by the merchant at order-creation time (used for
+    off-session charges) rather than chosen by the customer at checkout. The
+    minimum/maximum/preset amounts are not used in this mode. Like the sibling
+    custom-price columns, this is NULL for non-custom prices (single-table
+    inheritance), where it does not apply.
+    """
 
     __mapper_args__ = {
         "polymorphic_abstract": True,

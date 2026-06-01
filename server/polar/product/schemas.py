@@ -10,6 +10,7 @@ from pydantic import (
     ValidationInfo,
     computed_field,
     field_validator,
+    model_validator,
 )
 from pydantic.aliases import AliasChoices
 from pydantic.json_schema import SkipJsonSchema
@@ -207,6 +208,15 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
             f"Minimum per currency:\n{MINIMUM_PRICE_PER_CURRENCY_DOCSTRING}"
         ),
     )
+    merchant_priced: bool = Field(
+        default=False,
+        description=(
+            "When set, the amount is decided by the merchant at order-creation "
+            "time (for off-session charges) instead of being chosen by the "
+            "customer. The minimum, maximum, and suggested amounts are ignored, "
+            "and the product must be private."
+        ),
+    )
 
     @field_validator("minimum_amount", "preset_amount", "maximum_amount")
     @classmethod
@@ -221,6 +231,19 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
             # (Pydantic will already report the currency error)
             return v
         return validate_price_amount(currency, v, allow_zero=True)
+
+    @model_validator(mode="after")
+    def normalize_merchant_priced(self) -> "ProductPriceCustomCreate":
+        # A merchant-priced custom price has no customer-facing bounds: the
+        # merchant supplies the amount at order creation. Normalize the bounds so
+        # that whatever the client sent is ignored. `minimum_amount` stays 0
+        # (not null) so the "any amount >= 0" path in validate_custom_price_amount
+        # and checkout's `preset_amount or minimum_amount` stay safe.
+        if self.merchant_priced:
+            self.minimum_amount = 0
+            self.maximum_amount = None
+            self.preset_amount = None
+        return self
 
     def get_model_class(self) -> builtins.type[ProductPriceCustomModel]:
         return ProductPriceCustomModel
@@ -623,6 +646,18 @@ class ProductPriceCustomBase(ProductPriceBase):
     preset_amount: int | None = Field(
         description="The initial amount shown to the customer."
     )
+    merchant_priced: bool = Field(
+        description=(
+            "Whether the amount is decided by the merchant at order-creation "
+            "time (for off-session charges) instead of by the customer."
+        )
+    )
+
+    @field_validator("merchant_priced", mode="before")
+    @classmethod
+    def coerce_merchant_priced(cls, v: bool | None) -> bool:
+        # Prices created before this column existed read NULL; treat as False.
+        return bool(v)
 
 
 class ProductPriceFreeBase(ProductPriceBase):

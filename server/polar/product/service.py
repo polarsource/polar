@@ -44,6 +44,7 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
 from polar.product.guard import (
+    is_custom_price,
     is_legacy_price,
     is_metered_price,
     is_static_price,
@@ -189,6 +190,18 @@ class ProductService:
         )
         errors.extend(prices_errors)
 
+        if create_schema.visibility != ProductVisibility.private and any(
+            is_custom_price(price) and bool(price.merchant_priced) for price in prices
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "visibility"),
+                    "msg": "Merchant-priced products must be private.",
+                    "input": create_schema.visibility,
+                }
+            )
+
         product = await repository.create(
             Product(
                 organization=organization,
@@ -292,6 +305,28 @@ class ProductService:
                 auth_subject,
             )
             errors.extend(prices_errors)
+
+        # Run the merchant-priced/private guard here, while the price objects are
+        # still fresh — the medias and custom-fields blocks below open nested
+        # transactions whose rollback would expire these objects and turn a later
+        # column access into unexpected (sync) IO.
+        final_visibility = (
+            update_schema.visibility
+            if update_schema.visibility is not None
+            else product.visibility
+        )
+        if final_visibility != ProductVisibility.private and any(
+            is_custom_price(price) and bool(price.merchant_priced)
+            for price in (*existing_prices, *added_prices)
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "visibility"),
+                    "msg": "Merchant-priced products must be private.",
+                    "input": final_visibility,
+                }
+            )
 
         # Prevent non-legacy products from changing their recurring interval
         if (

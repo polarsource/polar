@@ -109,11 +109,72 @@ export const ProductPricingSection = ({
     }
   }, [recurringInterval, recurringIntervalCount, setValue, getValues, replace])
 
-  const [productType, setProductType] = useState<'one_time' | 'recurring'>(
-    recurringInterval === null ? 'one_time' : 'recurring',
+  const [productType, setProductType] = useState<
+    'one_time' | 'recurring' | 'arbitrary'
+  >(() => {
+    if (recurringInterval !== null) return 'recurring'
+    const initialPrices = getValues('prices') ?? []
+    if (
+      initialPrices.some(
+        (price) =>
+          'amount_type' in price &&
+          price.amount_type === 'custom' &&
+          'merchant_priced' in price &&
+          Boolean(price.merchant_priced),
+      )
+    ) {
+      return 'arbitrary'
+    }
+    return 'one_time'
+  })
+
+  const buildArbitraryPrices = useCallback(
+    (): ProductPriceCreate[] => [
+      {
+        amount_type: 'custom',
+        price_currency: defaultCurrency as schemas['PresentmentCurrency'],
+        minimum_amount: 0,
+        merchant_priced: true,
+      },
+    ],
+    [defaultCurrency],
   )
 
   useEffect(() => {
+    // The product type can't be changed on existing products (radio disabled),
+    // so don't rewrite the prices when editing.
+    if (update) return
+
+    if (productType === 'arbitrary') {
+      setValue('recurring_interval', null)
+      // Merchant-priced products must be private (enforced server-side too).
+      setValue('visibility', 'private')
+      const currentPrices = getValues('prices') ?? []
+      const alreadyArbitrary =
+        currentPrices.length === 1 &&
+        'merchant_priced' in currentPrices[0] &&
+        Boolean(currentPrices[0].merchant_priced)
+      if (!alreadyArbitrary) {
+        replace(buildArbitraryPrices())
+      }
+      return
+    }
+
+    // Leaving arbitrary mode: drop the merchant-priced price for a normal one.
+    const currentPrices = getValues('prices') ?? []
+    const hadArbitrary = currentPrices.some(
+      (price) => 'merchant_priced' in price && Boolean(price.merchant_priced),
+    )
+    if (hadArbitrary) {
+      replace([
+        {
+          amount_type: 'fixed',
+          price_currency: defaultCurrency as schemas['PresentmentCurrency'],
+          price_amount: 0,
+        },
+      ])
+    }
+
     if (productType === 'one_time') {
       setValue('recurring_interval', null)
     } else {
@@ -125,7 +186,17 @@ export const ProductPricingSection = ({
         setValue('recurring_interval_count', 1)
       }
     }
-  }, [productType, recurringInterval, recurringIntervalCount, setValue])
+  }, [
+    productType,
+    recurringInterval,
+    recurringIntervalCount,
+    setValue,
+    getValues,
+    replace,
+    update,
+    defaultCurrency,
+    buildArbitraryPrices,
+  ])
 
   const pricesByCurrency = useMemo(
     () => groupPricesByCurrency(prices as ProductFormType['prices']),
@@ -166,7 +237,12 @@ export const ProductPricingSection = ({
         if (newAmountType === 'fixed') {
           return { ...base, amount_type: 'fixed', price_amount: 0 }
         } else if (newAmountType === 'custom') {
-          return { ...base, amount_type: 'custom', minimum_amount: 0 }
+          return {
+            ...base,
+            amount_type: 'custom',
+            minimum_amount: 0,
+            merchant_priced: false,
+          }
         } else if (newAmountType === 'free') {
           return { ...base, amount_type: 'free' }
         } else if (newAmountType === 'seat_based') {
@@ -233,6 +309,8 @@ export const ProductPricingSection = ({
             ...baseCurrency,
             amount_type: 'custom',
             minimum_amount: 0,
+            merchant_priced:
+              'merchant_priced' in price && price.merchant_priced,
           }
         } else if (price.amount_type === 'free') {
           newPrice = { ...baseCurrency, amount_type: 'free' }
@@ -373,13 +451,15 @@ export const ProductPricingSection = ({
         <div className="@container flex flex-col gap-y-6 py-6">
           <RadioGroup
             value={productType}
-            onValueChange={(v) => setProductType(v as 'one_time' | 'recurring')}
+            onValueChange={(v) =>
+              setProductType(v as 'one_time' | 'recurring' | 'arbitrary')
+            }
             className={twMerge(
               'grid-cols-1 gap-3',
-              compact ? 'grid-cols-1' : '@md:grid-cols-2',
+              compact ? 'grid-cols-1' : 'md:grid-cols-3',
             )}
           >
-            {['one_time', 'recurring'].map((option) => (
+            {(['one_time', 'recurring', 'arbitrary'] as const).map((option) => (
               <Label
                 key={option}
                 htmlFor={`price-type-${option}`}
@@ -397,9 +477,13 @@ export const ProductPricingSection = ({
                       id={`price-type-${option}`}
                       disabled={update}
                     />
-                    {option === 'one_time'
-                      ? 'One-time purchase'
-                      : 'Recurring subscription'}
+                    {
+                      {
+                        one_time: 'One-time purchase',
+                        recurring: 'Recurring subscription',
+                        arbitrary: 'Arbitrary price',
+                      }[option]
+                    }
                   </div>
                 </div>
               </Label>
@@ -486,59 +570,75 @@ export const ProductPricingSection = ({
           )}
         </div>
 
-        <CurrencyTabs
-          activeCurrencies={activeCurrencies}
-          selectedCurrency={validatedSelectedCurrency}
-          onSelectCurrency={setSelectedCurrency}
-          onAddCurrency={handleAddCurrency}
-          onRemoveCurrency={handleRemoveCurrency}
-          defaultCurrency={defaultCurrency}
-        />
-
-        <div className="flex flex-col gap-y-6 py-6">
-          <div className="flex flex-row items-center justify-between">
-            <h3>Price Type</h3>
-            {recurringInterval !== null && (
-              <Button
-                className="self-start"
-                variant="secondary"
-                size="sm"
-                onClick={handleAddMeteredPrice}
-              >
-                Add metered price
-              </Button>
-            )}
+        {productType === 'arbitrary' ? (
+          <div className="dark:bg-polar-700 dark:text-polar-400 flex flex-col gap-2 rounded-2xl bg-gray-100 p-6 py-6 text-sm text-gray-500">
+            <p className="font-medium text-gray-700 dark:text-white">
+              The amount is set when you create the order
+            </p>
+            <p>
+              You decide the price each time you charge a customer off-session
+              via the API — there is no fixed or customer-chosen amount. Because
+              it can&apos;t be purchased from a storefront, the product is
+              always private.
+            </p>
           </div>
-          {pricesForSelectedCurrency.map(({ price, index }) => (
-            <div
-              key={`${selectedCurrency}-${index}`}
-              className={
-                pricesForSelectedCurrency.length > 1 &&
-                isMeteredPrice(price as ProductPrice)
-                  ? 'dark:border-polar-700 rounded-2xl border border-gray-200 p-4'
-                  : ''
-              }
-            >
-              <ProductPriceItem
-                organization={organization}
-                index={index}
-                currency={validatedSelectedCurrency}
-                onRemove={handleRemovePrice}
-                onAmountTypeChange={handleAmountTypeChange}
-                canRemove={
-                  isMeteredPrice(price as ProductPrice) &&
-                  (pricesForSelectedCurrency.filter((p) =>
-                    isMeteredPrice(p.price as ProductPrice),
-                  ).length > 1 ||
-                    pricesForSelectedCurrency.filter(
-                      (p) => !isMeteredPrice(p.price as ProductPrice),
-                    ).length >= 1)
-                }
-                key={`${selectedCurrency}-${index}`}
-              />
+        ) : (
+          <>
+            <CurrencyTabs
+              activeCurrencies={activeCurrencies}
+              selectedCurrency={validatedSelectedCurrency}
+              onSelectCurrency={setSelectedCurrency}
+              onAddCurrency={handleAddCurrency}
+              onRemoveCurrency={handleRemoveCurrency}
+              defaultCurrency={defaultCurrency}
+            />
+
+            <div className="flex flex-col gap-y-6 py-6">
+              <div className="flex flex-row items-center justify-between">
+                <h3>Price Type</h3>
+                {recurringInterval !== null && (
+                  <Button
+                    className="self-start"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleAddMeteredPrice}
+                  >
+                    Add metered price
+                  </Button>
+                )}
+              </div>
+              {pricesForSelectedCurrency.map(({ price, index }) => (
+                <div
+                  key={`${selectedCurrency}-${index}`}
+                  className={
+                    pricesForSelectedCurrency.length > 1 &&
+                    isMeteredPrice(price as ProductPrice)
+                      ? 'dark:border-polar-700 rounded-2xl border border-gray-200 p-4'
+                      : ''
+                  }
+                >
+                  <ProductPriceItem
+                    organization={organization}
+                    index={index}
+                    currency={validatedSelectedCurrency}
+                    onRemove={handleRemovePrice}
+                    onAmountTypeChange={handleAmountTypeChange}
+                    canRemove={
+                      isMeteredPrice(price as ProductPrice) &&
+                      (pricesForSelectedCurrency.filter((p) =>
+                        isMeteredPrice(p.price as ProductPrice),
+                      ).length > 1 ||
+                        pricesForSelectedCurrency.filter(
+                          (p) => !isMeteredPrice(p.price as ProductPrice),
+                        ).length >= 1)
+                    }
+                    key={`${selectedCurrency}-${index}`}
+                  />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
 
         {recurringInterval && (
           <div className="flex flex-col py-6">

@@ -23,8 +23,10 @@ from polar.models import (
 )
 from polar.models.benefit import BenefitType
 from polar.models.file import FileServiceTypes, ProductMediaFile
+from polar.models.product import ProductVisibility
 from polar.models.product_price import (
     ProductPriceAmountType,
+    ProductPriceCustom,
     ProductPriceFixed,
 )
 from polar.postgres import AsyncSession
@@ -682,6 +684,69 @@ class TestCreate:
                         ProductPriceFixedCreate(
                             amount_type=ProductPriceAmountType.fixed,
                             price_amount=2000,
+                            price_currency=PresentmentCurrency.usd,
+                        ),
+                    ],
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_merchant_priced_custom_price(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        product = await product_service.create(
+            session,
+            ProductCreateOneTime(
+                name="Merchant-priced",
+                visibility=ProductVisibility.private,
+                prices=[
+                    ProductPriceCustomCreate(
+                        amount_type=ProductPriceAmountType.custom,
+                        # Bounds are supplied but should be normalized away.
+                        minimum_amount=1000,
+                        maximum_amount=2000,
+                        preset_amount=1500,
+                        merchant_priced=True,
+                        price_currency=PresentmentCurrency.usd,
+                    ),
+                ],
+                organization_id=organization.id,
+            ),
+            auth_subject,
+        )
+
+        assert len(product.prices) == 1
+        price = product.prices[0]
+        assert isinstance(price, ProductPriceCustom)
+        assert price.merchant_priced is True
+        assert price.minimum_amount == 0
+        assert price.maximum_amount is None
+        assert price.preset_amount is None
+
+    @pytest.mark.auth
+    async def test_merchant_priced_requires_private(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(
+                session,
+                ProductCreateOneTime(
+                    name="Merchant-priced public",
+                    visibility=ProductVisibility.public,
+                    prices=[
+                        ProductPriceCustomCreate(
+                            amount_type=ProductPriceAmountType.custom,
+                            merchant_priced=True,
                             price_currency=PresentmentCurrency.usd,
                         ),
                     ],

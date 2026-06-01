@@ -21,7 +21,14 @@ export const ProductCustomerPortalSection = ({
 }: {
   className?: string
 }) => {
-  const { control } = useFormContext<ProductFormType>()
+  const { control, watch } = useFormContext<ProductFormType>()
+
+  // Merchant-priced ("Arbitrary price") products can only be charged off-session
+  // and must stay private — lock the selector to Private in that case.
+  const prices = watch('prices')
+  const isMerchantPriced = (prices ?? []).some(
+    (price) => 'merchant_priced' in price && Boolean(price.merchant_priced),
+  )
 
   return (
     <Section
@@ -39,24 +46,37 @@ export const ProductCustomerPortalSection = ({
               <FormControl>
                 <div className="@container">
                   <RadioGroup
-                    value={field.value ?? 'public'}
-                    onValueChange={field.onChange}
+                    value={
+                      isMerchantPriced ? 'private' : (field.value ?? 'public')
+                    }
+                    onValueChange={(v) => {
+                      if (isMerchantPriced) return
+                      field.onChange(v)
+                    }}
                     className="grid-cols-1 gap-3 @md:grid-cols-2"
                   >
                     <Label
                       htmlFor="visibility-public"
-                      className={`flex cursor-pointer flex-col gap-2 rounded-2xl border p-4 font-normal transition-colors ${
-                        field.value === 'public' || !field.value
+                      aria-disabled={isMerchantPriced}
+                      className={`flex flex-col gap-2 rounded-2xl border p-4 font-normal transition-colors not-aria-disabled:cursor-pointer aria-disabled:cursor-not-allowed aria-disabled:opacity-50 ${
+                        (field.value === 'public' || !field.value) &&
+                        !isMerchantPriced
                           ? 'dark:bg-polar-800 bg-gray-50'
                           : 'dark:border-polar-700 dark:hover:border-polar-700 dark:text-polar-500 dark:hover:bg-polar-700 dark:bg-polar-900 border-gray-100 text-gray-500 hover:border-gray-200'
                       }`}
                     >
                       <div className="flex items-center gap-2.5 font-medium">
-                        <RadioGroupItem value="public" id="visibility-public" />
+                        <RadioGroupItem
+                          value="public"
+                          id="visibility-public"
+                          disabled={isMerchantPriced}
+                        />
                         Public
                       </div>
                       <p className="dark:text-polar-500 text-sm text-gray-500">
-                        Shown in the Customer Portal
+                        {isMerchantPriced
+                          ? 'Not available for arbitrary-price products'
+                          : 'Shown in the Customer Portal'}
                       </p>
                     </Label>
                     <Label

@@ -19400,6 +19400,11 @@ export interface components {
        */
       preset_amount: number | null
       /**
+       * Merchant Priced
+       * @description Whether the amount is decided by the merchant at order-creation time (for off-session charges) instead of by the customer.
+       */
+      merchant_priced: boolean
+      /**
        * Legacy
        * @constant
        */
@@ -26553,6 +26558,11 @@ export interface components {
        * @description The initial amount shown to the customer.
        */
       preset_amount: number | null
+      /**
+       * Merchant Priced
+       * @description Whether the amount is decided by the merchant at order-creation time (for off-session charges) instead of by the customer.
+       */
+      merchant_priced: boolean
     }
     /**
      * ProductPriceCustomCreate
@@ -26839,6 +26849,12 @@ export interface components {
        *     - ZMW: 10
        */
       preset_amount?: number | null
+      /**
+       * Merchant Priced
+       * @description When set, the amount is decided by the merchant at order-creation time (for off-session charges) instead of being chosen by the customer. The minimum, maximum, and suggested amounts are ignored, and the product must be private.
+       * @default false
+       */
+      merchant_priced: boolean
     }
     /**
      * ProductPriceFixed

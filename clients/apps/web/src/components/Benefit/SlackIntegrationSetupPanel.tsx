@@ -116,6 +116,26 @@ export const SlackIntegrationSetupPanel = ({
             </Text>
           </Box>
           <ManifestBlock manifest={manifest} />
+          <Box display="flex" flexDirection="column" rowGap="s">
+            <Button
+              asChild
+              variant="secondary"
+              size="sm"
+              wrapperClassNames="self-start"
+            >
+              <a
+                href="https://api.slack.com/apps?new_app=1"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Create app on api.slack.com
+              </a>
+            </Button>
+            <Text color="muted" variant="caption">
+              Choose &ldquo;From an app manifest&rdquo;, pick your workspace, and
+              paste the manifest above.
+            </Text>
+          </Box>
         </Box>
       </SetupSection>
 

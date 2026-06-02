@@ -73,7 +73,3 @@ class BenefitSlackIntegration(RecordModel):
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship(Organization, lazy="raise")
-
-    @property
-    def is_installed(self) -> bool:
-        return self.bot_token is not None and self.revoked_at is None

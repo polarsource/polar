@@ -3,18 +3,9 @@ from typing import Any
 import httpx
 import structlog
 
-from polar.exceptions import PolarError
-
 log = structlog.get_logger()
 
 BASE_URL = "https://slack.com/api"
-
-
-class SlackClientError(PolarError):
-    def __init__(self, method: str, error: str) -> None:
-        self.method = method
-        self.error = error
-        super().__init__(f"Slack API call {method} failed: {error}")
 
 
 class SlackClient:

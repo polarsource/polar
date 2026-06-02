@@ -23,12 +23,6 @@ class BenefitSlackIntegrationRepository(
         )
         return await self.get_one_or_none(statement)
 
-    async def get_by_team_id(self, team_id: str) -> BenefitSlackIntegration | None:
-        statement = self.get_base_statement().where(
-            BenefitSlackIntegration.team_id == team_id
-        )
-        return await self.get_one_or_none(statement)
-
     async def delete(self, integration: BenefitSlackIntegration) -> None:
         await self.session.delete(integration)
         await self.session.flush()

@@ -1,10 +1,9 @@
-/* eslint-disable no-restricted-imports, email-ds/no-classname */
-import { Preview, Section } from 'react-email'
-import BodyText from '../components/BodyText'
-import Button from '../components/Button'
-import FooterCustomer from '../components/FooterCustomer'
-import Intro from '../components/Intro'
-import WrapperOrganization from '../components/WrapperOrganization'
+import {
+  Button,
+  FooterCustomer,
+  WrapperOrganization,
+} from '../components/layout'
+import { Intro, Text } from '../components/text'
 import { organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -16,26 +15,26 @@ export function SubscriptionRenewalReminder({
   renewal_date,
 }: schemas['SubscriptionRenewalReminderProps']) {
   return (
-    <WrapperOrganization organization={organization}>
-      <Preview>
-        Your {product.name} subscription renews on {renewal_date}
-      </Preview>
-
+    <WrapperOrganization
+      organization={organization}
+      preview={`Your ${product.name} subscription renews on ${renewal_date}`}
+    >
       <Intro headline="Upcoming subscription renewal">
-        Your <span className="font-medium">{product.name}</span> subscription
-        will automatically renew on{' '}
-        <span className="font-medium">{renewal_date}</span>.
+        Your{' '}
+        <Text as="span" weight="medium">
+          {product.name}
+        </Text>{' '}
+        subscription will automatically renew on{' '}
+        <Text as="span" weight="medium">
+          {renewal_date}
+        </Text>
+        .
       </Intro>
-
-      <BodyText>
+      <Text>
         If you&rsquo;d like to make any changes to your subscription, you can do
         so from your customer portal.
-      </BodyText>
-
-      <Section className="my-8 text-center">
-        <Button href={url}>Manage subscription</Button>
-      </Section>
-
+      </Text>
+      <Button href={url}>Manage subscription</Button>
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
   )

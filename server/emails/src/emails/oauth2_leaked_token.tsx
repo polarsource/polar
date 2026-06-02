@@ -1,8 +1,7 @@
-/* eslint-disable no-restricted-imports, email-ds/no-classname */
-import { Link, Preview, Section, Text } from 'react-email'
-import Footer from '../components/Footer'
 import InfoBox from '../components/InfoBox'
-import WrapperPolar from '../components/WrapperPolar'
+import { Footer, WrapperPolar } from '../components/layout'
+import SecurityFaqNote from '../components/SecurityFaqNote'
+import { EmailLink, Heading, List, Text } from '../components/text'
 import type { schemas } from '../types'
 
 export function OAuth2LeakedToken({
@@ -12,56 +11,34 @@ export function OAuth2LeakedToken({
   client_name,
 }: schemas['OAuth2LeakedTokenProps']) {
   return (
-    <WrapperPolar>
-      <Preview>
-        Important security notice: Your access or refresh token has been
-        publicly leaked
-      </Preview>
-      <Section>
-        <Text className="text-xl font-bold text-gray-900">
-          Important security notice
-        </Text>
-        <Text>
-          We've been notified that one of your access or refresh token has been
-          publicly leaked. For your security, we've automatically revoked this
-          access token and the associated refresh token.
-        </Text>
-        <Text>
-          In the coming days, be extra careful about any suspicious activity on
-          your account and get in touch with us if you have any doubt.
-        </Text>
-      </Section>
+    <WrapperPolar preview="Important security notice: Your access or refresh token has been publicly leaked">
+      <Heading>Important security notice</Heading>
+      <Text>
+        We've been notified that one of your access or refresh token has been
+        publicly leaked. For your security, we've automatically revoked this
+        access token and the associated refresh token.
+      </Text>
+      <Text>
+        In the coming days, be extra careful about any suspicious activity on
+        your account and get in touch with us if you have any doubt.
+      </Text>
       <InfoBox title="Leak details" variant="info">
-        <ul className="list-disc space-y-1 pl-6">
-          <li>Notifier: {notifier}</li>
-          <li>URL: {url}</li>
-          <li>OAuth2 Client: {client_name}</li>
-        </ul>
-        <Text className="mt-4 mb-0 text-sm text-gray-600">
+        <List>
+          <List.Item>Notifier: {notifier}</List.Item>
+          <List.Item>URL: {url}</List.Item>
+          <List.Item>OAuth2 Client: {client_name}</List.Item>
+        </List>
+        <Text variant="caption">
           As a reminder, access and refresh tokens are super sensitive values
           that shouldn't be shared publicly on the web or in a code repository.
           Use dedicated features to safely store secrets, like{' '}
-          <Link
-            href="https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions"
-            className="text-blue-600 underline"
-          >
+          <EmailLink href="https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions">
             GitHub Actions secrets
-          </Link>
+          </EmailLink>
           .
         </Text>
       </InfoBox>
-      <Section className="mt-6 border-t border-gray-200 pt-4 pb-2">
-        <Text className="m-0 text-sm text-gray-600">
-          You can read more about why you received this alert in our{' '}
-          <Link
-            href="https://polar.sh/docs/documentation/integration-guides/authenticating-with-polar#security"
-            className="text-blue-600 underline"
-          >
-            FAQ
-          </Link>
-          .
-        </Text>
-      </Section>
+      <SecurityFaqNote />
       <Footer email={email} />
     </WrapperPolar>
   )

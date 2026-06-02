@@ -46,7 +46,7 @@ function formatCurrency(amount: number, currency: string = 'USD'): string {
 const OrderSummary = ({ order }: OrderSummaryProps) => {
   return (
     <Section>
-      <Heading as="h2" className="text-lg font-bold">
+      <Heading as="h2" className="mt-0 text-lg font-bold">
         Order summary
       </Heading>
       {/* Invoice Details */}

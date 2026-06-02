@@ -441,40 +441,33 @@ class PayoutService:
 
             return payout
 
-    async def transfer_stripe(self, session: AsyncSession, payout: Payout) -> Payout:
-        """
-        The Stripe payout is a two-steps process:
+    async def transfer(self, session: AsyncSession, payout: Payout) -> Payout:
+        """Move funds for a payout, whatever its processor.
 
-        1. Make the transfer to the Stripe Connect account
-        2. Trigger a payout on the Stripe Connect account,
-        but later once the balance is actually available.
-
-        This function performs the first step.
+        The caller (the ``payout.transfer`` task) holds a FOR UPDATE lock on the
+        payout row, so this re-checks the payout is still payable, guards against
+        a payout-account swap, and only then dispatches to the processor-specific
+        transfer. Kept processor-agnostic so any future processor inherits the
+        guards.
         """
-        # Lock + re-read status before moving funds: a queued transfer can race a
-        # cancel (deny/block/backoffice) and would otherwise pay out a payout the
-        # ledger already reversed. The FOR UPDATE serializes with cancel(), which
-        # holds the same lock.
-        await session.refresh(payout, attribute_names=["status"], with_for_update=True)
         if payout.status in (PayoutStatus.canceled, PayoutStatus.held):
             log.warning(
-                "payout.transfer_stripe.skipped_not_payable",
+                "payout.transfer.skipped_not_payable",
                 payout_id=str(payout.id),
                 status=payout.status,
             )
             return payout
 
+        # The payout pins the payout account it was created against. If the org
+        # has since swapped its payout account (a release can win the race
+        # against the swap-cancel job), transferring would send funds to the
+        # abandoned account. Before any transfer is made, cancel + refund instead
+        # so the merchant re-requests against the current account.
         payout_transaction_repository = PayoutTransactionRepository.from_session(
             session
         )
         transaction = await payout_transaction_repository.get_by_payout_id(payout.id)
         assert transaction is not None
-
-        # The payout pins the Connect account it was created against. If the org
-        # has since swapped its payout account (a release can win the race
-        # against the swap-cancel job), transferring would send funds to the
-        # abandoned account. Before any transfer is made, cancel + refund
-        # instead so the merchant re-requests against the current account.
         if transaction.transfer_id is None:
             organization_repository = OrganizationRepository.from_session(session)
             organization = await organization_repository.get_by_account(
@@ -486,15 +479,37 @@ class PayoutService:
                 and organization.payout_account_id != payout.payout_account_id
             ):
                 log.warning(
-                    "payout.transfer_stripe.skipped_payout_account_changed",
+                    "payout.transfer.skipped_payout_account_changed",
                     payout_id=str(payout.id),
                     pinned_payout_account_id=str(payout.payout_account_id),
                     current_payout_account_id=str(organization.payout_account_id),
                 )
                 return await self.cancel(session, payout)
 
+        if payout.processor == PayoutAccountType.stripe:
+            return await self.transfer_stripe(session, payout)
+
+        return payout
+
+    async def transfer_stripe(self, session: AsyncSession, payout: Payout) -> Payout:
+        """
+        The Stripe payout is a two-steps process:
+
+        1. Make the transfer to the Stripe Connect account
+        2. Trigger a payout on the Stripe Connect account,
+        but later once the balance is actually available.
+
+        This function performs the first step. Callers must go through
+        ``transfer``, which holds the row lock and runs the payable/swap guards.
+        """
         payout_account = payout.payout_account
         assert payout_account.stripe_id is not None
+
+        payout_transaction_repository = PayoutTransactionRepository.from_session(
+            session
+        )
+        transaction = await payout_transaction_repository.get_by_payout_id(payout.id)
+        assert transaction is not None
 
         stripe_transfer = await stripe_service.transfer(
             payout_account.stripe_id,
@@ -790,7 +805,7 @@ class PayoutService:
         offboarding). Restricted to ``held`` when a payout account is swapped
         while a payout is still held, so the release can't transfer to a stale
         account. ``payout_account_id`` further scopes the cancel to payouts
-        pinned to that Connect account (the swap case passes the previous one).
+        pinned to that payout account (the swap case passes the previous one).
         """
         repository = PayoutRepository.from_session(session)
         payouts = await repository.get_by_account_and_statuses(

@@ -2,7 +2,6 @@ import uuid
 
 import structlog
 
-from polar.enums import PayoutAccountType
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models.payout import PayoutStatus
@@ -49,8 +48,12 @@ async def payout_transfer(payout_id: uuid.UUID) -> None:
         if payout is None:
             raise PayoutDoesNotExist(payout_id)
 
-        if payout.processor == PayoutAccountType.stripe:
-            await payout_service.transfer_stripe(session, payout)
+        # Lock + re-read status before handing off: a queued transfer can race a
+        # cancel (deny/block/backoffice) and would otherwise pay out a payout the
+        # ledger already reversed. The FOR UPDATE serializes with cancel(), which
+        # takes the same lock.
+        await session.refresh(payout, attribute_names=["status"], with_for_update=True)
+        await payout_service.transfer(session, payout)
 
 
 @actor(
@@ -130,7 +133,7 @@ async def cancel_held_payouts(
 ) -> None:
     """Cancel only held payouts for an account when its payout account changes.
 
-    Enqueued by ``set_payout_account`` on a swap: a held payout pins the Connect
+    Enqueued by ``set_payout_account`` on a swap: a held payout pins the payout
     account it was created against, so releasing it later would transfer to the
     stale account. Scoped to ``payout_account_id`` (the previous account) so a
     held payout already created against the new account isn't canceled. Pending

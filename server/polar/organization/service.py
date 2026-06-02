@@ -789,7 +789,7 @@ class OrganizationService:
             flush=True,
         )
 
-        # A held payout pins the Connect account it was created against, so a
+        # A held payout pins the payout account it was created against, so a
         # rebind would release to a stale account. Cancel held payouts on swap
         # (they refund their fees, so re-requesting is safe); leave pending ones,
         # whose transfer may already be in flight. Scope the cancel to the

@@ -596,8 +596,7 @@ class TestTransferStripe:
         user: User,
     ) -> None:
         # A payout.transfer job can race a cancellation (or a rolled-back
-        # release): transfer_stripe must not move funds for a canceled/held
-        # payout.
+        # release): transfer must not move funds for a canceled/held payout.
         account = await create_account(save_fixture, user)
         payout_account = await create_payout_account(
             save_fixture, organization, user, type=PayoutAccountType.stripe
@@ -610,7 +609,7 @@ class TestTransferStripe:
             attempts=[],
         )
 
-        result = await payout_service.transfer_stripe(session, payout)
+        result = await payout_service.transfer(session, payout)
 
         assert result.status == status
         stripe_service_mock.transfer.assert_not_called()
@@ -625,10 +624,10 @@ class TestTransferStripe:
         user: User,
         payout_transaction_service_mock: MagicMock,
     ) -> None:
-        # transfer_stripe locks and re-reads the row, so a cancel that commits
-        # after the payout.transfer job was queued is observed and the Stripe
-        # transfer is skipped — without this the funds would move for a payout
-        # the ledger has already reversed.
+        # A cancel that commits after the payout.transfer job was queued leaves
+        # the row canceled; transfer must honor that and skip rather than pay out
+        # a payout the ledger already reversed. (The task's FOR UPDATE re-read is
+        # what surfaces the committed status in production.)
         mocker.patch(
             "polar.payout.service.platform_fee_transaction_service"
             ".create_payout_fees_reversal_balances"
@@ -664,7 +663,7 @@ class TestTransferStripe:
         await session.flush()
 
         # ...then the already-queued transfer runs and must skip.
-        result = await payout_service.transfer_stripe(session, payout)
+        result = await payout_service.transfer(session, payout)
 
         assert result.status == PayoutStatus.canceled
         stripe_service_mock.transfer.assert_not_called()
@@ -680,9 +679,9 @@ class TestTransferStripe:
         payout_transaction_service_mock: MagicMock,
     ) -> None:
         # A released hold can win the race against the swap-cancel job. Before
-        # any transfer is made, transfer_stripe must notice the org now points
-        # at a different payout account and cancel + refund instead of sending
-        # funds to the abandoned Connect account.
+        # any transfer is made, transfer must notice the org now points at a
+        # different payout account and cancel + refund instead of sending funds
+        # to the abandoned account.
         fee_reversal_mock = mocker.patch(
             "polar.payout.service.platform_fee_transaction_service"
             ".create_payout_fees_reversal_balances"
@@ -723,7 +722,7 @@ class TestTransferStripe:
 
         assert organization.payout_account_id == new_payout_account.id
 
-        result = await payout_service.transfer_stripe(session, payout)
+        result = await payout_service.transfer(session, payout)
 
         assert result.status == PayoutStatus.canceled
         stripe_service_mock.transfer.assert_not_called()

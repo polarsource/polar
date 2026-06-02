@@ -29,6 +29,7 @@ from polar.checkout.schemas import (
 from polar.config import settings
 from polar.custom_field.data import validate_custom_field_data
 from polar.customer.repository import CustomerRepository
+from polar.customer_seat.repository import CustomerSeatRepository
 from polar.customer_seat.service import seat_service
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import DiscountNotRedeemableError
@@ -1349,6 +1350,23 @@ class CheckoutService:
         container: Subscription | Order | None = subscription or order
         if container is None or container.customer is None:
             return
+
+        # One-time seat purchases mint a fresh order (and thus a fresh seat
+        # container) on every checkout, so the per-container assignment guards
+        # can't tell that a repeat buyer already self-claimed a seat for this
+        # product on an earlier order. Bail out if they did, to avoid claiming
+        # a duplicate seat for the same person.
+        if isinstance(container, Order):
+            product = container.product
+            if product is not None:
+                seat_repository = CustomerSeatRepository.from_session(session)
+                already_claimed = (
+                    await seat_repository.has_claimed_seat_for_product_via_orders(
+                        product.id, container.customer_id
+                    )
+                )
+                if already_claimed:
+                    return
 
         try:
             await seat_service.assign_seat(

@@ -69,8 +69,9 @@ from polar.models import (
 from polar.models.checkout import CheckoutStatus
 from polar.models.custom_field import CustomFieldType
 from polar.models.customer import CustomerType
+from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
-from polar.models.order import OrderBillingReasonInternal
+from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.product_price import (
     ProductPriceAmountType,
@@ -106,7 +107,9 @@ from tests.fixtures.random_objects import (
     create_checkout_link,
     create_custom_field,
     create_customer,
+    create_customer_seat,
     create_discount,
+    create_order,
     create_product,
     create_product_price_fixed,
     create_product_price_seat_unit,
@@ -358,6 +361,18 @@ async def product_seat_based(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[("seat", 1000, "usd")],
+    )
+
+
+@pytest_asyncio.fixture
+async def product_one_time_seat_based(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=None,
         prices=[("seat", 1000, "usd")],
     )
 
@@ -6007,6 +6022,82 @@ class TestHandleSuccess:
 
         await checkout_service.handle_success(
             session, checkout_confirmed_recurring, payment
+        )
+
+        seat_service_mock.assign_seat.assert_not_called()
+
+    async def test_seat_based_one_time_first_purchase_auto_claims(
+        self,
+        save_fixture: SaveFixture,
+        seat_service_mock: MagicMock,
+        session: AsyncSession,
+        product_one_time_seat_based: Product,
+        customer: Customer,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time_seat_based],
+            status=CheckoutStatus.confirmed,
+            seats=1,
+        )
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product_one_time_seat_based,
+            status=OrderStatus.paid,
+        )
+
+        await checkout_service._maybe_auto_claim_single_seat(
+            session, checkout, None, order
+        )
+
+        seat_service_mock.assign_seat.assert_called_once_with(
+            ANY,
+            order,
+            email=customer.email,
+            immediate_claim=True,
+        )
+
+    async def test_seat_based_one_time_repeat_purchase_does_not_reclaim(
+        self,
+        save_fixture: SaveFixture,
+        seat_service_mock: MagicMock,
+        session: AsyncSession,
+        product_one_time_seat_based: Product,
+        customer: Customer,
+    ) -> None:
+        # An earlier one-time purchase already auto-claimed a seat for this
+        # buyer on its own order.
+        previous_order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product_one_time_seat_based,
+            status=OrderStatus.paid,
+        )
+        await create_customer_seat(
+            save_fixture,
+            order=previous_order,
+            customer=customer,
+            status=SeatStatus.claimed,
+            email=customer.email,
+        )
+
+        # The buyer purchases the same product again, minting a fresh order.
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time_seat_based],
+            status=CheckoutStatus.confirmed,
+            seats=1,
+        )
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product_one_time_seat_based,
+            status=OrderStatus.paid,
+        )
+
+        await checkout_service._maybe_auto_claim_single_seat(
+            session, checkout, None, order
         )
 
         seat_service_mock.assign_seat.assert_not_called()

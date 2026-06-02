@@ -968,6 +968,25 @@ class TestConfirmOrganizationReviewed:
                 session, organization, 15000
             )
 
+    async def test_enqueues_release_held_payouts(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.confirm_organization_reviewed(
+            session, organization, 15000
+        )
+
+        assert result is not None
+        enqueue_job_mock.assert_any_call(
+            "organization.release_held_payouts",
+            account_id=organization.account_id,
+        )
+
     async def test_race_lost_returns_none(
         self,
         session: AsyncSession,
@@ -1185,6 +1204,52 @@ class TestDenyOrganization:
 
         # Then
         assert result.status == OrganizationStatus.DENIED
+
+    async def test_enqueues_cancel_pending_payouts(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.deny_organization(session, organization)
+
+        enqueue_job_mock.assert_any_call(
+            "organization.cancel_pending_payouts",
+            account_id=organization.account_id,
+        )
+
+
+@pytest.mark.asyncio
+class TestBlockOrganization:
+    async def test_block_organization(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.ACTIVE
+
+        result = await organization_service.block_organization(session, organization)
+
+        assert result.status == OrganizationStatus.BLOCKED
+
+    async def test_enqueues_cancel_pending_payouts(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.block_organization(session, organization)
+
+        enqueue_job_mock.assert_any_call(
+            "organization.cancel_pending_payouts",
+            account_id=organization.account_id,
+        )
 
 
 @pytest.mark.asyncio
@@ -3431,6 +3496,22 @@ class TestSetOrganizationOffboarding:
         assert result.internal_notes is not None
         assert "Requested by merchant" in result.internal_notes
 
+    async def test_enqueues_cancel_pending_payouts(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.set_organization_offboarding(session, organization)
+
+        enqueue_job_mock.assert_any_call(
+            "organization.cancel_pending_payouts",
+            account_id=organization.account_id,
+        )
+
 
 @pytest.mark.asyncio
 class TestSnoozeOrganization:
@@ -3732,6 +3813,65 @@ class TestSetPayoutAccount:
 
         assert updated_org.payout_account_id == payout_account.id
         assert updated_org.status == OrganizationStatus.ACTIVE
+
+    @pytest.mark.auth
+    async def test_swap_cancels_held_payouts(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        from polar.models.payout import PayoutStatus
+
+        old_payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        new_payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        # create_payout_account links the org to whichever account it just
+        # created, so pin the "previous" account back to the old one.
+        organization.payout_account = old_payout_account
+        await save_fixture(organization)
+
+        cancel_mock = mocker.patch("polar.payout.service.payout.cancel_account_payouts")
+
+        await organization_service.set_payout_account(
+            session, organization, new_payout_account
+        )
+
+        cancel_mock.assert_called_once_with(
+            session,
+            organization.account_id,
+            statuses=(PayoutStatus.held,),
+        )
+
+    @pytest.mark.auth
+    async def test_no_swap_does_not_cancel(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        organization.payout_account = payout_account
+        await save_fixture(organization)
+
+        cancel_mock = mocker.patch("polar.payout.service.payout.cancel_account_payouts")
+
+        await organization_service.set_payout_account(
+            session, organization, payout_account
+        )
+
+        cancel_mock.assert_not_called()
 
 
 @pytest.mark.asyncio

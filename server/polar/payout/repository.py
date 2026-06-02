@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import timedelta
 from uuid import UUID
 
-from sqlalchemy import Select, exists, select
+from sqlalchemy import Select, exists, select, update
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -52,12 +52,57 @@ class PayoutRepository(
             Payout.payout_account_id == payout_account_id,
             Payout.status.in_(
                 {
+                    # `held` reserves funds against the account just like
+                    # `pending`, so it must count here too — otherwise a payout
+                    # account with held funds could be deleted.
+                    PayoutStatus.held,
                     PayoutStatus.pending,
                     PayoutStatus.in_transit,
                 }
             ),
         )
         return await self.count(statement)
+
+    async def get_by_account_and_statuses(
+        self,
+        account_id: UUID,
+        statuses: Sequence[PayoutStatus],
+        *,
+        options: Options = (),
+    ) -> Sequence[Payout]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Payout.account_id == account_id,
+                Payout.status.in_(statuses),
+            )
+            # Deterministic order so two concurrent cancel jobs lock the rows
+            # (FOR UPDATE in PayoutService.cancel) in the same order and can't
+            # deadlock.
+            .order_by(Payout.created_at.asc(), Payout.id.asc())
+            .options(*options)
+        )
+        return await self.get_all(statement)
+
+    async def release_held_by_account(self, account_id: UUID) -> Sequence[UUID]:
+        """Move every held payout for an account back to `pending`.
+
+        Returns the ids of the released payouts so the caller can enqueue the
+        Stripe transfer that was skipped while they were held. Done as a single
+        UPDATE ... RETURNING so concurrent releases can't double-release a row.
+        """
+        statement = (
+            update(Payout)
+            .where(
+                Payout.account_id == account_id,
+                Payout.status == PayoutStatus.held,
+                Payout.deleted_at.is_(None),
+            )
+            .values(status=PayoutStatus.pending)
+            .returning(Payout.id)
+        )
+        result = await self.session.execute(statement)
+        return [row[0] for row in result.all()]
 
     async def get_all_stripe_pending(
         self, delay: timedelta = settings.ACCOUNT_PAYOUT_DELAY
@@ -71,7 +116,9 @@ class PayoutRepository(
             .where(
                 Payout.processor == PayoutAccountType.stripe,
                 Payout.created_at < utc_now() - delay,
-                Payout.status.not_in([PayoutStatus.canceled, PayoutStatus.succeeded]),
+                # Strictly `pending`: `held` payouts are not yet payable, so
+                # they must not be picked up by the hourly Stripe-transfer cron.
+                Payout.status == PayoutStatus.pending,
                 # Only include payouts that have no attempts yet
                 ~exists(
                     select(PayoutAttempt).where(PayoutAttempt.payout_id == Payout.id)

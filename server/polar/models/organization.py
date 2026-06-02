@@ -281,7 +281,10 @@ STATUS_CAPABILITIES: dict[OrganizationStatus, OrganizationCapabilities] = {
     OrganizationStatus.REVIEW: {
         "checkout_payments": True,
         "subscription_renewals": True,
-        "payouts": False,
+        # Payouts are allowed while under review: the request is reserved and
+        # held until the org is approved (see PayoutService.create). `payouts`
+        # now means "the merchant may request a payout", not "paid immediately".
+        "payouts": True,
         "refunds": True,
         "api_access": True,
         "dashboard_access": True,
@@ -289,7 +292,8 @@ STATUS_CAPABILITIES: dict[OrganizationStatus, OrganizationCapabilities] = {
     OrganizationStatus.SNOOZED: {
         "checkout_payments": True,
         "subscription_renewals": True,
-        "payouts": False,
+        # See REVIEW: held payouts are allowed while snoozed too.
+        "payouts": True,
         "refunds": True,
         "api_access": True,
         "dashboard_access": True,

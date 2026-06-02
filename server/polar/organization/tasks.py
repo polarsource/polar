@@ -14,6 +14,7 @@ from polar.models.benefit_grant import BenefitGrant
 from polar.models.customer_seat import SeatStatus
 from polar.models.member import Member, MemberRole
 from polar.models.organization import OrganizationStatus
+from polar.payout.service import payout as payout_service
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
 from polar.worker import (
@@ -125,6 +126,30 @@ async def organization_under_review(organization_id: uuid.UUID) -> None:
             organization_id=organization_id,
             auto_approve_eligible=is_auto_approve_eligible,
         )
+
+
+@actor(actor_name="organization.release_held_payouts", priority=TaskPriority.LOW)
+async def organization_release_held_payouts(account_id: uuid.UUID) -> None:
+    """Release held payouts for an account once its org becomes ACTIVE.
+
+    Enqueued by ``confirm_organization_reviewed`` after a REVIEW/SNOOZED org is
+    approved. Moves held payouts back to ``pending`` and kicks off the Stripe
+    transfer that was held back at request time.
+    """
+    async with AsyncSessionMaker() as session:
+        await payout_service.release_held_payouts(session, account_id)
+
+
+@actor(actor_name="organization.cancel_pending_payouts", priority=TaskPriority.LOW)
+async def organization_cancel_pending_payouts(account_id: uuid.UUID) -> None:
+    """Cancel in-flight payouts for an account leaving the review flow.
+
+    Enqueued when an org is denied, blocked or set to offboarding. Cancels both
+    ``held`` and ``pending`` payouts and returns the reserved funds (gross plus
+    fees) to the available balance.
+    """
+    async with AsyncSessionMaker() as session:
+        await payout_service.cancel_account_payouts(session, account_id)
 
 
 @actor(actor_name="organization.deletion_requested", priority=TaskPriority.HIGH)

@@ -780,12 +780,35 @@ class OrganizationService:
         organization: Organization,
         payout_account: PayoutAccount,
     ) -> Organization:
+        from polar.models.payout import PayoutStatus
+        from polar.payout.service import payout as payout_service
+
+        previous_payout_account_id = organization.payout_account_id
+
         organization_repository = OrganizationRepository.from_session(session)
         await organization_repository.update(
             organization,
             update_dict={"payout_account_id": payout_account.id},
             flush=True,
         )
+
+        # A held payout pins the Connect account it was created against. If the
+        # merchant rebinds to a different account while a payout is held, the
+        # release would transfer to the stale account — so cancel held payouts
+        # here and let them re-request. Canceled held payouts return their fees
+        # too, so re-requesting doesn't double-charge. Pending payouts are left
+        # alone (their transfer may already be in flight to the old account).
+        account_changed = (
+            previous_payout_account_id is not None
+            and previous_payout_account_id != payout_account.id
+        )
+        if account_changed and organization.account_id is not None:
+            await payout_service.cancel_account_payouts(
+                session,
+                organization.account_id,
+                statuses=(PayoutStatus.held,),
+            )
+
         # Reusing an already-ready payout account doesn't fire a Stripe
         # `account.updated` webhook, so attempt activation here too.
         await self.maybe_activate(session, organization)
@@ -980,6 +1003,15 @@ class OrganizationService:
 
         return organization
 
+    def _enqueue_cancel_pending_payouts(self, organization: Organization) -> None:
+        """Cancel in-flight (held/pending) payouts when an org leaves the
+        review flow to a terminal state (denied, blocked, offboarding)."""
+        if organization.account_id is not None:
+            enqueue_job(
+                "organization.cancel_pending_payouts",
+                account_id=organization.account_id,
+            )
+
     async def block_organization(
         self,
         session: AsyncSession,
@@ -988,6 +1020,7 @@ class OrganizationService:
         """Block an organization by setting status to BLOCKED."""
         organization.set_status(OrganizationStatus.BLOCKED)
         session.add(organization)
+        self._enqueue_cancel_pending_payouts(organization)
         return organization
 
     async def confirm_organization_reviewed(
@@ -1023,13 +1056,23 @@ class OrganizationService:
             )
 
         repository = OrganizationRepository.from_session(session)
-        return await repository.confirm_review_atomic(
+        confirmed = await repository.confirm_review_atomic(
             organization.id,
             next_review_threshold=next_review_threshold,
             min_threshold=_MIN_REVIEW_THRESHOLD,
             active_capabilities={**STATUS_CAPABILITIES[OrganizationStatus.ACTIVE]},
             now=datetime.now(UTC),
         )
+
+        # Only the worker that actually flipped the org to ACTIVE releases its
+        # held payouts; a lost race returns None and does nothing.
+        if confirmed is not None and confirmed.account_id is not None:
+            enqueue_job(
+                "organization.release_held_payouts",
+                account_id=confirmed.account_id,
+            )
+
+        return confirmed
 
     async def _is_activation_ready(
         self, session: AsyncSession, organization: Organization
@@ -1238,6 +1281,8 @@ class OrganizationService:
         organization.set_status(OrganizationStatus.DENIED)
         session.add(organization)
 
+        self._enqueue_cancel_pending_payouts(organization)
+
         # If there's a pending appeal, mark it as rejected
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
@@ -1381,6 +1426,7 @@ class OrganizationService:
             organization, "Organization set to offboarding.", reason=reason
         )
         session.add(organization)
+        self._enqueue_cancel_pending_payouts(organization)
         return organization
 
     def get_payment_status(self, organization: Organization) -> PaymentStatusResponse:

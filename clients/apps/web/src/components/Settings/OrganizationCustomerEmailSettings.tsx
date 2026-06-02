@@ -1,17 +1,9 @@
 import { useUpdateOrganization } from '@/hooks/queries'
-import { useAutoSave } from '@/hooks/useAutoSave'
-import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
-import { isValidationError, schemas } from '@polar-sh/client'
+import { useOptimisticSave } from '@/hooks/useOptimisticSave'
+import { extractApiErrorMessage } from '@/utils/api/errors'
+import { schemas } from '@polar-sh/client'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from '@polar-sh/ui/components/ui/form'
 import React from 'react'
-import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
@@ -88,81 +80,41 @@ const customerEmails: {
 const OrganizationCustomerEmailSettings: React.FC<
   OrganizationCustomerEmailSettingsProps
 > = ({ organization }) => {
-  const form = useForm<schemas['OrganizationCustomerEmailSettings']>({
-    defaultValues: organization.customer_email_settings,
-  })
-  const { control, setError, reset } = form
-
   const updateOrganization = useUpdateOrganization()
-  const onSave = async (
-    customer_email_settings: schemas['OrganizationCustomerEmailSettings'],
-  ) => {
-    const { data, error } = await updateOrganization.mutateAsync({
-      id: organization.id,
-      body: {
-        customer_email_settings,
-      },
-    })
 
-    if (error) {
-      if (isValidationError(error.detail)) {
-        setValidationErrors(error.detail, setError)
-      } else {
-        setError('root', { message: error.detail })
-      }
-
-      toast({
-        title: 'Customer Email Settings Update Failed',
-        description: `Error updating customer email settings: ${extractApiErrorMessage(error)}`,
+  const { value: settings, update } = useOptimisticSave(
+    organization.customer_email_settings,
+    async (customer_email_settings) => {
+      const { error } = await updateOrganization.mutateAsync({
+        id: organization.id,
+        body: { customer_email_settings },
       })
 
-      return
-    }
+      if (error) {
+        toast({
+          title: 'Customer Email Settings Update Failed',
+          description: `Error updating customer email settings: ${extractApiErrorMessage(error)}`,
+        })
+        return false
+      }
 
-    reset(data.customer_email_settings)
-  }
-
-  useAutoSave({
-    form,
-    onSave,
-    delay: 200,
-  })
+      return true
+    },
+  )
 
   return (
-    <Form {...form}>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-        }}
-      >
-        <SettingsGroup>
-          {customerEmails.map(({ key, title, description }) => (
-            <SettingsGroupItem
-              key={key}
-              title={title}
-              description={description}
-            >
-              <FormField
-                control={control}
-                name={key}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </SettingsGroupItem>
-          ))}
-        </SettingsGroup>
-      </form>
-    </Form>
+    <SettingsGroup>
+      {customerEmails.map(({ key, title, description }) => (
+        <SettingsGroupItem key={key} title={title} description={description}>
+          <Switch
+            checked={settings[key]}
+            onCheckedChange={(checked) =>
+              update((previous) => ({ ...previous, [key]: checked }))
+            }
+          />
+        </SettingsGroupItem>
+      ))}
+    </SettingsGroup>
   )
 }
 

@@ -6,8 +6,6 @@ import {
   useTOTPStatus,
   useTOTPDelete,
 } from '@/hooks'
-import VerifiedUserOutlined from '@mui/icons-material/VerifiedUserOutlined'
-import KeyOutlined from '@mui/icons-material/KeyOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ListGroup from '@polar-sh/ui/components/atoms/ListGroup'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
@@ -16,6 +14,7 @@ import { useState } from 'react'
 import TOTPSetupModal from './TOTPSetupModal'
 import BackupCodesModal from './BackupCodesModal'
 import BackupCodesRegenerateModal from './BackupCodesRegenerateModal'
+import { KeyRoundIcon, ShieldCheckIcon } from 'lucide-react'
 
 const AuthenticationMethod = ({
   icon,
@@ -87,12 +86,12 @@ const TwoFactorSettings = () => {
       <ListGroup>
         <ListGroup.Item>
           <AuthenticationMethod
-            icon={<VerifiedUserOutlined />}
+            icon={<ShieldCheckIcon />}
             title="Authenticator App"
             subtitle={
               totpStatus.data?.enabled
-                ? 'Use an authenticator app to sign in.'
-                : 'Add an extra layer of security to your account.'
+                ? "You're using an authenticator app to sign in securely."
+                : 'Add an extra layer of security when you sign in.'
             }
             action={
               totpStatus.data?.enabled ? (
@@ -110,52 +109,67 @@ const TwoFactorSettings = () => {
           />
         </ListGroup.Item>
 
-        <ListGroup.Item>
-          <AuthenticationMethod
-            icon={<KeyOutlined />}
-            title="Backup Codes"
-            subtitle={
-              backupCodesStatus.data
-                ? `${backupCodesStatus.data.codes - backupCodesStatus.data.used_codes} remaining`
-                : 'Generate backup codes for emergency access.'
-            }
-            action={
-              backupCodesStatus.data?.codes &&
-              backupCodesStatus.data.codes > 0 ? (
-                <Button
-                  variant="secondary"
-                  onClick={showBackupCodesRegenerateModal}
-                  loading={backupCodesEnroll.isPending}
-                >
-                  Regenerate
-                </Button>
-              ) : totpStatus.data?.enabled ? (
-                <Button
-                  onClick={async () => {
-                    const result = await backupCodesEnroll.mutateAsync()
-                    if (result.data?.codes) {
-                      setNewBackupCodes(result.data.codes)
-                      await backupCodesStatus.refetch()
-                      showBackupCodesModal()
-                    }
-                  }}
-                  loading={backupCodesEnroll.isPending}
-                >
-                  Generate
-                </Button>
-              ) : null
-            }
-          />
-        </ListGroup.Item>
+        {totpStatus.data?.enabled && (
+          <ListGroup.Item>
+            <AuthenticationMethod
+              icon={<KeyRoundIcon />}
+              title="Backup Codes"
+              subtitle={
+                backupCodesStatus.data
+                  ? `${backupCodesStatus.data.codes - backupCodesStatus.data.used_codes} remaining`
+                  : 'Generate backup codes for emergency access.'
+              }
+              action={
+                backupCodesStatus.data?.codes &&
+                backupCodesStatus.data.codes > 0 ? (
+                  <Button
+                    variant="secondary"
+                    onClick={showBackupCodesRegenerateModal}
+                    loading={backupCodesEnroll.isPending}
+                  >
+                    Regenerate
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={async () => {
+                      const result = await backupCodesEnroll.mutateAsync()
+                      if (result.data?.codes) {
+                        setNewBackupCodes(result.data.codes)
+                        await backupCodesStatus.refetch()
+                        showBackupCodesModal()
+                      }
+                    }}
+                    loading={backupCodesEnroll.isPending}
+                  >
+                    Generate
+                  </Button>
+                )
+              }
+            />
+          </ListGroup.Item>
+        )}
       </ListGroup>
 
-      <TOTPSetupModal isShown={isTOTPModalShown} hide={hideTOTPModal} />
+      <TOTPSetupModal
+        isShown={isTOTPModalShown}
+        hide={hideTOTPModal}
+        onEnabled={async () => {
+          hideTOTPModal()
+          await totpStatus.refetch()
+          const result = await backupCodesEnroll.mutateAsync()
+          if (result.data?.codes) {
+            setNewBackupCodes(result.data.codes)
+            await backupCodesStatus.refetch()
+            showBackupCodesModal()
+          }
+        }}
+      />
 
       <ConfirmModal
         isShown={isDeleteConfirmShown}
         hide={hideDeleteConfirmModal}
-        title="Disable Authenticator App"
-        description="Are you sure you want to disable your authenticator app? Your account will be less secure without two-factor authentication."
+        title="Disable Authenticator App?"
+        description="You'll no longer be asked for a code when you sign in, and your backup codes will stop working. You can turn it back on anytime."
         destructive
         destructiveText="Disable"
         onConfirm={handleDeleteTOTP}

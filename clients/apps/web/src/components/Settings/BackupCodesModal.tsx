@@ -2,6 +2,7 @@
 
 import { Modal } from '@/components/Modal'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import { useEffect, useRef, useState } from 'react'
 
 interface BackupCodesModalProps {
   isShown: boolean
@@ -16,16 +17,30 @@ export default function BackupCodesModal({
 }: BackupCodesModalProps) {
   const codesText = codes.join('\n')
 
+  const [isCopied, setIsCopied] = useState(false)
+  const copyResetTimeout = useRef<number | null>(null)
+
   const handleCopy = () => {
     navigator.clipboard.writeText(codesText)
+    setIsCopied(true)
+    copyResetTimeout.current = window.setTimeout(() => setIsCopied(false), 2000)
   }
+
+  // Clear timeout if the component unmounts while the "Copied!" state is active
+  useEffect(() => {
+    return () => {
+      if (copyResetTimeout.current) {
+        clearTimeout(copyResetTimeout.current)
+      }
+    }
+  }, [])
 
   const modalContent = (
     <div className="p-8">
-      <p className="dark:text-polar-400 mb-4 text-sm text-gray-600">
-        These backup codes will only be shown once. Store them securely. Each
-        code can be used once to access your account if you lose your
-        authenticator device.
+      <p className="dark:text-polar-400 mb-4 max-w-md text-sm text-gray-600">
+        You&rsquo;ll only see these backup codes once, so save them somewhere
+        secure. Each code lets you sign in one time if you lose access to your
+        authenticator app.
       </p>
 
       <div className="relative">
@@ -38,7 +53,7 @@ export default function BackupCodesModal({
           className="absolute top-2 right-2"
           onClick={handleCopy}
         >
-          Copy All
+          {isCopied ? 'Copied!' : 'Copy All'}
         </Button>
       </div>
 
@@ -53,7 +68,7 @@ export default function BackupCodesModal({
       title="Your Backup Codes"
       isShown={isShown}
       hide={hide}
-      className="max-w-lg"
+      className="lg:max-w-lg"
       modalContent={modalContent}
     />
   )

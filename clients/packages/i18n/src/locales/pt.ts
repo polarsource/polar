@@ -282,4 +282,18 @@ export default {
     many: 'º',
     other: 'º',
   },
+  embedPaymentMethod: {
+    title: 'Adicionar forma de pagamento',
+    close: 'Fechar',
+    submit: 'Adicionar forma de pagamento',
+    processing: 'Adicionando forma de pagamento…',
+    fallbackError: 'Algo deu errado. Tente novamente.',
+    errors: {
+      invalidRequest: 'Parâmetros obrigatórios ausentes.',
+      unauthorized: 'Sessão expirada.',
+      processingFailed:
+        'Não foi possível processar a forma de pagamento. Tente novamente.',
+      unknown: 'Algo deu errado.',
+    },
+  },
 } as const

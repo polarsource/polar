@@ -284,4 +284,18 @@ export default {
     many: 'e',
     other: 'e',
   },
+  embedPaymentMethod: {
+    title: 'Betaalmethode toevoegen',
+    close: 'Sluiten',
+    submit: 'Betaalmethode toevoegen',
+    processing: 'Betaalmethode toevoegen…',
+    fallbackError: 'Er is iets misgegaan. Probeer het opnieuw.',
+    errors: {
+      invalidRequest: 'Vereiste parameters ontbreken.',
+      unauthorized: 'Sessie verlopen.',
+      processingFailed:
+        'De betaalmethode kon niet worden verwerkt. Probeer het opnieuw.',
+      unknown: 'Er is iets misgegaan.',
+    },
+  },
 } as const

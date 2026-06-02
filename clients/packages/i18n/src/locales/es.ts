@@ -283,4 +283,18 @@ export default {
     many: 'º',
     other: 'º',
   },
+  embedPaymentMethod: {
+    title: 'Añadir método de pago',
+    close: 'Cerrar',
+    submit: 'Añadir método de pago',
+    processing: 'Añadiendo método de pago…',
+    fallbackError: 'Algo ha ido mal. Inténtalo de nuevo.',
+    errors: {
+      invalidRequest: 'Faltan parámetros obligatorios.',
+      unauthorized: 'La sesión ha caducado.',
+      processingFailed:
+        'No se ha podido procesar el método de pago. Inténtalo de nuevo.',
+      unknown: 'Algo ha ido mal.',
+    },
+  },
 } as const

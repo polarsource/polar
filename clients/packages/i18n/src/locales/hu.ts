@@ -282,4 +282,18 @@ export default {
     many: '.',
     other: '.',
   },
+  embedPaymentMethod: {
+    title: 'Fizetési mód hozzáadása',
+    close: 'Bezárás',
+    submit: 'Fizetési mód hozzáadása',
+    processing: 'Fizetési mód hozzáadása…',
+    fallbackError: 'Valami hiba történt. Kérjük, próbálja újra.',
+    errors: {
+      invalidRequest: 'Hiányzó kötelező paraméterek.',
+      unauthorized: 'A munkamenet lejárt.',
+      processingFailed:
+        'A fizetési mód feldolgozása nem sikerült. Kérjük, próbálja újra.',
+      unknown: 'Valami hiba történt.',
+    },
+  },
 } as const

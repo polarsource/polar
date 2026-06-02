@@ -227,23 +227,21 @@ export const CheckoutConfirmation = ({
               )}
             </div>
           )}
-          {status === 'succeeded' && (
+          {status === 'succeeded' && hasProductCheckout(checkout) && (
             <>
-              {hasProductCheckout(checkout) &&
-                (checkout.product_price.amount_type === 'seat_based' &&
-                (checkout.seats ?? 0) > 1 ? (
+              <CheckoutBenefits
+                checkout={checkout}
+                locale={locale}
+                customerSessionToken={customerSessionToken}
+                maxWaitingTimeMs={maxWaitingTimeMs}
+              />
+              {checkout.product_price.amount_type === 'seat_based' &&
+                (checkout.seats ?? 0) > 1 && (
                   <CheckoutSeatInvitations
                     checkout={checkout}
                     customerSessionToken={customerSessionToken}
                   />
-                ) : (
-                  <CheckoutBenefits
-                    checkout={checkout}
-                    locale={locale}
-                    customerSessionToken={customerSessionToken}
-                    maxWaitingTimeMs={maxWaitingTimeMs}
-                  />
-                ))}
+                )}
               <p className="dark:text-polar-500 text-center text-xs text-gray-500">
                 {t('checkout.footer.merchantOfRecord')}
               </p>

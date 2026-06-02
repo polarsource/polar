@@ -40,7 +40,6 @@ const CheckoutSeatInvitations = ({
   return (
     <SeatInvitationsPanel
       checkoutId={checkout.id}
-      customerEmail={checkout.customer_email}
       seats={checkout.seats}
       customerSessionToken={customerSessionToken}
     />
@@ -49,38 +48,28 @@ const CheckoutSeatInvitations = ({
 
 interface SeatInvitationsPanelProps {
   checkoutId: string
-  customerEmail: string | null
   seats: number
   customerSessionToken: string
 }
 
 const SeatInvitationsPanel = ({
   checkoutId,
-  customerEmail,
   seats,
   customerSessionToken,
 }: SeatInvitationsPanelProps) => {
-  const [emailInputs, setEmailInputs] = useState<EmailInput[]>(
-    [
-      {
-        id: '1',
-        value: customerEmail || '',
-      },
-      seats > 1 && customerEmail
-        ? {
-            id: '2',
-            value: '',
-          }
-        : null,
-    ].filter(Boolean) as EmailInput[],
-  )
+  const [emailInputs, setEmailInputs] = useState<EmailInput[]>([
+    { id: '1', value: '' },
+  ])
 
   const [isSending, setIsSending] = useState(false)
   const [sentCount, setSentCount] = useState(0)
 
   const assignSeat = useAssignSeatFromCheckout(checkoutId, customerSessionToken)
 
-  const availableSeats = seats - sentCount
+  // The buyer's own seat is auto-claimed at checkout, so only the remaining
+  // seats are available to invite teammates to.
+  const remainingSeats = seats - 1
+  const availableSeats = remainingSeats - sentCount
   const canAddMore =
     emailInputs.filter((input) => !input.sent).length < availableSeats
 
@@ -157,10 +146,14 @@ const SeatInvitationsPanel = ({
   return (
     <Well className="dark:border-polar-700 dark:bg-polar-800 w-full border border-gray-200 bg-white">
       <WellHeader className="gap-y-2 pb-4 text-center">
-        <h2 className="text-xl font-medium">Invite team members</h2>
+        <h2 className="text-xl font-medium">Invite your team</h2>
         <p className="dark:text-polar-500 text-sm text-gray-500">
-          Invite {seats > 1 ? `${seats} team members` : 'one team member'} to
-          access your purchase.
+          You&apos;ve claimed your seat. Invite{' '}
+          {remainingSeats === 1
+            ? 'one more team member'
+            : `up to ${remainingSeats} more team members`}{' '}
+          to the remaining seats. You can always manage this later through the
+          Customer Portal.
         </p>
       </WellHeader>
 

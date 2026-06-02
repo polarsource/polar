@@ -1253,7 +1253,7 @@ class CheckoutService:
                 session, checkout, payment
             )
 
-        await self._maybe_auto_claim_single_seat(session, checkout, subscription, order)
+        await self._maybe_auto_claim_buyer_seat(session, checkout, subscription, order)
 
         # Create trial redemption record if this checkout had a trial period
         if checkout.trial_end is not None:
@@ -1325,18 +1325,19 @@ class CheckoutService:
 
         return checkout
 
-    async def _maybe_auto_claim_single_seat(
+    async def _maybe_auto_claim_buyer_seat(
         self,
         session: AsyncSession,
         checkout: Checkout,
         subscription: Subscription | None,
         order: Order | None,
     ) -> None:
-        """When a buyer purchases exactly one seat through the default Polar
-        confirmation flow, immediately claim that seat for themselves so they
-        get access without going through the invitation email loop.
+        """When a buyer purchases one or more seats through the default Polar
+        confirmation flow, immediately claim a single seat for themselves so
+        they get access without going through the invitation email loop. Any
+        remaining seats stay available for them to invite teammates.
         """
-        if checkout.seats != 1:
+        if checkout.seats is None or checkout.seats < 1:
             return
         product_price = checkout.product_price
         if product_price is None or not is_seat_price(product_price):

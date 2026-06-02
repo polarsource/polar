@@ -5953,7 +5953,7 @@ class TestHandleSuccess:
             immediate_claim=True,
         )
 
-    async def test_seat_based_multi_seat_does_not_auto_claim(
+    async def test_seat_based_multi_seat_auto_claims_buyer_seat(
         self,
         save_fixture: SaveFixture,
         subscription_service_mock: MagicMock,
@@ -5977,7 +5977,14 @@ class TestHandleSuccess:
 
         await checkout_service.handle_success(session, checkout)
 
-        seat_service_mock.assign_seat.assert_not_called()
+        # A single seat is claimed for the buyer; the remaining seats stay
+        # available for them to invite teammates.
+        seat_service_mock.assign_seat.assert_called_once_with(
+            ANY,
+            subscription_mock,
+            email=customer.email,
+            immediate_claim=True,
+        )
 
     async def test_seat_based_custom_success_url_does_not_auto_claim(
         self,
@@ -6047,7 +6054,7 @@ class TestHandleSuccess:
             status=OrderStatus.paid,
         )
 
-        await checkout_service._maybe_auto_claim_single_seat(
+        await checkout_service._maybe_auto_claim_buyer_seat(
             session, checkout, None, order
         )
 
@@ -6096,7 +6103,7 @@ class TestHandleSuccess:
             status=OrderStatus.paid,
         )
 
-        await checkout_service._maybe_auto_claim_single_seat(
+        await checkout_service._maybe_auto_claim_buyer_seat(
             session, checkout, None, order
         )
 

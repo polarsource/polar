@@ -23,6 +23,7 @@ from polar.custom_field.schemas import (
 from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.file.schemas import ProductMediaFileRead
 from polar.kit.currency import (
+    MAXIMUM_PRICE_PER_CURRENCY_DOCSTRING,
     MINIMUM_PRICE_PER_CURRENCY_DOCSTRING,
     PresentmentCurrency,
     format_currency,
@@ -195,7 +196,10 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
     )
     maximum_amount: PriceAmount | None = Field(
         default=None,
-        description="The maximum amount the customer can pay.",
+        description=(
+            "The maximum amount the customer can pay. "
+            f"Maximum per currency:\n{MAXIMUM_PRICE_PER_CURRENCY_DOCSTRING}"
+        ),
     )
     preset_amount: PriceAmount | None = Field(
         default=None,

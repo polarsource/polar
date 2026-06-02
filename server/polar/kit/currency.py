@@ -219,6 +219,7 @@ def format_currency(
 # of the target currency.
 # Comment added for the cases where our minimum differs from Stripe's.
 # Ref: https://docs.stripe.com/currencies#minimum-and-maximum-charge-amounts
+MINIMUM_PRICE_PER_CURRENCY_DEFAULT = 50
 MINIMUM_PRICE_PER_CURRENCY: dict[str, int] = {
     "usd": 50,
     "aed": 200,
@@ -349,8 +350,44 @@ MINIMUM_PRICE_PER_CURRENCY: dict[str, int] = {
 }
 
 MINIMUM_PRICE_PER_CURRENCY_DOCSTRING = "\n".join(
-    f"- {currency.upper()}: {format_decimal(amount / _get_currency_decimal_factor(currency), locale='en_US', decimal_quantization=False)}"
-    for currency, amount in MINIMUM_PRICE_PER_CURRENCY.items()
+    [
+        *(
+            f"- {currency.upper()}: {format_decimal(amount / _get_currency_decimal_factor(currency), locale='en_US', decimal_quantization=False)}"
+            for currency, amount in MINIMUM_PRICE_PER_CURRENCY.items()
+        ),
+        f"- Other currencies: {format_decimal(MINIMUM_PRICE_PER_CURRENCY_DEFAULT, locale='en_US', decimal_quantization=False)} minor units",
+    ]
+)
+
+# Maximums for currencies whose weak per-USD rate makes the default ceiling too low.
+# Everything else falls back to the default.
+MAXIMUM_PRICE_PER_CURRENCY_DEFAULT = 999_999_99
+MAXIMUM_PRICE_PER_CURRENCY: dict[str, int] = {
+    "usd": MAXIMUM_PRICE_PER_CURRENCY_DEFAULT,
+    "eur": MAXIMUM_PRICE_PER_CURRENCY_DEFAULT,
+    "gbp": MAXIMUM_PRICE_PER_CURRENCY_DEFAULT,
+    "ars": 1_400_000_00,  # 1,400,000.00 ARS ≈ $1,000
+    "cdf": 2_800_000_00,  # 2,800,000.00 CDF ≈ $1,000
+    "cop": 4_000_000_00,  # 4,000,000.00 COP ≈ $1,000
+    "idr": 16_000_000_00,  # 16,000,000.00 IDR ≈ $1,000
+    "khr": 4_000_000_00,  # 4,000,000.00 KHR ≈ $1,000
+    "lak": 21_000_000_00,  # 21,000,000.00 LAK ≈ $1,000
+    "mnt": 3_500_000_00,  # 3,500,000.00 MNT ≈ $1,000
+    "mwk": 1_750_000_00,  # 1,750,000.00 MWK ≈ $1,000
+    "ngn": 1_550_000_00,  # 1,550,000.00 NGN ≈ $1,000
+    "tzs": 2_500_000_00,  # 2,500,000.00 TZS ≈ $1,000
+    "ugx": 3_700_000_00,  # 3,700,000.00 UGX ≈ $1,000
+    "uzs": 12_500_000_00,  # 12,500,000.00 UZS ≈ $1,000
+}
+
+MAXIMUM_PRICE_PER_CURRENCY_DOCSTRING = "\n".join(
+    [
+        *(
+            f"- {currency.upper()}: {format_decimal(amount / _get_currency_decimal_factor(currency), locale='en_US', decimal_quantization=False)}"
+            for currency, amount in MAXIMUM_PRICE_PER_CURRENCY.items()
+        ),
+        f"- Other currencies: {format_decimal(MAXIMUM_PRICE_PER_CURRENCY_DEFAULT, locale='en_US', decimal_quantization=False)} minor units",
+    ]
 )
 
 
@@ -363,7 +400,9 @@ def get_minimum_currency_amount(currency: PresentmentCurrency | str) -> int:
     Returns:
         The minimum price amount in the smallest currency unit.
     """
-    return MINIMUM_PRICE_PER_CURRENCY.get(currency.lower(), 50)
+    return MINIMUM_PRICE_PER_CURRENCY.get(
+        currency.lower(), MINIMUM_PRICE_PER_CURRENCY_DEFAULT
+    )
 
 
 def get_maximum_currency_amount(currency: PresentmentCurrency | str) -> int:
@@ -375,4 +414,6 @@ def get_maximum_currency_amount(currency: PresentmentCurrency | str) -> int:
     Returns:
         The maximum price amount in the smallest currency unit.
     """
-    return 99999999  # TODO: Define maximum price amounts per currency
+    return MAXIMUM_PRICE_PER_CURRENCY.get(
+        currency.lower(), MAXIMUM_PRICE_PER_CURRENCY_DEFAULT
+    )

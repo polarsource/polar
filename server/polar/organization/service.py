@@ -780,9 +780,6 @@ class OrganizationService:
         organization: Organization,
         payout_account: PayoutAccount,
     ) -> Organization:
-        from polar.models.payout import PayoutStatus
-        from polar.payout.service import payout as payout_service
-
         previous_payout_account_id = organization.payout_account_id
 
         organization_repository = OrganizationRepository.from_session(session)
@@ -795,16 +792,16 @@ class OrganizationService:
         # A held payout pins the Connect account it was created against, so a
         # rebind would release to a stale account. Cancel held payouts on swap
         # (they refund their fees, so re-requesting is safe); leave pending ones,
-        # whose transfer may already be in flight.
+        # whose transfer may already be in flight. Emitted as an event to keep
+        # the payout layer out of this service.
         account_changed = (
             previous_payout_account_id is not None
             and previous_payout_account_id != payout_account.id
         )
         if account_changed and organization.account_id is not None:
-            await payout_service.cancel_account_payouts(
-                session,
-                organization.account_id,
-                statuses=(PayoutStatus.held,),
+            enqueue_job(
+                "organization.cancel_held_payouts",
+                account_id=organization.account_id,
             )
 
         # Reusing an already-ready payout account doesn't fire a Stripe

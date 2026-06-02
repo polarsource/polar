@@ -14,6 +14,7 @@ from polar.models.benefit_grant import BenefitGrant
 from polar.models.customer_seat import SeatStatus
 from polar.models.member import Member, MemberRole
 from polar.models.organization import OrganizationStatus
+from polar.models.payout import PayoutStatus
 from polar.payout.service import payout as payout_service
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
@@ -150,6 +151,21 @@ async def organization_cancel_pending_payouts(account_id: uuid.UUID) -> None:
     """
     async with AsyncSessionMaker() as session:
         await payout_service.cancel_account_payouts(session, account_id)
+
+
+@actor(actor_name="organization.cancel_held_payouts", priority=TaskPriority.LOW)
+async def organization_cancel_held_payouts(account_id: uuid.UUID) -> None:
+    """Cancel only held payouts for an account when its payout account changes.
+
+    Enqueued by ``set_payout_account`` on a swap: a held payout pins the Connect
+    account it was created against, so releasing it later would transfer to the
+    stale account. Pending payouts are left alone (their transfer may already be
+    in flight to the old account).
+    """
+    async with AsyncSessionMaker() as session:
+        await payout_service.cancel_account_payouts(
+            session, account_id, statuses=(PayoutStatus.held,)
+        )
 
 
 @actor(actor_name="organization.deletion_requested", priority=TaskPriority.HIGH)

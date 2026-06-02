@@ -3824,8 +3824,6 @@ class TestSetPayoutAccount:
         user_organization: UserOrganization,
         user: User,
     ) -> None:
-        from polar.models.payout import PayoutStatus
-
         old_payout_account = await create_payout_account(
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
@@ -3837,16 +3835,15 @@ class TestSetPayoutAccount:
         organization.payout_account = old_payout_account
         await save_fixture(organization)
 
-        cancel_mock = mocker.patch("polar.payout.service.payout.cancel_account_payouts")
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
 
         await organization_service.set_payout_account(
             session, organization, new_payout_account
         )
 
-        cancel_mock.assert_called_once_with(
-            session,
-            organization.account_id,
-            statuses=(PayoutStatus.held,),
+        enqueue_job_mock.assert_any_call(
+            "organization.cancel_held_payouts",
+            account_id=organization.account_id,
         )
 
     @pytest.mark.auth
@@ -3865,13 +3862,18 @@ class TestSetPayoutAccount:
         organization.payout_account = payout_account
         await save_fixture(organization)
 
-        cancel_mock = mocker.patch("polar.payout.service.payout.cancel_account_payouts")
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
 
         await organization_service.set_payout_account(
             session, organization, payout_account
         )
 
-        cancel_mock.assert_not_called()
+        cancel_calls = [
+            c
+            for c in enqueue_job_mock.call_args_list
+            if c.args and c.args[0] == "organization.cancel_held_payouts"
+        ]
+        assert cancel_calls == []
 
 
 @pytest.mark.asyncio

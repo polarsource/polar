@@ -26,7 +26,7 @@ data "tfe_outputs" "production" {
 
 locals {
   environment_id = data.tfe_outputs.production.values.test_environment_id
-  test_enabled   = false
+  test_enabled   = true
 }
 
 # =============================================================================

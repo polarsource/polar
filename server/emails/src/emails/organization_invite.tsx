@@ -1,8 +1,6 @@
-import { Preview, Section, Text } from 'react-email'
-import Button from '../components/Button'
 import Footer from '../components/Footer'
-import Intro from '../components/Intro'
-import WrapperPolar from '../components/WrapperPolar'
+import { Button, WrapperPolar } from '../components/layout'
+import { Intro, Text } from '../components/text'
 import type { schemas } from '../types'
 
 export function OrganizationInvite({
@@ -12,21 +10,21 @@ export function OrganizationInvite({
   invite_url,
 }: schemas['OrganizationInviteProps']) {
   return (
-    <WrapperPolar>
-      <Preview>You've been added to {organization_name} on Polar</Preview>
+    <WrapperPolar
+      preview={`You've been added to ${organization_name} on Polar`}
+    >
       <Intro>
         {inviter_email} has added you to{' '}
-        <span className="font-bold">{organization_name}</span> on Polar.
+        <Text as="span" weight="bold">
+          {organization_name}
+        </Text>{' '}
+        on Polar.
       </Intro>
-      <Section>
-        <Text>
-          As a member of {organization_name} you're now able to manage{' '}
-          {organization_name}'s products, customers, and subscriptions on Polar.
-        </Text>
-      </Section>
-      <Section className="text-center">
-        <Button href={invite_url}>Go to the Polar dashboard</Button>
-      </Section>
+      <Text>
+        As a member of {organization_name} you're now able to manage{' '}
+        {organization_name}'s products, customers, and subscriptions on Polar.
+      </Text>
+      <Button href={invite_url}>Go to the Polar dashboard</Button>
       <Footer email={email} />
     </WrapperPolar>
   )

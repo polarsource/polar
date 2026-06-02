@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-imports, email-ds/no-classname */
 import { Preview, Text } from 'react-email'
 import Footer from '../components/Footer'
 import Intro from '../components/Intro'

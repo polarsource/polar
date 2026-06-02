@@ -139,14 +139,10 @@ class ReviewsSection:
 
                             # Reason
                             if human_feedback.reason:
-                                with tag.p(classes="text-xs text-base-content/70 mt-1"):
-                                    truncated = (
-                                        human_feedback.reason[:120] + "..."
-                                        if len(human_feedback.reason) > 120
-                                        else human_feedback.reason
-                                    )
-                                    with tag.span(title=human_feedback.reason):
-                                        text(truncated)
+                                with tag.p(
+                                    classes="text-xs text-base-content/70 mt-1 whitespace-pre-wrap"
+                                ):
+                                    text(human_feedback.reason)
                         else:
                             with tag.span(classes="text-sm text-base-content/40"):
                                 text("No human decision")

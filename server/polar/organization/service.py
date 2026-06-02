@@ -575,10 +575,14 @@ class OrganizationService:
         for pii_field in pii_fields + github_fields:
             value = getattr(organization, pii_field)
             if value:
-                update_dict[pii_field] = anonymize_for_deletion(value)
+                update_dict[pii_field] = anonymize_for_deletion(
+                    value, organization.created_at
+                )
 
         if organization.email:
-            update_dict["email"] = anonymize_email_for_deletion(organization.email)
+            update_dict["email"] = anonymize_email_for_deletion(
+                organization.email, organization.created_at
+            )
 
         if organization._avatar_url:
             # Anonymize by setting to Polar logo
@@ -725,10 +729,14 @@ class OrganizationService:
         for pii_field in pii_fields + github_fields:
             value = getattr(organization, pii_field)
             if value:
-                update_dict[pii_field] = anonymize_for_deletion(value)
+                update_dict[pii_field] = anonymize_for_deletion(
+                    value, organization.created_at
+                )
 
         if organization.email:
-            update_dict["email"] = anonymize_email_for_deletion(organization.email)
+            update_dict["email"] = anonymize_email_for_deletion(
+                organization.email, organization.created_at
+            )
 
         if organization._avatar_url:
             # Anonymize by setting to Polar logo

@@ -570,18 +570,22 @@ class CustomerService:
 
         # Anonymize email (if present)
         if customer.email is not None:
-            update_dict["email"] = anonymize_email_for_deletion(customer.email)
+            update_dict["email"] = anonymize_email_for_deletion(
+                customer.email, customer.created_at
+            )
         update_dict["email_verified"] = False
 
         # Anonymize name only for individuals (no tax_id = individual)
         # Businesses (has tax_id) retain name for legal reasons
         if customer.tax_id is None and customer.name:
-            update_dict["name"] = anonymize_for_deletion(customer.name)
+            update_dict["name"] = anonymize_for_deletion(
+                customer.name, customer.created_at
+            )
 
         # Anonymize billing_name (always, if present)
         if customer._billing_name:
             update_dict["_billing_name"] = anonymize_for_deletion(
-                customer._billing_name
+                customer._billing_name, customer.created_at
             )
 
         # Clear address (invoices retain original)

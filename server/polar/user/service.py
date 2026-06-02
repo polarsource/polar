@@ -367,7 +367,9 @@ class UserService:
 
         update_dict: dict[str, Any] = {}
 
-        update_dict["email"] = anonymize_email_for_deletion(user.email)
+        update_dict["email"] = anonymize_email_for_deletion(
+            user.email, user.created_at
+        )
 
         if user.avatar_url:
             update_dict["avatar_url"] = None

@@ -206,6 +206,7 @@ module "test" {
     auth_cookie_domain                   = "test.polar.sh"
     tax_processors                       = "[\"numeral\",\"stripe\"]"
     tax_record_processor                 = "numeral"
+    customer_portal_url_overrides        = var.customer_portal_url_overrides
     plain_default_tier_external_id       = var.plain_default_tier_external_id
   }
 
@@ -215,6 +216,7 @@ module "test" {
     discord_bot_token        = var.backend_discord_bot_token
     discord_client_id        = var.backend_discord_client_id
     discord_client_secret    = var.backend_discord_client_secret
+    discord_proxy_url        = var.backend_discord_proxy_url
     resend_api_key           = var.backend_resend_api_key
     resend_webhook_secret    = var.backend_resend_webhook_secret
     firecrawl_api_key        = var.firecrawl_api_key
@@ -274,6 +276,15 @@ module "test" {
     url      = var.grafana_cloud_prometheus_url
     username = var.grafana_cloud_prometheus_username
     password = var.grafana_cloud_prometheus_password
+  }
+
+  polar_self_config = {
+    access_token     = var.polar_access_token
+    webhook_secret   = var.polar_webhook_secret
+    organization_id  = var.polar_organization_id
+    free_product_id  = var.polar_free_product_id
+    scale_product_id = var.polar_scale_product_id
+    api_url          = "https://test-api.polar.sh"
   }
 
   tinybird_config = {

@@ -312,3 +312,69 @@ resource "tfe_variable" "firecrawl_api_key_test" {
   sensitive       = true
   variable_set_id = tfe_variable_set.test.id
 }
+
+resource "tfe_variable" "backend_discord_proxy_url_test" {
+  key             = "backend_discord_proxy_url"
+  category        = "terraform"
+  description     = "Discord Proxy URL for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "customer_portal_url_overrides_test" {
+  key             = "customer_portal_url_overrides"
+  category        = "terraform"
+  description     = "JSON object mapping organization IDs to custom customer portal URLs for test"
+  sensitive       = false
+  value           = "{}"
+  variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "polar_access_token_test" {
+  key             = "polar_access_token"
+  category        = "terraform"
+  description     = "Polar API access token"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "polar_webhook_secret_test" {
+  key             = "polar_webhook_secret"
+  category        = "terraform"
+  description     = "Polar webhook secret"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "polar_organization_id_test" {
+  key             = "polar_organization_id"
+  category        = "terraform"
+  description     = "Polar organization ID"
+  variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "polar_free_product_id_test" {
+  key             = "polar_free_product_id"
+  category        = "terraform"
+  description     = "Polar free-tier product ID"
+  variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "polar_scale_product_id_test" {
+  key             = "polar_scale_product_id"
+  category        = "terraform"
+  description     = "Polar Scale-tier product ID for test"
+  variable_set_id = tfe_variable_set.test.id
+}

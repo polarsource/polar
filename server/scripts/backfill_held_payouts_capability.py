@@ -11,7 +11,10 @@ them until their next status change.
 
 This script backfills `capabilities->>'payouts' = true` for every non-deleted
 org currently in REVIEW or SNOOZED whose stored capability is still false. It
-only touches the `payouts` key; every other capability is left untouched.
+only touches the `payouts` key; every other capability is left untouched. Orgs
+whose payouts capability was explicitly disabled by an admin (an intentional
+override, detected via the internal-notes marker) are skipped so the backfill
+never re-enables a deliberate block.
 
 Usage:
     cd server
@@ -55,13 +58,25 @@ HELD_PAYOUT_STATUSES = (
 
 SAMPLE_LIMIT = 50
 
+# Marker left by OrganizationService.set_capability when an admin disables
+# payouts. Since REVIEW/SNOOZED already defaulted to payouts=false before the
+# flip, set_capability could only write this note by deliberately disabling
+# payouts after the default became true — i.e. an intentional override we must
+# not clobber. (At the initial deploy no such note exists, so this is a no-op
+# then; it protects re-runs once admins can disable payouts on review orgs.)
+_PAYOUTS_DISABLED_NOTE = "%Capability 'payouts' disabled%"
+
 
 def _candidate_filter() -> tuple[ColumnElement[bool], ...]:
-    """Orgs under review whose stored `payouts` capability is still false."""
+    """Orgs under review whose stored `payouts` capability is still false,
+    excluding any whose payouts capability was explicitly disabled by an admin.
+    """
     return (
         Organization.deleted_at.is_(None),
         Organization.status.in_(HELD_PAYOUT_STATUSES),
         Organization.capabilities["payouts"].as_boolean().is_not(True),
+        # Skip intentional overrides (coalesce so NULL notes are still included).
+        ~func.coalesce(Organization.internal_notes, "").ilike(_PAYOUTS_DISABLED_NOTE),
     )
 
 

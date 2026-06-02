@@ -191,23 +191,26 @@ export const CheckoutConfirmation = ({
             avatar_url={organization.avatar_url}
             name={organization.name}
           />
-          <h1 className="text-2xl font-medium">
-            {status === 'confirmed' &&
-              t('checkout.confirmation.processingTitle')}
-            {status === 'succeeded' && t('checkout.confirmation.successTitle')}
-            {status === 'failed' && t('checkout.confirmation.failedTitle')}
-          </h1>
-          <p className="dark:text-polar-500 text-gray-500">
-            {status === 'confirmed' &&
-              t('checkout.confirmation.processingDescription')}
-            {status === 'succeeded' &&
-              hasProductCheckout(checkout) &&
-              t('checkout.confirmation.successDescription', {
-                product: checkout.product.name,
-              })}
-            {status === 'failed' &&
-              t('checkout.confirmation.failedDescription')}
-          </p>
+          <div className="flex flex-col items-center gap-y-4">
+            <h1 className="text-2xl font-medium">
+              {status === 'confirmed' &&
+                t('checkout.confirmation.processingTitle')}
+              {status === 'succeeded' &&
+                t('checkout.confirmation.successTitle')}
+              {status === 'failed' && t('checkout.confirmation.failedTitle')}
+            </h1>
+            <p className="dark:text-polar-500 text-gray-500">
+              {status === 'confirmed' &&
+                t('checkout.confirmation.processingDescription')}
+              {status === 'succeeded' &&
+                hasProductCheckout(checkout) &&
+                t('checkout.confirmation.successDescription', {
+                  product: checkout.product.name,
+                })}
+              {status === 'failed' &&
+                t('checkout.confirmation.failedDescription')}
+            </p>
+          </div>
           {status === 'confirmed' && (
             <div className="flex items-center justify-center">
               {checkout.payment_processor === 'stripe' ? (

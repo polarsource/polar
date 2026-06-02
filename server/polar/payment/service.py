@@ -2,6 +2,7 @@ import uuid
 from collections.abc import Sequence
 
 import stripe as stripe_lib
+from sqlalchemy import func, or_
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
@@ -76,9 +77,17 @@ class PaymentService:
             statement = statement.where(Payment.order_id.in_(order_id))
 
         if customer_id is not None:
-            statement = statement.join(Order, Payment.order_id == Order.id).where(
-                Order.is_deleted.is_(False),
-                Order.customer_id.in_(customer_id),
+            statement = statement.outerjoin(Order, Payment.order_id == Order.id)
+            statement = statement.outerjoin(
+                Checkout, Payment.checkout_id == Checkout.id
+            )
+            effective_customer_id = func.coalesce(
+                Order.customer_id, Checkout.customer_id
+            )
+
+            statement = statement.where(
+                effective_customer_id.in_(customer_id),
+                or_(Order.is_deleted.is_(False), Order.id.is_(None)),
             )
 
         if status is not None:

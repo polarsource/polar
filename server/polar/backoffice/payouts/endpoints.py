@@ -538,8 +538,7 @@ async def cancel(
             joinedload(Payout.transactions).options(
                 joinedload(Transaction.account),
                 joinedload(Transaction.payout),
-                # Needed so cancel can reverse the per-payout fees when the
-                # payout never ran its Stripe transfer (held / not-yet-transferred).
+                # So cancel() can reverse per-payout fees (held/untransferred).
                 selectinload(Transaction.incurred_transactions),
             ),
         ),

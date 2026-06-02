@@ -114,18 +114,15 @@ class PlatformFeeTransactionService(BaseTransactionService):
     ) -> list[tuple[Transaction, Transaction]]:
         """Return the per-payout platform fees to the merchant's balance.
 
-        Used when canceling a payout that never ran its Stripe transfer (a held
-        payout, or a pending one canceled before the transfer fired). Those fees
-        were only a ledger reservation — no fee was actually paid to Stripe — so
-        we credit the same amount back, tagged with the same fee type so it
-        counts toward the available balance immediately. Mirrors the debits
-        written by ``create_payout_fees_balances``.
+        Used when canceling a payout that never ran its Stripe transfer (held,
+        or pending-before-transfer). Those fees were only reserved, never paid,
+        so we credit them back with the same fee type, which counts toward the
+        available balance immediately. Mirrors ``create_payout_fees_balances``.
         """
         account = payout.account
         reversals: list[tuple[Transaction, Transaction]] = []
         for fee_transaction in payout.fees_transactions:
-            # `fee_transaction` is the merchant-side debit, with a negative
-            # amount; credit the same magnitude back to the account.
+            # fee_transaction is the merchant-side debit (negative); credit it back.
             reversal = await balance_transaction_service.create_balance(
                 session,
                 source_account=None,

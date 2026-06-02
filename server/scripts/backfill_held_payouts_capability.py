@@ -5,9 +5,9 @@ The payout-hold flow flips `STATUS_CAPABILITIES` so REVIEW and SNOOZED orgs
 have `payouts: True` (a request is reserved and held until approval, instead
 of being blocked). But `capabilities` is a denormalized JSONB column that is
 only refreshed on a status transition, so orgs that were already in REVIEW or
-SNOOZED at deploy time still have `payouts: false` stored — `can_payout`,
-`estimate()`, and the public `capabilities.payouts` field would all keep
-rejecting them until their next status change.
+SNOOZED at deploy time still have `payouts: false` stored, so `can_payout`,
+`estimate()`, and the public `capabilities.payouts` field all keep rejecting
+them until their next status change.
 
 This script backfills `capabilities->>'payouts' = true` for every non-deleted
 org currently in REVIEW or SNOOZED whose stored capability is still false. It
@@ -16,7 +16,7 @@ only touches the `payouts` key; every other capability is left untouched.
 Usage:
     cd server
 
-    # Dry-run (default) — show counts and a sample of candidates:
+    # Dry-run (default): show counts and a sample of candidates.
     uv run python -m scripts.backfill_held_payouts_capability
 
     # Execute the backfill (batched):
@@ -150,7 +150,7 @@ async def backfill(
 
         if not execute:
             console.print(
-                f"\n[yellow]Dry-run — use --execute to grant the payouts "
+                f"\n[yellow]Dry-run. Use --execute to grant the payouts "
                 f"capability to {total} organization(s)."
             )
             return

@@ -93,10 +93,9 @@ class PayoutError(PolarError): ...
 class OrganizationCannotPayout(PayoutError):
     """Raised when an organization is not allowed to request a payout.
 
-    The message reflects the actual organization status. Note that `REVIEW`
-    and `SNOOZED` orgs *can* request a payout (it is held until approval), so
-    they never raise this — only `CREATED`, `DENIED`, `OFFBOARDING` and
-    `BLOCKED` do.
+    The message reflects the actual organization status. `REVIEW` and `SNOOZED`
+    orgs can request a payout (held until approval) and never raise this; only
+    `CREATED`, `DENIED`, `OFFBOARDING` and `BLOCKED` do.
     """
 
     def __init__(self, organization: Organization) -> None:
@@ -360,13 +359,10 @@ class PayoutService:
             raise PendingPayoutCreation(account)
 
         async with locker.lock(lock_name, timeout=60, blocking_timeout=1):
-            # Lock the organization row before reading its status, so an
-            # in-flight approval can't slip between the read and the payout
-            # insert. If an approval is committing, this waits for it, then
-            # re-reads `ACTIVE` and takes the immediate path; otherwise we see
-            # `REVIEW`/`SNOOZED` and hold the payout. Only `status` and
-            # `capabilities` are refreshed, leaving the eager-loaded `account`
-            # and `payout_account` relationships intact.
+            # Lock the org row so a concurrent approval can't land between the
+            # status read and the payout insert and strand a held payout on an
+            # already-active org. Refresh only status/capabilities to keep the
+            # eager-loaded relationships.
             await session.refresh(
                 organization,
                 attribute_names=["status", "capabilities"],
@@ -376,9 +372,6 @@ class PayoutService:
             if not organization.can_payout:
                 raise OrganizationCannotPayout(organization)
 
-            # REVIEW/SNOOZED orgs reserve the balance exactly like ACTIVE ones,
-            # but the payout is held: no Stripe transfer runs until the org is
-            # approved (see organization.release_held_payouts).
             held = organization.status in (
                 OrganizationStatus.REVIEW,
                 OrganizationStatus.SNOOZED,
@@ -441,10 +434,7 @@ class PayoutService:
                     update_dict={"account_amount": -transaction.account_amount},
                 )
 
-            # `payout.created` is a plain event that fires for held payouts too
-            # (a hook for confirmation emails, etc). The Stripe transfer is a
-            # separate task we only enqueue once the payout is payable — a held
-            # payout's transfer is enqueued later by release_held_payouts.
+            # A held payout's transfer is deferred until release_held_payouts.
             enqueue_job("payout.created", payout_id=payout.id)
             if not held:
                 enqueue_job("payout.transfer", payout_id=payout.id)
@@ -461,16 +451,10 @@ class PayoutService:
 
         This function performs the first step.
         """
-        # Lock the payout row and re-read its status before moving any funds.
-        # `payout.transfer` can race a cancellation: an org denied/blocked/
-        # offboarded (cancel_pending_payouts) or a backoffice cancel may flip the
-        # payout to `canceled` after the job was queued, and a rolled-back release
-        # can leave it `held`. Without the lock, this guard could read a stale
-        # `pending` status, pass, and then transfer to Stripe *after* a concurrent
-        # cancel already reversed the ledger — moving real funds for a payout the
-        # ledger considers canceled. Holding the FOR UPDATE lock through the Stripe
-        # call serializes against PayoutService.cancel (which takes the same lock):
-        # whichever commits first wins, and the loser sees the updated state.
+        # Lock + re-read status before moving funds: a queued transfer can race a
+        # cancel (deny/block/backoffice) and would otherwise pay out a payout the
+        # ledger already reversed. The FOR UPDATE serializes with cancel(), which
+        # holds the same lock.
         await session.refresh(payout, attribute_names=["status"], with_for_update=True)
         if payout.status in (PayoutStatus.canceled, PayoutStatus.held):
             log.warning(
@@ -708,14 +692,9 @@ class PayoutService:
         )
 
     async def cancel(self, session: AsyncSession, payout: Payout) -> Payout:
-        # Lock the row and re-read the status before reversing anything, so two
-        # concurrent cancels can't both pass the check and each write a set of
-        # reversals (which would double-credit the merchant). This races in
-        # practice: a backoffice cancel against organization.cancel_pending_payouts,
-        # or a deny followed by a block, each enqueue a cancel. The loser blocks
-        # here, then re-reads `canceled` and raises before touching the ledger.
-        # Only `status` is refreshed, so the eager-loaded transaction/fee rows
-        # the reversal needs stay intact.
+        # Lock + re-read before reversing: serializes concurrent cancels (e.g. a
+        # backoffice cancel racing cancel_pending_payouts) so they can't each
+        # write a reversal and double-credit the merchant.
         await session.refresh(payout, attribute_names=["status"], with_for_update=True)
         if not payout.status.is_cancelable():
             raise PayoutNotCancelable(payout)
@@ -744,10 +723,8 @@ class PayoutService:
                 update_dict={"transfer_reversal_id": stripe_reversal.id},
             )
         else:
-            # No Stripe transfer ran (a held payout, or a pending one canceled
-            # before its transfer fired), so the per-payout fees were never paid
-            # to Stripe — they were only reserved on the ledger. Return them so
-            # the merchant gets the full reserved amount back, gross plus fees.
+            # No transfer ran, so the per-payout fees were only reserved, never
+            # paid to Stripe. Return them so the merchant is made whole.
             await platform_fee_transaction_service.create_payout_fees_reversal_balances(
                 session, payout=payout
             )

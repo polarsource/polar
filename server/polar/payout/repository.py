@@ -52,9 +52,8 @@ class PayoutRepository(
             Payout.payout_account_id == payout_account_id,
             Payout.status.in_(
                 {
-                    # `held` reserves funds against the account just like
-                    # `pending`, so it must count here too — otherwise a payout
-                    # account with held funds could be deleted.
+                    # held reserves funds like pending, so it must count here
+                    # too (otherwise the payout account could be deleted).
                     PayoutStatus.held,
                     PayoutStatus.pending,
                     PayoutStatus.in_transit,
@@ -76,9 +75,8 @@ class PayoutRepository(
                 Payout.account_id == account_id,
                 Payout.status.in_(statuses),
             )
-            # Deterministic order so two concurrent cancel jobs lock the rows
-            # (FOR UPDATE in PayoutService.cancel) in the same order and can't
-            # deadlock.
+            # Deterministic order so concurrent cancel jobs lock rows in the
+            # same order (FOR UPDATE in cancel()) and can't deadlock.
             .order_by(Payout.created_at.asc(), Payout.id.asc())
             .options(*options)
         )

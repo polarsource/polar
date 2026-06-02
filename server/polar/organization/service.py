@@ -792,12 +792,10 @@ class OrganizationService:
             flush=True,
         )
 
-        # A held payout pins the Connect account it was created against. If the
-        # merchant rebinds to a different account while a payout is held, the
-        # release would transfer to the stale account — so cancel held payouts
-        # here and let them re-request. Canceled held payouts return their fees
-        # too, so re-requesting doesn't double-charge. Pending payouts are left
-        # alone (their transfer may already be in flight to the old account).
+        # A held payout pins the Connect account it was created against, so a
+        # rebind would release to a stale account. Cancel held payouts on swap
+        # (they refund their fees, so re-requesting is safe); leave pending ones,
+        # whose transfer may already be in flight.
         account_changed = (
             previous_payout_account_id is not None
             and previous_payout_account_id != payout_account.id

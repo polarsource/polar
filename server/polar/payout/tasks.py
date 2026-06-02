@@ -29,10 +29,8 @@ class PayoutDoesNotExist(PayoutTaskError):
 
 @actor(actor_name="payout.created", priority=TaskPriority.LOW)
 async def payout_created(payout_id: uuid.UUID) -> None:
-    # Plain event marking that a payout was created. It fires for held payouts
-    # too and is the hook for follow-ups like confirmation emails. The Stripe
-    # transfer is handled separately by `payout.transfer`, which is only
-    # enqueued once the payout is actually payable (never while held).
+    # Event-only hook (fires for held payouts too); the Stripe transfer is the
+    # separate `payout.transfer` task.
     async with AsyncSessionMaker() as session:
         repository = PayoutRepository(session)
         payout = await repository.get_by_id(payout_id)
@@ -42,9 +40,6 @@ async def payout_created(payout_id: uuid.UUID) -> None:
 
 @actor(actor_name="payout.transfer", priority=TaskPriority.LOW)
 async def payout_transfer(payout_id: uuid.UUID) -> None:
-    # Step 1 of the Stripe payout: transfer funds from the platform to the
-    # Connect account. Enqueued by PayoutService.create for immediate payouts,
-    # and by organization.release_held_payouts when a held payout is released.
     async with AsyncSessionMaker() as session:
         repository = PayoutRepository(session)
         payout = await repository.get_by_id(

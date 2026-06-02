@@ -93,6 +93,7 @@ from polar.tax.calculation import (
     CalculationExpiredError,
     TaxabilityReason,
     TaxCalculation,
+    TaxCalculationLogicalError,
     TaxCalculationService,
     get_tax_behavior_from_option,
 )
@@ -5332,6 +5333,34 @@ class TestCreateDraftOrder:
                 session, off_session_organization, payload
             )
 
+    async def test_uncomputable_tax_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        tax_service_mock: MagicMock,
+    ) -> None:
+        # The customer has a billing address (so tax is attempted), but the
+        # processor can't compute tax for it. The draft must be rejected rather
+        # than persisted tax-free — finalize never recomputes it.
+        tax_service_mock.calculate.side_effect = TaxCalculationLogicalError(
+            "Invalid address"
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=off_session_organization,
+            billing_address=Address(country=CountryAlpha2("US")),
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
 
 @pytest.mark.asyncio
 class TestFinalizeOrder:
@@ -5350,6 +5379,41 @@ class TestFinalizeOrder:
         )
         with pytest.raises(OrderNotDraft):
             await order_service.finalize_order(session, order)
+
+    async def test_lost_draft_claim_raises(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Another request already claimed the draft, so the atomic
+        # start_finalization() guard returns False. Finalize must refuse and
+        # leave the order untouched.
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+        )
+        original_invoice_number = order.invoice_number
+        mocker.patch(
+            "polar.order.repository.OrderRepository.start_finalization",
+            new=AsyncMock(return_value=False),
+        )
+
+        with pytest.raises(OrderNotDraft):
+            await order_service.finalize_order(
+                session, order, payment_method_id=payment_method.id
+            )
+
+        await session.refresh(order)
+        assert order.status == OrderStatus.draft
+        assert order.invoice_number == original_invoice_number
+        assert order.payment_lock_acquired_at is None
 
     async def test_feature_flag_revoked_between_create_and_finalize(
         self,

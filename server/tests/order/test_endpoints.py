@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime
+from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
@@ -9,6 +10,7 @@ from pytest_mock import MockerFixture
 from polar.auth.scope import Scope
 from polar.models import Customer, Order, Organization, Product, UserOrganization
 from polar.models.order import OrderStatus
+from polar.order.service import PaymentFailed, PaymentFailedReason
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_order
@@ -595,3 +597,48 @@ class TestFinalizeOrderEndpoint:
         # The default `orders` fixture creates orders with status=paid.
         response = await client.post(f"/v1/orders/{orders[0].id}/finalize", json={})
         assert response.status_code == 412
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_403_when_off_session_disabled(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # No `off_session_organization` fixture here, so the flag is disabled:
+        # finalizing a draft raises OffSessionChargesNotEnabled -> 403.
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+        )
+        response = await client.post(f"/v1/orders/{order.id}/finalize", json={})
+        assert response.status_code == 403
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_402_when_payment_fails(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+        )
+        # A PaymentFailed from the service must map to 402.
+        mocker.patch(
+            "polar.order.endpoints.order_service.finalize_order",
+            new=AsyncMock(side_effect=PaymentFailed(PaymentFailedReason.card_error)),
+        )
+        response = await client.post(f"/v1/orders/{order.id}/finalize", json={})
+        assert response.status_code == 402

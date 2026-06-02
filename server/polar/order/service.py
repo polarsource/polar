@@ -274,8 +274,8 @@ class OffSessionChargesNotEnabled(OrderError):
     def __init__(self, organization_id: uuid.UUID) -> None:
         self.organization_id = organization_id
         super().__init__(
-            "Off-session charges are not enabled for this organization. "
-            "Contact Polar support to opt in.",
+            "Off-session charges are not enabled for this organization "
+            f"({organization_id}). Contact Polar support to opt in.",
             403,
         )
 
@@ -287,8 +287,8 @@ class OrganizationNotReadyForPayments(OrderError):
     def __init__(self, organization_id: uuid.UUID) -> None:
         self.organization_id = organization_id
         super().__init__(
-            "This organization can't accept payments yet. Its account may be "
-            "pending onboarding or under review.",
+            f"This organization ({organization_id}) can't accept payments yet. "
+            "Its account may be pending onboarding or under review.",
             403,
         )
 
@@ -936,21 +936,42 @@ class OrderService:
         discount_amount = 0
 
         order_id = uuid.uuid4()
-        (
-            tax_processor,
-            tax_behavior,
-            tax_calculation_processor_id,
-            tax_amount,
-            tax_breakdown,
-        ) = await self._calculate_tax(
-            reference=str(order_id),
-            taxable_amount=subtotal_amount - discount_amount,
-            tax_behavior_option=organization.default_tax_behavior,
-            currency=currency,
-            customer=customer,
-            product=product,
-            tax_exempted=False,
-        )
+        # Unlike the subscription flow, a draft order persists its tax and never
+        # recomputes it at finalize — so a tax we can't compute now (e.g. the
+        # customer's billing address is missing or invalid) must be rejected
+        # rather than silently charged tax-free.
+        try:
+            (
+                tax_processor,
+                tax_behavior,
+                tax_calculation_processor_id,
+                tax_amount,
+                tax_breakdown,
+            ) = await self._calculate_tax(
+                reference=str(order_id),
+                taxable_amount=subtotal_amount - discount_amount,
+                tax_behavior_option=organization.default_tax_behavior,
+                currency=currency,
+                customer=customer,
+                product=product,
+                tax_exempted=False,
+                allow_silent_failure=False,
+            )
+        except TaxCalculationLogicalError as e:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "customer_id"),
+                        "msg": (
+                            "Tax could not be calculated for this order. The "
+                            "customer needs a complete, valid billing address "
+                            "before an off-session charge can be created."
+                        ),
+                        "input": payload.customer_id,
+                    }
+                ]
+            ) from e
 
         net_amount = (
             subtotal_amount
@@ -1559,6 +1580,12 @@ class OrderService:
             order = await repository.update(
                 order, update_dict={"status": OrderStatus.paid}
             )
+
+            # Allocate the invoice number before emitting events/hooks so the
+            # `order.paid` webhook never observes a paid order without one
+            # (off-session drafts only get their number here). Idempotent, so
+            # orders that already have one — e.g. subscription renewals — no-op.
+            order = await self._assign_invoice_number(session, order)
 
             # Add to the customer's balance
             await wallet_service.create_balance_transaction(
@@ -2810,6 +2837,7 @@ class OrderService:
         customer: Customer,
         product: Product,
         tax_exempted: bool,
+        allow_silent_failure: bool = True,
     ) -> tuple[
         TaxProcessor | None,
         TaxBehavior | None,
@@ -2848,6 +2876,12 @@ class OrderService:
                     tax_exempted,
                 )
             except TaxCalculationLogicalError:
+                # The subscription flow tolerates an uncomputable tax (the
+                # address is fixed up over the lifecycle). Off-session draft
+                # orders persist this result and never recompute it, so a silent
+                # zero would charge tax-free — the caller must surface it instead.
+                if not allow_silent_failure:
+                    raise
                 log.warning(
                     "Failed to calculate tax for subscription order due to invalid or incomplete address",
                     reference=reference,

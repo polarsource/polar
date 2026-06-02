@@ -1,8 +1,5 @@
-/* eslint-disable no-restricted-imports, email-ds/no-classname */
-import { Preview, Text } from 'react-email'
-import Footer from '../components/Footer'
-import Intro from '../components/Intro'
-import WrapperPolar from '../components/WrapperPolar'
+import { Footer, WrapperPolar } from '../components/layout'
+import { Intro, Text } from '../components/text'
 import type { schemas } from '../types'
 
 export function CustomerEmailChangedNotification({
@@ -11,19 +8,22 @@ export function CustomerEmailChangedNotification({
   new_email,
 }: schemas['CustomerEmailChangedNotificationProps']) {
   return (
-    <WrapperPolar>
-      <Preview>Your email address has been changed</Preview>
+    <WrapperPolar preview="Your email address has been changed">
       <Intro>
         The email address for your{' '}
-        <span className="font-bold">{organization_name}</span> account has been
-        changed to <span className="font-bold">{new_email}</span>.
+        <Text as="span" weight="bold">
+          {organization_name}
+        </Text>{' '}
+        account has been changed to{' '}
+        <Text as="span" weight="bold">
+          {new_email}
+        </Text>
+        .
       </Intro>
-
-      <Text className="my-4 text-sm text-gray-500">
+      <Text variant="caption">
         If you did not make this change, please contact {organization_name}{' '}
         immediately.
       </Text>
-
       <Footer email={email} />
     </WrapperPolar>
   )

@@ -1,5 +1,8 @@
-import FooterCustomer from '../components/FooterCustomer'
-import { Button, WrapperOrganization } from '../components/layout'
+import {
+  Button,
+  FooterCustomer,
+  WrapperOrganization,
+} from '../components/layout'
 import { Intro, Text } from '../components/text'
 import { organization, product } from '../preview'
 import type { schemas } from '../types'

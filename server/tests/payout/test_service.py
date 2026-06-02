@@ -669,6 +669,66 @@ class TestTransferStripe:
         assert result.status == PayoutStatus.canceled
         stripe_service_mock.transfer.assert_not_called()
 
+    async def test_cancels_when_payout_account_swapped(
+        self,
+        mocker: MockerFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        payout_transaction_service_mock: MagicMock,
+    ) -> None:
+        # A released hold can win the race against the swap-cancel job. Before
+        # any transfer is made, transfer_stripe must notice the org now points
+        # at a different payout account and cancel + refund instead of sending
+        # funds to the abandoned Connect account.
+        fee_reversal_mock = mocker.patch(
+            "polar.payout.service.platform_fee_transaction_service"
+            ".create_payout_fees_reversal_balances"
+        )
+        account = await create_account(save_fixture, user)
+        old_payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        new_payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        # The org's financial account owns the payout, and its current payout
+        # account is the new one (create_payout_account left it pointing there).
+        organization.account = account
+        await save_fixture(organization)
+
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=old_payout_account,
+            status=PayoutStatus.pending,
+            attempts=[],
+        )
+        payout_transaction = Transaction(
+            type=TransactionType.payout,
+            account=account,
+            processor=Processor.stripe,
+            currency=payout.currency,
+            amount=-payout.amount,
+            account_currency=payout.account_currency,
+            account_amount=-payout.account_amount,
+            tax_amount=0,
+            payout=payout,
+            transfer_id=None,
+        )
+        await save_fixture(payout_transaction)
+        payout_transaction_service_mock.reverse.return_value = Transaction()
+
+        assert organization.payout_account_id == new_payout_account.id
+
+        result = await payout_service.transfer_stripe(session, payout)
+
+        assert result.status == PayoutStatus.canceled
+        stripe_service_mock.transfer.assert_not_called()
+        fee_reversal_mock.assert_called_once_with(session, payout=payout)
+
     async def test_valid(
         self,
         stripe_service_mock: MagicMock,
@@ -1242,6 +1302,69 @@ class TestCancelAccountPayouts:
         await payout_service.cancel_account_payouts(session, account.id)
 
         assert set(attempted) == {held_1.id, held_2.id}
+
+    async def test_scopes_to_payout_account(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        payout_transaction_service_mock: MagicMock,
+    ) -> None:
+        # On a payout-account swap we cancel only holds pinned to the previous
+        # account; a fresh hold already created against the new account (the
+        # cooldown clears once the old hold is >24h old) must survive.
+        account = await create_account(save_fixture, user)
+        old_payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        new_payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        stale_hold = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=old_payout_account,
+            status=PayoutStatus.held,
+            attempts=[],
+        )
+        fresh_hold = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=new_payout_account,
+            status=PayoutStatus.held,
+            attempts=[],
+        )
+        payout_transaction = Transaction(
+            type=TransactionType.payout,
+            account=account,
+            processor=Processor.stripe,
+            currency=stale_hold.currency,
+            amount=-stale_hold.amount,
+            account_currency=stale_hold.account_currency,
+            account_amount=-stale_hold.account_amount,
+            tax_amount=0,
+            payout=stale_hold,
+            transfer_id=None,
+        )
+        await save_fixture(payout_transaction)
+        payout_transaction_service_mock.reverse.return_value = Transaction()
+
+        await payout_service.cancel_account_payouts(
+            session,
+            account.id,
+            statuses=(PayoutStatus.held,),
+            payout_account_id=old_payout_account.id,
+        )
+
+        repository = PayoutRepository.from_session(session)
+        refreshed_stale = await repository.get_by_id(stale_hold.id)
+        assert refreshed_stale is not None
+        assert refreshed_stale.status == PayoutStatus.canceled
+
+        refreshed_fresh = await repository.get_by_id(fresh_hold.id)
+        assert refreshed_fresh is not None
+        assert refreshed_fresh.status == PayoutStatus.held
 
 
 @pytest.mark.asyncio

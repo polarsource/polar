@@ -3844,6 +3844,7 @@ class TestSetPayoutAccount:
         enqueue_job_mock.assert_any_call(
             "payout.cancel_held_payouts",
             account_id=organization.account_id,
+            payout_account_id=old_payout_account.id,
         )
 
     @pytest.mark.auth

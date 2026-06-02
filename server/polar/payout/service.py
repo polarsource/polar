@@ -464,14 +464,37 @@ class PayoutService:
             )
             return payout
 
-        payout_account = payout.payout_account
-        assert payout_account.stripe_id is not None
-
         payout_transaction_repository = PayoutTransactionRepository.from_session(
             session
         )
         transaction = await payout_transaction_repository.get_by_payout_id(payout.id)
         assert transaction is not None
+
+        # The payout pins the Connect account it was created against. If the org
+        # has since swapped its payout account (a release can win the race
+        # against the swap-cancel job), transferring would send funds to the
+        # abandoned account. Before any transfer is made, cancel + refund
+        # instead so the merchant re-requests against the current account.
+        if transaction.transfer_id is None:
+            organization_repository = OrganizationRepository.from_session(session)
+            organization = await organization_repository.get_by_account(
+                payout.account_id
+            )
+            if (
+                organization is not None
+                and organization.payout_account_id is not None
+                and organization.payout_account_id != payout.payout_account_id
+            ):
+                log.warning(
+                    "payout.transfer_stripe.skipped_payout_account_changed",
+                    payout_id=str(payout.id),
+                    pinned_payout_account_id=str(payout.payout_account_id),
+                    current_payout_account_id=str(organization.payout_account_id),
+                )
+                return await self.cancel(session, payout)
+
+        payout_account = payout.payout_account
+        assert payout_account.stripe_id is not None
 
         stripe_transfer = await stripe_service.transfer(
             payout_account.stripe_id,
@@ -758,6 +781,7 @@ class PayoutService:
             PayoutStatus.pending,
             PayoutStatus.held,
         ),
+        payout_account_id: uuid.UUID | None = None,
     ) -> None:
         """Cancel every in-flight payout for an account.
 
@@ -765,11 +789,15 @@ class PayoutService:
         an org leaves the review flow to a terminal state (denied, blocked,
         offboarding). Restricted to ``held`` when a payout account is swapped
         while a payout is still held, so the release can't transfer to a stale
-        account.
+        account. ``payout_account_id`` further scopes the cancel to payouts
+        pinned to that Connect account (the swap case passes the previous one).
         """
         repository = PayoutRepository.from_session(session)
         payouts = await repository.get_by_account_and_statuses(
-            account_id, statuses, options=repository.get_eager_options()
+            account_id,
+            statuses,
+            payout_account_id=payout_account_id,
+            options=repository.get_eager_options(),
         )
         for payout in payouts:
             try:

@@ -67,6 +67,7 @@ class PayoutRepository(
         account_id: UUID,
         statuses: Sequence[PayoutStatus],
         *,
+        payout_account_id: UUID | None = None,
         options: Options = (),
     ) -> Sequence[Payout]:
         statement = (
@@ -80,6 +81,8 @@ class PayoutRepository(
             .order_by(Payout.created_at.asc(), Payout.id.asc())
             .options(*options)
         )
+        if payout_account_id is not None:
+            statement = statement.where(Payout.payout_account_id == payout_account_id)
         return await self.get_all(statement)
 
     async def release_held_by_account(self, account_id: UUID) -> Sequence[UUID]:

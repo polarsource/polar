@@ -792,8 +792,10 @@ class OrganizationService:
         # A held payout pins the Connect account it was created against, so a
         # rebind would release to a stale account. Cancel held payouts on swap
         # (they refund their fees, so re-requesting is safe); leave pending ones,
-        # whose transfer may already be in flight. Emitted as an event to keep
-        # the payout layer out of this service.
+        # whose transfer may already be in flight. Scope the cancel to the
+        # previous payout account so a held payout already created against the
+        # new account isn't swept up. Emitted as an event to keep the payout
+        # layer out of this service.
         account_changed = (
             previous_payout_account_id is not None
             and previous_payout_account_id != payout_account.id
@@ -802,6 +804,7 @@ class OrganizationService:
             enqueue_job(
                 "payout.cancel_held_payouts",
                 account_id=organization.account_id,
+                payout_account_id=previous_payout_account_id,
             )
 
         # Reusing an already-ready payout account doesn't fire a Stripe

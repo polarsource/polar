@@ -126,12 +126,27 @@ def validate_custom_price_amount(
             ]
         )
 
-    if price.minimum_amount == 0:
-        # Free is allowed: accept 0, or any amount >= the currency minimum.
-        if amount == 0:
-            return
+    # Enforce the price's configured minimum (0 means free / pay-what-you-want
+    # is allowed, so a 0 amount passes here).
+    if amount < price.minimum_amount:
+        raise PolarRequestValidationError(
+            [
+                {
+                    "type": "greater_than_equal",
+                    "loc": loc,
+                    "msg": "Amount is below minimum.",
+                    "input": amount,
+                    "ctx": {"ge": price.minimum_amount},
+                }
+            ]
+        )
+
+    # A positive amount must always clear the processor floor for the currency,
+    # regardless of the configured minimum — otherwise it would pass here but
+    # fail when we try to charge it. (Mirrors the currency-maximum check below.)
+    if amount > 0:
         currency_minimum = get_minimum_currency_amount(currency)
-        if 0 < amount < currency_minimum:
+        if amount < currency_minimum:
             raise PolarRequestValidationError(
                 [
                     {
@@ -146,18 +161,6 @@ def validate_custom_price_amount(
                     }
                 ]
             )
-    elif amount < price.minimum_amount:
-        raise PolarRequestValidationError(
-            [
-                {
-                    "type": "greater_than_equal",
-                    "loc": loc,
-                    "msg": "Amount is below minimum.",
-                    "input": amount,
-                    "ctx": {"ge": price.minimum_amount},
-                }
-            ]
-        )
 
     if price.maximum_amount is not None and amount > price.maximum_amount:
         raise PolarRequestValidationError(

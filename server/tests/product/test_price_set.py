@@ -38,6 +38,18 @@ class TestValidateCustomPriceAmount:
         with pytest.raises(PolarRequestValidationError):
             validate_custom_price_amount(_custom_price(minimum_amount=500), 100, "usd")
 
+    def test_positive_below_currency_minimum_rejected_with_low_configured_minimum(
+        self,
+    ) -> None:
+        # Even when the configured minimum is below the currency floor (50 for
+        # USD), a positive amount under the floor must be rejected — it would
+        # otherwise pass validation but fail when charged.
+        with pytest.raises(PolarRequestValidationError):
+            validate_custom_price_amount(_custom_price(minimum_amount=10), 30, "usd")
+
+    def test_at_currency_minimum_passes_with_low_configured_minimum(self) -> None:
+        validate_custom_price_amount(_custom_price(minimum_amount=10), 50, "usd")
+
     def test_above_maximum_rejected(self) -> None:
         with pytest.raises(PolarRequestValidationError):
             validate_custom_price_amount(

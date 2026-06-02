@@ -67,6 +67,7 @@ class OrderBillingReason(StrEnum):
 
 
 class OrderStatus(StrEnum):
+    draft = "draft"
     pending = "pending"
     paid = "paid"
     refunded = "refunded"
@@ -165,7 +166,9 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         String, nullable=True, default=None
     )
 
-    invoice_number: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    invoice_number: Mapped[str | None] = mapped_column(
+        String, nullable=True, unique=True, default=None
+    )
     invoice_path: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
     )

@@ -1,10 +1,15 @@
 from collections.abc import Sequence
 from typing import Self
 
-from polar.exceptions import PolarError
+from polar.exceptions import PolarError, PolarRequestValidationError
+from polar.kit.currency import (
+    format_currency,
+    get_maximum_currency_amount,
+    get_minimum_currency_amount,
+)
 from polar.models import Product, ProductPrice
 
-from .guard import is_static_price
+from .guard import is_custom_price, is_static_price
 
 
 class PriceSetError(PolarError): ...
@@ -93,8 +98,101 @@ class PriceSet:
         return self.prices[0]
 
 
+def validate_custom_price_amount(
+    price: ProductPrice,
+    amount: int,
+    currency: str,
+    loc: tuple[str, ...] = ("body", "amount"),
+) -> None:
+    """Validate a custom (pay-what-you-want) amount against the price's
+    configured minimum/maximum and the currency's minimum/maximum.
+
+    No-op for non-custom prices. Shared by the checkout and off-session order
+    flows so both enforce identical bounds.
+    """
+    if not is_custom_price(price):
+        return
+
+    if amount < 0:
+        raise PolarRequestValidationError(
+            [
+                {
+                    "type": "greater_than_equal",
+                    "loc": loc,
+                    "msg": "Amount must be at least 0.",
+                    "input": amount,
+                    "ctx": {"ge": 0},
+                }
+            ]
+        )
+
+    if price.minimum_amount == 0:
+        # Free is allowed: accept 0, or any amount >= the currency minimum.
+        if amount == 0:
+            return
+        currency_minimum = get_minimum_currency_amount(currency)
+        if 0 < amount < currency_minimum:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "invalid_amount",
+                        "loc": loc,
+                        "msg": (
+                            "Amount must be 0 or at least "
+                            f"{format_currency(currency_minimum, currency)}."
+                        ),
+                        "input": amount,
+                        "ctx": {"allowed": [0], "ge": currency_minimum},
+                    }
+                ]
+            )
+    elif amount < price.minimum_amount:
+        raise PolarRequestValidationError(
+            [
+                {
+                    "type": "greater_than_equal",
+                    "loc": loc,
+                    "msg": "Amount is below minimum.",
+                    "input": amount,
+                    "ctx": {"ge": price.minimum_amount},
+                }
+            ]
+        )
+
+    if price.maximum_amount is not None and amount > price.maximum_amount:
+        raise PolarRequestValidationError(
+            [
+                {
+                    "type": "less_than_equal",
+                    "loc": loc,
+                    "msg": "Amount is above maximum.",
+                    "input": amount,
+                    "ctx": {"le": price.maximum_amount},
+                }
+            ]
+        )
+
+    currency_maximum = get_maximum_currency_amount(currency)
+    if amount > currency_maximum:
+        raise PolarRequestValidationError(
+            [
+                {
+                    "type": "less_than_equal",
+                    "loc": loc,
+                    "msg": (
+                        "Amount must be at most "
+                        f"{format_currency(currency_maximum, currency)}."
+                    ),
+                    "input": amount,
+                    "ctx": {"le": currency_maximum},
+                }
+            ]
+        )
+
+
 __all__ = [
     "NoPricesForCurrencies",
     "PriceSet",
     "PriceSetError",
+    "validate_custom_price_amount",
 ]

@@ -5,7 +5,10 @@ from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
 from polar.auth.permission import OrganizationPermission
-from polar.authz.service import assert_resource_permission
+from polar.authz.service import (
+    assert_organization_permission,
+    assert_resource_permission,
+)
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import IterableCSVWriter
@@ -15,6 +18,7 @@ from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Order
 from polar.models.product import ProductBillingType
 from polar.openapi import APITag
+from polar.organization.resolver import get_payload_organization
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -28,8 +32,24 @@ from polar.subscription.schemas import SubscriptionID
 
 from . import auth, sorting
 from .schemas import Order as OrderSchema
-from .schemas import OrderID, OrderInvoice, OrderNotFound, OrderReceipt, OrderUpdate
-from .service import MissingInvoiceBillingDetails, NotPaidOrder
+from .schemas import (
+    OrderCreate,
+    OrderFinalize,
+    OrderID,
+    OrderInvoice,
+    OrderNotFound,
+    OrderReceipt,
+    OrderUpdate,
+)
+from .service import (
+    MissingInvoiceBillingDetails,
+    NotPaidOrder,
+    OffSessionChargesNotEnabled,
+    OrderNotDraft,
+    OrganizationNotReadyForPayments,
+    PaymentActionRequired,
+    PaymentFailed,
+)
 from .service import order as order_service
 
 router = APIRouter(prefix="/orders", tags=["orders", APITag.public, APITag.mcp])
@@ -190,6 +210,33 @@ async def get(
     return order
 
 
+@router.post(
+    "/",
+    status_code=201,
+    summary="Create Order",
+    response_model=OrderSchema,
+)
+async def create(
+    order_create: OrderCreate,
+    auth_subject: auth.OrdersWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Order:
+    """
+    Create a draft order for an off-session charge against a saved payment
+    method. The order is created with `status=draft` and no invoice number;
+    call `POST /v1/orders/{id}/finalize` to attempt the charge.
+
+    The organization must have the `off_session_charges_enabled` feature flag.
+    """
+    organization = await get_payload_organization(session, auth_subject, order_create)
+
+    await assert_organization_permission(
+        session, auth_subject, organization.id, OrganizationPermission.sales_manage
+    )
+
+    return await order_service.create_draft_order(session, organization, order_create)
+
+
 @router.patch(
     "/{id}",
     summary="Update Order",
@@ -197,22 +244,60 @@ async def get(
     responses={404: OrderNotFound},
 )
 async def update(
-    id: OrderID,
     order_update: OrderUpdate,
-    auth_subject: auth.OrdersWrite,
+    authorized: auth.OrderSalesManage,
     session: AsyncSession = Depends(get_db_session),
 ) -> Order:
     """Update an order."""
-    order = await order_service.get(session, auth_subject, id)
+    return await order_service.update(session, authorized.order, order_update)
 
-    if order is None:
-        raise ResourceNotFound()
 
-    await assert_resource_permission(
-        session, auth_subject, order, OrganizationPermission.sales_manage
+@router.post(
+    "/{id}/finalize",
+    summary="Finalize Order",
+    response_model=OrderSchema,
+    responses={
+        402: {
+            "description": (
+                "The charge failed, or requires customer authentication "
+                "(e.g. a 3DS challenge) that can't be completed off-session."
+            ),
+            "model": PaymentFailed.schema() | PaymentActionRequired.schema(),
+        },
+        403: {
+            "description": (
+                "Off-session charges are not enabled for this organization, "
+                "or its account can't currently accept payments."
+            ),
+            "model": OffSessionChargesNotEnabled.schema()
+            | OrganizationNotReadyForPayments.schema(),
+        },
+        404: OrderNotFound,
+        412: {
+            "description": "The order is not in `draft` status.",
+            "model": OrderNotDraft.schema(),
+        },
+    },
+)
+async def finalize(
+    finalize_payload: OrderFinalize,
+    authorized: auth.OrderSalesManage,
+    session: AsyncSession = Depends(get_db_session),
+) -> Order:
+    """
+    Finalize a draft order and synchronously attempt an off-session charge.
+
+    On success, the order transitions to `paid` and benefit grants fire
+    before the response returns. On failure (decline, missing payment method,
+    SCA challenge), the order stays in `draft` and a 4xx error is returned.
+
+    The request fails with 412 if the order is not in `draft` status.
+    """
+    return await order_service.finalize_order(
+        session,
+        authorized.order,
+        payment_method_id=finalize_payload.payment_method_id,
     )
-
-    return await order_service.update(session, order, order_update)
 
 
 @router.post(

@@ -15,6 +15,7 @@ import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
 import { SeatManagementTable } from './SeatManagementTable'
 
 const OrderStatusDisplayTitle: Record<schemas['Order']['status'], string> = {
+  draft: 'Draft',
   paid: 'Paid',
   pending: 'Pending',
   refunded: 'Refunded',
@@ -23,6 +24,7 @@ const OrderStatusDisplayTitle: Record<schemas['Order']['status'], string> = {
 }
 
 const OrderStatusDisplayColor: Record<schemas['Order']['status'], string> = {
+  draft: 'bg-gray-100 text-gray-500 dark:bg-gray-900 dark:text-gray-400',
   paid: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500',
   pending:
     'bg-yellow-100 text-yellow-500 dark:bg-yellow-950 dark:text-yellow-500',

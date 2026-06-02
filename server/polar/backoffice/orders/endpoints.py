@@ -1,4 +1,3 @@
-import contextlib
 import uuid
 from collections.abc import Generator
 from typing import Annotated, Any
@@ -9,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
-from tagflow import attr, classes, tag, text
+from tagflow import attr, tag, text
 
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.currency import format_currency
@@ -33,7 +32,7 @@ from ..components import button, datatable, description_list, input, modal
 from ..layout import layout
 from ..responses import HXRedirectResponse
 from ..toast import add_toast
-from .components import orders_datatable, payments_datatable
+from .components import order_status_badge, orders_datatable, payments_datatable
 from .forms import RefundForm
 
 router = APIRouter()
@@ -109,24 +108,6 @@ class ReceiptPDFItem(description_list.DescriptionListItem[Order]):
                 with tag.span(classes="text-gray-500"):
                     text("Not generated")
         return None
-
-
-# Table Columns
-@contextlib.contextmanager
-def order_status_badge(status: OrderStatus) -> Generator[None]:
-    with tag.div(classes="badge"):
-        if status == OrderStatus.paid:
-            classes("badge-success")
-        elif status == OrderStatus.pending:
-            classes("badge-warning")
-        elif status == OrderStatus.refunded:
-            classes("badge-error")
-        elif status == OrderStatus.partially_refunded:
-            classes("badge-info")
-        elif status == OrderStatus.void:
-            classes("badge-error")
-        text(status.replace("_", " ").title())
-    yield
 
 
 @router.get("/", name="orders:list")
@@ -226,6 +207,7 @@ async def list(
                 with input.select(
                     [
                         ("All Statuses", ""),
+                        ("Draft", OrderStatus.draft.value),
                         ("Pending", OrderStatus.pending.value),
                         ("Paid", OrderStatus.paid.value),
                         ("Refunded", OrderStatus.refunded.value),
@@ -324,7 +306,7 @@ async def get(
             with tag.div(classes="flex justify-between items-center"):
                 with tag.div(classes="flex items-center gap-2"):
                     with tag.h1(classes="text-4xl"):
-                        text(f"Order {order.invoice_number}")
+                        text(f"Order {order.invoice_number or order.id}")
                     if order.refunds_blocked:
                         with tag.div(classes="badge badge-warning"):
                             text("Refunds Blocked")

@@ -1,10 +1,9 @@
-/* eslint-disable no-restricted-imports, email-ds/no-classname */
-import { Preview, Section } from 'react-email'
-import BodyText from '../components/BodyText'
-import Button from '../components/Button'
-import FooterCustomer from '../components/FooterCustomer'
-import Intro from '../components/Intro'
-import WrapperOrganization from '../components/WrapperOrganization'
+import {
+  Button,
+  FooterCustomer,
+  WrapperOrganization,
+} from '../components/layout'
+import { Intro, Text } from '../components/text'
 import { organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -16,26 +15,26 @@ export function SubscriptionTrialConversionReminder({
   conversion_date,
 }: schemas['SubscriptionTrialConversionReminderProps']) {
   return (
-    <WrapperOrganization organization={organization}>
-      <Preview>
-        Your {product.name} trial is ending on {conversion_date}
-      </Preview>
-
+    <WrapperOrganization
+      organization={organization}
+      preview={`Your ${product.name} trial is ending on ${conversion_date}`}
+    >
       <Intro headline="Your trial is ending soon">
-        Your <span className="font-medium">{product.name}</span> trial will end
-        on <span className="font-medium">{conversion_date}</span> and your
-        subscription will convert to a paid plan.
+        Your{' '}
+        <Text as="span" weight="medium">
+          {product.name}
+        </Text>{' '}
+        trial will end on{' '}
+        <Text as="span" weight="medium">
+          {conversion_date}
+        </Text>{' '}
+        and your subscription will convert to a paid plan.
       </Intro>
-
-      <BodyText>
+      <Text>
         If you&rsquo;d like to make any changes or cancel before your trial
         ends, you can do so from your customer portal.
-      </BodyText>
-
-      <Section className="my-8 text-center">
-        <Button href={url}>Manage subscription</Button>
-      </Section>
-
+      </Text>
+      <Button href={url}>Manage subscription</Button>
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
   )

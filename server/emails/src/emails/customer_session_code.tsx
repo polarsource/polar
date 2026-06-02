@@ -1,9 +1,6 @@
-/* eslint-disable no-restricted-imports, email-ds/no-classname */
-import { Link, Preview, Text } from 'react-email'
-import FooterCustomer from '../components/FooterCustomer'
-import Intro from '../components/Intro'
+import { FooterCustomer, WrapperOrganization } from '../components/layout'
 import OTPCode from '../components/OTPCode'
-import WrapperOrganization from '../components/WrapperOrganization'
+import { EmailLink, Intro, Text } from '../components/text'
 import { organization } from '../preview'
 import type { schemas } from '../types'
 
@@ -16,24 +13,20 @@ export function CustomerSessionCode({
   domain,
 }: schemas['CustomerSessionCodeProps']) {
   return (
-    <WrapperOrganization organization={organization}>
-      <Preview>Your verification code for {organization.name}</Preview>
+    <WrapperOrganization
+      organization={organization}
+      preview={`Your verification code for ${organization.name}`}
+    >
       <Intro>
         You can use the following code to access your purchases on the{' '}
-        <Link href={url} className="text-blue-500 underline">
-          {organization.name} Customer Portal
-        </Link>
-        .
+        <EmailLink href={url}>{organization.name} Customer Portal</EmailLink>.
       </Intro>
-
       <OTPCode code={code} domain={domain} />
-
-      <Text className="mt-2 text-center text-sm text-gray-500">
+      <Text variant="caption" align="center">
         This&nbsp;code&nbsp;expires&nbsp;in&nbsp;
         {code_lifetime_minutes}
         &nbsp;minutes.
       </Text>
-
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
   )

@@ -1,9 +1,5 @@
-/* eslint-disable no-restricted-imports, email-ds/no-classname */
-import { Preview, Section } from 'react-email'
-import Button from '../components/Button'
-import Footer from '../components/Footer'
-import Intro from '../components/Intro'
-import WrapperPolar from '../components/WrapperPolar'
+import { Button, Footer, WrapperPolar } from '../components/layout'
+import { Intro, Text } from '../components/text'
 import type { schemas } from '../types'
 
 export function CustomerEmailUpdateVerification({
@@ -13,21 +9,20 @@ export function CustomerEmailUpdateVerification({
   url,
 }: schemas['CustomerEmailUpdateVerificationProps']) {
   return (
-    <WrapperPolar>
-      <Preview>Verify your new email address for {organization_name}</Preview>
+    <WrapperPolar
+      preview={`Verify your new email address for ${organization_name}`}
+    >
       <Intro>
         You requested to change your email address for your{' '}
-        <span className="font-bold">{organization_name}</span> account. Click
-        the button below to verify this email address.{' '}
-        <span className="font-bold">
+        <Text as="span" weight="bold">
+          {organization_name}
+        </Text>{' '}
+        account. Click the button below to verify this email address.{' '}
+        <Text as="span" weight="bold">
           This link is only valid for the next {token_lifetime_minutes} minutes.
-        </span>
+        </Text>
       </Intro>
-
-      <Section className="my-8 text-center">
-        <Button href={url}>Verify Email Address</Button>
-      </Section>
-
+      <Button href={url}>Verify Email Address</Button>
       <Footer email={email} />
     </WrapperPolar>
   )

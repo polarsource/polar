@@ -1,10 +1,9 @@
-/* eslint-disable no-restricted-imports, email-ds/no-classname */
-import { Link, Preview, Section } from 'react-email'
-import BodyText from '../components/BodyText'
-import Button from '../components/Button'
-import FooterCustomer from '../components/FooterCustomer'
-import { Intro } from '../components/Intro'
-import WrapperOrganization from '../components/WrapperOrganization'
+import {
+  Button,
+  FooterCustomer,
+  WrapperOrganization,
+} from '../components/layout'
+import { EmailLink, Intro, Text } from '../components/text'
 import { organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -16,43 +15,36 @@ export function SubscriptionPastDue({
   payment_url,
 }: schemas['SubscriptionPastDueProps']) {
   return (
-    <WrapperOrganization organization={organization}>
-      <Preview>
-        Action needed: update your payment method for {product.name}
-      </Preview>
-
+    <WrapperOrganization
+      organization={organization}
+      preview={`Action needed: update your payment method for ${product.name}`}
+    >
       <Intro headline="We couldn&rsquo;t process your payment">
         We tried to charge your payment method for your{' '}
-        <span className="font-medium">{product.name}</span> subscription, but it
-        didn&rsquo;t go through. This can happen for a number of reasons, like
-        an expired card or a temporary bank hold.
+        <Text as="span" weight="medium">
+          {product.name}
+        </Text>{' '}
+        subscription, but it didn&rsquo;t go through. This can happen for a
+        number of reasons, like an expired card or a temporary bank hold.
       </Intro>
-
-      <BodyText>
+      <Text>
         Until the payment goes through, your access to{' '}
-        <span className="font-medium">{product.name}</span> won&rsquo;t be
-        available.
-      </BodyText>
-
+        <Text as="span" weight="medium">
+          {product.name}
+        </Text>{' '}
+        won&rsquo;t be available.
+      </Text>
       {payment_url ? (
         <>
-          <Section className="my-8 text-center">
-            <Button href={payment_url}>Update payment method</Button>
-          </Section>
-          <BodyText>
+          <Button href={payment_url}>Update payment method</Button>
+          <Text>
             You can also{' '}
-            <Link href={url} className="text-blue-600 underline">
-              manage your subscription
-            </Link>
-            .
-          </BodyText>
+            <EmailLink href={url}>manage your subscription</EmailLink>.
+          </Text>
         </>
       ) : (
-        <Section className="my-8 text-center">
-          <Button href={url}>Manage subscription</Button>
-        </Section>
+        <Button href={url}>Manage subscription</Button>
       )}
-
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
   )

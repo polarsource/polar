@@ -22,8 +22,8 @@ export default function BackupCodesRegenerateModal({
     <ConfirmModal
       isShown={isShown}
       hide={hide}
-      title="Regenerate Backup Codes"
-      description="Are you sure you want to regenerate your backup codes? This will invalidate all existing backup codes and generate new ones."
+      title="Regenerate backup codes?"
+      description="Your current backup codes will stop working immediately and be replaced with new backup codes."
       destructive
       destructiveText="Regenerate"
       onConfirm={handleConfirm}

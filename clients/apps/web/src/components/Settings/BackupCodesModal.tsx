@@ -23,9 +23,9 @@ export default function BackupCodesModal({
   const modalContent = (
     <div className="p-8">
       <p className="dark:text-polar-400 mb-4 text-sm text-gray-600">
-        These backup codes will only be shown once. Store them securely. Each
-        code can be used once to access your account if you lose your
-        authenticator device.
+        You&rsquo;ll only see these backup codes once, so save them somewhere
+        secure. Each code lets you sign in one time if you lose access to your
+        authenticator app.
       </p>
 
       <div className="relative">

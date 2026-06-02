@@ -12,9 +12,9 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import QRCode from 'react-qr-code'
 import { useState } from 'react'
-import Spinner from '@/components/Shared/Spinner'
 import BackupCodesModal from './BackupCodesModal'
 import { useModal } from '@/components/Modal/useModal'
+import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 
 export interface TOTPSetupModalProps {
   isShown: boolean
@@ -31,6 +31,8 @@ const TOTPSetupContent = () => {
   const [generatedBackupCodes, setGeneratedBackupCodes] = useState<
     string[] | null
   >(null)
+
+  const [manualEntryMode, setManualEntryMode] = useState(false)
 
   const totpStatus = useTOTPStatus()
   const totpEnroll = useTOTPEnroll()
@@ -70,7 +72,7 @@ const TOTPSetupContent = () => {
           </p>
           {backupCodesEnroll.isPending && (
             <p className="dark:text-polar-500 text-sm text-gray-500">
-              Generating backup codes...
+              Generating backup codes…
             </p>
           )}
         </div>
@@ -81,8 +83,8 @@ const TOTPSetupContent = () => {
       return (
         <div className="flex flex-col gap-6 p-8">
           <p className="dark:text-polar-400 text-sm text-gray-600">
-            Add an extra layer of security to your account. You&apos;ll need an
-            authenticator app such as Google Authenticator or Authy.
+            To set this up, you&rsquo;ll need an authenticator app like Google
+            Authenticator or Authy.
           </p>
           {error && (
             <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
@@ -97,34 +99,33 @@ const TOTPSetupContent = () => {
     return (
       <div className="flex flex-col gap-6 p-8">
         <p className="dark:text-polar-400 text-sm text-gray-600">
-          Scan this QR code with your authenticator app (Google Authenticator,
-          Authy, etc.) to get a 6-digit code.
+          Scan this QR code with your authenticator app, then enter the 6-digit
+          code it generates.
         </p>
 
-        <div className="dark:bg-polar-800 flex justify-center rounded-lg bg-white p-4">
-          <QRCode value={enrollment.provisioning_uri} size={200} />
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <label className="dark:text-polar-300 text-sm font-medium text-gray-700">
-            Can&apos;t scan? Enter this code manually:
-          </label>
-          <div className="flex gap-2">
-            <Input
-              readOnly
-              value={enrollment.provisioning_uri}
-              className="flex-1 font-mono text-xs"
-            />
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() =>
-                navigator.clipboard.writeText(enrollment.provisioning_uri)
-              }
-            >
-              Copy
-            </Button>
+        <div className="flex flex-col items-center gap-0">
+          <div className="dark:bg-polar-800 flex justify-center rounded-lg bg-white p-4">
+            <QRCode value={enrollment.provisioning_uri} size={200} />
           </div>
+
+          <button
+            className="dark:text-polar-500 dark:hover:text-polar-400 mx-auto cursor-pointer appearance-none p-2 text-center text-xs text-gray-500 hover:text-gray-700"
+            onClick={() => setManualEntryMode(!manualEntryMode)}
+          >
+            Can&rsquo;t scan?{' '}
+            {manualEntryMode
+              ? 'Enter this code manually:'
+              : 'Get a code to enter manually.'}
+          </button>
+
+          {manualEntryMode && (
+            <div className="w-full pt-2">
+              <CopyToClipboardInput
+                value={enrollment.provisioning_uri}
+                buttonLabel="Copy"
+              />
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-2">
@@ -145,26 +146,15 @@ const TOTPSetupContent = () => {
             <Button
               onClick={handleVerify}
               loading={totpEnable.isPending}
-              className="min-w-[100px]"
+              className="min-w-25"
             >
-              Verify
+              {totpEnable.isPending ? 'Verifying…' : 'Verify'}
             </Button>
           </div>
           {error && (
             <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
           )}
         </div>
-
-        {totpEnable.isPending && (
-          <div className="flex items-center justify-center gap-2">
-            <div className="h-5 w-5 animate-spin">
-              <Spinner />
-            </div>
-            <p className="dark:text-polar-500 text-sm text-gray-500">
-              Verifying...
-            </p>
-          </div>
-        )}
       </div>
     )
   }
@@ -233,7 +223,7 @@ const TOTPSetupModal = ({ isShown, hide }: TOTPSetupModalProps) => {
       title="Set Up Two-Factor Authentication"
       isShown={isShown}
       hide={hide}
-      className="md:min-w-[400px] lg:max-w-[540px]"
+      className="md:min-w-100 lg:max-w-135"
       modalContent={<TOTPSetupContent key={String(isShown)} />}
     />
   )

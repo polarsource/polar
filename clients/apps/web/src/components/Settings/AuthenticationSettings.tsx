@@ -19,6 +19,7 @@ import ListGroup from '@polar-sh/ui/components/atoms/ListGroup'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import EmailUpdateForm from '../Form/EmailUpdateForm'
+import { twMerge } from 'tailwind-merge'
 
 const AuthenticationMethod = ({
   icon,
@@ -38,7 +39,11 @@ const AuthenticationMethod = ({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-center">
-        <div className="self-start">{icon}</div>
+        <div
+          className={twMerge('self-start', !hideTitle && 'relative top-[3px]')}
+        >
+          {icon}
+        </div>
         {!hideTitle && (
           <div className="grow">
             <div className="font-medium">{title}</div>

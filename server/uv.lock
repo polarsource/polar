@@ -7,7 +7,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-05-22T12:27:39.872887Z"
+exclude-newer = "2026-05-25T12:40:42.054704Z"
 exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
@@ -934,6 +934,24 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/5d/45/c130091c2dfa061bbfe3150f2a5091ef1adf149f2a8d2ae769ecaf6e99a2/fastapi-0.136.1.tar.gz", hash = "sha256:7af665ad7acfa0a3baf8983d393b6b471b9da10ede59c60045f49fbc89a0fa7f", size = 397448, upload-time = "2026-04-23T16:49:44.046Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5a/ff/2e4eca3ade2c22fe1dea7043b8ee9dabe47753349eb1b56a202de8af6349/fastapi-0.136.1-py3-none-any.whl", hash = "sha256:a6e9d7eeada96c93a4d69cb03836b44fa34e2854accb7244a1ece36cd4781c3f", size = 117683, upload-time = "2026-04-23T16:49:42.437Z" },
+]
+
+[[package]]
+name = "firecrawl-py"
+version = "4.28.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "httpx" },
+    { name = "nest-asyncio" },
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+    { name = "requests" },
+    { name = "websockets" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/98/d5/22cf938c920da8ccc04afc910239a2d4de008a0645d48af90759315cc6c8/firecrawl_py-4.28.0.tar.gz", hash = "sha256:c5fa2b1ce21f01627f197d357741edaf60183260fa34ba4e5f979e3b16b64e0b", size = 191466, upload-time = "2026-05-23T23:03:42.499Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8b/5b/52f6ad949d412cf342e882c3f08808a226ad462864489afc451661e5268c/firecrawl_py-4.28.0-py3-none-any.whl", hash = "sha256:0745c13cc8a13c874c86094a3fea98ea2aa2289d58cef8b7fa64877b270d809f", size = 238547, upload-time = "2026-05-23T23:03:40.47Z" },
 ]
 
 [[package]]
@@ -1974,6 +1992,15 @@ wheels = [
 ]
 
 [[package]]
+name = "nest-asyncio"
+version = "1.6.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/83/f8/51569ac65d696c8ecbee95938f89d4abf00f47d58d48f6fbabfe8f0baefe/nest_asyncio-1.6.0.tar.gz", hash = "sha256:6f172d5449aca15afd6c646851f4e31e02c598d553a667e38cafa997cfec55fe", size = 7418, upload-time = "2024-01-21T14:25:19.227Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a0/c4/c2971a3ba4c6103a3d10c4b0f24f461ddc027f0f09763220cf35ca1401b3/nest_asyncio-1.6.0-py3-none-any.whl", hash = "sha256:87af6efd6b5e897c81050477ef65c62e2b2f35d51703cae01aff2905b1852e1c", size = 5195, upload-time = "2024-01-21T14:25:17.223Z" },
+]
+
+[[package]]
 name = "openai"
 version = "2.29.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2313,6 +2340,7 @@ dependencies = [
     { name = "email-validator" },
     { name = "exponent-server-sdk" },
     { name = "fastapi" },
+    { name = "firecrawl-py" },
     { name = "fpdf2" },
     { name = "genai-prices" },
     { name = "githubkit" },
@@ -2408,6 +2436,7 @@ requires-dist = [
     { name = "email-validator", specifier = ">=2.1.0.post1" },
     { name = "exponent-server-sdk", specifier = ">=2.1.0" },
     { name = "fastapi", specifier = ">=0.136.1" },
+    { name = "firecrawl-py", specifier = ">=4.28.0" },
     { name = "fpdf2", specifier = ">=2.8.3" },
     { name = "genai-prices", specifier = ">=0.0.61" },
     { name = "githubkit", specifier = "==0.15.5" },

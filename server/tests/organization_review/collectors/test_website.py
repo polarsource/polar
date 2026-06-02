@@ -6,7 +6,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
+from polar.config import settings
 from polar.kit.http import SSRFBlockedError
+from polar.organization_review.collectors.firecrawl_client import ScrapeResult
 from polar.organization_review.collectors.website import (
     MAX_CHARS_PER_PAGE,
     MAX_PAGES,
@@ -784,3 +786,246 @@ class TestPlaywrightRouteInterceptor:
             await handler["handler"](route)
 
         route.abort.assert_called_once_with("blockedbyclient")
+
+
+# ---------------------------------------------------------------------------
+# browse_page — Firecrawl branch
+# ---------------------------------------------------------------------------
+
+
+def _patch_scrape_markdown(result: ScrapeResult | Exception) -> Any:
+    """Patch scrape_markdown to return a ScrapeResult or raise an exception."""
+    if isinstance(result, Exception):
+        return patch(
+            "polar.organization_review.collectors.website.scrape_markdown",
+            new_callable=AsyncMock,
+            side_effect=result,
+        )
+    return patch(
+        "polar.organization_review.collectors.website.scrape_markdown",
+        new_callable=AsyncMock,
+        return_value=result,
+    )
+
+
+class TestBrowsePageFirecrawl:
+    @pytest.fixture(autouse=True)
+    def _use_firecrawl(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(settings, "ORGANIZATION_REVIEW_SCRAPER", "firecrawl")
+
+    @pytest.mark.asyncio
+    async def test_successful_scrape(self) -> None:
+        client = AsyncMock(spec=httpx.AsyncClient)
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        result = ScrapeResult(
+            markdown="# Welcome\n\nThis is a real business.",
+            url="https://example.com/",
+            status_code=200,
+            title="My Site",
+        )
+        with _patch_scrape_markdown(result):
+            response = await browse_page(ctx, "https://example.com/")
+
+        assert deps.pages_navigated == 1
+        assert len(deps.pages_visited) == 1
+        page = deps.pages_visited[0]
+        assert page.url == "https://example.com/"
+        assert page.title == "My Site"
+        assert page.method == "browser"
+        assert "real business" in page.content
+        assert "Page: My Site" in response
+
+    @pytest.mark.asyncio
+    async def test_rejects_off_origin_url(self) -> None:
+        client = AsyncMock(spec=httpx.AsyncClient)
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        with _patch_scrape_markdown(
+            ScrapeResult(
+                markdown="x", url="https://evil.com/", status_code=200, title=None
+            )
+        ) as mock_scrape:
+            response = await browse_page(ctx, "https://evil.com/steal")
+
+        assert "off-origin" in response
+        assert deps.pages_navigated == 0
+        mock_scrape.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_respects_page_limit(self) -> None:
+        client = AsyncMock(spec=httpx.AsyncClient)
+        deps = WebsiteDeps(
+            client=client, allowed_domain="example.com", pages_navigated=MAX_PAGES
+        )
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        with _patch_scrape_markdown(
+            ScrapeResult(
+                markdown="x", url="https://example.com/", status_code=200, title=None
+            )
+        ) as mock_scrape:
+            response = await browse_page(ctx, "https://example.com/page")
+
+        assert "Page limit reached" in response
+        mock_scrape.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_off_origin_final_url_blocked(self) -> None:
+        """A JS/HTTP redirect that lands off-origin is rejected via the final URL."""
+        client = AsyncMock(spec=httpx.AsyncClient)
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        result = ScrapeResult(
+            markdown="phish", url="https://evil.com/landing", status_code=200, title="X"
+        )
+        with _patch_scrape_markdown(result):
+            response = await browse_page(ctx, "https://example.com/")
+
+        assert "off-origin" in response
+        assert "https://evil.com/landing" in response
+        assert deps.pages_visited == []
+
+    @pytest.mark.asyncio
+    async def test_http_error(self) -> None:
+        client = AsyncMock(spec=httpx.AsyncClient)
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        result = ScrapeResult(
+            markdown="", url="https://example.com/missing", status_code=404, title=None
+        )
+        with _patch_scrape_markdown(result):
+            response = await browse_page(ctx, "https://example.com/missing")
+
+        assert "Error: HTTP 404" in response
+        assert deps.pages_visited == []
+
+    @pytest.mark.asyncio
+    async def test_scrape_exception(self) -> None:
+        client = AsyncMock(spec=httpx.AsyncClient)
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        with _patch_scrape_markdown(RuntimeError("firecrawl down")):
+            response = await browse_page(ctx, "https://example.com/")
+
+        assert "Error navigating" in response
+        assert deps.pages_visited == []
+
+    @pytest.mark.asyncio
+    async def test_content_truncation(self) -> None:
+        client = AsyncMock(spec=httpx.AsyncClient)
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        long_markdown = "x" * (MAX_CHARS_PER_PAGE + 5_000)
+        result = ScrapeResult(
+            markdown=long_markdown,
+            url="https://example.com/",
+            status_code=200,
+            title="Big",
+        )
+        with _patch_scrape_markdown(result):
+            response = await browse_page(ctx, "https://example.com/")
+
+        assert deps.pages_visited[0].content_truncated is True
+        assert len(deps.pages_visited[0].content) <= MAX_CHARS_PER_PAGE
+        assert "(content truncated)" in response
+
+
+# ---------------------------------------------------------------------------
+# browse_page — shadow mode
+# ---------------------------------------------------------------------------
+
+
+class TestBrowsePageShadow:
+    @pytest.mark.asyncio
+    async def test_uses_playwright_result_and_runs_firecrawl(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Shadow mode returns Playwright's result but still invokes Firecrawl."""
+        monkeypatch.setattr(settings, "ORGANIZATION_REVIEW_SCRAPER", "shadow")
+
+        mock_page = AsyncMock()
+        mock_page.goto = AsyncMock(return_value=MagicMock(status=200))
+        mock_page.wait_for_load_state = AsyncMock()
+        mock_page.wait_for_timeout = AsyncMock()
+        mock_page.url = "https://example.com/"
+        mock_page.content = AsyncMock(
+            return_value=(
+                "<html><head><title>PW Title</title></head>"
+                "<body><p>Playwright content here</p></body></html>"
+            )
+        )
+        mock_page.title = AsyncMock(return_value="PW Title")
+        mock_page.evaluate = AsyncMock(return_value=[])
+
+        client = AsyncMock(spec=httpx.AsyncClient)
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        deps._browser_page = mock_page
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        firecrawl_result = ScrapeResult(
+            markdown="firecrawl content",
+            url="https://example.com/",
+            status_code=200,
+            title="FC Title",
+        )
+        with (
+            _patch_scrape_markdown(firecrawl_result) as mock_scrape,
+            _PATCH_SSRF,
+        ):
+            response = await browse_page(ctx, "https://example.com/")
+
+        # Playwright's result is the live one
+        assert "Page: PW Title" in response
+        assert deps.pages_navigated == 1
+        assert len(deps.pages_visited) == 1
+        assert deps.pages_visited[0].title == "PW Title"
+        # Firecrawl was still run for comparison
+        mock_scrape.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_firecrawl_failure_does_not_break_playwright(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A Firecrawl error in shadow mode must not affect the Playwright result."""
+        monkeypatch.setattr(settings, "ORGANIZATION_REVIEW_SCRAPER", "shadow")
+
+        mock_page = AsyncMock()
+        mock_page.goto = AsyncMock(return_value=MagicMock(status=200))
+        mock_page.wait_for_load_state = AsyncMock()
+        mock_page.wait_for_timeout = AsyncMock()
+        mock_page.url = "https://example.com/"
+        mock_page.content = AsyncMock(
+            return_value="<html><head><title>PW</title></head><body><p>ok</p></body></html>"
+        )
+        mock_page.title = AsyncMock(return_value="PW")
+        mock_page.evaluate = AsyncMock(return_value=[])
+
+        client = AsyncMock(spec=httpx.AsyncClient)
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        deps._browser_page = mock_page
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        with (
+            _patch_scrape_markdown(RuntimeError("firecrawl exploded")),
+            _PATCH_SSRF,
+        ):
+            response = await browse_page(ctx, "https://example.com/")
+
+        assert "Page: PW" in response
+        assert deps.pages_navigated == 1

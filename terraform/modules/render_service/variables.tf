@@ -160,6 +160,7 @@ variable "backend_secrets" {
     app_review_otp_code            = optional(string, "")
     chargeback_stop_webhook_secret = optional(string, "")
     numeral_api_key                = optional(string, "")
+    firecrawl_api_key              = optional(string, "")
   })
   sensitive = true
 }

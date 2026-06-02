@@ -1,12 +1,7 @@
 'use client'
 
 import { Modal } from '@/components/Modal'
-import {
-  useBackupCodesEnroll,
-  useTOTPEnroll,
-  useTOTPEnable,
-  useTOTPStatus,
-} from '@/hooks/auth'
+import { useTOTPEnroll, useTOTPEnable } from '@/hooks/auth'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -16,73 +11,28 @@ import {
 } from '@polar-sh/ui/components/atoms/InputOTP'
 import QRCode from 'react-qr-code'
 import { useState } from 'react'
-import BackupCodesModal from './BackupCodesModal'
-import { useModal } from '@/components/Modal/useModal'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
+import { toast } from '../Toast/use-toast'
 
 export interface TOTPSetupModalProps {
   isShown: boolean
   hide: () => void
+  onEnabled: () => void
 }
 
-const TOTPSetupContent = () => {
+const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
   const [code, setCode] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [enrollment, setEnrollment] = useState<
     schemas['TOTPEnrollment'] | null
   >(null)
-  const [showSuccess, setShowSuccess] = useState(false)
-  const [generatedBackupCodes, setGeneratedBackupCodes] = useState<
-    string[] | null
-  >(null)
 
   const [manualEntryMode, setManualEntryMode] = useState(false)
 
-  const totpStatus = useTOTPStatus()
   const totpEnroll = useTOTPEnroll()
   const totpEnable = useTOTPEnable()
-  const backupCodesEnroll = useBackupCodesEnroll()
-
-  const {
-    isShown: isBackupCodesModalShown,
-    show: showBackupCodesModal,
-    hide: hideBackupCodesModal,
-  } = useModal()
 
   const renderContent = () => {
-    if (showSuccess) {
-      return (
-        <div className="flex flex-col items-center justify-center gap-4 p-8 py-12">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-8 w-8 text-green-600 dark:text-green-400"
-            >
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-          </div>
-          <h2 className="text-lg font-semibold text-green-600 dark:text-green-400">
-            TOTP Enabled!
-          </h2>
-          <p className="dark:text-polar-400 text-center text-gray-600">
-            Two-factor authentication is now active on your account.
-          </p>
-          {backupCodesEnroll.isPending && (
-            <p className="dark:text-polar-500 text-sm text-gray-500">
-              Generating backup codes…
-            </p>
-          )}
-        </div>
-      )
-    }
-
     if (!enrollment) {
       return (
         <div className="flex flex-col gap-6 p-8">
@@ -192,20 +142,9 @@ const TOTPSetupContent = () => {
     }
     setError(null)
     totpEnable.mutate(code, {
-      onSuccess: async () => {
-        setShowSuccess(true)
-        totpStatus.refetch()
-        // Generate backup codes after TOTP is enabled
-        try {
-          const result = await backupCodesEnroll.mutateAsync()
-          if (result.data?.codes) {
-            setGeneratedBackupCodes(result.data.codes)
-            showBackupCodesModal()
-          }
-        } catch {
-          // Backup codes generation failed, but TOTP is still enabled
-          // Don't block the success flow
-        }
+      onSuccess: () => {
+        toast({ title: 'Two-factor authentication enabled' })
+        onEnabled()
       },
       onError: (err) =>
         setError(err.message || 'Invalid code. Please try again.'),
@@ -217,26 +156,19 @@ const TOTPSetupContent = () => {
     if (error) setError(null)
   }
 
-  return (
-    <>
-      {renderContent()}
-      <BackupCodesModal
-        isShown={isBackupCodesModalShown}
-        hide={hideBackupCodesModal}
-        codes={generatedBackupCodes || []}
-      />
-    </>
-  )
+  return renderContent()
 }
 
-const TOTPSetupModal = ({ isShown, hide }: TOTPSetupModalProps) => {
+const TOTPSetupModal = ({ isShown, hide, onEnabled }: TOTPSetupModalProps) => {
   return (
     <Modal
       title="Set Up Two-Factor Authentication"
       isShown={isShown}
       hide={hide}
       className="md:min-w-100 lg:max-w-135"
-      modalContent={<TOTPSetupContent key={String(isShown)} />}
+      modalContent={
+        <TOTPSetupContent key={String(isShown)} onEnabled={onEnabled} />
+      }
     />
   )
 }

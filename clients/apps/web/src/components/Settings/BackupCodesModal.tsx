@@ -2,6 +2,7 @@
 
 import { Modal } from '@/components/Modal'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import { useEffect, useRef, useState } from 'react'
 
 interface BackupCodesModalProps {
   isShown: boolean
@@ -16,9 +17,23 @@ export default function BackupCodesModal({
 }: BackupCodesModalProps) {
   const codesText = codes.join('\n')
 
+  const [isCopied, setIsCopied] = useState(false)
+  const copyResetTimeout = useRef<number | null>(null)
+
   const handleCopy = () => {
     navigator.clipboard.writeText(codesText)
+    setIsCopied(true)
+    copyResetTimeout.current = window.setTimeout(() => setIsCopied(false), 2000)
   }
+
+  // Clear timeout if the component unmounts while the "Copied!" state is active
+  useEffect(() => {
+    return () => {
+      if (copyResetTimeout.current) {
+        clearTimeout(copyResetTimeout.current)
+      }
+    }
+  }, [])
 
   const modalContent = (
     <div className="p-8">
@@ -38,7 +53,7 @@ export default function BackupCodesModal({
           className="absolute top-2 right-2"
           onClick={handleCopy}
         >
-          Copy All
+          {isCopied ? 'Copied!' : 'Copy All'}
         </Button>
       </div>
 

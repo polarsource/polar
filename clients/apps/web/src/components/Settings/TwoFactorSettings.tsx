@@ -150,7 +150,20 @@ const TwoFactorSettings = () => {
         )}
       </ListGroup>
 
-      <TOTPSetupModal isShown={isTOTPModalShown} hide={hideTOTPModal} />
+      <TOTPSetupModal
+        isShown={isTOTPModalShown}
+        hide={hideTOTPModal}
+        onEnabled={async () => {
+          hideTOTPModal()
+          await totpStatus.refetch()
+          const result = await backupCodesEnroll.mutateAsync()
+          if (result.data?.codes) {
+            setNewBackupCodes(result.data.codes)
+            await backupCodesStatus.refetch()
+            showBackupCodesModal()
+          }
+        }}
+      />
 
       <ConfirmModal
         isShown={isDeleteConfirmShown}

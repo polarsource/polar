@@ -19,8 +19,12 @@ depends_on: tuple[str] | None = ${repr(depends_on)}
 
 
 def upgrade() -> None:
+    # Ensures we don't break app by applying a deadlock-inducing migration
+    op.execute("SET LOCAL lock_timeout = '5s'")
     ${upgrades if upgrades else "pass"}
 
 
 def downgrade() -> None:
+    # Ensures we don't break app by applying a deadlock-inducing migration
+    op.execute("SET LOCAL lock_timeout = '5s'")
     ${downgrades if downgrades else "pass"}

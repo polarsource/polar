@@ -88,6 +88,7 @@ from polar.observability.checkout_metrics import (
 from polar.order.service import order as order_service
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.posthog import posthog
+from polar.product.custom_price import validate_custom_price_amount
 from polar.product.guard import (
     is_custom_price,
     is_discount_applicable,
@@ -97,7 +98,6 @@ from polar.product.guard import (
 from polar.product.price_set import (
     NoPricesForCurrencies,
     PriceSet,
-    validate_custom_price_amount,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.schemas import ProductPriceCreateList

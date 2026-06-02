@@ -5238,6 +5238,57 @@ class TestCreateDraftOrder:
         assert order.subtotal_amount > 0
         assert len(order.items) >= 1
 
+    async def test_multi_currency_requires_currency(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time_multiple_currencies: Product,
+        customer: Customer,
+    ) -> None:
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time_multiple_currencies.id,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_multi_currency_with_currency(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time_multiple_currencies: Product,
+        customer: Customer,
+    ) -> None:
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time_multiple_currencies.id,
+            currency="eur",
+        )
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+        assert order.status == OrderStatus.draft
+        assert order.currency == "eur"
+
+    async def test_unknown_currency_rejected(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+            currency="gbp",
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
     async def test_custom_price_product_rejected(
         self,
         session: AsyncSession,

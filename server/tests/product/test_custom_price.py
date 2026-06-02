@@ -2,7 +2,7 @@ import pytest
 
 from polar.exceptions import PolarRequestValidationError
 from polar.models import ProductPriceCustom
-from polar.product.price_set import validate_custom_price_amount
+from polar.product.custom_price import validate_custom_price_amount
 
 
 def _custom_price(

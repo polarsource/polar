@@ -300,6 +300,14 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
         "Subscription, seat-based, and pay-what-you-want products are not "
         "supported."
     )
+    currency: str | None = Field(
+        None,
+        description=(
+            "The currency to charge in (ISO 4217, lowercase, e.g. `usd`). "
+            "**Required when the product has prices in more than one currency**; "
+            "otherwise the product's single currency is used."
+        ),
+    )
 
 
 class OrderUpdateBase(Schema):

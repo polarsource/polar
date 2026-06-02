@@ -21976,6 +21976,11 @@ export interface components {
        * @description The ID of the one-time, fixed-price product to charge for. Must belong to the order's organization. Subscription, seat-based, and pay-what-you-want products are not supported.
        */
       product_id: string
+      /**
+       * Currency
+       * @description The currency to charge in (ISO 4217, lowercase, e.g. `usd`). **Required when the product has prices in more than one currency**; otherwise the product's single currency is used.
+       */
+      currency?: string | null
     }
     /** OrderCustomer */
     OrderCustomer: {

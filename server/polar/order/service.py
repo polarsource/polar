@@ -100,7 +100,6 @@ from polar.product.guard import (
     is_static_price,
 )
 from polar.product.price_set import (
-    NoPricesForCurrencies,
     PriceSet,
 )
 from polar.product.repository import ProductRepository
@@ -844,14 +843,22 @@ class OrderService:
                 ]
             )
 
-        # Off-session charges currently support fixed-price products only: the
-        # amount must be fully determined by the product. Custom (pay-what-you-want)
-        # and free prices are rejected.
-        if any(
-            not is_fixed_price(price)
-            for price in product.prices
-            if is_static_price(price)
-        ):
+        # Off-session charges currently support fixed-price products only — the
+        # amount must be fully determined by the product. Custom
+        # (pay-what-you-want) and free prices are rejected.
+        static_prices = [price for price in product.prices if is_static_price(price)]
+        if not static_prices:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product has no chargeable static prices.",
+                        "input": payload.product_id,
+                    }
+                ]
+            )
+        if any(not is_fixed_price(price) for price in static_prices):
             raise PolarRequestValidationError(
                 [
                     {
@@ -879,38 +886,48 @@ class OrderService:
                 ]
             )
 
-        currency = organization.default_presentment_currency
-        try:
-            currency_prices = PriceSet.from_product(product, currency)
-        except NoPricesForCurrencies as e:
+        # Resolve the charge currency. When the product is priced in more than
+        # one currency, the merchant must say which one to use.
+        available_currencies = sorted({price.price_currency for price in static_prices})
+        if payload.currency is not None:
+            requested_currency = payload.currency.lower()
+            if requested_currency not in available_currencies:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "currency"),
+                            "msg": (
+                                "Product has no price in currency "
+                                f"'{requested_currency}'."
+                            ),
+                            "input": payload.currency,
+                        }
+                    ]
+                )
+            currency = requested_currency
+        elif len(available_currencies) > 1:
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_id"),
+                        "loc": ("body", "currency"),
                         "msg": (
-                            "Product has no chargeable prices in the "
-                            f"organization currency ({currency})."
+                            "This product is priced in multiple currencies; "
+                            "specify the currency to charge in."
                         ),
-                        "input": payload.product_id,
+                        "input": None,
                     }
                 ]
-            ) from e
+            )
+        else:
+            currency = available_currencies[0]
+
+        currency_prices = PriceSet.from_product(product, currency)
 
         items = list(
             self._build_static_order_items(currency_prices, amount=None, seats=None)
         )
-        if not items:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_id"),
-                        "msg": "Product has no chargeable static prices.",
-                        "input": payload.product_id,
-                    }
-                ]
-            )
 
         # Validate custom field values against the product's attached fields,
         # same as the checkout path. Unknown keys are dropped and values are

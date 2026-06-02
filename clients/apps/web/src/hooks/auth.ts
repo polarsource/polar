@@ -87,3 +87,48 @@ export const useBackupCodesVerify = () =>
     mutationFn: (body: { code: string }) =>
       api.POST('/v1/auth/backup-codes/verify', { body }),
   })
+
+export const useTOTPStatus = () =>
+  useQuery({
+    queryKey: ['totp', 'status'],
+    queryFn: async () => {
+      const { data, response } = await api.GET('/v1/auth/totp')
+      if (response.status === 404) return { enabled: false }
+      if (!response.ok) throw new Error('Failed to fetch TOTP status')
+      return data ?? { enabled: false }
+    },
+    retry: false,
+  })
+
+export const useTOTPEnroll = () =>
+  useMutation({
+    mutationFn: () => api.POST('/v1/auth/totp', {}),
+  })
+
+export const useTOTPEnable = () =>
+  useMutation({
+    mutationFn: (code: string) =>
+      api.POST('/v1/auth/totp/enable', { body: { code } }),
+  })
+
+export const useTOTPDelete = () =>
+  useMutation({
+    mutationFn: () => api.DELETE('/v1/auth/totp'),
+  })
+
+export const useBackupCodesStatus = () =>
+  useQuery({
+    queryKey: ['backup-codes', 'status'],
+    queryFn: async () => {
+      const { data, response } = await api.GET('/v1/auth/backup-codes')
+      if (response.status === 404) return null
+      if (!response.ok) throw new Error('Failed to fetch backup codes status')
+      return data
+    },
+    retry: false,
+  })
+
+export const useBackupCodesEnroll = () =>
+  useMutation({
+    mutationFn: () => api.POST('/v1/auth/backup-codes', {}),
+  })

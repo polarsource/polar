@@ -3,7 +3,6 @@ from urllib.parse import urlencode
 from uuid import UUID
 
 import structlog
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.config import settings
@@ -198,8 +197,8 @@ class BenefitSlackIntegrationService:
         session: AsyncSession,
         integration: BenefitSlackIntegration,
     ) -> None:
-        await session.delete(integration)
-        await session.flush()
+        repository = BenefitSlackIntegrationRepository.from_session(session)
+        await repository.delete(integration)
 
     async def upsert_display_name(
         self,
@@ -207,24 +206,8 @@ class BenefitSlackIntegrationService:
         benefit: Benefit,
         display_name: str,
     ) -> BenefitSlackIntegration:
-        statement = (
-            pg_insert(BenefitSlackIntegration)
-            .values(
-                benefit_id=benefit.id,
-                organization_id=benefit.organization_id,
-                display_name=display_name,
-            )
-            .on_conflict_do_update(
-                index_elements=["benefit_id"],
-                set_={"display_name": display_name},
-            )
-        )
-        await session.execute(statement)
-        await session.flush()
         repository = BenefitSlackIntegrationRepository.from_session(session)
-        integration = await repository.get_by_benefit(benefit.id)
-        assert integration is not None
-        return integration
+        return await repository.upsert_display_name(benefit, display_name)
 
     async def list_workspace_users(
         self,

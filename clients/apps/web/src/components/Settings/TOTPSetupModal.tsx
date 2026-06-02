@@ -135,20 +135,19 @@ const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
     })
   }
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (!code || code.length !== 6) {
       setError('Please enter a 6-digit code')
       return
     }
     setError(null)
-    totpEnable.mutate(code, {
-      onSuccess: () => {
-        toast({ title: 'Two-factor authentication enabled' })
-        onEnabled()
-      },
-      onError: (err) =>
-        setError(err.message || 'Invalid code. Please try again.'),
-    })
+    const { error } = await totpEnable.mutateAsync(code)
+    if (error) {
+      setError('Invalid code. Please try again.')
+      return
+    }
+    toast({ title: 'Two-factor authentication enabled' })
+    onEnabled()
   }
 
   const handleCodeChange = (value: string) => {

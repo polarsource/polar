@@ -39,12 +39,6 @@ export const SlackIntegrationSetupPanel = ({
   const [signingSecret, setSigningSecret] = useState('')
   const [manifest, setManifest] = useState('')
   const [credentialsError, setCredentialsError] = useState<string | null>(null)
-  const [credentialsSaved, setCredentialsSaved] = useState(
-    !!integration?.slack_app_id,
-  )
-  const [integrationId, setIntegrationId] = useState<string | null>(
-    integration?.id ?? null,
-  )
 
   const { mutate: generateManifest } = useGenerateSlackManifest()
   const saveCredentials = useSaveSlackCredentials()
@@ -87,14 +81,10 @@ export const SlackIntegrationSetupPanel = ({
       })
       return
     }
-    toast({ title: 'Credentials saved. Now authorize Slack below.' })
-    setIntegrationId(result.data.id)
-    setCredentialsSaved(true)
-    setClientSecret('')
-    setSigningSecret('')
+    // Saving succeeded — send the merchant straight into the OAuth install
+    // rather than surfacing a separate authorize step they could miss.
+    window.location.href = buildAuthorizeUrl(result.data.id, returnTo)
   }
-
-  const hasCredentials = credentialsSaved || !!integration?.slack_app_id
 
   return (
     <Box display="flex" flexDirection="column" rowGap="l">
@@ -140,8 +130,8 @@ export const SlackIntegrationSetupPanel = ({
       </SetupSection>
 
       <SetupSection
-        title="2. Paste credentials from your Slack app"
-        description="Find these on the Basic Information page of the app you just created."
+        title="2. Paste credentials and connect"
+        description="Find these on the Basic Information page of the app you just created. Saving sends you to Slack to authorize the workspace."
       >
         <Box display="flex" flexDirection="column" rowGap="l">
           <LabeledInput
@@ -196,14 +186,10 @@ export const SlackIntegrationSetupPanel = ({
             wrapperClassNames="self-start"
             onClick={saveSlackCredentials}
           >
-            Save credentials
+            Save and authorize
           </Button>
         </Box>
       </SetupSection>
-
-      {hasCredentials && integrationId && (
-        <AuthorizeSection integrationId={integrationId} returnTo={returnTo} />
-      )}
     </Box>
   )
 }
@@ -292,27 +278,10 @@ const LabeledInput = ({
   </Box>
 )
 
-const AuthorizeSection = ({
-  integrationId,
-  returnTo,
-}: {
-  integrationId: string
-  returnTo: string
-}) => {
+const buildAuthorizeUrl = (integrationId: string, returnTo: string): string => {
   const [path, query = ''] = returnTo.split('?')
   const params = new URLSearchParams(query)
   params.set('slack_integration_id', integrationId)
   const resolvedReturnTo = `${path}?${params.toString()}`
-  const href = `${CONFIG.BASE_URL}/v1/integrations/slack/authorize?integration_id=${integrationId}&return_to=${encodeURIComponent(resolvedReturnTo)}`
-
-  return (
-    <SetupSection
-      title="3. Authorize Slack workspace"
-      description="Approve the app installation in Slack, then return here to finish the benefit."
-    >
-      <Button asChild wrapperClassNames="self-start">
-        <a href={href}>Authorize Slack workspace</a>
-      </Button>
-    </SetupSection>
-  )
+  return `${CONFIG.BASE_URL}/v1/integrations/slack/authorize?integration_id=${integrationId}&return_to=${encodeURIComponent(resolvedReturnTo)}`
 }

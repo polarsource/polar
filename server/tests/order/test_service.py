@@ -5,6 +5,7 @@ from typing import cast
 from unittest.mock import ANY, AsyncMock, MagicMock, call
 
 import pytest
+import pytest_asyncio
 import stripe as stripe_lib
 from freezegun import freeze_time
 from pydantic import BaseModel
@@ -45,6 +46,7 @@ from polar.models import (
     BillingEntry,
     Customer,
     Discount,
+    Order,
     PaymentMethod,
     Product,
     ProductPriceFixed,
@@ -55,6 +57,7 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
+from polar.models.custom_field import CustomFieldType
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import Organization, OrganizationStatus
@@ -63,7 +66,7 @@ from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.models.wallet import WalletType
-from polar.order.schemas import OrderUpdate
+from polar.order.schemas import OrderCreate, OrderUpdate
 from polar.order.service import (
     ManualRetryLimitExceeded,
     MissingCheckoutCustomer,
@@ -71,8 +74,12 @@ from polar.order.service import (
     NoPendingBillingEntries,
     NotPaidOrder,
     NotRecurringProduct,
+    OffSessionChargesNotEnabled,
+    OrderNotDraft,
     OrderNotEligibleForRetry,
     OrderNotPending,
+    OrganizationNotReadyForPayments,
+    PaymentActionRequired,
     PaymentAlreadyInProgress,
     PaymentFailed,
     RecurringProduct,
@@ -86,6 +93,7 @@ from polar.tax.calculation import (
     CalculationExpiredError,
     TaxabilityReason,
     TaxCalculation,
+    TaxCalculationLogicalError,
     TaxCalculationService,
     get_tax_behavior_from_option,
 )
@@ -103,6 +111,7 @@ from tests.fixtures.random_objects import (
     create_billing_entry,
     create_canceled_subscription,
     create_checkout,
+    create_custom_field,
     create_customer,
     create_discount,
     create_event,
@@ -2546,19 +2555,38 @@ class TestGenerateInvoice:
 
 @pytest.mark.asyncio
 class TestHandlePayment:
-    async def test_order_not_pending(
+    async def test_already_paid_is_idempotent(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
     ) -> None:
-        # Create an order that is already paid
+        # An already-paid order is a no-op: the success path may run inline
+        # (from finalize_order) and then again from charge.succeeded.
         order = await create_order(
             save_fixture,
             product=product,
             customer=customer,
             status=OrderStatus.paid,
+        )
+
+        result = await order_service.handle_payment(session, order, None)
+        assert result is order
+        assert result.status == OrderStatus.paid
+
+    async def test_order_not_pending_raises_for_non_paid(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.refunded,
         )
 
         with pytest.raises(OrderNotPending):
@@ -2621,7 +2649,7 @@ class TestHandlePayment:
         product: Product,
         organization: Organization,
     ) -> None:
-        # Create a customer with a billing address so that _calculate_subscription_order_tax
+        # Create a customer with a billing address so that _calculate_tax
         # will actually invoke tax_calculation_service.calculate and produce a non-zero amount.
         # The mocked calculate returns polar_round(amount * 0.20), so for net_amount=1000 → 200.
         customer_with_address = await create_customer(
@@ -5086,3 +5114,607 @@ class TestVoidPendingOrdersForSubscription:
             assert order.status == OrderStatus.void
             assert order.next_payment_attempt_at is None
             assert order.subscription_id == subscription.id
+
+
+@pytest_asyncio.fixture
+async def off_session_organization(
+    save_fixture: SaveFixture, organization: Organization
+) -> Organization:
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "off_session_charges_enabled": True,
+    }
+    await save_fixture(organization)
+    return organization
+
+
+@pytest.mark.asyncio
+class TestCreateDraftOrder:
+    async def test_feature_flag_disabled(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        # `organization` does not have the off_session_charges flag set.
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+        )
+        with pytest.raises(OffSessionChargesNotEnabled):
+            await order_service.create_draft_order(session, organization, payload)
+
+    async def test_unknown_product_rejected(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=uuid.uuid4(),
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_recurring_product_rejected(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # The default `product` fixture is recurring monthly.
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_seat_based_product_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=off_session_organization,
+            recurring_interval=None,
+            prices=[("seat", 1000, "usd")],
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_unknown_customer_rejected(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time: Product,
+    ) -> None:
+        payload = OrderCreate(
+            customer_id=uuid.uuid4(),
+            product_id=product_one_time.id,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_happy_path(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+        )
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+
+        assert order.status == OrderStatus.draft
+        assert order.invoice_number is None
+        assert order.customer_id == customer.id
+        assert order.product_id == product_one_time.id
+        assert order.subscription_id is None
+        assert order.checkout_id is None
+        assert order.subtotal_amount > 0
+        assert len(order.items) >= 1
+
+    async def test_multi_currency_falls_back_to_org_default(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time_multiple_currencies: Product,
+        customer: Customer,
+    ) -> None:
+        # When no currency is given, fall back to the organization's default
+        # presentment currency (matching the checkout flow), even though the
+        # product is priced in several currencies.
+        assert off_session_organization.default_presentment_currency == "usd"
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time_multiple_currencies.id,
+        )
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+        assert order.status == OrderStatus.draft
+        assert order.currency == "usd"
+        # The usd price set was selected (1000), not eur (900) or gbp (800).
+        usd_prices = PriceSet.from_product(product_one_time_multiple_currencies, "usd")
+        assert len(order.items) == len(usd_prices.prices)
+        assert order.subtotal_amount == sum(
+            cast(ProductPriceFixed, price).price_amount for price in usd_prices.prices
+        )
+
+    async def test_multi_currency_with_currency(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time_multiple_currencies: Product,
+        customer: Customer,
+    ) -> None:
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time_multiple_currencies.id,
+            currency="eur",
+        )
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+        assert order.status == OrderStatus.draft
+        assert order.currency == "eur"
+        # The eur price set was selected (900), not usd (1000) or gbp (800).
+        eur_prices = PriceSet.from_product(product_one_time_multiple_currencies, "eur")
+        assert len(order.items) == len(eur_prices.prices)
+        assert order.subtotal_amount == sum(
+            cast(ProductPriceFixed, price).price_amount for price in eur_prices.prices
+        )
+
+    async def test_unknown_currency_rejected(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+            currency="gbp",
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_custom_price_product_rejected(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time_custom_price: Product,
+        customer: Customer,
+    ) -> None:
+        # Only fixed-price products are supported off-session; a pay-what-you-want
+        # (custom) product is rejected.
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time_custom_price.id,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_free_product_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=off_session_organization,
+            recurring_interval=None,
+            prices=[(None, "usd")],
+        )
+        payload = OrderCreate(customer_id=customer.id, product_id=product.id)
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_custom_field_data_validated_against_product(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        text_field = await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="note",
+            organization=off_session_organization,
+        )
+        product = await create_product(
+            save_fixture,
+            organization=off_session_organization,
+            recurring_interval=None,
+            attached_custom_fields=[(text_field, False)],
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+            custom_field_data={"note": "hello", "unknown": "dropme"},
+        )
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+        # Unknown keys are dropped; the product's field is kept.
+        assert order.custom_field_data == {"note": "hello"}
+
+    async def test_custom_field_wrong_type_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        number_field = await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.number,
+            slug="level",
+            organization=off_session_organization,
+        )
+        product = await create_product(
+            save_fixture,
+            organization=off_session_organization,
+            recurring_interval=None,
+            attached_custom_fields=[(number_field, False)],
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+            custom_field_data={"level": "not-a-number"},
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_uncomputable_tax_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        tax_service_mock: MagicMock,
+    ) -> None:
+        # The customer has a billing address (so tax is attempted), but the
+        # processor can't compute tax for it. The draft must be rejected rather
+        # than persisted tax-free — finalize never recomputes it.
+        tax_service_mock.calculate.side_effect = TaxCalculationLogicalError(
+            "Invalid address"
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=off_session_organization,
+            billing_address=Address(country=CountryAlpha2("US")),
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+
+@pytest.mark.asyncio
+class TestFinalizeOrder:
+    async def test_order_not_draft(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+        )
+        with pytest.raises(OrderNotDraft):
+            await order_service.finalize_order(session, order)
+
+    async def test_lost_draft_claim_raises(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Another request already claimed the draft, so the atomic
+        # start_finalization() guard returns False. Finalize must refuse and
+        # leave the order untouched.
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+        )
+        original_invoice_number = order.invoice_number
+        mocker.patch(
+            "polar.order.repository.OrderRepository.start_finalization",
+            new=AsyncMock(return_value=False),
+        )
+
+        with pytest.raises(OrderNotDraft):
+            await order_service.finalize_order(
+                session, order, payment_method_id=payment_method.id
+            )
+
+        await session.refresh(order)
+        assert order.status == OrderStatus.draft
+        assert order.invoice_number == original_invoice_number
+        assert order.payment_lock_acquired_at is None
+
+    async def test_feature_flag_revoked_between_create_and_finalize(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Org has no flag set; calling finalize on a draft should refuse.
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+        with pytest.raises(OffSessionChargesNotEnabled):
+            await order_service.finalize_order(session, order)
+
+    async def test_organization_cannot_accept_payments(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Flag is enabled, but the org's account can't accept payments yet
+        # (e.g. pending onboarding / under review).
+        off_session_organization.capabilities = {
+            **off_session_organization.capabilities,
+            "checkout_payments": False,
+        }
+        await save_fixture(off_session_organization)
+
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+        with pytest.raises(OrganizationNotReadyForPayments):
+            await order_service.finalize_order(session, order)
+
+        await session.refresh(order)
+        # Rejected before any state change — the order stays a draft.
+        assert order.status == OrderStatus.draft
+
+    async def test_missing_payment_method(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+        with pytest.raises(PaymentFailed):
+            await order_service.finalize_order(session, order)
+
+        await session.refresh(order)
+        # Missing payment method is caught before any state mutation —
+        # nothing changes on the order.
+        assert order.status == OrderStatus.draft
+
+    async def test_card_error_reverts_to_draft(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+
+        stripe_service_mock.create_payment_intent.side_effect = stripe_lib.CardError(
+            message="Your card was declined.",
+            param="card",
+            code="card_declined",
+        )
+
+        with pytest.raises(PaymentFailed):
+            await order_service.finalize_order(
+                session, order, payment_method_id=payment_method.id
+            )
+
+        await session.refresh(order)
+        assert order.status == OrderStatus.draft
+        assert order.invoice_number is None
+        assert order.payment_lock_acquired_at is None
+
+    async def test_requires_action_reverts_to_draft(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+
+        stripe_service_mock.create_payment_intent.return_value = (
+            build_stripe_payment_intent(status="requires_action")
+        )
+
+        with pytest.raises(PaymentActionRequired):
+            await order_service.finalize_order(
+                session, order, payment_method_id=payment_method.id
+            )
+
+        await session.refresh(order)
+        assert order.status == OrderStatus.draft
+        assert order.invoice_number is None
+
+    async def test_explicit_payment_method_must_belong_to_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        other_payment_method = await create_payment_method(
+            save_fixture, customer=customer_second
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+
+        with pytest.raises(PaymentFailed):
+            await order_service.finalize_order(
+                session, order, payment_method_id=other_payment_method.id
+            )
+
+        await session.refresh(order)
+        assert order.status == OrderStatus.draft
+
+    async def test_happy_path_charges_and_settles_inline(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+        mocker: MockerFixture,
+    ) -> None:
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+
+        # A succeeded off-session charge with an expanded Charge, as
+        # trigger_payment requests via expand=["latest_charge"].
+        payment_intent = stripe_lib.PaymentIntent.construct_from(
+            {
+                "id": "pi_finalize_success",
+                "status": "succeeded",
+                "latest_charge": {"object": "charge", "id": "ch_finalize_success"},
+            },
+            None,
+        )
+        stripe_service_mock.create_payment_intent.return_value = payment_intent
+
+        # The charge -> payment -> benefit-grant pipeline has its own coverage;
+        # here we only assert finalize's orchestration drives it with a paid
+        # order, rather than leaving settlement to the webhook.
+        def _settle(_session: AsyncSession, settled: Order, _payment: object) -> Order:
+            settled.status = OrderStatus.paid
+            return settled
+
+        upsert_mock = mocker.patch(
+            "polar.order.service.payment_service.upsert_from_stripe_charge",
+            new=AsyncMock(return_value=MagicMock()),
+        )
+        handle_payment_mock = mocker.patch.object(
+            order_service, "handle_payment", new=AsyncMock(side_effect=_settle)
+        )
+
+        result = await order_service.finalize_order(
+            session, order, payment_method_id=payment_method.id
+        )
+
+        assert result.status == OrderStatus.paid
+        # The invoice number is assigned inline, and only on success.
+        assert result.invoice_number is not None
+
+        # The charge is keyed for idempotency (sync/finalize path only) so a
+        # retry after a lost response can't double-charge.
+        call_kwargs = stripe_service_mock.create_payment_intent.call_args[1]
+        assert (
+            call_kwargs["idempotency_key"]
+            == f"order_finalize:{order.id}:{payment_method.processor_id}"
+        )
+
+        # The success path is applied inline: the expanded charge is extracted
+        # and handed to the payment + settlement pipeline.
+        upsert_mock.assert_awaited_once()
+        charge_arg = upsert_mock.call_args.args[1]
+        assert isinstance(charge_arg, stripe_lib.Charge)
+        assert charge_arg.id == "ch_finalize_success"
+        handle_payment_mock.assert_awaited_once()

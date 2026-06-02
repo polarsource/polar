@@ -2010,7 +2010,17 @@ export interface paths {
      */
     get: operations['orders:list']
     put?: never
-    post?: never
+    /**
+     * Create Order
+     * @description Create a draft order for an off-session charge against a saved payment
+     *     method. The order is created with `status=draft` and no invoice number;
+     *     call `POST /v1/orders/{id}/finalize` to attempt the charge.
+     *
+     *     The organization must have the `off_session_charges_enabled` feature flag.
+     *
+     *     **Scopes**: `orders:write`
+     */
+    post: operations['orders:create']
     delete?: never
     options?: never
     head?: never
@@ -2065,6 +2075,34 @@ export interface paths {
      *     **Scopes**: `orders:write`
      */
     patch: operations['orders:update']
+    trace?: never
+  }
+  '/v1/orders/{id}/finalize': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Finalize Order
+     * @description Finalize a draft order and synchronously attempt an off-session charge.
+     *
+     *     On success, the order transitions to `paid` and benefit grants fire
+     *     before the response returns. On failure (decline, missing payment method,
+     *     SCA challenge), the order stays in `draft` and a 4xx error is returned.
+     *
+     *     The request fails with 412 if the order is not in `draft` status.
+     *
+     *     **Scopes**: `orders:write`
+     */
+    post: operations['orders:finalize']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
     trace?: never
   }
   '/v1/orders/{id}/invoice': {
@@ -14949,9 +14987,9 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /**
        * Invoice Number
-       * @description The invoice number associated with this order.
+       * @description The invoice number associated with this order. `null` while the order is in `draft` status; assigned at finalize.
        */
-      invoice_number: string
+      invoice_number: string | null
       /**
        * Is Invoice Generated
        * @description Whether an invoice has been generated for this order.
@@ -21678,6 +21716,17 @@ export interface components {
      * @enum {string}
      */
     OAuthPlatform: 'github' | 'github_repository_benefit' | 'google' | 'apple'
+    /** OffSessionChargesNotEnabled */
+    OffSessionChargesNotEnabled: {
+      /**
+       * Error
+       * @example OffSessionChargesNotEnabled
+       * @constant
+       */
+      error: 'OffSessionChargesNotEnabled'
+      /** Detail */
+      detail: string
+    }
     /** Order */
     Order: {
       /**
@@ -21773,9 +21822,9 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /**
        * Invoice Number
-       * @description The invoice number associated with this order.
+       * @description The invoice number associated with this order. `null` while the order is in `draft` status; assigned at finalize.
        */
-      invoice_number: string
+      invoice_number: string | null
       /**
        * Is Invoice Generated
        * @description Whether an invoice has been generated for this order.
@@ -21881,6 +21930,58 @@ export interface components {
       | 'subscription_cycle_after_trial'
       | 'subscription_cancel'
       | 'subscription_update'
+    /**
+     * OrderCreate
+     * @description Schema to create a draft order for an off-session charge.
+     */
+    OrderCreate: {
+      /**
+       * Custom Field Data
+       * @description Key-value object storing custom field values.
+       */
+      custom_field_data?: {
+        [key: string]: string | number | boolean | null
+      }
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Organization Id
+       * @description The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization.
+       */
+      organization_id?: string | null
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer the order is for. Must belong to the order's organization.
+       */
+      customer_id: string
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The ID of the one-time, fixed-price product to charge for. Must belong to the order's organization. Subscription, seat-based, and pay-what-you-want products are not supported.
+       */
+      product_id: string
+      /**
+       * Currency
+       * @description The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency.
+       */
+      currency?: string | null
+    }
     /** OrderCustomer */
     OrderCustomer: {
       /**
@@ -21955,6 +22056,17 @@ export interface components {
       readonly avatar_url: string
     }
     /**
+     * OrderFinalize
+     * @description Schema to finalize a draft order and trigger an off-session charge.
+     */
+    OrderFinalize: {
+      /**
+       * Payment Method Id
+       * @description ID of the payment method to charge. Must belong to the order's customer. Falls back to the customer's default payment method when unset.
+       */
+      payment_method_id?: string | null
+    }
+    /**
      * OrderInvoice
      * @description Order's invoice data.
      */
@@ -22016,6 +22128,17 @@ export interface components {
        * @description Associated price ID, if any.
        */
       product_price_id: string | null
+    }
+    /** OrderNotDraft */
+    OrderNotDraft: {
+      /**
+       * Error
+       * @example OrderNotDraft
+       * @constant
+       */
+      error: 'OrderNotDraft'
+      /** Detail */
+      detail: string
     }
     /** OrderNotEligibleForRetry */
     OrderNotEligibleForRetry: {
@@ -22321,7 +22444,13 @@ export interface components {
      * OrderStatus
      * @enum {string}
      */
-    OrderStatus: 'pending' | 'paid' | 'refunded' | 'partially_refunded' | 'void'
+    OrderStatus:
+      | 'draft'
+      | 'pending'
+      | 'paid'
+      | 'refunded'
+      | 'partially_refunded'
+      | 'void'
     /** OrderSubscription */
     OrderSubscription: {
       metadata: components['schemas']['MetadataOutputType']
@@ -23668,6 +23797,12 @@ export interface components {
        */
       reset_proration_behavior_enabled: boolean
       /**
+       * Off Session Charges Enabled
+       * @description If this organization can create and finalize draft orders via the API (off-session charges against a saved payment method).
+       * @default false
+       */
+      off_session_charges_enabled: boolean
+      /**
        * Billing Enabled
        * @description If this organization has billing enabled
        * @default false
@@ -24074,6 +24209,17 @@ export interface components {
        * @enum {string}
        */
       role: 'admin' | 'member'
+    }
+    /** OrganizationNotReadyForPayments */
+    OrganizationNotReadyForPayments: {
+      /**
+       * Error
+       * @example OrganizationNotReadyForPayments
+       * @constant
+       */
+      error: 'OrganizationNotReadyForPayments'
+      /** Detail */
+      detail: string
     }
     /** OrganizationNotificationSettings */
     OrganizationNotificationSettings: {
@@ -25325,6 +25471,17 @@ export interface components {
     Payment:
       | components['schemas']['CardPayment']
       | components['schemas']['GenericPayment']
+    /** PaymentActionRequired */
+    PaymentActionRequired: {
+      /**
+       * Error
+       * @example PaymentActionRequired
+       * @constant
+       */
+      error: 'PaymentActionRequired'
+      /** Detail */
+      detail: string
+    }
     /** PaymentAlreadyInProgress */
     PaymentAlreadyInProgress: {
       /**
@@ -36417,6 +36574,39 @@ export interface operations {
       }
     }
   }
+  'orders:create': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrderCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Order']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'orders:export': {
     parameters: {
       query?: {
@@ -36525,6 +36715,82 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'orders:finalize': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The order ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrderFinalize']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Order']
+        }
+      }
+      /** @description The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session. */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['PaymentFailed']
+            | components['schemas']['PaymentActionRequired']
+        }
+      }
+      /** @description Off-session charges are not enabled for this organization, or its account can't currently accept payments. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['OffSessionChargesNotEnabled']
+            | components['schemas']['OrganizationNotReadyForPayments']
+        }
+      }
+      /** @description Order not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The order is not in `draft` status. */
+      412: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrderNotDraft']
         }
       }
       /** @description Validation Error */
@@ -55098,7 +55364,7 @@ export const orderSortPropertyValues: ReadonlyArray<
 ]
 export const orderStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrderStatus']
-> = ['pending', 'paid', 'refunded', 'partially_refunded', 'void']
+> = ['draft', 'pending', 'paid', 'refunded', 'partially_refunded', 'void']
 export const orderVoidedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrderVoidedEvent']['name']
 > = ['order.voided']

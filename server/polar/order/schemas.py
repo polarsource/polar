@@ -11,19 +11,23 @@ from pydantic import (
 )
 from pydantic.json_schema import SkipJsonSchema
 
-from polar.custom_field.data import CustomFieldDataOutputMixin
+from polar.custom_field.data import (
+    CustomFieldDataInputMixin,
+    CustomFieldDataOutputMixin,
+)
 from polar.customer.schemas.customer import CustomerBase
 from polar.discount.schemas import DiscountMinimal
 from polar.exceptions import ResourceNotFound
 from polar.kit.address import Address, AddressInput
 from polar.kit.currency import format_currency
-from polar.kit.metadata import MetadataOutputMixin
+from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import IDSchema, MergeJSONSchema, Schema, TimestampedSchema
 from polar.models.order import (
     OrderBillingReason,
     OrderBillingReasonInternal,
     OrderStatus,
 )
+from polar.organization.schemas import OrganizationID
 from polar.product.schemas import ProductBase, ProductPrice
 from polar.subscription.schemas import SubscriptionBase
 
@@ -90,8 +94,11 @@ class OrderBase(TimestampedSchema, IDSchema):
             return OrderBillingReason.subscription_cycle
         return OrderBillingReason(value)
 
-    invoice_number: str = Field(
-        description="The invoice number associated with this order."
+    invoice_number: str | None = Field(
+        description=(
+            "The invoice number associated with this order. "
+            "`null` while the order is in `draft` status; assigned at finalize."
+        )
     )
     is_invoice_generated: bool = Field(
         description="Whether an invoice has been generated for this order."
@@ -272,6 +279,38 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
     )
 
 
+class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
+    """Schema to create a draft order for an off-session charge."""
+
+    organization_id: OrganizationID | None = Field(
+        default=None,
+        description=(
+            "The ID of the organization the order belongs to. "
+            "**Required unless you use an organization token.** "
+            "The customer and product must belong to this organization."
+        ),
+    )
+    customer_id: UUID4 = Field(
+        description="The ID of the customer the order is for. "
+        "Must belong to the order's organization."
+    )
+    product_id: UUID4 = Field(
+        description="The ID of the one-time, fixed-price product to charge for. "
+        "Must belong to the order's organization. "
+        "Subscription, seat-based, and pay-what-you-want products are not "
+        "supported."
+    )
+    currency: str | None = Field(
+        None,
+        description=(
+            "The currency to charge in (ISO 4217, lowercase, e.g. `usd`). "
+            "Defaults to the organization's default currency; specify it to "
+            "force a different one, or when the product isn't priced in the "
+            "organization's default currency."
+        ),
+    )
+
+
 class OrderUpdateBase(Schema):
     billing_name: str | None = Field(
         None, description="The name of the customer that should appear on the invoice."
@@ -287,6 +326,19 @@ class OrderUpdateBase(Schema):
 
 class OrderUpdate(OrderUpdateBase):
     """Schema to update an order."""
+
+
+class OrderFinalize(Schema):
+    """Schema to finalize a draft order and trigger an off-session charge."""
+
+    payment_method_id: UUID4 | None = Field(
+        None,
+        description=(
+            "ID of the payment method to charge. Must belong to the order's "
+            "customer. Falls back to the customer's default payment method "
+            "when unset."
+        ),
+    )
 
 
 class OrderInvoice(Schema):

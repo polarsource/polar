@@ -1,5 +1,5 @@
 import uuid
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator, Iterable, Sequence
 from contextlib import asynccontextmanager
 from enum import StrEnum
 from typing import Any, Literal
@@ -18,6 +18,7 @@ from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.guard import has_product_checkout
 from polar.config import settings
+from polar.custom_field.data import validate_custom_field_data
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
 from polar.customer_portal.schemas.order import (
@@ -68,6 +69,7 @@ from polar.models import (
     Payment,
     PaymentMethod,
     Product,
+    ProductPrice,
     Subscription,
     Transaction,
     User,
@@ -88,14 +90,19 @@ from polar.notifications.service import notifications as notifications_service
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
 from polar.payment.repository import PaymentRepository
+from polar.payment.service import payment as payment_service
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.product.guard import (
     is_custom_price,
+    is_fixed_price,
     is_seat_price,
     is_static_price,
 )
-from polar.product.price_set import PriceSet
+from polar.product.price_set import (
+    NoPricesForCurrencies,
+    PriceSet,
+)
 from polar.product.repository import ProductRepository
 from polar.receipt.service import receipt as receipt_service
 from polar.subscription.service import subscription as subscription_service
@@ -120,7 +127,7 @@ from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
 from .repository import OrderRepository
-from .schemas import OrderInvoice, OrderReceipt, OrderUpdate
+from .schemas import OrderCreate, OrderInvoice, OrderReceipt, OrderUpdate
 from .sorting import OrderSortProperty
 
 log: Logger = structlog.get_logger()
@@ -242,6 +249,60 @@ class PaymentFailed(OrderError):
         self.reason = reason
         message = f"Payment failed with reason: {reason}."
         super().__init__(message, 402)
+
+
+class PaymentActionRequired(OrderError):
+    """
+    Off-session charge needs customer interaction (typically 3DS / SCA).
+    The merchant should redirect the customer to the portal to reauthenticate
+    the card.
+    """
+
+    def __init__(self, order: Order, payment_intent_id: str) -> None:
+        self.order = order
+        self.payment_intent_id = payment_intent_id
+        message = (
+            f"Order {order.id} payment requires customer authentication "
+            "(e.g. 3DS challenge); off-session charge cannot complete."
+        )
+        super().__init__(message, 402)
+
+
+class OffSessionChargesNotEnabled(OrderError):
+    """The organization is not allowed to use the off-session charges API."""
+
+    def __init__(self, organization_id: uuid.UUID) -> None:
+        self.organization_id = organization_id
+        super().__init__(
+            "Off-session charges are not enabled for this organization "
+            f"({organization_id}). Contact Polar support to opt in.",
+            403,
+        )
+
+
+class OrganizationNotReadyForPayments(OrderError):
+    """The organization's account can't currently accept payments (e.g. not yet
+    onboarded or under review), so an off-session charge can't be attempted."""
+
+    def __init__(self, organization_id: uuid.UUID) -> None:
+        self.organization_id = organization_id
+        super().__init__(
+            f"This organization ({organization_id}) can't accept payments yet. "
+            "Its account may be pending onboarding or under review.",
+            403,
+        )
+
+
+class OrderNotDraft(OrderError):
+    """Operation only valid on orders in `draft` status."""
+
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        super().__init__(
+            f"Order {order.id} is not in draft status (current: {order.status}). "
+            "Only draft orders can be modified or finalized.",
+            412,
+        )
 
 
 class PaymentRetryValidationError(OrderError):
@@ -389,16 +450,13 @@ class OrderService:
         id: uuid.UUID,
     ) -> Order | None:
         repository = OrderRepository.from_session(session)
-        statement = (
-            repository.get_readable_statement(auth_subject)
-            .options(
-                *repository.get_eager_options(
-                    product_load=joinedload(Order.product),
-                )
-            )
-            .where(Order.id == id)
+        return await repository.get_readable_by_id(
+            auth_subject,
+            id,
+            options=repository.get_eager_options(
+                product_load=joinedload(Order.product),
+            ),
         )
-        return await repository.get_one_or_none(statement)
 
     async def update(
         self,
@@ -596,6 +654,31 @@ class OrderService:
             session, checkout, billing_reason, payment, subscription
         )
 
+    def _build_static_order_items(
+        self,
+        prices: Iterable[ProductPrice],
+        *,
+        amount: int | None,
+        seats: int | None,
+    ) -> Sequence[OrderItem]:
+        """
+        Build order line items for the static prices of a product.
+
+        Metered prices are skipped (they're billed through usage). Custom
+        (pay-what-you-want) prices use `amount`; seat-based prices use `seats`.
+        Callers are responsible for validating that `amount` / `seats` are
+        present when the product requires them.
+        """
+        items: list[OrderItem] = []
+        for price in prices:
+            if not is_static_price(price):
+                continue
+            if is_custom_price(price):
+                items.append(OrderItem.from_price(price, 0, amount))
+            else:
+                items.append(OrderItem.from_price(price, 0, seats=seats))
+        return items
+
     async def _create_order_from_checkout(
         self,
         session: AsyncSession,
@@ -613,15 +696,11 @@ class OrderService:
             currency_prices = PriceSet.from_prices(
                 checkout.prices[checkout.product_id], checkout.currency
             )
-            for price in currency_prices:
-                # Don't create an item for metered prices
-                if not is_static_price(price):
-                    continue
-                if is_custom_price(price):
-                    item = OrderItem.from_price(price, 0, checkout.amount)
-                else:
-                    item = OrderItem.from_price(price, 0, seats=checkout.seats)
-                items.append(item)
+            items = list(
+                self._build_static_order_items(
+                    currency_prices, amount=checkout.amount, seats=checkout.seats
+                )
+            )
 
         discount_amount = checkout.discount_amount
 
@@ -700,6 +779,392 @@ class OrderService:
 
         return order
 
+    async def create_draft_order(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        payload: OrderCreate,
+    ) -> Order:
+        """
+        Create a draft order for an off-session charge in `organization`. The
+        order is persisted with `status=draft` and no invoice number; the
+        merchant must call finalize_order() to charge the customer's saved
+        payment method.
+
+        The caller (endpoint) is responsible for having resolved `organization`
+        and asserted `sales_manage` permission on it. The product and customer
+        are looked up scoped to that organization.
+        """
+        if not organization.feature_settings.get("off_session_charges_enabled"):
+            raise OffSessionChargesNotEnabled(organization.id)
+
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id_and_organization(
+            payload.product_id,
+            organization.id,
+            options=product_repository.get_eager_options(),
+        )
+        if product is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product does not exist.",
+                        "input": payload.product_id,
+                    }
+                ]
+            )
+        if product.is_recurring:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": (
+                            "Subscription products are not supported by the "
+                            "off-session charge API. Use a one-time product."
+                        ),
+                        "input": payload.product_id,
+                    }
+                ]
+            )
+        if product.has_seat_based_price:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": (
+                            "Seat-based products are not supported by the "
+                            "off-session charge API."
+                        ),
+                        "input": payload.product_id,
+                    }
+                ]
+            )
+
+        # Off-session charges currently support fixed-price products only — the
+        # amount must be fully determined by the product. Custom
+        # (pay-what-you-want) and free prices are rejected.
+        static_prices = [price for price in product.prices if is_static_price(price)]
+        if not static_prices:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product has no chargeable static prices.",
+                        "input": payload.product_id,
+                    }
+                ]
+            )
+        if any(not is_fixed_price(price) for price in static_prices):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Off-session charges only support fixed-price products.",
+                        "input": payload.product_id,
+                    }
+                ]
+            )
+
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id_and_organization(
+            payload.customer_id, organization.id
+        )
+        if customer is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "customer_id"),
+                        "msg": "Customer does not exist.",
+                        "input": payload.customer_id,
+                    }
+                ]
+            )
+
+        # Resolve the charge currency: use the one the merchant requested, else
+        # fall back to the organization's default presentment currency (matching
+        # the checkout flow). So `currency` only needs to be passed when the
+        # product isn't priced in the organization's default currency.
+        if payload.currency is not None:
+            currency = payload.currency.lower()
+        else:
+            currency = organization.default_presentment_currency
+        try:
+            currency_prices = PriceSet.from_product(product, currency)
+        except NoPricesForCurrencies as e:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "currency"),
+                        "msg": (
+                            f"Product has no price in currency '{currency}'."
+                            if payload.currency is not None
+                            else (
+                                "Product is not priced in the organization's "
+                                f"default currency ('{currency}'); specify a "
+                                "currency to charge in."
+                            )
+                        ),
+                        "input": payload.currency,
+                    }
+                ]
+            ) from e
+
+        items = list(
+            self._build_static_order_items(currency_prices, amount=None, seats=None)
+        )
+
+        # Validate custom field values against the product's attached fields,
+        # same as the checkout path. Unknown keys are dropped and values are
+        # type-checked; required fields aren't enforced at draft creation.
+        custom_field_data = validate_custom_field_data(
+            product.attached_custom_fields,
+            payload.custom_field_data,
+            validate_required=False,
+        )
+
+        subtotal_amount = sum(item.amount for item in items)
+        discount_amount = 0
+
+        order_id = uuid.uuid4()
+        # Unlike the subscription flow, a draft order persists its tax and never
+        # recomputes it at finalize — so a tax we can't compute now (e.g. the
+        # customer's billing address is missing or invalid) must be rejected
+        # rather than silently charged tax-free.
+        try:
+            (
+                tax_processor,
+                tax_behavior,
+                tax_calculation_processor_id,
+                tax_amount,
+                tax_breakdown,
+            ) = await self._calculate_tax(
+                reference=str(order_id),
+                taxable_amount=subtotal_amount - discount_amount,
+                tax_behavior_option=organization.default_tax_behavior,
+                currency=currency,
+                customer=customer,
+                product=product,
+                tax_exempted=False,
+                allow_silent_failure=False,
+            )
+        except TaxCalculationLogicalError as e:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "customer_id"),
+                        "msg": (
+                            "Tax could not be calculated for this order. The "
+                            "customer needs a complete, valid billing address "
+                            "before an off-session charge can be created."
+                        ),
+                        "input": payload.customer_id,
+                    }
+                ]
+            ) from e
+
+        net_amount = (
+            subtotal_amount
+            - discount_amount
+            - (tax_amount if tax_behavior == TaxBehavior.inclusive else 0)
+        )
+
+        repository = OrderRepository.from_session(session)
+        order = await repository.create(
+            Order(
+                id=order_id,
+                status=OrderStatus.draft,
+                subtotal_amount=subtotal_amount,
+                discount_amount=discount_amount,
+                tax_amount=tax_amount,
+                net_amount=net_amount,
+                currency=currency,
+                billing_reason=OrderBillingReasonInternal.purchase,
+                billing_name=customer.billing_name,
+                billing_address=customer.billing_address,
+                tax_id=customer.tax_id,
+                tax_behavior=tax_behavior,
+                tax_breakdown=tax_breakdown or None,
+                tax_processor=tax_processor,
+                tax_calculation_processor_id=tax_calculation_processor_id,
+                invoice_number=None,
+                organization=organization,
+                customer=customer,
+                product=product,
+                discount=None,
+                subscription=None,
+                checkout=None,
+                user_metadata=payload.metadata,
+                custom_field_data=custom_field_data,
+                items=items,
+                seats=None,
+            ),
+            flush=True,
+        )
+
+        return order
+
+    async def finalize_order(
+        self,
+        session: AsyncSession,
+        order: Order,
+        *,
+        payment_method_id: uuid.UUID | None = None,
+    ) -> Order:
+        """
+        Finalize a draft order: resolve the payment method, atomically claim the
+        draft, and synchronously attempt an off-session charge. On success the
+        order transitions to paid, gets an invoice number, and benefit grants
+        fire before this method returns. On any failure the order is reverted to
+        draft so the merchant can fix the situation and retry against the same
+        order ID. The invoice number is assigned only on success, so failed
+        attempts don't burn invoice numbers.
+        """
+        if order.status != OrderStatus.draft:
+            raise OrderNotDraft(order)
+
+        organization = order.organization
+        if not organization.feature_settings.get("off_session_charges_enabled"):
+            raise OffSessionChargesNotEnabled(organization.id)
+
+        # Surface the real reason up front: trigger_payment would otherwise
+        # short-circuit on this same capability and leave the order pending,
+        # which the None-handling below can only report as a generic failure.
+        if not organization.can_accept_payments:
+            raise OrganizationNotReadyForPayments(organization.id)
+
+        customer = order.customer
+        payment_method = await self._resolve_payment_method(
+            session, customer, payment_method_id
+        )
+
+        # Atomically claim the draft (draft -> pending). If another request
+        # already claimed it, this returns False and we bail out so two
+        # finalizes can't both charge / race the order status.
+        repository = OrderRepository.from_session(session)
+        if not await repository.start_finalization(order.id):
+            raise OrderNotDraft(order)
+        # Sync the in-memory status with the atomic transition (deterministic on
+        # a successful claim) so trigger_payment, which requires `pending`, sees
+        # it — without a refresh round-trip or expiring loaded relationships.
+        order.status = OrderStatus.pending
+
+        # Any failure from trigger_payment happens before a charge completes
+        # (declines raise, SCA returns requires_action, a concurrent lock raises
+        # PaymentAlreadyInProgress), so reverting to draft is always safe here.
+        try:
+            payment_intent = await self.trigger_payment(
+                session, order, payment_method, payment_mode=PaymentMode.sync
+            )
+        except Exception:
+            await self._revert_to_draft(session, order)
+            raise
+
+        if payment_intent is None:
+            # trigger_payment short-circuited without a charge. The expected
+            # case is under-currency-minimum, which already marked the order
+            # paid (org capability was checked above), so re-read for a clean
+            # status: paid -> assign the invoice number and return. A still
+            # `pending` order here means no Stripe charge could be attempted
+            # (e.g. a non-Stripe payment method), so revert and report failure.
+            settled = await repository.get_by_id(order.id)
+            if settled is not None and settled.status == OrderStatus.pending:
+                await self._revert_to_draft(session, order)
+                raise PaymentFailed(PaymentFailedReason.missing_payment_method)
+            return await self._assign_invoice_number(session, order)
+
+        # Apply the charge.succeeded path inline so the finalize HTTP response
+        # carries the paid order. The webhook arrives shortly after and no-ops
+        # via the idempotency guards in upsert_from_stripe_charge / handle_payment.
+        charge = self._get_intent_charge(payment_intent)
+        order = await self._assign_invoice_number(session, order)
+        payment = await payment_service.upsert_from_stripe_charge(
+            session, charge, organization, None, None, order
+        )
+        return await self.handle_payment(session, order, payment)
+
+    def _get_intent_charge(
+        self, payment_intent: stripe_lib.PaymentIntent
+    ) -> stripe_lib.Charge:
+        """Return the Charge from a confirmed PaymentIntent.
+
+        trigger_payment creates the intent with ``expand=["latest_charge"]``,
+        so this is a full Charge object. We raise (rather than assert) if it
+        isn't, since asserts are stripped under ``-O`` and this runs after the
+        customer has been charged.
+        """
+        charge = payment_intent.latest_charge
+        if not isinstance(charge, stripe_lib.Charge):
+            raise OrderError(
+                f"PaymentIntent {payment_intent.id} is missing its expanded "
+                "latest_charge; cannot settle the order synchronously."
+            )
+        return charge
+
+    async def _assign_invoice_number(
+        self, session: AsyncSession, order: Order
+    ) -> Order:
+        """Assign the next invoice number to an order that doesn't have one."""
+        if order.invoice_number is not None:
+            return order
+        invoice_number = await organization_service.get_next_invoice_number(
+            session, order.organization, order.customer
+        )
+        repository = OrderRepository.from_session(session)
+        return await repository.update(
+            order, update_dict={"invoice_number": invoice_number}
+        )
+
+    async def _resolve_payment_method(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        payment_method_id: uuid.UUID | None,
+    ) -> PaymentMethod:
+        """
+        Resolve the payment method to charge for an off-session order: the
+        explicitly requested one (which must belong to the customer), else the
+        customer's default. Raises PaymentFailed if none is usable.
+        """
+        repository = PaymentMethodRepository.from_session(session)
+        if payment_method_id is not None:
+            payment_method = await repository.get_by_id(
+                payment_method_id, options=repository.get_eager_options()
+            )
+            if payment_method is None or payment_method.customer_id != customer.id:
+                raise PaymentFailed(PaymentFailedReason.missing_payment_method)
+            return payment_method
+
+        payment_method = await payment_method_service.get_customer_payment_method(
+            session, customer
+        )
+        if payment_method is None:
+            raise PaymentFailed(PaymentFailedReason.missing_payment_method)
+        return payment_method
+
+    async def _revert_to_draft(self, session: AsyncSession, order: Order) -> Order:
+        """
+        Roll a failed finalize back to draft so the merchant can fix the
+        situation and retry against the same order ID. flush=True so the revert
+        is persisted even as the request bubbles up the failure exception. The
+        invoice number is only assigned on success, so there's nothing to
+        release here (cleared defensively).
+        """
+        repository = OrderRepository.from_session(session)
+        return await repository.update(
+            order,
+            update_dict={"status": OrderStatus.draft, "invoice_number": None},
+            flush=True,
+        )
+
     async def create_subscription_order(
         self,
         session: AsyncSession,
@@ -765,7 +1230,7 @@ class OrderService:
                 tax_calculation_processor_id,
                 tax_amount,
                 tax_breakdown,
-            ) = await self._calculate_subscription_order_tax(
+            ) = await self._calculate_tax(
                 reference=str(order_id),
                 taxable_amount=subtotal_amount - discount_amount,
                 tax_behavior_option=tax_behavior_option,
@@ -1065,7 +1530,15 @@ class OrderService:
         *,
         payment_mode: PaymentMode = PaymentMode.background,
         payment_trigger: PaymentTrigger | None = None,
-    ) -> None:
+    ) -> stripe_lib.PaymentIntent | None:
+        """
+        Attempt an off-session charge for the order.
+
+        Returns the Stripe PaymentIntent on Stripe-card paths so callers in
+        synchronous mode can apply the success path inline without waiting for
+        the webhook. Returns None for the under-minimum / non-Stripe / disabled
+        branches that don't create a PaymentIntent.
+        """
         if order.status != OrderStatus.pending:
             raise OrderNotPending(order)
 
@@ -1089,7 +1562,7 @@ class OrderService:
                     else "checkout_payments"
                 ),
             )
-            return
+            return None
 
         if order.payment_lock_acquired_at is not None:
             log.warn("Payment already in progress", order_id=order.id)
@@ -1106,6 +1579,12 @@ class OrderService:
                 order, update_dict={"status": OrderStatus.paid}
             )
 
+            # Allocate the invoice number before emitting events/hooks so the
+            # `order.paid` webhook never observes a paid order without one
+            # (off-session drafts only get their number here). Idempotent, so
+            # orders that already have one — e.g. subscription renewals — no-op.
+            order = await self._assign_invoice_number(session, order)
+
             # Add to the customer's balance
             await wallet_service.create_balance_transaction(
                 session,
@@ -1119,7 +1598,7 @@ class OrderService:
                 session, order, order.organization
             )
             await self._on_order_updated(session, order, previous_status)
-            return
+            return None
 
         async with self.acquire_payment_lock(session, order):
             if payment_method.processor == PaymentProcessor.stripe:
@@ -1139,17 +1618,33 @@ class OrderService:
                 stripe_customer_id = order.customer.stripe_customer_id
                 assert stripe_customer_id is not None
 
+                # Off-session finalize is retried by the merchant against the
+                # same order (which reverts to draft on failure), so the charge
+                # must be idempotent: if it succeeds but the response/commit is
+                # lost, a retry returns the cached PaymentIntent instead of
+                # double-charging. Scoping the key to the payment method keeps a
+                # retry with a *different* card a genuinely fresh attempt. Only
+                # the sync path sets this — background dunning relies on Stripe
+                # attempting a brand-new charge on each retry.
+                idempotency_key: str | None = None
+                if payment_mode == PaymentMode.sync:
+                    idempotency_key = (
+                        f"order_finalize:{order.id}:{payment_method.processor_id}"
+                    )
+
                 try:
-                    await stripe_service.create_payment_intent(
+                    payment_intent = await stripe_service.create_payment_intent(
                         amount=order.due_amount,
                         currency=order.currency,
                         payment_method=payment_method.processor_id,
                         customer=stripe_customer_id,
                         confirm=True,
                         off_session=True,
+                        expand=["latest_charge"],
                         statement_descriptor_suffix=order.statement_descriptor_suffix,
                         description=f"{order.organization.name} — {order.description}",
                         metadata=metadata,
+                        idempotency_key=idempotency_key,
                     )
                 except stripe_lib.CardError as e:
                     # Card errors (declines, expired cards, etc.) should not be retried
@@ -1192,6 +1687,31 @@ class OrderService:
                             raise PaymentFailed(PaymentFailedReason.card_error) from e
 
                     raise
+
+                # Off-session SCA / 3DS challenges return a non-raising intent
+                # in one of the `requires_*` statuses. Only sync callers
+                # (draft-order finalize) surface a typed error so the merchant
+                # can re-authenticate the customer; background callers (checkout
+                # / dunning) must keep waiting for the webhook to drive dunning,
+                # exactly as before this path existed — raising here would break
+                # those flows.
+                if payment_mode == PaymentMode.sync and payment_intent.status in (
+                    "requires_action",
+                    "requires_confirmation",
+                    "requires_payment_method",
+                    "requires_source_action",
+                ):
+                    log.info(
+                        "Off-session payment requires customer action",
+                        order_id=order.id,
+                        payment_intent_id=payment_intent.id,
+                        payment_intent_status=payment_intent.status,
+                    )
+                    raise PaymentActionRequired(order, payment_intent.id)
+
+                return payment_intent
+
+        return None
 
     async def _mark_intent_as_failed_sync(self, error: stripe_lib.StripeError) -> None:
         payment_intent = getattr(error.error, "payment_intent", None)
@@ -1416,6 +1936,12 @@ class OrderService:
     async def handle_payment(
         self, session: AsyncSession, order: Order, payment: Payment | None
     ) -> Order:
+        # Idempotency: a charge.succeeded webhook can arrive after the
+        # finalize-order endpoint already applied the success path inline.
+        # In that case, the order is already paid and there's nothing to do.
+        if order.stripe_invoice_id is None and order.status == OrderStatus.paid:
+            return order
+
         # Stripe invoices may already have been marked as paid, so ignore the check
         if order.stripe_invoice_id is None and order.status != OrderStatus.pending:
             raise OrderNotPending(order)
@@ -1487,7 +2013,7 @@ class OrderService:
                     tax_calculation_processor_id,
                     tax_amount,
                     tax_breakdown,
-                ) = await self._calculate_subscription_order_tax(
+                ) = await self._calculate_tax(
                     reference=str(order.id),
                     taxable_amount=order.net_amount,
                     currency=order.currency,
@@ -2299,7 +2825,7 @@ class OrderService:
 
         return order
 
-    async def _calculate_subscription_order_tax(
+    async def _calculate_tax(
         self,
         *,
         reference: str,
@@ -2309,6 +2835,7 @@ class OrderService:
         customer: Customer,
         product: Product,
         tax_exempted: bool,
+        allow_silent_failure: bool = True,
     ) -> tuple[
         TaxProcessor | None,
         TaxBehavior | None,
@@ -2347,6 +2874,12 @@ class OrderService:
                     tax_exempted,
                 )
             except TaxCalculationLogicalError:
+                # The subscription flow tolerates an uncomputable tax (the
+                # address is fixed up over the lifecycle). Off-session draft
+                # orders persist this result and never recompute it, so a silent
+                # zero would charge tax-free — the caller must surface it instead.
+                if not allow_silent_failure:
+                    raise
                 log.warning(
                     "Failed to calculate tax for subscription order due to invalid or incomplete address",
                     reference=reference,

@@ -14,6 +14,7 @@ import { Stack, useLocalSearchParams } from 'expo-router'
 import { RefreshControl, ScrollView } from 'react-native'
 
 const statusColors = {
+  draft: 'gray',
   pending: 'yellow',
   paid: 'green',
   refunded: 'blue',

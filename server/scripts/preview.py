@@ -723,6 +723,19 @@ def grant_template_objects(
                     FOR r IN SELECT sequencename FROM pg_sequences WHERE schemaname = 'public' LOOP
                         EXECUTE format('ALTER SEQUENCE public.%I OWNER TO {role_name}', r.sequencename);
                     END LOOP;
+                    FOR r IN
+                        SELECT p.proname AS func_name,
+                               pg_get_function_identity_arguments(p.oid) AS func_args
+                        FROM pg_proc p
+                        JOIN pg_namespace n ON n.oid = p.pronamespace
+                        WHERE n.nspname = 'public' AND p.prokind = 'f'
+                          AND NOT EXISTS (
+                              SELECT 1 FROM pg_depend d
+                              WHERE d.objid = p.oid AND d.deptype = 'e'
+                          )
+                    LOOP
+                        EXECUTE format('ALTER FUNCTION public.%I(%s) OWNER TO {role_name}', r.func_name, r.func_args);
+                    END LOOP;
                 END $$;
                 """
             )

@@ -291,3 +291,42 @@ variable "firecrawl_api_key" {
   type        = string
   sensitive   = true
 }
+
+variable "backend_discord_proxy_url" {
+  description = "Discord Proxy URL"
+  type        = string
+  sensitive   = true
+}
+
+variable "customer_portal_url_overrides" {
+  description = "JSON object mapping organization IDs to custom customer portal URLs"
+  type        = string
+  default     = "{}"
+}
+
+variable "polar_access_token" {
+  description = "Polar API access token"
+  type        = string
+  sensitive   = true
+}
+
+variable "polar_webhook_secret" {
+  description = "Polar webhook secret"
+  type        = string
+  sensitive   = true
+}
+
+variable "polar_organization_id" {
+  description = "Polar organization ID"
+  type        = string
+}
+
+variable "polar_free_product_id" {
+  description = "Polar free-tier product ID"
+  type        = string
+}
+
+variable "polar_scale_product_id" {
+  description = "Polar Scale-tier product ID"
+  type        = string
+}

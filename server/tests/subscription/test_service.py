@@ -60,7 +60,10 @@ from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import ProductPriceAmountType, ProductPriceSeatUnit
 from polar.models.subscription import SubscriptionStatus
+from polar.models.webhook_endpoint import WebhookEventType
+from polar.order.repository import OrderRepository
 from polar.order.service import PaymentFailed, PaymentFailedReason
+from polar.order.service import order as order_service
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     MeteredPrice,
@@ -73,6 +76,11 @@ from polar.subscription.repository import SubscriptionUpdateRepository
 from polar.subscription.schemas import (
     SubscriptionCreateCustomer,
     SubscriptionCreateExternalCustomer,
+    SubscriptionUpdateBillingPeriod,
+    SubscriptionUpdateDiscount,
+    SubscriptionUpdateProduct,
+    SubscriptionUpdateSeats,
+    SubscriptionUpdateTrial,
 )
 from polar.subscription.service import (
     AboveMaximumSeats,
@@ -98,6 +106,7 @@ from tests.fixtures.random_objects import (
     create_event,
     create_legacy_recurring_product_price,
     create_meter,
+    create_payment_method,
     create_product,
     create_subscription,
     create_subscription_with_seats,
@@ -178,6 +187,11 @@ def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
 @pytest.fixture
 def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.subscription.service.enqueue_email_template")
+
+
+@pytest.fixture
+def webhook_service_send_mock(mocker: MockerFixture) -> AsyncMock:
+    return mocker.patch("polar.subscription.service.webhook_service.send")
 
 
 @pytest.fixture
@@ -2375,6 +2389,305 @@ class TestList:
 
         assert subscription_1 in results
         assert subscription_2 in results
+
+
+async def assert_order_exists(
+    session: AsyncSession, subscription: Subscription
+) -> None:
+    order_repository = OrderRepository.from_session(session)
+    orders = await order_repository.get_all_by_subscription(subscription.id)
+    assert len(orders) > 0, (
+        "Expected at least one order to be created for the subscription"
+    )
+
+
+@pytest.mark.asyncio
+class TestUpdate:
+    async def test_product_update_prorate(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        locker: Locker,
+        webhook_service_send_mock: MagicMock,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        updated = await subscription_service.update(
+            session,
+            locker,
+            subscription,
+            update=SubscriptionUpdateProduct(product_id=new_product.id),
+        )
+
+        assert updated.product == new_product
+
+        webhook_service_send_mock.assert_any_call(
+            session, organization, WebhookEventType.subscription_updated, updated
+        )
+
+    async def test_product_update_invoice(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        locker: Locker,
+        webhook_service_send_mock: MagicMock,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        updated = await subscription_service.update(
+            session,
+            locker,
+            subscription,
+            update=SubscriptionUpdateProduct(
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.invoice,
+            ),
+        )
+
+        assert updated.product == new_product
+        await assert_order_exists(session, subscription)
+        webhook_service_send_mock.assert_any_call(
+            session, organization, WebhookEventType.subscription_updated, updated
+        )
+
+    async def test_discount_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        discount_percentage_50: Discount,
+        locker: Locker,
+        webhook_service_send_mock: MagicMock,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        updated = await subscription_service.update(
+            session,
+            locker,
+            subscription,
+            update=SubscriptionUpdateDiscount(discount_id=discount_percentage_50.id),
+        )
+
+        assert updated.discount == discount_percentage_50
+
+        webhook_service_send_mock.assert_any_call(
+            session, organization, WebhookEventType.subscription_updated, updated
+        )
+
+    async def test_trial_update_extends(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        locker: Locker,
+        webhook_service_send_mock: MagicMock,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+        )
+        initial_trial_end = subscription.trial_end
+        assert initial_trial_end is not None
+
+        updated = await subscription_service.update(
+            session,
+            locker,
+            subscription,
+            update=SubscriptionUpdateTrial(
+                trial_end=initial_trial_end + timedelta(days=7),
+            ),
+        )
+
+        assert updated.status == SubscriptionStatus.trialing
+        assert updated.trial_end == initial_trial_end + timedelta(days=7)
+
+        webhook_service_send_mock.assert_any_call(
+            session, organization, WebhookEventType.subscription_updated, updated
+        )
+
+    async def test_trial_update_ends(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        locker: Locker,
+        webhook_service_send_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+        )
+        initial_trial_end = subscription.trial_end
+        assert initial_trial_end is not None
+
+        updated = await subscription_service.update(
+            session,
+            locker,
+            subscription,
+            update=SubscriptionUpdateTrial(trial_end="now"),
+        )
+
+        assert updated.status == SubscriptionStatus.active
+        assert updated.trial_end is not None
+        assert updated.trial_end == updated.current_period_start
+        assert updated.trial_end < initial_trial_end
+
+        webhook_service_send_mock.assert_any_call(
+            session, organization, WebhookEventType.subscription_updated, updated
+        )
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            updated.id,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+        )
+
+    async def test_seats_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product_recurring_seat_based: Product,
+        locker: Locker,
+        webhook_service_send_mock: MagicMock,
+    ) -> None:
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product_recurring_seat_based,
+            customer=customer,
+            seats=5,
+        )
+
+        updated = await subscription_service.update(
+            session,
+            locker,
+            subscription,
+            update=SubscriptionUpdateSeats(seats=10),
+        )
+
+        assert updated.seats == 10
+
+        webhook_service_send_mock.assert_any_call(
+            session, organization, WebhookEventType.subscription_updated, updated
+        )
+
+    async def test_seats_update_invoice(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product_recurring_seat_based: Product,
+        locker: Locker,
+        webhook_service_send_mock: MagicMock,
+    ) -> None:
+        trigger_payment_mock = mocker.patch.object(
+            order_service,
+            "trigger_payment",
+            new_callable=AsyncMock,
+        )
+
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product_recurring_seat_based,
+            customer=customer,
+            seats=5,
+            payment_method=payment_method,
+        )
+
+        updated = await subscription_service.update(
+            session,
+            locker,
+            subscription,
+            update=SubscriptionUpdateSeats(
+                seats=10, proration_behavior=SubscriptionProrationBehavior.invoice
+            ),
+        )
+
+        assert updated.seats == 10
+        await assert_order_exists(session, subscription)
+        trigger_payment_mock.assert_awaited_once()
+
+        webhook_service_send_mock.assert_any_call(
+            session, organization, WebhookEventType.subscription_updated, updated
+        )
+
+    async def test_billing_period_end_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        locker: Locker,
+        webhook_service_send_mock: MagicMock,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        initial_period_end = subscription.current_period_end
+        assert initial_period_end is not None
+
+        updated = await subscription_service.update(
+            session,
+            locker,
+            subscription,
+            update=SubscriptionUpdateBillingPeriod(
+                current_billing_period_end=initial_period_end + timedelta(days=7)
+            ),
+        )
+
+        assert updated.current_period_end == initial_period_end + timedelta(days=7)
+
+        webhook_service_send_mock.assert_any_call(
+            session, organization, WebhookEventType.subscription_updated, updated
+        )
 
 
 @pytest.mark.asyncio

@@ -69,6 +69,22 @@ class OrderRepository(
             statement = statement.where(Order.status == status)
         return await self.get_all(statement)
 
+    async def get_all_by_subscription(
+        self,
+        subscription_id: UUID,
+        *,
+        status: OrderStatus | None = None,
+        options: Options = (),
+    ) -> Sequence[Order]:
+        statement = (
+            self.get_base_statement()
+            .where(Order.subscription_id == subscription_id)
+            .options(*options)
+        )
+        if status is not None:
+            statement = statement.where(Order.status == status)
+        return await self.get_all(statement)
+
     async def get_by_stripe_invoice_id(
         self, stripe_invoice_id: str, *, options: Options = ()
     ) -> Order | None:

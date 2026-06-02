@@ -1390,9 +1390,16 @@ class SubscriptionService:
                     },
                 ),
             )
-            return await repository.update(
+            subscription = await repository.update(
                 subscription, update_dict={"discount": discount}, flush=True
             )
+            await self._after_subscription_updated(
+                session,
+                subscription,
+                previous_status=subscription.status,
+                previous_is_canceled=subscription.canceled,
+            )
+            return subscription
 
         if discount is None:
             return await _update_discount(session, subscription, None)

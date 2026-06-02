@@ -253,12 +253,19 @@ resource "render_web_service" "api" {
   health_check_path  = "/healthz"
   pre_deploy_command = "uv run task pre_deploy"
 
+  # Deploy from the "latest" tag so newly created services come up on the most
+  # recent main build. CI deploys specific digests out-of-band (deploy_server.sh),
+  # so ignore_changes below keeps Terraform from reverting them.
   runtime_source = {
     image = {
       image_url              = split("@", var.api_service_config.image_url)[0]
       registry_credential_id = var.registry_credential_id
-      digest                 = var.api_service_config.image_digest
+      tag                    = "latest"
     }
+  }
+
+  lifecycle {
+    ignore_changes = [runtime_source.image]
   }
 
   autoscaling = var.environment == "production" ? {
@@ -327,12 +334,19 @@ resource "render_web_service" "worker" {
   start_command     = each.value.start_command
   num_instances     = each.value.num_instances
 
+  # Deploy from the "latest" tag so newly created services come up on the most
+  # recent main build. CI deploys specific digests out-of-band (deploy_server.sh),
+  # so ignore_changes below keeps Terraform from reverting them.
   runtime_source = {
     image = {
       image_url              = split("@", each.value.image_url)[0]
       registry_credential_id = var.registry_credential_id
-      digest                 = each.value.image_digest
+      tag                    = "latest"
     }
+  }
+
+  lifecycle {
+    ignore_changes = [runtime_source.image]
   }
 
   custom_domains = length(each.value.custom_domains) > 0 ? each.value.custom_domains : null

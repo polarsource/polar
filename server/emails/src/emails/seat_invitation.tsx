@@ -1,9 +1,9 @@
-/* eslint-disable no-restricted-imports, email-ds/no-classname */
-import { Preview, Text } from 'react-email'
-import Button from '../components/Button'
-import FooterCustomer from '../components/FooterCustomer'
-import Intro from '../components/Intro'
-import WrapperOrganization from '../components/WrapperOrganization'
+import {
+  Button,
+  FooterCustomer,
+  WrapperOrganization,
+} from '../components/layout'
+import { Intro, Text } from '../components/text'
 import { organization } from '../preview'
 import type { schemas } from '../types'
 
@@ -15,23 +15,21 @@ export function SeatInvitation({
   claim_url,
 }: schemas['SeatInvitationProps']) {
   return (
-    <WrapperOrganization organization={organization}>
-      <Preview>
-        You&rsquo;re invited to {product_name} from {organization.name}
-      </Preview>
-
+    <WrapperOrganization
+      organization={organization}
+      preview={`You're invited to ${product_name} from ${organization.name}`}
+    >
       <Intro headline={`You're invited to join ${product_name}`}>
         {billing_manager_email} has invited you to{' '}
-        <span className="font-medium">{product_name}</span>.
-        Claim&nbsp;your&nbsp;seat&nbsp;to&nbsp;get&nbsp;started.
+        <Text as="span" weight="medium">
+          {product_name}
+        </Text>
+        . Claim&nbsp;your&nbsp;seat&nbsp;to&nbsp;get&nbsp;started.
       </Intro>
-
       <Button href={claim_url}>Claim seat</Button>
-
-      <Text className="my-8 text-center text-sm text-gray-500">
+      <Text variant="caption" align="center">
         This invitation expires in 24 hours.
       </Text>
-
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
   )

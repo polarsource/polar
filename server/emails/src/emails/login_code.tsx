@@ -1,5 +1,4 @@
-import Footer from '../components/Footer'
-import { WrapperPolar } from '../components/layout'
+import { Footer, WrapperPolar } from '../components/layout'
 import OTPCode from '../components/OTPCode'
 import { Intro, Text } from '../components/text'
 import type { schemas } from '../types'

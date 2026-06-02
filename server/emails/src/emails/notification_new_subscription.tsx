@@ -1,8 +1,5 @@
-/* eslint-disable no-restricted-imports, email-ds/no-classname */
-import { Preview } from 'react-email'
-import Footer from '../components/Footer'
-import Intro from '../components/Intro'
-import WrapperPolar from '../components/WrapperPolar'
+import { Footer, WrapperPolar } from '../components/layout'
+import { Intro, Text } from '../components/text'
 import type { schemas } from '../types'
 
 export function NotificationNewSubscription({
@@ -16,10 +13,15 @@ export function NotificationNewSubscription({
 }: schemas['MaintainerNewPaidSubscriptionNotificationPayload']) {
   const formattedName = subscriber_email ? (
     <>
-      <strong>{subscriber_name}</strong> ({subscriber_email})
+      <Text as="span" weight="bold">
+        {subscriber_name}
+      </Text>{' '}
+      ({subscriber_email})
     </>
   ) : (
-    <strong>{subscriber_name}</strong>
+    <Text as="span" weight="bold">
+      {subscriber_name}
+    </Text>
   )
 
   const priceDisplay =
@@ -29,11 +31,13 @@ export function NotificationNewSubscription({
       : 'free')
 
   return (
-    <WrapperPolar>
-      <Preview>New {tier_name} subscriber</Preview>
+    <WrapperPolar preview={`New ${tier_name} subscriber`}>
       <Intro headline="Congratulations!">
-        {formattedName} is now subscribing to <strong>{tier_name}</strong> for{' '}
-        {priceDisplay}.
+        {formattedName} is now subscribing to{' '}
+        <Text as="span" weight="bold">
+          {tier_name}
+        </Text>{' '}
+        for {priceDisplay}.
       </Intro>
       <Footer email={null} />
     </WrapperPolar>

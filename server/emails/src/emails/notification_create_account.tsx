@@ -1,10 +1,5 @@
-/* eslint-disable no-restricted-imports, email-ds/no-classname */
-import { Preview } from 'react-email'
-import BodyText from '../components/BodyText'
-import Button from '../components/Button'
-import Footer from '../components/Footer'
-import Intro from '../components/Intro'
-import WrapperPolar from '../components/WrapperPolar'
+import { Button, Footer, WrapperPolar } from '../components/layout'
+import { Intro, Text } from '../components/text'
 import type { schemas } from '../types'
 
 export function NotificationCreateAccount({
@@ -12,18 +7,16 @@ export function NotificationCreateAccount({
   url,
 }: schemas['MaintainerCreateAccountNotificationPayload']) {
   return (
-    <WrapperPolar>
-      <Preview>Your Polar account is being reviewed</Preview>
+    <WrapperPolar preview="Your Polar account is being reviewed">
       <Intro>
         Now that you got your first payment to {organization_name}, you should
         create a payout account in order to receive your funds.
       </Intro>
-      <BodyText>
+      <Text>
         This operation only takes a few minutes and allows you to receive your
         money immediately.
-      </BodyText>
+      </Text>
       <Button href={url}>Create payout account</Button>
-
       <Footer email={null} />
     </WrapperPolar>
   )

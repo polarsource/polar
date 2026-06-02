@@ -1,5 +1,4 @@
-import Footer from '../components/Footer'
-import { Button, WrapperPolar } from '../components/layout'
+import { Button, Footer, WrapperPolar } from '../components/layout'
 import { Intro, Text } from '../components/text'
 import type { schemas } from '../types'
 

@@ -81,6 +81,29 @@ class SeatTiersData(TypedDict):
     tiers: list[SeatTier]
 
 
+class MeteredTierType(StrEnum):
+    volume = "volume"
+    graduated = "graduated"
+
+
+class MeteredTier(TypedDict):
+    """A single pricing tier for metered, usage-based pricing."""
+
+    min_units: int
+    max_units: int | None
+    # Stored as a string to preserve the full 12-decimal precision in JSONB,
+    # since the JSON serializer would otherwise coerce Decimal to float.
+    unit_amount: str
+    flat_amount: int | None
+
+
+class MeteredTiersData(TypedDict):
+    """The structure of the metered_tiers JSONB column."""
+
+    metered_tier_type: MeteredTierType
+    tiers: list[MeteredTier]
+
+
 LEGACY_IDENTITY_PREFIX = "legacy_"
 
 
@@ -338,6 +361,16 @@ class ProductPriceMeteredUnit(ProductPrice, NewProductPrice):
     cap_amount: Mapped[int | None] = mapped_column(
         "cap_amount_v2", BigInteger, nullable=True
     )
+    metered_tiers: Mapped[MeteredTiersData | None] = mapped_column(
+        postgresql.JSONB,
+        nullable=True,
+    )
+    """
+    Optional volume or graduated tiered pricing.
+
+    When set, it takes precedence over the single ``unit_amount``. Each tier
+    defines a per-unit amount and an optional flat amount for the whole tier.
+    """
     meter_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("meters.id"),
@@ -352,6 +385,9 @@ class ProductPriceMeteredUnit(ProductPrice, NewProductPrice):
         return relationship("Meter", lazy="joined")
 
     def get_amount_and_label(self, units: float) -> tuple[int, str]:
+        if self.metered_tiers is not None:
+            return self._get_tiered_amount_and_label(units)
+
         label = f"({format_decimal(max(0, units), locale='en_US')} consumed units"
 
         label += f") × {format_currency(self.unit_amount, self.price_currency, decimal_quantization=False)}"
@@ -367,6 +403,98 @@ class ProductPriceMeteredUnit(ProductPrice, NewProductPrice):
             )
 
         return amount, label
+
+    def _get_tiered_amount_and_label(self, units: float) -> tuple[int, str]:
+        assert self.metered_tiers is not None
+        billable_units = Decimal(max(0, units))
+        tier_type = self.metered_tiers.get("metered_tier_type", MeteredTierType.volume)
+
+        label = f"({format_decimal(max(0, units), locale='en_US')} consumed units)"
+
+        if billable_units <= 0:
+            amount = 0
+        elif tier_type == MeteredTierType.graduated:
+            amount = self._calculate_graduated(billable_units)
+            label += " — Graduated pricing"
+        else:
+            tier = self._get_tier_for_units(billable_units)
+            amount = self._tier_amount(tier, billable_units)
+            label += f" — {self._tier_label(tier)}"
+
+        if self.cap_amount is not None and amount > self.cap_amount:
+            amount = self.cap_amount
+            label += (
+                f" — Capped at {format_currency(self.cap_amount, self.price_currency)}"
+            )
+
+        return amount, label
+
+    @staticmethod
+    def _sorted_tiers(tiers: list[MeteredTier]) -> list[MeteredTier]:
+        return sorted(tiers, key=lambda t: t["min_units"])
+
+    def _get_tier_for_units(self, units: Decimal) -> MeteredTier:
+        """Find the volume tier matching the total consumed units.
+
+        Tiers are contiguous, so the first tier whose upper bound is not yet
+        exceeded matches. This also handles fractional usage that falls between
+        two integer tier boundaries.
+        """
+        assert self.metered_tiers is not None
+        tiers = self._sorted_tiers(self.metered_tiers.get("tiers", []))
+        for tier in tiers:
+            max_units = tier.get("max_units")
+            if max_units is None or units <= max_units:
+                return tier
+        return tiers[-1]
+
+    @staticmethod
+    def _tier_amount(tier: MeteredTier, units: Decimal) -> int:
+        total = Decimal(str(tier["unit_amount"])) * units
+        flat_amount = tier.get("flat_amount")
+        if flat_amount:
+            total += Decimal(flat_amount)
+        return polar_round(total)
+
+    def _tier_label(self, tier: MeteredTier) -> str:
+        unit_amount = Decimal(str(tier["unit_amount"]))
+        flat_amount = tier.get("flat_amount")
+        parts: list[str] = []
+        if unit_amount > 0 or not flat_amount:
+            parts.append(
+                f"× {format_currency(unit_amount, self.price_currency, decimal_quantization=False)}"
+            )
+        if flat_amount:
+            parts.append(f"+ {format_currency(flat_amount, self.price_currency)} flat")
+        return " ".join(parts)
+
+    def _calculate_graduated(self, units: Decimal) -> int:
+        assert self.metered_tiers is not None
+        total = Decimal(0)
+        remaining = units
+        # Tier capacity is measured from the previous tier's upper bound, mirroring
+        # the seat-based graduated logic: the first tier's min_units may be > 1, but
+        # usage must still bill from the first unit.
+        previous_max = 0
+        for tier in self._sorted_tiers(self.metered_tiers.get("tiers", [])):
+            if remaining <= 0:
+                break
+            max_units = tier.get("max_units")
+            tier_capacity = (
+                Decimal(max_units - previous_max)
+                if max_units is not None
+                else remaining
+            )
+            units_in_tier = min(remaining, tier_capacity)
+            if units_in_tier > 0:
+                total += Decimal(str(tier["unit_amount"])) * units_in_tier
+                flat_amount = tier.get("flat_amount")
+                if flat_amount:
+                    total += Decimal(flat_amount)
+            remaining -= units_in_tier
+            if max_units is not None:
+                previous_max = max_units
+        return polar_round(total)
 
     __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.metered_unit,

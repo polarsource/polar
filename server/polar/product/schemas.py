@@ -1,6 +1,6 @@
 import builtins
 from decimal import Decimal
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 
 from pydantic import (
     UUID4,
@@ -9,7 +9,9 @@ from pydantic import (
     Tag,
     ValidationInfo,
     computed_field,
+    field_serializer,
     field_validator,
+    model_validator,
 )
 from pydantic.aliases import AliasChoices
 from pydantic.json_schema import SkipJsonSchema
@@ -50,6 +52,7 @@ from polar.kit.visibility import Visibility
 from polar.meter.unit import MeterUnit
 from polar.models.product import ProductVisibility
 from polar.models.product_price import (
+    MeteredTierType,
     ProductPriceAmountType,
     ProductPriceSource,
     ProductPriceType,
@@ -347,21 +350,125 @@ class ProductPriceSeatBasedCreate(ProductPriceCreateBase):
         return ProductPriceSeatUnitModel
 
 
+class ProductPriceMeteredTier(Schema):
+    """
+    A pricing tier for metered, usage-based pricing.
+    """
+
+    min_units: int = Field(ge=1, description="Minimum number of units (inclusive).")
+    max_units: int | None = Field(
+        default=None,
+        ge=1,
+        description="Maximum number of units (inclusive). None for unlimited.",
+    )
+    unit_amount: Decimal = Field(
+        ge=0,
+        max_digits=17,
+        decimal_places=12,
+        description=(
+            "The price per unit in cents for this tier. "
+            "Supports up to 12 decimal places. Can be 0 for a flat-only tier."
+        ),
+    )
+    flat_amount: int | None = Field(
+        default=None,
+        ge=0,
+        le=INT_MAX_VALUE,
+        description=(
+            "Optional flat amount in cents charged for the whole tier, "
+            "in addition to the per-unit amount."
+        ),
+    )
+
+    @field_serializer("unit_amount")
+    def serialize_unit_amount(self, value: Decimal) -> str:
+        # Persisted to JSONB (and returned over the API) as a string to preserve
+        # the full decimal precision, since the JSON serializer would otherwise
+        # coerce a Decimal to a lossy float.
+        return str(value)
+
+
+class ProductPriceMeteredTiers(Schema):
+    """
+    List of pricing tiers for metered, usage-based pricing.
+    """
+
+    metered_tier_type: MeteredTierType = Field(
+        default=MeteredTierType.volume,
+        description=(
+            "How tiers are applied. 'volume' prices all consumed units at the "
+            "matching tier's rate. 'graduated' prices each tier's range independently."
+        ),
+    )
+    tiers: list[ProductPriceMeteredTier] = Field(
+        min_length=1, description="List of pricing tiers."
+    )
+
+    @field_validator("tiers")
+    @classmethod
+    def validate_tiers(
+        cls, v: list[ProductPriceMeteredTier]
+    ) -> list[ProductPriceMeteredTier]:
+        """Validate that tiers form continuous ranges without gaps or overlaps."""
+        if not v:
+            raise ValueError("At least one tier is required")
+
+        # Sort by min_units
+        sorted_tiers = sorted(v, key=lambda t: t.min_units)
+
+        # First tier must start at >= 1
+        if sorted_tiers[0].min_units < 1:
+            raise ValueError("First tier must start at min_units >= 1")
+
+        # Validate continuous ranges without gaps/overlaps
+        for i in range(len(sorted_tiers) - 1):
+            current = sorted_tiers[i]
+            next_tier = sorted_tiers[i + 1]
+
+            if current.max_units is None:
+                raise ValueError(
+                    "Only the last tier can have unlimited max_units (None)"
+                )
+
+            if next_tier.min_units != current.max_units + 1:
+                raise ValueError(
+                    "Gap or overlap between tiers: "
+                    + f"tier ending at {current.max_units} and tier starting at {next_tier.min_units}"
+                )
+
+        return sorted_tiers
+
+
 class ProductPriceMeteredCreateBase(ProductPriceCreateBase):
     meter_id: UUID4 = Field(description="The ID of the meter associated to the price.")
 
 
 class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
     """
-    Schema to create a metered price with a fixed unit price.
+    Schema to create a metered price.
+
+    Provide either a single `unit_amount` for a flat per-unit price, or
+    `metered_tiers` for volume/graduated tiered pricing. At least one is
+    required; if both are given, `metered_tiers` takes precedence.
     """
 
     amount_type: Literal[ProductPriceAmountType.metered_unit]
-    unit_amount: Decimal = Field(
+    unit_amount: Decimal | None = Field(
+        default=None,
         gt=0,
         max_digits=17,
         decimal_places=12,
-        description="The price per unit in cents. Supports up to 12 decimal places.",
+        description=(
+            "The price per unit in cents. Supports up to 12 decimal places. "
+            "Ignored if `metered_tiers` is provided."
+        ),
+    )
+    metered_tiers: ProductPriceMeteredTiers | None = Field(
+        default=None,
+        description=(
+            "Volume or graduated tiered pricing based on consumed units. "
+            "Takes precedence over `unit_amount` when both are provided."
+        ),
     )
     cap_amount: int | None = Field(
         default=None,
@@ -372,6 +479,18 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
             "regardless of the number of units consumed."
         ),
     )
+
+    @model_validator(mode="after")
+    def validate_pricing_method(self) -> Self:
+        if self.unit_amount is None and self.metered_tiers is None:
+            raise ValueError("Either unit_amount or metered_tiers must be provided")
+        # metered_tiers is authoritative: keep the single unit_amount in sync with
+        # the first tier so that consumers relying on the legacy field stay correct.
+        # This also lets a tiered price round-trip through clients that echo back
+        # both fields. Billing always uses metered_tiers when present.
+        if self.metered_tiers is not None:
+            self.unit_amount = self.metered_tiers.tiers[0].unit_amount
+        return self
 
     def get_model_class(self) -> builtins.type[ProductPriceMeteredUnitModel]:
         return ProductPriceMeteredUnitModel
@@ -760,16 +879,32 @@ class ProductPriceMeter(IDSchema):
 
 class ProductPriceMeteredUnit(ProductPriceBase):
     """
-    A metered, usage-based, price for a product, with a fixed unit price.
+    A metered, usage-based, price for a product.
+
+    Pricing is either a single `unit_amount`, or volume/graduated `metered_tiers`.
+    When `metered_tiers` is set, `unit_amount` reflects the first tier's per-unit
+    amount for backward compatibility, but billing uses the tiers.
     """
 
     amount_type: Literal[ProductPriceAmountType.metered_unit]
-    unit_amount: Decimal = Field(description="The price per unit in cents.")
+    unit_amount: Decimal = Field(
+        description=(
+            "The price per unit in cents. "
+            "When tiered pricing is used, this is the first tier's per-unit amount."
+        )
+    )
     cap_amount: int | None = Field(
         description=(
             "The maximum amount in cents that can be charged, "
             "regardless of the number of units consumed."
         )
+    )
+    metered_tiers: ProductPriceMeteredTiers | None = Field(
+        default=None,
+        description=(
+            "Volume or graduated tiered pricing based on consumed units. "
+            "Null when a single unit_amount is used."
+        ),
     )
     meter_id: UUID4 = Field(description="The ID of the meter associated to the price.")
     meter: ProductPriceMeter = Field(description="The meter associated to the price.")

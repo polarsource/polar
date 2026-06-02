@@ -20,6 +20,22 @@ const MeteredPriceLabel: React.FC<MeteredPriceLabelProps> = ({
     customMultiplier: price.meter.custom_multiplier,
   })
 
+  if (price.metered_tiers) {
+    return (
+      <div className="flex flex-row items-baseline gap-x-1">
+        <span>Tiered</span>
+        <span
+          className={cn(
+            'dark:text-polar-400 text-[max(12px,0.5em)] text-gray-500',
+            price.meter.unit === 'custom' ? 'lowercase' : '',
+          )}
+        >
+          / {label}
+        </span>
+      </div>
+    )
+  }
+
   const format = formatCurrency('subcent', locale)
   const baseAmount = Number.parseFloat(price.unit_amount) * scale
   const discountedAmount =

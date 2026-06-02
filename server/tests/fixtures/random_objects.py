@@ -590,12 +590,14 @@ async def create_product_price_metered_unit(
     cap_amount: int | None = None,
     currency: str = "usd",
     tax_behavior: TaxBehavior | None = None,
+    metered_tiers: dict[str, typing.Any] | None = None,
 ) -> ProductPriceMeteredUnit:
     price = ProductPriceMeteredUnit(
         price_currency=currency,
         tax_behavior=tax_behavior,
         unit_amount=unit_amount,
         cap_amount=cap_amount,
+        metered_tiers=metered_tiers,
         meter=meter,
         product=product,
     )

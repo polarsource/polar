@@ -86,6 +86,39 @@ describe('MeteredPriceLabel', () => {
     })
   })
 
+  describe('tiered pricing', () => {
+    it('renders "Tiered" instead of a per-unit rate', () => {
+      const price = createMeteredPrice({
+        unit_amount: '0',
+        metered_tiers: {
+          metered_tier_type: 'volume',
+          tiers: [
+            {
+              min_units: 1,
+              max_units: 50,
+              unit_amount: '0',
+              flat_amount: 99900,
+            },
+            {
+              min_units: 51,
+              max_units: null,
+              unit_amount: '2000',
+              flat_amount: null,
+            },
+          ],
+        },
+      })
+
+      const { container } = render(
+        <MeteredPriceLabel price={price} locale="en" />,
+      )
+
+      expect(container.textContent).toContain('Tiered')
+      // The misleading $0.00 / unit rate must not be shown.
+      expect(container.textContent).not.toContain('$0.00')
+    })
+  })
+
   describe('token unit', () => {
     it('scales price to per 1M tokens', () => {
       // $10 / 1M tokens → unit_amount = 0.001 cents/token

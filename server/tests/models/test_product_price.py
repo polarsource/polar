@@ -4,7 +4,12 @@ from typing import Any
 import pytest
 
 from polar.models import Meter, Product
-from polar.models.product_price import ProductPriceSeatUnit, SeatTierType
+from polar.models.product_price import (
+    MeteredTierType,
+    ProductPriceMeteredUnit,
+    ProductPriceSeatUnit,
+    SeatTierType,
+)
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_product_price_metered_unit
 
@@ -214,3 +219,126 @@ class TestGraduatedPricing:
         assert price.calculate_amount(10) == 10 * 20000
         # 10 at first tier + 5 at second tier.
         assert price.calculate_amount(15) == 10 * 20000 + 5 * 6000
+
+
+def _make_metered_tiered_price(
+    tiers: list[dict[str, Any]],
+    metered_tier_type: MeteredTierType = MeteredTierType.volume,
+    cap_amount: int | None = None,
+) -> ProductPriceMeteredUnit:
+    return ProductPriceMeteredUnit(
+        metered_tiers={"metered_tier_type": metered_tier_type, "tiers": tiers},
+        cap_amount=cap_amount,
+        price_currency="usd",
+    )
+
+
+# The example from the feature request:
+#   1 - 50 units:   flat fee of $999
+#   51 - 100 units: $20/unit
+#   101 - 200 units: $17.50/unit
+#   201+ units:     $15/unit
+GOAL_TIERS: list[dict[str, Any]] = [
+    {"min_units": 1, "max_units": 50, "unit_amount": "0", "flat_amount": 999_00},
+    {"min_units": 51, "max_units": 100, "unit_amount": "2000", "flat_amount": None},
+    {"min_units": 101, "max_units": 200, "unit_amount": "1750", "flat_amount": None},
+    {"min_units": 201, "max_units": None, "unit_amount": "1500", "flat_amount": None},
+]
+
+
+class TestMeteredVolumeTiers:
+    def test_goal_example(self) -> None:
+        price = _make_metered_tiered_price(GOAL_TIERS, MeteredTierType.volume)
+        # 25 units fall in the flat tier → $999 flat.
+        assert price.get_amount_and_label(25)[0] == 999_00
+        # 50 units (boundary) still flat tier.
+        assert price.get_amount_and_label(50)[0] == 999_00
+        # 75 units → 75 × $20.
+        assert price.get_amount_and_label(75)[0] == 75 * 2000
+        # 100 units (boundary) → 100 × $20.
+        assert price.get_amount_and_label(100)[0] == 100 * 2000
+        # 150 units → 150 × $17.50.
+        assert price.get_amount_and_label(150)[0] == 150 * 1750
+        # 300 units → 300 × $15.
+        assert price.get_amount_and_label(300)[0] == 300 * 1500
+
+    def test_zero_units_is_free(self) -> None:
+        price = _make_metered_tiered_price(GOAL_TIERS, MeteredTierType.volume)
+        assert price.get_amount_and_label(0)[0] == 0
+
+    def test_fractional_units_between_boundaries(self) -> None:
+        price = _make_metered_tiered_price(GOAL_TIERS, MeteredTierType.volume)
+        # 50.5 units exceeds the first tier's max (50) → priced in the $20 tier.
+        assert price.get_amount_and_label(50.5)[0] == round(50.5 * 2000)
+
+    def test_unit_plus_flat(self) -> None:
+        price = _make_metered_tiered_price(
+            [
+                {
+                    "min_units": 1,
+                    "max_units": None,
+                    "unit_amount": "1000",
+                    "flat_amount": 500_00,
+                }
+            ],
+            MeteredTierType.volume,
+        )
+        # 10 × $10 + $500 flat.
+        assert price.get_amount_and_label(10)[0] == 10 * 1000 + 500_00
+
+    def test_label_describes_applied_tier(self) -> None:
+        price = _make_metered_tiered_price(GOAL_TIERS, MeteredTierType.volume)
+        _, label = price.get_amount_and_label(75)
+        assert "75 consumed units" in label
+        assert "$20.00" in label
+
+    def test_cap_applies(self) -> None:
+        price = _make_metered_tiered_price(
+            GOAL_TIERS, MeteredTierType.volume, cap_amount=1000_00
+        )
+        amount, label = price.get_amount_and_label(300)  # would be $4500
+        assert amount == 1000_00
+        assert "Capped at" in label
+
+
+class TestMeteredGraduatedTiers:
+    def test_spans_flat_then_unit(self) -> None:
+        price = _make_metered_tiered_price(GOAL_TIERS, MeteredTierType.graduated)
+        # 75 units: first 50 units → $999 flat, next 25 units → 25 × $20.
+        assert price.get_amount_and_label(75)[0] == 999_00 + 25 * 2000
+
+    def test_spans_all_tiers(self) -> None:
+        price = _make_metered_tiered_price(GOAL_TIERS, MeteredTierType.graduated)
+        # 250 units: 50 (flat $999) + 50 × $20 + 100 × $17.50 + 50 × $15.
+        expected = 999_00 + 50 * 2000 + 100 * 1750 + 50 * 1500
+        assert price.get_amount_and_label(250)[0] == expected
+
+    def test_within_first_tier(self) -> None:
+        price = _make_metered_tiered_price(GOAL_TIERS, MeteredTierType.graduated)
+        # 30 units stay in the first (flat) tier.
+        assert price.get_amount_and_label(30)[0] == 999_00
+
+    def test_zero_units_is_free(self) -> None:
+        price = _make_metered_tiered_price(GOAL_TIERS, MeteredTierType.graduated)
+        assert price.get_amount_and_label(0)[0] == 0
+
+    def test_decimal_unit_amounts(self) -> None:
+        price = _make_metered_tiered_price(
+            [
+                {
+                    "min_units": 1,
+                    "max_units": 100,
+                    "unit_amount": "0.5",
+                    "flat_amount": None,
+                },
+                {
+                    "min_units": 101,
+                    "max_units": None,
+                    "unit_amount": "0.25",
+                    "flat_amount": None,
+                },
+            ],
+            MeteredTierType.graduated,
+        )
+        # 200 units: 100 × $0.005 + 100 × $0.0025 = 50 + 25 = 75 cents.
+        assert price.get_amount_and_label(200)[0] == 75

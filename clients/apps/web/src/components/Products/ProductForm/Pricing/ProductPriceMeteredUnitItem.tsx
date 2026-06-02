@@ -10,6 +10,13 @@ import { formatCurrency } from '@polar-sh/currency'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@polar-sh/ui/components/atoms/Select'
 import { getMeterUnitFormat } from '@polar-sh/ui/lib/meterUnit'
 import {
   FormControl,
@@ -29,6 +36,9 @@ import React, { useCallback, useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { ProductFormType } from '../ProductForm'
 import UnitAmountInput from '../UnitAmountInput'
+import { ProductPriceMeteredTiersField } from './ProductPriceMeteredTiersField'
+
+type PricingModel = 'per_unit' | 'volume' | 'graduated'
 
 export interface ProductPriceMeteredUnitItemProps {
   organization: schemas['Organization']
@@ -39,7 +49,8 @@ export interface ProductPriceMeteredUnitItemProps {
 export const ProductPriceMeteredUnitItem: React.FC<
   ProductPriceMeteredUnitItemProps
 > = ({ organization, index, currency }) => {
-  const { control, setValue, watch } = useFormContext<ProductFormType>()
+  const { control, setValue, watch, getValues } =
+    useFormContext<ProductFormType>()
 
   const { data: meters } = useMeters(organization.id, {
     sorting: ['name'],
@@ -49,6 +60,48 @@ export const ProductPriceMeteredUnitItem: React.FC<
 
   const meterId = watch(`prices.${index}.meter_id`)
   const unitAmount = watch(`prices.${index}.unit_amount`)
+  const meteredTiers = watch(`prices.${index}.metered_tiers`)
+
+  const pricingModel: PricingModel = meteredTiers
+    ? meteredTiers.metered_tier_type === 'graduated'
+      ? 'graduated'
+      : 'volume'
+    : 'per_unit'
+
+  const handlePricingModelChange = useCallback(
+    (value: PricingModel) => {
+      setValue(`prices.${index}.id`, '')
+
+      if (value === 'per_unit') {
+        const currentTiers = getValues(`prices.${index}.metered_tiers.tiers`)
+        const firstTier = currentTiers?.[0]
+        setValue(`prices.${index}.metered_tiers`, null)
+        setValue(`prices.${index}.unit_amount`, firstTier?.unit_amount ?? 0)
+        return
+      }
+
+      const tierType = value as schemas['MeteredTierType']
+      const existingTiers = getValues(`prices.${index}.metered_tiers.tiers`)
+      if (existingTiers && existingTiers.length > 0) {
+        setValue(`prices.${index}.metered_tiers.metered_tier_type`, tierType)
+      } else {
+        setValue(`prices.${index}.metered_tiers`, {
+          metered_tier_type: tierType,
+          tiers: [
+            {
+              min_units: 1,
+              max_units: null,
+              unit_amount: getValues(`prices.${index}.unit_amount`) ?? 0,
+              flat_amount: null,
+            },
+          ],
+        })
+      }
+      // The single unit_amount is derived from the first tier server-side.
+      setValue(`prices.${index}.unit_amount`, null)
+    },
+    [getValues, setValue, index],
+  )
 
   const pricePreview = useMemo(() => {
     const selectedMeter = meters?.items.find(
@@ -142,35 +195,63 @@ export const ProductPriceMeteredUnitItem: React.FC<
               )
             }}
           />
-          <FormField
-            control={control}
-            name={`prices.${index}.unit_amount`}
-            rules={{
-              min: 0,
-              required: 'This field is required',
-            }}
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormLabel>Amount per unit</FormLabel>
-                  <FormControl>
-                    <UnitAmountInput
-                      {...field}
-                      name={field.name}
-                      currency={currency}
-                      value={field.value}
-                      onValueChange={(v) => {
-                        field.onChange(v)
-                        setValue(`prices.${index}.id`, '')
-                      }}
-                    />
-                  </FormControl>
-                  <FormDescription>Displayed as {pricePreview}</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )
-            }}
-          />
+
+          <FormItem>
+            <FormLabel>Pricing model</FormLabel>
+            <Select
+              value={pricingModel}
+              onValueChange={(v) => handlePricingModelChange(v as PricingModel)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="per_unit">Per unit</SelectItem>
+                <SelectItem value="volume">Volume tiers</SelectItem>
+                <SelectItem value="graduated">Graduated tiers</SelectItem>
+              </SelectContent>
+            </Select>
+          </FormItem>
+
+          {pricingModel === 'per_unit' ? (
+            <FormField
+              control={control}
+              name={`prices.${index}.unit_amount`}
+              rules={{
+                min: 0,
+                required: 'This field is required',
+              }}
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormLabel>Amount per unit</FormLabel>
+                    <FormControl>
+                      <UnitAmountInput
+                        name={field.name}
+                        currency={currency}
+                        value={field.value ?? undefined}
+                        onValueChange={(v) => {
+                          field.onChange(v)
+                          setValue(`prices.${index}.id`, '')
+                        }}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Displayed as {pricePreview}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
+            />
+          ) : (
+            <ProductPriceMeteredTiersField
+              index={index}
+              currency={currency}
+              tierType={pricingModel}
+            />
+          )}
+
           <FormField
             control={control}
             name={`prices.${index}.cap_amount`}
@@ -196,7 +277,7 @@ export const ProductPriceMeteredUnitItem: React.FC<
                       {...field}
                       name={field.name}
                       currency={currency}
-                      value={field.value}
+                      value={field.value ?? undefined}
                       onChange={(v) => {
                         field.onChange(v)
                         setValue(`prices.${index}.id`, '')

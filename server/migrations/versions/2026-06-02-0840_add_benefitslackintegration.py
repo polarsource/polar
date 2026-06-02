@@ -1,7 +1,7 @@
 """Add BenefitSlackIntegration
 
 Revision ID: 0e4e79f67574
-Revises: 64d92ea66fa5
+Revises: b7b69a5d5731
 Create Date: 2026-05-20 16:11:09.994763
 
 """
@@ -14,7 +14,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "0e4e79f67574"
-down_revision = "64d92ea66fa5"
+down_revision = "b7b69a5d5731"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

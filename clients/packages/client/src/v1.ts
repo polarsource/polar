@@ -21973,14 +21973,9 @@ export interface components {
       /**
        * Product Id
        * Format: uuid4
-       * @description The ID of the one-time product to charge for. Must belong to the order's organization. Subscription products and seat-based products are not supported.
+       * @description The ID of the one-time, fixed-price product to charge for. Must belong to the order's organization. Subscription, seat-based, and pay-what-you-want products are not supported.
        */
       product_id: string
-      /**
-       * Amount
-       * @description Amount in the smallest currency unit. Required for pay-what-you-want / custom-priced products; ignored otherwise. Must respect the price's configured minimum and maximum.
-       */
-      amount?: number | null
     }
     /** OrderCustomer */
     OrderCustomer: {

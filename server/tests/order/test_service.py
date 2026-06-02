@@ -5238,41 +5238,42 @@ class TestCreateDraftOrder:
         assert order.subtotal_amount > 0
         assert len(order.items) >= 1
 
-    async def test_custom_price_below_minimum_rejected(
+    async def test_custom_price_product_rejected(
         self,
         session: AsyncSession,
         off_session_organization: Organization,
         product_one_time_custom_price: Product,
         customer: Customer,
     ) -> None:
-        # The custom-price fixture has a minimum_amount of 50.
+        # Only fixed-price products are supported off-session; a pay-what-you-want
+        # (custom) product is rejected.
         payload = OrderCreate(
             customer_id=customer.id,
             product_id=product_one_time_custom_price.id,
-            amount=10,
         )
         with pytest.raises(PolarRequestValidationError):
             await order_service.create_draft_order(
                 session, off_session_organization, payload
             )
 
-    async def test_custom_price_within_bounds(
+    async def test_free_product_rejected(
         self,
+        save_fixture: SaveFixture,
         session: AsyncSession,
         off_session_organization: Organization,
-        product_one_time_custom_price: Product,
         customer: Customer,
     ) -> None:
-        payload = OrderCreate(
-            customer_id=customer.id,
-            product_id=product_one_time_custom_price.id,
-            amount=100,
+        product = await create_product(
+            save_fixture,
+            organization=off_session_organization,
+            recurring_interval=None,
+            prices=[(None, "usd")],
         )
-        order = await order_service.create_draft_order(
-            session, off_session_organization, payload
-        )
-        assert order.status == OrderStatus.draft
-        assert order.subtotal_amount == 100
+        payload = OrderCreate(customer_id=customer.id, product_id=product.id)
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
 
     async def test_custom_field_data_validated_against_product(
         self,

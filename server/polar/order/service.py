@@ -95,13 +95,13 @@ from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.product.guard import (
     is_custom_price,
+    is_fixed_price,
     is_seat_price,
     is_static_price,
 )
 from polar.product.price_set import (
     NoPricesForCurrencies,
     PriceSet,
-    validate_custom_price_amount,
 )
 from polar.product.repository import ProductRepository
 from polar.receipt.service import receipt as receipt_service
@@ -679,33 +679,6 @@ class OrderService:
                 items.append(OrderItem.from_price(price, 0, seats=seats))
         return items
 
-    def _validate_purchase_pricing(
-        self, prices: Iterable[ProductPrice], payload: OrderCreate, currency: str
-    ) -> None:
-        """
-        Validate that the off-session purchase payload provides the values the
-        product's static prices require — and that a custom amount respects the
-        price's configured bounds — returning friendly 4xx errors before
-        `_build_static_order_items` would otherwise hit an assertion.
-        """
-        for price in prices:
-            if is_custom_price(price):
-                if payload.amount is None:
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", "amount"),
-                                "msg": (
-                                    "Amount is required for "
-                                    "pay-what-you-want / custom-priced products."
-                                ),
-                                "input": None,
-                            }
-                        ]
-                    )
-                validate_custom_price_amount(price, payload.amount, currency)
-
     async def _create_order_from_checkout(
         self,
         session: AsyncSession,
@@ -871,6 +844,25 @@ class OrderService:
                 ]
             )
 
+        # Off-session charges currently support fixed-price products only: the
+        # amount must be fully determined by the product. Custom (pay-what-you-want)
+        # and free prices are rejected.
+        if any(
+            not is_fixed_price(price)
+            for price in product.prices
+            if is_static_price(price)
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Off-session charges only support fixed-price products.",
+                        "input": payload.product_id,
+                    }
+                ]
+            )
+
         customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_id_and_organization(
             payload.customer_id, organization.id
@@ -905,11 +897,8 @@ class OrderService:
                 ]
             ) from e
 
-        self._validate_purchase_pricing(currency_prices, payload, currency)
         items = list(
-            self._build_static_order_items(
-                currency_prices, amount=payload.amount, seats=None
-            )
+            self._build_static_order_items(currency_prices, amount=None, seats=None)
         )
         if not items:
             raise PolarRequestValidationError(

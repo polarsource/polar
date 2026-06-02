@@ -5258,6 +5258,12 @@ class TestCreateDraftOrder:
         )
         assert order.status == OrderStatus.draft
         assert order.currency == "usd"
+        # The usd price set was selected (1000), not eur (900) or gbp (800).
+        usd_prices = PriceSet.from_product(product_one_time_multiple_currencies, "usd")
+        assert len(order.items) == len(usd_prices.prices)
+        assert order.subtotal_amount == sum(
+            cast(ProductPriceFixed, price).price_amount for price in usd_prices.prices
+        )
 
     async def test_multi_currency_with_currency(
         self,
@@ -5276,6 +5282,12 @@ class TestCreateDraftOrder:
         )
         assert order.status == OrderStatus.draft
         assert order.currency == "eur"
+        # The eur price set was selected (900), not usd (1000) or gbp (800).
+        eur_prices = PriceSet.from_product(product_one_time_multiple_currencies, "eur")
+        assert len(order.items) == len(eur_prices.prices)
+        assert order.subtotal_amount == sum(
+            cast(ProductPriceFixed, price).price_amount for price in eur_prices.prices
+        )
 
     async def test_unknown_currency_rejected(
         self,

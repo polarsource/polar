@@ -9,7 +9,11 @@ import {
 } from '@/hooks/auth'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from '@polar-sh/ui/components/atoms/InputOTP'
 import QRCode from 'react-qr-code'
 import { useState } from 'react'
 import BackupCodesModal from './BackupCodesModal'
@@ -129,30 +133,38 @@ const TOTPSetupContent = () => {
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="dark:text-polar-300 text-sm font-medium text-gray-700">
-            Enter the 6-digit code from your app:
+          <label className="dark:text-polar-300 text-center text-sm font-medium text-gray-700">
+            Enter the 6-digit code from your app
           </label>
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
+          <div className="flex flex-col items-center gap-4">
+            <InputOTP
               maxLength={6}
+              minLength={6}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              autoFocus={true}
               value={code}
               onChange={handleCodeChange}
-              placeholder="123456"
-              className="flex-1"
-            />
-            <Button
-              onClick={handleVerify}
-              loading={totpEnable.isPending}
-              className="min-w-25"
+              onComplete={handleVerify}
             >
+              <InputOTPGroup>
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <InputOTPSlot
+                    key={index}
+                    index={index}
+                    className="dark:border-polar-600 h-12 w-12 border-gray-300 text-xl"
+                  />
+                ))}
+              </InputOTPGroup>
+            </InputOTP>
+            <Button onClick={handleVerify} loading={totpEnable.isPending}>
               {totpEnable.isPending ? 'Verifying…' : 'Verify'}
             </Button>
           </div>
           {error && (
-            <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
+            <p className="text-center text-sm text-red-500 dark:text-red-400">
+              {error}
+            </p>
           )}
         </div>
       </div>
@@ -200,8 +212,8 @@ const TOTPSetupContent = () => {
     })
   }
 
-  const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCode(e.target.value)
+  const handleCodeChange = (value: string) => {
+    setCode(value)
     if (error) setError(null)
   }
 

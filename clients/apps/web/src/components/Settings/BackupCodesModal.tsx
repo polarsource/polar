@@ -22,7 +22,7 @@ export default function BackupCodesModal({
 
   const modalContent = (
     <div className="p-8">
-      <p className="dark:text-polar-400 mb-4 text-sm text-gray-600">
+      <p className="dark:text-polar-400 mb-4 max-w-md text-sm text-gray-600">
         You&rsquo;ll only see these backup codes once, so save them somewhere
         secure. Each code lets you sign in one time if you lose access to your
         authenticator app.
@@ -53,7 +53,7 @@ export default function BackupCodesModal({
       title="Your Backup Codes"
       isShown={isShown}
       hide={hide}
-      className="max-w-lg"
+      className="lg:max-w-lg"
       modalContent={modalContent}
     />
   )

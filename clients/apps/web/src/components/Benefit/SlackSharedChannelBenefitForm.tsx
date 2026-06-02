@@ -148,8 +148,7 @@ export const SlackSharedChannelBenefitForm = ({
               </Box>
             </FormControl>
             <FormDescription>
-              Recommended. Public channels are visible to anyone in either
-              workspace.
+              Public channels are visible to anyone in either workspace.
             </FormDescription>
             <FormMessage />
           </FormItem>

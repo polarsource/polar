@@ -56,7 +56,7 @@ Represents a billing event (one-time purchase or subscription cycle).
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `status` | OrderStatus | pending, paid, refunded, partially_refunded |
+| `status` | OrderStatus | draft, pending, paid, refunded, partially_refunded, void |
 | `billing_reason` | OrderBillingReason | purchase, subscription_create, subscription_cycle, subscription_update |
 | `subtotal_amount` | int | Amount before discount/tax |
 | `discount_amount` | int | Discount applied |
@@ -241,6 +241,8 @@ enqueue_benefits_grants(task="grant"|"revoke", customer, product)
 ```python
 create_from_checkout(checkout)  # One-time purchase
 create_subscription_order(subscription, billing_reason)  # Recurring
+create_draft_order(organization, payload)  # Off-session charge draft
+finalize_order(order, payment_method_id)  # Charge saved payment method
 trigger_payment(order)  # Charge customer
 create_order_balance(order)  # Ledger entries
 ```

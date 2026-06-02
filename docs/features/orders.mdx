@@ -24,13 +24,14 @@ An order moves through a small set of statuses over its lifetime:
 
 | Status               | Meaning                                                                                   |
 | -------------------- | ----------------------------------------------------------------------------------------- |
+| `draft`              | The order is a draft, pending finalization. Invoice number is not yet assigned.           |
 | `pending`            | The order has been created and Polar is attempting to collect payment.                    |
 | `paid`               | The payment succeeded.                                                                    |
 | `refunded`           | The order has been fully refunded.                                                        |
 | `partially_refunded` | Part of the order has been refunded. See [Refunds](/features/refunds).                    |
 | `void`               | The order will not be collected (for example, it's been voided after repeated failures). |
 
-Free orders — those with a total of zero, typically from a $0 subscription or a 100% discount — are marked `paid` immediately with no payment step.
+Draft orders are created via the off-session charges API and must be finalized before payment is attempted. Free orders — those with a total of zero, typically from a $0 subscription or a 100% discount — are marked `paid` immediately with no payment step.
 
 ## What's on an order
 

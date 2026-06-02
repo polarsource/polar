@@ -22,7 +22,7 @@ depends_on: tuple[str] | None = None
 def upgrade() -> None:
     op.create_table(
         "benefit_slack_integrations",
-        sa.Column("benefit_id", sa.Uuid(), nullable=False),
+        sa.Column("benefit_id", sa.Uuid(), nullable=True),
         sa.Column("organization_id", sa.Uuid(), nullable=False),
         sa.Column("display_name", sa.String(length=35), nullable=False),
         sa.Column("slack_app_id", sa.String(length=32), nullable=True),

@@ -14,11 +14,12 @@ from .organization import Organization
 class BenefitSlackIntegration(RecordModel):
     __tablename__ = "benefit_slack_integrations"
 
-    benefit_id: Mapped[UUID] = mapped_column(
+    benefit_id: Mapped[UUID | None] = mapped_column(
         Uuid,
         ForeignKey("benefits.id", ondelete="cascade"),
-        nullable=False,
+        nullable=True,
         unique=True,
+        default=None,
     )
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,

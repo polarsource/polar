@@ -44,7 +44,26 @@ class SlackIntegrationInvalidState(BadRequest):
 
 class SlackIntegrationAppIdAlreadyLinked(BadRequest):
     def __init__(self) -> None:
-        super().__init__("This Slack app is already linked to another Polar benefit.")
+        super().__init__(
+            "This Slack app is already connected to another Polar organization."
+        )
+
+
+class SlackIntegrationNotInstalled(BadRequest):
+    def __init__(self) -> None:
+        super().__init__(
+            "Authorize the Slack workspace before linking it to a benefit."
+        )
+
+
+class SlackIntegrationAlreadyLinked(BadRequest):
+    def __init__(self) -> None:
+        super().__init__("This Slack integration is already linked to a benefit.")
+
+
+class SlackIntegrationBenefitAlreadyLinked(BadRequest):
+    def __init__(self) -> None:
+        super().__init__("This benefit is already linked to a Slack integration.")
 
 
 # Errors that mean credentials parsed but code was rejected — credentials are OK.
@@ -56,6 +75,12 @@ class BenefitSlackIntegrationService:
         self._client = SlackClient()
 
     async def get(
+        self, session: AsyncReadSession, integration_id: UUID
+    ) -> BenefitSlackIntegration | None:
+        repository = BenefitSlackIntegrationRepository.from_session(session)
+        return await repository.get_by_id(integration_id)
+
+    async def get_by_benefit(
         self, session: AsyncReadSession, benefit_id: UUID
     ) -> BenefitSlackIntegration | None:
         repository = BenefitSlackIntegrationRepository.from_session(session)
@@ -64,16 +89,19 @@ class BenefitSlackIntegrationService:
     async def set_credentials(
         self,
         session: AsyncSession,
-        benefit: Benefit,
+        organization_id: UUID,
         update: SlackIntegrationCredentialsUpdate,
         *,
         redirect_uri: str,
     ) -> BenefitSlackIntegration:
         repository = BenefitSlackIntegrationRepository.from_session(session)
-        existing = await repository.get_by_benefit(benefit.id)
+        # slack_app_id is globally unique, so it identifies an existing
+        # integration regardless of which benefit (if any) it's linked to.
+        existing = await repository.get_by_app_id(update.slack_app_id)
+        if existing is not None and existing.organization_id != organization_id:
+            raise SlackIntegrationAppIdAlreadyLinked()
 
-        # First time pasting credentials (no existing row, or only display_name
-        # was persisted) requires both secrets.
+        # First time pasting credentials for this app requires both secrets.
         has_existing_credentials = (
             existing is not None
             and existing.client_secret is not None
@@ -107,14 +135,9 @@ class BenefitSlackIntegrationService:
                 redirect_uri=redirect_uri,
             )
 
-        conflicting = await repository.get_by_app_id(update.slack_app_id)
-        if conflicting is not None and conflicting.benefit_id != benefit.id:
-            raise SlackIntegrationAppIdAlreadyLinked()
-
         if existing is None:
             integration = BenefitSlackIntegration(
-                benefit_id=benefit.id,
-                organization_id=benefit.organization_id,
+                organization_id=organization_id,
                 display_name=update.display_name,
                 slack_app_id=update.slack_app_id,
                 client_id=update.client_id,
@@ -123,26 +146,17 @@ class BenefitSlackIntegrationService:
             )
             return await repository.create(integration, flush=True)
 
-        # Existing stub row (display_name only): treat as a fresh install rather
-        # than a credential rotation. Don't reset OAuth state on the first
-        # credential write since there was nothing to reset.
-        was_stub = existing.client_id is None
-
         update_dict: dict[str, Any] = {
             "display_name": update.display_name,
-            "slack_app_id": update.slack_app_id,
             "client_id": update.client_id,
             "client_secret": client_secret,
             "signing_secret": signing_secret,
         }
-        # client_id and slack_app_id identify which Slack app the OAuth flow
-        # targets. If they change the app changes too, so the bot_token from
-        # the previous install is no longer valid and we must reset OAuth
-        # state. Rotating just the secrets keeps the install intact.
-        if not was_stub and (
-            update.client_id != existing.client_id
-            or update.slack_app_id != existing.slack_app_id
-        ):
+        # client_id identifies which Slack app the OAuth flow targets. If it
+        # changes, the bot_token from the previous install is no longer valid
+        # and we must reset OAuth state. Rotating just the secrets keeps the
+        # install intact.
+        if update.client_id != existing.client_id:
             update_dict.update(
                 {
                     "team_id": None,
@@ -157,6 +171,28 @@ class BenefitSlackIntegrationService:
             )
         return await repository.update(existing, update_dict=update_dict)
 
+    async def link(
+        self,
+        session: AsyncSession,
+        benefit: Benefit,
+        integration: BenefitSlackIntegration,
+    ) -> BenefitSlackIntegration:
+        if integration.bot_token is None:
+            raise SlackIntegrationNotInstalled()
+        if integration.benefit_id is not None and integration.benefit_id != benefit.id:
+            raise SlackIntegrationAlreadyLinked()
+
+        repository = BenefitSlackIntegrationRepository.from_session(session)
+        existing_for_benefit = await repository.get_by_benefit(benefit.id)
+        if existing_for_benefit is not None and existing_for_benefit.id != integration.id:
+            raise SlackIntegrationBenefitAlreadyLinked()
+
+        if integration.benefit_id == benefit.id:
+            return integration
+        return await repository.update(
+            integration, update_dict={"benefit_id": benefit.id}
+        )
+
     def build_authorize_url(
         self,
         integration: BenefitSlackIntegration,
@@ -167,7 +203,7 @@ class BenefitSlackIntegrationService:
     ) -> str:
         state = jwt.encode(
             data={
-                "benefit_id": str(integration.benefit_id),
+                "integration_id": str(integration.id),
                 "subject_id": str(subject_id),
                 "return_to": return_to,
             },
@@ -199,15 +235,6 @@ class BenefitSlackIntegrationService:
     ) -> None:
         repository = BenefitSlackIntegrationRepository.from_session(session)
         await repository.delete(integration)
-
-    async def upsert_display_name(
-        self,
-        session: AsyncSession,
-        benefit: Benefit,
-        display_name: str,
-    ) -> BenefitSlackIntegration:
-        repository = BenefitSlackIntegrationRepository.from_session(session)
-        return await repository.upsert_display_name(benefit, display_name)
 
     async def list_workspace_users(
         self,
@@ -249,13 +276,13 @@ class BenefitSlackIntegrationService:
     async def complete_install(
         self,
         session: AsyncSession,
-        benefit_id: UUID,
+        integration_id: UUID,
         *,
         code: str,
         redirect_uri: str,
     ) -> BenefitSlackIntegration:
         repository = BenefitSlackIntegrationRepository.from_session(session)
-        integration = await repository.get_by_benefit(benefit_id)
+        integration = await repository.get_by_id(integration_id)
         if (
             integration is None
             or integration.client_id is None

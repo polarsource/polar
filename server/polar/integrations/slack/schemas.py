@@ -35,7 +35,9 @@ DisplayName = Annotated[str, StringConstraints(min_length=1, max_length=35)]
 
 
 class SlackIntegrationCredentialsUpdate(Schema):
-    benefit_id: UUID4 = Field(description="Benefit the integration belongs to.")
+    organization_id: UUID4 = Field(
+        description="Organization the integration belongs to."
+    )
     display_name: DisplayName = Field(
         description=(
             "Display name used by the bot user in your Slack workspace. "
@@ -65,7 +67,6 @@ class SlackIntegrationCredentialsUpdate(Schema):
 
 
 class SlackIntegrationManifestRequest(Schema):
-    benefit_id: UUID4
     display_name: DisplayName = Field(
         description=(
             "Name shown in your Slack workspace for the app and bot user. "
@@ -94,9 +95,14 @@ class SlackWorkspaceUsersResponse(Schema):
     users: list[SlackWorkspaceUser]
 
 
+class SlackIntegrationLink(Schema):
+    benefit_id: UUID4 = Field(description="Benefit to link the integration to.")
+    integration_id: UUID4 = Field(description="Slack integration to link.")
+
+
 class SlackIntegration(TimestampedSchema):
     id: UUID4
-    benefit_id: UUID4
+    benefit_id: UUID4 | None
     organization_id: UUID4
 
     display_name: str

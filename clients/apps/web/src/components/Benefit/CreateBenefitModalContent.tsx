@@ -1,4 +1,4 @@
-import { useCreateBenefit } from '@/hooks/queries'
+import { useCreateBenefit, useLinkSlackIntegration } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { enums, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -15,6 +15,7 @@ export type CreateBenefitModalParams = {
   description?: string
   error?: string
   guild_token?: string
+  slack_integration_id?: string
 }
 
 interface CreateBenefitModalContentProps {
@@ -31,7 +32,7 @@ const CreateBenefitModalContent = ({
   defaultValues,
 }: CreateBenefitModalContentProps) => {
   const searchParams = useSearchParams()
-  const { type, description, error, ...properties } =
+  const { type, description, error, slack_integration_id, ...properties } =
     useMemo<CreateBenefitModalParams>(() => {
       if (defaultValues) {
         return defaultValues
@@ -44,6 +45,7 @@ const CreateBenefitModalContent = ({
     }, [searchParams, defaultValues])
 
   const createSubscriptionBenefit = useCreateBenefit(organization.id)
+  const linkSlackIntegration = useLinkSlackIntegration()
 
   const form = useForm<schemas['BenefitCreate']>({
     defaultValues: {
@@ -80,6 +82,19 @@ const CreateBenefitModalContent = ({
         return
       }
 
+      if (slack_integration_id && benefit.type === 'slack_shared_channel') {
+        const linkResult = await linkSlackIntegration.mutateAsync({
+          benefit_id: benefit.id,
+          integration_id: slack_integration_id,
+        })
+        if (linkResult.error) {
+          toast({
+            title: 'Benefit created, but linking Slack failed',
+            description: 'Open the benefit and reconnect the Slack workspace.',
+          })
+        }
+      }
+
       onSelectBenefit(benefit)
       toast({
         title: 'Benefit Created',
@@ -87,7 +102,15 @@ const CreateBenefitModalContent = ({
       })
       hideModal()
     },
-    [toast, hideModal, onSelectBenefit, createSubscriptionBenefit, setError],
+    [
+      toast,
+      hideModal,
+      onSelectBenefit,
+      createSubscriptionBenefit,
+      setError,
+      slack_integration_id,
+      linkSlackIntegration,
+    ],
   )
 
   useEffect(() => {

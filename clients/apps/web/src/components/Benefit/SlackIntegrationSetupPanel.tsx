@@ -20,15 +20,15 @@ import { toast } from '../Toast/use-toast'
 type Integration = schemas['SlackIntegration']
 
 export const SlackIntegrationSetupPanel = ({
-  benefitId,
+  organizationId,
   defaultDisplayName,
   integration,
   returnTo,
 }: {
-  benefitId: string
+  organizationId: string
   defaultDisplayName: string
   integration: Integration | null
-  returnTo?: string
+  returnTo: string
 }) => {
   const [displayName, setDisplayName] = useState(
     integration?.display_name ?? defaultDisplayName,
@@ -42,6 +42,9 @@ export const SlackIntegrationSetupPanel = ({
   const [credentialsSaved, setCredentialsSaved] = useState(
     !!integration?.slack_app_id,
   )
+  const [integrationId, setIntegrationId] = useState<string | null>(
+    integration?.id ?? null,
+  )
 
   const { mutate: generateManifest } = useGenerateSlackManifest()
   const saveCredentials = useSaveSlackCredentials()
@@ -49,10 +52,10 @@ export const SlackIntegrationSetupPanel = ({
   const debouncedDisplayName = useDebounce(displayName, 300)
   useEffect(() => {
     generateManifest(
-      { benefit_id: benefitId, display_name: debouncedDisplayName },
+      { display_name: debouncedDisplayName },
       { onSuccess: (r) => r.data && setManifest(r.data.manifest) },
     )
-  }, [debouncedDisplayName, benefitId, generateManifest])
+  }, [debouncedDisplayName, generateManifest])
 
   const saveSlackCredentials = async () => {
     const requiresClientSecret = !integration?.client_secret_last_4
@@ -70,14 +73,14 @@ export const SlackIntegrationSetupPanel = ({
 
     setCredentialsError(null)
     const result = await saveCredentials.mutateAsync({
-      benefit_id: benefitId,
+      organization_id: organizationId,
       display_name: displayName,
       slack_app_id: slackAppId,
       client_id: clientId,
       client_secret: clientSecret || null,
       signing_secret: signingSecret || null,
     })
-    if (result.error) {
+    if (result.error || !result.data) {
       toast({
         title: 'Could not save credentials',
         description: 'Slack rejected the values. Double-check and try again.',
@@ -85,6 +88,7 @@ export const SlackIntegrationSetupPanel = ({
       return
     }
     toast({ title: 'Credentials saved. Now authorize Slack below.' })
+    setIntegrationId(result.data.id)
     setCredentialsSaved(true)
     setClientSecret('')
     setSigningSecret('')
@@ -177,8 +181,8 @@ export const SlackIntegrationSetupPanel = ({
         </Box>
       </SetupSection>
 
-      {hasCredentials && (
-        <AuthorizeSection benefitId={benefitId} returnTo={returnTo} />
+      {hasCredentials && integrationId && (
+        <AuthorizeSection integrationId={integrationId} returnTo={returnTo} />
       )}
     </Box>
   )
@@ -269,22 +273,17 @@ const LabeledInput = ({
 )
 
 const AuthorizeSection = ({
-  benefitId,
+  integrationId,
   returnTo,
 }: {
-  benefitId: string
-  returnTo?: string
+  integrationId: string
+  returnTo: string
 }) => {
-  const resolvedReturnTo =
-    returnTo ??
-    (typeof window !== 'undefined'
-      ? (() => {
-          const params = new URLSearchParams(window.location.search)
-          params.set('edit_benefit', benefitId)
-          return `${window.location.pathname}?${params.toString()}`
-        })()
-      : '/')
-  const href = `${CONFIG.BASE_URL}/v1/integrations/slack/authorize?benefit_id=${benefitId}&return_to=${encodeURIComponent(resolvedReturnTo)}`
+  const [path, query = ''] = returnTo.split('?')
+  const params = new URLSearchParams(query)
+  params.set('slack_integration_id', integrationId)
+  const resolvedReturnTo = `${path}?${params.toString()}`
+  const href = `${CONFIG.BASE_URL}/v1/integrations/slack/authorize?integration_id=${integrationId}&return_to=${encodeURIComponent(resolvedReturnTo)}`
 
   return (
     <SetupSection

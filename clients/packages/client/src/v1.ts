@@ -383,6 +383,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/integrations/slack/link': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Link
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['integrations_slack:link']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/notifications': {
     parameters: {
       query?: never
@@ -28531,11 +28551,8 @@ export interface components {
        * Format: uuid4
        */
       id: string
-      /**
-       * Benefit Id
-       * Format: uuid4
-       */
-      benefit_id: string
+      /** Benefit Id */
+      benefit_id: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -28574,11 +28591,11 @@ export interface components {
     /** SlackIntegrationCredentialsUpdate */
     SlackIntegrationCredentialsUpdate: {
       /**
-       * Benefit Id
+       * Organization Id
        * Format: uuid4
-       * @description Benefit the integration belongs to.
+       * @description Organization the integration belongs to.
        */
-      benefit_id: string
+      organization_id: string
       /**
        * Display Name
        * @description Display name used by the bot user in your Slack workspace. Reflected in the manifest.
@@ -28605,6 +28622,21 @@ export interface components {
        */
       signing_secret?: string | null
     }
+    /** SlackIntegrationLink */
+    SlackIntegrationLink: {
+      /**
+       * Benefit Id
+       * Format: uuid4
+       * @description Benefit to link the integration to.
+       */
+      benefit_id: string
+      /**
+       * Integration Id
+       * Format: uuid4
+       * @description Slack integration to link.
+       */
+      integration_id: string
+    }
     /** SlackIntegrationManifest */
     SlackIntegrationManifest: {
       /**
@@ -28615,11 +28647,6 @@ export interface components {
     }
     /** SlackIntegrationManifestRequest */
     SlackIntegrationManifestRequest: {
-      /**
-       * Benefit Id
-       * Format: uuid4
-       */
-      benefit_id: string
       /**
        * Display Name
        * @description Name shown in your Slack workspace for the app and bot user. Defaults to your organization name; customize before pasting into Slack.
@@ -33208,8 +33235,9 @@ export interface operations {
   }
   'integrations_slack:get_integration': {
     parameters: {
-      query: {
-        benefit_id: string
+      query?: {
+        integration_id?: string | null
+        benefit_id?: string | null
       }
       header?: never
       path?: never
@@ -33247,7 +33275,7 @@ export interface operations {
   'integrations_slack:delete_integration': {
     parameters: {
       query: {
-        benefit_id: string
+        integration_id: string
       }
       header?: never
       path?: never
@@ -33283,7 +33311,7 @@ export interface operations {
   'integrations_slack:list_workspace_users': {
     parameters: {
       query: {
-        benefit_id: string
+        integration_id: string
       }
       header?: never
       path?: never
@@ -33387,7 +33415,7 @@ export interface operations {
   'integrations_slack:authorize': {
     parameters: {
       query: {
-        benefit_id: string
+        integration_id: string
         return_to?: string | null
       }
       header?: never
@@ -33436,6 +33464,46 @@ export interface operations {
         content: {
           'application/json': unknown
         }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'integrations_slack:link': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SlackIntegrationLink']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SlackIntegration']
+        }
+      }
+      /** @description Benefit or Slack integration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
       }
       /** @description Validation Error */
       422: {

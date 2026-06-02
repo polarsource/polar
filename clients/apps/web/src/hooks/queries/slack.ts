@@ -5,17 +5,17 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useSlackIntegration = (
-  benefitId?: string,
+  { integrationId, benefitId }: { integrationId?: string; benefitId?: string },
   { enabled = true }: { enabled?: boolean } = {},
 ) =>
   useQuery({
-    queryKey: ['slackIntegration', benefitId],
+    queryKey: ['slackIntegration', integrationId ?? null, benefitId ?? null],
     queryFn: async (): Promise<schemas['SlackIntegration'] | null> => {
       const response = await api.GET('/v1/integrations/slack/integration', {
         params: {
-          query: {
-            benefit_id: benefitId ?? '',
-          },
+          query: integrationId
+            ? { integration_id: integrationId }
+            : { benefit_id: benefitId },
         },
       })
       if (response.response.status === 404) {
@@ -27,7 +27,7 @@ export const useSlackIntegration = (
       return response.data ?? null
     },
     retry: defaultRetry,
-    enabled: enabled && !!benefitId,
+    enabled: enabled && (!!integrationId || !!benefitId),
   })
 
 export const useGenerateSlackManifest = () =>
@@ -40,13 +40,23 @@ export const useSaveSlackCredentials = () =>
   useMutation({
     mutationFn: (body: schemas['SlackIntegrationCredentialsUpdate']) =>
       api.POST('/v1/integrations/slack/credentials', { body }),
-    onSuccess: (result, variables) => {
+    onSuccess: (result) => {
       if (result.error) {
         return
       }
-      getQueryClient().invalidateQueries({
-        queryKey: ['slackIntegration', variables.benefit_id],
-      })
+      getQueryClient().invalidateQueries({ queryKey: ['slackIntegration'] })
+    },
+  })
+
+export const useLinkSlackIntegration = () =>
+  useMutation({
+    mutationFn: (body: schemas['SlackIntegrationLink']) =>
+      api.POST('/v1/integrations/slack/link', { body }),
+    onSuccess: (result) => {
+      if (result.error) {
+        return
+      }
+      getQueryClient().invalidateQueries({ queryKey: ['slackIntegration'] })
     },
   })
 
@@ -57,14 +67,14 @@ export const usePreviewSlackChannelName = () =>
   })
 
 export const useSlackWorkspaceUsers = (
-  benefitId?: string,
+  integrationId?: string,
   { enabled = true }: { enabled?: boolean } = {},
 ) =>
   useQuery({
-    queryKey: ['slackWorkspaceUsers', benefitId],
+    queryKey: ['slackWorkspaceUsers', integrationId],
     queryFn: async (): Promise<schemas['SlackWorkspaceUser'][]> => {
       const response = await api.GET('/v1/integrations/slack/users', {
-        params: { query: { benefit_id: benefitId ?? '' } },
+        params: { query: { integration_id: integrationId ?? '' } },
       })
       if (response.error) {
         throw response.error
@@ -72,21 +82,19 @@ export const useSlackWorkspaceUsers = (
       return response.data?.users ?? []
     },
     retry: defaultRetry,
-    enabled: enabled && !!benefitId,
+    enabled: enabled && !!integrationId,
   })
 
 export const useDeleteSlackIntegration = () =>
   useMutation({
-    mutationFn: ({ benefitId }: { benefitId: string }) =>
+    mutationFn: ({ integrationId }: { integrationId: string }) =>
       api.DELETE('/v1/integrations/slack/integration', {
-        params: { query: { benefit_id: benefitId } },
+        params: { query: { integration_id: integrationId } },
       }),
-    onSuccess: (result, variables) => {
+    onSuccess: (result) => {
       if (result.error) {
         return
       }
-      getQueryClient().invalidateQueries({
-        queryKey: ['slackIntegration', variables.benefitId],
-      })
+      getQueryClient().invalidateQueries({ queryKey: ['slackIntegration'] })
     },
   })

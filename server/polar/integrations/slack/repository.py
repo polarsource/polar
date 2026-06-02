@@ -1,15 +1,17 @@
 from uuid import UUID
 
-from sqlalchemy.dialects.postgresql import insert as pg_insert
-
 from polar.kit.repository import RepositoryBase
-from polar.models import Benefit, BenefitSlackIntegration
+from polar.models import BenefitSlackIntegration
 
 
 class BenefitSlackIntegrationRepository(
     RepositoryBase[BenefitSlackIntegration],
 ):
     model = BenefitSlackIntegration
+
+    async def get_by_id(self, id: UUID) -> BenefitSlackIntegration | None:
+        statement = self.get_base_statement().where(BenefitSlackIntegration.id == id)
+        return await self.get_one_or_none(statement)
 
     async def get_by_benefit(self, benefit_id: UUID) -> BenefitSlackIntegration | None:
         statement = self.get_base_statement().where(
@@ -26,24 +28,3 @@ class BenefitSlackIntegrationRepository(
     async def delete(self, integration: BenefitSlackIntegration) -> None:
         await self.session.delete(integration)
         await self.session.flush()
-
-    async def upsert_display_name(
-        self, benefit: Benefit, display_name: str
-    ) -> BenefitSlackIntegration:
-        statement = (
-            pg_insert(BenefitSlackIntegration)
-            .values(
-                benefit_id=benefit.id,
-                organization_id=benefit.organization_id,
-                display_name=display_name,
-            )
-            .on_conflict_do_update(
-                index_elements=["benefit_id"],
-                set_={"display_name": display_name},
-            )
-        )
-        await self.session.execute(statement)
-        await self.session.flush()
-        integration = await self.get_by_benefit(benefit.id)
-        assert integration is not None
-        return integration

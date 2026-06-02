@@ -29,7 +29,6 @@ variable "api_service_config" {
     cors_origins           = string # "[\"https://polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = list(object({ name = string }))
     image_url              = optional(string, "ghcr.io/polarsource/polar")
-    image_digest           = string
     web_concurrency        = optional(string, "2")
     forwarded_allow_ips    = optional(string, "*")
     database_pool_size     = optional(string, "10")
@@ -44,8 +43,7 @@ variable "workers" {
   description = "Map of worker configurations"
   type = map(object({
     start_command      = string
-    image_url          = string
-    image_digest       = string
+    image_url          = optional(string, "ghcr.io/polarsource/polar")
     custom_domains     = optional(list(object({ name = string })), [])
     dramatiq_prom_port = optional(string, "10000")
     plan               = optional(string, "pro")

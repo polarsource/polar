@@ -4,13 +4,12 @@ from polar.kit.currency import (
     get_maximum_currency_amount,
     get_minimum_currency_amount,
 )
-from polar.models import ProductPrice
 
-from .guard import is_custom_price
+from .guard import CustomPrice
 
 
 def validate_custom_price_amount(
-    price: ProductPrice,
+    price: CustomPrice,
     amount: int,
     currency: str,
     loc: tuple[str, ...] = ("body", "amount"),
@@ -18,12 +17,10 @@ def validate_custom_price_amount(
     """Validate a custom (pay-what-you-want) amount against the price's
     configured minimum/maximum and the currency's minimum/maximum.
 
-    No-op for non-custom prices. Shared by the checkout and off-session order
-    flows so both enforce identical bounds.
+    Takes a `CustomPrice` so `minimum_amount`/`maximum_amount` are statically
+    typed (never `None`); callers narrow with `is_custom_price` first. Shared by
+    the checkout and off-session order flows so both enforce identical bounds.
     """
-    if not is_custom_price(price):
-        return
-
     if amount < 0:
         raise PolarRequestValidationError(
             [

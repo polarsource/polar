@@ -748,11 +748,6 @@ class PayoutService:
         payout_ids = await repository.release_held_by_account(account_id)
         for payout_id in payout_ids:
             enqueue_job("payout.transfer", payout_id=payout_id)
-        log.info(
-            "payout.release_held_payouts",
-            account_id=str(account_id),
-            released=len(payout_ids),
-        )
 
     async def cancel_account_payouts(
         self,
@@ -776,21 +771,14 @@ class PayoutService:
         payouts = await repository.get_by_account_and_statuses(
             account_id, statuses, options=repository.get_eager_options()
         )
-        canceled = 0
         for payout in payouts:
             try:
                 await self.cancel(session, payout)
-                canceled += 1
             except PayoutNotCancelable:
                 # A concurrent cancel/transition already finalized this payout
                 # (cancel() locks and re-checks the row). Skip it rather than
                 # failing the whole job.
                 continue
-        log.info(
-            "payout.cancel_account_payouts",
-            account_id=str(account_id),
-            canceled=canceled,
-        )
 
     async def trigger_invoice_generation(
         self,

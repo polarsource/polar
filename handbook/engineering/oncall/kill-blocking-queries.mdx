@@ -1,0 +1,66 @@
+---
+title: "Kill Blocking DB Queries"
+description: "Detect and terminate queries that are blocking migrations or other operations"
+---
+
+When a migration or operation appears stuck, it's often blocked by a long-running transaction holding a lock. Here's how to detect and resolve it.
+
+## Prerequisites
+
+- Access to the production database. See [Connecting to Production DB](/engineering/oncall/connecting-to-prod-db).
+
+## 1. Find the blocking query
+
+Run this query to find sessions that are waiting and what's blocking them:
+
+```sql
+SELECT
+  a.pid,
+  a.state,
+  age(clock_timestamp(), a.query_start) AS waiting,
+  a.query AS blocked_query,
+  bl.pid AS blocking_pid,
+  bl.query AS blocking_query
+FROM pg_stat_activity a
+JOIN pg_stat_activity bl ON bl.pid = ANY(pg_blocking_pids(a.pid))
+ORDER BY waiting DESC;
+```
+
+This returns:
+- `pid` / `blocking_pid` — process IDs
+- `waiting` — how long the blocked query has been waiting
+- `blocked_query` — the query that can't proceed
+- `blocking_query` — the last query run by the blocking session
+
+<Warning>
+`pg_stat_activity.query` shows the **last** statement executed by a session, not the one that acquired the lock. A session that is `idle in transaction` may have run many queries before going idle — all locks from the entire transaction are still held. The blocking query displayed may be a red herring.
+
+Similarly, the lock conflict may be on a **different table** than the one being operated on. For example, dropping a table with a foreign key referencing a parent table will request `AccessExclusiveLock` on the **parent** table, not just the child. Any session holding an `AccessShareLock` on the parent (e.g. from a simple `SELECT`) will block the drop.
+</Warning>
+
+## 2. Terminate the blocking session
+
+Once you've identified the blocking `pid`, terminate it:
+
+```sql
+SELECT pg_terminate_backend(<blocking_pid>);
+```
+
+This releases all locks held by that session, allowing the blocked operation to proceed.
+
+## 3. After termination
+
+- [ ] Verify the blocked operation completes successfully
+- [ ] Check application logs / Sentry for errors caused by the terminated session
+- [ ] Document in the [on-call log](/engineering/oncall/on-call-log)
+- [ ] Notify the team
+
+## Root causes to investigate
+
+Common reasons a session holds locks for too long:
+
+- **Transaction open across external I/O** — e.g. a worker that queries the DB and then makes a slow HTTP call (Expo push, Stripe, etc.) while still inside the same database transaction. The transaction never commits until the HTTP call returns.
+- **Missing `lock_timeout` on DDL migrations** — without a timeout, a `DROP TABLE` or `ALTER TABLE` will queue indefinitely behind hot-table readers, and while queued it also blocks new readers.
+- **No `idle_in_transaction_session_timeout`** — connections left idle inside a transaction are never auto-killed by the DB.
+
+See also the [on-call log](/engineering/oncall/on-call-log) entry for the 2026-06-02 incident for a worked example.

@@ -10,7 +10,12 @@ from plain_client import (
 )
 from pytest_mock import MockerFixture
 
-from polar.integrations.plain.service import PlainCustomerError, PlainService
+from polar.integrations.plain.service import (
+    PlainCustomerError,
+    PlainService,
+)
+from polar.models import Feedback, User
+from polar.models.feedback import FeedbackType
 
 
 @contextlib.asynccontextmanager
@@ -81,6 +86,149 @@ def plain_client(mocker: MockerFixture) -> MagicMock:
         return_value=_mock_client(client),
     )
     return client
+
+
+_FEEDBACK_ID = uuid.UUID("9627a2e3-b7e3-4c6a-9f00-13ed415849fd")
+
+
+def _feedback(*, message: str, type: FeedbackType = FeedbackType.question) -> Feedback:
+    user = User(email="user@example.com", email_verified=False)
+    return Feedback(id=_FEEDBACK_ID, type=type, message=message, user=user)
+
+
+def _ok_result() -> MagicMock:
+    result = MagicMock()
+    result.error = None
+    return result
+
+
+@pytest.fixture
+def feedback_thread_client(mocker: MockerFixture, plain_client: MagicMock) -> MagicMock:
+    # Don't hit the LLM gateway from thread-creation tests.
+    mocker.patch(
+        "polar.integrations.plain.service._generate_thread_subject",
+        AsyncMock(return_value="Generated subject"),
+    )
+    plain_client.customer_by_email.return_value = _customer_by_email_payload(
+        external_id=str(uuid.uuid4())
+    )
+    thread_result = _ok_result()
+    thread_result.thread.id = "t_123"
+    plain_client.create_thread = AsyncMock(return_value=thread_result)
+    plain_client.create_note = AsyncMock(return_value=_ok_result())
+    plain_client.reply_to_thread = AsyncMock(return_value=_ok_result())
+    return plain_client
+
+
+@pytest.mark.asyncio
+class TestCreateFeedbackThread:
+    async def test_impersonates_with_note_and_notes_transcript(
+        self,
+        plain_service: PlainService,
+        feedback_thread_client: MagicMock,
+    ) -> None:
+        transcript = "**User**\n\nHow do I do X?\n\n**Assistant**\n\nTry Y."
+        feedback = _feedback(
+            message=f"I still need help\n\n---\n\n## Transcript\n\n{transcript}"
+        )
+
+        url = await plain_service.create_feedback_thread(feedback)
+
+        assert url == (
+            "https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/thread/t_123"
+        )
+        thread_input = feedback_thread_client.create_thread.call_args.args[0]
+        assert thread_input.title == "Generated subject"
+        feedback_thread_client.reply_to_thread.assert_awaited_once()
+        reply_input = feedback_thread_client.reply_to_thread.call_args.args[0]
+        assert reply_input.thread_id == "t_123"
+        assert reply_input.text_content == "I still need help"
+        assert (
+            reply_input.impersonation.as_customer.customer_identifier.customer_id
+            == "c_123"
+        )
+        note_input = feedback_thread_client.create_note.call_args.args[0]
+        assert note_input.text.startswith(transcript)
+        # The note links back to the backoffice feedback record.
+        assert f"/feedbacks/{_FEEDBACK_ID}" in note_input.markdown
+        assert "[View in backoffice]" in note_input.markdown
+
+    async def test_impersonates_with_original_question_when_no_note(
+        self,
+        plain_service: PlainService,
+        feedback_thread_client: MagicMock,
+    ) -> None:
+        transcript = "**User**\n\nHow do I do X?\n\n**Assistant**\n\nTry Y."
+        feedback = _feedback(message=f"## Transcript\n\n{transcript}")
+
+        await plain_service.create_feedback_thread(feedback)
+
+        reply_input = feedback_thread_client.reply_to_thread.call_args.args[0]
+        assert reply_input.text_content == "How do I do X?"
+        note_input = feedback_thread_client.create_note.call_args.args[0]
+        assert note_input.text.startswith(transcript)
+        assert f"/feedbacks/{_FEEDBACK_ID}" in note_input.markdown
+
+    async def test_direct_submission_keeps_message_as_note(
+        self,
+        plain_service: PlainService,
+        feedback_thread_client: MagicMock,
+    ) -> None:
+        feedback = _feedback(message="The dashboard is broken.", type=FeedbackType.bug)
+
+        await plain_service.create_feedback_thread(feedback)
+
+        feedback_thread_client.reply_to_thread.assert_not_awaited()
+        note_input = feedback_thread_client.create_note.call_args.args[0]
+        assert note_input.text.startswith("The dashboard is broken.")
+        assert f"/feedbacks/{_FEEDBACK_ID}" in note_input.markdown
+
+
+@pytest.mark.asyncio
+class TestGenerateThreadSubject:
+    async def test_returns_model_output(self, mocker: MockerFixture) -> None:
+        from polar.integrations.plain.service import _generate_thread_subject
+
+        get_model = mocker.patch(
+            "polar.integrations.plain.service.settings.get_pydantic_gateway_model",
+            return_value=(MagicMock(), "openai", "gpt-5.5"),
+        )
+        agent = MagicMock()
+        agent.run = AsyncMock(
+            return_value=MagicMock(output='  "Custom domain setup"  ')
+        )
+        agent_cls = mocker.patch(
+            "polar.integrations.plain.service.Agent", return_value=agent
+        )
+
+        subject = await _generate_thread_subject(
+            "How do I set up a domain?", "Fallback"
+        )
+
+        assert subject == "Custom domain setup"
+        # Uses the configured default model (no hardcoded provider).
+        get_model.assert_called_once_with()
+        # gpt-5.5 rejects a non-default temperature.
+        assert agent_cls.call_args.kwargs["model_settings"] == {}
+
+    async def test_falls_back_on_error(self, mocker: MockerFixture) -> None:
+        from polar.integrations.plain.service import _generate_thread_subject
+
+        mocker.patch(
+            "polar.integrations.plain.service.settings.get_pydantic_gateway_model",
+            side_effect=RuntimeError("gateway down"),
+        )
+
+        subject = await _generate_thread_subject("Anything", "Re: your recent question")
+
+        assert subject == "Re: your recent question"
+
+    async def test_falls_back_on_empty_content(self) -> None:
+        from polar.integrations.plain.service import _generate_thread_subject
+
+        subject = await _generate_thread_subject("   ", "Re: your recent question")
+
+        assert subject == "Re: your recent question"
 
 
 @pytest.mark.asyncio

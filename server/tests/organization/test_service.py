@@ -983,7 +983,7 @@ class TestConfirmOrganizationReviewed:
 
         assert result is not None
         enqueue_job_mock.assert_any_call(
-            "organization.release_held_payouts",
+            "payout.release_held_payouts",
             account_id=organization.account_id,
         )
 
@@ -1217,7 +1217,7 @@ class TestDenyOrganization:
         await organization_service.deny_organization(session, organization)
 
         enqueue_job_mock.assert_any_call(
-            "organization.cancel_pending_payouts",
+            "payout.cancel_account_payouts",
             account_id=organization.account_id,
         )
 
@@ -1247,7 +1247,7 @@ class TestBlockOrganization:
         await organization_service.block_organization(session, organization)
 
         enqueue_job_mock.assert_any_call(
-            "organization.cancel_pending_payouts",
+            "payout.cancel_account_payouts",
             account_id=organization.account_id,
         )
 
@@ -3508,7 +3508,7 @@ class TestSetOrganizationOffboarding:
         await organization_service.set_organization_offboarding(session, organization)
 
         enqueue_job_mock.assert_any_call(
-            "organization.cancel_pending_payouts",
+            "payout.cancel_account_payouts",
             account_id=organization.account_id,
         )
 
@@ -3842,7 +3842,7 @@ class TestSetPayoutAccount:
         )
 
         enqueue_job_mock.assert_any_call(
-            "organization.cancel_held_payouts",
+            "payout.cancel_held_payouts",
             account_id=organization.account_id,
         )
 
@@ -3871,7 +3871,7 @@ class TestSetPayoutAccount:
         cancel_calls = [
             c
             for c in enqueue_job_mock.call_args_list
-            if c.args and c.args[0] == "organization.cancel_held_payouts"
+            if c.args and c.args[0] == "payout.cancel_held_payouts"
         ]
         assert cancel_calls == []
 

@@ -740,8 +740,8 @@ class PayoutService:
         """Release every held payout for an account after its org is approved.
 
         Moves each held payout back to ``pending`` and enqueues the Stripe
-        transfer that was skipped while it was held. Enqueued by
-        ``organization.release_held_payouts`` when a REVIEW/SNOOZED org becomes
+        transfer that was skipped while it was held. Driven by the
+        ``payout.release_held_payouts`` task when a REVIEW/SNOOZED org becomes
         ACTIVE.
         """
         repository = PayoutRepository.from_session(session)

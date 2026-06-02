@@ -800,7 +800,7 @@ class OrganizationService:
         )
         if account_changed and organization.account_id is not None:
             enqueue_job(
-                "organization.cancel_held_payouts",
+                "payout.cancel_held_payouts",
                 account_id=organization.account_id,
             )
 
@@ -1003,7 +1003,7 @@ class OrganizationService:
         review flow to a terminal state (denied, blocked, offboarding)."""
         if organization.account_id is not None:
             enqueue_job(
-                "organization.cancel_pending_payouts",
+                "payout.cancel_account_payouts",
                 account_id=organization.account_id,
             )
 
@@ -1063,7 +1063,7 @@ class OrganizationService:
         # held payouts; a lost race returns None and does nothing.
         if confirmed is not None and confirmed.account_id is not None:
             enqueue_job(
-                "organization.release_held_payouts",
+                "payout.release_held_payouts",
                 account_id=confirmed.account_id,
             )
 

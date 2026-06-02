@@ -5,6 +5,7 @@ import structlog
 from polar.enums import PayoutAccountType
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
+from polar.models.payout import PayoutStatus
 from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
 
 from .repository import PayoutRepository
@@ -97,3 +98,42 @@ async def order_invoice(payout_id: uuid.UUID) -> None:
             raise PayoutDoesNotExist(payout_id)
 
         await payout_service.generate_invoice(session, payout)
+
+
+@actor(actor_name="payout.release_held_payouts", priority=TaskPriority.LOW)
+async def release_held_payouts(account_id: uuid.UUID) -> None:
+    """Release held payouts for an account once its org becomes ACTIVE.
+
+    Enqueued by ``confirm_organization_reviewed`` after a REVIEW/SNOOZED org is
+    approved. Moves held payouts back to ``pending`` and kicks off the Stripe
+    transfer that was held back at request time.
+    """
+    async with AsyncSessionMaker() as session:
+        await payout_service.release_held_payouts(session, account_id)
+
+
+@actor(actor_name="payout.cancel_account_payouts", priority=TaskPriority.LOW)
+async def cancel_account_payouts(account_id: uuid.UUID) -> None:
+    """Cancel in-flight payouts for an account leaving the review flow.
+
+    Enqueued when an org is denied, blocked or set to offboarding. Cancels both
+    ``held`` and ``pending`` payouts and returns the reserved funds (gross plus
+    fees) to the available balance.
+    """
+    async with AsyncSessionMaker() as session:
+        await payout_service.cancel_account_payouts(session, account_id)
+
+
+@actor(actor_name="payout.cancel_held_payouts", priority=TaskPriority.LOW)
+async def cancel_held_payouts(account_id: uuid.UUID) -> None:
+    """Cancel only held payouts for an account when its payout account changes.
+
+    Enqueued by ``set_payout_account`` on a swap: a held payout pins the Connect
+    account it was created against, so releasing it later would transfer to the
+    stale account. Pending payouts are left alone (their transfer may already be
+    in flight to the old account).
+    """
+    async with AsyncSessionMaker() as session:
+        await payout_service.cancel_account_payouts(
+            session, account_id, statuses=(PayoutStatus.held,)
+        )

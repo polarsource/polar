@@ -26769,7 +26769,7 @@ export interface components {
        *     - YER: 200
        *     - ZAR: 9
        *     - ZMW: 10
-       *     - Other currencies: 0.5
+       *     - Other currencies: 50 minor units
        * @default 50
        */
       minimum_amount: number
@@ -26791,7 +26791,7 @@ export interface components {
        *     - TZS: 2,500,000
        *     - UGX: 3,700,000
        *     - UZS: 12,500,000
-       *     - Other currencies: 999,999.99
+       *     - Other currencies: 99,999,999 minor units
        */
       maximum_amount?: number | null
       /**
@@ -26923,7 +26923,7 @@ export interface components {
        *     - YER: 200
        *     - ZAR: 9
        *     - ZMW: 10
-       *     - Other currencies: 0.5
+       *     - Other currencies: 50 minor units
        */
       preset_amount?: number | null
     }
@@ -27127,7 +27127,7 @@ export interface components {
        *     - YER: 200
        *     - ZAR: 9
        *     - ZMW: 10
-       *     - Other currencies: 0.5
+       *     - Other currencies: 50 minor units
        */
       price_amount: number
     }

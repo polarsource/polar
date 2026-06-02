@@ -355,7 +355,7 @@ MINIMUM_PRICE_PER_CURRENCY_DOCSTRING = "\n".join(
             f"- {currency.upper()}: {format_decimal(amount / _get_currency_decimal_factor(currency), locale='en_US', decimal_quantization=False)}"
             for currency, amount in MINIMUM_PRICE_PER_CURRENCY.items()
         ),
-        f"- Other currencies: {format_decimal(MINIMUM_PRICE_PER_CURRENCY_DEFAULT / 100, locale='en_US', decimal_quantization=False)}",
+        f"- Other currencies: {format_decimal(MINIMUM_PRICE_PER_CURRENCY_DEFAULT, locale='en_US', decimal_quantization=False)} minor units",
     ]
 )
 
@@ -386,7 +386,7 @@ MAXIMUM_PRICE_PER_CURRENCY_DOCSTRING = "\n".join(
             f"- {currency.upper()}: {format_decimal(amount / _get_currency_decimal_factor(currency), locale='en_US', decimal_quantization=False)}"
             for currency, amount in MAXIMUM_PRICE_PER_CURRENCY.items()
         ),
-        f"- Other currencies: {format_decimal(MAXIMUM_PRICE_PER_CURRENCY_DEFAULT / 100, locale='en_US', decimal_quantization=False)}",
+        f"- Other currencies: {format_decimal(MAXIMUM_PRICE_PER_CURRENCY_DEFAULT, locale='en_US', decimal_quantization=False)} minor units",
     ]
 )
 

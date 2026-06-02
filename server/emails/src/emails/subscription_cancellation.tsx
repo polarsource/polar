@@ -1,9 +1,6 @@
-import { Preview, Section } from 'react-email'
-import BodyText from '../components/BodyText'
-import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
-import Intro from '../components/Intro'
-import WrapperOrganization from '../components/WrapperOrganization'
+import { Button, WrapperOrganization } from '../components/layout'
+import { Intro, Text } from '../components/text'
 import { organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -21,21 +18,19 @@ export function SubscriptionCancellation({
   })
 
   return (
-    <WrapperOrganization organization={organization}>
-      <Preview>
-        Your subscription to {product.name} will end on {endDate}
-      </Preview>
+    <WrapperOrganization
+      organization={organization}
+      preview={`Your subscription to ${product.name} will end on ${endDate}`}
+    >
       <Intro headline="Your subscription has been canceled">
-        Your subscription to <span className="font-medium">{product.name}</span>{' '}
+        Your subscription to{' '}
+        <Text as="span" weight="medium">
+          {product.name}
+        </Text>{' '}
         has been canceled. You still have full access until {endDate}.
       </Intro>
-      <BodyText>
-        If you change your mind, you can renew anytime before then.
-      </BodyText>
-      <Section className="my-8 text-center">
-        <Button href={url}>Renew subscription</Button>
-      </Section>
-
+      <Text>If you change your mind, you can renew anytime before then.</Text>
+      <Button href={url}>Renew subscription</Button>
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
   )
@@ -46,7 +41,7 @@ SubscriptionCancellation.PreviewProps = {
   organization,
   product,
   subscription: {
-    ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+    ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
   },
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
 }

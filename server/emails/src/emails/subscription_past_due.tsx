@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-imports, email-ds/no-classname */
 import { Link, Preview, Section } from 'react-email'
 import BodyText from '../components/BodyText'
 import Button from '../components/Button'

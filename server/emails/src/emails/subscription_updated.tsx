@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-imports, email-ds/no-classname */
 import { Hr, Preview, Section } from 'react-email'
 import Benefits from '../components/Benefits'
 import Button from '../components/Button'

@@ -5238,21 +5238,26 @@ class TestCreateDraftOrder:
         assert order.subtotal_amount > 0
         assert len(order.items) >= 1
 
-    async def test_multi_currency_requires_currency(
+    async def test_multi_currency_falls_back_to_org_default(
         self,
         session: AsyncSession,
         off_session_organization: Organization,
         product_one_time_multiple_currencies: Product,
         customer: Customer,
     ) -> None:
+        # When no currency is given, fall back to the organization's default
+        # presentment currency (matching the checkout flow), even though the
+        # product is priced in several currencies.
+        assert off_session_organization.default_presentment_currency == "usd"
         payload = OrderCreate(
             customer_id=customer.id,
             product_id=product_one_time_multiple_currencies.id,
         )
-        with pytest.raises(PolarRequestValidationError):
-            await order_service.create_draft_order(
-                session, off_session_organization, payload
-            )
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+        assert order.status == OrderStatus.draft
+        assert order.currency == "usd"
 
     async def test_multi_currency_with_currency(
         self,

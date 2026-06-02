@@ -100,6 +100,7 @@ from polar.product.guard import (
     is_static_price,
 )
 from polar.product.price_set import (
+    NoPricesForCurrencies,
     PriceSet,
 )
 from polar.product.repository import ProductRepository
@@ -886,44 +887,35 @@ class OrderService:
                 ]
             )
 
-        # Resolve the charge currency. When the product is priced in more than
-        # one currency, the merchant must say which one to use.
-        available_currencies = sorted({price.price_currency for price in static_prices})
+        # Resolve the charge currency: use the one the merchant requested, else
+        # fall back to the organization's default presentment currency (matching
+        # the checkout flow). So `currency` only needs to be passed when the
+        # product isn't priced in the organization's default currency.
         if payload.currency is not None:
-            requested_currency = payload.currency.lower()
-            if requested_currency not in available_currencies:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "currency"),
-                            "msg": (
-                                "Product has no price in currency "
-                                f"'{requested_currency}'."
-                            ),
-                            "input": payload.currency,
-                        }
-                    ]
-                )
-            currency = requested_currency
-        elif len(available_currencies) > 1:
+            currency = payload.currency.lower()
+        else:
+            currency = organization.default_presentment_currency
+        try:
+            currency_prices = PriceSet.from_product(product, currency)
+        except NoPricesForCurrencies as e:
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
                         "loc": ("body", "currency"),
                         "msg": (
-                            "This product is priced in multiple currencies; "
-                            "specify the currency to charge in."
+                            f"Product has no price in currency '{currency}'."
+                            if payload.currency is not None
+                            else (
+                                "Product is not priced in the organization's "
+                                f"default currency ('{currency}'); specify a "
+                                "currency to charge in."
+                            )
                         ),
-                        "input": None,
+                        "input": payload.currency,
                     }
                 ]
-            )
-        else:
-            currency = available_currencies[0]
-
-        currency_prices = PriceSet.from_product(product, currency)
+            ) from e
 
         items = list(
             self._build_static_order_items(currency_prices, amount=None, seats=None)

@@ -304,8 +304,9 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
         None,
         description=(
             "The currency to charge in (ISO 4217, lowercase, e.g. `usd`). "
-            "**Required when the product has prices in more than one currency**; "
-            "otherwise the product's single currency is used."
+            "Defaults to the organization's default currency; specify it to "
+            "force a different one, or when the product isn't priced in the "
+            "organization's default currency."
         ),
     )
 

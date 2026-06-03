@@ -73,7 +73,7 @@ const TimestampInput = ({ field }: ValueInputProps) => {
   return (
     <Input
       {...field}
-      value={field.value || ''}
+      value={field.value ?? ''}
       placeholder="unix timestamp"
       autoComplete="off"
       className="font-mono text-xs"
@@ -94,7 +94,7 @@ const MetadataInput = ({ field }: ValueInputProps) => {
   return (
     <Input
       {...field}
-      value={field.value || ''}
+      value={field.value ?? ''}
       autoComplete="off"
       className="font-mono md:text-xs"
       placeholder="property value"

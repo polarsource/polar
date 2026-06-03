@@ -6,7 +6,9 @@ State, Secrets and Runs are directly managed on [HCP Terraform Cloud](https://ap
 
 ## Infrastructure overview
 
-Currently, most of our infrastructure is hosted on Render. We also have AWS S3 buckets to store uploaded files.
+- **Backend**: Hosted on Render (API server, workers)
+- **Frontend**: Hosted on Vercel (Next.js web application)
+- **Storage**: AWS S3 buckets for uploaded files
 
 ## HCP Terraform Cloud
 
@@ -19,6 +21,8 @@ Projects:
 
 
 ## Adding environment variables
+
+### Backend (Render)
 
 If you need to add an environment variable to a backend service, do the following:
 
@@ -51,3 +55,11 @@ resource "render_env_group" "backend_production" {
 > Do not create environment variables directly in the Render dashboard, the source of truth for our secrets is Terraform.
 
 On the next Terraform run, the new variable will be copied to Render and made available to the service.
+
+### Frontend (Vercel)
+
+If you need to add an environment variable to the frontend, follow the pattern in:
+
+- `terraform/modules/vercel/variables.tf` for shared config/secrets
+- `terraform/{production,sandbox}/vercel.tf` for environment-specific variables
+- `terraform/global/{production,sandbox}.tf` for Terraform Cloud variables (prefixed with `vercel_`)

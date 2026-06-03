@@ -141,9 +141,8 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
           {!canWithdraw && (
             <div className="flex flex-col gap-6">
               <p>
-                Your organization is currently under review, as part of our
-                compliance process. Withdrawals are disabled until the review is
-                complete.
+                Withdrawals are currently unavailable for your organization. If
+                you have any questions, please reach out to our support team.
               </p>
               <p>
                 <Link

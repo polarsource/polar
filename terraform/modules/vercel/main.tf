@@ -14,6 +14,12 @@ resource "vercel_project" "this" {
   install_command = var.install_command
   ignore_command  = var.ignore_command
 
+  build_machine_type         = var.build_machine_type
+  resource_config            = var.resource_config
+  enable_preview_feedback    = var.enable_preview_feedback
+  enable_production_feedback = var.enable_production_feedback
+  git_provider_options       = var.git_provider_options
+
   git_repository = {
     type              = "github"
     repo              = var.git_repo

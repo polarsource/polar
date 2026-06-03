@@ -129,7 +129,7 @@ module "test" {
     postgres_database      = local.db_name
     postgres_read_database = local.db_name
     redis_db               = "0"
-    plan                   = "standard"
+    plan                   = "pro"
   }
 
   workers = {

@@ -178,18 +178,27 @@ const OrganizationSocialLinks = ({
                   }
                   placeholder="https://"
                   className="flex-1"
+                  disabled={readOnly}
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    field.onChange(socials.filter((_, i) => i !== index))
-                  }}
-                  className="dark:text-polar-400 text-gray-400 hover:text-gray-600"
+                <span
+                  className={twMerge(
+                    'inline-flex',
+                    readOnly && 'cursor-not-allowed',
+                  )}
                 >
-                  <CloseOutlined fontSize="small" />
-                </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={readOnly}
+                    onClick={() => {
+                      field.onChange(socials.filter((_, i) => i !== index))
+                    }}
+                    className="dark:text-polar-400 text-gray-400 hover:text-gray-600"
+                  >
+                    <CloseOutlined fontSize="small" />
+                  </Button>
+                </span>
               </div>
             ))}
             <span

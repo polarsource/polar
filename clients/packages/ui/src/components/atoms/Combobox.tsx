@@ -93,10 +93,7 @@ export function Combobox<T>({
   }, [value, selectedItem, getItemLabel])
 
   return (
-    <Popover
-      open={open}
-      onOpenChange={(nextOpen) => !disabled && setOpen(nextOpen)}
-    >
+    <Popover open={open && !disabled} onOpenChange={setOpen}>
       <span className={cn('block w-full', disabled && 'cursor-not-allowed')}>
         <PopoverTrigger asChild>
           <Button

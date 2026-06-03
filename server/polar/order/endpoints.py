@@ -280,8 +280,8 @@ async def update(
     },
 )
 async def finalize(
-    finalize_payload: OrderFinalize,
     authorized: auth.OrderSalesManage,
+    finalize_payload: OrderFinalize = OrderFinalize(),
     session: AsyncSession = Depends(get_db_session),
 ) -> Order:
     """

@@ -329,13 +329,17 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
         ),
     )
 
-    @field_validator("description")
+    @field_validator("description", mode="before")
     @classmethod
-    def strip_description(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
-        value = value.strip()
-        return value or None
+    def strip_description(cls, value: object) -> object:
+        # Run in `before` mode so blank input is normalized to None *before*
+        # the `max_length` constraint is checked — otherwise a long
+        # whitespace-only string is rejected instead of treated as empty.
+        # Non-strings fall through to Pydantic's normal type validation.
+        if isinstance(value, str):
+            value = value.strip()
+            return value or None
+        return value
 
 
 class OrderUpdateBase(Schema):

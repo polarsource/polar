@@ -1,6 +1,9 @@
 """Test for order schema serialization."""
 
+import uuid
+
 import pytest
+from pydantic import ValidationError
 
 from polar.models.customer import Customer
 from polar.models.order import (
@@ -8,7 +11,7 @@ from polar.models.order import (
     OrderBillingReasonInternal,
 )
 from polar.models.product import Product
-from polar.order.schemas import Order
+from polar.order.schemas import Order, OrderCreate
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_order
 
@@ -57,3 +60,30 @@ class TestOrderBillingReasonSerializer:
         order_schema = Order.model_validate(order)
         serialized = order_schema.model_dump(mode="json")
         assert serialized["billing_reason"] == expected_output
+
+
+class TestOrderCreateDescription:
+    """Test OrderCreate.description normalization."""
+
+    def _create(self, description: object) -> OrderCreate:
+        return OrderCreate(
+            customer_id=uuid.uuid4(),
+            product_id=uuid.uuid4(),
+            description=description,  # type: ignore[arg-type]
+        )
+
+    def test_surrounding_whitespace_trimmed(self) -> None:
+        assert self._create("  5,000 tokens  ").description == "5,000 tokens"
+
+    def test_blank_normalized_to_none(self) -> None:
+        assert self._create("   ").description is None
+
+    def test_long_blank_normalized_to_none(self) -> None:
+        # Whitespace-only input is trimmed to None *before* `max_length` is
+        # enforced, so an over-length blank string is accepted, not rejected.
+        assert self._create(" " * 501).description is None
+
+    def test_genuine_over_length_rejected(self) -> None:
+        # A real (non-blank) description over the limit is still rejected.
+        with pytest.raises(ValidationError):
+            self._create("a" * 501)

@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import timedelta
 from uuid import UUID
 
-from sqlalchemy import Select, exists, select, update
+from sqlalchemy import Select, exists, func, select, update
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -34,6 +34,28 @@ class PayoutRepository(
     async def count_by_account(self, account: UUID) -> int:
         statement = self.get_base_statement().where(Payout.account_id == account)
         return await self.count(statement)
+
+    async def get_held_counts_by_accounts(
+        self, account_ids: Sequence[UUID]
+    ) -> dict[UUID, int]:
+        """Count held payouts per account, for the Review-queue priority boost.
+
+        Accounts with no held payout are absent from the result (caller defaults
+        the count to 0).
+        """
+        if not account_ids:
+            return {}
+        statement = (
+            self.get_base_statement()
+            .with_only_columns(Payout.account_id, func.count(Payout.id))
+            .where(
+                Payout.account_id.in_(account_ids),
+                Payout.status == PayoutStatus.held,
+            )
+            .group_by(Payout.account_id)
+        )
+        result = await self.session.execute(statement)
+        return {account_id: count for account_id, count in result.all()}
 
     async def get_latest_by_account(self, account: UUID) -> Payout | None:
         statement = (

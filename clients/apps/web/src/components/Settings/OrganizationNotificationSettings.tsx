@@ -40,7 +40,7 @@ const OrganizationNotificationSettings: React.FC<
     <SettingsGroup>
       <SettingsGroupItem
         title="New Orders"
-        description="Send a notification when new orders are created"
+        description="Receive a notification when new orders are created"
       >
         <Switch
           checked={settings.new_order}
@@ -52,7 +52,7 @@ const OrganizationNotificationSettings: React.FC<
 
       <SettingsGroupItem
         title="New Subscriptions"
-        description="Send a notification when new subscriptions are created"
+        description="Receive a notification when new subscriptions are created"
       >
         <Switch
           checked={settings.new_subscription}

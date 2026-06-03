@@ -75,8 +75,8 @@ export default function ClientPage({
 
         <Section id="account-notifications">
           <SectionDescription
-            title="Account notifications"
-            description="Emails sent to members of your organization for account and product activity"
+            title="Your notifications"
+            description="Choose which account and product activity emails you receive as a member of this organization."
           />
           <OrganizationNotificationSettings organization={org} />
         </Section>

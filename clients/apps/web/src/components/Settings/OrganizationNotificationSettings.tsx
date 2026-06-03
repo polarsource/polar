@@ -1,4 +1,3 @@
-import { useUpdateOrganization } from '@/hooks/queries'
 import { useOptimisticSave } from '@/hooks/useOptimisticSave'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
@@ -6,23 +5,29 @@ import Switch from '@polar-sh/ui/components/atoms/Switch'
 import React from 'react'
 import { toast } from '../Toast/use-toast'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
+import { useUpdateUserOrganizationNotificationSettings } from '@/hooks/queries/user_organizations'
 
 interface OrganizationNotificationSettingsProps {
   organization: schemas['Organization']
+  userNotificationSettings: schemas['UserOrganizationNotificationSettings']
 }
 
 const OrganizationNotificationSettings: React.FC<
   OrganizationNotificationSettingsProps
-> = ({ organization }) => {
-  const updateOrganization = useUpdateOrganization()
+> = ({ organization, userNotificationSettings }) => {
+  const updateUserOrganizationNotificationSettings =
+    useUpdateUserOrganizationNotificationSettings(organization.id)
 
   const { value: settings, update } = useOptimisticSave(
-    organization.notification_settings,
+    // TODO (maxime): default to organization settings is temporary while user level is Nullable.
+    // once backfill script ran and user level is non-nullable, we can remove the fallback to organization settings.
+    userNotificationSettings.notification_settings ??
+      organization.notification_settings,
     async (notification_settings) => {
-      const { error } = await updateOrganization.mutateAsync({
-        id: organization.id,
-        body: { notification_settings },
-      })
+      const { error } =
+        await updateUserOrganizationNotificationSettings.mutateAsync({
+          notification_settings,
+        })
 
       if (error) {
         toast({

@@ -76,24 +76,15 @@ def s3_public_bucket(instance: int) -> str:
 
 
 # Host ports for the per-instance app stack. Only api and web publish host
-# ports; shared infra is reached by container name with no host ports.
-#
-# These must avoid every host port published by the legacy single-instance
-# stack (server/docker-compose.yml) and the non-Docker dev defaults — most
-# importantly minio on 9000/9001.
-#
-# The previous scheme (8000 + instance*100 / 3000 + instance*100) swept the
-# whole 8100..17900 / 3100..12900 range across 99 instances and so landed on
-# reserved ports: instance 10 → api 9000 (minio), instance 60 → web 9000
-# (minio), instance 50 → web 8000 (default api). Instead we pack each port
-# into a tight dedicated band that is clear of every reserved port, keeping
-# the trailing two digits equal to the instance number for readability.
-# Instance 0 keeps the legacy defaults ("0 = default ports, no offset").
+# ports (shared infra is reached by container name). Each instance gets one
+# port per service from a tight band whose trailing two digits are the
+# instance number; both bands stay clear of every RESERVED_HOST_PORT.
+# Instance 0 uses the legacy defaults.
 API_PORT_BASE = 8100  # instance 1..99 → 8101..8199
 WEB_PORT_BASE = 3100  # instance 1..99 → 3101..3199
 
-# Host ports published by the legacy/shared infra stack and the non-Docker
-# dev tooling. The per-instance app ports must never collide with these.
+# Host ports published by the shared infra and the non-Docker dev tooling.
+# Per-instance app ports must never collide with these.
 RESERVED_HOST_PORTS = frozenset(
     {
         DEFAULT_API_PORT,  # 8000 — non-Docker / legacy api
@@ -119,9 +110,9 @@ def web_port(instance: int) -> int:
 
 
 def _assert_ports_free(instance: int) -> None:
-    """Guard against any future port-scheme change re-introducing collisions."""
+    """Fail fast if an instance's api or web port falls on a reserved infra port."""
     if instance == 0:
-        return  # instance 0 intentionally maps to the reserved legacy defaults
+        return  # instance 0 uses the reserved legacy defaults by design
     for label, port in (("API", api_port(instance)), ("web", web_port(instance))):
         if port in RESERVED_HOST_PORTS:
             console.print(

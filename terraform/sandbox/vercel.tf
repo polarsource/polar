@@ -55,9 +55,9 @@ module "vercel" {
     { key = "POLAR_AUTH_COOKIE_KEY", value = "polar_sandbox_session" },
     { key = "NEXT_PUBLIC_PRODUCT_LINK_BASE_URL", value = "https://sandbox.polar.sh/api/checkout?price=" },
     { key = "POLAR_PREVIEW_BACKEND_HOST", value = "", target = ["preview"] },
-    { key = "NEXT_PUBLIC_STRIPE_KEY", value = var.stripe_publishable_key, target = ["production", "development"], sensitive = true },
-    { key = "NEXT_PUBLIC_STRIPE_KEY", value = var.stripe_publishable_key_preview, target = ["preview"], sensitive = true },
-    { key = "MCP_OAUTH2_CLIENT_ID", value = var.mcp_oauth2_client_id, sensitive = true },
-    { key = "MCP_OAUTH2_CLIENT_SECRET", value = var.mcp_oauth2_client_secret, sensitive = true },
+    { key = "NEXT_PUBLIC_STRIPE_KEY", value = var.stripe_publishable_key, target = ["production", "development"] },
+    { key = "NEXT_PUBLIC_STRIPE_KEY", value = var.stripe_publishable_key_preview, target = ["preview"] },
+    { key = "MCP_OAUTH2_CLIENT_ID", value = var.mcp_oauth2_client_id, target = ["production", "preview"], sensitive = true },
+    { key = "MCP_OAUTH2_CLIENT_SECRET", value = var.mcp_oauth2_client_secret, target = ["production", "preview"], sensitive = true },
   ]
 }

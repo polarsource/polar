@@ -150,8 +150,7 @@ def assign_owner(
                 plan.append(f"demote current owner {current_owner.email} -> admin")
             suffix = " (still soft-deleted)" if member_is_deleted else ""
             plan.append(
-                f"set role of {target_user.email} ({membership.role}) "
-                f"-> owner{suffix}"
+                f"set role of {target_user.email} ({membership.role}) -> owner{suffix}"
             )
             if sync_polar_for_polar:
                 plan.append("sync new owner's role on Polar's self-customer")

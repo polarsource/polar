@@ -2080,49 +2080,48 @@ class OrderService:
         if product is None:
             return
 
-        if organization.notification_settings["new_order"]:
-            product_image_url: str | None = None
-            try:
-                if product.product_medias and len(product.product_medias) > 0:
-                    first_media = product.product_medias[0].file
-                    product_image_url = S3_SERVICES[first_media.service].get_public_url(
-                        first_media.path
-                    )
-            except Exception:
-                pass
+        product_image_url: str | None = None
+        try:
+            if product.product_medias and len(product.product_medias) > 0:
+                first_media = product.product_medias[0].file
+                product_image_url = S3_SERVICES[first_media.service].get_public_url(
+                    first_media.path
+                )
+        except Exception:
+            pass
 
-            billing_address = order.billing_address
-            customer = order.customer
+        billing_address = order.billing_address
+        customer = order.customer
 
-            await notifications_service.send_to_org_members(
-                session,
-                org_id=organization.id,
-                notif=PartialNotification(
-                    type=NotificationType.maintainer_new_product_sale,
-                    payload=MaintainerNewProductSaleNotificationPayload(
-                        customer_email=customer.email,
-                        customer_name=customer.display_name,
-                        billing_address_country=billing_address.country
-                        if billing_address
-                        else None,
-                        billing_address_city=billing_address.city
-                        if billing_address
-                        else None,
-                        billing_address_line1=billing_address.line1
-                        if billing_address
-                        else None,
-                        product_name=product.name,
-                        product_price_amount=order.net_amount,
-                        product_image_url=product_image_url,
-                        order_id=str(order.id),
-                        order_date=order.created_at.isoformat(),
-                        organization_name=organization.name,
-                        organization_slug=organization.slug,
-                        billing_reason=order.billing_reason,
-                        currency=order.currency,
-                    ),
+        await notifications_service.send_to_org_members(
+            session,
+            org_id=organization.id,
+            notif=PartialNotification(
+                type=NotificationType.maintainer_new_product_sale,
+                payload=MaintainerNewProductSaleNotificationPayload(
+                    customer_email=customer.email,
+                    customer_name=customer.display_name,
+                    billing_address_country=billing_address.country
+                    if billing_address
+                    else None,
+                    billing_address_city=billing_address.city
+                    if billing_address
+                    else None,
+                    billing_address_line1=billing_address.line1
+                    if billing_address
+                    else None,
+                    product_name=product.name,
+                    product_price_amount=order.net_amount,
+                    product_image_url=product_image_url,
+                    order_id=str(order.id),
+                    order_date=order.created_at.isoformat(),
+                    organization_name=organization.name,
+                    organization_slug=organization.slug,
+                    billing_reason=order.billing_reason,
+                    currency=order.currency,
                 ),
-            )
+            ),
+        )
 
     async def send_confirmation_email(
         self, session: AsyncSession, order: Order

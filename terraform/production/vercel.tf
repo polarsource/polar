@@ -46,6 +46,11 @@ module "vercel" {
   name     = "polar"
   git_repo = "polarsource/polar"
 
+  # Production runs functions in cle1 (sandbox uses the module default, iad1).
+  resource_config = {
+    function_default_regions = ["cle1"]
+  }
+
   domains = [
     { name = "polar.sh" },
     { name = "www.polar.sh", redirect = "polar.sh", redirect_status_code = 308 },

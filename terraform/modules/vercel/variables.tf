@@ -40,9 +40,9 @@ variable "install_command" {
 }
 
 variable "ignore_command" {
-  description = "Command that decides whether to skip a build. Leave null to always build."
+  description = "Command that decides whether to skip a build (empty = always build)."
   type        = string
-  default     = null
+  default     = ""
 }
 
 # Project settings (defaults track the live values; override per env if they differ)

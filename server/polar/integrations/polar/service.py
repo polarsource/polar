@@ -305,13 +305,32 @@ class PolarSelfService:
             subscription = await client.uncancel_subscription(
                 subscription_id=subscription.id
             )
-        # Discounts are scoped to a specific product and never carry across
-        # a plan change. Clear it before switching the product so the API
-        # doesn't reject the update on incompatible-discount grounds.
-        if subscription.discount_id is not None:
+
+        # Apply the Startup Program's discount BEFORE switching the product, so
+        # the proration computed at product-switch reflects the discounted
+        # amount. The discount is no longer product-scoped, so the API accepts
+        # it on the current product and carries it through the switch. Only the
+        # Scale plan is eligible, so we only attach when switching to Scale.
+        # Mirror ``start_checkout``: without this a Pro/Growth -> Scale switch
+        # via the Change Plan page would skip the Startup Program discount even
+        # when the org is invited.
+        if product_id == settings.POLAR_SCALE_PRODUCT_ID:
+            discount_id = await startup_program_service.resolve_checkout_discount_id(
+                organization_id=organization_id, product_id=product_id
+            )
+            if discount_id is not None:
+                subscription = await client.update_subscription_discount(
+                    subscription_id=subscription.id, discount_id=discount_id
+                )
+        elif subscription.discount_id is not None:
+            # Switching away from Scale to a non-eligible plan: the Startup
+            # Program discount only applies to Scale. Since the discount is no
+            # longer product-scoped, it would otherwise carry onto the new plan,
+            # so clear it before the switch.
             subscription = await client.update_subscription_discount(
                 subscription_id=subscription.id, discount_id=None
             )
+
         target_amount = self._product_fixed_price_amount(target_product)
         proration = (
             SubscriptionProrationBehavior.INVOICE
@@ -323,19 +342,6 @@ class PolarSelfService:
             product_id=product_id,
             proration_behavior=proration,
         )
-
-        # Mirror ``start_checkout``: if the new product has a claimable
-        # discount for this org (e.g. the Startup Program's discount on
-        # Scale), attach it. Without this step a Pro/Growth -> Scale switch
-        # via the Change Plan page would skip the Startup Program discount
-        # even when the org is invited.
-        discount_id = await startup_program_service.resolve_checkout_discount_id(
-            organization_id=organization_id, product_id=product_id
-        )
-        if discount_id is not None:
-            subscription = await client.update_subscription_discount(
-                subscription_id=subscription.id, discount_id=discount_id
-            )
 
         return subscription
 
@@ -415,19 +421,26 @@ class PolarSelfService:
                 subscription_id=subscription.id
             )
 
-        if subscription.product_id != settings.POLAR_SCALE_PRODUCT_ID:
-            # Upgrade-to-Scale always invoices immediately; with a 100%
-            # discount the API computes a $0 prorated charge anyway.
+        needs_switch = subscription.product_id != settings.POLAR_SCALE_PRODUCT_ID
+
+        # Attach the discount BEFORE switching the product so the proration
+        # computed at the switch reflects the 100% discount (a $0 prorated
+        # charge). The discount is no longer product-scoped, so the API accepts
+        # it on the current product and carries it through the switch.
+        subscription = await client.update_subscription_discount(
+            subscription_id=subscription.id,
+            discount_id=discount_id,
+        )
+
+        if needs_switch:
+            # Upgrade-to-Scale always invoices immediately; with the discount
+            # already in place the API computes a $0 prorated charge.
             subscription = await client.update_subscription_product(
                 subscription_id=subscription.id,
                 product_id=settings.POLAR_SCALE_PRODUCT_ID,
                 proration_behavior=SubscriptionProrationBehavior.INVOICE,
             )
 
-        subscription = await client.update_subscription_discount(
-            subscription_id=subscription.id,
-            discount_id=discount_id,
-        )
         return (subscription, None)
 
     async def list_orders(

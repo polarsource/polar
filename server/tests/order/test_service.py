@@ -37,6 +37,7 @@ from polar.kit.address import (
     CountryAlpha2,
     CountryAlpha2Input,
 )
+from polar.kit.currency import get_maximum_currency_amount
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.math import polar_round
 from polar.kit.pagination import PaginationParams
@@ -5420,6 +5421,25 @@ class TestCreateDraftOrder:
             customer_id=customer.id,
             product_id=product_one_time.id,
             amount=10,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_amount_above_currency_maximum_rejected(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        # An amount above the currency's maximum would be rejected at finalize,
+        # so reject it up front.
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+            amount=get_maximum_currency_amount("usd") + 1,
         )
         with pytest.raises(PolarRequestValidationError):
             await order_service.create_draft_order(

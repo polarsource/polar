@@ -53,7 +53,11 @@ from polar.integrations.stripe.service import (
     stripe as stripe_service,
 )
 from polar.invoice.service import invoice as invoice_service
-from polar.kit.currency import format_currency, get_minimum_currency_amount
+from polar.kit.currency import (
+    format_currency,
+    get_maximum_currency_amount,
+    get_minimum_currency_amount,
+)
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
@@ -718,8 +722,9 @@ class OrderService:
     def _validate_purchase_amount(self, payload: OrderCreate, currency: str) -> None:
         """
         When the merchant provides a custom `amount`, ensure a positive amount
-        clears the currency's processor minimum — otherwise the charge would be
-        rejected at finalize. A 0 amount is allowed (e.g. a free product).
+        falls within the currency's processor bounds — otherwise the charge
+        would be rejected at finalize. A 0 amount is allowed (e.g. a free
+        product).
         """
         if payload.amount is None or payload.amount == 0:
             return
@@ -736,6 +741,22 @@ class OrderService:
                         ),
                         "input": payload.amount,
                         "ctx": {"ge": currency_minimum},
+                    }
+                ]
+            )
+        currency_maximum = get_maximum_currency_amount(currency)
+        if payload.amount > currency_maximum:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "less_than_equal",
+                        "loc": ("body", "amount"),
+                        "msg": (
+                            "Amount must be at most "
+                            f"{format_currency(currency_maximum, currency)}."
+                        ),
+                        "input": payload.amount,
+                        "ctx": {"le": currency_maximum},
                     }
                 ]
             )

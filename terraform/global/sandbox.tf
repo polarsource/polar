@@ -376,3 +376,108 @@ resource "tfe_variable" "firecrawl_api_key_sandbox" {
   sensitive       = true
   variable_set_id = tfe_variable_set.sandbox.id
 }
+
+# Vercel frontend
+resource "tfe_variable" "vercel_stripe_publishable_key_sandbox" {
+  key             = "stripe_publishable_key"
+  category        = "terraform"
+  description     = "Stripe publishable key for the Vercel sandbox frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "vercel_stripe_publishable_key_preview_sandbox" {
+  key             = "stripe_publishable_key_preview"
+  category        = "terraform"
+  description     = "Stripe publishable key for Vercel sandbox preview deployments"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "vercel_pydantic_ai_gateway_api_key_sandbox" {
+  key             = "pydantic_ai_gateway_api_key"
+  category        = "terraform"
+  description     = "Pydantic AI Gateway API key for the Vercel sandbox frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "vercel_gram_api_key_sandbox" {
+  key             = "gram_api_key"
+  category        = "terraform"
+  description     = "Gram API key for the Vercel sandbox frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "vercel_mintlify_assistant_api_key_sandbox" {
+  key             = "mintlify_assistant_api_key"
+  category        = "terraform"
+  description     = "Mintlify assistant API key for the Vercel sandbox frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "vercel_mcp_oauth2_client_id_sandbox" {
+  key             = "mcp_oauth2_client_id"
+  category        = "terraform"
+  description     = "MCP OAuth2 client ID for the Vercel sandbox frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "vercel_mcp_oauth2_client_secret_sandbox" {
+  key             = "mcp_oauth2_client_secret"
+  category        = "terraform"
+  description     = "MCP OAuth2 client secret for the Vercel sandbox frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "vercel_sentry_auth_token_sandbox" {
+  key             = "sentry_auth_token"
+  category        = "terraform"
+  description     = "Sentry auth token for the Vercel sandbox frontend build"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "vercel_polar_preview_access_token_sandbox" {
+  key             = "polar_preview_access_token"
+  category        = "terraform"
+  description     = "Polar preview access token for the Vercel sandbox frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "vercel_next_public_sentry_dsn_sandbox" {
+  key             = "next_public_sentry_dsn"
+  category        = "terraform"
+  description     = "Sentry DSN for the Vercel sandbox frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "vercel_next_public_posthog_token_sandbox" {
+  key             = "next_public_posthog_token"
+  category        = "terraform"
+  description     = "PostHog token for the Vercel sandbox frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "vercel_next_public_apple_domain_association_sandbox" {
+  key             = "next_public_apple_domain_association"
+  category        = "terraform"
+  description     = "Apple Pay domain association for the Vercel sandbox frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "vercel_next_public_stripe_payment_method_configuration_sandbox" {
+  key             = "next_public_stripe_payment_method_configuration"
+  category        = "terraform"
+  description     = "Stripe payment method configuration ID for the Vercel sandbox frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}

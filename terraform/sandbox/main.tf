@@ -10,6 +10,9 @@ provider "aws" {
 provider "render" {
 }
 
+provider "vercel" {
+}
+
 module "s3_buckets" {
   source                   = "../modules/s3_buckets"
   environment              = "sandbox"

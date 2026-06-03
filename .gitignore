@@ -167,3 +167,4 @@ clients/apps/web/src/app/(main)/onboarding/validate-description/acceptable-use-p
 server/polar/organization_review/acceptable-use-policy.mdx
 
 .worktrees/
+.vercel

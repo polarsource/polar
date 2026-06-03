@@ -17,3 +17,6 @@ provider "aws" {
 
 provider "render" {
 }
+
+provider "vercel" {
+}

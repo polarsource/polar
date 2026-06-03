@@ -120,8 +120,10 @@ def web_port(instance: int) -> int:
 
 def _assert_ports_free(instance: int) -> None:
     """Guard against any future port-scheme change re-introducing collisions."""
+    if instance == 0:
+        return  # instance 0 intentionally maps to the reserved legacy defaults
     for label, port in (("API", api_port(instance)), ("web", web_port(instance))):
-        if instance != 0 and port in RESERVED_HOST_PORTS:
+        if port in RESERVED_HOST_PORTS:
             console.print(
                 f"[red]Instance {instance} maps {label} to reserved infra port "
                 f"{port}. This is a bug in the port scheme (dev/cli/commands/"

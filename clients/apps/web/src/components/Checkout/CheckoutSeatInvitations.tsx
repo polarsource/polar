@@ -93,8 +93,9 @@ const SeatInvitationsPanel = ({
 
   const sendInvitations = async () => {
     const validatedInputs = emailInputs.map((input) => {
-      if (input.value.trim() && !validateEmail(input.value)) {
-        return { ...input, error: 'Invalid email format' }
+      const trimmed = input.value.trim()
+      if (trimmed && !validateEmail(trimmed)) {
+        return { ...input, value: trimmed, error: 'Invalid email format' }
       }
 
       return input

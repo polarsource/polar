@@ -43,7 +43,7 @@ class PayoutStatus(StrEnum):
 
     def is_cancelable(self) -> bool:
         """Whether a payout with this status can be canceled."""
-        return self in {PayoutStatus.pending, PayoutStatus.failed}
+        return self in {PayoutStatus.pending, PayoutStatus.failed, PayoutStatus.held}
 
 
 class Payout(RecordModel):

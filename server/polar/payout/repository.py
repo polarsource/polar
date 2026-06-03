@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import timedelta
 from uuid import UUID
 
-from sqlalchemy import Select, exists, select
+from sqlalchemy import Select, exists, select, update
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -47,17 +47,80 @@ class PayoutRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_by_id_for_update(
+        self, id: UUID, *, options: Options = ()
+    ) -> Payout | None:
+        """Get a payout by ID with a FOR UPDATE lock on the payout row.
+
+        Locks only the payout row (``OF payouts``) so eager-loading joins don't
+        try to lock the joined rows. Blocks until any concurrent holder (e.g.
+        cancel()) releases, so the transfer serializes against cancellation.
+        """
+        statement = (
+            self.get_base_statement()
+            .where(Payout.id == id)
+            .options(*options)
+            .with_for_update(of=Payout)
+        )
+        return await self.get_one_or_none(statement)
+
     async def count_pending_by_payout_account(self, payout_account_id: UUID) -> int:
         statement = self.get_base_statement().where(
             Payout.payout_account_id == payout_account_id,
             Payout.status.in_(
                 {
+                    # held reserves funds like pending, so it must count here
+                    # too (otherwise the payout account could be deleted).
+                    PayoutStatus.held,
                     PayoutStatus.pending,
                     PayoutStatus.in_transit,
                 }
             ),
         )
         return await self.count(statement)
+
+    async def get_by_account_and_statuses(
+        self,
+        account_id: UUID,
+        statuses: Sequence[PayoutStatus],
+        *,
+        payout_account_id: UUID | None = None,
+        options: Options = (),
+    ) -> Sequence[Payout]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Payout.account_id == account_id,
+                Payout.status.in_(statuses),
+            )
+            # Deterministic order so concurrent cancel jobs lock rows in the
+            # same order (FOR UPDATE in cancel()) and can't deadlock.
+            .order_by(Payout.created_at.asc(), Payout.id.asc())
+            .options(*options)
+        )
+        if payout_account_id is not None:
+            statement = statement.where(Payout.payout_account_id == payout_account_id)
+        return await self.get_all(statement)
+
+    async def release_held_by_account(self, account_id: UUID) -> Sequence[UUID]:
+        """Move every held payout for an account back to `pending`.
+
+        Returns the ids of the released payouts so the caller can enqueue the
+        Stripe transfer that was skipped while they were held. Done as a single
+        UPDATE ... RETURNING so concurrent releases can't double-release a row.
+        """
+        statement = (
+            update(Payout)
+            .where(
+                Payout.account_id == account_id,
+                Payout.status == PayoutStatus.held,
+                Payout.deleted_at.is_(None),
+            )
+            .values(status=PayoutStatus.pending)
+            .returning(Payout.id)
+        )
+        result = await self.session.execute(statement)
+        return [row[0] for row in result.all()]
 
     async def get_all_stripe_pending(
         self, delay: timedelta = settings.ACCOUNT_PAYOUT_DELAY
@@ -71,7 +134,9 @@ class PayoutRepository(
             .where(
                 Payout.processor == PayoutAccountType.stripe,
                 Payout.created_at < utc_now() - delay,
-                Payout.status.not_in([PayoutStatus.canceled, PayoutStatus.succeeded]),
+                # Strictly `pending`: `held` payouts are not yet payable, so
+                # they must not be picked up by the hourly Stripe-transfer cron.
+                Payout.status == PayoutStatus.pending,
                 # Only include payouts that have no attempts yet
                 ~exists(
                     select(PayoutAttempt).where(PayoutAttempt.payout_id == Payout.id)

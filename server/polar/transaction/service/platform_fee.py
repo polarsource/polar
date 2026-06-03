@@ -8,7 +8,7 @@ from polar.account_credit.service import account_credit_service
 from polar.enums import PayoutAccountType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.logging import Logger
-from polar.models import Account, PayoutAccount, Transaction
+from polar.models import Account, Payout, PayoutAccount, Transaction
 from polar.models.transaction import PlatformFeeType, Processor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.fees.stripe import (
@@ -105,6 +105,33 @@ class PlatformFeeTransactionService(BaseTransactionService):
             payout_fees.append((PlatformFeeType.payout, payout_fee_amount))
 
         return payout_fees
+
+    async def create_payout_fees_reversal_balances(
+        self,
+        session: AsyncSession,
+        *,
+        payout: Payout,
+    ) -> list[tuple[Transaction, Transaction]]:
+        """Return the per-payout platform fees to the merchant's balance.
+
+        Used when canceling a payout that never ran its Stripe transfer (held,
+        or pending-before-transfer). Those fees were only reserved, never paid,
+        so we credit them back with the same fee type, which counts toward the
+        available balance immediately. Mirrors ``create_payout_fees_balances``.
+        """
+        account = payout.account
+        reversals: list[tuple[Transaction, Transaction]] = []
+        for fee_transaction in payout.fees_transactions:
+            # fee_transaction is the merchant-side debit (negative); credit it back.
+            reversal = await balance_transaction_service.create_balance(
+                session,
+                source_account=None,
+                destination_account=account,
+                amount=-fee_transaction.amount,
+                platform_fee_type=fee_transaction.platform_fee_type,
+            )
+            reversals.append(reversal)
+        return reversals
 
     async def create_payout_fees_balances(
         self,

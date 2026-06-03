@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
 from pydantic_core import PydanticCustomError
 from sqlalchemy import func, or_, select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from tagflow import attr, classes, tag, text
 
 from polar.enums import PayoutAccountType
@@ -538,6 +538,8 @@ async def cancel(
             joinedload(Payout.transactions).options(
                 joinedload(Transaction.account),
                 joinedload(Transaction.payout),
+                # So cancel() can reverse per-payout fees (held/untransferred).
+                selectinload(Transaction.incurred_transactions),
             ),
         ),
     )

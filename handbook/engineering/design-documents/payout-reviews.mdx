@@ -128,7 +128,7 @@ We do not enforce a single in-flight payout. The only limit is the 24h cooldown,
 
 ### Review-queue boost
 
-We add a new signal `has_held_payouts` to `review_priority.compute(...)`. The signal adds `+25` to the org's priority score per held payout. The boost is additive so an org with strong risk signals but no held payout can still outrank an org with one.
+We add a new signal `has_held_payouts` to `review_priority.compute(...)`. The signal adds a flat `+25` boost for having any held payout, regardless of count. The boost is additive so an org with strong risk signals but no held payout can still outrank an org with one.
 
 In addition, the backoffice payouts list gets a status badge for `held`, and the "Set Under Review" dialog bullet is rewritten from "Block payouts while the organization is under review" to represent the new behavior (it holds payouts, it does not block them).
 

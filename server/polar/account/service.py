@@ -6,6 +6,7 @@ from sqlalchemy.orm.strategy_options import joinedload
 
 from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
+from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.config import settings
 from polar.exceptions import PolarError
@@ -25,8 +26,12 @@ class AccountService:
         session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
+        *,
+        permission: OrganizationPermission | None = None,
     ) -> Account | None:
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=permission
+        )
         repository = AccountRepository.from_session(session)
         statement = (
             repository.get_statement_by_org_ids(org_ids)

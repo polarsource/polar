@@ -19,6 +19,8 @@ depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
+    # Ensures we don't break app by applying a deadlock-inducing migration
+    op.execute("SET LOCAL lock_timeout = '5s'")
     op.add_column(
         "subscriptions",
         sa.Column("organization_id", sa.Uuid(), nullable=True),
@@ -42,6 +44,8 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    # Ensures we don't break app by applying a deadlock-inducing migration
+    op.execute("SET LOCAL lock_timeout = '5s'")
     op.drop_constraint(
         op.f("subscriptions_organization_id_fkey"),
         "subscriptions",

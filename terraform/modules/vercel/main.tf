@@ -61,7 +61,7 @@ locals {
     { key = "POLAR_PREVIEW_ACCESS_TOKEN", value = var.secrets.polar_preview_access_token, target = ["preview"] },
   ]
 
-  environment_variables = concat(
+  managed_environment_variables = concat(
     [for env in local.shared_environment_variables : {
       key       = env.key
       value     = env.value
@@ -87,6 +87,9 @@ locals {
       sensitive = env.sensitive
     }],
   )
+
+  # A null value omits the env var (a typed config key can be left unset).
+  environment_variables = [for env in local.managed_environment_variables : env if env.value != null]
 }
 
 resource "vercel_project_environment_variables" "this" {

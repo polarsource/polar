@@ -11,7 +11,10 @@ from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.utils import utc_now
 from polar.models import User, UserOrganization
 from polar.models.user import IdentityVerificationStatus
-from polar.models.user_organization import OrganizationRole
+from polar.models.user_organization import (
+    OrganizationNotificationSettings,
+    OrganizationRole,
+)
 from polar.postgres import AsyncReadSession, AsyncSession, sql
 
 from .repository import UserOrganizationRepository
@@ -405,6 +408,22 @@ class UserOrganizationService:
             stmt = stmt.order_by(UserOrganization.created_at.asc())
 
         return stmt
+
+    async def update_notification_settings(
+        self,
+        session: AsyncSession,
+        *,
+        user_id: UUID,
+        organization_id: UUID,
+        notification_settings: OrganizationNotificationSettings,
+    ) -> UserOrganization:
+        """Update the current user's notification settings for an organization."""
+        user_org = await self.get_by_user_and_org(session, user_id, organization_id)
+        if user_org is None:
+            raise UserNotMemberOfOrganization(user_id, organization_id)
+
+        user_org.notification_settings = notification_settings
+        return user_org
 
 
 user_organization = UserOrganizationService()

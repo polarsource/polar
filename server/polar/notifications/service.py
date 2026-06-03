@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, TypeAdapter
@@ -75,8 +76,26 @@ class NotificationsService:
         org_id: UUID,
         notif: PartialNotification,
     ) -> None:
+        _SETTING_KEY: dict[
+            NotificationType, Literal["new_order", "new_subscription"]
+        ] = {
+            NotificationType.maintainer_new_product_sale: "new_order",
+            NotificationType.maintainer_new_paid_subscription: "new_subscription",
+        }
+        key = _SETTING_KEY.get(notif.type)
         members = await user_organization_service.list_by_org(session, org_id)
+
         for member in members:
+            if key is not None:
+                # TODO (maxime): default to organization settings is temporary while user level is Nullable.
+                # once backfill script ran and user level is non-nullable, we can remove the fallback to organization settings.
+                settings = (
+                    member.notification_settings
+                    or member.organization.notification_settings
+                )
+                if not settings[key]:
+                    continue
+
             await self.send_to_user(
                 session=session,
                 user_id=member.user_id,

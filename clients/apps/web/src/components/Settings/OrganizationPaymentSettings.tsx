@@ -25,6 +25,7 @@ import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationPaymentSettingsProps {
   organization: schemas['Organization']
+  readOnly: boolean
 }
 
 type FormSchema = Pick<
@@ -43,7 +44,7 @@ const taxBehaviorOptionDisplayNames: Record<
 
 const OrganizationPaymentSettings: React.FC<
   OrganizationPaymentSettingsProps
-> = ({ organization: _organization }) => {
+> = ({ organization: _organization, readOnly }) => {
   const organization = _organization as schemas['Organization'] & {
     default_presentment_currency: schemas['PresentmentCurrency']
   }
@@ -103,6 +104,7 @@ const OrganizationPaymentSettings: React.FC<
                 <FormItem>
                   <FormControl>
                     <CurrencySelector
+                      disabled={readOnly}
                       value={field.value as schemas['PresentmentCurrency']}
                       onChange={field.onChange}
                     />
@@ -123,6 +125,7 @@ const OrganizationPaymentSettings: React.FC<
                 <FormItem>
                   <FormControl>
                     <Select
+                      disabled={readOnly}
                       onValueChange={field.onChange}
                       defaultValue={field.value || undefined}
                     >

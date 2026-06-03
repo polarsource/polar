@@ -60,6 +60,7 @@ import {
 interface OrganizationDetailsFormProps {
   organization: schemas['Organization']
   inKYCMode: boolean
+  readOnly: boolean
 }
 
 const SwitchingFromOptions = {
@@ -88,10 +89,12 @@ const SOCIAL_PLATFORM_DOMAINS: Record<string, string> = {
 
 interface OrganizationSocialLinksProps {
   required?: boolean
+  readOnly: boolean
 }
 
 const OrganizationSocialLinks = ({
   required,
+  readOnly,
 }: OrganizationSocialLinksProps) => {
   const { control, formState } = useFormContext<schemas['OrganizationUpdate']>()
 
@@ -175,31 +178,48 @@ const OrganizationSocialLinks = ({
                   }
                   placeholder="https://"
                   className="flex-1"
+                  disabled={readOnly}
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    field.onChange(socials.filter((_, i) => i !== index))
-                  }}
-                  className="dark:text-polar-400 text-gray-400 hover:text-gray-600"
+                <span
+                  className={twMerge(
+                    'inline-flex',
+                    readOnly && 'cursor-not-allowed',
+                  )}
                 >
-                  <CloseOutlined fontSize="small" />
-                </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={readOnly}
+                    onClick={() => {
+                      field.onChange(socials.filter((_, i) => i !== index))
+                    }}
+                    className="dark:text-polar-400 text-gray-400 hover:text-gray-600"
+                  >
+                    <CloseOutlined fontSize="small" />
+                  </Button>
+                </span>
               </div>
             ))}
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                field.onChange([...socials, { platform: 'other', url: '' }])
-              }}
+            <span
+              className={twMerge(
+                'inline-block',
+                readOnly && 'cursor-not-allowed',
+              )}
             >
-              <AddOutlined fontSize="small" className="mr-1" />
-              Add Social
-            </Button>
+              <Button
+                type="button"
+                disabled={readOnly}
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  field.onChange([...socials, { platform: 'other', url: '' }])
+                }}
+              >
+                <AddOutlined fontSize="small" className="mr-1" />
+                Add Social
+              </Button>
+            </span>
             {showError && (
               <p className="text-destructive text-sm font-medium">
                 At least one social media link is required
@@ -232,6 +252,7 @@ const CompactTextArea = ({
 const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
   organization,
   inKYCMode,
+  readOnly,
 }) => {
   const { control, setError, setValue } =
     useFormContext<schemas['OrganizationUpdate']>()
@@ -273,6 +294,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
     onFilesUpdated,
     onFilesRejected,
     initialFiles: [],
+    disabled: readOnly,
   })
 
   return (
@@ -290,7 +312,8 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                   <div
                     {...getRootProps()}
                     className={twMerge(
-                      'relative cursor-pointer',
+                      'relative',
+                      readOnly ? 'cursor-not-allowed' : 'cursor-pointer',
                       isDragActive && 'opacity-50',
                     )}
                   >
@@ -298,11 +321,16 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                     <Avatar
                       avatar_url={avatarURL ?? ''}
                       name={name ?? ''}
-                      className="h-10 w-10 transition-opacity hover:opacity-75"
+                      className={twMerge(
+                        'h-10 w-10 transition-opacity',
+                        !readOnly && 'hover:opacity-75',
+                      )}
                     />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
-                      <AddPhotoAlternateOutlined className="dark:text-polar-400 text-gray-600" />
-                    </div>
+                    {!readOnly && (
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
+                        <AddPhotoAlternateOutlined className="dark:text-polar-400 text-gray-600" />
+                      </div>
+                    )}
                   </div>
                   <FormMessage className="mt-2 text-xs/snug" />
                 </div>
@@ -330,6 +358,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                       {...field}
                       value={field.value || ''}
                       placeholder="Acme Inc"
+                      disabled={readOnly}
                     />
                     <FormMessage />
                   </div>
@@ -353,6 +382,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                   }
                   onChange={field.onChange as (value: string) => void}
                   placeholder="Select country"
+                  disabled={readOnly}
                 />
                 <FormMessage />
               </div>
@@ -387,6 +417,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                     type="url"
                     {...field}
                     value={field.value || ''}
+                    disabled={readOnly}
                     placeholder="https://acme.com"
                     onChange={(e) => {
                       let value = e.target.value
@@ -440,6 +471,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                   <Input
                     type="email"
                     {...field}
+                    disabled={readOnly}
                     value={field.value || ''}
                     placeholder="support@acme.com"
                   />
@@ -461,7 +493,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
               verification. They will never be shown publicly.
             </p>
           </div>
-          <OrganizationSocialLinks required={inKYCMode} />
+          <OrganizationSocialLinks required={inKYCMode} readOnly={readOnly} />
         </div>
       </div>
 
@@ -566,11 +598,12 @@ interface OrganizationProfileSettingsProps {
   organization: schemas['Organization']
   kyc?: boolean
   onSubmitted?: () => void
+  readOnly: boolean
 }
 
 const OrganizationProfileSettings: React.FC<
   OrganizationProfileSettingsProps
-> = ({ organization: _organization, kyc, onSubmitted }) => {
+> = ({ organization: _organization, kyc, onSubmitted, readOnly }) => {
   const organization = _organization as schemas['Organization'] & {
     default_presentment_currency: schemas['PresentmentCurrency']
     country?: schemas['CountryAlpha2Input']
@@ -782,6 +815,7 @@ const OrganizationProfileSettings: React.FC<
             <OrganizationDetailsForm
               organization={organization}
               inKYCMode={inKYCMode}
+              readOnly={readOnly}
             />
           </div>
 

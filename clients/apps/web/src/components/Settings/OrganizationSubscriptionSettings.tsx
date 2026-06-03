@@ -19,11 +19,12 @@ import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationSubscriptionSettingsProps {
   organization: schemas['Organization']
+  readOnly: boolean
 }
 
 const OrganizationSubscriptionSettings: React.FC<
   OrganizationSubscriptionSettingsProps
-> = ({ organization }) => {
+> = ({ organization, readOnly }) => {
   const form = useForm<schemas['OrganizationSubscriptionSettings']>({
     defaultValues: organization.subscription_settings,
   })
@@ -84,6 +85,7 @@ const OrganizationSubscriptionSettings: React.FC<
                   <FormControl>
                     <Switch
                       checked={field.value}
+                      disabled={readOnly}
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>
@@ -108,6 +110,7 @@ const OrganizationSubscriptionSettings: React.FC<
                       organization={organization}
                       value={field.value}
                       onValueChange={field.onChange}
+                      disabled={readOnly}
                     />
                   </FormControl>
                   <FormMessage />
@@ -128,6 +131,7 @@ const OrganizationSubscriptionSettings: React.FC<
                   <FormControl>
                     <BenefitRevocationGracePeriod
                       value={field.value}
+                      disabled={readOnly}
                       onValueChange={(value) => field.onChange(Number(value))}
                     />
                   </FormControl>
@@ -149,6 +153,7 @@ const OrganizationSubscriptionSettings: React.FC<
                   <FormControl>
                     <Switch
                       checked={field.value}
+                      disabled={readOnly}
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>

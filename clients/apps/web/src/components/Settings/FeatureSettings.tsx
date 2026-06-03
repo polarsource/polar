@@ -14,8 +14,10 @@ import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 export default function FeatureSettings({
   organization,
+  readOnly,
 }: {
   organization: schemas['Organization']
+  readOnly: boolean
 }) {
   const form = useForm<schemas['OrganizationFeatureSettings']>({
     defaultValues: organization.feature_settings || {},
@@ -105,6 +107,7 @@ export default function FeatureSettings({
                 return (
                   <Switch
                     checked={field.value}
+                    disabled={readOnly}
                     onCheckedChange={(enabled) => field.onChange(enabled)}
                   />
                 )
@@ -128,7 +131,9 @@ export default function FeatureSettings({
                 return (
                   <Switch
                     checked={field.value}
-                    disabled={!memberModelEnabled || seatBasedAlreadyEnabled}
+                    disabled={
+                      readOnly || !memberModelEnabled || seatBasedAlreadyEnabled
+                    }
                     onCheckedChange={() => {
                       setShowSeatBasedModal(true)
                     }}

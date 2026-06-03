@@ -8,6 +8,7 @@ from pydantic import (
     Field,
     computed_field,
     field_serializer,
+    field_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
 
@@ -295,10 +296,9 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
         "Must belong to the order's organization."
     )
     product_id: UUID4 = Field(
-        description="The ID of the one-time, fixed-price product to charge for. "
+        description="The ID of the one-time product to charge for. "
         "Must belong to the order's organization. "
-        "Subscription, seat-based, and pay-what-you-want products are not "
-        "supported."
+        "Only fixed-price and free products are supported."
     )
     currency: str | None = Field(
         None,
@@ -309,6 +309,33 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
             "organization's default currency."
         ),
     )
+    amount: int | None = Field(
+        None,
+        ge=0,
+        description=(
+            "A custom amount to charge, in the smallest currency unit. Overrides "
+            "the product's price; defaults to the product's configured price "
+            "(0 for free products). A positive amount must be at least the "
+            "currency's minimum."
+        ),
+    )
+    description: str | None = Field(
+        None,
+        max_length=500,
+        description=(
+            "A custom description for the order's line item, shown on the "
+            "invoice and receipt (e.g. `5,000 tokens`). Defaults to the "
+            "product name."
+        ),
+    )
+
+    @field_validator("description")
+    @classmethod
+    def strip_description(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        return value or None
 
 
 class OrderUpdateBase(Schema):

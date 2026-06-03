@@ -1369,11 +1369,16 @@ class CheckoutService:
                 if already_claimed:
                     return
 
+        # Team customers can have no email of their own; in that case the
+        # checkout's customer_email was backfilled from the owner member earlier
+        # in the confirmation flow, so prefer that as the claim target.
+        email = container.customer.email or checkout.customer_email
+
         try:
             await seat_service.assign_seat(
                 session,
                 container,
-                email=container.customer.email,
+                email=email,
                 immediate_claim=True,
             )
         except Exception as e:

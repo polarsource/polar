@@ -14914,6 +14914,12 @@ export interface components {
        * @example John Doe
        */
       name: string | null
+      /**
+       * Billing Name
+       * @description The name that should appear on the customer's invoices. Falls back to the customer name when not explicitly set.
+       * @example John Doe
+       */
+      billing_name: string | null
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
@@ -16463,6 +16469,12 @@ export interface components {
        * @example John Doe
        */
       name: string | null
+      /**
+       * Billing Name
+       * @description The name that should appear on the customer's invoices. Falls back to the customer name when not explicitly set.
+       * @example John Doe
+       */
+      billing_name: string | null
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
@@ -16780,6 +16792,12 @@ export interface components {
        * @example John Doe
        */
       name: string | null
+      /**
+       * Billing Name
+       * @description The name that should appear on the customer's invoices. Falls back to the customer name when not explicitly set.
+       * @example John Doe
+       */
+      billing_name: string | null
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
@@ -17248,6 +17266,12 @@ export interface components {
        * @example John Doe
        */
       name: string | null
+      /**
+       * Billing Name
+       * @description The name that should appear on the customer's invoices. Falls back to the customer name when not explicitly set.
+       * @example John Doe
+       */
+      billing_name: string | null
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
@@ -19973,6 +19997,12 @@ export interface components {
        * @example John Doe
        */
       name: string | null
+      /**
+       * Billing Name
+       * @description The name that should appear on the customer's invoices. Falls back to the customer name when not explicitly set.
+       * @example John Doe
+       */
+      billing_name: string | null
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
@@ -22341,6 +22371,12 @@ export interface components {
        * @example John Doe
        */
       name: string | null
+      /**
+       * Billing Name
+       * @description The name that should appear on the customer's invoices. Falls back to the customer name when not explicitly set.
+       * @example John Doe
+       */
+      billing_name: string | null
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
@@ -29418,6 +29454,12 @@ export interface components {
        * @example John Doe
        */
       name: string | null
+      /**
+       * Billing Name
+       * @description The name that should appear on the customer's invoices. Falls back to the customer name when not explicitly set.
+       * @example John Doe
+       */
+      billing_name: string | null
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null

@@ -4,6 +4,7 @@ from fastapi import Depends, Query
 from pydantic import UUID4
 
 from polar.account.service import account as account_service
+from polar.auth.permission import OrganizationPermission
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
@@ -67,7 +68,12 @@ async def get_summary(
     account_id: UUID4,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> TransactionsSummary:
-    account = await account_service.get(session, auth_subject, account_id)
+    account = await account_service.get(
+        session,
+        auth_subject,
+        account_id,
+        permission=OrganizationPermission.finance_read,
+    )
     if account is None:
         raise ResourceNotFound()
 

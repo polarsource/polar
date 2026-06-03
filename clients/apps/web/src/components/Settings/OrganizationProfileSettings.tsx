@@ -192,18 +192,25 @@ const OrganizationSocialLinks = ({
                 </Button>
               </div>
             ))}
-            <Button
-              type="button"
-              disabled={readOnly}
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                field.onChange([...socials, { platform: 'other', url: '' }])
-              }}
+            <span
+              className={twMerge(
+                'inline-block',
+                readOnly && 'cursor-not-allowed',
+              )}
             >
-              <AddOutlined fontSize="small" className="mr-1" />
-              Add Social
-            </Button>
+              <Button
+                type="button"
+                disabled={readOnly}
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  field.onChange([...socials, { platform: 'other', url: '' }])
+                }}
+              >
+                <AddOutlined fontSize="small" className="mr-1" />
+                Add Social
+              </Button>
+            </span>
             {showError && (
               <p className="text-destructive text-sm font-medium">
                 At least one social media link is required

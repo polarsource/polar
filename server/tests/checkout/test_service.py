@@ -6065,16 +6065,56 @@ class TestHandleSuccess:
             immediate_claim=True,
         )
 
-    async def test_seat_based_one_time_repeat_purchase_does_not_reclaim(
+    async def test_seat_based_one_time_multi_seat_first_purchase_auto_claims_via_handle_success(
         self,
         save_fixture: SaveFixture,
+        order_service_mock: MagicMock,
         seat_service_mock: MagicMock,
         session: AsyncSession,
         product_one_time_seat_based: Product,
         customer: Customer,
     ) -> None:
-        # An earlier one-time purchase already auto-claimed a seat for this
-        # buyer on its own order.
+        # Exercise the public ``handle_success`` entry point (not the private
+        # ``_maybe_auto_claim_buyer_seat`` helper directly) so we verify the
+        # one-time Order minted inside ``handle_success`` is correctly wired
+        # into the auto-claim helper for a multi-seat purchase.
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time_seat_based],
+            status=CheckoutStatus.confirmed,
+            seats=3,
+        )
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product_one_time_seat_based,
+            status=OrderStatus.paid,
+        )
+        order_service_mock.create_from_checkout_one_time.return_value = order
+
+        await checkout_service.handle_success(session, checkout)
+
+        # A single seat is claimed for the buyer; the remaining seats stay
+        # available for them to invite teammates.
+        seat_service_mock.assign_seat.assert_called_once_with(
+            ANY,
+            order,
+            email=customer.email,
+            immediate_claim=True,
+        )
+
+    async def test_seat_based_one_time_repeat_purchase_does_not_reclaim_via_handle_success(
+        self,
+        save_fixture: SaveFixture,
+        order_service_mock: MagicMock,
+        seat_service_mock: MagicMock,
+        session: AsyncSession,
+        product_one_time_seat_based: Product,
+        customer: Customer,
+    ) -> None:
+        # As above, drive the public ``handle_success`` entry point so the
+        # repeat-purchase guard inside ``_maybe_auto_claim_buyer_seat`` sees the
+        # freshly minted one-time Order.
         previous_order = await create_order(
             save_fixture,
             customer=customer,
@@ -6089,12 +6129,11 @@ class TestHandleSuccess:
             email=customer.email,
         )
 
-        # The buyer purchases the same product again, minting a fresh order.
         checkout = await create_checkout(
             save_fixture,
             products=[product_one_time_seat_based],
             status=CheckoutStatus.confirmed,
-            seats=1,
+            seats=3,
         )
         order = await create_order(
             save_fixture,
@@ -6102,10 +6141,9 @@ class TestHandleSuccess:
             product=product_one_time_seat_based,
             status=OrderStatus.paid,
         )
+        order_service_mock.create_from_checkout_one_time.return_value = order
 
-        await checkout_service._maybe_auto_claim_buyer_seat(
-            session, checkout, None, order
-        )
+        await checkout_service.handle_success(session, checkout)
 
         seat_service_mock.assign_seat.assert_not_called()
 

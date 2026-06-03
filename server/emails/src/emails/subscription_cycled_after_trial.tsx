@@ -1,11 +1,13 @@
 import {
   Button,
   Divider,
+  EmailLink,
   FooterCustomer,
+  Intro,
+  Text,
   WrapperOrganization,
-} from '../components/layout'
+} from '../components/foundation'
 import OrderSummary from '../components/OrderSummary'
-import { EmailLink, Intro, Text } from '../components/text'
 import { order, organization, product } from '../preview'
 import type { schemas } from '../types'
 

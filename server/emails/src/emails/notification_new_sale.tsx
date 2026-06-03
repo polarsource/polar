@@ -1,6 +1,5 @@
-import { Button, Footer, WrapperPolar } from '../components/layout'
+import { Button, Footer, Text, WrapperPolar } from '../components/foundation'
 import SaleSummary from '../components/SaleSummary'
-import { Text } from '../components/text'
 import type { schemas } from '../types'
 
 export function NotificationNewSale({

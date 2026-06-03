@@ -1,4 +1,4 @@
-import { Button as ReactEmailButton } from 'react-email'
+import { Button as ReactEmailButton, Section } from 'react-email'
 
 interface ButtonProps {
   href: string
@@ -14,12 +14,14 @@ export function Button({ href, children, variant = 'primary' }: ButtonProps) {
   }
 
   return (
-    <ReactEmailButton
-      href={href}
-      className={`block rounded-full px-[18px] py-[10px] text-center text-base font-medium text-white no-underline ${variantClasses[variant]}`}
-    >
-      {children}
-    </ReactEmailButton>
+    <Section className="my-[32px] text-center">
+      <ReactEmailButton
+        href={href}
+        className={`block rounded-full px-[18px] py-[10px] text-center text-base font-medium text-white no-underline ${variantClasses[variant]}`}
+      >
+        {children}
+      </ReactEmailButton>
+    </Section>
   )
 }
 

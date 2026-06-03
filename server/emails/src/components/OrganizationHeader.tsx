@@ -1,5 +1,6 @@
-import { Column, Img, Link, Row, Section, Text } from 'react-email'
+import { Column, Img, Link, Row, Section } from 'react-email'
 import type { schemas } from '../types'
+import { Text } from './foundation'
 
 const S3_TO_CDN: Record<string, string> = {
   'polar-public-files.s3.amazonaws.com': 'uploads.polar.sh',
@@ -46,8 +47,8 @@ const Header = ({ organization }: HeaderProps) => (
             />
           </Column>
         )}
-        <Column>
-          <Text className="my-0 text-lg font-bold text-gray-900">
+        <Column className="text-gray-900">
+          <Text variant="lead" weight="bold" noMargin>
             {organization.name}
           </Text>
         </Column>

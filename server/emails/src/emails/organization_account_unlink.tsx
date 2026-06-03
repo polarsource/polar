@@ -1,6 +1,5 @@
+import { Footer, Intro, Text, WrapperPolar } from '../components/foundation'
 import AccountUnlinkDetails from '../components/AccountUnlinkDetails'
-import { Footer, WrapperPolar } from '../components/layout'
-import { Intro, Text } from '../components/text'
 import type { schemas } from '../types'
 
 export function OrganizationAccountUnlink({

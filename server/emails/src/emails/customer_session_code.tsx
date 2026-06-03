@@ -1,6 +1,11 @@
-import { FooterCustomer, WrapperOrganization } from '../components/layout'
+import {
+  EmailLink,
+  FooterCustomer,
+  Intro,
+  Text,
+  WrapperOrganization,
+} from '../components/foundation'
 import OTPCode from '../components/OTPCode'
-import { EmailLink, Intro, Text } from '../components/text'
 import { organization } from '../preview'
 import type { schemas } from '../types'
 

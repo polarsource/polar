@@ -103,13 +103,22 @@ class StartupProgramService:
         # ``organization_id`` is intentionally omitted: ``POLAR_ACCESS_TOKEN``
         # is an organization-scoped token, and the API rejects any explicit
         # ``organization_id`` on the request when that's the case.
+        #
+        # ``products`` is intentionally omitted (no product constraint). A
+        # product-scoped discount can only be attached to a subscription once
+        # it's already on that product, which forces us to switch the product
+        # first and apply the discount after — so the proration computed at
+        # the switch misses the discount. Leaving the discount unscoped lets
+        # us attach it before the product change so proration is correct.
+        # Redemption is still bounded by ``max_redemptions`` and the discount
+        # is customer-specific via metadata.
         discount = await client.create_percentage_discount(
             name=self._discount_name(organization),
             basis_points=DISCOUNT_BASIS_POINTS,
             duration=DiscountDuration.REPEATING,
             duration_in_months=DISCOUNT_DURATION_IN_MONTHS,
             max_redemptions=DISCOUNT_MAX_REDEMPTIONS,
-            products=[settings.POLAR_SCALE_PRODUCT_ID],
+            products=None,
             metadata={
                 DISCOUNT_TAG_KEY: "true",
                 "customer_id": customer.id,

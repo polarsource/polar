@@ -123,7 +123,10 @@ class TestMarkInvited:
         assert create_kwargs["basis_points"] == DISCOUNT_BASIS_POINTS
         assert create_kwargs["duration_in_months"] == DISCOUNT_DURATION_IN_MONTHS
         assert create_kwargs["max_redemptions"] == DISCOUNT_MAX_REDEMPTIONS
-        assert create_kwargs["products"] == [SCALE_PRODUCT_ID]
+        # No product constraint: the discount must be attachable to a
+        # subscription before its product is switched to Scale, so proration
+        # at the switch reflects the discount.
+        assert create_kwargs["products"] is None
         # POLAR_ACCESS_TOKEN is organization-scoped, so the API rejects any
         # explicit organization_id on the request.
         assert "organization_id" not in create_kwargs

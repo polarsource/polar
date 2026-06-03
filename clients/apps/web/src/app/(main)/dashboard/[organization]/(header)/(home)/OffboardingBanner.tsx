@@ -32,7 +32,7 @@ export const OffboardingBanner = ({ organization }: OffboardingBannerProps) => {
         </Box>
       </Box>
       <Link href={`/dashboard/${organization.slug}/finance/account`}>
-        <Button>Learn More</Button>
+        <Button variant="secondary">Learn More</Button>
       </Link>
     </Box>
   )

@@ -1,10 +1,11 @@
-/* eslint-disable no-restricted-imports, email-ds/no-classname */
-import { Hr, Link, Preview, Section } from 'react-email'
-import Button from '../components/Button'
-import FooterCustomer from '../components/FooterCustomer'
-import Intro from '../components/Intro'
+import {
+  Button,
+  Divider,
+  FooterCustomer,
+  WrapperOrganization,
+} from '../components/layout'
 import OrderSummary from '../components/OrderSummary'
-import WrapperOrganization from '../components/WrapperOrganization'
+import { EmailLink, Intro, Text } from '../components/text'
 import { order, organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -16,26 +17,27 @@ export function SubscriptionCycledAfterTrial({
   url,
 }: schemas['SubscriptionCycledAfterTrialProps']) {
   return (
-    <WrapperOrganization organization={organization}>
-      <Preview>Your {product.name} trial ended</Preview>
+    <WrapperOrganization
+      organization={organization}
+      preview={`Your ${product.name} trial ended`}
+    >
       <Intro headline="Your trial has ended">
-        Your <span className="font-medium">{product.name}</span> trial is over
-        and your subscription is now active. Your first invoice is attached.
+        Your{' '}
+        <Text as="span" weight="medium">
+          {product.name}
+        </Text>{' '}
+        trial is over and your subscription is now active. Your first invoice is
+        attached.
         {order.receipt_number && (
           <>
             {' '}
             You can find your receipt in the{' '}
-            <Link href={url} className="text-blue-600 underline">
-              Customer Portal
-            </Link>
-            .
+            <EmailLink href={url}>Customer Portal</EmailLink>.
           </>
         )}
       </Intro>
-      <Section className="my-8 text-center">
-        <Button href={url}>Manage subscription</Button>
-      </Section>
-      <Hr />
+      <Button href={url}>Manage subscription</Button>
+      <Divider />
       <OrderSummary order={order} />
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>

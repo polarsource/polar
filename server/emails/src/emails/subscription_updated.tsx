@@ -1,11 +1,12 @@
-/* eslint-disable no-restricted-imports, email-ds/no-classname */
-import { Hr, Preview, Section } from 'react-email'
 import Benefits from '../components/Benefits'
-import Button from '../components/Button'
-import FooterCustomer from '../components/FooterCustomer'
-import Intro from '../components/Intro'
+import {
+  Button,
+  Divider,
+  FooterCustomer,
+  WrapperOrganization,
+} from '../components/layout'
 import OrderSummary from '../components/OrderSummary'
-import WrapperOrganization from '../components/WrapperOrganization'
+import { Intro } from '../components/text'
 import { order, organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -17,8 +18,10 @@ export function SubscriptionUpdated({
   url,
 }: schemas['SubscriptionUpdatedProps']) {
   return (
-    <WrapperOrganization organization={organization}>
-      <Preview>You&rsquo;re now subscribed to {product.name}</Preview>
+    <WrapperOrganization
+      organization={organization}
+      preview={`You're now subscribed to ${product.name}`}
+    >
       <Intro headline={`You're now subscribed to ${product.name}`}>
         This change is effective immediately and you'll be billed at your new
         rate going forward.{' '}
@@ -29,13 +32,9 @@ export function SubscriptionUpdated({
         )}
       </Intro>
       {product.benefits.length > 0 && <Benefits benefits={product.benefits} />}
-      <Section className="my-8 text-center">
-        <Button href={url}>View subscription</Button>
-      </Section>
-      <Hr />
-
+      <Button href={url}>View subscription</Button>
+      <Divider />
       {order ? <OrderSummary order={order} /> : null}
-
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
   )

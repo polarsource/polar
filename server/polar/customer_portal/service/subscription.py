@@ -118,6 +118,8 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         session: AsyncSession,
         auth_subject: AuthSubject[Customer | Member],
         id: uuid.UUID,
+        *,
+        for_update: bool = False,
     ) -> Subscription | None:
         statement = (
             self._get_readable_subscription_statement(auth_subject)
@@ -132,6 +134,9 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                 joinedload(Subscription.pending_update),
             )
         )
+
+        if for_update:
+            statement = statement.with_for_update(of=Subscription)
 
         result = await session.execute(statement)
         return result.scalar_one_or_none()

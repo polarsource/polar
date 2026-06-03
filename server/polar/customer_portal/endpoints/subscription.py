@@ -8,7 +8,6 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
-from polar.locker import Locker, get_locker
 from polar.models import Subscription
 from polar.openapi import APITag
 from polar.order.service import PaymentFailed
@@ -160,11 +159,10 @@ async def update(
     subscription_update: CustomerSubscriptionUpdate,
     auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
-    locker: Locker = Depends(get_locker),
 ) -> Subscription:
     """Update a subscription of the authenticated customer."""
     subscription = await customer_subscription_service.get_by_id(
-        session, auth_subject, id
+        session, auth_subject, id, for_update=True
     )
 
     if subscription is None:
@@ -176,10 +174,9 @@ async def update(
         updates=subscription_update.model_dump(exclude_unset=True),
         **get_audit_context(auth_subject),
     )
-    async with subscription_service.lock(locker, subscription):
-        return await customer_subscription_service.update(
-            session, subscription, updates=subscription_update
-        )
+    return await customer_subscription_service.update(
+        session, subscription, updates=subscription_update
+    )
 
 
 @router.delete(
@@ -203,11 +200,10 @@ async def cancel(
     id: SubscriptionID,
     auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
-    locker: Locker = Depends(get_locker),
 ) -> Subscription:
     """Cancel a subscription of the authenticated customer."""
     subscription = await customer_subscription_service.get_by_id(
-        session, auth_subject, id
+        session, auth_subject, id, for_update=True
     )
 
     if subscription is None:
@@ -218,5 +214,4 @@ async def cancel(
         subscription_id=id,
         **get_audit_context(auth_subject),
     )
-    async with subscription_service.lock(locker, subscription):
-        return await customer_subscription_service.cancel(session, subscription)
+    return await customer_subscription_service.cancel(session, subscription)

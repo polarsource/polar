@@ -13,7 +13,6 @@ from polar.kit.csv import IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
-from polar.locker import Locker, get_locker
 from polar.models import Subscription
 from polar.models.subscription import CustomerCancellationReason
 from polar.openapi import APITag
@@ -303,10 +302,11 @@ async def update(
     subscription_update: SubscriptionUpdate,
     auth_subject: auth.SubscriptionsWrite,
     session: AsyncSession = Depends(get_db_session),
-    locker: Locker = Depends(get_locker),
 ) -> Subscription:
     """Update a subscription."""
-    subscription = await subscription_service.get(session, auth_subject, id)
+    subscription = await subscription_service.get(
+        session, auth_subject, id, for_update=True
+    )
     if subscription is None:
         raise ResourceNotFound()
 
@@ -323,10 +323,9 @@ async def update(
         customer_id=auth_subject.subject.id,
         updates=subscription_update,
     )
-    async with subscription_service.lock(locker, subscription):
-        return await subscription_service.update(
-            session, locker, subscription, update=subscription_update
-        )
+    return await subscription_service.update(
+        session, subscription, update=subscription_update
+    )
 
 
 @router.delete(
@@ -350,10 +349,11 @@ async def revoke(
     id: SubscriptionID,
     auth_subject: auth.SubscriptionsWrite,
     session: AsyncSession = Depends(get_db_session),
-    locker: Locker = Depends(get_locker),
 ) -> Subscription:
     """Revoke a subscription, i.e cancel immediately."""
-    subscription = await subscription_service.get(session, auth_subject, id)
+    subscription = await subscription_service.get(
+        session, auth_subject, id, for_update=True
+    )
     if subscription is None:
         raise ResourceNotFound()
 
@@ -367,5 +367,4 @@ async def revoke(
     log.info(
         "subscription.revoke", id=id, admin_id=auth_subject.subject.id, immediate=True
     )
-    async with subscription_service.lock(locker, subscription):
-        return await subscription_service.revoke(session, subscription)
+    return await subscription_service.revoke(session, subscription)

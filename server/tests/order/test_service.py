@@ -67,6 +67,7 @@ from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.models.wallet import WalletType
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.schemas import OrderCreate, OrderUpdate
 from polar.order.service import (
     ManualRetryLimitExceeded,
@@ -5238,6 +5239,28 @@ class TestCreateDraftOrder:
         assert order.checkout_id is None
         assert order.subtotal_amount > 0
         assert len(order.items) >= 1
+
+    async def test_fires_order_created_webhook(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        send_webhook_mock = mocker.patch.object(order_service, "send_webhook")
+
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+        )
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+
+        send_webhook_mock.assert_awaited_once_with(
+            session, order, WebhookEventType.order_created
+        )
 
     async def test_multi_currency_falls_back_to_org_default(
         self,

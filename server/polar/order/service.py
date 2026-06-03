@@ -1104,6 +1104,13 @@ class OrderService:
             flush=True,
         )
 
+        # Fire the `order.created` webhook so merchants are notified about the
+        # draft. We deliberately don't route through `_on_order_created`: a draft
+        # isn't charged yet, so the customer-facing confirmation email it
+        # enqueues would be premature. The `order.paid`/`order.updated` events
+        # are emitted later by finalize_order once the charge settles.
+        await self.send_webhook(session, order, WebhookEventType.order_created)
+
         return order
 
     async def finalize_order(

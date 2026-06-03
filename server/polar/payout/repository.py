@@ -47,6 +47,23 @@ class PayoutRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_by_id_for_update(
+        self, id: UUID, *, options: Options = ()
+    ) -> Payout | None:
+        """Get a payout by ID with a FOR UPDATE lock on the payout row.
+
+        Locks only the payout row (``OF payouts``) so eager-loading joins don't
+        try to lock the joined rows. Blocks until any concurrent holder (e.g.
+        cancel()) releases, so the transfer serializes against cancellation.
+        """
+        statement = (
+            self.get_base_statement()
+            .where(Payout.id == id)
+            .options(*options)
+            .with_for_update(of=Payout)
+        )
+        return await self.get_one_or_none(statement)
+
     async def count_pending_by_payout_account(self, payout_account_id: UUID) -> int:
         statement = self.get_base_statement().where(
             Payout.payout_account_id == payout_account_id,

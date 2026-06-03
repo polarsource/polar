@@ -42,17 +42,16 @@ async def payout_created(payout_id: uuid.UUID) -> None:
 async def payout_transfer(payout_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = PayoutRepository(session)
-        payout = await repository.get_by_id(
+        # Lock the payout row up front: a queued transfer can race a cancel
+        # (deny/block/backoffice) and would otherwise pay out a payout the ledger
+        # already reversed. FOR UPDATE serializes with cancel(), which locks the
+        # same row.
+        payout = await repository.get_by_id_for_update(
             payout_id, options=repository.get_eager_options()
         )
         if payout is None:
             raise PayoutDoesNotExist(payout_id)
 
-        # Lock + re-read status before handing off: a queued transfer can race a
-        # cancel (deny/block/backoffice) and would otherwise pay out a payout the
-        # ledger already reversed. The FOR UPDATE serializes with cancel(), which
-        # takes the same lock.
-        await session.refresh(payout, attribute_names=["status"], with_for_update=True)
         await payout_service.transfer(session, payout)
 
 

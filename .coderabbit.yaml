@@ -9,13 +9,11 @@ reviews:
   # Keep reviews advisory; CodeRabbit comments but does not block merges.
   request_changes_workflow: false
   high_level_summary: true
-  review_status: true
+  review_status: false
   collapse_walkthrough: true
   poem: false
   # Stop spending review cycles on PRs that get closed mid-review.
   abort_on_close: true
-
-  review_status: false
 
   auto_review:
     # Disabled: CodeRabbit no longer reviews PRs automatically.

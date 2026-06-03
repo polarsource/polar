@@ -84,8 +84,8 @@ export default function ClientPage({
 
         <Section id="account-notifications">
           <SectionDescription
-            title="Your notifications"
-            description="Choose which account and product activity emails you receive as a member of this organization."
+            title="Account notifications"
+            description="Emails sent to members of your organization for account and product activity"
           />
           <OrganizationNotificationSettings organization={org} />
         </Section>
@@ -118,7 +118,11 @@ export default function ClientPage({
             title="Danger Zone"
             description="Irreversible actions for this organization"
           />
-          <OrganizationDeleteSettings organization={org} />
+          {canManageOrganization === false ? (
+            <AccessRestricted message="You don't have permission to delete this organization." />
+          ) : (
+            <OrganizationDeleteSettings organization={org} />
+          )}
         </Section>
       </div>
     </DashboardBody>

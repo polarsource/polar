@@ -268,14 +268,6 @@ class PolarSelfService:
         existing = await client.get_active_subscription(
             external_customer_id=str(organization_id)
         )
-        # Discounts are scoped to a specific product. When switching the
-        # active subscription's product via a fresh checkout, the previous
-        # discount must be cleared first — otherwise the API rejects the
-        # checkout because the discount no longer applies.
-        if existing is not None and existing.discount_id is not None:
-            existing = await client.update_subscription_discount(
-                subscription_id=existing.id, discount_id=None
-            )
         # Auto-apply the Startup Program discount when an eligible organization
         # checks out the Scale plan.
         discount_id = await startup_program_service.resolve_checkout_discount_id(

@@ -2,7 +2,7 @@
 #
 # One Vercel project per environment (production, sandbox), its custom domains
 # and its environment variables. Env vars are managed via the dedicated
-# vercel_project_environment_variables resource, so the project's inline
+# vercel_project_environment_variable resources, so the project's inline
 # `environment` is intentionally left unmanaged (see lifecycle below).
 
 resource "vercel_project" "this" {
@@ -27,7 +27,7 @@ resource "vercel_project" "this" {
   }
 
   lifecycle {
-    # Environment variables are owned by vercel_project_environment_variables.
+    # Environment variables are owned by vercel_project_environment_variable resources.
     ignore_changes = [environment]
   }
 }
@@ -58,13 +58,13 @@ locals {
     { key = "ENABLE_EXPERIMENTAL_COREPACK", value = var.config.enable_experimental_corepack },
   ]
 
-  # Secrets present in every environment; targets baked per key.
+  # Secrets present in every environment.
   secret_environment_variables = [
-    { key = "PYDANTIC_AI_GATEWAY_API_KEY", value = var.secrets.pydantic_ai_gateway_api_key, target = ["production", "preview"] },
-    { key = "MINTLIFY_ASSISTANT_API_KEY", value = var.secrets.mintlify_assistant_api_key, target = ["production", "preview"] },
-    { key = "GRAM_API_KEY", value = var.secrets.gram_api_key, target = ["production", "preview"] },
-    { key = "SENTRY_AUTH_TOKEN", value = var.secrets.sentry_auth_token, target = ["production", "preview"] },
-    { key = "POLAR_PREVIEW_ACCESS_TOKEN", value = var.secrets.polar_preview_access_token, target = ["preview"] },
+    { key = "PYDANTIC_AI_GATEWAY_API_KEY", value = var.secrets.pydantic_ai_gateway_api_key, target = ["production", "preview"], sensitive = true },
+    { key = "MINTLIFY_ASSISTANT_API_KEY", value = var.secrets.mintlify_assistant_api_key, target = ["production", "preview"], sensitive = true },
+    { key = "GRAM_API_KEY", value = var.secrets.gram_api_key, target = ["production", "preview"], sensitive = false },
+    { key = "SENTRY_AUTH_TOKEN", value = var.secrets.sentry_auth_token, target = ["production", "preview"], sensitive = false },
+    { key = "POLAR_PREVIEW_ACCESS_TOKEN", value = var.secrets.polar_preview_access_token, target = ["preview"], sensitive = true },
   ]
 
   managed_environment_variables = concat(
@@ -84,7 +84,7 @@ locals {
       key       = env.key
       value     = env.value
       target    = toset(env.target)
-      sensitive = true
+      sensitive = env.sensitive
     }],
     [for env in var.environment_variables : {
       key       = env.key
@@ -94,13 +94,17 @@ locals {
     }],
   )
 
-  # A null value omits the env var (a typed config key can be left unset).
   environment_variables = [for env in local.managed_environment_variables : env if env.value != null]
 }
 
-resource "vercel_project_environment_variables" "this" {
+resource "vercel_project_environment_variable" "this" {
+  count = length(local.environment_variables)
+
   project_id = vercel_project.this.id
-  variables  = local.environment_variables
+  key        = local.environment_variables[count.index].key
+  value      = local.environment_variables[count.index].value
+  target     = local.environment_variables[count.index].target
+  sensitive  = local.environment_variables[count.index].sensitive
 }
 
 resource "vercel_project_domain" "this" {

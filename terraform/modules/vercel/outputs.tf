@@ -12,3 +12,6 @@ output "domains" {
   description = "Custom domains attached to the project"
   value       = [for domain in vercel_project_domain.this : domain.domain]
 }
+
+
+

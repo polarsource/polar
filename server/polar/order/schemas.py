@@ -5,10 +5,10 @@ from pydantic import (
     UUID4,
     AliasChoices,
     AliasPath,
+    BeforeValidator,
     Field,
     computed_field,
     field_serializer,
-    field_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
 
@@ -22,7 +22,13 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.address import Address, AddressInput
 from polar.kit.currency import format_currency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
-from polar.kit.schemas import IDSchema, MergeJSONSchema, Schema, TimestampedSchema
+from polar.kit.schemas import (
+    IDSchema,
+    MergeJSONSchema,
+    Schema,
+    TimestampedSchema,
+    empty_str_to_none,
+)
 from polar.models.order import (
     OrderBillingReason,
     OrderBillingReasonInternal,
@@ -319,7 +325,10 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
             "currency's minimum."
         ),
     )
-    description: str | None = Field(
+    # `BeforeValidator` runs the strip/empty→None normalization *before* the
+    # `max_length` constraint, so a long whitespace-only value is treated as
+    # empty instead of rejected; non-strings fall through to type validation.
+    description: Annotated[str | None, BeforeValidator(empty_str_to_none)] = Field(
         None,
         max_length=500,
         description=(
@@ -328,18 +337,6 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
             "product name."
         ),
     )
-
-    @field_validator("description", mode="before")
-    @classmethod
-    def strip_description(cls, value: object) -> object:
-        # Run in `before` mode so blank input is normalized to None *before*
-        # the `max_length` constraint is checked — otherwise a long
-        # whitespace-only string is rejected instead of treated as empty.
-        # Non-strings fall through to Pydantic's normal type validation.
-        if isinstance(value, str):
-            value = value.strip()
-            return value or None
-        return value
 
 
 class OrderUpdateBase(Schema):

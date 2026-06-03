@@ -32,7 +32,7 @@ def upgrade() -> None:
         ondelete="restrict",
     )
     with op.get_context().autocommit_block():
-        op.execute("SET LOCAL lock_timeout = '5s'")
+        op.execute("SET lock_timeout = '5s'")
         op.create_index(
             op.f("ix_subscriptions_organization_id"),
             "subscriptions",

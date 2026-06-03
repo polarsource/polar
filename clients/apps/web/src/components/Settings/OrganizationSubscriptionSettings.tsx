@@ -110,6 +110,7 @@ const OrganizationSubscriptionSettings: React.FC<
                       organization={organization}
                       value={field.value}
                       onValueChange={field.onChange}
+                      disabled={!canManageOrganization}
                     />
                   </FormControl>
                   <FormMessage />
@@ -130,6 +131,7 @@ const OrganizationSubscriptionSettings: React.FC<
                   <FormControl>
                     <BenefitRevocationGracePeriod
                       value={field.value}
+                      disabled={!canManageOrganization}
                       onValueChange={(value) => field.onChange(Number(value))}
                     />
                   </FormControl>

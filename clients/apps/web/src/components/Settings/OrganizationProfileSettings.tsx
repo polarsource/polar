@@ -60,6 +60,7 @@ import {
 interface OrganizationDetailsFormProps {
   organization: schemas['Organization']
   inKYCMode: boolean
+  canManageOrganization: boolean | undefined
 }
 
 const SwitchingFromOptions = {
@@ -88,10 +89,12 @@ const SOCIAL_PLATFORM_DOMAINS: Record<string, string> = {
 
 interface OrganizationSocialLinksProps {
   required?: boolean
+  canManageOrganization: boolean | undefined
 }
 
 const OrganizationSocialLinks = ({
   required,
+  canManageOrganization,
 }: OrganizationSocialLinksProps) => {
   const { control, formState } = useFormContext<schemas['OrganizationUpdate']>()
 
@@ -191,6 +194,7 @@ const OrganizationSocialLinks = ({
             ))}
             <Button
               type="button"
+              disabled={!canManageOrganization}
               size="sm"
               variant="secondary"
               onClick={() => {
@@ -232,6 +236,7 @@ const CompactTextArea = ({
 const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
   organization,
   inKYCMode,
+  canManageOrganization,
 }) => {
   const { control, setError, setValue } =
     useFormContext<schemas['OrganizationUpdate']>()
@@ -330,6 +335,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                       {...field}
                       value={field.value || ''}
                       placeholder="Acme Inc"
+                      disabled={!canManageOrganization}
                     />
                     <FormMessage />
                   </div>
@@ -353,6 +359,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                   }
                   onChange={field.onChange as (value: string) => void}
                   placeholder="Select country"
+                  disabled={!canManageOrganization}
                 />
                 <FormMessage />
               </div>
@@ -366,6 +373,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
             <FormField
               control={control}
               name="website"
+              disabled={!canManageOrganization}
               rules={{
                 required: 'Website is required',
                 validate: (value) => {
@@ -440,6 +448,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                   <Input
                     type="email"
                     {...field}
+                    disabled={!canManageOrganization}
                     value={field.value || ''}
                     placeholder="support@acme.com"
                   />
@@ -461,7 +470,10 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
               verification. They will never be shown publicly.
             </p>
           </div>
-          <OrganizationSocialLinks required={inKYCMode} />
+          <OrganizationSocialLinks
+            required={inKYCMode}
+            canManageOrganization={canManageOrganization}
+          />
         </div>
       </div>
 
@@ -566,11 +578,17 @@ interface OrganizationProfileSettingsProps {
   organization: schemas['Organization']
   kyc?: boolean
   onSubmitted?: () => void
+  canManageOrganization: boolean | undefined
 }
 
 const OrganizationProfileSettings: React.FC<
   OrganizationProfileSettingsProps
-> = ({ organization: _organization, kyc, onSubmitted }) => {
+> = ({
+  organization: _organization,
+  kyc,
+  onSubmitted,
+  canManageOrganization,
+}) => {
   const organization = _organization as schemas['Organization'] & {
     default_presentment_currency: schemas['PresentmentCurrency']
     country?: schemas['CountryAlpha2Input']
@@ -782,6 +800,7 @@ const OrganizationProfileSettings: React.FC<
             <OrganizationDetailsForm
               organization={organization}
               inKYCMode={inKYCMode}
+              canManageOrganization={canManageOrganization}
             />
           </div>
 

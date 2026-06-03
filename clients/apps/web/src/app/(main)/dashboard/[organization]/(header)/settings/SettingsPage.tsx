@@ -33,12 +33,18 @@ export default function ClientPage({
       <div className="flex flex-col gap-y-12">
         <Section id="organization">
           <SectionDescription title="Organization" />
-          <OrganizationProfileSettings organization={org} />
+          <OrganizationProfileSettings
+            organization={org}
+            canManageOrganization={canManageOrganization}
+          />
         </Section>
 
         <Section id="payments">
           <SectionDescription title="Payments" />
-          <OrganizationPaymentSettings organization={org} />
+          <OrganizationPaymentSettings
+            organization={org}
+            canManageOrganization={canManageOrganization}
+          />
         </Section>
 
         <Section id="subscriptions">

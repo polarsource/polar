@@ -22,6 +22,7 @@ export interface ProrationBehaviorProps {
   organization: schemas['Organization']
   value: schemas['SubscriptionProrationBehavior']
   onValueChange: (value: string) => void
+  disabled?: boolean
 }
 
 export const ProrationBehavior: React.FC<ProrationBehaviorProps> = ({

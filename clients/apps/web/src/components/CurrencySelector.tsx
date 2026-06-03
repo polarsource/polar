@@ -100,7 +100,8 @@ export const CurrencySelector = ({
       emptyLabel="No currencies found"
       popoverClassName="min-w-[250px]"
       popoverAlign="end"
-      className={disabled ? 'pointer-events-none opacity-50' : className}
+      disabled={disabled}
+      className={className}
     />
   )
 }

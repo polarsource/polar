@@ -44,6 +44,9 @@ export interface ComboboxProps<T> {
   className?: string
   popoverClassName?: string
   popoverAlign?: 'start' | 'center' | 'end'
+
+  // State
+  disabled?: boolean
 }
 
 export function Combobox<T>({
@@ -62,6 +65,7 @@ export function Combobox<T>({
   className,
   popoverClassName,
   popoverAlign,
+  disabled = false,
 }: ComboboxProps<T>) {
   const [open, setOpen] = React.useState(false)
   const [query, setQuery] = React.useState('')
@@ -89,24 +93,30 @@ export function Combobox<T>({
   }, [value, selectedItem, getItemLabel])
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn(
-            'dark:bg-polar-800 dark:hover:bg-polar-700 dark:hover:border-polar-700 dark:border-polar-700 flex w-full flex-row justify-between gap-x-2 rounded-xl border border-gray-200 bg-white px-3 font-normal shadow-xs transition-colors hover:border-gray-300 hover:bg-white',
-            selectedItem
-              ? 'text-foreground hover:text-foreground'
-              : 'text-foreground/50 hover:text-foreground/50 dark:text-polar-400 dark:hover:text-polar-300',
-            className,
-          )}
-        >
-          {selectedLabel ?? placeholder}
-          <ChevronsUpDown className="opacity-50" />
-        </Button>
-      </PopoverTrigger>
+    <Popover
+      open={open}
+      onOpenChange={(nextOpen) => !disabled && setOpen(nextOpen)}
+    >
+      <span className={cn('block w-full', disabled && 'cursor-not-allowed')}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            disabled={disabled}
+            className={cn(
+              'dark:bg-polar-800 dark:hover:bg-polar-700 dark:hover:border-polar-700 dark:border-polar-700 flex w-full flex-row justify-between gap-x-2 rounded-xl border border-gray-200 bg-white px-3 font-normal shadow-xs transition-colors hover:border-gray-300 hover:bg-white',
+              selectedItem
+                ? 'text-foreground hover:text-foreground'
+                : 'text-foreground/50 hover:text-foreground/50 dark:text-polar-400 dark:hover:text-polar-300',
+              className,
+            )}
+          >
+            {selectedLabel ?? placeholder}
+            <ChevronsUpDown className="opacity-50" />
+          </Button>
+        </PopoverTrigger>
+      </span>
       <PopoverContent
         align={popoverAlign}
         className={cn(

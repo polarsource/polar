@@ -1,12 +1,8 @@
 """Composite priority score for the Review queue.
 
-Sum of four components. Risk, payment health, and fast-mover are each
-capped at 25 — they're "tie-breaker" signals on top of the queue's main
-sort, which is age in status. Aging is uncapped at 25 (50pts max) so
-orgs sitting in the queue past ~10 days naturally outrank fresh orgs
-that lack other signals — but a fresh dispute-heavy merchant can still
-surface if its other signals stack up. ``compute`` is pure over
-primitives — fetching and JSONB parsing live in the caller.
+Additive signals layered on the queue's main sort (age in status); each
+constant below documents its own component. ``compute`` is pure over
+primitives, so fetching and JSONB parsing stay in the caller.
 """
 
 from __future__ import annotations
@@ -24,7 +20,7 @@ from polar.organization_review.schemas import PaymentMetrics
 AGING_DAILY_PTS = 2.5
 AGING_MAX_PTS = 50.0
 
-# Other components share this cap; the sum stays meaningful at [0, 125].
+# Per-component cap shared by the risk, payment, and fast-mover signals.
 SIGNAL_CAP = 25.0
 
 # Risk: AI overall_risk_score is 0..100 (LOW=15, MEDIUM=50, HIGH=85).
@@ -43,6 +39,10 @@ NEW_ORG_DAYS = 30
 FAST_MOVER_MIN_REVENUE_CENTS = 100_000  # $1,000
 FAST_MOVER_MIN_PAYMENTS = 25
 
+# A held payout means a merchant is waiting on their money, so bump the org up.
+# A flat boost for having any held payout, regardless of how many.
+HELD_PAYOUT_PTS = 25.0
+
 
 @dataclass
 class Signals:
@@ -50,10 +50,17 @@ class Signals:
     risk_pts: float = 0.0
     payment_pts: float = 0.0
     fast_mover_pts: float = 0.0
+    held_payout_pts: float = 0.0
 
     @property
     def priority(self) -> float:
-        return self.aging_pts + self.risk_pts + self.payment_pts + self.fast_mover_pts
+        return (
+            self.aging_pts
+            + self.risk_pts
+            + self.payment_pts
+            + self.fast_mover_pts
+            + self.held_payout_pts
+        )
 
 
 def _days_between(later: datetime, earlier: datetime) -> float:
@@ -119,11 +126,17 @@ def _fast_mover_component(
     return min(ramp, 1.0) * SIGNAL_CAP
 
 
+def _held_payout_component(held_payout_count: int) -> float:
+    # Flat boost for having any held payout, not scaled by how many.
+    return HELD_PAYOUT_PTS if held_payout_count > 0 else 0.0
+
+
 def compute(
     org: Organization,
     *,
     metrics: PaymentMetrics | None = None,
     risk_score: float | None = None,
+    held_payout_count: int = 0,
     now: datetime | None = None,
 ) -> Signals:
     """Compute the priority breakdown for an org in the Review queue."""
@@ -135,4 +148,5 @@ def compute(
         risk_pts=_risk_component(risk_score),
         payment_pts=_payment_component(metrics),
         fast_mover_pts=_fast_mover_component(org, metrics, now),
+        held_payout_pts=_held_payout_component(held_payout_count),
     )

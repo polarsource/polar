@@ -86,6 +86,7 @@ from polar.organization_review.schemas import (
     ReviewContext,
     ReviewVerdict,
 )
+from polar.payout.repository import PayoutRepository
 from polar.payout_account.service import payout_account as payout_account_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.startup_program.service import (
@@ -265,6 +266,11 @@ async def _build_review_signals(
         ar.organization_id: ar for ar in result.scalars()
     }
 
+    payout_repository = PayoutRepository.from_session(session)
+    held_counts = await payout_repository.get_held_counts_by_accounts(
+        [o.account_id for o in orgs]
+    )
+
     signals: dict[uuid.UUID, Signals] = {}
     for org in orgs:
         metrics = None
@@ -282,7 +288,10 @@ async def _build_review_signals(
                 metrics = report.data_snapshot.metrics
                 risk_score = report.report.overall_risk_score
         signals[org.id] = review_priority.compute(
-            org, metrics=metrics, risk_score=risk_score
+            org,
+            metrics=metrics,
+            risk_score=risk_score,
+            held_payout_count=held_counts.get(org.account_id, 0),
         )
     return signals
 
@@ -1736,7 +1745,11 @@ async def under_review_dialog(
                     with tag.li():
                         text("Change the organization status to Ongoing Review")
                     with tag.li():
-                        text("Block payouts while the organization is under review")
+                        text(
+                            "Hold any payout requests for review instead of paying "
+                            "them out immediately. Held payouts are released "
+                            "automatically once the organization is approved."
+                        )
 
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
                 with tag.form(method="dialog"):

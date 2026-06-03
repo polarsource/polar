@@ -52,6 +52,8 @@ def payout_status_badge(status: PayoutStatus) -> Generator[None]:
                 classes("badge-neutral")
             case PayoutStatus.canceled:
                 classes("badge-neutral")
+            case PayoutStatus.held:
+                classes("badge-info")
         text(status.value.replace("_", " ").title())
     yield
 

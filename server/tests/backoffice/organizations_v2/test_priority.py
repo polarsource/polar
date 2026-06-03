@@ -16,6 +16,7 @@ import pytest
 from polar.backoffice.organizations_v2.priority import (
     AGING_DAILY_PTS,
     AGING_MAX_PTS,
+    HELD_PAYOUT_PTS,
     compute,
 )
 from polar.organization_review.schemas import PaymentMetrics
@@ -217,6 +218,28 @@ class TestFastMoverComponent:
         assert s.fast_mover_pts == pytest.approx(0.0, abs=0.5)
 
 
+class TestHeldPayoutComponent:
+    def test_no_held_payouts_no_points(self) -> None:
+        s = compute(_org(), now=NOW)
+        assert s.held_payout_pts == 0.0
+
+    def test_single_held_payout(self) -> None:
+        s = compute(_org(), held_payout_count=1, now=NOW)
+        assert s.held_payout_pts == pytest.approx(HELD_PAYOUT_PTS)
+
+    def test_multiple_held_payouts_still_flat(self) -> None:
+        # Flat boost for having any held payout — three still only adds 25.
+        s = compute(_org(), held_payout_count=3, now=NOW)
+        assert s.held_payout_pts == pytest.approx(HELD_PAYOUT_PTS)
+
+    def test_held_payout_boosts_over_org_without_one(self) -> None:
+        # A fresh org with a held payout should outrank an equally-fresh org
+        # carrying no other signals.
+        held = compute(_org(days_in_status=2), held_payout_count=1, now=NOW)
+        plain = compute(_org(days_in_status=2), now=NOW)
+        assert held.priority > plain.priority
+
+
 class TestPriorityComposite:
     def test_zero_signals(self) -> None:
         s = compute(_org(days_in_status=0, created_days_ago=200), now=NOW)
@@ -232,6 +255,21 @@ class TestPriorityComposite:
         # aging 14d * 2.5 (35) + risk 85% (21.25) + payment auth (10) + no fast
         assert s.priority == pytest.approx(66.25, abs=0.1)
 
+    def test_priority_includes_held_payout_boost(self) -> None:
+        # Same as the sum-of-components case, plus a held payout (+25). Pins that
+        # held_payout_pts is actually summed into `priority`, not just held on
+        # the field.
+        s = compute(
+            _org(days_in_status=14, created_days_ago=200),
+            metrics=_metrics(total_payments=10, succeeded_payments=5),  # 50% auth
+            risk_score=85.0,
+            held_payout_count=2,
+            now=NOW,
+        )
+        # aging 35 + risk 21.25 + payment 10 + held flat (25) = 91.25
+        assert s.held_payout_pts == pytest.approx(25.0)
+        assert s.priority == pytest.approx(91.25, abs=0.1)
+
     def test_max_priority_bounded(self) -> None:
         s = compute(
             _org(days_in_status=30, created_days_ago=10),
@@ -245,5 +283,7 @@ class TestPriorityComposite:
             risk_score=100.0,
             now=NOW,
         )
-        # aging max (50) + risk (25) + payment cap (25) + fast cap (25) = 125
+        # The four capped components are bounded: aging max (50) + risk (25) +
+        # payment cap (25) + fast cap (25) = 125. The held-payout boost adds at
+        # most another 25 (overall max 150); this case has no held payout.
         assert s.priority <= 125.0

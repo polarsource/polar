@@ -32416,6 +32416,15 @@ export interface operations {
           'application/json': components['schemas']['UserOrganizationNotificationSettings']
         }
       }
+      /** @description User is not a member of this organization. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -32449,6 +32458,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['UserOrganizationNotificationSettings']
+        }
+      }
+      /** @description User is not a member of this organization. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */

@@ -90,6 +90,12 @@ async def update_authenticated(
 @router.patch(
     "/me/organizations/{organization_id}/notification-settings",
     response_model=UserOrganizationNotificationSettings,
+    responses={
+        404: {
+            "description": "User is not a member of this organization.",
+            "model": ResourceNotFound.schema(),
+        }
+    },
 )
 async def update_my_notification_settings(
     organization_id: UUID,
@@ -114,6 +120,12 @@ async def update_my_notification_settings(
 @router.get(
     "/me/organizations/{organization_id}/notification-settings",
     response_model=UserOrganizationNotificationSettings,
+    responses={
+        404: {
+            "description": "User is not a member of this organization.",
+            "model": ResourceNotFound.schema(),
+        }
+    },
 )
 async def get_my_notification_settings(
     organization_id: UUID,

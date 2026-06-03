@@ -1180,17 +1180,27 @@ class OrderService:
             if settled is not None and settled.status == OrderStatus.pending:
                 await self._revert_to_draft(session, order)
                 raise PaymentFailed(PaymentFailedReason.missing_payment_method)
-            return await self._assign_invoice_number(session, order)
+            order = await self._assign_invoice_number(session, order)
+        else:
+            # Apply the charge.succeeded path inline so the finalize HTTP
+            # response carries the paid order. The webhook arrives shortly after
+            # and no-ops via the idempotency guards in
+            # upsert_from_stripe_charge / handle_payment.
+            charge = self._get_intent_charge(payment_intent)
+            order = await self._assign_invoice_number(session, order)
+            payment = await payment_service.upsert_from_stripe_charge(
+                session, charge, organization, None, None, order
+            )
+            order = await self.handle_payment(session, order, payment)
 
-        # Apply the charge.succeeded path inline so the finalize HTTP response
-        # carries the paid order. The webhook arrives shortly after and no-ops
-        # via the idempotency guards in upsert_from_stripe_charge / handle_payment.
-        charge = self._get_intent_charge(payment_intent)
-        order = await self._assign_invoice_number(session, order)
-        payment = await payment_service.upsert_from_stripe_charge(
-            session, charge, organization, None, None, order
-        )
-        return await self.handle_payment(session, order, payment)
+        # Unlike the checkout flow, the off-session draft flow skips the
+        # confirmation email at draft creation (nothing is charged yet). Now that
+        # finalize has settled the order as paid, send it so the customer gets
+        # their confirmation.
+        if order.paid:
+            enqueue_job("order.confirmation_email", order.id)
+
+        return order
 
     def _get_intent_charge(
         self, payment_intent: stripe_lib.PaymentIntent

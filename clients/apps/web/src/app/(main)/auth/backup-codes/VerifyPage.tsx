@@ -2,6 +2,7 @@
 
 import { useBackupCodesVerify } from '@/hooks'
 import { setValidationErrors } from '@/utils/api/errors'
+import { isApiSameOrigin } from '@/utils/auth'
 import { CONFIG } from '@/utils/config'
 import { isValidationError } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
@@ -36,7 +37,12 @@ const VerifyPage = () => {
         }
         return
       }
-      router.push('/auth')
+      // Same-origin needs a hard navigation
+      if (isApiSameOrigin()) {
+        window.location.assign('/auth')
+      } else {
+        router.push('/auth')
+      }
     } catch {
       setError('code', {
         message: 'An unexpected error occurred. Please try again.',

@@ -67,6 +67,9 @@ dependencies = [
   "markdown-it-py>=4.2.0",
   "tzdata>=2026.2",
   "reauth==0.1.8",
+  # Vercel-specific
+  "vercel-workers[dramatiq]==0.0.25",
+  "vercel==0.5.9",
 ]
 
 [dependency-groups]
@@ -188,7 +191,7 @@ warn_untyped_fields = true
 
 [tool.uv]
 exclude-newer = "1 week"
-exclude-newer-package = { reauth = false } # Reauth is brand new, but remember to remove this exclusion when stabilized
+exclude-newer-package = { reauth = false, vercel-workers = false } # Reauth is brand new, but remember to remove this exclusion when stabilized
 
 [tool.uv.sources]
 dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }

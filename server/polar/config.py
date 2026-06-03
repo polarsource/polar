@@ -4,11 +4,17 @@ import tempfile
 from datetime import timedelta
 from enum import StrEnum
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 from urllib.parse import urlparse
 
 from annotated_types import Ge
-from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn
+from pydantic import (
+    AfterValidator,
+    DirectoryPath,
+    Field,
+    PostgresDsn,
+    model_validator,
+)
 from pydantic_ai.models import Model, infer_model, parse_model_id
 from pydantic_ai.providers.gateway import gateway_provider
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -26,7 +32,20 @@ class Environment(StrEnum):
     test = "test"  # Used for the test environment in Render
 
 
+# Vercel services are used for development and test environment only
+_VERCEL_ENV_TO_ENVIRONMENT: dict[str, Environment] = {
+    "development": Environment.development,  # vc dev
+    "preview": Environment.test,
+    "production": Environment.test,
+}
+
+
 def _validate_email_renderer_binary_path(value: Path) -> Path:
+    # On Vercel the email renderer lives in a separate service, so the binary
+    # isn't present in every service's bundle
+    if os.getenv("VERCEL"):
+        return value
+
     if not value.exists() and not value.is_file():
         raise ValueError(
             f"""
@@ -352,6 +371,9 @@ class Settings(BaseSettings):
     MINIO_USER: str = "polar"
     MINIO_PWD: str = "polarpolar"
 
+    # Vercel
+    VERCEL_ENV: str | None = None
+
     # Chargeback Stop
     CHARGEBACK_STOP_WEBHOOK_SECRET: str = ""
 
@@ -531,6 +553,34 @@ class Settings(BaseSettings):
     TAX_PROCESSORS: list[TaxProcessor] = [TaxProcessor.stripe]
     TAX_RECORD_PROCESSOR: TaxProcessor = TaxProcessor.stripe
 
+    @model_validator(mode="before")
+    @classmethod
+    def _map_vercel_env_vars(cls, values: dict[str, Any]) -> dict[str, Any]:
+        vercel_env = os.getenv("VERCEL_ENV")
+        if not vercel_env:
+            return values
+
+        values["VERCEL_ENV"] = vercel_env
+
+        # On Vercel the proxy unifies all services under one origin, so the
+        # Vercel-injected URLs take precedence over .env values
+        if api_url := os.getenv("API_URL"):
+            values["BASE_URL"] = api_url
+            values["CHECKOUT_BASE_URL"] = (
+                f"{api_url}/v1/checkout-links/{{client_secret}}/redirect"
+            )
+
+        if frontend_url := os.getenv("FRONTEND_URL"):
+            values["FRONTEND_BASE_URL"] = frontend_url
+
+            hostname = urlparse(frontend_url).hostname
+            if hostname:
+                values["USER_SESSION_COOKIE_DOMAIN"] = hostname
+                values["AUTHENTICATION_SESSION_COOKIE_DOMAIN"] = hostname
+                values["OAUTH2_SESSION_STATE_COOKIE_DOMAIN"] = hostname
+
+        return values
+
     model_config = SettingsConfigDict(
         env_prefix="polar_",
         env_file_encoding="utf-8",
@@ -538,6 +588,9 @@ class Settings(BaseSettings):
         env_file=env_file,
         extra="allow",
     )
+
+    def is_vercel(self) -> bool:
+        return self.VERCEL_ENV is not None
 
     @property
     def redis_url(self) -> str:
@@ -584,7 +637,11 @@ class Settings(BaseSettings):
         )
 
     def is_environment(self, environments: set[Environment]) -> bool:
-        return self.ENV in environments
+        env = self.ENV
+        if self.VERCEL_ENV is not None:
+            env = _VERCEL_ENV_TO_ENVIRONMENT.get(self.VERCEL_ENV, env)
+
+        return env in environments
 
     def is_development(self) -> bool:
         return self.is_environment({Environment.development})

@@ -3,6 +3,7 @@
   "globalDependencies": ["**/.env.*local"],
   "globalEnv": [
     "POLAR_API_URL",
+    "API_URL",
     "EXPO_PUBLIC_POLAR_SERVER_URL",
     "NODE_ENV",
     "NEXT_PHASE",
@@ -15,6 +16,7 @@
     "POLAR_PREVIEW_ACCESS_TOKEN",
     "POLAR_PREVIEW_BUILD",
     "POLAR_PREVIEW_BACKEND_HOST",
+    "VERCEL",
     "VERCEL_ENV",
     "VERCEL_GIT_PULL_REQUEST_ID",
     "VERCEL_URL",

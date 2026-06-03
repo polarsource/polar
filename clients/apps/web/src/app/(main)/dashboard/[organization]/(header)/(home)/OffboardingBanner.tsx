@@ -1,7 +1,6 @@
 import { schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import Button from '@polar-sh/ui/components/atoms/Button'
 import { AlertTriangleIcon } from 'lucide-react'
 import Link from 'next/link'
 
@@ -25,7 +24,7 @@ export const OffboardingBanner = ({ organization }: OffboardingBannerProps) => {
           <AlertTriangleIcon className="h-4 w-4 shrink-0" />
           <Text as="strong">Your organization is being offboarded</Text>
         </Box>
-        <Box maxWidth={720}>
+        <Box maxWidth="45rem">
           <Text color="muted">
             Your organization is in the process of being offboarded from Polar.
             Some features may be limited. Reach out if you have any questions.

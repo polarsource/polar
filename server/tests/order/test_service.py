@@ -37,6 +37,7 @@ from polar.kit.address import (
     CountryAlpha2,
     CountryAlpha2Input,
 )
+from polar.kit.currency import get_maximum_currency_amount
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.math import polar_round
 from polar.kit.pagination import PaginationParams
@@ -5313,8 +5314,8 @@ class TestCreateDraftOrder:
         product_one_time_custom_price: Product,
         customer: Customer,
     ) -> None:
-        # Only fixed-price products are supported off-session; a pay-what-you-want
-        # (custom) product is rejected.
+        # Only fixed-price and free products are supported off-session; a
+        # pay-what-you-want (custom) product is rejected.
         payload = OrderCreate(
             customer_id=customer.id,
             product_id=product_one_time_custom_price.id,
@@ -5324,7 +5325,49 @@ class TestCreateDraftOrder:
                 session, off_session_organization, payload
             )
 
-    async def test_free_product_rejected(
+    async def test_free_product_allowed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # Free products are chargeable off-session; without an amount the order
+        # is a $0 draft.
+        product = await create_product(
+            save_fixture,
+            organization=off_session_organization,
+            recurring_interval=None,
+            prices=[(None, "usd")],
+        )
+        payload = OrderCreate(customer_id=customer.id, product_id=product.id)
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+        assert order.status == OrderStatus.draft
+        assert order.subtotal_amount == 0
+
+    async def test_amount_overrides_fixed_price(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        # `product_one_time` is priced at 1000 usd; the merchant charges 2500.
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+            amount=2500,
+        )
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+        assert order.status == OrderStatus.draft
+        assert order.subtotal_amount == 2500
+        assert order.items[0].amount == 2500
+
+    async def test_amount_on_free_product(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -5337,7 +5380,67 @@ class TestCreateDraftOrder:
             recurring_interval=None,
             prices=[(None, "usd")],
         )
-        payload = OrderCreate(customer_id=customer.id, product_id=product.id)
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product.id,
+            amount=1500,
+        )
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+        assert order.subtotal_amount == 1500
+        assert order.items[0].amount == 1500
+
+    async def test_custom_description_overrides_label(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+            description="5,000 tokens",
+        )
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+        assert order.items[0].label == "5,000 tokens"
+
+    async def test_positive_amount_below_currency_minimum_rejected(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        # usd's minimum is 50; a positive amount below it would be rejected at
+        # finalize, so reject it up front.
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+            amount=10,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_amount_above_currency_maximum_rejected(
+        self,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        # An amount above the currency's maximum would be rejected at finalize,
+        # so reject it up front.
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+            amount=get_maximum_currency_amount("usd") + 1,
+        )
         with pytest.raises(PolarRequestValidationError):
             await order_service.create_draft_order(
                 session, off_session_organization, payload

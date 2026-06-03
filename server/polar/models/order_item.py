@@ -67,6 +67,7 @@ class OrderItem(RecordModel):
         tax_amount: int,
         amount: int | None = None,
         seats: int | None = None,
+        label: str | None = None,
     ) -> Self:
         if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
             amount = price.price_amount
@@ -78,7 +79,7 @@ class OrderItem(RecordModel):
             assert seats is not None, "seats must be provided for seat-based prices"
             amount = price.calculate_amount(seats)
         return cls(
-            label=price.product.name,
+            label=label if label is not None else price.product.name,
             amount=amount,
             tax_amount=tax_amount,
             net_amount=amount,

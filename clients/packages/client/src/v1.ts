@@ -21973,7 +21973,7 @@ export interface components {
       /**
        * Product Id
        * Format: uuid4
-       * @description The ID of the one-time, fixed-price product to charge for. Must belong to the order's organization. Subscription, seat-based, and pay-what-you-want products are not supported.
+       * @description The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price and free products are supported.
        */
       product_id: string
       /**
@@ -21981,6 +21981,16 @@ export interface components {
        * @description The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency.
        */
       currency?: string | null
+      /**
+       * Amount
+       * @description A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum.
+       */
+      amount?: number | null
+      /**
+       * Description
+       * @description A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name.
+       */
+      description?: string | null
     }
     /** OrderCustomer */
     OrderCustomer: {

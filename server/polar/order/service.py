@@ -53,7 +53,11 @@ from polar.integrations.stripe.service import (
     stripe as stripe_service,
 )
 from polar.invoice.service import invoice as invoice_service
-from polar.kit.currency import get_minimum_currency_amount
+from polar.kit.currency import (
+    format_currency,
+    get_maximum_currency_amount,
+    get_minimum_currency_amount,
+)
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
@@ -96,6 +100,7 @@ from polar.payment_method.service import payment_method as payment_method_servic
 from polar.product.guard import (
     is_custom_price,
     is_fixed_price,
+    is_free_price,
     is_seat_price,
     is_static_price,
 )
@@ -679,6 +684,83 @@ class OrderService:
                 items.append(OrderItem.from_price(price, 0, seats=seats))
         return items
 
+    def _build_draft_order_items(
+        self,
+        prices: Iterable[ProductPrice],
+        *,
+        amount: int | None,
+        label: str | None,
+    ) -> Sequence[OrderItem]:
+        """
+        Build line items for an off-session draft order over a product's
+        fixed/free static prices.
+
+        `amount`, when provided, overrides the charge (the merchant sets a custom
+        price for this order); otherwise the price's own amount is used — the
+        configured amount for fixed prices, 0 for free prices. `label` overrides
+        the line item's description, defaulting to the product name.
+        """
+        items: list[OrderItem] = []
+        for price in prices:
+            if not is_static_price(price):
+                continue
+            if amount is not None:
+                items.append(
+                    OrderItem(
+                        label=label if label is not None else price.product.name,
+                        amount=amount,
+                        tax_amount=0,
+                        net_amount=amount,
+                        proration=False,
+                        product_price=price,
+                    )
+                )
+            else:
+                items.append(OrderItem.from_price(price, 0, label=label))
+        return items
+
+    def _validate_purchase_amount(self, payload: OrderCreate, currency: str) -> None:
+        """
+        When the merchant provides a custom `amount`, ensure a positive amount
+        falls within the currency's processor bounds — otherwise the charge
+        would be rejected at finalize. A 0 amount is allowed (e.g. a free
+        product).
+        """
+        if payload.amount is None or payload.amount == 0:
+            return
+        currency_minimum = get_minimum_currency_amount(currency)
+        if payload.amount < currency_minimum:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "greater_than_equal",
+                        "loc": ("body", "amount"),
+                        "msg": (
+                            "Amount must be at least "
+                            f"{format_currency(currency_minimum, currency)}."
+                        ),
+                        "input": payload.amount,
+                        "ctx": {"ge": currency_minimum},
+                    }
+                ]
+            )
+        currency_maximum = get_maximum_currency_amount(currency)
+        if payload.amount > currency_maximum:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "less_than_equal",
+                        "loc": ("body", "amount"),
+                        "msg": (
+                            "Amount must be at most "
+                            f"{format_currency(currency_maximum, currency)}."
+                        ),
+                        "input": payload.amount,
+                        "ctx": {"le": currency_maximum},
+                    }
+                ]
+            )
+
     async def _create_order_from_checkout(
         self,
         session: AsyncSession,
@@ -844,9 +926,10 @@ class OrderService:
                 ]
             )
 
-        # Off-session charges currently support fixed-price products only — the
-        # amount must be fully determined by the product. Custom
-        # (pay-what-you-want) and free prices are rejected.
+        # Off-session charges only support fixed-price and free products — the
+        # amount is predetermined by the product, or set by the merchant via
+        # `amount`, never chosen by the customer. Pay-what-you-want (custom)
+        # prices are rejected.
         static_prices = [price for price in product.prices if is_static_price(price)]
         if not static_prices:
             raise PolarRequestValidationError(
@@ -859,13 +942,19 @@ class OrderService:
                     }
                 ]
             )
-        if any(not is_fixed_price(price) for price in static_prices):
+        if any(
+            not (is_fixed_price(price) or is_free_price(price))
+            for price in static_prices
+        ):
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
                         "loc": ("body", "product_id"),
-                        "msg": "Off-session charges only support fixed-price products.",
+                        "msg": (
+                            "Off-session charges only support fixed-price and "
+                            "free products."
+                        ),
                         "input": payload.product_id,
                     }
                 ]
@@ -917,8 +1006,13 @@ class OrderService:
                 ]
             ) from e
 
+        self._validate_purchase_amount(payload, currency)
         items = list(
-            self._build_static_order_items(currency_prices, amount=None, seats=None)
+            self._build_draft_order_items(
+                currency_prices,
+                amount=payload.amount,
+                label=payload.description,
+            )
         )
 
         # Validate custom field values against the product's attached fields,

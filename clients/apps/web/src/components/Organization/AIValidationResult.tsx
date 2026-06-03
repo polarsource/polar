@@ -82,7 +82,7 @@ const AIValidationResult = ({
           type: 'pass',
           title: 'Approved!',
           message:
-            'Your organization details have been automatically validated. You can accept payments immediately, but a manual review will still occur before your first payout.',
+            'Your organization details have been automatically validated. You can accept payments immediately. A manual review will still take place, and any payout you request in the meantime will be paid out automatically once the review is complete.',
           icon: (
             <CheckCircleIcon className="dark:text-polar-400 -mt-0.5 h-4 w-4 text-gray-500" />
           ),

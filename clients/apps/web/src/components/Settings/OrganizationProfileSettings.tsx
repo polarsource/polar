@@ -373,7 +373,6 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
             <FormField
               control={control}
               name="website"
-              disabled={readOnly}
               rules={{
                 required: 'Website is required',
                 validate: (value) => {
@@ -395,6 +394,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                     type="url"
                     {...field}
                     value={field.value || ''}
+                    disabled={readOnly}
                     placeholder="https://acme.com"
                     onChange={(e) => {
                       let value = e.target.value

@@ -16,7 +16,8 @@ reviews:
   abort_on_close: true
 
   auto_review:
-    enabled: true
+    # Disabled: CodeRabbit no longer reviews PRs automatically.
+    enabled: false
     drafts: false
     auto_incremental_review: true
     base_branches:

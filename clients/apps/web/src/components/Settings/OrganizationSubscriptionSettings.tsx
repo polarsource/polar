@@ -19,11 +19,12 @@ import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationSubscriptionSettingsProps {
   organization: schemas['Organization']
+  canManageOrganization: boolean | undefined
 }
 
 const OrganizationSubscriptionSettings: React.FC<
   OrganizationSubscriptionSettingsProps
-> = ({ organization }) => {
+> = ({ organization, canManageOrganization }) => {
   const form = useForm<schemas['OrganizationSubscriptionSettings']>({
     defaultValues: organization.subscription_settings,
   })
@@ -84,6 +85,7 @@ const OrganizationSubscriptionSettings: React.FC<
                   <FormControl>
                     <Switch
                       checked={field.value}
+                      disabled={!canManageOrganization}
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>
@@ -149,6 +151,7 @@ const OrganizationSubscriptionSettings: React.FC<
                   <FormControl>
                     <Switch
                       checked={field.value}
+                      disabled={!canManageOrganization}
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>

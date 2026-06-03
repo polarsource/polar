@@ -43,12 +43,18 @@ export default function ClientPage({
 
         <Section id="subscriptions">
           <SectionDescription title="Subscriptions" />
-          <OrganizationSubscriptionSettings organization={org} />
+          <OrganizationSubscriptionSettings
+            organization={org}
+            canManageOrganization={canManageOrganization}
+          />
         </Section>
 
         <Section id="customer_portal">
           <SectionDescription title="Customer portal" />
-          <OrganizationCustomerPortalSettings organization={org} />
+          <OrganizationCustomerPortalSettings
+            organization={org}
+            canManageOrganization={canManageOrganization}
+          />
         </Section>
 
         <Section id="customer_emails">
@@ -70,13 +76,16 @@ export default function ClientPage({
               accepted.
             </Alert>
           )}
-          <OrganizationCustomerEmailSettings organization={org} />
+          <OrganizationCustomerEmailSettings
+            organization={org}
+            canManageOrganization={canManageOrganization}
+          />
         </Section>
 
         <Section id="account-notifications">
           <SectionDescription
-            title="Account notifications"
-            description="Emails sent to members of your organization for account and product activity"
+            title="Your notifications"
+            description="Choose which account and product activity emails you receive as a member of this organization."
           />
           <OrganizationNotificationSettings organization={org} />
         </Section>
@@ -86,7 +95,10 @@ export default function ClientPage({
             title="Features"
             description="Manage alpha & beta features for your organization"
           />
-          <FeatureSettings organization={org} />
+          <FeatureSettings
+            organization={org}
+            canManageOrganization={canManageOrganization}
+          />
         </Section>
 
         <Section id="developers">

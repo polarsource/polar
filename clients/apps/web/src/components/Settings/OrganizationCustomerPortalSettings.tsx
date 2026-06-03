@@ -17,11 +17,12 @@ import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationCustomerPortalSettingsProps {
   organization: schemas['Organization']
+  canManageOrganization: boolean | undefined
 }
 
 const OrganizationCustomerPortalSettings: React.FC<
   OrganizationCustomerPortalSettingsProps
-> = ({ organization }) => {
+> = ({ organization, canManageOrganization }) => {
   const form = useForm<schemas['OrganizationCustomerPortalSettings']>({
     defaultValues: {
       ...organization.customer_portal_settings,
@@ -89,6 +90,7 @@ const OrganizationCustomerPortalSettings: React.FC<
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
+                      disabled={!canManageOrganization}
                     />
                   </FormControl>
                   <FormMessage />
@@ -110,6 +112,7 @@ const OrganizationCustomerPortalSettings: React.FC<
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
+                      disabled={!canManageOrganization}
                     />
                   </FormControl>
                   <FormMessage />
@@ -131,6 +134,7 @@ const OrganizationCustomerPortalSettings: React.FC<
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
+                      disabled={!canManageOrganization}
                     />
                   </FormControl>
                   <FormMessage />
@@ -152,6 +156,7 @@ const OrganizationCustomerPortalSettings: React.FC<
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
+                      disabled={!canManageOrganization}
                     />
                   </FormControl>
                   <FormMessage />

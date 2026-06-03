@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import Depends, Request
 
 from polar.auth.dependencies import Authenticator
@@ -11,6 +13,7 @@ from polar.customer_portal.endpoints.downloadables import router as downloadable
 from polar.customer_portal.endpoints.license_keys import router as license_keys_router
 from polar.customer_portal.endpoints.order import router as order_router
 from polar.customer_portal.endpoints.subscription import router as subscription_router
+from polar.exceptions import ResourceNotFound
 from polar.models import User
 from polar.models.user import OAuthPlatform
 from polar.openapi import APITag
@@ -25,6 +28,16 @@ from polar.routing import APIRouter
 from polar.user.oauth_service import oauth_account_service
 from polar.user.service import user as user_service
 from polar.user_organization.repository import UserOrganizationRepository
+from polar.user_organization.schemas import (
+    UserOrganizationNotificationSettings,
+    UserOrganizationNotificationSettingsUpdate,
+)
+from polar.user_organization.service import (
+    UserNotMemberOfOrganization,
+)
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 
 from .schemas import (
     UserDeletionResponse,
@@ -72,6 +85,50 @@ async def update_authenticated(
     return await user_service.update(
         session, auth_subject.subject, user_update, ip_address=ip_address
     )
+
+
+@router.patch(
+    "/me/organizations/{organization_id}/notification-settings",
+    response_model=UserOrganizationNotificationSettings,
+)
+async def update_my_notification_settings(
+    organization_id: UUID,
+    body: UserOrganizationNotificationSettingsUpdate,
+    auth_subject: AuthorizeWebUserWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> UserOrganizationNotificationSettings:
+    """Update the authenticated user's notification settings for an organization."""
+    try:
+        user_org = await user_organization_service.update_notification_settings(
+            session,
+            user_id=auth_subject.subject.id,
+            organization_id=organization_id,
+            notification_settings=body.notification_settings,
+        )
+    except UserNotMemberOfOrganization as exc:
+        raise ResourceNotFound() from exc
+
+    return UserOrganizationNotificationSettings.model_validate(user_org)
+
+
+@router.get(
+    "/me/organizations/{organization_id}/notification-settings",
+    response_model=UserOrganizationNotificationSettings,
+)
+async def get_my_notification_settings(
+    organization_id: UUID,
+    auth_subject: AuthorizeWebUserRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> UserOrganizationNotificationSettings:
+    """Get the authenticated user's notification settings for an organization."""
+
+    user_org = await user_organization_service.get_by_user_and_org(
+        session, auth_subject.subject.id, organization_id
+    )
+    if user_org is None:
+        raise ResourceNotFound()
+
+    return UserOrganizationNotificationSettings.model_validate(user_org)
 
 
 @router.get("/me/scopes", response_model=UserScopes)

@@ -2410,7 +2410,6 @@ class TestUpdate:
         customer: Customer,
         organization: Organization,
         product: Product,
-        locker: Locker,
         webhook_service_send_mock: MagicMock,
     ) -> None:
         subscription = await create_active_subscription(
@@ -2427,7 +2426,6 @@ class TestUpdate:
 
         updated = await subscription_service.update(
             session,
-            locker,
             subscription,
             update=SubscriptionUpdateProduct(product_id=new_product.id),
         )
@@ -2445,7 +2443,6 @@ class TestUpdate:
         customer: Customer,
         organization: Organization,
         product: Product,
-        locker: Locker,
         webhook_service_send_mock: MagicMock,
     ) -> None:
         subscription = await create_active_subscription(
@@ -2462,7 +2459,6 @@ class TestUpdate:
 
         updated = await subscription_service.update(
             session,
-            locker,
             subscription,
             update=SubscriptionUpdateProduct(
                 product_id=new_product.id,
@@ -2484,7 +2480,6 @@ class TestUpdate:
         organization: Organization,
         product: Product,
         discount_percentage_50: Discount,
-        locker: Locker,
         webhook_service_send_mock: MagicMock,
     ) -> None:
         subscription = await create_active_subscription(
@@ -2494,7 +2489,6 @@ class TestUpdate:
         )
         updated = await subscription_service.update(
             session,
-            locker,
             subscription,
             update=SubscriptionUpdateDiscount(discount_id=discount_percentage_50.id),
         )
@@ -2512,7 +2506,6 @@ class TestUpdate:
         customer: Customer,
         organization: Organization,
         product: Product,
-        locker: Locker,
         webhook_service_send_mock: MagicMock,
     ) -> None:
         subscription = await create_trialing_subscription(
@@ -2527,7 +2520,6 @@ class TestUpdate:
 
         updated = await subscription_service.update(
             session,
-            locker,
             subscription,
             update=SubscriptionUpdateTrial(
                 trial_end=initial_trial_end + timedelta(days=7),
@@ -2548,7 +2540,6 @@ class TestUpdate:
         customer: Customer,
         organization: Organization,
         product: Product,
-        locker: Locker,
         webhook_service_send_mock: MagicMock,
         enqueue_job_mock: MagicMock,
     ) -> None:
@@ -2564,7 +2555,6 @@ class TestUpdate:
 
         updated = await subscription_service.update(
             session,
-            locker,
             subscription,
             update=SubscriptionUpdateTrial(trial_end="now"),
         )
@@ -2590,7 +2580,6 @@ class TestUpdate:
         customer: Customer,
         organization: Organization,
         product_recurring_seat_based: Product,
-        locker: Locker,
         webhook_service_send_mock: MagicMock,
     ) -> None:
         subscription = await create_subscription_with_seats(
@@ -2602,7 +2591,6 @@ class TestUpdate:
 
         updated = await subscription_service.update(
             session,
-            locker,
             subscription,
             update=SubscriptionUpdateSeats(seats=10),
         )
@@ -2621,7 +2609,6 @@ class TestUpdate:
         customer: Customer,
         organization: Organization,
         product_recurring_seat_based: Product,
-        locker: Locker,
         webhook_service_send_mock: MagicMock,
     ) -> None:
         trigger_payment_mock = mocker.patch.object(
@@ -2641,7 +2628,6 @@ class TestUpdate:
 
         updated = await subscription_service.update(
             session,
-            locker,
             subscription,
             update=SubscriptionUpdateSeats(
                 seats=10, proration_behavior=SubscriptionProrationBehavior.invoice
@@ -2663,7 +2649,6 @@ class TestUpdate:
         customer: Customer,
         organization: Organization,
         product: Product,
-        locker: Locker,
         webhook_service_send_mock: MagicMock,
     ) -> None:
         subscription = await create_active_subscription(
@@ -2676,7 +2661,6 @@ class TestUpdate:
 
         updated = await subscription_service.update(
             session,
-            locker,
             subscription,
             update=SubscriptionUpdateBillingPeriod(
                 current_billing_period_end=initial_period_end + timedelta(days=7)

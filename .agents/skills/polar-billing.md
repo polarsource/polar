@@ -342,6 +342,11 @@ revoke_benefit(customer, benefit)
 | Task | Trigger | Action |
 |------|---------|--------|
 | `payout.trigger_stripe_payouts` | **Daily 00:15 UTC** | Initiate pending payouts |
+| `payout.created` | Payout created | Event hook (fires for held payouts too) |
+| `payout.transfer` | After payout.created | Stripe transfer (skipped for held) |
+| `payout.release_held_payouts` | Org approved | Move held → pending, enqueue transfers |
+| `payout.cancel_account_payouts` | Org denied/blocked | Cancel held+pending payouts |
+| `payout.cancel_held_payouts` | Payout account swap | Cancel only held payouts on old account |
 
 ---
 
@@ -672,9 +677,16 @@ payment fails → status=past_due, past_due_at=now
 2. payout.trigger_stripe_payouts (daily)
 3. Calculate available balance
 4. Create Payout record
-5. stripe_service.transfer() to Connect account
+   - ACTIVE org: status=pending, enqueue payout.created + payout.transfer
+   - REVIEW/SNOOZED org: status=held, enqueue payout.created only
+5. stripe_service.transfer() to Connect account (skipped for held)
 6. stripe_service.create_payout() to bank
 7. payout.paid webhook → update status
+
+Held payout lifecycle:
+- When org approved: payout.release_held_payouts → status=pending, enqueue transfer
+- When org denied/blocked: payout.cancel_account_payouts → cancel + refund
+- When payout account swapped: payout.cancel_held_payouts (old account only)
 ```
 
 ---

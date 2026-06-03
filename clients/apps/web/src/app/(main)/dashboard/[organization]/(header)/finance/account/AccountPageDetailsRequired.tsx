@@ -3,6 +3,7 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
+import { useHasPermission } from '@/hooks/permissions'
 import { schemas } from '@polar-sh/client'
 
 interface Props {
@@ -10,6 +11,11 @@ interface Props {
 }
 
 export const AccountPageDetailsRequired = ({ organization }: Props) => {
+  const canManageOrganization = useHasPermission(
+    organization.id,
+    'organization:manage',
+  )
+
   return (
     <DashboardBody wrapperClassName="max-w-(--breakpoint-sm)!">
       <div className="flex flex-col gap-y-12">
@@ -18,7 +24,11 @@ export const AccountPageDetailsRequired = ({ organization }: Props) => {
             title="Account Review"
             description="Tell us about your organization so we can review your usecase."
           />
-          <OrganizationProfileSettings organization={organization} kyc={true} />
+          <OrganizationProfileSettings
+            organization={organization}
+            kyc={true}
+            canManageOrganization={canManageOrganization}
+          />
         </Section>
       </div>
     </DashboardBody>

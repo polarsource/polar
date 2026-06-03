@@ -285,6 +285,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
     onFilesUpdated,
     onFilesRejected,
     initialFiles: [],
+    disabled: readOnly,
   })
 
   return (
@@ -302,7 +303,8 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                   <div
                     {...getRootProps()}
                     className={twMerge(
-                      'relative cursor-pointer',
+                      'relative',
+                      readOnly ? 'cursor-not-allowed' : 'cursor-pointer',
                       isDragActive && 'opacity-50',
                     )}
                   >
@@ -310,11 +312,16 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                     <Avatar
                       avatar_url={avatarURL ?? ''}
                       name={name ?? ''}
-                      className="h-10 w-10 transition-opacity hover:opacity-75"
+                      className={twMerge(
+                        'h-10 w-10 transition-opacity',
+                        !readOnly && 'hover:opacity-75',
+                      )}
                     />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
-                      <AddPhotoAlternateOutlined className="dark:text-polar-400 text-gray-600" />
-                    </div>
+                    {!readOnly && (
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
+                        <AddPhotoAlternateOutlined className="dark:text-polar-400 text-gray-600" />
+                      </div>
+                    )}
                   </div>
                   <FormMessage className="mt-2 text-xs/snug" />
                 </div>

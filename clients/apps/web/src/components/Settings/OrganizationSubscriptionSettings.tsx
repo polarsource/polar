@@ -19,12 +19,12 @@ import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationSubscriptionSettingsProps {
   organization: schemas['Organization']
-  canManageOrganization: boolean | undefined
+  readOnly: boolean
 }
 
 const OrganizationSubscriptionSettings: React.FC<
   OrganizationSubscriptionSettingsProps
-> = ({ organization, canManageOrganization }) => {
+> = ({ organization, readOnly }) => {
   const form = useForm<schemas['OrganizationSubscriptionSettings']>({
     defaultValues: organization.subscription_settings,
   })
@@ -85,7 +85,7 @@ const OrganizationSubscriptionSettings: React.FC<
                   <FormControl>
                     <Switch
                       checked={field.value}
-                      disabled={!canManageOrganization}
+                      disabled={readOnly}
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>
@@ -110,7 +110,7 @@ const OrganizationSubscriptionSettings: React.FC<
                       organization={organization}
                       value={field.value}
                       onValueChange={field.onChange}
-                      disabled={!canManageOrganization}
+                      disabled={readOnly}
                     />
                   </FormControl>
                   <FormMessage />
@@ -131,7 +131,7 @@ const OrganizationSubscriptionSettings: React.FC<
                   <FormControl>
                     <BenefitRevocationGracePeriod
                       value={field.value}
-                      disabled={!canManageOrganization}
+                      disabled={readOnly}
                       onValueChange={(value) => field.onChange(Number(value))}
                     />
                   </FormControl>
@@ -153,7 +153,7 @@ const OrganizationSubscriptionSettings: React.FC<
                   <FormControl>
                     <Switch
                       checked={field.value}
-                      disabled={!canManageOrganization}
+                      disabled={readOnly}
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>

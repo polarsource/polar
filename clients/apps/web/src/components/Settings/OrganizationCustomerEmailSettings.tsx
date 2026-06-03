@@ -9,7 +9,7 @@ import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationCustomerEmailSettingsProps {
   organization: schemas['Organization']
-  canManageOrganization: boolean | undefined
+  readOnly: boolean
 }
 
 const customerEmails: {
@@ -80,7 +80,7 @@ const customerEmails: {
 
 const OrganizationCustomerEmailSettings: React.FC<
   OrganizationCustomerEmailSettingsProps
-> = ({ organization, canManageOrganization }) => {
+> = ({ organization, readOnly }) => {
   const updateOrganization = useUpdateOrganization()
 
   const { value: settings, update } = useOptimisticSave(
@@ -109,7 +109,7 @@ const OrganizationCustomerEmailSettings: React.FC<
         <SettingsGroupItem key={key} title={title} description={description}>
           <Switch
             checked={settings[key]}
-            disabled={!canManageOrganization}
+            disabled={readOnly}
             onCheckedChange={(checked) =>
               update((previous) => ({ ...previous, [key]: checked }))
             }

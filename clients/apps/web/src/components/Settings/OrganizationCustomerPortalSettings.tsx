@@ -17,12 +17,12 @@ import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationCustomerPortalSettingsProps {
   organization: schemas['Organization']
-  canManageOrganization: boolean | undefined
+  readOnly: boolean
 }
 
 const OrganizationCustomerPortalSettings: React.FC<
   OrganizationCustomerPortalSettingsProps
-> = ({ organization, canManageOrganization }) => {
+> = ({ organization, readOnly }) => {
   const form = useForm<schemas['OrganizationCustomerPortalSettings']>({
     defaultValues: {
       ...organization.customer_portal_settings,
@@ -90,7 +90,7 @@ const OrganizationCustomerPortalSettings: React.FC<
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      disabled={!canManageOrganization}
+                      disabled={readOnly}
                     />
                   </FormControl>
                   <FormMessage />
@@ -112,7 +112,7 @@ const OrganizationCustomerPortalSettings: React.FC<
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      disabled={!canManageOrganization}
+                      disabled={readOnly}
                     />
                   </FormControl>
                   <FormMessage />
@@ -134,7 +134,7 @@ const OrganizationCustomerPortalSettings: React.FC<
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      disabled={!canManageOrganization}
+                      disabled={readOnly}
                     />
                   </FormControl>
                   <FormMessage />
@@ -156,7 +156,7 @@ const OrganizationCustomerPortalSettings: React.FC<
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      disabled={!canManageOrganization}
+                      disabled={readOnly}
                     />
                   </FormControl>
                   <FormMessage />

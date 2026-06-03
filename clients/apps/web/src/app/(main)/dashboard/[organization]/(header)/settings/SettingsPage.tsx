@@ -35,7 +35,7 @@ export default function ClientPage({
           <SectionDescription title="Organization" />
           <OrganizationProfileSettings
             organization={org}
-            canManageOrganization={canManageOrganization}
+            readOnly={!canManageOrganization}
           />
         </Section>
 
@@ -43,7 +43,7 @@ export default function ClientPage({
           <SectionDescription title="Payments" />
           <OrganizationPaymentSettings
             organization={org}
-            canManageOrganization={canManageOrganization}
+            readOnly={!canManageOrganization}
           />
         </Section>
 
@@ -51,7 +51,7 @@ export default function ClientPage({
           <SectionDescription title="Subscriptions" />
           <OrganizationSubscriptionSettings
             organization={org}
-            canManageOrganization={canManageOrganization}
+            readOnly={!canManageOrganization}
           />
         </Section>
 
@@ -59,7 +59,7 @@ export default function ClientPage({
           <SectionDescription title="Customer portal" />
           <OrganizationCustomerPortalSettings
             organization={org}
-            canManageOrganization={canManageOrganization}
+            readOnly={!canManageOrganization}
           />
         </Section>
 
@@ -84,7 +84,7 @@ export default function ClientPage({
           )}
           <OrganizationCustomerEmailSettings
             organization={org}
-            canManageOrganization={canManageOrganization}
+            readOnly={!canManageOrganization}
           />
         </Section>
 
@@ -103,7 +103,7 @@ export default function ClientPage({
           />
           <FeatureSettings
             organization={org}
-            canManageOrganization={canManageOrganization}
+            readOnly={!canManageOrganization}
           />
         </Section>
 

@@ -60,7 +60,7 @@ import {
 interface OrganizationDetailsFormProps {
   organization: schemas['Organization']
   inKYCMode: boolean
-  canManageOrganization: boolean | undefined
+  readOnly: boolean
 }
 
 const SwitchingFromOptions = {
@@ -89,12 +89,12 @@ const SOCIAL_PLATFORM_DOMAINS: Record<string, string> = {
 
 interface OrganizationSocialLinksProps {
   required?: boolean
-  canManageOrganization: boolean | undefined
+  readOnly: boolean
 }
 
 const OrganizationSocialLinks = ({
   required,
-  canManageOrganization,
+  readOnly,
 }: OrganizationSocialLinksProps) => {
   const { control, formState } = useFormContext<schemas['OrganizationUpdate']>()
 
@@ -194,7 +194,7 @@ const OrganizationSocialLinks = ({
             ))}
             <Button
               type="button"
-              disabled={!canManageOrganization}
+              disabled={readOnly}
               size="sm"
               variant="secondary"
               onClick={() => {
@@ -236,7 +236,7 @@ const CompactTextArea = ({
 const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
   organization,
   inKYCMode,
-  canManageOrganization,
+  readOnly,
 }) => {
   const { control, setError, setValue } =
     useFormContext<schemas['OrganizationUpdate']>()
@@ -335,7 +335,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                       {...field}
                       value={field.value || ''}
                       placeholder="Acme Inc"
-                      disabled={!canManageOrganization}
+                      disabled={readOnly}
                     />
                     <FormMessage />
                   </div>
@@ -359,7 +359,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                   }
                   onChange={field.onChange as (value: string) => void}
                   placeholder="Select country"
-                  disabled={!canManageOrganization}
+                  disabled={readOnly}
                 />
                 <FormMessage />
               </div>
@@ -373,7 +373,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
             <FormField
               control={control}
               name="website"
-              disabled={!canManageOrganization}
+              disabled={readOnly}
               rules={{
                 required: 'Website is required',
                 validate: (value) => {
@@ -448,7 +448,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                   <Input
                     type="email"
                     {...field}
-                    disabled={!canManageOrganization}
+                    disabled={readOnly}
                     value={field.value || ''}
                     placeholder="support@acme.com"
                   />
@@ -470,10 +470,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
               verification. They will never be shown publicly.
             </p>
           </div>
-          <OrganizationSocialLinks
-            required={inKYCMode}
-            canManageOrganization={canManageOrganization}
-          />
+          <OrganizationSocialLinks required={inKYCMode} readOnly={readOnly} />
         </div>
       </div>
 
@@ -578,17 +575,12 @@ interface OrganizationProfileSettingsProps {
   organization: schemas['Organization']
   kyc?: boolean
   onSubmitted?: () => void
-  canManageOrganization: boolean | undefined
+  readOnly: boolean
 }
 
 const OrganizationProfileSettings: React.FC<
   OrganizationProfileSettingsProps
-> = ({
-  organization: _organization,
-  kyc,
-  onSubmitted,
-  canManageOrganization,
-}) => {
+> = ({ organization: _organization, kyc, onSubmitted, readOnly }) => {
   const organization = _organization as schemas['Organization'] & {
     default_presentment_currency: schemas['PresentmentCurrency']
     country?: schemas['CountryAlpha2Input']
@@ -800,7 +792,7 @@ const OrganizationProfileSettings: React.FC<
             <OrganizationDetailsForm
               organization={organization}
               inKYCMode={inKYCMode}
-              canManageOrganization={canManageOrganization}
+              readOnly={readOnly}
             />
           </div>
 

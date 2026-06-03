@@ -27,7 +27,7 @@ export const AccountPageDetailsRequired = ({ organization }: Props) => {
           <OrganizationProfileSettings
             organization={organization}
             kyc={true}
-            canManageOrganization={canManageOrganization}
+            readOnly={!canManageOrganization}
           />
         </Section>
       </div>

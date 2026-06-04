@@ -206,7 +206,7 @@ async def create_subscription(
                 cancel_at_period_end=False,
                 recurring_interval=recurring_interval,
                 recurring_interval_count=recurring_interval_count,
-                organization_id=product.organization_id,
+                organization=product.organization,
                 product=product,
                 customer=customer,
                 subscription_product_prices=subscription_product_prices,

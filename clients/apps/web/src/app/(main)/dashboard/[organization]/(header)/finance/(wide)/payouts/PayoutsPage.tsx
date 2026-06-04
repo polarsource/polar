@@ -33,6 +33,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
 import { EllipsisVertical } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -106,10 +111,22 @@ export default function ClientPage({
       ),
       cell: ({ getValue }) => {
         return (
-          <FormattedDateTime
-            datetime={getValue() as string}
-            resolution="time"
-          />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="truncate whitespace-nowrap">
+                <FormattedDateTime
+                  datetime={getValue() as Date}
+                  resolution="day"
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <FormattedDateTime
+                datetime={getValue() as Date}
+                resolution="time"
+              />
+            </TooltipContent>
+          </Tooltip>
         )
       },
     },

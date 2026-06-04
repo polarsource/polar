@@ -5,7 +5,7 @@ import { toast } from '@/components/Toast/use-toast'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Button, Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
   DataTable,
@@ -14,6 +14,7 @@ import {
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
 import { useCallback } from 'react'
+import Button from '@polar-sh/ui/components/atoms/Button'
 
 const formatPrice = formatCurrency('standard', 'en-US')
 

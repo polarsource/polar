@@ -1,12 +1,6 @@
 // ─── Components ───────────────────────────────────────────────────────────────
-export { Avatar } from './components/Avatar'
-export type { AvatarProps } from './components/Avatar'
-export { Button } from './components/Button'
-export type { ButtonProps } from './components/Button'
 export { SegmentedControl } from './components/SegmentedControl'
 export type { SegmentedControlProps } from './components/SegmentedControl'
-export { Stack } from './components/Stack'
-export type { StackBreakpoint, StackGap, StackProps } from './components/Stack'
 export { Text } from './components/Text'
 export type { TextColor, TextStyleProps, TextVariant } from './components/Text'
 export { Truncated } from './components/Truncated'

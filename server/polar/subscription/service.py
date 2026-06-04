@@ -589,7 +589,7 @@ class SubscriptionService:
         subscription.recurring_interval_count = recurring_interval_count
         subscription.status = status
         subscription.payment_method = payment_method
-        subscription.organization = product.organization
+        subscription.organization = checkout.organization
         subscription.product = product
         subscription.subscription_product_prices = subscription_product_prices
         subscription.currency = currency

@@ -13,6 +13,8 @@ Use task debouncing when you have background tasks that:
 - Have some tolerance for delayed execution
 - Would benefit from reduced database load and resource usage
 
+**Limitation:** Debounced tasks cannot be routed to SQS/Lambda workers. They must run on the Dramatiq/Redis broker. The system validates this at startup and will raise an error if a debounced actor is added to the SQS allowlist.
+
 **Common use cases:**
 
 - Updating customer metrics after multiple usage events

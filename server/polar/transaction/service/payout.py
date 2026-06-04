@@ -70,9 +70,6 @@ class PayoutTransactionService(BaseTransactionService):
         transaction: Transaction,
         payout: Payout,
     ) -> Transaction:
-        # `payout` is passed explicitly rather than read via `transaction.payout`
-        # because callers refresh the payout under `with_for_update=True`, which
-        # expires the back-reference and trips Transaction.payout's lazy='raise'.
         reversed_transaction = Transaction(
             id=generate_uuid(),
             type=TransactionType.payout_reversal,

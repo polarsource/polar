@@ -71,6 +71,8 @@ export interface paths {
     /**
      * Get Authenticated Notification Settings
      * @description Get the authenticated user's notification settings for an organization.
+     *
+     *     **Scopes**: `user:read` `user:write`
      */
     get: operations['users:get_authenticated_notification_settings']
     put?: never
@@ -81,6 +83,8 @@ export interface paths {
     /**
      * Update Authenticated Notification Settings
      * @description Update the authenticated user's notification settings for an organization.
+     *
+     *     **Scopes**: `user:write`
      */
     patch: operations['users:update_authenticated_notification_settings']
     trace?: never

@@ -102,6 +102,14 @@ class Discount(MetadataMixin, RecordModel):
     def get_discount_amount(self, amount: int, currency: str) -> int:
         raise NotImplementedError()
 
+    def allocate_discount_amounts(self, amounts: list[int], currency: str) -> list[int]:
+        """Allocate this discount across an ordered list of amounts.
+
+        Returns the discount applied to each amount, in the same order. Each
+        concrete discount type defines how the discount is distributed.
+        """
+        raise NotImplementedError()
+
     def is_applicable(self, product: "Product", currency: str) -> bool:
         raise NotImplementedError()
 
@@ -171,6 +179,18 @@ class DiscountFixed(Discount):
     def get_discount_amount(self, amount: int, currency: str) -> int:
         return min(self.amounts[currency], amount)
 
+    def allocate_discount_amounts(self, amounts: list[int], currency: str) -> list[int]:
+        # Waterfall: the first amount absorbs as much of the discount as it can,
+        # the remainder flows to the next, and so on. This guarantees the parts
+        # sum to min(discount, total)
+        remaining = self.amounts[currency]
+        allocations: list[int] = []
+        for amount in amounts:
+            allocated = min(remaining, amount)
+            allocations.append(allocated)
+            remaining -= allocated
+        return allocations
+
     @property
     def amount(self) -> int:
         """Backward compatibility for the amount field."""
@@ -204,6 +224,13 @@ class DiscountPercentage(Discount):
     def get_discount_amount(self, amount: int, currency: str) -> int:
         discount_amount_float = amount * (self.basis_points / 10_000)
         return polar_round(discount_amount_float)
+
+    def allocate_discount_amounts(self, amounts: list[int], currency: str) -> list[int]:
+        # Each amount is discounted independently. Because each share is rounded
+        # on its own, the parts can sum to ±(n-1) minor units off the discount on
+        # the combined total; this is accepted because prorations are not
+        # re-pooled at the order level.
+        return [self.get_discount_amount(amount, currency) for amount in amounts]
 
     def is_applicable(self, product: "Product", currency: str) -> bool:
         if len(self.products) == 0:

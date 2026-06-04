@@ -378,3 +378,92 @@ resource "tfe_variable" "polar_scale_product_id_test" {
   description     = "Polar Scale-tier product ID for test"
   variable_set_id = tfe_variable_set.test.id
 }
+
+# Vercel frontend
+resource "tfe_variable" "vercel_stripe_publishable_key_preview_test" {
+  key             = "stripe_publishable_key_preview"
+  category        = "terraform"
+  description     = "Stripe publishable key for Vercel test preview deployments"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "vercel_mintlify_assistant_api_key_test" {
+  key             = "mintlify_assistant_api_key"
+  category        = "terraform"
+  description     = "Mintlify assistant API key for the Vercel test frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "vercel_gram_api_key_test" {
+  key             = "gram_api_key"
+  category        = "terraform"
+  description     = "Gram API key for the Vercel test frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "vercel_sentry_auth_token_test" {
+  key             = "sentry_auth_token"
+  category        = "terraform"
+  description     = "Sentry auth token for the Vercel test frontend build"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "vercel_polar_preview_access_token_test" {
+  key             = "polar_preview_access_token"
+  category        = "terraform"
+  description     = "Polar preview access token for the Vercel test frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "vercel_mcp_oauth2_client_id_test" {
+  key             = "mcp_oauth2_client_id"
+  category        = "terraform"
+  description     = "MCP OAuth2 client ID for the Vercel test frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "vercel_mcp_oauth2_client_secret_test" {
+  key             = "mcp_oauth2_client_secret"
+  category        = "terraform"
+  description     = "MCP OAuth2 client secret for the Vercel test frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "vercel_next_public_sentry_dsn_test" {
+  key             = "next_public_sentry_dsn"
+  category        = "terraform"
+  description     = "Sentry DSN for the Vercel test frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "vercel_next_public_posthog_token_test" {
+  key             = "next_public_posthog_token"
+  category        = "terraform"
+  description     = "PostHog token for the Vercel test frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "vercel_next_public_apple_domain_association_test" {
+  key             = "next_public_apple_domain_association"
+  category        = "terraform"
+  description     = "Apple Pay domain association for the Vercel test frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "vercel_next_public_stripe_payment_method_configuration_test" {
+  key             = "next_public_stripe_payment_method_configuration"
+  category        = "terraform"
+  description     = "Stripe payment method configuration ID for the Vercel test frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}

@@ -26,6 +26,11 @@ terraform {
       source  = "hashicorp/tfe"
       version = "0.71.0"
     }
+
+    vercel = {
+      source  = "vercel/vercel"
+      version = "~> 5.3"
+    }
   }
 
   required_version = ">= 1.2"

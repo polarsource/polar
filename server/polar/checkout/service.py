@@ -733,7 +733,9 @@ class CheckoutService:
 
         amount = calculate_upfront_amount(
             currency_prices.get_static_prices(),
-            custom_amount=custom_amount or None,
+            # A validated `0` prefill is honored (PWYW prices that allow 0);
+            # `None` falls back to the preset/minimum.
+            custom_amount=custom_amount,
             seats=seats,
         )
 

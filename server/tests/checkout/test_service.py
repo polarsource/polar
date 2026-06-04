@@ -2367,6 +2367,28 @@ class TestCheckoutLinkCreate:
         assert checkout.success_url == "https://example.com/success"
         assert checkout.user_metadata == {"key": "value"}
 
+    async def test_valid_custom_price_honors_zero_prefill(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # PWYW price that allows 0 with a non-zero preset: a validated `?amount=0`
+        # prefill must be honored, not fall back to the preset.
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[(0, None, 700, "usd")],
+        )
+        checkout_link = await create_checkout_link(save_fixture, products=[product])
+
+        checkout = await checkout_service.checkout_link_create(
+            session, checkout_link, query_prefill={"amount": "0"}
+        )
+
+        assert checkout.amount == 0
+
     async def test_valid_seat_based_defaults_to_minimum_seats(
         self,
         save_fixture: SaveFixture,

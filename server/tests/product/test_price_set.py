@@ -120,6 +120,16 @@ class TestCalculateUpfrontAmount:
         )
         assert amount == 0
 
+    def test_custom_preset_zero_is_honored(self) -> None:
+        # A configured preset of 0 ("show $0 default") must NOT fall back to the
+        # minimum; only a missing preset does.
+        amount = calculate_upfront_amount(
+            [_custom(minimum_amount=500, preset_amount=0)],
+            custom_amount=None,
+            seats=None,
+        )
+        assert amount == 0
+
     def test_seat(self) -> None:
         seat = _seat(price_per_seat=1000)
         amount = calculate_upfront_amount([seat], custom_amount=None, seats=5)

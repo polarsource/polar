@@ -140,8 +140,12 @@ def calculate_upfront_amount(
         elif is_custom_price(price):
             if custom_amount is not None:
                 amount += custom_amount
+            elif price.preset_amount is not None:
+                # A configured preset of 0 ("show $0 default") is honored; only a
+                # missing preset falls back to the minimum.
+                amount += price.preset_amount
             else:
-                amount += price.preset_amount or price.minimum_amount
+                amount += price.minimum_amount
         elif is_seat_price(price):
             if seats is None:
                 raise ValueError("seats must be provided to price a seat-based price")

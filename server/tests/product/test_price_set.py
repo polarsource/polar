@@ -37,7 +37,9 @@ def _metered() -> ProductPriceMeteredUnit:
     )
 
 
-def _seat(*, price_per_seat: int = 1000, minimum_seats: int = 1) -> ProductPriceSeatUnit:
+def _seat(
+    *, price_per_seat: int = 1000, minimum_seats: int = 1
+) -> ProductPriceSeatUnit:
     return ProductPriceSeatUnit(
         price_currency="usd",
         seat_tiers={
@@ -94,9 +96,7 @@ class TestCalculateUpfrontAmount:
         assert amount == 1500
 
     def test_custom_with_amount(self) -> None:
-        amount = calculate_upfront_amount(
-            [_custom()], custom_amount=2000, seats=None
-        )
+        amount = calculate_upfront_amount([_custom()], custom_amount=2000, seats=None)
         assert amount == 2000
 
     def test_custom_falls_back_to_preset(self) -> None:
@@ -134,7 +134,7 @@ class TestCalculateUpfrontAmount:
         assert amount == 0
 
     def test_seat_price_without_seats_raises(self) -> None:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="seats must be provided"):
             calculate_upfront_amount([_seat()], custom_amount=None, seats=None)
 
     def test_sums_fixed_and_seat(self) -> None:

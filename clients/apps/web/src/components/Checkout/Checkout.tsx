@@ -17,6 +17,7 @@ import {
   CheckoutSeatSelector,
 } from '@polar-sh/checkout/components'
 import {
+  getSeatPrice,
   hasProductCheckout,
   type ProductCheckoutPublic,
 } from '@polar-sh/checkout/guards'
@@ -275,7 +276,7 @@ const Checkout = ({
           beforeSubmit={
             hasProductCheckout(checkout) && !checkout.is_free_product_price ? (
               <div className="flex flex-col gap-4">
-                {checkout.product_price.amount_type === 'seat_based' && (
+                {!!getSeatPrice(checkout) && (
                   <CheckoutSeatSelector
                     checkout={checkout}
                     update={update}
@@ -411,7 +412,7 @@ const Checkout = ({
                 )}
                 {!checkout.is_free_product_price && (
                   <div className="flex flex-col gap-4 text-sm">
-                    {checkout.product_price.amount_type === 'seat_based' && (
+                    {!!getSeatPrice(checkout) && (
                       <CheckoutSeatSelector
                         checkout={checkout}
                         update={update}

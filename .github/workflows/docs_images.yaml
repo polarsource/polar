@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
 
       - name: Compress Images
         uses: calibreapp/image-actions@1.5.0

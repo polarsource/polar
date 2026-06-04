@@ -20,6 +20,7 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_benefit_grant,
     create_customer,
+    create_payment_method,
     create_subscription,
 )
 
@@ -247,6 +248,28 @@ class TestGetExternal:
 
         json = response.json()
         assert json["id"] == str(customer_external_id.id)
+        assert json["default_payment_method_id"] is None
+
+    @pytest.mark.auth
+    async def test_valid_default_payment_method(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer_external_id: Customer,
+    ) -> None:
+        payment_method = await create_payment_method(save_fixture, customer_external_id)
+        customer_external_id.default_payment_method_id = payment_method.id
+        await save_fixture(customer_external_id)
+
+        response = await client.get(
+            f"/v1/customers/external/{customer_external_id.external_id}"
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["default_payment_method_id"] == str(payment_method.id)
 
 
 @pytest.mark.asyncio
@@ -318,6 +341,109 @@ class TestGetState:
             json["granted_benefits"][0]["benefit_metadata"]
             == benefit_organization.user_metadata
         )
+
+
+@pytest.mark.asyncio
+class TestListPaymentMethods:
+    async def test_anonymous(self, client: AsyncClient, customer: Customer) -> None:
+        response = await client.get(f"/v1/customers/{customer.id}/payment-methods")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
+    async def test_missing_scope(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        response = await client.get(f"/v1/customers/{customer.id}/payment-methods")
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_not_existing(
+        self, client: AsyncClient, user_organization: UserOrganization
+    ) -> None:
+        response = await client.get(f"/v1/customers/{uuid.uuid4()}/payment-methods")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_not_accessible(
+        self, client: AsyncClient, customer: Customer
+    ) -> None:
+        response = await client.get(f"/v1/customers/{customer.id}/payment-methods")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        default_payment_method = await create_payment_method(
+            save_fixture,
+            customer,
+            type="card",
+            method_metadata={
+                "brand": "visa",
+                "last4": "4242",
+                "exp_month": 12,
+                "exp_year": 2030,
+            },
+        )
+        other_payment_method = await create_payment_method(save_fixture, customer)
+
+        customer.default_payment_method_id = default_payment_method.id
+        await save_fixture(customer)
+
+        response = await client.get(f"/v1/customers/{customer.id}/payment-methods")
+
+        assert response.status_code == 200
+
+        json = response.json()
+
+        assert json["pagination"]["total_count"] == 2
+
+        items_by_id = {item["id"]: item for item in json["items"]}
+
+        default_item = items_by_id[str(default_payment_method.id)]
+        assert default_item["type"] == "card"
+        assert default_item["method_metadata"]["brand"] == "visa"
+        assert default_item["is_default"] is True
+
+        other_item = items_by_id[str(other_payment_method.id)]
+        assert other_item["is_default"] is False
+
+    @pytest.mark.auth
+    async def test_valid_external_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            external_id="external-123",
+        )
+        payment_method = await create_payment_method(save_fixture, customer)
+
+        response = await client.get(
+            f"/v1/customers/external/{customer.external_id}/payment-methods"
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["id"] == str(payment_method.id)
 
 
 @pytest.mark.asyncio

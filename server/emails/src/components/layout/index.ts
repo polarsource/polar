@@ -1,6 +1,0 @@
-export { default as WrapperPolar } from './WrapperPolar'
-export { default as WrapperOrganization } from './WrapperOrganization'
-export { default as Footer } from './Footer'
-export { default as FooterCustomer } from './FooterCustomer'
-export { default as Divider } from './Divider'
-export { Button } from './Button'

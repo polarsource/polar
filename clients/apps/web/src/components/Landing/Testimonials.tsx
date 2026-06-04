@@ -1,7 +1,8 @@
-import { Avatar, Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { StillaAI } from './Logos'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 
 export const companyTestimonials = [
   {

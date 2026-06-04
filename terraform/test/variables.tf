@@ -330,3 +330,70 @@ variable "polar_scale_product_id" {
   description = "Polar Scale-tier product ID"
   type        = string
 }
+
+# Vercel frontend
+variable "stripe_publishable_key_preview" {
+  description = "Stripe publishable key for Vercel preview deployments"
+  type        = string
+  sensitive   = true
+}
+
+variable "mintlify_assistant_api_key" {
+  description = "Mintlify assistant API key for the Vercel frontend"
+  type        = string
+  sensitive   = true
+}
+
+variable "gram_api_key" {
+  description = "Gram API key for the Vercel frontend"
+  type        = string
+  sensitive   = true
+}
+
+variable "sentry_auth_token" {
+  description = "Sentry auth token for the Vercel frontend build"
+  type        = string
+  sensitive   = true
+}
+
+variable "polar_preview_access_token" {
+  description = "Polar preview access token for the Vercel frontend"
+  type        = string
+  sensitive   = true
+}
+
+variable "mcp_oauth2_client_id" {
+  description = "MCP OAuth2 client ID for the Vercel frontend"
+  type        = string
+  sensitive   = true
+}
+
+variable "mcp_oauth2_client_secret" {
+  description = "MCP OAuth2 client secret for the Vercel frontend"
+  type        = string
+  sensitive   = true
+}
+
+variable "next_public_sentry_dsn" {
+  description = "Sentry DSN for the Vercel frontend"
+  type        = string
+  sensitive   = true
+}
+
+variable "next_public_posthog_token" {
+  description = "PostHog token for the Vercel frontend"
+  type        = string
+  sensitive   = true
+}
+
+variable "next_public_apple_domain_association" {
+  description = "Apple Pay domain association for the Vercel frontend"
+  type        = string
+  sensitive   = true
+}
+
+variable "next_public_stripe_payment_method_configuration" {
+  description = "Stripe payment method configuration ID for the Vercel frontend"
+  type        = string
+  sensitive   = true
+}

@@ -1,5 +1,4 @@
-import { Footer, WrapperPolar } from '../components/layout'
-import { Intro, Text } from '../components/text'
+import { Footer, Intro, Text, WrapperPolar } from '../components/foundation'
 import type { schemas } from '../types'
 
 export function PolarSelfSubscriptionCycled({

@@ -57,9 +57,16 @@ const TransactionsList = ({
       cell: (props) => {
         const datetime = props.getValue() as string
         return (
-          <div className="whitespace-nowrap">
-            <FormattedDateTime datetime={datetime} resolution="time" />
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="truncate whitespace-nowrap">
+                <FormattedDateTime datetime={datetime} resolution="day" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <FormattedDateTime datetime={datetime} resolution="time" />
+            </TooltipContent>
+          </Tooltip>
         )
       },
     },
@@ -69,6 +76,8 @@ const TransactionsList = ({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Description" />
       ),
+      minSize: 200,
+
       cell: (props) => {
         const transaction = props.row.original
         if (isTransaction(transaction)) {

@@ -1,8 +1,5 @@
-/* eslint-disable no-restricted-imports, email-ds/no-classname */
-import { Hr, Img, Preview, Section, Text } from 'react-email'
-import Button from '../components/Button'
-import Footer from '../components/Footer'
-import WrapperPolar from '../components/WrapperPolar'
+import { Button, Footer, Text, WrapperPolar } from '../components/foundation'
+import SaleSummary from '../components/SaleSummary'
 import type { schemas } from '../types'
 
 export function NotificationNewSale({
@@ -34,88 +31,26 @@ export function NotificationNewSale({
     addressParts.length > 0 ? addressParts.join(', ') : null
 
   return (
-    <WrapperPolar>
-      <Preview>
-        {displayName} placed an order for {product_name}
-      </Preview>
-      <Section>
-        <Text className="m-0 text-lg text-gray-900">
-          <strong>{displayName}</strong> placed an order
-          {formattedDate ? ` on ${formattedDate}` : ''}!
-        </Text>
-      </Section>
-
-      {order_url && (
-        <Section className="mt-6 mb-8">
-          <Button href={order_url}>View order</Button>
-        </Section>
-      )}
-
-      <Hr className="my-6 border-gray-200" />
-
-      <Section>
-        <Text className="my-0 mb-2 text-base font-semibold text-gray-900">
-          Order Summary
-        </Text>
-        <table className="w-full">
-          <tbody>
-            <tr>
-              {product_image_url && (
-                <td className="w-[72px] pr-3 align-top">
-                  <Img
-                    src={product_image_url}
-                    width={64}
-                    height={64}
-                    className="rounded-lg border border-gray-200"
-                  />
-                </td>
-              )}
-              <td className="align-middle">
-                <Text className="m-0 text-sm font-medium text-gray-900">
-                  {product_name}
-                </Text>
-                <Text className="m-0 text-sm text-gray-500">
-                  {formatted_price_amount}
-                </Text>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </Section>
-
-      <Hr className="my-6 border-gray-200" />
-
-      {formatted_billing_reason && (
-        <Section>
-          <Text className="m-0 text-sm font-semibold text-gray-900">
-            Order Type
-          </Text>
-          <Text className="m-0 text-sm text-gray-600">
-            {formatted_billing_reason}
-          </Text>
-        </Section>
-      )}
-
-      <Section className="mt-4 mb-6">
-        <Text className="m-0 text-sm font-semibold text-gray-900">
-          Customer
-        </Text>
-        {customer_name && (
-          <Text className="m-0 text-sm text-gray-600">{customer_name}</Text>
-        )}
-        {customer_email && (
-          <Text className="m-0 text-sm text-gray-600">{customer_email}</Text>
-        )}
-        {formattedAddress && (
-          <Text className="m-0 text-sm text-gray-600">{formattedAddress}</Text>
-        )}
-        {formatted_address_country && (
-          <Text className="m-0 text-sm text-gray-600">
-            {formatted_address_country}
-          </Text>
-        )}
-      </Section>
-
+    <WrapperPolar
+      preview={`${displayName} placed an order for ${product_name}`}
+    >
+      <Text variant="lead">
+        <Text as="span" weight="bold">
+          {displayName}
+        </Text>{' '}
+        placed an order{formattedDate ? ` on ${formattedDate}` : ''}!
+      </Text>
+      {order_url && <Button href={order_url}>View order</Button>}
+      <SaleSummary
+        product_name={product_name}
+        product_image_url={product_image_url}
+        formatted_price_amount={formatted_price_amount}
+        formatted_billing_reason={formatted_billing_reason}
+        customer_name={customer_name}
+        customer_email={customer_email}
+        formatted_address={formattedAddress}
+        formatted_address_country={formatted_address_country}
+      />
       <Footer email={null} />
     </WrapperPolar>
   )

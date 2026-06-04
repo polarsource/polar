@@ -21,6 +21,11 @@ terraform {
       source  = "cloudflare/cloudflare"
       version = "~> 5.13"
     }
+
+    vercel = {
+      source  = "vercel/vercel"
+      version = "~> 5.3"
+    }
   }
 
   required_version = ">= 1.2"

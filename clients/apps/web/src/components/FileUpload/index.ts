@@ -40,6 +40,7 @@ interface FileUploadProps<T extends FileRead | schemas['FileUpload']> {
   onFilesUpdated: (files: FileObject<T>[]) => void
   onFilesRejected?: (rejections: FileRejection[]) => void
   onFileUploadError?: (fileName: string, error: Error) => void
+  disabled?: boolean
 }
 
 export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
@@ -51,6 +52,7 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
   onFilesRejected,
   onFileUploadError,
   initialFiles = [],
+  disabled = false,
 }: FileUploadProps<T>) => {
   const [files, setFilesState] = useState<FileObject<T>[]>(
     buildFileObjects(initialFiles) as unknown as FileObject<T>[],
@@ -165,6 +167,7 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
     maxSize,
     accept,
     onDrop,
+    disabled,
   })
 
   return {

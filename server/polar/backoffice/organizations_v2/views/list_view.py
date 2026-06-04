@@ -256,7 +256,8 @@ class OrganizationListView:
                     f"Aging {signals.aging_pts:.0f} + "
                     f"Risk {signals.risk_pts:.0f} + "
                     f"Payments {signals.payment_pts:.0f} + "
-                    f"Fast Mover {signals.fast_mover_pts:.0f}"
+                    f"Fast Mover {signals.fast_mover_pts:.0f} + "
+                    f"Held Payouts {signals.held_payout_pts:.0f}"
                 )
                 with tag.td(classes="text-sm font-bold text-center"):
                     with tag.span(title=tooltip):

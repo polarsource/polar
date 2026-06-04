@@ -128,3 +128,11 @@ CMD ["uv", "run", "uvicorn", "polar.app:app", "--host", "0.0.0.0", "--port", "10
 FROM production AS playwright
 
 RUN uv run playwright install --with-deps chromium
+
+# Stage 7: AWS Lambda image (SQS-driven background tasks, POC)
+FROM production AS lambda
+
+RUN uv pip install awslambdaric
+
+ENTRYPOINT ["uv", "run", "python", "-m", "awslambdaric"]
+CMD ["polar.worker.aws_lambda.handler"]

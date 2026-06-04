@@ -1,6 +1,5 @@
-import contextlib
 import uuid
-from collections.abc import AsyncGenerator, Sequence
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any, Literal, cast, overload
@@ -59,7 +58,6 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
-from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import (
     Benefit,
@@ -323,6 +321,8 @@ class SubscriptionService:
         session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
+        *,
+        for_update: bool = False,
     ) -> Subscription | None:
         repository = SubscriptionRepository.from_session(session)
         statement = (
@@ -337,6 +337,10 @@ class SubscriptionService:
                 )
             )
         )
+
+        if for_update:
+            statement = statement.with_for_update(of=Subscription)
+
         return await repository.get_one_or_none(statement)
 
     async def create(
@@ -474,6 +478,7 @@ class SubscriptionService:
             cancel_at_period_end=False,
             recurring_interval=recurring_interval,
             recurring_interval_count=recurring_interval_count,
+            organization_id=product.organization_id,
             product=product,
             customer=customer,
             subscription_product_prices=subscription_product_prices,
@@ -585,6 +590,7 @@ class SubscriptionService:
         subscription.recurring_interval_count = recurring_interval_count
         subscription.status = status
         subscription.payment_method = payment_method
+        subscription.organization_id = product.organization_id
         subscription.product = product
         subscription.subscription_product_prices = subscription_product_prices
         subscription.currency = currency
@@ -883,24 +889,9 @@ class SubscriptionService:
 
         enqueue_job("customer.state_changed", subscription.customer_id)
 
-    @contextlib.asynccontextmanager
-    async def lock(
-        self, locker: Locker, subscription: Subscription
-    ) -> AsyncGenerator[Subscription]:
-        lock_name = f"subscription:{subscription.id}"
-        if await locker.is_locked(lock_name):
-            raise SubscriptionLocked(subscription)
-        async with locker.lock(
-            lock_name,
-            timeout=10.0,  # Quite long, but we've experienced slow responses from Stripe in test mode
-            blocking_timeout=1,
-        ):
-            yield subscription
-
     async def update(
         self,
         session: AsyncSession,
-        locker: Locker,
         subscription: Subscription,
         *,
         update: SubscriptionUpdate,

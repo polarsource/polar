@@ -18,6 +18,7 @@ const BENEFIT_REVOCATION_GRACE_PERIOD_LABELS: Record<number, string> = {
 export interface BenefitRevocationGracePeriodProps {
   value: number
   onValueChange: (value: string) => void
+  disabled?: boolean
 }
 
 export const BenefitRevocationGracePeriod: React.FC<

@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
 
       - name: Run update script
         run: ./update-schema.sh https://spec.speakeasy.com/polar/polar/polar-oas-with-code-samples

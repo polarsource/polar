@@ -19,7 +19,15 @@ from typing import Annotated
 import typer
 from rich.table import Table
 
-from shared import ROOT_DIR, SECRETS_FILE, SERVER_DIR, console, run_command
+from shared import (
+    DEFAULT_API_PORT,
+    DEFAULT_WEB_PORT,
+    ROOT_DIR,
+    SECRETS_FILE,
+    SERVER_DIR,
+    console,
+    run_command,
+)
 
 DOCKER_DIR = ROOT_DIR / "dev" / "docker"
 COMPOSE_FILE = DOCKER_DIR / "docker-compose.dev.yml"
@@ -65,6 +73,54 @@ def s3_bucket(instance: int) -> str:
 
 def s3_public_bucket(instance: int) -> str:
     return f"polar-s3-public-{instance}"
+
+
+# Host ports for the per-instance app stack. Only api and web publish host
+# ports (shared infra is reached by container name). Each instance gets one
+# port per service from a tight band whose trailing two digits are the
+# instance number; both bands stay clear of every RESERVED_HOST_PORT.
+# Instance 0 uses the legacy defaults.
+API_PORT_BASE = 8100  # instance 1..99 → 8101..8199
+WEB_PORT_BASE = 3100  # instance 1..99 → 3101..3199
+
+# Host ports published by the shared infra and the non-Docker dev tooling.
+# Per-instance app ports must never collide with these.
+RESERVED_HOST_PORTS = frozenset(
+    {
+        DEFAULT_API_PORT,  # 8000 — non-Docker / legacy api
+        DEFAULT_WEB_PORT,  # 3000 — non-Docker / legacy web
+        3001,  # grafana
+        5432,  # postgres
+        6379,  # redis
+        7181,  # tinybird
+        7182,  # tinybird admin
+        9000,  # minio api
+        9001,  # minio console
+        9090,  # prometheus
+    }
+)
+
+
+def api_port(instance: int) -> int:
+    return DEFAULT_API_PORT if instance == 0 else API_PORT_BASE + instance
+
+
+def web_port(instance: int) -> int:
+    return DEFAULT_WEB_PORT if instance == 0 else WEB_PORT_BASE + instance
+
+
+def _assert_ports_free(instance: int) -> None:
+    """Fail fast if an instance's api or web port falls on a reserved infra port."""
+    if instance == 0:
+        return  # instance 0 uses the reserved legacy defaults by design
+    for label, port in (("API", api_port(instance)), ("web", web_port(instance))):
+        if port in RESERVED_HOST_PORTS:
+            console.print(
+                f"[red]Instance {instance} maps {label} to reserved infra port "
+                f"{port}. This is a bug in the port scheme (dev/cli/commands/"
+                f"docker.py); please report it.[/red]"
+            )
+            raise typer.Exit(1)
 
 
 APP_SERVICES = frozenset(("api", "worker", "web"))
@@ -460,11 +516,11 @@ def _build_compose_env(instance: int) -> dict[str, str]:
     the host browser). Infra services live in the shared stack and are
     reached by container name on the polar-shared network — no host ports.
     """
-    offset = instance * 100
+    _assert_ports_free(instance)
     return {
         "POLAR_DOCKER_INSTANCE": str(instance),
-        "API_PORT": str(8000 + offset),
-        "WEB_PORT": str(3000 + offset),
+        "API_PORT": str(api_port(instance)),
+        "WEB_PORT": str(web_port(instance)),
         "POLAR_POSTGRES_DATABASE": db_name(instance),
         "POLAR_REDIS_DB": str(redis_db(instance)),
         "POLAR_S3_FILES_BUCKET_NAME": s3_bucket(instance),
@@ -498,7 +554,6 @@ def _instance_was_explicit(ctx: typer.Context) -> bool:
 
 
 def _print_access_info(ctx: typer.Context, instance: int) -> None:
-    offset = instance * 100
     i_flag = f" -i {instance}" if _instance_was_explicit(ctx) else ""
     console.print()
     console.print("[bold]Polar Docker Development Environment[/bold]")
@@ -509,8 +564,8 @@ def _print_access_info(ctx: typer.Context, instance: int) -> None:
     )
     console.print()
     console.print("[bold]App services:[/bold]")
-    console.print(f"  API:           http://localhost:{8000 + offset}")
-    console.print(f"  Web:           http://localhost:{3000 + offset}")
+    console.print(f"  API:           http://localhost:{api_port(instance)}")
+    console.print(f"  Web:           http://localhost:{web_port(instance)}")
     console.print()
     console.print(
         "[bold]Shared infra:[/bold] (no host ports — reach via `dev docker exec <service>`)"
@@ -916,10 +971,10 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
                 raise typer.Exit(1)
             _upsert_registry(str(ROOT_DIR), instance)
         _write_stored_instance(instance)
-        offset = instance * 100
         console.print(f"[green]Stored instance {instance} in .env.docker[/green]")
         console.print(
-            f"[dim]Ports: API={8000 + offset}, Web={3000 + offset}, DB=5432 (shared)[/dim]"
+            f"[dim]Ports: API={api_port(instance)}, Web={web_port(instance)}, "
+            f"DB=5432 (shared)[/dim]"
         )
         console.print(
             f"[dim]Database: {db_name(instance)}, Redis DB: {redis_db(instance)}, "

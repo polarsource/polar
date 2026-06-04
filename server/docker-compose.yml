@@ -126,9 +126,36 @@ services:
     profiles:
       - tinybird
 
+  localstack:
+    # Pinned: newer tags may require a LOCALSTACK_AUTH_TOKEN.
+    image: localstack/localstack:4.4.0
+    ports:
+      - "${LOCALSTACK_PORT:-4566}:4566"
+    environment:
+      - SERVICES=sqs,lambda
+      - DEBUG=${LOCALSTACK_DEBUG:-0}
+      - AWS_DEFAULT_REGION=${POLAR_AWS_REGION:-us-east-2}
+      # LocalStack-spawned Lambda containers join this network so they can
+      # reach `db` and `redis` by service name. Defaults to this project's
+      # network (<project>_default); override if the project name differs.
+      - LAMBDA_DOCKER_NETWORK=${LAMBDA_DOCKER_NETWORK:-server_default}
+      - LAMBDA_KEEPALIVE_MS=${LAMBDA_KEEPALIVE_MS:-300000}
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "localstack_data:/var/lib/localstack"
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -fs http://localhost:4566/_localstack/health || exit 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+    profiles:
+      - sqs
+
 volumes:
   postgres_data:
   minio_data:
     driver: local
   prometheus_data:
   grafana_data:
+  localstack_data:

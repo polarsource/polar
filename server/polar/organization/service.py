@@ -575,10 +575,14 @@ class OrganizationService:
         for pii_field in pii_fields + github_fields:
             value = getattr(organization, pii_field)
             if value:
-                update_dict[pii_field] = anonymize_for_deletion(value)
+                update_dict[pii_field] = anonymize_for_deletion(
+                    value, organization.created_at
+                )
 
         if organization.email:
-            update_dict["email"] = anonymize_email_for_deletion(organization.email)
+            update_dict["email"] = anonymize_email_for_deletion(
+                organization.email, organization.created_at
+            )
 
         if organization._avatar_url:
             # Anonymize by setting to Polar logo
@@ -725,10 +729,14 @@ class OrganizationService:
         for pii_field in pii_fields + github_fields:
             value = getattr(organization, pii_field)
             if value:
-                update_dict[pii_field] = anonymize_for_deletion(value)
+                update_dict[pii_field] = anonymize_for_deletion(
+                    value, organization.created_at
+                )
 
         if organization.email:
-            update_dict["email"] = anonymize_email_for_deletion(organization.email)
+            update_dict["email"] = anonymize_email_for_deletion(
+                organization.email, organization.created_at
+            )
 
         if organization._avatar_url:
             # Anonymize by setting to Polar logo
@@ -780,12 +788,33 @@ class OrganizationService:
         organization: Organization,
         payout_account: PayoutAccount,
     ) -> Organization:
+        previous_payout_account_id = organization.payout_account_id
+
         organization_repository = OrganizationRepository.from_session(session)
         await organization_repository.update(
             organization,
             update_dict={"payout_account_id": payout_account.id},
             flush=True,
         )
+
+        # A held payout pins the payout account it was created against, so a
+        # rebind would release to a stale account. Cancel held payouts on swap
+        # (they refund their fees, so re-requesting is safe); leave pending ones,
+        # whose transfer may already be in flight. Scope the cancel to the
+        # previous payout account so a held payout already created against the
+        # new account isn't swept up. Emitted as an event to keep the payout
+        # layer out of this service.
+        account_changed = (
+            previous_payout_account_id is not None
+            and previous_payout_account_id != payout_account.id
+        )
+        if account_changed and organization.account_id is not None:
+            enqueue_job(
+                "payout.cancel_held_payouts",
+                account_id=organization.account_id,
+                payout_account_id=previous_payout_account_id,
+            )
+
         # Reusing an already-ready payout account doesn't fire a Stripe
         # `account.updated` webhook, so attempt activation here too.
         await self.maybe_activate(session, organization)
@@ -980,6 +1009,15 @@ class OrganizationService:
 
         return organization
 
+    def _enqueue_cancel_pending_payouts(self, organization: Organization) -> None:
+        """Cancel in-flight (held/pending) payouts when an org leaves the
+        review flow to a terminal state (denied, blocked, offboarding)."""
+        if organization.account_id is not None:
+            enqueue_job(
+                "payout.cancel_account_payouts",
+                account_id=organization.account_id,
+            )
+
     async def block_organization(
         self,
         session: AsyncSession,
@@ -988,6 +1026,7 @@ class OrganizationService:
         """Block an organization by setting status to BLOCKED."""
         organization.set_status(OrganizationStatus.BLOCKED)
         session.add(organization)
+        self._enqueue_cancel_pending_payouts(organization)
         return organization
 
     async def confirm_organization_reviewed(
@@ -1023,13 +1062,23 @@ class OrganizationService:
             )
 
         repository = OrganizationRepository.from_session(session)
-        return await repository.confirm_review_atomic(
+        confirmed = await repository.confirm_review_atomic(
             organization.id,
             next_review_threshold=next_review_threshold,
             min_threshold=_MIN_REVIEW_THRESHOLD,
             active_capabilities={**STATUS_CAPABILITIES[OrganizationStatus.ACTIVE]},
             now=datetime.now(UTC),
         )
+
+        # Only the worker that actually flipped the org to ACTIVE releases its
+        # held payouts; a lost race returns None and does nothing.
+        if confirmed is not None and confirmed.account_id is not None:
+            enqueue_job(
+                "payout.release_held_payouts",
+                account_id=confirmed.account_id,
+            )
+
+        return confirmed
 
     async def _is_activation_ready(
         self, session: AsyncSession, organization: Organization
@@ -1238,6 +1287,8 @@ class OrganizationService:
         organization.set_status(OrganizationStatus.DENIED)
         session.add(organization)
 
+        self._enqueue_cancel_pending_payouts(organization)
+
         # If there's a pending appeal, mark it as rejected
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
@@ -1381,6 +1432,7 @@ class OrganizationService:
             organization, "Organization set to offboarding.", reason=reason
         )
         session.add(organization)
+        self._enqueue_cancel_pending_payouts(organization)
         return organization
 
     def get_payment_status(self, organization: Organization) -> PaymentStatusResponse:

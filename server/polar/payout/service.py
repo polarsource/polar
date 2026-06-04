@@ -26,6 +26,7 @@ from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import Account, Organization, Payout, PayoutAttempt
+from polar.models.organization import OrganizationStatus
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.organization.repository import OrganizationRepository
@@ -89,10 +90,36 @@ def _adjust_payout_amount_for_zero_decimal_currency(
 class PayoutError(PolarError): ...
 
 
-class OrganizationUnderReview(PayoutError):
+class OrganizationCannotPayout(PayoutError):
+    """Raised when an organization is not allowed to request a payout.
+
+    The message reflects the actual organization status. `REVIEW` and `SNOOZED`
+    orgs can request a payout (held until approval) and never raise this; only
+    `CREATED`, `DENIED`, `OFFBOARDING` and `BLOCKED` do.
+    """
+
     def __init__(self, organization: Organization) -> None:
         self.organization = organization
-        message = "Your organization is currently under review. Payouts are disabled during this period."
+        match organization.status:
+            case OrganizationStatus.CREATED:
+                message = (
+                    "Your organization isn't active yet. "
+                    "Payouts will be available once it's approved."
+                )
+            case OrganizationStatus.DENIED:
+                message = (
+                    "Your organization's review was denied, "
+                    "so payouts aren't available."
+                )
+            case OrganizationStatus.OFFBOARDING:
+                message = (
+                    "Your organization is being offboarded, "
+                    "so payouts aren't available."
+                )
+            case OrganizationStatus.BLOCKED:
+                message = "Your organization is blocked, so payouts aren't available."
+            case _:
+                message = "Your organization can't request a payout at the moment."
         super().__init__(message, 403)
 
 
@@ -271,7 +298,7 @@ class PayoutService:
         self, session: AsyncSession, organization: Organization
     ) -> PayoutEstimate:
         if not organization.can_payout:
-            raise OrganizationUnderReview(organization)
+            raise OrganizationCannotPayout(organization)
 
         account = organization.account
         payout_account = organization.get_ready_payout_account()
@@ -325,9 +352,6 @@ class PayoutService:
     async def create(
         self, session: AsyncSession, locker: Locker, organization: Organization
     ) -> Payout:
-        if not organization.can_payout:
-            raise OrganizationUnderReview(organization)
-
         account = organization.account
 
         lock_name = f"payout:{account.id}"
@@ -335,6 +359,24 @@ class PayoutService:
             raise PendingPayoutCreation(account)
 
         async with locker.lock(lock_name, timeout=60, blocking_timeout=1):
+            # Lock the org row so a concurrent approval can't land between the
+            # status read and the payout insert and strand a held payout on an
+            # already-active org. Refresh only status/capabilities to keep the
+            # eager-loaded relationships.
+            await session.refresh(
+                organization,
+                attribute_names=["status", "capabilities"],
+                with_for_update=True,
+            )
+
+            if not organization.can_payout:
+                raise OrganizationCannotPayout(organization)
+
+            held = organization.status in (
+                OrganizationStatus.REVIEW,
+                OrganizationStatus.SNOOZED,
+            )
+
             next_payout_at = await self.get_next_payout_at(session, account)
             if next_payout_at is not None:
                 raise PayoutIntervalLimitReached(account, account.payout_interval)
@@ -368,6 +410,7 @@ class PayoutService:
             payout = await repository.create(
                 Payout(
                     processor=payout_account.type,
+                    status=PayoutStatus.held if held else PayoutStatus.pending,
                     currency="usd",  # FIXME: Main Polar currency
                     amount=balance_amount_after_fees,
                     fees_amount=balance_amount - balance_amount_after_fees,
@@ -391,9 +434,62 @@ class PayoutService:
                     update_dict={"account_amount": -transaction.account_amount},
                 )
 
+            # A held payout's transfer is deferred until release_held_payouts.
             enqueue_job("payout.created", payout_id=payout.id)
+            if not held:
+                enqueue_job("payout.transfer", payout_id=payout.id)
 
             return payout
+
+    async def transfer(self, session: AsyncSession, payout: Payout) -> Payout:
+        """Move funds for a payout, whatever its processor.
+
+        The caller (the ``payout.transfer`` task) holds a FOR UPDATE lock on the
+        payout row, so this re-checks the payout is still payable, guards against
+        a payout-account swap, and only then dispatches to the processor-specific
+        transfer. Kept processor-agnostic so any future processor inherits the
+        guards.
+        """
+        if payout.status in (PayoutStatus.canceled, PayoutStatus.held):
+            log.warning(
+                "payout.transfer.skipped_not_payable",
+                payout_id=str(payout.id),
+                status=payout.status,
+            )
+            return payout
+
+        # The payout pins the payout account it was created against. If the org
+        # has since swapped its payout account (a release can win the race
+        # against the swap-cancel job), transferring would send funds to the
+        # abandoned account. Before any transfer is made, cancel + refund instead
+        # so the merchant re-requests against the current account.
+        payout_transaction_repository = PayoutTransactionRepository.from_session(
+            session
+        )
+        transaction = await payout_transaction_repository.get_by_payout_id(payout.id)
+        assert transaction is not None
+        if transaction.transfer_id is None:
+            organization_repository = OrganizationRepository.from_session(session)
+            organization = await organization_repository.get_by_account(
+                payout.account_id
+            )
+            if (
+                organization is not None
+                and organization.payout_account_id is not None
+                and organization.payout_account_id != payout.payout_account_id
+            ):
+                log.warning(
+                    "payout.transfer.skipped_payout_account_changed",
+                    payout_id=str(payout.id),
+                    pinned_payout_account_id=str(payout.payout_account_id),
+                    current_payout_account_id=str(organization.payout_account_id),
+                )
+                return await self.cancel(session, payout)
+
+        if payout.processor == PayoutAccountType.stripe:
+            return await self.transfer_stripe(session, payout)
+
+        return payout
 
     async def transfer_stripe(self, session: AsyncSession, payout: Payout) -> Payout:
         """
@@ -403,7 +499,8 @@ class PayoutService:
         2. Trigger a payout on the Stripe Connect account,
         but later once the balance is actually available.
 
-        This function performs the first step.
+        This function performs the first step. Callers must go through
+        ``transfer``, which holds the row lock and runs the payable/swap guards.
         """
         payout_account = payout.payout_account
         assert payout_account.stripe_id is not None
@@ -633,12 +730,16 @@ class PayoutService:
         )
 
     async def cancel(self, session: AsyncSession, payout: Payout) -> Payout:
+        # Lock + re-read before reversing: serializes concurrent cancels (e.g. a
+        # backoffice cancel racing cancel_pending_payouts) so they can't each
+        # write a reversal and double-credit the merchant.
+        await session.refresh(payout, attribute_names=["status"], with_for_update=True)
         if not payout.status.is_cancelable():
             raise PayoutNotCancelable(payout)
 
         payout_transaction = payout.transaction
         payout_reversal_transaction = await payout_transaction_service.reverse(
-            session, payout_transaction
+            session, payout_transaction, payout
         )
 
         if (
@@ -659,11 +760,68 @@ class PayoutService:
                 payout_reversal_transaction,
                 update_dict={"transfer_reversal_id": stripe_reversal.id},
             )
+        else:
+            # No transfer ran, so the per-payout fees were only reserved, never
+            # paid to Stripe. Return them so the merchant is made whole.
+            await platform_fee_transaction_service.create_payout_fees_reversal_balances(
+                session, payout=payout
+            )
 
         repository = PayoutRepository.from_session(session)
         return await repository.update(
             payout, update_dict={"status": PayoutStatus.canceled}
         )
+
+    async def release_held_payouts(
+        self, session: AsyncSession, account_id: uuid.UUID
+    ) -> None:
+        """Release every held payout for an account after its org is approved.
+
+        Moves each held payout back to ``pending`` and enqueues the Stripe
+        transfer that was skipped while it was held. Driven by the
+        ``payout.release_held_payouts`` task when a REVIEW/SNOOZED org becomes
+        ACTIVE.
+        """
+        repository = PayoutRepository.from_session(session)
+        payout_ids = await repository.release_held_by_account(account_id)
+        for payout_id in payout_ids:
+            enqueue_job("payout.transfer", payout_id=payout_id)
+
+    async def cancel_account_payouts(
+        self,
+        session: AsyncSession,
+        account_id: uuid.UUID,
+        *,
+        statuses: Sequence[PayoutStatus] = (
+            PayoutStatus.pending,
+            PayoutStatus.held,
+        ),
+        payout_account_id: uuid.UUID | None = None,
+    ) -> None:
+        """Cancel every in-flight payout for an account.
+
+        Defaults to cancelling both ``pending`` and ``held`` payouts, used when
+        an org leaves the review flow to a terminal state (denied, blocked,
+        offboarding). Restricted to ``held`` when a payout account is swapped
+        while a payout is still held, so the release can't transfer to a stale
+        account. ``payout_account_id`` further scopes the cancel to payouts
+        pinned to that payout account (the swap case passes the previous one).
+        """
+        repository = PayoutRepository.from_session(session)
+        payouts = await repository.get_by_account_and_statuses(
+            account_id,
+            statuses,
+            payout_account_id=payout_account_id,
+            options=repository.get_eager_options(),
+        )
+        for payout in payouts:
+            try:
+                await self.cancel(session, payout)
+            except PayoutNotCancelable:
+                # A concurrent cancel/transition already finalized this payout
+                # (cancel() locks and re-checks the row). Skip it rather than
+                # failing the whole job.
+                continue
 
     async def trigger_invoice_generation(
         self,

@@ -5,6 +5,7 @@ from pydantic import (
     UUID4,
     AliasChoices,
     AliasPath,
+    BeforeValidator,
     Field,
     computed_field,
     field_serializer,
@@ -21,7 +22,13 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.address import Address, AddressInput
 from polar.kit.currency import format_currency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
-from polar.kit.schemas import IDSchema, MergeJSONSchema, Schema, TimestampedSchema
+from polar.kit.schemas import (
+    IDSchema,
+    MergeJSONSchema,
+    Schema,
+    TimestampedSchema,
+    empty_str_to_none,
+)
 from polar.models.order import (
     OrderBillingReason,
     OrderBillingReasonInternal,
@@ -295,10 +302,9 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
         "Must belong to the order's organization."
     )
     product_id: UUID4 = Field(
-        description="The ID of the one-time, fixed-price product to charge for. "
+        description="The ID of the one-time product to charge for. "
         "Must belong to the order's organization. "
-        "Subscription, seat-based, and pay-what-you-want products are not "
-        "supported."
+        "Only fixed-price and free products are supported."
     )
     currency: str | None = Field(
         None,
@@ -307,6 +313,28 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
             "Defaults to the organization's default currency; specify it to "
             "force a different one, or when the product isn't priced in the "
             "organization's default currency."
+        ),
+    )
+    amount: int | None = Field(
+        None,
+        ge=0,
+        description=(
+            "A custom amount to charge, in the smallest currency unit. Overrides "
+            "the product's price; defaults to the product's configured price "
+            "(0 for free products). A positive amount must be at least the "
+            "currency's minimum."
+        ),
+    )
+    # `BeforeValidator` runs the strip/empty→None normalization *before* the
+    # `max_length` constraint, so a long whitespace-only value is treated as
+    # empty instead of rejected; non-strings fall through to type validation.
+    description: Annotated[str | None, BeforeValidator(empty_str_to_none)] = Field(
+        None,
+        max_length=500,
+        description=(
+            "A custom description for the order's line item, shown on the "
+            "invoice and receipt (e.g. `5,000 tokens`). Defaults to the "
+            "product name."
         ),
     )
 

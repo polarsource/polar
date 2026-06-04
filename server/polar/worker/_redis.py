@@ -19,6 +19,12 @@ async def _close_redis() -> None:
         _redis = None
 
 
+def setup_redis() -> None:
+    global _redis
+    _redis = create_redis("worker")
+    log.info("Created Redis client")
+
+
 class RedisMiddleware(dramatiq.Middleware):
     """
     Middleware managing the lifecycle of the Redis connection.
@@ -34,9 +40,7 @@ class RedisMiddleware(dramatiq.Middleware):
     def before_worker_boot(
         self, broker: dramatiq.Broker, worker: dramatiq.Worker
     ) -> None:
-        global _redis
-        _redis = create_redis("worker")
-        log.info("Created Redis client")
+        setup_redis()
 
     def after_worker_shutdown(
         self, broker: dramatiq.Broker, worker: dramatiq.Worker

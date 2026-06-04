@@ -48,6 +48,8 @@ updates:
     ignore:
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: "npm"
     directory: "/server/emails"
     schedule:
@@ -65,6 +67,8 @@ updates:
           - "*"
     ignore:
       - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: "npm"
     directory: "/docs"
@@ -84,6 +88,8 @@ updates:
     ignore:
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: "npm"
     directory: "/handbook"
     schedule:
@@ -101,4 +107,6 @@ updates:
           - "*"
     ignore:
       - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]

@@ -1144,15 +1144,16 @@ class TestStartCheckout:
 
         client_mock.create_checkout.assert_not_awaited()
 
-    async def test_clears_existing_discount_before_checkout(
+    async def test_does_not_touch_existing_discount_on_checkout(
         self,
         configured: None,
         client_mock: MagicMock,
         organization_repository_mock: MagicMock,
         read_session_mock: AsyncReadSession,
     ) -> None:
-        """A new checkout that switches an existing subscription's product
-        must not carry the previous discount — clear it first."""
+        """Discounts are no longer product-scoped, so a checkout that switches
+        an existing subscription's product must NOT clear the previous
+        discount — the checkout handles its own discount via ``discount_id``."""
         client_mock.list_recurring_products.return_value = [
             _make_product(id="prod_paid", metadata={"order": 1}),
         ]
@@ -1168,10 +1169,7 @@ class TestStartCheckout:
             product_id="prod_paid",
         )
 
-        client_mock.update_subscription_discount.assert_awaited_once_with(
-            subscription_id="sub_existing",
-            discount_id=None,
-        )
+        client_mock.update_subscription_discount.assert_not_awaited()
         client_mock.create_checkout.assert_awaited_once()
 
     async def test_does_not_clear_when_no_existing_subscription(
@@ -1366,16 +1364,21 @@ class TestChangePlan:
 
         client_mock.update_subscription_product.assert_not_awaited()
 
-    async def test_clears_existing_discount_before_switching(
+    async def test_clears_existing_discount_when_leaving_scale(
         self,
         configured: None,
         client_mock: MagicMock,
         organization_repository_mock: MagicMock,
+        mocker: MockerFixture,
         read_session_mock: AsyncReadSession,
     ) -> None:
-        """Discounts are scoped to a product, so a plan change must clear
-        the existing discount first — otherwise the API rejects the update
-        on incompatible-discount grounds."""
+        """Discounts are no longer product-scoped, so switching away from Scale
+        to a non-eligible plan must clear the discount — otherwise the Startup
+        Program discount would leak onto the new plan."""
+        mocker.patch(
+            "polar.integrations.polar.service.settings.POLAR_SCALE_PRODUCT_ID",
+            "prod_scale",
+        )
         client_mock.list_recurring_products.return_value = [
             _make_product(id="prod_growth", metadata={"order": 2}, price_amount=10000),
         ]
@@ -1433,7 +1436,7 @@ class TestChangePlan:
 
         client_mock.update_subscription_discount.assert_not_awaited()
 
-    async def test_attaches_claimable_discount_after_product_switch(
+    async def test_attaches_claimable_discount_before_product_switch(
         self,
         configured: None,
         client_mock: MagicMock,
@@ -1442,13 +1445,18 @@ class TestChangePlan:
         read_session_mock: AsyncReadSession,
     ) -> None:
         """Pro -> Scale via Change Plan: if the org is invited to the
-        Startup Program, attach the discount after switching products.
+        Startup Program, attach the discount BEFORE switching products so the
+        proration computed at the switch reflects the discounted amount.
         Mirrors what ``start_checkout`` does for Free -> Scale."""
         client_mock.list_recurring_products.return_value = [
             _make_product(id="prod_scale", metadata={"order": 4}, price_amount=40000),
         ]
         client_mock.get_active_subscription.return_value = _make_subscription(
             id="sub_existing", product_id="prod_pro", amount=2000
+        )
+        mocker.patch(
+            "polar.integrations.polar.service.settings.POLAR_SCALE_PRODUCT_ID",
+            "prod_scale",
         )
         mocker.patch(
             "polar.integrations.polar.service.startup_program_service."
@@ -1462,14 +1470,21 @@ class TestChangePlan:
             product_id="prod_scale",
         )
 
-        client_mock.update_subscription_product.assert_awaited_once()
-        # The resolver gates on target product == Scale; the discount is
-        # attached to the post-switch subscription returned by
-        # update_subscription_product (default id "sub_2" from the mock).
+        # The discount is attached to the current subscription ("sub_existing")
+        # before the product switch.
         client_mock.update_subscription_discount.assert_awaited_once_with(
-            subscription_id="sub_2",
+            subscription_id="sub_existing",
             discount_id="disc_startup",
         )
+        client_mock.update_subscription_product.assert_awaited_once()
+        # The discount must be applied before the product update. ``mock_calls``
+        # captures the global call order across all mock attributes.
+        method_call_order = [
+            call[0] for call in client_mock.mock_calls if "()" not in call[0]
+        ]
+        discount_index = method_call_order.index("update_subscription_discount")
+        update_index = method_call_order.index("update_subscription_product")
+        assert discount_index < update_index
 
     async def test_does_not_attach_when_no_claimable_discount(
         self,
@@ -1598,7 +1613,7 @@ class TestClaimStartupProgram:
         client_mock.update_subscription_product.assert_not_awaited()
         client_mock.update_subscription_discount.assert_not_awaited()
 
-    async def test_switches_product_then_applies_discount(
+    async def test_applies_discount_then_switches_product(
         self,
         configured: None,
         client_mock: MagicMock,
@@ -1606,9 +1621,9 @@ class TestClaimStartupProgram:
         mocker: MockerFixture,
         read_session_mock: AsyncReadSession,
     ) -> None:
-        """Org on Growth → switches product to Scale, then applies the
-        Startup Program discount. Both calls happen via PATCH; no
-        ``create_checkout``."""
+        """Org on Growth → applies the Startup Program discount, THEN switches
+        product to Scale so the proration at the switch reflects the discount.
+        Both calls happen via PATCH; no ``create_checkout``."""
         mocker.patch(
             "polar.integrations.polar.service.settings.STARTUP_PROGRAM_ENABLED",
             True,
@@ -1632,15 +1647,23 @@ class TestClaimStartupProgram:
 
         assert subscription is not None
         assert checkout is None
+        # Discount is attached to the current subscription before the switch.
+        client_mock.update_subscription_discount.assert_awaited_once_with(
+            subscription_id="sub_existing",
+            discount_id="disc_startup",
+        )
         client_mock.update_subscription_product.assert_awaited_once_with(
             subscription_id="sub_existing",
             product_id="prod_scale",
             proration_behavior=SubscriptionProrationBehavior.INVOICE,
         )
-        client_mock.update_subscription_discount.assert_awaited_once_with(
-            subscription_id="sub_2",  # default id returned by update_subscription_product mock
-            discount_id="disc_startup",
-        )
+        # The discount must be applied before the product update.
+        method_call_order = [
+            call[0] for call in client_mock.mock_calls if "()" not in call[0]
+        ]
+        discount_index = method_call_order.index("update_subscription_discount")
+        update_index = method_call_order.index("update_subscription_product")
+        assert discount_index < update_index
         client_mock.create_checkout.assert_not_awaited()
 
     async def test_only_applies_discount_when_already_on_scale(

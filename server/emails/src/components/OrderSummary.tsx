@@ -1,3 +1,4 @@
+/* eslint-disable email-ds/no-raw-text-elements */
 import { Column, Heading, Hr, Row, Section } from 'react-email'
 import type { schemas } from '../types'
 
@@ -46,7 +47,7 @@ function formatCurrency(amount: number, currency: string = 'USD'): string {
 const OrderSummary = ({ order }: OrderSummaryProps) => {
   return (
     <Section>
-      <Heading as="h2" className="text-lg font-bold">
+      <Heading as="h2" className="mt-0 text-lg font-bold">
         Order summary
       </Heading>
       {/* Invoice Details */}
@@ -74,8 +75,8 @@ const OrderSummary = ({ order }: OrderSummaryProps) => {
       </Row>
 
       {/* Line Items Header */}
-      <div className="border-t border-gray-200 pt-4">
-        <Row className="mb-2 border-b border-gray-100 pb-2">
+      <div className="pt-[7px]">
+        <Row className="mb-6 border-b border-gray-100 pb-2">
           <Column className="w-2/5">
             <span className="text-xs font-medium tracking-wide text-gray-700 uppercase">
               Description

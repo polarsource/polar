@@ -587,6 +587,16 @@ class TestFinalizeOrderEndpoint:
         assert response.status_code == 404
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_empty_body_allowed(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+    ) -> None:
+        # The payload is optional: sending no body at all must not 422.
+        response = await client.post(f"/v1/orders/{uuid.uuid4()}/finalize")
+        assert response.status_code == 404
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
     async def test_412_when_not_draft(
         self,
         client: AsyncClient,

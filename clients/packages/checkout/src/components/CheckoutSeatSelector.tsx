@@ -10,7 +10,7 @@ import {
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ProductCheckoutPublic } from '../guards'
+import { getSeatPrice, type ProductCheckoutPublic } from '../guards'
 import { ErrorResponse } from '../providers/CheckoutProvider'
 import MeteredPricesDisplay from './MeteredPricesDisplay'
 
@@ -48,12 +48,12 @@ const CheckoutSeatSelector = ({
   )
 
   // Check if the product has seat-based pricing
-  const productPrice = checkout.product_price
-  const isSeatBased = productPrice.amount_type === 'seat_based'
+  const seatPrice = getSeatPrice(checkout)
+  const isSeatBased = seatPrice !== null
 
   // Get seat limits from the tiers
   // The minimum comes from the first tier's min_seats, maximum from the last tier's max_seats
-  const seatTiers = isSeatBased ? productPrice.seat_tiers : null
+  const seatTiers = seatPrice?.seat_tiers ?? null
   const tiers = seatTiers?.tiers ?? []
   const sortedTiers = [...tiers].sort((a, b) => a.min_seats - b.min_seats)
   const tierMinimumSeats = sortedTiers[0]?.min_seats ?? 1

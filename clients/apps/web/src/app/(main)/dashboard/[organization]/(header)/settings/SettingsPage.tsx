@@ -36,22 +36,34 @@ export default function ClientPage({
       <div className="flex flex-col gap-y-12">
         <Section id="organization">
           <SectionDescription title="Organization" />
-          <OrganizationProfileSettings organization={org} />
+          <OrganizationProfileSettings
+            organization={org}
+            readOnly={!canManageOrganization}
+          />
         </Section>
 
         <Section id="payments">
           <SectionDescription title="Payments" />
-          <OrganizationPaymentSettings organization={org} />
+          <OrganizationPaymentSettings
+            organization={org}
+            readOnly={!canManageOrganization}
+          />
         </Section>
 
         <Section id="subscriptions">
           <SectionDescription title="Subscriptions" />
-          <OrganizationSubscriptionSettings organization={org} />
+          <OrganizationSubscriptionSettings
+            organization={org}
+            readOnly={!canManageOrganization}
+          />
         </Section>
 
         <Section id="customer_portal">
           <SectionDescription title="Customer portal" />
-          <OrganizationCustomerPortalSettings organization={org} />
+          <OrganizationCustomerPortalSettings
+            organization={org}
+            readOnly={!canManageOrganization}
+          />
         </Section>
 
         <Section id="customer_emails">
@@ -73,7 +85,10 @@ export default function ClientPage({
               accepted.
             </Alert>
           )}
-          <OrganizationCustomerEmailSettings organization={org} />
+          <OrganizationCustomerEmailSettings
+            organization={org}
+            readOnly={!canManageOrganization}
+          />
         </Section>
 
         <Section id="account-notifications">
@@ -94,7 +109,10 @@ export default function ClientPage({
             title="Features"
             description="Manage alpha & beta features for your organization"
           />
-          <FeatureSettings organization={org} />
+          <FeatureSettings
+            organization={org}
+            readOnly={!canManageOrganization}
+          />
         </Section>
 
         <Section id="developers">
@@ -114,7 +132,11 @@ export default function ClientPage({
             title="Danger Zone"
             description="Irreversible actions for this organization"
           />
-          <OrganizationDeleteSettings organization={org} />
+          {canManageOrganization === false ? (
+            <AccessRestricted message="You don't have permission to delete this organization." />
+          ) : (
+            <OrganizationDeleteSettings organization={org} />
+          )}
         </Section>
       </div>
     </DashboardBody>

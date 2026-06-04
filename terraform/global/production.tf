@@ -450,3 +450,116 @@ resource "tfe_variable" "firecrawl_api_key_production" {
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
 }
+
+# Vercel frontend
+resource "tfe_variable" "vercel_stripe_publishable_key_production" {
+  key             = "stripe_publishable_key"
+  category        = "terraform"
+  description     = "Stripe publishable key for the Vercel production frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "vercel_pydantic_ai_gateway_api_key_production" {
+  key             = "pydantic_ai_gateway_api_key"
+  category        = "terraform"
+  description     = "Pydantic AI Gateway API key for the Vercel production frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "vercel_gram_api_key_production" {
+  key             = "gram_api_key"
+  category        = "terraform"
+  description     = "Gram API key for the Vercel production frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "vercel_mintlify_assistant_api_key_production" {
+  key             = "mintlify_assistant_api_key"
+  category        = "terraform"
+  description     = "Mintlify assistant API key for the Vercel production frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "vercel_attio_api_key_production" {
+  key             = "attio_api_key"
+  category        = "terraform"
+  description     = "Attio API key for the Vercel production frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "vercel_attio_startup_list_id_production" {
+  key             = "attio_startup_list_id"
+  category        = "terraform"
+  description     = "Attio startup list ID for the Vercel production frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "vercel_mcp_oauth2_client_id_production" {
+  key             = "mcp_oauth2_client_id"
+  category        = "terraform"
+  description     = "MCP OAuth2 client ID for the Vercel production frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "vercel_mcp_oauth2_client_secret_production" {
+  key             = "mcp_oauth2_client_secret"
+  category        = "terraform"
+  description     = "MCP OAuth2 client secret for the Vercel production frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "vercel_sentry_auth_token_production" {
+  key             = "sentry_auth_token"
+  category        = "terraform"
+  description     = "Sentry auth token for the Vercel production frontend build"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "vercel_polar_preview_access_token_production" {
+  key             = "polar_preview_access_token"
+  category        = "terraform"
+  description     = "Polar preview access token for the Vercel production frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "vercel_next_public_sentry_dsn_production" {
+  key             = "next_public_sentry_dsn"
+  category        = "terraform"
+  description     = "Sentry DSN for the Vercel production frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "vercel_next_public_posthog_token_production" {
+  key             = "next_public_posthog_token"
+  category        = "terraform"
+  description     = "PostHog token for the Vercel production frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "vercel_next_public_apple_domain_association_production" {
+  key             = "next_public_apple_domain_association"
+  category        = "terraform"
+  description     = "Apple Pay domain association for the Vercel production frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "vercel_next_public_stripe_payment_method_configuration_production" {
+  key             = "next_public_stripe_payment_method_configuration"
+  category        = "terraform"
+  description     = "Stripe payment method configuration ID for the Vercel production frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}

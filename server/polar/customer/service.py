@@ -34,7 +34,15 @@ from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.member_session.service import member_session as member_session_service
-from polar.models import BenefitGrant, Customer, Order, Organization, Subscription, User
+from polar.models import (
+    BenefitGrant,
+    Customer,
+    Order,
+    Organization,
+    PaymentMethod,
+    Subscription,
+    User,
+)
 from polar.models.customer import CustomerType
 from polar.models.member import MemberRole
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
@@ -570,18 +578,22 @@ class CustomerService:
 
         # Anonymize email (if present)
         if customer.email is not None:
-            update_dict["email"] = anonymize_email_for_deletion(customer.email)
+            update_dict["email"] = anonymize_email_for_deletion(
+                customer.email, customer.created_at
+            )
         update_dict["email_verified"] = False
 
         # Anonymize name only for individuals (no tax_id = individual)
         # Businesses (has tax_id) retain name for legal reasons
         if customer.tax_id is None and customer.name:
-            update_dict["name"] = anonymize_for_deletion(customer.name)
+            update_dict["name"] = anonymize_for_deletion(
+                customer.name, customer.created_at
+            )
 
         # Anonymize billing_name (always, if present)
         if customer._billing_name:
             update_dict["_billing_name"] = anonymize_for_deletion(
-                customer._billing_name
+                customer._billing_name, customer.created_at
             )
 
         # Clear address (invoices retain original)
@@ -717,6 +729,21 @@ class CustomerService:
             return None
         token, _ = await member_session_service.create_member_session(session, member)
         return token
+
+    async def list_payment_methods(
+        self,
+        session: AsyncReadSession,
+        customer: Customer,
+        *,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[PaymentMethod], int]:
+        repository = PaymentMethodRepository.from_session(session)
+        statement = repository.get_by_customer_statement(customer.id).order_by(
+            PaymentMethod.created_at.desc()
+        )
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
 
     async def get_export(
         self,

@@ -38,6 +38,9 @@ jobs:
       - name: "\U0001F527 uv install"
         working-directory: ./server
         run: uv sync --dev --frozen
+      - name: "\U0001F6DF Warm mypy cache"
+        working-directory: ./server
+        run: MYPY_CACHE_DIR="$HOME/.mypy_cache" uv run task lint_types
       - name: Pull container images
         run: |
           docker pull postgres:15.1-bullseye

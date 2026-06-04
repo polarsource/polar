@@ -46,7 +46,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.server == 'true'
     timeout-minutes: 15
-    runs-on: depot-ubuntu-24.04-4 # was: blacksmith-4vcpu-ubuntu-2404 (4 vCPU)
+    runs-on:
+      size: 4x16
+      image: pkpmg8f64v.registry.depot.dev/ci-server-snapshot:v1
     steps:
       - uses: actions/checkout@v6
       # - uses: actions/cache@v4
@@ -73,7 +75,7 @@ jobs:
         run: uv run task lint_check
       - name: "\U0001F6DF Type Check Server (mypy)"
         working-directory: ./server
-        run: uv run task lint_types
+        run: MYPY_CACHE_DIR="$HOME/.mypy_cache" uv run task lint_types
   tinybird-check:
     name: "Server: Tinybird Schema \U0001F426"
     needs: changes

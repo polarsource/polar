@@ -69,20 +69,20 @@ export interface paths {
       cookie?: never
     }
     /**
-     * Get My Notification Settings
+     * Get Authenticated Notification Settings
      * @description Get the authenticated user's notification settings for an organization.
      */
-    get: operations['users:get_my_notification_settings']
+    get: operations['users:get_authenticated_notification_settings']
     put?: never
     post?: never
     delete?: never
     options?: never
     head?: never
     /**
-     * Update My Notification Settings
+     * Update Authenticated Notification Settings
      * @description Update the authenticated user's notification settings for an organization.
      */
-    patch: operations['users:update_my_notification_settings']
+    patch: operations['users:update_authenticated_notification_settings']
     trace?: never
   }
   '/v1/users/me/scopes': {
@@ -32396,7 +32396,7 @@ export interface operations {
       }
     }
   }
-  'users:get_my_notification_settings': {
+  'users:get_authenticated_notification_settings': {
     parameters: {
       query?: never
       header?: never
@@ -32436,7 +32436,7 @@ export interface operations {
       }
     }
   }
-  'users:update_my_notification_settings': {
+  'users:update_authenticated_notification_settings': {
     parameters: {
       query?: never
       header?: never

@@ -97,7 +97,7 @@ async def update_authenticated(
         }
     },
 )
-async def update_my_notification_settings(
+async def update_authenticated_notification_settings(
     organization_id: UUID,
     body: UserOrganizationNotificationSettingsUpdate,
     auth_subject: AuthorizeWebUserWrite,
@@ -127,7 +127,7 @@ async def update_my_notification_settings(
         }
     },
 )
-async def get_my_notification_settings(
+async def get_authenticated_notification_settings(
     organization_id: UUID,
     auth_subject: AuthorizeWebUserRead,
     session: AsyncReadSession = Depends(get_db_read_session),

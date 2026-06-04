@@ -40,9 +40,54 @@ variable "install_command" {
 }
 
 variable "ignore_command" {
-  description = "Command that decides whether to skip a build. Leave null to always build."
+  description = "Command that decides whether to skip a build (empty = always build)."
   type        = string
+  default     = ""
+}
+
+# Project settings (defaults track the live values; override per env if they differ)
+variable "build_machine_type" {
+  description = "Vercel build machine type"
+  type        = string
+  default     = "elastic"
+}
+
+variable "resource_config" {
+  description = "Vercel project resource configuration"
+  type = object({
+    fluid                     = optional(bool, true)
+    function_default_cpu_type = optional(string)
+    function_default_regions  = optional(set(string), ["iad1"])
+    function_default_timeout  = optional(number)
+  })
+  default = {}
+}
+
+variable "enable_preview_feedback" {
+  description = "Enable the Vercel Toolbar on preview deployments"
+  type        = bool
   default     = null
+}
+
+variable "enable_production_feedback" {
+  description = "Enable the Vercel Toolbar on production deployments"
+  type        = bool
+  default     = null
+}
+
+variable "git_provider_options" {
+  description = "Vercel project Git provider options"
+  type = object({
+    create_deployments         = optional(bool)
+    git_commit_status          = optional(bool)
+    repository_dispatch_events = optional(bool)
+    require_verified_commits   = optional(bool)
+    consolidated_git_commit_status = optional(object({
+      enabled            = optional(bool)
+      propagate_failures = optional(bool)
+    }))
+  })
+  default = null
 }
 
 # Custom domains attached to the project

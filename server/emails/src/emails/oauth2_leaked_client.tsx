@@ -1,7 +1,13 @@
+import {
+  EmailLink,
+  Footer,
+  Heading,
+  List,
+  Text,
+  WrapperPolar,
+} from '../components/foundation'
 import InfoBox from '../components/InfoBox'
-import { Footer, WrapperPolar } from '../components/layout'
 import SecurityFaqNote from '../components/SecurityFaqNote'
-import { EmailLink, Heading, List, Text } from '../components/text'
 import type { schemas } from '../types'
 
 export function OAuth2LeakedClient({
@@ -46,7 +52,7 @@ export function OAuth2LeakedClient({
           <List.Item>URL: {url}</List.Item>
           <List.Item>OAuth2 Client: {client_name}</List.Item>
         </List>
-        <Text variant="caption">
+        <Text variant="caption" noMargin>
           As a reminder, OAuth2 client secrets are super sensitive values that
           shouldn't be shared publicly on the web or in a code repository. Use
           dedicated features to safely store secrets, like{' '}

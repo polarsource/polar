@@ -1,4 +1,5 @@
-import { Hr, Img, Section, Text } from 'react-email'
+import { Hr, Img, Section } from 'react-email'
+import { Text } from './foundation'
 
 interface SaleSummaryProps {
   product_name: string
@@ -25,10 +26,10 @@ export function SaleSummary({
     <>
       <Hr className="my-6 border-gray-200" />
       <Section>
-        <Text className="my-0 mb-2 text-base font-semibold text-gray-900">
+        <Text variant="body" weight="semibold" noMargin>
           Order Summary
         </Text>
-        <table className="w-full">
+        <table className="mt-4 w-full">
           <tbody>
             <tr>
               {product_image_url && (
@@ -42,10 +43,10 @@ export function SaleSummary({
                 </td>
               )}
               <td className="align-middle">
-                <Text className="m-0 text-sm font-medium text-gray-900">
+                <Text variant="detail" weight="medium" noMargin>
                   {product_name}
                 </Text>
-                <Text className="m-0 text-sm text-gray-500">
+                <Text variant="caption" noMargin>
                   {formatted_price_amount}
                 </Text>
               </td>
@@ -56,29 +57,35 @@ export function SaleSummary({
       <Hr className="my-6 border-gray-200" />
       {formatted_billing_reason && (
         <Section>
-          <Text className="m-0 text-sm font-semibold text-gray-900">
+          <Text variant="detail" weight="semibold" noMargin>
             Order Type
           </Text>
-          <Text className="m-0 text-sm text-gray-600">
+          <Text variant="caption" noMargin>
             {formatted_billing_reason}
           </Text>
         </Section>
       )}
       <Section className="mt-4 mb-6">
-        <Text className="m-0 text-sm font-semibold text-gray-900">
+        <Text variant="detail" weight="semibold" noMargin>
           Customer
         </Text>
         {customer_name && (
-          <Text className="m-0 text-sm text-gray-600">{customer_name}</Text>
+          <Text variant="caption" noMargin>
+            {customer_name}
+          </Text>
         )}
         {customer_email && (
-          <Text className="m-0 text-sm text-gray-600">{customer_email}</Text>
+          <Text variant="caption" noMargin>
+            {customer_email}
+          </Text>
         )}
         {formatted_address && (
-          <Text className="m-0 text-sm text-gray-600">{formatted_address}</Text>
+          <Text variant="caption" noMargin>
+            {formatted_address}
+          </Text>
         )}
         {formatted_address_country && (
-          <Text className="m-0 text-sm text-gray-600">
+          <Text variant="caption" noMargin>
             {formatted_address_country}
           </Text>
         )}

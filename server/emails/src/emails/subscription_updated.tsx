@@ -1,12 +1,12 @@
-import Benefits from '../components/Benefits'
 import {
   Button,
   Divider,
   FooterCustomer,
+  Intro,
   WrapperOrganization,
-} from '../components/layout'
+} from '../components/foundation'
+import Benefits from '../components/Benefits'
 import OrderSummary from '../components/OrderSummary'
-import { Intro } from '../components/text'
 import { order, organization, product } from '../preview'
 import type { schemas } from '../types'
 

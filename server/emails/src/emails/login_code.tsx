@@ -1,6 +1,5 @@
-import { Footer, WrapperPolar } from '../components/layout'
+import { Footer, Intro, Text, WrapperPolar } from '../components/foundation'
 import OTPCode from '../components/OTPCode'
-import { Intro, Text } from '../components/text'
 import type { schemas } from '../types'
 
 export function LoginCode({

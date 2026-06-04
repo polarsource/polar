@@ -1,4 +1,5 @@
-import { Section, Text } from 'react-email'
+import { Section } from 'react-email'
+import { Text } from './foundation'
 
 interface InfoBoxProps {
   title: string
@@ -14,8 +15,8 @@ export function InfoBox({ title, children, variant = 'info' }: InfoBoxProps) {
   }[variant]
 
   return (
-    <Section className={`${bgColor} my-6 rounded-lg p-4`}>
-      <Text className="m-0 mb-2 text-base font-bold text-gray-900">
+    <Section className={`${bgColor} my-6 rounded-lg p-6`}>
+      <Text weight="bold" noMargin>
         {title}
       </Text>
       <div className="text-gray-800">{children}</div>

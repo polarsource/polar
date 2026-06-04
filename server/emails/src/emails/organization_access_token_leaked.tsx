@@ -1,7 +1,13 @@
+import {
+  EmailLink,
+  Footer,
+  Heading,
+  List,
+  Text,
+  WrapperPolar,
+} from '../components/foundation'
 import InfoBox from '../components/InfoBox'
-import { Footer, WrapperPolar } from '../components/layout'
 import SecurityFaqNote from '../components/SecurityFaqNote'
-import { EmailLink, Heading, List, Text } from '../components/text'
 import type { schemas } from '../types'
 
 export function OrganizationAccessTokenLeaked({
@@ -17,10 +23,10 @@ export function OrganizationAccessTokenLeaked({
         We've been notified that one of your organization access token has been
         leaked. For your security, we've automatically revoked this access
         token.{' '}
-        <Text as="span" weight="bold">
-          You'll need to create a new one and update your existing integrations
-          so they continue working.
-        </Text>
+      </Text>
+      <Text weight="bold">
+        You'll need to create a new one and update your existing integrations so
+        they continue working.
       </Text>
       <Text>
         In the coming days, be extra careful about any suspicious activity on
@@ -34,7 +40,7 @@ export function OrganizationAccessTokenLeaked({
             Organization Access Token: {organization_access_token}
           </List.Item>
         </List>
-        <Text variant="caption">
+        <Text variant="caption" noMargin>
           As a reminder, organization access tokens are super sensitive values
           that shouldn't be shared publicly on the web or in a code repository.
           Use dedicated features to safely store secrets, like{' '}

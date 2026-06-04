@@ -1,9 +1,10 @@
 import {
   Button,
   FooterCustomer,
+  Intro,
+  Text,
   WrapperOrganization,
-} from '../components/layout'
-import { Intro, Text } from '../components/text'
+} from '../components/foundation'
 import { organization } from '../preview'
 import type { schemas } from '../types'
 

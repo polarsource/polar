@@ -1,6 +1,13 @@
+import {
+  Button,
+  Footer,
+  Heading,
+  Intro,
+  List,
+  Text,
+  WrapperPolar,
+} from '../components/foundation'
 import InfoBox from '../components/InfoBox'
-import { Button, Footer, WrapperPolar } from '../components/layout'
-import { Heading, Intro, List, Text } from '../components/text'
 import type { schemas } from '../types'
 
 export function WebhookEndpointDisabled({
@@ -26,7 +33,9 @@ export function WebhookEndpointDisabled({
         the endpoint URL is unreachable or returns errors.
       </Text>
       <InfoBox title="Disabled Endpoint" variant="warning">
-        <Text variant="mono">{webhook_endpoint_url}</Text>
+        <Text variant="mono" noMargin>
+          {webhook_endpoint_url}
+        </Text>
       </InfoBox>
       <Heading>What to do next</Heading>
       <Text>

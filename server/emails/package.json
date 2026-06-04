@@ -22,14 +22,14 @@
     "react-email": "^6.5.0"
   },
   "devDependencies": {
-    "@react-email/ui": "^6.1.5",
+    "@react-email/ui": "^6.5.0",
     "@types/node": "^24.12.4",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
-    "@yao-pkg/pkg": "^6.19.0",
+    "@yao-pkg/pkg": "^6.20.0",
     "eslint": "^10.4.0",
     "openapi-typescript": "^7.13.0",
-    "oxfmt": "^0.51.0",
+    "oxfmt": "^0.52.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.60.0"

@@ -15593,9 +15593,6 @@ export interface components {
        */
       is_default: boolean
     }
-    CustomerPaymentMethodWithDefault:
-      | components['schemas']['CustomerPaymentMethodCard']
-      | components['schemas']['CustomerPaymentMethodGeneric']
     /** CustomerPortalCustomer */
     CustomerPortalCustomer: {
       /**
@@ -20128,12 +20125,6 @@ export interface components {
       items: components['schemas']['CustomerOrder'][]
       pagination: components['schemas']['Pagination']
     }
-    /** ListResource[CustomerPaymentMethodWithDefault] */
-    ListResource_CustomerPaymentMethodWithDefault_: {
-      /** Items */
-      items: components['schemas']['CustomerPaymentMethodWithDefault'][]
-      pagination: components['schemas']['Pagination']
-    }
     /** ListResource[CustomerPaymentMethod] */
     ListResource_CustomerPaymentMethod_: {
       /** Items */
@@ -20268,6 +20259,12 @@ export interface components {
     ListResource_Organization_: {
       /** Items */
       items: components['schemas']['Organization'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[PaymentMethod] */
+    ListResource_PaymentMethod_: {
+      /** Items */
+      items: components['schemas']['PaymentMethod'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[Payment] */
@@ -25691,6 +25688,9 @@ export interface components {
       /** Detail */
       detail: string
     }
+    PaymentMethod:
+      | components['schemas']['CustomerPaymentMethodCard']
+      | components['schemas']['CustomerPaymentMethodGeneric']
     /** PaymentMethodCard */
     PaymentMethodCard: {
       /**
@@ -40802,7 +40802,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ListResource_CustomerPaymentMethodWithDefault_']
+          'application/json': components['schemas']['ListResource_PaymentMethod_']
         }
       }
       /** @description Customer not found. */
@@ -40848,7 +40848,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ListResource_CustomerPaymentMethodWithDefault_']
+          'application/json': components['schemas']['ListResource_PaymentMethod_']
         }
       }
       /** @description Customer not found. */

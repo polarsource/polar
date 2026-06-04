@@ -290,9 +290,9 @@ class CustomerPaymentMethodGeneric(PaymentMethodGeneric):
 
 CustomerPaymentMethod = Annotated[
     CustomerPaymentMethodCard | CustomerPaymentMethodGeneric,
-    SetSchemaReference("CustomerPaymentMethodWithDefault"),
-    MergeJSONSchema({"title": "CustomerPaymentMethodWithDefault"}),
-    ClassName("CustomerPaymentMethodWithDefault"),
+    SetSchemaReference("PaymentMethod"),
+    MergeJSONSchema({"title": "PaymentMethod"}),
+    ClassName("PaymentMethod"),
 ]
 CustomerPaymentMethodTypeAdapter: TypeAdapter[CustomerPaymentMethod] = TypeAdapter(
     CustomerPaymentMethod

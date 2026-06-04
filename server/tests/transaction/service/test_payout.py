@@ -189,7 +189,7 @@ class TestReverse:
         assert balance_transaction_2.payout_transaction_id == payout_transaction.id
 
         transaction = await payout_transaction_service.reverse(
-            session, payout_transaction
+            session, payout_transaction, payout
         )
 
         assert transaction.type == TransactionType.payout_reversal

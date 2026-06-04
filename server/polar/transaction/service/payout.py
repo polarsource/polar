@@ -65,8 +65,14 @@ class PayoutTransactionService(BaseTransactionService):
         return await repository.create(transaction, flush=True)
 
     async def reverse(
-        self, session: AsyncSession, transaction: Transaction
+        self,
+        session: AsyncSession,
+        transaction: Transaction,
+        payout: Payout,
     ) -> Transaction:
+        # `payout` is passed explicitly rather than read via `transaction.payout`
+        # because callers refresh the payout under `with_for_update=True`, which
+        # expires the back-reference and trips Transaction.payout's lazy='raise'.
         reversed_transaction = Transaction(
             id=generate_uuid(),
             type=TransactionType.payout_reversal,
@@ -83,7 +89,7 @@ class PayoutTransactionService(BaseTransactionService):
             paid_transactions=[],
             incurred_transactions=[],
             account_incurred_transactions=[],
-            payout=transaction.payout,
+            payout=payout,
         )
 
         repository = PayoutReversalTransactionRepository.from_session(session)

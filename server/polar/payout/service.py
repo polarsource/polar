@@ -739,7 +739,7 @@ class PayoutService:
 
         payout_transaction = payout.transaction
         payout_reversal_transaction = await payout_transaction_service.reverse(
-            session, payout_transaction
+            session, payout_transaction, payout
         )
 
         if (

@@ -91,7 +91,7 @@ Recurring billing relationship.
 | `past_due_at` | datetime | When payment failed |
 | `seats` | int | For seat-based pricing |
 
-**Relationships:** customer, product, payment_method, discount, meters, grants (benefits)
+**Relationships:** organization, customer, product, payment_method, discount, meters, grants (benefits)
 
 ---
 
@@ -184,7 +184,7 @@ Organization
 │   ├── ProductPrice (multiple per product)
 │   └── ProductBenefit → Benefit
 ├── Customer
-│   ├── Subscription → Product, Discount
+│   ├── Subscription → Organization, Product, Discount
 │   │   ├── SubscriptionProductPrice
 │   │   ├── SubscriptionMeter
 │   │   └── BenefitGrant

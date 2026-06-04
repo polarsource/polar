@@ -75,7 +75,6 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             .join(Organization, onclause=Product.organization_id == Organization.id)
             .options(
                 joinedload(Subscription.customer).joinedload(Customer.organization),
-                joinedload(Subscription.organization),
                 contains_eager(Subscription.product).options(
                     selectinload(Product.product_medias),
                     contains_eager(Product.organization),

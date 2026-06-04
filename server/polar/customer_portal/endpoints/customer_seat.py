@@ -205,7 +205,6 @@ async def list_claimed_subscriptions(
         auth_subject
     ).options(
         joinedload(Subscription.customer),
-        joinedload(Subscription.organization),
         joinedload(Subscription.product).options(
             selectinload(Product.product_medias),
             joinedload(Product.organization),

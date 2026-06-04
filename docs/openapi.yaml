@@ -46872,6 +46872,19 @@
             "title": "Max Redemptions",
             "description": "Optional maximum number of times the discount can be redeemed."
           },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Optional maximum number of times the discount can be redeemed by a single customer."
+          },
           "products": {
             "anyOf": [
               {
@@ -47114,6 +47127,18 @@
             "title": "Max Redemptions",
             "description": "Maximum number of times the discount can be redeemed."
           },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Maximum number of times the discount can be redeemed by a single customer."
+          },
           "redemptions_count": {
             "type": "integer",
             "title": "Redemptions Count",
@@ -47157,6 +47182,7 @@
           "starts_at",
           "ends_at",
           "max_redemptions",
+          "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id",
           "products"
@@ -47285,6 +47311,18 @@
             "title": "Max Redemptions",
             "description": "Maximum number of times the discount can be redeemed."
           },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Maximum number of times the discount can be redeemed by a single customer."
+          },
           "redemptions_count": {
             "type": "integer",
             "title": "Redemptions Count",
@@ -47321,6 +47359,7 @@
           "starts_at",
           "ends_at",
           "max_redemptions",
+          "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id"
         ],
@@ -47451,6 +47490,18 @@
             "title": "Max Redemptions",
             "description": "Maximum number of times the discount can be redeemed."
           },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Maximum number of times the discount can be redeemed by a single customer."
+          },
           "redemptions_count": {
             "type": "integer",
             "title": "Redemptions Count",
@@ -47495,6 +47546,7 @@
           "starts_at",
           "ends_at",
           "max_redemptions",
+          "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id",
           "products"
@@ -47627,6 +47679,18 @@
             "title": "Max Redemptions",
             "description": "Maximum number of times the discount can be redeemed."
           },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Maximum number of times the discount can be redeemed by a single customer."
+          },
           "redemptions_count": {
             "type": "integer",
             "title": "Redemptions Count",
@@ -47664,6 +47728,7 @@
           "starts_at",
           "ends_at",
           "max_redemptions",
+          "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id"
         ],
@@ -47755,6 +47820,19 @@
             ],
             "title": "Max Redemptions",
             "description": "Optional maximum number of times the discount can be redeemed."
+          },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Optional maximum number of times the discount can be redeemed by a single customer."
           },
           "products": {
             "anyOf": [
@@ -47934,6 +48012,18 @@
             "title": "Max Redemptions",
             "description": "Maximum number of times the discount can be redeemed."
           },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Maximum number of times the discount can be redeemed by a single customer."
+          },
           "redemptions_count": {
             "type": "integer",
             "title": "Redemptions Count",
@@ -47975,6 +48065,7 @@
           "starts_at",
           "ends_at",
           "max_redemptions",
+          "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id",
           "products"
@@ -48081,6 +48172,18 @@
             "title": "Max Redemptions",
             "description": "Maximum number of times the discount can be redeemed."
           },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Maximum number of times the discount can be redeemed by a single customer."
+          },
           "redemptions_count": {
             "type": "integer",
             "title": "Redemptions Count",
@@ -48115,6 +48218,7 @@
           "starts_at",
           "ends_at",
           "max_redemptions",
+          "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id"
         ],
@@ -48223,6 +48327,18 @@
             "title": "Max Redemptions",
             "description": "Maximum number of times the discount can be redeemed."
           },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Maximum number of times the discount can be redeemed by a single customer."
+          },
           "redemptions_count": {
             "type": "integer",
             "title": "Redemptions Count",
@@ -48265,6 +48381,7 @@
           "starts_at",
           "ends_at",
           "max_redemptions",
+          "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id",
           "products"
@@ -48375,6 +48492,18 @@
             "title": "Max Redemptions",
             "description": "Maximum number of times the discount can be redeemed."
           },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Maximum number of times the discount can be redeemed by a single customer."
+          },
           "redemptions_count": {
             "type": "integer",
             "title": "Redemptions Count",
@@ -48410,6 +48539,7 @@
           "starts_at",
           "ends_at",
           "max_redemptions",
+          "max_redemptions_per_customer",
           "redemptions_count",
           "organization_id"
         ],
@@ -48666,6 +48796,19 @@
             ],
             "title": "Max Redemptions",
             "description": "Optional maximum number of times the discount can be redeemed."
+          },
+          "max_redemptions_per_customer": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redemptions Per Customer",
+            "description": "Optional maximum number of times the discount can be redeemed by a single customer."
           },
           "duration": {
             "anyOf": [

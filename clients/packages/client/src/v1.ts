@@ -17358,6 +17358,11 @@ export interface components {
        * @description Optional maximum number of times the discount can be redeemed.
        */
       max_redemptions?: number | null
+      /**
+       * Max Redemptions Per Customer
+       * @description Optional maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer?: number | null
       /** Products */
       products?: string[] | null
       /**
@@ -17471,6 +17476,11 @@ export interface components {
        */
       max_redemptions: number | null
       /**
+       * Max Redemptions Per Customer
+       * @description Maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer: number | null
+      /**
        * Redemptions Count
        * @description Number of times the discount has been redeemed.
        */
@@ -17555,6 +17565,11 @@ export interface components {
        * @description Maximum number of times the discount can be redeemed.
        */
       max_redemptions: number | null
+      /**
+       * Max Redemptions Per Customer
+       * @description Maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer: number | null
       /**
        * Redemptions Count
        * @description Number of times the discount has been redeemed.
@@ -17645,6 +17660,11 @@ export interface components {
        */
       max_redemptions: number | null
       /**
+       * Max Redemptions Per Customer
+       * @description Maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer: number | null
+      /**
        * Redemptions Count
        * @description Number of times the discount has been redeemed.
        */
@@ -17732,6 +17752,11 @@ export interface components {
        */
       max_redemptions: number | null
       /**
+       * Max Redemptions Per Customer
+       * @description Maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer: number | null
+      /**
        * Redemptions Count
        * @description Number of times the discount has been redeemed.
        */
@@ -17791,6 +17816,11 @@ export interface components {
        * @description Optional maximum number of times the discount can be redeemed.
        */
       max_redemptions?: number | null
+      /**
+       * Max Redemptions Per Customer
+       * @description Optional maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer?: number | null
       /** Products */
       products?: string[] | null
       /**
@@ -17881,6 +17911,11 @@ export interface components {
        */
       max_redemptions: number | null
       /**
+       * Max Redemptions Per Customer
+       * @description Maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer: number | null
+      /**
        * Redemptions Count
        * @description Number of times the discount has been redeemed.
        */
@@ -17948,6 +17983,11 @@ export interface components {
        * @description Maximum number of times the discount can be redeemed.
        */
       max_redemptions: number | null
+      /**
+       * Max Redemptions Per Customer
+       * @description Maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer: number | null
       /**
        * Redemptions Count
        * @description Number of times the discount has been redeemed.
@@ -18021,6 +18061,11 @@ export interface components {
        */
       max_redemptions: number | null
       /**
+       * Max Redemptions Per Customer
+       * @description Maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer: number | null
+      /**
        * Redemptions Count
        * @description Number of times the discount has been redeemed.
        */
@@ -18090,6 +18135,11 @@ export interface components {
        * @description Maximum number of times the discount can be redeemed.
        */
       max_redemptions: number | null
+      /**
+       * Max Redemptions Per Customer
+       * @description Maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer: number | null
       /**
        * Redemptions Count
        * @description Number of times the discount has been redeemed.
@@ -18235,6 +18285,11 @@ export interface components {
        * @description Optional maximum number of times the discount can be redeemed.
        */
       max_redemptions?: number | null
+      /**
+       * Max Redemptions Per Customer
+       * @description Optional maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer?: number | null
       duration?: components['schemas']['DiscountDuration'] | null
       /** Duration In Months */
       duration_in_months?: number | null

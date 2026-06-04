@@ -103,6 +103,7 @@ export default {
         updateFailed: 'Falha ao atualizar os assentos',
       },
       inclTax: 'Impostos (inclusos)',
+      orderSummary: 'Resumo do pedido',
     },
     trial: {
       ends: 'Teste termina a {endDate}',

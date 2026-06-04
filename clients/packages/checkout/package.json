@@ -44,6 +44,10 @@
     "./providers": {
       "types": "./dist/providers/index.d.ts",
       "default": "./src/providers/index.ts"
+    },
+    "./test-utils": {
+      "types": "./src/test-utils/makeCheckout.ts",
+      "default": "./src/test-utils/makeCheckout.ts"
     }
   },
   "publishConfig": {

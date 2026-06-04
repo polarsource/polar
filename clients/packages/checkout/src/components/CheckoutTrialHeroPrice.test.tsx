@@ -254,4 +254,104 @@ describe('CheckoutTrialHeroPrice', () => {
       expect(container.textContent).toContain('$199.99 / 2nd yr')
     })
   })
+
+  describe('compact variant (used by the mobile order-summary bar)', () => {
+    it('omits the "starting <date>" suffix', () => {
+      const checkout = createTrialCheckout({
+        trial_end: '2026-04-05T00:00:00Z',
+      })
+
+      const { container } = render(
+        <CheckoutTrialHeroPrice checkout={checkout} locale="en" compact />,
+      )
+
+      expect(container.textContent).not.toContain('starting')
+      expect(container.textContent).not.toContain('April')
+      expect(container.textContent).not.toContain('2026')
+    })
+
+    it('uses the short interval form ("/mo") for monthly trials', () => {
+      const checkout = createTrialCheckout({
+        amount: 999,
+        net_amount: 999,
+        total_amount: 999,
+        product: {
+          ...trialProduct,
+          recurring_interval: 'month',
+        },
+      })
+
+      const { container } = render(
+        <CheckoutTrialHeroPrice checkout={checkout} locale="en" compact />,
+      )
+
+      expect(container.textContent).toContain('$9.99/mo')
+      expect(container.textContent).not.toContain('$9.99/month')
+    })
+
+    it('uses the short interval form ("/yr") for yearly trials', () => {
+      const checkout = createTrialCheckout()
+
+      const { container } = render(
+        <CheckoutTrialHeroPrice checkout={checkout} locale="en" compact />,
+      )
+
+      expect(container.textContent).toContain('$99.99/yr')
+      expect(container.textContent).not.toContain('$99.99/year')
+    })
+
+    it('preserves the ordinal short form when recurring_interval_count > 1', () => {
+      const checkout = createTrialCheckout({
+        amount: 4106,
+        net_amount: 4106,
+        total_amount: 4106,
+        product: {
+          ...trialProduct,
+          recurring_interval: 'month',
+          recurring_interval_count: 3,
+        },
+      })
+
+      const { container } = render(
+        <CheckoutTrialHeroPrice checkout={checkout} locale="en" compact />,
+      )
+
+      expect(container.textContent).toContain('$41.06 / 3rd mo')
+    })
+
+    it('applies font-semibold to the trial label headline', () => {
+      const checkout = createTrialCheckout()
+
+      const { container } = render(
+        <CheckoutTrialHeroPrice checkout={checkout} locale="en" compact />,
+      )
+
+      const headline = container.querySelector('span')
+      expect(headline?.className ?? '').toMatch(/font-semibold/)
+    })
+
+    it('does not apply font-semibold to the headline when compact is omitted', () => {
+      const checkout = createTrialCheckout()
+
+      const { container } = render(
+        <CheckoutTrialHeroPrice checkout={checkout} locale="en" />,
+      )
+
+      const headline = container.querySelector('span')
+      expect(headline?.className ?? '').not.toMatch(/font-semibold/)
+    })
+
+    it('still includes the date and long interval when compact is omitted', () => {
+      const checkout = createTrialCheckout({
+        trial_end: '2026-04-05T00:00:00Z',
+      })
+
+      const { container } = render(
+        <CheckoutTrialHeroPrice checkout={checkout} locale="en" />,
+      )
+
+      expect(container.textContent).toContain('starting')
+      expect(container.textContent).toContain('$99.99/year')
+    })
+  })
 })

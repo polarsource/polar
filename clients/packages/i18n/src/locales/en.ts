@@ -69,6 +69,11 @@ export default {
           'A pricing type where the customer can choose how much to pay.',
       },
       total: 'Total',
+      orderSummary: {
+        value: 'Order summary',
+        _llmContext:
+          'Label for the mobile-only collapsible bar that reveals the full order breakdown when tapped. Appears at the top of the checkout page on small screens.',
+      },
       everyInterval: {
         day: {
           _mode: 'plural',

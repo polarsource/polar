@@ -103,6 +103,7 @@ export default {
         updateFailed: 'A felhasználói helyek frissítése nem sikerült',
       },
       inclTax: 'ÁFA (tartalmazza)',
+      orderSummary: 'Rendelés összegzése',
     },
     trial: {
       ends: 'A próbaidőszak ekkor jár le: {endDate}',

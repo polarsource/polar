@@ -43,6 +43,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Slideshow } from '../Products/Slideshow'
 import { CheckoutDiscountInput } from './CheckoutDiscountInput'
 import { CheckoutProductDescription } from './CheckoutProductDescription'
+import { MobileOrderSummaryBar } from './MobileOrderSummaryBar'
+import { useMobileSummaryState } from './useMobileSummaryState'
 import { twMerge } from 'tailwind-merge'
 
 const PaymentNotReadyBanner = ({
@@ -227,6 +229,14 @@ const Checkout = ({
     [_confirm, checkoutConfirmedRedirect],
   )
 
+  const {
+    mode: mobileLayout,
+    collapses: mobileCollapses,
+    hasTrial,
+    isOpen: mobileSummaryOpen,
+    toggle: toggleMobileSummary,
+  } = useMobileSummaryState(checkout)
+
   if (embed) {
     return (
       <ShadowBox className="dark:md:bg-polar-900 flex flex-col gap-y-12 divide-gray-200 overflow-hidden rounded-3xl md:bg-white dark:divide-transparent">
@@ -335,116 +345,134 @@ const Checkout = ({
   return (
     <div className="md:grid md:min-h-screen md:grid-cols-2">
       <div className="md:flex md:justify-end">
-        <div className="mx-auto flex w-full max-w-[480px] flex-col gap-y-8 px-4 py-6 md:mx-0 md:py-12 md:pr-12 md:pl-4">
+        <div className="mx-auto flex w-full max-w-[480px] flex-col gap-y-6 px-4 pt-6 pb-0 md:mx-0 md:py-12 md:pr-12 md:pl-4">
           {orgHeader}
-          <div className="flex flex-col gap-y-8 md:sticky md:top-8">
+          <div className="flex flex-col md:sticky md:top-8 md:gap-y-8">
             {hasProductCheckout(checkout) && (
               <>
-                <div className="flex flex-col gap-y-2">
-                  <div className="flex flex-row items-center gap-x-3">
-                    {hasMedia && checkout.product.medias[0]?.public_url && (
-                      <Dialog>
-                        <DialogTrigger
-                          asChild
-                          disabled={checkout.product.medias.length <= 1}
-                        >
-                          <button
-                            className={`relative h-10 w-10 shrink-0 ${checkout.product.medias.length > 1 ? 'cursor-pointer' : 'cursor-default'}`}
-                          >
-                            <UploadImage
-                              src={checkout.product.medias[0].public_url}
-                              approximateWidth={40}
-                              alt={checkout.product.name}
-                              className="h-10 w-10 rounded-lg object-cover"
-                            />
-                            {checkout.product.medias.length > 1 && (
-                              <span className="absolute right-0 bottom-0 rounded bg-black/60 px-1 py-0.5 text-[10px] leading-none font-medium text-white">
-                                +{checkout.product.medias.length - 1}
-                              </span>
-                            )}
-                          </button>
-                        </DialogTrigger>
-                        <DialogContent className="dark:bg-polar-900 max-w-2xl">
-                          <DialogHeader>
-                            <DialogTitle>{checkout.product.name}</DialogTitle>
-                            <DialogDescription className="sr-only">
-                              Product images
-                            </DialogDescription>
-                          </DialogHeader>
-                          <Slideshow
-                            images={checkout.product.medias.map((m) =>
-                              getResizedImage(m.public_url, 672),
-                            )}
-                          />
-                        </DialogContent>
-                      </Dialog>
-                    )}
-                    <div className="flex min-w-0 flex-col gap-y-1">
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {checkout.product.name}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="text-3xl font-medium">
-                    <CheckoutHeroPrice checkout={checkout} locale={locale} />
-                  </span>
-                </div>
-                <CheckoutProductSwitcher
-                  checkout={checkout}
-                  update={
-                    update as (
-                      data: schemas['CheckoutUpdatePublic'],
-                    ) => Promise<ProductCheckoutPublic>
-                  }
-                  themePreset={themePreset}
-                  locale={locale}
-                />
-                {checkout.product_price.amount_type === 'custom' && (
-                  <CheckoutPWYWForm
+                {mobileLayout === 'collapsed-bar' && (
+                  <MobileOrderSummaryBar
                     checkout={checkout}
-                    update={update}
-                    productPrice={
-                      checkout.product_price as schemas['ProductPriceCustom']
-                    }
                     locale={locale}
+                    hasTrial={hasTrial}
+                    isOpen={mobileSummaryOpen}
+                    onToggle={toggleMobileSummary}
                   />
                 )}
-                {!checkout.is_free_product_price && (
-                  <div className="flex flex-col gap-4 text-sm">
-                    {checkout.product_price.amount_type === 'seat_based' && (
-                      <CheckoutSeatSelector
+                <div
+                  className={twMerge(
+                    'flex flex-col gap-y-8',
+                    mobileCollapses && !mobileSummaryOpen && 'hidden md:flex',
+                    mobileCollapses &&
+                      'dark:border-polar-700 dark:bg-polar-800 -mx-4 border-b border-gray-200 bg-gray-50 px-4 pt-6 pb-6 md:mx-0 md:border-0 md:bg-transparent md:p-0 md:dark:bg-transparent',
+                  )}
+                >
+                  <div className="flex flex-col gap-y-2">
+                    <div className="flex flex-row items-center gap-x-3">
+                      {hasMedia && checkout.product.medias[0]?.public_url && (
+                        <Dialog>
+                          <DialogTrigger
+                            asChild
+                            disabled={checkout.product.medias.length <= 1}
+                          >
+                            <button
+                              className={`relative h-10 w-10 shrink-0 ${checkout.product.medias.length > 1 ? 'cursor-pointer' : 'cursor-default'}`}
+                            >
+                              <UploadImage
+                                src={checkout.product.medias[0].public_url}
+                                approximateWidth={40}
+                                alt={checkout.product.name}
+                                className="h-10 w-10 rounded-lg object-cover"
+                              />
+                              {checkout.product.medias.length > 1 && (
+                                <span className="absolute right-0 bottom-0 rounded bg-black/60 px-1 py-0.5 text-[10px] leading-none font-medium text-white">
+                                  +{checkout.product.medias.length - 1}
+                                </span>
+                              )}
+                            </button>
+                          </DialogTrigger>
+                          <DialogContent className="dark:bg-polar-900 max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>{checkout.product.name}</DialogTitle>
+                              <DialogDescription className="sr-only">
+                                Product images
+                              </DialogDescription>
+                            </DialogHeader>
+                            <Slideshow
+                              images={checkout.product.medias.map((m) =>
+                                getResizedImage(m.public_url, 672),
+                              )}
+                            />
+                          </DialogContent>
+                        </Dialog>
+                      )}
+                      <div className="flex min-w-0 flex-col gap-y-1">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {checkout.product.name}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-3xl font-medium">
+                      <CheckoutHeroPrice checkout={checkout} locale={locale} />
+                    </span>
+                  </div>
+                  <CheckoutProductSwitcher
+                    checkout={checkout}
+                    update={
+                      update as (
+                        data: schemas['CheckoutUpdatePublic'],
+                      ) => Promise<ProductCheckoutPublic>
+                    }
+                    themePreset={themePreset}
+                    locale={locale}
+                  />
+                  {checkout.product_price.amount_type === 'custom' && (
+                    <CheckoutPWYWForm
+                      checkout={checkout}
+                      update={update}
+                      productPrice={
+                        checkout.product_price as schemas['ProductPriceCustom']
+                      }
+                      locale={locale}
+                    />
+                  )}
+                  {!checkout.is_free_product_price && (
+                    <div className="flex flex-col gap-4 text-sm">
+                      {checkout.product_price.amount_type === 'seat_based' && (
+                        <CheckoutSeatSelector
+                          checkout={checkout}
+                          update={update}
+                          locale={locale}
+                          compact
+                        />
+                      )}
+                      <CheckoutPricingBreakdown
+                        checkout={checkout}
+                        locale={locale}
+                      />
+                      <CheckoutDiscountInput
                         checkout={checkout}
                         update={update}
                         locale={locale}
-                        compact
+                        collapsible
                       />
-                    )}
-                    <CheckoutPricingBreakdown
-                      checkout={checkout}
+                    </div>
+                  )}
+                  {checkout.product.description && (
+                    <CheckoutProductDescription
+                      description={checkout.product.description}
+                      productName={checkout.product.name}
                       locale={locale}
                     />
-                    <CheckoutDiscountInput
-                      checkout={checkout}
-                      update={update}
-                      locale={locale}
-                      collapsible
-                    />
-                  </div>
-                )}
-                {checkout.product.description && (
-                  <CheckoutProductDescription
-                    description={checkout.product.description}
-                    productName={checkout.product.name}
-                    locale={locale}
-                  />
-                )}
+                  )}
+                </div>
               </>
             )}
           </div>
         </div>
       </div>
       <div className="dark:md:bg-polar-900 md:bg-white">
-        <div className="mx-auto flex w-full max-w-[480px] flex-col gap-y-8 px-4 py-6 md:mx-0 md:py-12 md:pr-4 md:pl-12">
+        <div className="mx-auto flex w-full max-w-[480px] flex-col gap-y-8 px-4 pt-6 pb-6 md:mx-0 md:py-12 md:pr-4 md:pl-12">
           {shouldBlockCheckout && (
             <PaymentNotReadyBanner
               organizationStatus={paymentStatus?.organization_status}

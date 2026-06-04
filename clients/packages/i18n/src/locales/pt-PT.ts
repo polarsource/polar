@@ -103,6 +103,7 @@ export default {
         updateFailed: 'Não foi possível atualizar as licenças',
       },
       inclTax: 'IVA (incluído)',
+      orderSummary: 'Resumo da encomenda',
     },
     trial: {
       ends: 'Teste termina a {endDate}',

@@ -181,7 +181,8 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.orderSummary": "Order summary"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -365,7 +366,8 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.orderSummary": "Order summary"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -549,7 +551,8 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.orderSummary": "Order summary"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -733,7 +736,8 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.orderSummary": "Order summary"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -917,7 +921,8 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.orderSummary": "Order summary"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1093,7 +1098,8 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.orderSummary": "Order summary"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1269,7 +1275,8 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.orderSummary": "Order summary"
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1445,7 +1452,8 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.orderSummary": "Order summary"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1621,7 +1629,8 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.orderSummary": "Order summary"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1797,6 +1806,7 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.orderSummary": "Order summary"
   }
 }

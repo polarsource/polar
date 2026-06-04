@@ -103,6 +103,7 @@ export default {
         updateFailed: 'Stoelen bijwerken mislukt',
       },
       inclTax: 'Btw (inbegrepen)',
+      orderSummary: 'Besteloverzicht',
     },
     trial: {
       ends: 'Proefperiode eindigt op {endDate}',

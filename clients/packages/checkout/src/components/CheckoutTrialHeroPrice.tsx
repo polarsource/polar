@@ -9,12 +9,14 @@ import {
 } from '@polar-sh/i18n'
 import { formatDate } from '@polar-sh/i18n/formatters/date'
 import { formatOrdinal } from '@polar-sh/i18n/formatters/ordinal'
+import { cn } from '@polar-sh/ui/lib/utils'
 import type { ProductCheckoutPublic } from '../guards'
 import { isLegacyRecurringPrice } from '../utils/product'
 
 export interface CheckoutTrialHeroPriceProps {
   checkout: ProductCheckoutPublic
   locale?: AcceptedLocale
+  compact?: boolean
 }
 
 const TRIAL_FREE_KEYS = {
@@ -33,6 +35,7 @@ const INTERVAL_SUFFIX_KEYS = {
 const CheckoutTrialHeroPrice = ({
   checkout,
   locale,
+  compact,
 }: CheckoutTrialHeroPriceProps) => {
   const { product, product_price } = checkout
   const effectiveLocale = locale ?? DEFAULT_LOCALE
@@ -57,10 +60,13 @@ const CheckoutTrialHeroPrice = ({
   const intervalCount = product.recurring_interval_count
   const intervalSuffix = (() => {
     if (!interval || !(interval in INTERVAL_SUFFIX_KEYS)) return ''
+    const shortInterval =
+      getTranslations(effectiveLocale).intervals.short[interval]
     if (intervalCount && intervalCount > 1) {
-      const shortInterval =
-        getTranslations(effectiveLocale).intervals.short[interval]
       return ` / ${formatOrdinal(intervalCount, effectiveLocale)} ${shortInterval}`
+    }
+    if (compact) {
+      return `/${shortInterval}`
     }
     return t(
       INTERVAL_SUFFIX_KEYS[interval as keyof typeof INTERVAL_SUFFIX_KEYS],
@@ -69,18 +75,26 @@ const CheckoutTrialHeroPrice = ({
   const format = formatCurrency('standard', effectiveLocale)
   const priceStr = `${format(recurringAmount, currency)}${intervalSuffix}`
 
-  const dateStr = checkout.trial_end
-    ? formatDate(checkout.trial_end, effectiveLocale, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    : null
+  const dateStr =
+    !compact && checkout.trial_end
+      ? formatDate(checkout.trial_end, effectiveLocale, {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
+      : null
 
   return (
     <div className="flex flex-col gap-y-1">
-      <span>{trialLabel}</span>
-      <span className="dark:text-polar-500 text-sm font-normal text-gray-500">
+      <span className={compact ? 'font-semibold' : undefined}>
+        {trialLabel}
+      </span>
+      <span
+        className={cn(
+          'dark:text-polar-500 text-sm font-normal text-gray-500',
+          compact && 'text-xs',
+        )}
+      >
         {t('checkout.trial.hero.then')}{' '}
         <strong className="font-semibold">{priceStr}</strong>
         {dateStr

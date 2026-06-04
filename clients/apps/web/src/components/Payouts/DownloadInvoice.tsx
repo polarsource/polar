@@ -14,7 +14,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { Textarea } from '@polar-sh/ui/components/ui/textarea'
+import { Textarea } from '@polar-sh/orbit/ui/textarea'
 import { useCallback } from 'react'
 import { usePayoutContext } from './PayoutContext'
 import { useInvoiceDownload } from './useInvoiceDownload'

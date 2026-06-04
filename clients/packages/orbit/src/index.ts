@@ -9,6 +9,8 @@ export { SegmentedControl } from './components/SegmentedControl'
 export type { SegmentedControlProps } from './components/SegmentedControl'
 export { Text } from './components/Text'
 export type { TextColor, TextStyleProps, TextVariant } from './components/Text'
+export { TextArea } from './components/TextArea'
+export type { TextAreaProps } from './components/TextArea'
 export { Truncated } from './components/Truncated'
 export type { Props as TruncatedProps } from './components/Truncated'
 

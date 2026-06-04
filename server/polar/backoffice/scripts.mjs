@@ -3,7 +3,6 @@ import "hyperscript.org";
 import { EventSourcePlus } from "event-source-plus";
 
 window.htmx = htmx;
-window._hyperscript.browserInit();
 
 const formPostSSE = (formElement, target) => {
   const eventSource = new EventSourcePlus(formElement.action, {

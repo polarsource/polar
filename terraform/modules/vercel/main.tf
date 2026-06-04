@@ -20,6 +20,8 @@ resource "vercel_project" "this" {
   enable_production_feedback = var.enable_production_feedback
   git_provider_options       = var.git_provider_options
 
+  automatically_expose_system_environment_variables = true
+
   git_repository = {
     type              = "github"
     repo              = var.git_repo

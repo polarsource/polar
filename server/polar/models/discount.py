@@ -103,11 +103,6 @@ class Discount(MetadataMixin, RecordModel):
         raise NotImplementedError()
 
     def allocate_discount_amounts(self, amounts: list[int], currency: str) -> list[int]:
-        """Allocate this discount across an ordered list of amounts.
-
-        Returns the discount applied to each amount, in the same order. Each
-        concrete discount type defines how the discount is distributed.
-        """
         raise NotImplementedError()
 
     def is_applicable(self, product: "Product", currency: str) -> bool:

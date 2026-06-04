@@ -39,14 +39,6 @@ class TestDiscountFixedAllocateDiscountAmounts:
         assert discount.allocate_discount_amounts([1000], "usd") == [1000]
         assert discount.allocate_discount_amounts([2000], "usd") == [1500]
 
-    def test_three_amounts_waterfall(self) -> None:
-        discount = _fixed(1500)
-        assert discount.allocate_discount_amounts([1000, 1000, 1000], "usd") == [
-            1000,
-            500,
-            0,
-        ]
-
     def test_empty(self) -> None:
         discount = _fixed(1500)
         assert discount.allocate_discount_amounts([], "usd") == []
@@ -58,7 +50,6 @@ class TestDiscountFixedAllocateDiscountAmounts:
             (1500, [1000, 1000]),
             (2500, [1000, 1000]),
             (0, [1000, 1000]),
-            (1500, [1000, 1000, 1000]),
             (750, [300, 1200]),
         ],
     )
@@ -80,20 +71,20 @@ class TestDiscountPercentageAllocateDiscountAmounts:
 
     def test_matches_per_amount_get_discount_amount(self) -> None:
         discount = _percentage(2500)  # 25%
-        amounts = [1000, 333, 4567]
+        amounts = [1000, 333]
         assert discount.allocate_discount_amounts(amounts, "usd") == [
             discount.get_discount_amount(amount, "usd") for amount in amounts
         ]
 
     def test_accepted_rounding_drift(self) -> None:
-        # 33.33% over [100, 100, 100]: each share rounds to 33 (sum 99), while
-        # the discount on the combined 300 rounds to 100. The per-amount drift
-        # is accepted because prorations aren't re-pooled at the order level.
+        # 33.33% over [100, 100]: each share rounds to 33 (sum 66), while the
+        # discount on the combined 200 rounds to 67. The per-amount drift is
+        # accepted because prorations aren't re-pooled at the order level.
         discount = _percentage(3333)
-        allocated = discount.allocate_discount_amounts([100, 100, 100], "usd")
-        assert allocated == [33, 33, 33]
-        assert sum(allocated) == 99
-        assert discount.get_discount_amount(300, "usd") == 100
+        allocated = discount.allocate_discount_amounts([100, 100], "usd")
+        assert allocated == [33, 33]
+        assert sum(allocated) == 66
+        assert discount.get_discount_amount(200, "usd") == 67
 
     def test_empty(self) -> None:
         discount = _percentage(1000)

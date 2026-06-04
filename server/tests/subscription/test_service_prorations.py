@@ -1425,12 +1425,13 @@ class TestImmediateSeatChangeWithPendingProductChange:
 
 # --- Composed static price (fixed + seat) discount allocation -----------------
 #
-# These exercise the not-yet-reachable "fixed base fee + seat price" composition
-# (PR 2 enables it at the product layer). The factories build the prices and
-# subscription rows directly, bypassing product-price validation. Cases use
-# values where the fixed-amount waterfall *diverges* from the old per-price
-# `min(discount, amount)` behaviour, so they fail on the previous code and pass
-# now. Period 2025-06-01 → 2025-07-01 with an update at 2025-06-16 gives a clean
+# These exercise the not-yet-reachable "fixed base fee + seat price" composition.
+# The factories build the prices and subscription rows directly,
+# bypassing product-price validation. Cases use values where the
+# fixed-amount waterfall allocation matters — i.e. where a
+# naive per-price `min(discount, amount)` would distribute the discount
+# differently — so they pin down the behaviour we want once multiple prices ship.
+# Period 2025-06-01 → 2025-07-01 with an update at 2025-06-16 gives a clean
 # proration factor of 0.5.
 
 CYCLE_START = datetime(2025, 6, 1, tzinfo=UTC)
@@ -1515,8 +1516,7 @@ class TestComposedStaticPriceDiscountAllocation:
 
         # Old plan: fixed 100_00 + seat 120_00 (1 seat). Waterfall allocates the
         # 150_00 discount as [100_00, 50_00] (fixed-first), so the seat keeps a
-        # 70_00 net. The old per-price code capped the seat at its own 120_00,
-        # leaving 0 net → a 0 credit.
+        # 70_00 net.
         old_product, subscription = await _create_fixed_and_seat_subscription(
             save_fixture,
             organization=organization,
@@ -1528,7 +1528,7 @@ class TestComposedStaticPriceDiscountAllocation:
         )
         # New plan: fixed 200_00 + seat 120_00 (1 seat). Waterfall allocates
         # [150_00, 0]: the fixed fee absorbs the whole discount, the seat keeps
-        # its full 120_00. The old code capped the seat at 120_00 → 0 net.
+        # its full 120_00.
         new_product = await create_product(
             save_fixture,
             organization=organization,
@@ -1550,7 +1550,7 @@ class TestComposedStaticPriceDiscountAllocation:
         amounts = _amounts_by_price(entries)
         # Credit (old plan), factor 0.5:
         #   fixed: (100_00 - 100_00) * 0.5 = 0
-        #   seat:  (120_00 -  50_00) * 0.5 = 35_00   (old code: 0)
+        #   seat:  (120_00 -  50_00) * 0.5 = 35_00
         assert (
             amounts[(_fixed_price_id(old_product), BillingEntryDirection.credit)] == 0
         )
@@ -1560,7 +1560,7 @@ class TestComposedStaticPriceDiscountAllocation:
         )
         # Debit (new plan), factor 0.5:
         #   fixed: (200_00 - 150_00) * 0.5 = 25_00
-        #   seat:  (120_00 -      0) * 0.5 = 60_00   (old code: 0)
+        #   seat:  (120_00 -      0) * 0.5 = 60_00
         assert (
             amounts[(_fixed_price_id(new_product), BillingEntryDirection.debit)]
             == 25_00
@@ -1617,7 +1617,7 @@ class TestComposedStaticPriceDiscountAllocation:
             entries = await repository.get_pending_by_subscription(subscription.id)
 
         amounts = _amounts_by_price(entries)
-        # Percentage distributes independently (unchanged), factor 0.5:
+        # Percentage distributes independently, factor 0.5:
         #   credit fixed: (100_00 - 10_00) * 0.5 = 45_00
         #   credit seat:  (120_00 - 12_00) * 0.5 = 54_00
         #   debit  fixed: (200_00 - 20_00) * 0.5 = 90_00
@@ -1664,8 +1664,6 @@ class TestComposedStaticPriceDiscountAllocation:
         # So the seat discount doesn't change and the full seat delta prorates:
         #   delta = (200_00 - 50_00) - (100_00 - 50_00) = 100_00
         #   prorated = 100_00 * 0.5 = 50_00
-        # The old per-price code capped the seat discount at its own amount
-        # (100_00 then 150_00), giving a 25_00 delta instead.
         product, subscription = await _create_fixed_and_seat_subscription(
             save_fixture,
             organization=organization,

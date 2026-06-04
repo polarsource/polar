@@ -745,6 +745,7 @@ erDiagram
     Subscription {
         uuid id PK
         uuid customer_id FK "→ Customer (who pays)"
+        uuid organization_id FK "→ Organization (denormalized from product)"
         uuid payment_method_id FK
         int seats "NULL for non-seat, number for seat-based"
         string status

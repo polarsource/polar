@@ -19,7 +19,7 @@
     "commander": "^14.0.3",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-email": "^6.1.5"
+    "react-email": "^6.5.0"
   },
   "devDependencies": {
     "@react-email/ui": "^6.1.5",

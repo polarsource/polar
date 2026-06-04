@@ -51,6 +51,8 @@ jobs:
       image: pkpmg8f64v.registry.depot.dev/ci-server-snapshot:v1
     steps:
       - uses: actions/checkout@v6
+        with:
+          clean: false
       # - uses: actions/cache@v4
       #   with:
       #     path: |
@@ -227,6 +229,8 @@ jobs:
           --health-cmd "curl -s http://127.0.0.1:7181/tokens || exit 1" --health-interval 2s --health-timeout 5s --health-retries 10 --health-start-period 40s
     steps:
       - uses: actions/checkout@v6
+        with:
+          clean: false
       - name: "\U0001F4BF MinIO Setup"
         working-directory: ./server/.minio
         env:

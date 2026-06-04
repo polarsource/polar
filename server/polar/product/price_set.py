@@ -4,7 +4,14 @@ from typing import Self
 from polar.exceptions import PolarError
 from polar.models import Product, ProductPrice
 
-from .guard import is_static_price
+from .guard import (
+    CustomPrice,
+    SeatPrice,
+    is_custom_price,
+    is_fixed_price,
+    is_seat_price,
+    is_static_price,
+)
 
 
 class PriceSetError(PolarError): ...
@@ -92,9 +99,63 @@ class PriceSet:
                 return price
         return self.prices[0]
 
+    def get_static_prices(self) -> list[ProductPrice]:
+        """Return every static price in the set (fixed, custom, free, seat)."""
+        return [price for price in self.prices if is_static_price(price)]
+
+    def get_seat_price(self) -> SeatPrice | None:
+        """Return the lone seat-based price in the set, if any."""
+        for price in self.prices:
+            if is_seat_price(price):
+                return price
+        return None
+
+    def get_custom_price(self) -> CustomPrice | None:
+        """Return the lone custom (pay-what-you-want) price in the set, if any."""
+        for price in self.prices:
+            if is_custom_price(price):
+                return price
+        return None
+
+
+def calculate_upfront_amount(
+    prices: Sequence[ProductPrice],
+    *,
+    custom_amount: int | None,
+    seats: int | None,
+) -> int:
+    """Sum the upfront amount charged for a checkout across a set of prices.
+
+    Each price contributes according to its type:
+    - fixed: its configured amount
+    - custom: the buyer-provided ``custom_amount`` (``0`` is honored), falling
+      back to the price's preset or minimum when ``None``
+    - seat: the amount for ``seats`` seats
+    - free / metered: nothing upfront
+    """
+    amount = 0
+    for price in prices:
+        if is_fixed_price(price):
+            amount += price.price_amount
+        elif is_custom_price(price):
+            if custom_amount is not None:
+                amount += custom_amount
+            elif price.preset_amount is not None:
+                # A configured preset of 0 ("show $0 default") is honored; only a
+                # missing preset falls back to the minimum.
+                amount += price.preset_amount
+            else:
+                amount += price.minimum_amount
+        elif is_seat_price(price):
+            if seats is None:
+                raise ValueError("seats must be provided to price a seat-based price")
+            amount += price.calculate_amount(seats)
+    return amount
+
 
 __all__ = [
     "NoPricesForCurrencies",
     "PriceSet",
     "PriceSetError",
+    "calculate_upfront_amount",
 ]

@@ -253,15 +253,18 @@ class SubscriptionService:
         statement = (
             repository.get_readable_statement(auth_subject)
             .where(Subscription.started_at.is_not(None))
+            .join(Subscription.product)
             .join(Subscription.customer)
             .join(Subscription.discount, isouter=True)
         )
 
         if organization_id is not None:
-            statement = statement.where(Product.organization_id.in_(organization_id))
+            statement = statement.where(
+                Subscription.organization_id.in_(organization_id)
+            )
 
         if product_id is not None:
-            statement = statement.where(Product.id.in_(product_id))
+            statement = statement.where(Subscription.product_id.in_(product_id))
 
         if customer_id is not None:
             statement = statement.where(Subscription.customer_id.in_(customer_id))
@@ -331,11 +334,7 @@ class SubscriptionService:
                 Subscription.id == id,
                 Subscription.started_at.is_not(None),
             )
-            .options(
-                *repository.get_eager_options(
-                    product_load=contains_eager(Subscription.product)
-                )
-            )
+            .options(*repository.get_eager_options())
         )
 
         if for_update:

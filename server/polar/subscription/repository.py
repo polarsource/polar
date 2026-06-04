@@ -119,12 +119,11 @@ class SubscriptionRepository(
     ) -> Subscription | None:
         statement = (
             self.get_base_statement()
-            .join(Product)
             .where(
                 Subscription.id == id,
-                Product.organization_id == organization_id,
+                Subscription.organization_id == organization_id,
             )
-            .options(contains_eager(Subscription.product), *options)
+            .options(joinedload(Subscription.product), *options)
         )
         return await self.get_one_or_none(statement)
 
@@ -174,6 +173,7 @@ class SubscriptionRepository(
             product_load = joinedload(Subscription.product)
         return (
             joinedload(Subscription.customer).joinedload(Customer.organization),
+            joinedload(Subscription.organization),
             product_load.options(
                 joinedload(Product.organization),
                 selectinload(Product.product_medias),
@@ -186,11 +186,11 @@ class SubscriptionRepository(
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization | Customer | Member]
     ) -> Select[tuple[Subscription]]:
-        statement = self.get_base_statement().join(Product)
+        statement = self.get_base_statement()
 
         if is_user(auth_subject):
             statement = statement.where(
-                Product.organization_id.in_(
+                Subscription.organization_id.in_(
                     select_user_org_ids(
                         auth_subject.subject.id,
                         permission=OrganizationPermission.sales_read,
@@ -199,7 +199,7 @@ class SubscriptionRepository(
             )
         elif is_organization(auth_subject):
             statement = statement.where(
-                Product.organization_id == auth_subject.subject.id,
+                Subscription.organization_id == auth_subject.subject.id,
             )
         elif is_customer(auth_subject):
             customer = auth_subject.subject

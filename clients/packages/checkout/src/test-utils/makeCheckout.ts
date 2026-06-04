@@ -171,14 +171,22 @@ const defaults: ProductCheckoutPublic = {
 /**
  * Create a ProductCheckoutPublic for testing.
  * Only override the fields relevant to your test case.
+ *
+ * Unless `prices` is set explicitly, it's derived from the selected
+ * `product_price` so `prices[product_id]` contains it — mirroring the backend,
+ * where the product's price list always includes the selected price.
  */
 export function createCheckout(
   overrides: Partial<ProductCheckoutPublic> = {},
 ): ProductCheckoutPublic {
-  return {
+  const checkout = {
     ...defaults,
     ...overrides,
   } satisfies ProductCheckoutPublic
+  if (!('prices' in overrides)) {
+    checkout.prices = { [checkout.product_id]: [checkout.product_price] }
+  }
+  return checkout
 }
 
 /**

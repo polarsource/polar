@@ -2,7 +2,7 @@
 
 import { useAssignSeatFromCheckout } from '@/hooks/queries'
 import { validateEmail } from '@/utils/validation'
-import { hasProductCheckout } from '@polar-sh/checkout/guards'
+import { getSeatPrice } from '@polar-sh/checkout/guards'
 import type { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -26,9 +26,7 @@ const CheckoutSeatInvitations = ({
   checkout,
   customerSessionToken,
 }: CheckoutSeatInvitationsProps) => {
-  const isSeatBased =
-    hasProductCheckout(checkout) &&
-    checkout.product_price.amount_type === 'seat_based'
+  const isSeatBased = getSeatPrice(checkout) !== null
 
   if (!isSeatBased || !checkout.seats || !customerSessionToken) {
     return null

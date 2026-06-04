@@ -38,6 +38,7 @@ from .schemas import (
 from .service import (
     AlreadyCanceledSubscription,
     SubscriptionLocked,
+    SubscriptionUpdateContext,
 )
 from .service import subscription as subscription_service
 
@@ -323,9 +324,12 @@ async def update(
         customer_id=auth_subject.subject.id,
         updates=subscription_update,
     )
-    return await subscription_service.update(
-        session, subscription, update=subscription_update
-    )
+    async with SubscriptionUpdateContext(
+        session, subscription, subscription_service
+    ) as ctx:
+        return await subscription_service.update(
+            session, ctx, subscription, update=subscription_update
+        )
 
 
 @router.delete(
@@ -367,4 +371,7 @@ async def revoke(
     log.info(
         "subscription.revoke", id=id, admin_id=auth_subject.subject.id, immediate=True
     )
-    return await subscription_service.revoke(session, subscription)
+    async with SubscriptionUpdateContext(
+        session, subscription, subscription_service
+    ) as ctx:
+        return await subscription_service.revoke(session, ctx, subscription)

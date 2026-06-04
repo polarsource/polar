@@ -27,6 +27,7 @@ from polar.product.guard import (
     is_seat_price,
 )
 from polar.subscription.repository import SubscriptionUpdateRepository
+from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -338,11 +339,15 @@ class TestUpdateProductProrations:
             frozen_time.move_to(time_of_update)
 
             # Actually update subscription
-            updated_subscription = await subscription_service.update_product(
-                session,
-                subscription,
-                product_id=new_product.id,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated_subscription = await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=new_product.id,
+                )
 
             assert updated_subscription.ended_at is None
             if old_product.recurring_interval == new_product.recurring_interval:
@@ -463,11 +468,15 @@ class TestUpdateProductProrations:
 
         update_time = datetime(2025, 6, 16, tzinfo=UTC)
         with freezegun.freeze_time(update_time):
-            await subscription_service.update_product(
-                session,
-                subscription,
-                product_id=new_product.id,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=new_product.id,
+                )
 
             old_price = old_product.prices[0]
             new_price = new_product.prices[0]
@@ -521,11 +530,15 @@ class TestUpdateProductProrations:
 
         update_time = datetime(2025, 6, 16, tzinfo=UTC)
         with freezegun.freeze_time(update_time):
-            await subscription_service.update_product(
-                session,
-                subscription,
-                product_id=new_product.id,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=new_product.id,
+                )
 
             old_price = old_product.prices[0]
             new_price = new_product.prices[0]
@@ -581,11 +594,15 @@ class TestUpdateProductProrations:
 
         update_time = datetime(2025, 6, 16, tzinfo=UTC)
         with freezegun.freeze_time(update_time):
-            await subscription_service.update_product(
-                session,
-                subscription,
-                product_id=product.id,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=product.id,
+                )
 
             new_price = product.prices[0]
             assert not new_price.is_archived
@@ -661,12 +678,16 @@ class TestUpdateProductProrations:
                 update_time, new_anchor_day, subscription.recurring_interval_count
             )
 
-            updated_subscription = await subscription_service.update_product(
-                session,
-                subscription,
-                product_id=new_product.id,
-                proration_behavior=SubscriptionProrationBehavior.reset,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated_subscription = await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=new_product.id,
+                    proration_behavior=SubscriptionProrationBehavior.reset,
+                )
 
             create_subscription_update_order_mock.assert_awaited_once_with(
                 session, subscription
@@ -765,12 +786,16 @@ class TestUpdateProductProrations:
             frozen_time.move_to(time_of_update)
 
             # Actually update subscription
-            updated_subscription = await subscription_service.update_product(
-                session,
-                subscription,
-                product_id=new_product.id,
-                proration_behavior=call_proration,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=new_product.id,
+                    proration_behavior=call_proration,
+                )
 
             if expected_proration == SubscriptionProrationBehavior.invoice:
                 create_subscription_update_order_mock.assert_awaited_once_with(
@@ -822,12 +847,16 @@ class TestUpdateProductProrations:
 
             #  Update subscription no. 2 on June 17th
             frozen_time.move_to(time_of_update)
-            updated_subscription = await subscription_service.update_product(
-                session,
-                subscriptions[1],
-                product_id=products[3].id,
-                proration_behavior=SubscriptionProrationBehavior.invoice,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscriptions[1], subscription_service
+            ) as ctx:
+                updated_subscription = await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscriptions[1],
+                    product_id=products[3].id,
+                    proration_behavior=SubscriptionProrationBehavior.invoice,
+                )
 
             assert updated_subscription.current_period_start == datetime(
                 2025, 6, 2, tzinfo=UTC
@@ -947,12 +976,16 @@ class TestUpdateProductProrations:
             ############
             # Update 1 #
             ############
-            updated_subscription = await subscription_service.update_product(
-                session,
-                subscription,
-                product_id=products[1].id,
-                proration_behavior=proration_behavior,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated_subscription = await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=products[1].id,
+                    proration_behavior=proration_behavior,
+                )
 
             # fmt: off
             assert updated_subscription.ended_at is None
@@ -976,13 +1009,17 @@ class TestUpdateProductProrations:
             ############
             # Update 2 #
             ############
-            frozen_time.move_to(time_of_update_2)
-            updated_subscription = await subscription_service.update_product(
-                session,
-                subscription,
-                product_id=products[2].id,
-                proration_behavior=proration_behavior,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                frozen_time.move_to(time_of_update_2)
+                updated_subscription = await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=products[2].id,
+                    proration_behavior=proration_behavior,
+                )
 
             # fmt: off
             assert updated_subscription.ended_at is None
@@ -1009,12 +1046,16 @@ class TestUpdateProductProrations:
             # Update 3 #
             ############
             frozen_time.move_to(time_of_update_3)
-            updated_subscription = await subscription_service.update_product(
-                session,
-                subscription,
-                product_id=products[3].id,
-                proration_behavior=proration_behavior,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated_subscription = await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=products[3].id,
+                    proration_behavior=proration_behavior,
+                )
 
             # fmt: off
             assert updated_subscription.ended_at is None
@@ -1082,12 +1123,16 @@ class TestUpdateProductProrations:
 
             frozen_time.move_to(time_of_update)
 
-            updated_subscription = await subscription_service.update_product(
-                session,
-                subscription,
-                product_id=new_product.id,
-                proration_behavior=SubscriptionProrationBehavior.prorate,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated_subscription = await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=new_product.id,
+                    proration_behavior=SubscriptionProrationBehavior.prorate,
+                )
 
             assert updated_subscription.product == new_product
             assert len(updated_subscription.meters) == 1
@@ -1277,12 +1322,16 @@ class TestImmediateSeatChangeWithPendingProductChange:
             frozen_time.move_to(time_of_update)
 
             # 1. Schedule A -> B at next_period.
-            await subscription_service.update_product(
-                session,
-                subscription,
-                product_id=product_b.id,
-                proration_behavior=SubscriptionProrationBehavior.next_period,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=product_b.id,
+                    proration_behavior=SubscriptionProrationBehavior.next_period,
+                )
             await session.flush()
 
             sub_update_repo = SubscriptionUpdateRepository.from_session(session)
@@ -1294,12 +1343,16 @@ class TestImmediateSeatChangeWithPendingProductChange:
             assert pending.seats is None
 
             # 2. Bump seats with `prorate` — immediate proration entry.
-            updated = await subscription_service.update_seats(
-                session,
-                subscription,
-                seats=new_seats,
-                proration_behavior=SubscriptionProrationBehavior.prorate,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated = await subscription_service.update_seats(
+                    session,
+                    ctx,
+                    subscription,
+                    seats=new_seats,
+                    proration_behavior=SubscriptionProrationBehavior.prorate,
+                )
             await session.flush()
 
             # Subscription stays on A with seats applied immediately.

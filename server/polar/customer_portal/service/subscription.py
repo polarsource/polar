@@ -20,6 +20,7 @@ from polar.models import (
     SubscriptionMeter,
 )
 from polar.models.subscription import CustomerCancellationReason
+from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 
 from ..schemas.subscription import (
@@ -163,17 +164,24 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             if not organization.customer_portal_subscription_update_seats:
                 raise UpdateSubscriptionSeatsNotAllowed()
 
-            return await subscription_service.update_seats(
-                session,
-                subscription,
-                seats=updates.seats,
-                proration_behavior=updates.proration_behavior,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                return await subscription_service.update_seats(
+                    session,
+                    ctx,
+                    subscription,
+                    seats=updates.seats,
+                    proration_behavior=updates.proration_behavior,
+                )
 
         if isinstance(updates, CustomerSubscriptionUpdateClear):
-            return await subscription_service.clear_pending_update(
-                session, subscription
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                return await subscription_service.clear_pending_update(
+                    session, ctx, subscription
+                )
 
         cancel = updates.cancel_at_period_end is True
         uncancel = updates.cancel_at_period_end is False
@@ -197,22 +205,30 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         *,
         product_id: uuid.UUID,
     ) -> Subscription:
-        return await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=product_id,
-            allowed_visibilities=frozenset({Visibility.public}),
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            return await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=product_id,
+                allowed_visibilities=frozenset({Visibility.public}),
+            )
 
     async def uncancel(
         self,
         session: AsyncSession,
         subscription: Subscription,
     ) -> Subscription:
-        return await subscription_service.uncancel(
-            session,
-            subscription,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            return await subscription_service.uncancel(
+                session,
+                ctx,
+                subscription,
+            )
 
     async def cancel(
         self,
@@ -222,12 +238,16 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         reason: CustomerCancellationReason | None = None,
         comment: str | None = None,
     ) -> Subscription:
-        return await subscription_service.cancel(
-            session,
-            subscription,
-            customer_reason=reason,
-            customer_comment=comment,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            return await subscription_service.cancel(
+                session,
+                ctx,
+                subscription,
+                customer_reason=reason,
+                customer_comment=comment,
+            )
 
     def _get_readable_subscription_statement(
         self, auth_subject: AuthSubject[Customer | Member]

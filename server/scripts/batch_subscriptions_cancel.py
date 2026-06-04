@@ -17,6 +17,7 @@ from polar.organization.repository import OrganizationRepository
 from polar.postgres import create_async_engine
 from polar.redis import create_redis
 from polar.subscription.repository import SubscriptionRepository
+from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 from polar.worker import JobQueueManager
 
@@ -96,11 +97,15 @@ async def batch_subscriptions_cancel(
                         *subscription_repository.get_eager_options()
                     )
                 ):
-                    await subscription_service._perform_cancellation(
-                        session,
-                        subscription,
-                        immediately=True,
-                    )
+                    async with SubscriptionUpdateContext(
+                        session, subscription, subscription_service
+                    ) as ctx:
+                        await subscription_service._perform_cancellation(
+                            session,
+                            ctx,
+                            subscription,
+                            immediately=True,
+                        )
                     subscription_ids.add(subscription.id)
                     progress.advance(task)
 

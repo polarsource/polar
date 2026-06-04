@@ -110,6 +110,7 @@ from polar.product.price_set import (
 )
 from polar.product.repository import ProductRepository
 from polar.receipt.service import receipt as receipt_service
+from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import (
     CalculationExpiredError,
@@ -2900,7 +2901,10 @@ class OrderService:
             )
 
             if subscription is not None and subscription.can_cancel(immediately=True):
-                await subscription_service.revoke(session, subscription)
+                async with SubscriptionUpdateContext(
+                    session, subscription, subscription_service
+                ) as ctx:
+                    await subscription_service.revoke(session, ctx, subscription)
 
             return order
 

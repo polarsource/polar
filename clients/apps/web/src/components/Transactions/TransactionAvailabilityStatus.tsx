@@ -80,7 +80,7 @@ export const TransactionAvailabilityStatus = ({
 
     return (
       <Tooltip>
-        <TooltipTrigger className="cursor-help">
+        <TooltipTrigger>
           <Status
             status={TransactionAvailabilityStatusTitle[status]}
             className={twMerge(

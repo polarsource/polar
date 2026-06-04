@@ -597,6 +597,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def is_account_review_v2_enabled(self) -> bool:
         return self.feature_settings.get("account_review_v2_enabled", False)
 
+    @property
+    def is_slack_benefit_enabled(self) -> bool:
+        return self.feature_settings.get("slack_benefit_enabled", False)
+
     #
     # Currency and tax settings
     #

@@ -1973,6 +1973,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                         cancel_at_period_end=False,
                         started_at=now,
                         customer_id=sub_customer.id,
+                        organization_id=product.organization_id,
                         product_id=product.id,
                         anchor_day=now.day,
                     )
@@ -2025,6 +2026,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     cancel_at_period_end=False,
                     started_at=utc_now(),
                     customer_id=seat_customer.id,
+                    organization_id=seat_based_product.organization_id,
                     product_id=seat_based_product.id,
                     seats=seats_purchased,
                     anchor_day=utc_now().day,

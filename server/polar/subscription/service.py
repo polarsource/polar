@@ -253,15 +253,18 @@ class SubscriptionService:
         statement = (
             repository.get_readable_statement(auth_subject)
             .where(Subscription.started_at.is_not(None))
+            .join(Subscription.product)
             .join(Subscription.customer)
             .join(Subscription.discount, isouter=True)
         )
 
         if organization_id is not None:
-            statement = statement.where(Product.organization_id.in_(organization_id))
+            statement = statement.where(
+                Subscription.organization_id.in_(organization_id)
+            )
 
         if product_id is not None:
-            statement = statement.where(Product.id.in_(product_id))
+            statement = statement.where(Subscription.product_id.in_(product_id))
 
         if customer_id is not None:
             statement = statement.where(Subscription.customer_id.in_(customer_id))
@@ -331,11 +334,7 @@ class SubscriptionService:
                 Subscription.id == id,
                 Subscription.started_at.is_not(None),
             )
-            .options(
-                *repository.get_eager_options(
-                    product_load=contains_eager(Subscription.product)
-                )
-            )
+            .options(*repository.get_eager_options())
         )
 
         if for_update:
@@ -478,7 +477,7 @@ class SubscriptionService:
             cancel_at_period_end=False,
             recurring_interval=recurring_interval,
             recurring_interval_count=recurring_interval_count,
-            organization_id=product.organization_id,
+            organization=product.organization,
             product=product,
             customer=customer,
             subscription_product_prices=subscription_product_prices,
@@ -590,7 +589,7 @@ class SubscriptionService:
         subscription.recurring_interval_count = recurring_interval_count
         subscription.status = status
         subscription.payment_method = payment_method
-        subscription.organization_id = product.organization_id
+        subscription.organization = checkout.organization
         subscription.product = product
         subscription.subscription_product_prices = subscription_product_prices
         subscription.currency = currency
@@ -1772,7 +1771,7 @@ class SubscriptionService:
     ) -> None:
         subscription_repository = SubscriptionRepository.from_session(session)
         subscriptions = await subscription_repository.list_active_by_customer(
-            customer_id
+            customer_id, options=subscription_repository.get_eager_options()
         )
         for subscription in subscriptions:
             await self._perform_cancellation(

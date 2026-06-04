@@ -195,16 +195,16 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def customer(cls) -> Mapped["Customer"]:
         return relationship("Customer", lazy="raise")
 
-    organization_id: Mapped[UUID | None] = mapped_column(
+    organization_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("organizations.id", ondelete="restrict"),
-        nullable=True,
+        nullable=False,
         index=True,
     )
 
-    organization: AssociationProxy["Organization"] = association_proxy(
-        "product", "organization"
-    )
+    @declared_attr
+    def organization(cls) -> Mapped["Organization"]:
+        return relationship("Organization", lazy="raise")
 
     payment_method_id: Mapped[UUID | None] = mapped_column(
         Uuid,

@@ -195,6 +195,17 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def customer(cls) -> Mapped["Customer"]:
         return relationship("Customer", lazy="raise")
 
+    organization_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("organizations.id", ondelete="restrict"),
+        nullable=True,
+        index=True,
+    )
+
+    organization: AssociationProxy["Organization"] = association_proxy(
+        "product", "organization"
+    )
+
     payment_method_id: Mapped[UUID | None] = mapped_column(
         Uuid,
         ForeignKey("payment_methods.id", ondelete="set null"),
@@ -251,10 +262,6 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         cascade="all, delete-orphan",
         # Eager load
         lazy="selectin",
-    )
-
-    organization: AssociationProxy["Organization"] = association_proxy(
-        "product", "organization"
     )
 
     checkout_id: Mapped[UUID | None] = mapped_column(

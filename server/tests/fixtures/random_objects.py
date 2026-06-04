@@ -1143,6 +1143,7 @@ async def create_subscription(
         started_at=started_at,
         ended_at=ended_at,
         ends_at=ends_at,
+        organization_id=product.organization_id,
         customer=customer,
         product=product,
         payment_method=payment_method,

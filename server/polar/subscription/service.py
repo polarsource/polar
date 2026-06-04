@@ -478,6 +478,7 @@ class SubscriptionService:
             cancel_at_period_end=False,
             recurring_interval=recurring_interval,
             recurring_interval_count=recurring_interval_count,
+            organization_id=product.organization_id,
             product=product,
             customer=customer,
             subscription_product_prices=subscription_product_prices,
@@ -589,6 +590,7 @@ class SubscriptionService:
         subscription.recurring_interval_count = recurring_interval_count
         subscription.status = status
         subscription.payment_method = payment_method
+        subscription.organization_id = product.organization_id
         subscription.product = product
         subscription.subscription_product_prices = subscription_product_prices
         subscription.currency = currency

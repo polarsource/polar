@@ -32,6 +32,7 @@ from polar.integrations.github_repository_benefit.endpoints import (
 from polar.integrations.plain.endpoints import router as plain_router
 from polar.integrations.polar.endpoints import router as polar_self_router
 from polar.integrations.resend.endpoints import router as resend_router
+from polar.integrations.slack.endpoints import router as slack_router
 from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.license_key.endpoints import router as license_key_router
 from polar.member.endpoints import router as member_router
@@ -68,6 +69,8 @@ router.include_router(github_repository_benefit_router)
 router.include_router(stripe_router)
 # /integrations/discord
 router.include_router(discord_router)
+# /integrations/slack
+router.include_router(slack_router)
 # /notifications
 router.include_router(notifications_router)
 # /personal_access_tokens

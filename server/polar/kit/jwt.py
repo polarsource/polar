@@ -12,6 +12,9 @@ DecodeError = jwt.DecodeError
 ExpiredSignatureError = jwt.ExpiredSignatureError
 
 
+class InvalidTokenTypeError(DecodeError): ...
+
+
 def create_expiration_dt(seconds: int) -> datetime:
     return utc_now() + timedelta(seconds=seconds)
 
@@ -25,6 +28,7 @@ TYPE = Literal[
     "auth",
     "github_repository_benefit_oauth",
     "customer_oauth",
+    "slack_integration_oauth",
 ]
 
 
@@ -60,9 +64,10 @@ def decode(
 ) -> dict[str, Any]:
     res = decode_unsafe(token=token, secret=secret)
 
-    if res.get("type", "") != type:
-        raise Exception(
-            "JWT of unexpected type, expected '%s' got '%s'", type, res.get("type", "")
+    token_type = res.get("type", "")
+    if token_type != type:
+        raise InvalidTokenTypeError(
+            f"JWT of unexpected type, expected '{type}' got '{token_type}'"
         )
 
     return res

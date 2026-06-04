@@ -79,7 +79,7 @@ export default function ClientPage({
         <Section id="account-notifications">
           <SectionDescription
             title="Your notifications"
-            description="Choose which account and product activity emails you receive as a member of this organization."
+            description="Choose which emails you receive as a member of this organization."
           />
           {userNotificationSettings && (
             <OrganizationNotificationSettings

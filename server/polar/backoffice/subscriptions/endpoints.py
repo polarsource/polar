@@ -389,7 +389,9 @@ async def cancel(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
     subscription_repository = SubscriptionRepository.from_session(session)
-    subscription = await subscription_repository.get_by_id(id)
+    subscription = await subscription_repository.get_by_id(
+        id, options=subscription_repository.get_eager_options()
+    )
 
     if subscription is None:
         raise HTTPException(status_code=404)
@@ -441,7 +443,9 @@ async def uncancel(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
     subscription_repository = SubscriptionRepository.from_session(session)
-    subscription = await subscription_repository.get_by_id(id)
+    subscription = await subscription_repository.get_by_id(
+        id, options=subscription_repository.get_eager_options()
+    )
 
     if subscription is None:
         raise HTTPException(status_code=404)

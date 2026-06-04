@@ -14,7 +14,7 @@ dependencies = [
   "githubkit==0.15.5",
   "redis>=5.0.4",
   "sse-starlette>=3.4.4",
-  "stripe>=14,<15",
+  "stripe>=15.2.0,<16",
   "pyjwt>=2.13.0",
   "pydantic>=2.13.4",
   "sentry-sdk[fastapi,sqlalchemy]>=2.60.0",

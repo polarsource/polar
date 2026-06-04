@@ -2522,7 +2522,7 @@ requires-dist = [
     { name = "sqlalchemy-utils", specifier = ">=0.41.1" },
     { name = "sse-starlette", specifier = ">=3.4.4" },
     { name = "standardwebhooks", specifier = ">=1.0.0" },
-    { name = "stripe", specifier = ">=14,<15" },
+    { name = "stripe", specifier = ">=15.2.0,<16" },
     { name = "structlog", specifier = ">=24.4.0" },
     { name = "tagflow", specifier = ">=0.7.0" },
     { name = "taskipy", specifier = ">=1.10.3" },
@@ -3546,15 +3546,15 @@ wheels = [
 
 [[package]]
 name = "stripe"
-version = "14.4.1"
+version = "15.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "requests" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/63/01/59d92650146c6340e333c22b8a238561b022e8641ba255298dfe46b4137d/stripe-14.4.1.tar.gz", hash = "sha256:e3eecfb336819326cd2ab9a93f98eb01b49c4d4d93c9d167a52a68ab99c19a88", size = 1473321, upload-time = "2026-03-06T22:59:45.822Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d0/28/c3550f39d9e258c21bcba81a89ef3ca7af352ad2cb14fe16b80248841644/stripe-15.2.0.tar.gz", hash = "sha256:f795d8a8ff27433e9ab03099afc0f5c4e992a8a6f92b9f839dc0048bb12f76f6", size = 1520207, upload-time = "2026-05-27T20:34:44.256Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/35/0f/547eab75052384a72771b396a484556e5636629c031e5eafa8dc27af89ed/stripe-14.4.1-py3-none-any.whl", hash = "sha256:d6722b985dc3b4d6da01ff4fa95a975d3694a89bba96895bf17aa858073ff2b8", size = 2116642, upload-time = "2026-03-06T22:59:43.72Z" },
+    { url = "https://files.pythonhosted.org/packages/d8/2b/697003ba6349058b65a5cb6b0bd8a8b0e909ed35911f7beebfc24b0563ee/stripe-15.2.0-py3-none-any.whl", hash = "sha256:e74d45bb07bb912fdc4ce81ffbdf184bcb92ce6e210cb7939966e537021c1842", size = 2168459, upload-time = "2026-05-27T20:34:42.312Z" },
 ]
 
 [[package]]

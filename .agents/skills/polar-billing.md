@@ -56,7 +56,7 @@ Represents a billing event (one-time purchase or subscription cycle).
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `status` | OrderStatus | pending, paid, refunded, partially_refunded |
+| `status` | OrderStatus | draft, pending, paid, refunded, partially_refunded |
 | `billing_reason` | OrderBillingReason | purchase, subscription_create, subscription_cycle, subscription_update |
 | `subtotal_amount` | int | Amount before discount/tax |
 | `discount_amount` | int | Discount applied |

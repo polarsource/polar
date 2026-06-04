@@ -24,6 +24,7 @@ An order moves through a small set of statuses over its lifetime:
 
 | Status               | Meaning                                                                                   |
 | -------------------- | ----------------------------------------------------------------------------------------- |
+| `draft`              | The order was created via the off-session charge API and is awaiting finalization.       |
 | `pending`            | The order has been created and Polar is attempting to collect payment.                    |
 | `paid`               | The payment succeeded.                                                                    |
 | `refunded`           | The order has been fully refunded.                                                        |

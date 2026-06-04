@@ -42,7 +42,7 @@ Don't hesitate to reuse existing schemas for common types like `Organization`, `
 
 2. Run `pnpm run types` to generate updated TypeScript types based on the Pydantic models.
 3. Create a new TSX file in the `src/emails` directory with the name of the email template, as snake case, e.g. `customer_greetings.tsx`.
-4. Implement the email template using components from `src/components/layout` and `src/components/text`.
+4. Implement the email template using components from `src/components/foundation`.
 
 ## How to send it from the Python server?
 

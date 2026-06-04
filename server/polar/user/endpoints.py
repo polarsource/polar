@@ -5,6 +5,7 @@ from fastapi import Depends, Request
 from polar.auth.dependencies import Authenticator
 from polar.auth.models import AuthSubject
 from polar.authz.dependencies import (
+    AuthorizeUserRead,
     AuthorizeUserWrite,
     AuthorizeWebUserRead,
     AuthorizeWebUserWrite,
@@ -100,7 +101,7 @@ async def update_authenticated(
 async def update_authenticated_notification_settings(
     organization_id: UUID,
     body: UserOrganizationNotificationSettingsUpdate,
-    auth_subject: AuthorizeWebUserWrite,
+    auth_subject: AuthorizeUserWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> UserOrganizationNotificationSettings:
     """Update the authenticated user's notification settings for an organization."""
@@ -129,7 +130,7 @@ async def update_authenticated_notification_settings(
 )
 async def get_authenticated_notification_settings(
     organization_id: UUID,
-    auth_subject: AuthorizeWebUserRead,
+    auth_subject: AuthorizeUserRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> UserOrganizationNotificationSettings:
     """Get the authenticated user's notification settings for an organization."""

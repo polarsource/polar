@@ -9,15 +9,15 @@
     "build": "npm run build:css && npm run build:js"
   },
   "dependencies": {
-    "@tailwindcss/cli": "^4.1.17",
-    "@tailwindcss/postcss": "^4.1.17",
+    "@tailwindcss/cli": "^4.3.0",
+    "@tailwindcss/postcss": "^4.3.0",
     "@tailwindcss/typography": "^0.5.19",
-    "daisyui": "^5.4.7",
-    "esbuild": "^0.25.12",
+    "daisyui": "^5.5.20",
+    "esbuild": "^0.28.0",
     "event-source-plus": "^0.1.15",
-    "htmx.org": "^2.0.8",
-    "hyperscript.org": "^0.9.14",
+    "htmx.org": "^2.0.10",
+    "hyperscript.org": "^0.9.91",
     "lucide-static": "^0.552.0",
-    "tailwindcss": "^4.1.17"
+    "tailwindcss": "^4.3.0"
   }
 }

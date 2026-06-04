@@ -1,5 +1,5 @@
 import json
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from fastapi import Depends, Header, Query, Request
@@ -9,11 +9,14 @@ from pydantic import UUID4
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
+from polar.benefit.repository import BenefitRepository
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
 from polar.kit.db.postgres import AsyncReadSession as AsyncReadSessionT
 from polar.kit.db.postgres import AsyncSession as AsyncSessionT
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
-from polar.models import SlackApp
+from polar.kit.schemas import Schema
+from polar.models import Benefit, SlackApp
+from polar.models.benefit import BenefitType
 from polar.openapi import APITag
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import (
@@ -30,6 +33,7 @@ from .repository import SlackAppRepository
 from .schemas import (
     SlackIntegration,
     SlackIntegrationCredentialsUpdate,
+    SlackIntegrationLink,
     SlackIntegrationManifest,
     SlackIntegrationManifestRequest,
     SlackWorkspaceUser,
@@ -50,6 +54,40 @@ router = APIRouter(
 CALLBACK_ROUTE_NAME = "integrations.slack.callback"
 
 
+class SlackIntegrationLinkBadRequestResponse(Schema):
+    error: Literal[
+        "BadRequest",
+        "SlackIntegrationAlreadyLinked",
+        "SlackIntegrationNotInstalled",
+        "SlackIntegrationBenefitAlreadyLinked",
+    ]
+    detail: str
+
+
+class SlackIntegrationQueryBadRequestResponse(Schema):
+    error: Literal["BadRequest"]
+    detail: str
+
+
+async def _get_writable_benefit(
+    session: AsyncSessionT | AsyncReadSessionT,
+    auth_subject: AuthSubject[Any],
+    benefit_id: UUID,
+) -> Benefit:
+    benefit_repository = BenefitRepository.from_session(session)
+    benefit = await benefit_repository.get_by_id(benefit_id)
+    if benefit is None or benefit.type != BenefitType.slack_shared_channel:
+        raise ResourceNotFound()
+    await assert_organization_permission(
+        session,
+        auth_subject,
+        benefit.organization_id,
+        OrganizationPermission.organization_manage,
+    )
+    await _assert_slack_benefit_enabled(session, benefit.organization_id)
+    return benefit
+
+
 async def _get_writable_integration(
     session: AsyncSessionT | AsyncReadSessionT,
     auth_subject: AuthSubject[Any],
@@ -68,6 +106,32 @@ async def _get_writable_integration(
     return integration
 
 
+async def _resolve_writable_integration(
+    session: AsyncSessionT | AsyncReadSessionT,
+    auth_subject: AuthSubject[Any],
+    *,
+    integration_id: UUID | None,
+    benefit_id: UUID | None,
+) -> SlackApp:
+    if (integration_id is None) == (benefit_id is None):
+        raise BadRequest("Provide exactly one of integration_id or benefit_id.")
+    if integration_id is not None:
+        return await _get_writable_integration(session, auth_subject, integration_id)
+
+    assert benefit_id is not None
+    benefit = await _get_writable_benefit(session, auth_subject, benefit_id)
+    slack_integration_id = benefit.properties.get("slack_integration_id")
+    if not isinstance(slack_integration_id, str):
+        raise ResourceNotFound()
+    try:
+        resolved_integration_id = UUID(slack_integration_id)
+    except ValueError as e:
+        raise ResourceNotFound() from e
+    return await _get_writable_integration(
+        session, auth_subject, resolved_integration_id
+    )
+
+
 async def _assert_slack_benefit_enabled(
     session: AsyncSessionT | AsyncReadSessionT,
     organization_id: UUID,
@@ -83,14 +147,23 @@ async def _assert_slack_benefit_enabled(
 @router.get(
     "/integration",
     response_model=SlackIntegration,
-    responses={404: {"description": "No Slack integration configured."}},
+    responses={
+        400: {
+            "description": "Provide exactly one of integration_id or benefit_id.",
+            "model": SlackIntegrationQueryBadRequestResponse,
+        },
+        404: {"description": "No Slack integration configured."},
+    },
 )
 async def get_integration(
     auth_subject: SlackIntegrationRead,
-    integration_id: Annotated[UUID4, Query()],
+    integration_id: Annotated[UUID4 | None, Query()] = None,
+    benefit_id: Annotated[UUID4 | None, Query()] = None,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> SlackIntegration:
-    integration = await _get_writable_integration(session, auth_subject, integration_id)
+    integration = await _resolve_writable_integration(
+        session, auth_subject, integration_id=integration_id, benefit_id=benefit_id
+    )
     return SlackIntegration.model_validate(integration)
 
 
@@ -217,6 +290,37 @@ async def callback(
     )
 
     return RedirectResponse(get_safe_return_url(return_to), 303)
+
+
+@router.post(
+    "/link",
+    response_model=SlackIntegration,
+    responses={
+        400: {
+            "description": (
+                "Slack integration is not installed, already linked, "
+                "or belongs to a different organization."
+            ),
+            "model": SlackIntegrationLinkBadRequestResponse,
+        },
+        404: {"description": "Benefit or Slack integration not found."},
+    },
+)
+async def link(
+    payload: SlackIntegrationLink,
+    auth_subject: SlackIntegrationWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> SlackIntegration:
+    benefit = await _get_writable_benefit(session, auth_subject, payload.benefit_id)
+    integration = await _get_writable_integration(
+        session, auth_subject, payload.integration_id
+    )
+    if integration.organization_id != benefit.organization_id:
+        raise BadRequest(
+            "The Slack integration and benefit must belong to the same organization."
+        )
+    linked = await slack_app_service.link(session, benefit, integration)
+    return SlackIntegration.model_validate(linked)
 
 
 @router.post(

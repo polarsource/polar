@@ -5,6 +5,7 @@ import {
   DEFAULT_LOCALE,
   useTranslations,
   type AcceptedLocale,
+  type TranslationKey,
 } from '@polar-sh/i18n'
 import { Button } from '@polar-sh/orbit'
 import {
@@ -27,6 +28,17 @@ interface BenefitGrantProps {
   benefitGrant: schemas['CustomerBenefitGrant']
   locale?: AcceptedLocale
 }
+
+const benefitTypeTranslationKeys = {
+  custom: 'benefitTypes.custom',
+  discord: 'benefitTypes.discord',
+  downloadables: 'benefitTypes.downloadables',
+  feature_flag: 'benefitTypes.feature_flag',
+  github_repository: 'benefitTypes.github_repository',
+  license_keys: 'benefitTypes.license_keys',
+  meter_credit: 'benefitTypes.meter_credit',
+  slack_shared_channel: 'benefitTypes.slack_shared_channel',
+} as const satisfies Record<schemas['BenefitType'], TranslationKey>
 
 const BenefitGrantCustom = ({
   benefitGrant,
@@ -354,7 +366,7 @@ export const BenefitGrant = ({
         <div className="flex flex-col">
           <h3 className="text-sm font-medium">{benefit.description}</h3>
           <p className="dark:text-polar-500 flex flex-row gap-x-1 truncate text-sm text-gray-500">
-            {t(`benefitTypes.${benefit.type}`)}
+            {t(benefitTypeTranslationKeys[benefit.type])}
           </p>
         </div>
       </div>

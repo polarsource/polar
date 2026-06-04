@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select
@@ -13,6 +14,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.models import Benefit
+from polar.models.benefit import BenefitType
 from polar.models.product_benefit import ProductBenefit
 
 from .sorting import BenefitSortProperty
@@ -40,6 +42,19 @@ class BenefitRepository(
             .options(*options)
         )
         return await self.get_one_or_none(statement)
+
+    async def list_by_slack_integration_id(
+        self,
+        organization_id: UUID,
+        slack_integration_id: UUID,
+    ) -> Sequence[Benefit]:
+        statement = self.get_base_statement().where(
+            Benefit.organization_id == organization_id,
+            Benefit.type == BenefitType.slack_shared_channel,
+            Benefit.properties["slack_integration_id"].as_string()
+            == str(slack_integration_id),
+        )
+        return await self.get_all(statement)
 
     def get_eager_options(self) -> Options:
         return (joinedload(Benefit.organization),)

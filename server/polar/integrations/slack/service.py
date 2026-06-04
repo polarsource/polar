@@ -4,12 +4,14 @@ from uuid import UUID
 
 import structlog
 
+from polar.benefit.grant.repository import BenefitGrantRepository
+from polar.benefit.repository import BenefitRepository
 from polar.config import settings
 from polar.exceptions import BadRequest, PolarError, ResourceNotFound
 from polar.kit import jwt
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.utils import utc_now
-from polar.models import SlackApp
+from polar.models import Benefit, SlackApp
 
 from .client import SlackClient
 from .manifest import BOT_SCOPES
@@ -46,6 +48,23 @@ class SlackIntegrationAppIdAlreadyLinked(BadRequest):
         super().__init__(
             "This Slack app is already connected to another Polar organization."
         )
+
+
+class SlackIntegrationNotInstalled(BadRequest):
+    def __init__(self) -> None:
+        super().__init__(
+            "Authorize the Slack workspace before linking it to a benefit."
+        )
+
+
+class SlackIntegrationAlreadyLinked(BadRequest):
+    def __init__(self) -> None:
+        super().__init__("This Slack integration is already linked to a benefit.")
+
+
+class SlackIntegrationBenefitAlreadyLinked(BadRequest):
+    def __init__(self) -> None:
+        super().__init__("This benefit is already linked to a Slack integration.")
 
 
 # Errors that mean credentials parsed but code was rejected; credentials are OK.
@@ -146,6 +165,49 @@ class SlackAppService:
                 }
             )
         return await repository.update(existing, update_dict=update_dict)
+
+    async def link(
+        self,
+        session: AsyncSession,
+        benefit: Benefit,
+        integration: SlackApp,
+    ) -> SlackApp:
+        repository = SlackAppRepository.from_session(session)
+        locked_integration = await repository.get_by_id_for_update(integration.id)
+        if locked_integration is None:
+            raise SlackIntegrationNotConfigured()
+        integration = locked_integration
+
+        if integration.bot_token is None:
+            raise SlackIntegrationNotInstalled()
+
+        properties = dict(benefit.properties or {})
+        existing_integration_id = properties.get("slack_integration_id")
+        if isinstance(existing_integration_id, str) and existing_integration_id != str(
+            integration.id
+        ):
+            raise SlackIntegrationBenefitAlreadyLinked()
+
+        if existing_integration_id == str(integration.id):
+            return integration
+
+        benefit_repository = BenefitRepository.from_session(session)
+        linked_benefits = await benefit_repository.list_by_slack_integration_id(
+            benefit.organization_id, integration.id
+        )
+        if any(linked_benefit.id != benefit.id for linked_benefit in linked_benefits):
+            raise SlackIntegrationAlreadyLinked()
+
+        await benefit_repository.update(
+            benefit,
+            update_dict={
+                "properties": {
+                    **properties,
+                    "slack_integration_id": str(integration.id),
+                }
+            },
+        )
+        return integration
 
     def build_authorize_url(
         self,
@@ -304,8 +366,15 @@ class SlackAppService:
             )
             log.info(
                 "slack.events.integration_revoked",
+                integration_id=str(integration.id),
                 api_app_id=api_app_id,
                 event_type=event_type,
+            )
+            return
+
+        if event_type == "channel_shared":
+            await self._handle_channel_shared(
+                session, integration=integration, event=event
             )
             return
 
@@ -314,6 +383,40 @@ class SlackAppService:
             api_app_id=api_app_id,
             event_type=event_type,
         )
+
+    async def _handle_channel_shared(
+        self,
+        session: AsyncSession,
+        *,
+        integration: SlackApp,
+        event: dict[str, Any],
+    ) -> None:
+        channel_id = event.get("channel")
+        connected_team_id = event.get("connected_team_id")
+        if not isinstance(channel_id, str):
+            return
+
+        benefit_repository = BenefitRepository.from_session(session)
+        benefits = await benefit_repository.list_by_slack_integration_id(
+            integration.organization_id, integration.id
+        )
+
+        grant_repository = BenefitGrantRepository.from_session(session)
+        for benefit in benefits:
+            grant = await grant_repository.get_by_property_and_organization(
+                integration.organization_id,
+                "channel_id",
+                channel_id,
+                benefit_id=benefit.id,
+                for_update=True,
+            )
+            if grant is None:
+                continue
+
+            properties = dict(grant.properties or {})
+            if isinstance(connected_team_id, str):
+                properties["connected_team_id"] = connected_team_id
+            await grant_repository.update(grant, update_dict={"properties": properties})
 
     async def _validate_credentials(
         self,

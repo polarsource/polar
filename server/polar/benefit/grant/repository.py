@@ -236,6 +236,32 @@ class BenefitGrantRepository(
         )
         return await self.get_all(statement)
 
+    async def get_by_property_and_organization(
+        self,
+        organization_id: UUID,
+        key: str,
+        value: str,
+        *,
+        benefit_id: UUID | None = None,
+        for_update: bool = False,
+    ) -> BenefitGrant | None:
+        filters = [
+            BenefitGrant.properties[key].as_string() == value,
+            Benefit.organization_id == organization_id,
+        ]
+        if benefit_id is not None:
+            filters.append(BenefitGrant.benefit_id == benefit_id)
+
+        statement = (
+            self.get_base_statement()
+            .join(Benefit, BenefitGrant.benefit_id == Benefit.id)
+            .where(*filters)
+            .limit(1)
+        )
+        if for_update:
+            statement = statement.with_for_update(of=BenefitGrant)
+        return await self.get_one_or_none(statement)
+
     async def list_outdated_grants(
         self, product: Product, **scope: Unpack[BenefitGrantScope]
     ) -> Sequence[BenefitGrant]:

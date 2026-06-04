@@ -181,13 +181,13 @@ jobs:
     name: "Server: Tests \U0001F40D"
     needs: changes
     if: needs.changes.outputs.server == 'true'
-    runs-on: depot-ubuntu-24.04-8 # 8 vCPU — testing whether more cores offsets Depot's slower per-core speed
+    runs-on:
+      size: 4x16
+      image: pkpmg8f64v.registry.depot.dev/ci-server-snapshot:v1 # pre-warmed deps; built by snapshot_server.yaml
     timeout-minutes: 15
     env:
       POLAR_ENV: testing
       POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
-      # Depot sandbox affinity under-reports CPUs; force xdist to use all 8 vCPUs
-      PYTEST_XDIST_AUTO_NUM_WORKERS: "8"
     services:
       postgres:
         image: postgres:15.1-bullseye
@@ -257,15 +257,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version-file: "server/pyproject.toml"
-      - name: Cache CJK fonts
-        id: cjk-fonts-cache
-        uses: actions/cache@v5
-        with:
-          path: /usr/share/fonts/opentype/noto
-          key: cjk-fonts-${{ runner.os }}-noto-cjk-v1
-      - name: Install CJK fonts
-        if: steps.cjk-fonts-cache.outputs.cache-hit != 'true'
-        run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
       - name: "\U0001F527 uv install"
         working-directory: ./server
         run: |
@@ -281,4 +272,4 @@ jobs:
         run: uv run alembic check
       - name: "\U0001F40D Run tests (pytest)"
         working-directory: ./server
-        run: uv run pytest -n 16 --dist=loadgroup --no-cov --durations=0
+        run: uv run pytest -n logical --dist=loadgroup --no-cov --durations=0

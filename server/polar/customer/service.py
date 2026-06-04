@@ -34,7 +34,15 @@ from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.member_session.service import member_session as member_session_service
-from polar.models import BenefitGrant, Customer, Order, Organization, Subscription, User
+from polar.models import (
+    BenefitGrant,
+    Customer,
+    Order,
+    Organization,
+    PaymentMethod,
+    Subscription,
+    User,
+)
 from polar.models.customer import CustomerType
 from polar.models.member import MemberRole
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
@@ -721,6 +729,21 @@ class CustomerService:
             return None
         token, _ = await member_session_service.create_member_session(session, member)
         return token
+
+    async def list_payment_methods(
+        self,
+        session: AsyncReadSession,
+        customer: Customer,
+        *,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[PaymentMethod], int]:
+        repository = PaymentMethodRepository.from_session(session)
+        statement = repository.get_by_customer_statement(customer.id).order_by(
+            PaymentMethod.created_at.desc()
+        )
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
 
     async def get_export(
         self,

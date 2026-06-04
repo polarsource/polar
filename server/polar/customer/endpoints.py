@@ -15,9 +15,10 @@ from polar.kit.csv import IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
-from polar.models import Customer
+from polar.models import Customer, PaymentMethod
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
+from polar.payment_method.schemas import PaymentMethodTypeAdapter
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
@@ -32,6 +33,8 @@ from .repository import CustomerRepository
 from .schemas.customer import (
     CustomerCreate,
     CustomerID,
+    CustomerPaymentMethod,
+    CustomerPaymentMethodTypeAdapter,
     CustomerUpdate,
     CustomerUpdateExternalID,
     ExternalCustomerID,
@@ -278,6 +281,78 @@ async def get_state_external(
         raise ResourceNotFound()
 
     return await customer_service.get_state(session, redis, customer)
+
+
+def _serialize_payment_method(
+    customer: Customer, payment_method: PaymentMethod
+) -> CustomerPaymentMethod:
+    base = PaymentMethodTypeAdapter.validate_python(
+        payment_method, from_attributes=True
+    )
+    return CustomerPaymentMethodTypeAdapter.validate_python(
+        {
+            **dict(base),
+            "is_default": customer.default_payment_method_id == payment_method.id,
+        }
+    )
+
+
+@router.get(
+    "/{id}/payment-methods",
+    summary="List Customer Payment Methods",
+    response_model=ListResource[CustomerPaymentMethod],
+    responses={404: CustomerNotFound},
+)
+async def list_payment_methods(
+    id: CustomerID,
+    auth_subject: auth.CustomerRead,
+    pagination: PaginationParamsQuery,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> ListResource[CustomerPaymentMethod]:
+    """Get saved payment methods of a customer."""
+    customer = await customer_service.get(session, auth_subject, id)
+
+    if customer is None:
+        raise ResourceNotFound()
+
+    results, count = await customer_service.list_payment_methods(
+        session, customer, pagination=pagination
+    )
+
+    return ListResource.from_paginated_results(
+        [_serialize_payment_method(customer, result) for result in results],
+        count,
+        pagination,
+    )
+
+
+@router.get(
+    "/external/{external_id}/payment-methods",
+    summary="List Customer Payment Methods by External ID",
+    response_model=ListResource[CustomerPaymentMethod],
+    responses={404: CustomerNotFound},
+)
+async def list_payment_methods_external(
+    external_id: ExternalCustomerID,
+    auth_subject: auth.CustomerRead,
+    pagination: PaginationParamsQuery,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> ListResource[CustomerPaymentMethod]:
+    """Get saved payment methods of a customer by external ID."""
+    customer = await customer_service.get_external(session, auth_subject, external_id)
+
+    if customer is None:
+        raise ResourceNotFound()
+
+    results, count = await customer_service.list_payment_methods(
+        session, customer, pagination=pagination
+    )
+
+    return ListResource.from_paginated_results(
+        [_serialize_payment_method(customer, result) for result in results],
+        count,
+        pagination,
+    )
 
 
 @router.post(

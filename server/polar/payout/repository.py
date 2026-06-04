@@ -184,6 +184,7 @@ class PayoutRepository(
             joinedload(Payout.transactions).selectinload(
                 Transaction.incurred_transactions
             ),
+            joinedload(Payout.transactions).joinedload(Transaction.account),
         )
 
     def get_statement_by_org_ids(

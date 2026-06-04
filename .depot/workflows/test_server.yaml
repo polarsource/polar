@@ -281,4 +281,4 @@ jobs:
         run: uv run alembic check
       - name: "\U0001F40D Run tests (pytest)"
         working-directory: ./server
-        run: uv run pytest -n logical --dist=loadgroup --no-cov --durations=0
+        run: uv run pytest -n 16 --dist=loadgroup --no-cov --durations=0

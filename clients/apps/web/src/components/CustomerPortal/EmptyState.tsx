@@ -1,5 +1,5 @@
-import Button from '@polar-sh/ui/components/atoms/Button'
-import { ButtonProps } from '@polar-sh/ui/components/ui/button'
+import { Button } from '@polar-sh/orbit'
+import { ButtonProps } from '@polar-sh/orbit/ui/button'
 import { ReactNode } from 'react'
 
 interface EmptyStateProps {

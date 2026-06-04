@@ -22,7 +22,7 @@ import { extractApiErrorMessage } from '@/utils/api/errors'
 import { useOrganizationSeats } from '@/hooks/queries/seats'
 import SubscriptionOrdersSection from '@/components/Subscriptions/SubscriptionOrdersSection'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import {
   DropdownMenu,
   DropdownMenuContent,

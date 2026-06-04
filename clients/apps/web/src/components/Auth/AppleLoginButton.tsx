@@ -3,7 +3,7 @@ import { usePostHog, type EventName } from '@/hooks/posthog'
 import { useToast } from '@/components/Toast/use-toast'
 import Apple from '@mui/icons-material/Apple'
 import { schemas } from '@polar-sh/client'
-import Button, { type ButtonProps } from '@polar-sh/ui/components/atoms/Button'
+import { Button, type ButtonProps } from '@polar-sh/orbit'
 import { getAppleAuthorizeURL } from '@/utils/auth'
 
 interface AppleLoginButtonProps {

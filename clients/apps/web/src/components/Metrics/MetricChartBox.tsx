@@ -6,7 +6,7 @@ import { getFormattedMetricValue } from '@/utils/metrics'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
 import {

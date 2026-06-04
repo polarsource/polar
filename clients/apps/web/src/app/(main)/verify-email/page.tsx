@@ -1,7 +1,7 @@
 import LogoType from '@/components/Brand/logos/LogoType'
 import { CONFIG } from '@/utils/config'
 import { getAuthenticatedUser } from '@/utils/user'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Metadata } from 'next'
 import Link from 'next/link'

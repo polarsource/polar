@@ -7,7 +7,7 @@ import {
 import { useDeleteBenefit } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
   DropdownMenu,

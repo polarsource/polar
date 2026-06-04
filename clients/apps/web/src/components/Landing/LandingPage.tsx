@@ -2,7 +2,7 @@
 
 import { Hero } from '@/components/Landing/Hero/Hero'
 import { Testimonials } from '@/components/Landing/Testimonials'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
 import { Pricing } from './Pricing'

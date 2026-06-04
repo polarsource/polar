@@ -4,7 +4,7 @@ import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 
 import React, { useCallback } from 'react'
 import { useModal } from '../Modal/useModal'

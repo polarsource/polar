@@ -9,7 +9,7 @@ import { CONFIG } from '@/utils/config'
 import { setLastVisitedEnv, setLastVisitedOrg } from '@/utils/cookies'
 import ViewSidebarOutlined from '@mui/icons-material/ViewSidebarOutlined'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import {
   SidebarTrigger,
   useSidebar,

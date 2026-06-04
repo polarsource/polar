@@ -603,6 +603,9 @@ importers:
       '@polar-sh/i18n':
         specifier: workspace:*
         version: link:../i18n
+      '@polar-sh/orbit':
+        specifier: workspace:*
+        version: link:../orbit
       '@polar-sh/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
@@ -790,6 +793,9 @@ importers:
 
   packages/orbit:
     dependencies:
+      '@radix-ui/react-slot':
+        specifier: ^1.2.4
+        version: 1.2.4(@types/react@19.2.13)(react@19.2.5)
       '@radix-ui/react-tooltip':
         specifier: ^1.2.8
         version: 1.2.8(@types/react-dom@19.2.3(@types/react@19.2.13))(@types/react@19.2.13)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -841,6 +847,9 @@ importers:
       '@polar-sh/currency':
         specifier: workspace:^
         version: link:../currency
+      '@polar-sh/orbit':
+        specifier: workspace:*
+        version: link:../orbit
       '@radix-ui/react-accordion':
         specifier: ^1.2.12
         version: 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.13))(@types/react@19.2.13)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)

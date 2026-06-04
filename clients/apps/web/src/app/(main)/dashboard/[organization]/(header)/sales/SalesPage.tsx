@@ -19,7 +19,7 @@ import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Truncated } from '@polar-sh/orbit'
 import { Avatar } from '@polar-sh/orbit'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import {
   DataTable,
   DataTableColumnDef,

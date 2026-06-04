@@ -3,7 +3,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Button from './Button'
+import { Button } from '@polar-sh/orbit'
 
 interface PaginatorProps {
   totalCount: number

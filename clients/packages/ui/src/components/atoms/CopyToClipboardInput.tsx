@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Button from './Button'
+import { Button } from '@polar-sh/orbit'
 import Input from './Input'
 
 const CopyToClipboardInput = ({

@@ -2,7 +2,7 @@
 
 import { useDeleteUser } from '@/hooks/queries'
 import { CONFIG } from '@/utils/config'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { useCallback, useState } from 'react'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { toast } from '../Toast/use-toast'

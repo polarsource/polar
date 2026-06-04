@@ -7,7 +7,7 @@ import {
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { GripVertical, X } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 

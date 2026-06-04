@@ -3,7 +3,7 @@
 import { useProducts } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { ArrowRight, CheckIcon, Loader2, PackageIcon } from 'lucide-react'
 import Link from 'next/link'
 import { StatusBlock } from './StatusBlock'

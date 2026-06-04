@@ -1,7 +1,7 @@
 'use client'
 
 import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import ListGroup from '@polar-sh/ui/components/atoms/ListGroup'
 import {
   DropdownMenu,

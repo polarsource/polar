@@ -8,7 +8,7 @@ import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 
 /**
  * Callout shown on the billing page when the organization is invited to the

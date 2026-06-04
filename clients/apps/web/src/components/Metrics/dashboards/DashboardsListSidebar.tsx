@@ -8,7 +8,7 @@ import {
   useMetricDashboards,
 } from '@/hooks/queries/metrics'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'

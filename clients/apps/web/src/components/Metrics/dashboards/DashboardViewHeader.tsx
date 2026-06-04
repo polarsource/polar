@@ -13,7 +13,7 @@ import { getServerURL } from '@/utils/api'
 import { METRIC_GROUPS, toISODate } from '@/utils/metrics'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import {
   DropdownMenu,
   DropdownMenuContent,

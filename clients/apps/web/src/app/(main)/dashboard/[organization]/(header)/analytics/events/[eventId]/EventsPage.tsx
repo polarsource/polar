@@ -13,7 +13,7 @@ import {
 import KeyboardArrowUpOutlined from '@mui/icons-material/KeyboardArrowUpOutlined'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import React, { useMemo } from 'react'

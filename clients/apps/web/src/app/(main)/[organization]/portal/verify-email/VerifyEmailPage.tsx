@@ -2,7 +2,7 @@
 
 import { useCustomerEmailUpdateVerify } from '@/hooks/queries/customerPortal'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'

@@ -1,7 +1,7 @@
 'use client'
 
 import { Modal } from '@/components/Modal'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { useEffect, useRef, useState } from 'react'
 
 interface BackupCodesModalProps {

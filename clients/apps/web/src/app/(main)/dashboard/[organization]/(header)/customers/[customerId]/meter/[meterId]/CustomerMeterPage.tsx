@@ -23,7 +23,7 @@ import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { UTCDate } from '@date-fns/utc'
 import { endOfMonth, startOfMonth, subMonths } from 'date-fns'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import {
   Card,
   CardContent,

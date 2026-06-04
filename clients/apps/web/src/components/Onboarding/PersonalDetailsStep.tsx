@@ -5,7 +5,7 @@ import * as Sentry from '@sentry/nextjs'
 import { useUpdateUser } from '@/hooks/queries'
 import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {

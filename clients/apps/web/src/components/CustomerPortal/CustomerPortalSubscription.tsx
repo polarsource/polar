@@ -9,7 +9,7 @@ import {
 import { hasBillingPermission } from '@/utils/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import { useState } from 'react'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'

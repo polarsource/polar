@@ -12,7 +12,7 @@ import {
 import { getDiscountDisplay } from '@/utils/discount'
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
 import { isValidationError, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import Switch from '@polar-sh/ui/components/atoms/Switch'

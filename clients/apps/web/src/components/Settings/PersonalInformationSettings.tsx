@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks'
 import { useUpdateUser } from '@/hooks/queries'
 import { useMonthDigitTypeahead } from '@/hooks/useMonthDigitTypeahead'
 import { enums, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {

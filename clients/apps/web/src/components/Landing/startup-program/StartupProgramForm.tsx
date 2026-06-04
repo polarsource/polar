@@ -2,7 +2,7 @@
 
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,

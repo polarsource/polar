@@ -11,7 +11,7 @@ import {
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { X } from 'lucide-react'
 import { PaymentMethodDisplay } from '../../PaymentMethodDisplay'

@@ -17,10 +17,10 @@
     "mintlify": "^4.2.572"
   },
   "devDependencies": {
-    "@scalar/openapi-parser": "^0.28.4",
+    "@scalar/openapi-parser": "^0.28.5",
     "@types/node": "^24.12.4",
     "js-yaml": "^4.1.1",
-    "openapi-sampler": "^1.7.3",
+    "openapi-sampler": "^1.7.4",
     "tsx": "^4.22.3"
   }
 }

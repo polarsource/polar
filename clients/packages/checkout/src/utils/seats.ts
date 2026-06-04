@@ -1,4 +1,5 @@
 import type { schemas } from '@polar-sh/client'
+import { getSeatPrice } from '../guards'
 
 export interface SeatRow {
   seats: number
@@ -8,9 +9,8 @@ export interface SeatRow {
 export function getSeatRows(
   checkout: schemas['CheckoutPublic'],
 ): SeatRow[] | null {
-  if (!checkout.product || !checkout.product_price) return null
-  const price = checkout.product_price
-  if (price.amount_type !== 'seat_based') return null
+  const price = getSeatPrice(checkout)
+  if (!price) return null
   const seats = checkout.seats
   if (!seats) return null
 

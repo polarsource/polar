@@ -2,7 +2,8 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Any, Literal, cast, overload
+from types import TracebackType
+from typing import Any, Literal, Unpack, cast, overload
 from urllib.parse import urlencode
 
 import structlog
@@ -42,6 +43,7 @@ from polar.event.system import (
     SubscriptionReactivatedMetadata,
     SubscriptionRevokedMetadata,
     SubscriptionUncanceledMetadata,
+    SubscriptionUpdatedMetadataFields,
     SystemEvent,
     build_system_event,
 )
@@ -224,6 +226,84 @@ def _from_timestamp(t: int | None) -> datetime | None:
     if t is None:
         return None
     return datetime.fromtimestamp(t, UTC)
+
+
+class SubscriptionUpdateContext:
+    """Async context manager for batching subscription update side effects.
+
+    Centralizes the execution of side effects (webhooks, events, billing actions)
+    to ensure they are triggered exactly once, even when multiple update operations
+    are performed together.
+    """
+
+    def __init__(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        service: "SubscriptionService",
+    ) -> None:
+        self.session = session
+        self.service = service
+
+        self.subscription = subscription
+        self._previous_status = subscription.status
+        self._previous_is_canceled = subscription.canceled
+
+        self._billing_effect: Literal["invoice", "cycle"] | None = None
+        self._event_metadata: SubscriptionUpdatedMetadataFields = {}
+
+    async def __aenter__(self) -> "SubscriptionUpdateContext":
+        return self
+
+    async def __aexit__(
+        self,
+        type_: type[BaseException] | None,
+        value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        # Don't trigger side effects if an exception was raised within the context
+        if value is not None:
+            return
+
+        match self._billing_effect:
+            case "cycle":
+                await self.service.cycle(self.session, self, self.subscription)
+            case "invoice":
+                await self.service._create_subscription_update_order(
+                    self.session, self.subscription
+                )
+
+        if self._event_metadata:
+            await event_service.create_event(
+                self.session,
+                build_system_event(
+                    SystemEvent.subscription_updated,
+                    customer=self.subscription.customer,
+                    organization=self.subscription.organization,
+                    metadata={
+                        "subscription_id": str(self.subscription.id),
+                        **self._event_metadata,
+                    },
+                ),
+            )
+
+        await self.service._after_subscription_updated(
+            self.session,
+            self.subscription,
+            previous_status=self._previous_status,
+            previous_is_canceled=self._previous_is_canceled,
+        )
+
+    def set_billing_effect(self, effect: Literal["invoice", "cycle"]) -> None:
+        if effect == "cycle":
+            self._billing_effect = "cycle"
+        elif effect == "invoice" and self._billing_effect != "cycle":
+            self._billing_effect = "invoice"
+
+    def add_event_metadata(
+        self, **metadata: Unpack[SubscriptionUpdatedMetadataFields]
+    ) -> None:
+        self._event_metadata.update(metadata)
 
 
 class SubscriptionService:
@@ -654,6 +734,7 @@ class SubscriptionService:
     async def cycle(
         self,
         session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         update_cycle_dates: bool = True,
     ) -> Subscription:
@@ -787,17 +868,11 @@ class SubscriptionService:
             billing_reason = OrderBillingReasonInternal.subscription_cycle_after_trial
         else:
             billing_reason = OrderBillingReasonInternal.subscription_cycle
+
         enqueue_job(
             "order.create_subscription_order",
             subscription.id,
             billing_reason,
-        )
-
-        await self._after_subscription_updated(
-            session,
-            subscription,
-            previous_status=previous_status,
-            previous_is_canceled=previous_canceled,
         )
 
         return subscription
@@ -891,6 +966,7 @@ class SubscriptionService:
     async def update(
         self,
         session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         *,
         update: SubscriptionUpdate,
@@ -916,6 +992,7 @@ class SubscriptionService:
         if isinstance(update, SubscriptionUpdateProduct):
             return await self.update_product(
                 session,
+                ctx,
                 subscription,
                 product_id=update.product_id,
                 proration_behavior=update.proration_behavior,
@@ -924,18 +1001,20 @@ class SubscriptionService:
         if isinstance(update, SubscriptionUpdateDiscount):
             return await self.update_discount(
                 session,
+                ctx,
                 subscription,
                 discount_id=update.discount_id,
             )
 
         if isinstance(update, SubscriptionUpdateTrial):
             return await self.update_trial(
-                session, subscription, trial_end=update.trial_end
+                session, ctx, subscription, trial_end=update.trial_end
             )
 
         if isinstance(update, SubscriptionUpdateSeats):
             return await self.update_seats(
                 session,
+                ctx,
                 subscription,
                 seats=update.seats,
                 proration_behavior=update.proration_behavior,
@@ -944,6 +1023,7 @@ class SubscriptionService:
         if isinstance(update, SubscriptionUpdateBillingPeriod):
             return await self.update_currrent_billing_period_end(
                 session,
+                ctx,
                 subscription,
                 new_period_end=update.current_billing_period_end,
             )
@@ -952,10 +1032,11 @@ class SubscriptionService:
             uncancel = update.cancel_at_period_end is False
 
             if uncancel:
-                return await self.uncancel(session, subscription)
+                return await self.uncancel(session, ctx, subscription)
 
             return await self.cancel(
                 session,
+                ctx,
                 subscription,
                 customer_reason=update.customer_cancellation_reason,
                 customer_comment=update.customer_cancellation_comment,
@@ -964,6 +1045,7 @@ class SubscriptionService:
         if isinstance(update, SubscriptionRevoke):
             return await self._perform_cancellation(
                 session,
+                ctx,
                 subscription,
                 customer_reason=update.customer_cancellation_reason,
                 customer_comment=update.customer_cancellation_comment,
@@ -971,11 +1053,12 @@ class SubscriptionService:
             )
 
         if isinstance(update, SubscriptionUpdateClear):
-            return await self.clear_pending_update(session, subscription)
+            return await self.clear_pending_update(session, ctx, subscription)
 
     async def update_product(
         self,
         session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         *,
         product_id: uuid.UUID,
@@ -1207,14 +1290,13 @@ class SubscriptionService:
             await session.flush()
 
             if was_trialing and ends_trial:
-                subscription = await self.cycle(session, subscription)
+                ctx.set_billing_effect("cycle")
             elif (
                 (proration_behavior.is_immediate() or interval_changed)
                 and not was_trialing
                 and billing_entries
             ):
-                # Invoice and attempt to pay immediately
-                await self._create_subscription_update_order(session, subscription)
+                ctx.set_billing_effect("invoice")
 
             # When transitioning from non-seat to seat-based pricing, promote
             # the billing customer to a 'team' customer and claim a seat for
@@ -1245,26 +1327,9 @@ class SubscriptionService:
                 session, subscription, product, proration_behavior
             )
 
-        await event_service.create_event(
-            session,
-            build_system_event(
-                SystemEvent.subscription_updated,
-                customer=subscription.customer,
-                organization=subscription.organization,
-                metadata={
-                    "subscription_id": str(subscription.id),
-                    "product_id": str(product.id),
-                    "proration_behavior": proration_behavior,
-                },
-            ),
-        )
-
-        # Trigger subscription updated events and re-evaluate benefits
-        await self._after_subscription_updated(
-            session,
-            subscription,
-            previous_status=previous_status,
-            previous_is_canceled=previous_is_canceled,
+        ctx.add_event_metadata(
+            product_id=str(product.id),
+            proration_behavior=proration_behavior,
         )
 
         return subscription
@@ -1272,6 +1337,7 @@ class SubscriptionService:
     async def clear_pending_update(
         self,
         session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
         subscription: Subscription,
     ) -> Subscription:
         """Clear the pending update for a subscription."""
@@ -1310,18 +1376,12 @@ class SubscriptionService:
             ),
         )
 
-        await self._after_subscription_updated(
-            session,
-            subscription,
-            previous_status=subscription.status,
-            previous_is_canceled=False,
-        )
-
         return subscription
 
     async def update_discount(
         self,
         session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         *,
         discount_id: uuid.UUID | None = None,
@@ -1368,26 +1428,11 @@ class SubscriptionService:
             discount: Discount | None,
         ) -> Subscription:
             repository = SubscriptionRepository.from_session(session)
-            await event_service.create_event(
-                session,
-                build_system_event(
-                    SystemEvent.subscription_updated,
-                    customer=subscription.customer,
-                    organization=subscription.organization,
-                    metadata={
-                        "subscription_id": str(subscription.id),
-                        "discount_id": str(discount.id) if discount else None,
-                    },
-                ),
+            ctx.add_event_metadata(
+                discount_id=str(discount.id) if discount else None,
             )
             subscription = await repository.update(
                 subscription, update_dict={"discount": discount}, flush=True
-            )
-            await self._after_subscription_updated(
-                session,
-                subscription,
-                previous_status=subscription.status,
-                previous_is_canceled=subscription.canceled,
             )
             return subscription
 
@@ -1403,6 +1448,7 @@ class SubscriptionService:
     async def update_trial(
         self,
         session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         *,
         trial_end: datetime | Literal["now"],
@@ -1410,16 +1456,13 @@ class SubscriptionService:
         if not subscription.active:
             raise InactiveSubscription(subscription)
 
-        previous_status = subscription.status
-        previous_is_canceled = subscription.canceled
-
         # Already trialing
         if subscription.trialing:
             # End trial immediately
             if trial_end == "now":
                 subscription.trial_end = subscription.current_period_end = utc_now()
                 # Make sure to cycle the subscription immediately to update status and trigger order
-                subscription = await self.cycle(session, subscription)
+                ctx.set_billing_effect("cycle")
             # Set new trial end date
             else:
                 subscription.trial_end = subscription.current_period_end = trial_end
@@ -1458,24 +1501,8 @@ class SubscriptionService:
         subscription = await repository.update(subscription)
 
         assert subscription.trial_end is not None
-        await event_service.create_event(
-            session,
-            build_system_event(
-                SystemEvent.subscription_updated,
-                customer=subscription.customer,
-                organization=subscription.organization,
-                metadata={
-                    "subscription_id": str(subscription.id),
-                    "trial_end": subscription.trial_end.isoformat(),
-                },
-            ),
-        )
-
-        await self._after_subscription_updated(
-            session,
-            subscription,
-            previous_status=previous_status,
-            previous_is_canceled=previous_is_canceled,
+        ctx.add_event_metadata(
+            trial_end=subscription.trial_end.isoformat(),
         )
 
         return subscription
@@ -1483,6 +1510,7 @@ class SubscriptionService:
     async def update_seats(
         self,
         session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         *,
         seats: int,
@@ -1617,28 +1645,11 @@ class SubscriptionService:
                 and billing_entries
             ):
                 # Invoice and attempt to pay immediately
-                await self._create_subscription_update_order(session, subscription)
+                ctx.set_billing_effect("invoice")
 
-        await event_service.create_event(
-            session,
-            build_system_event(
-                SystemEvent.subscription_updated,
-                customer=subscription.customer,
-                organization=subscription.organization,
-                metadata={
-                    "subscription_id": str(subscription.id),
-                    "seats": seats,
-                    "proration_behavior": proration_behavior,
-                },
-            ),
-        )
-
-        # Send webhooks and notifications
-        await self._after_subscription_updated(
-            session,
-            subscription,
-            previous_status=previous_status,
-            previous_is_canceled=previous_is_canceled,
+        ctx.add_event_metadata(
+            seats=seats,
+            proration_behavior=proration_behavior,
         )
 
         return subscription
@@ -1646,6 +1657,7 @@ class SubscriptionService:
     async def update_currrent_billing_period_end(
         self,
         session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         *,
         new_period_end: datetime,
@@ -1683,30 +1695,17 @@ class SubscriptionService:
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(subscription)
 
-        await self._after_subscription_updated(
-            session,
-            subscription,
-            previous_status=previous_status,
-            previous_is_canceled=previous_is_canceled,
-        )
-
-        await event_service.create_event(
-            session,
-            build_system_event(
-                SystemEvent.subscription_updated,
-                customer=subscription.customer,
-                organization=subscription.organization,
-                metadata={
-                    "subscription_id": str(subscription.id),
-                    "billing_period_end": new_period_end.isoformat(),
-                },
-            ),
+        ctx.add_event_metadata(
+            billing_period_end=subscription.current_period_end.isoformat()
         )
 
         return subscription
 
     async def uncancel(
-        self, session: AsyncSession, subscription: Subscription
+        self,
+        session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
+        subscription: Subscription,
     ) -> Subscription:
         if subscription.ended_at:
             raise ResourceUnavailable()
@@ -1717,27 +1716,18 @@ class SubscriptionService:
         ):
             raise BadRequest()
 
-        previous_status = subscription.status
-        previous_is_canceled = subscription.canceled
-
         subscription.cancel_at_period_end = False
         subscription.ends_at = None
         subscription.canceled_at = None
         subscription.customer_cancellation_reason = None
         subscription.customer_cancellation_comment = None
         session.add(subscription)
-
-        await self._after_subscription_updated(
-            session,
-            subscription,
-            previous_status=previous_status,
-            previous_is_canceled=previous_is_canceled,
-        )
         return subscription
 
     async def revoke(
         self,
         session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         *,
         customer_reason: CustomerCancellationReason | None = None,
@@ -1745,6 +1735,7 @@ class SubscriptionService:
     ) -> Subscription:
         return await self._perform_cancellation(
             session,
+            ctx,
             subscription,
             customer_reason=customer_reason,
             customer_comment=customer_comment,
@@ -1754,6 +1745,7 @@ class SubscriptionService:
     async def cancel(
         self,
         session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         *,
         customer_reason: CustomerCancellationReason | None = None,
@@ -1761,6 +1753,7 @@ class SubscriptionService:
     ) -> Subscription:
         return await self._perform_cancellation(
             session,
+            ctx,
             subscription,
             customer_reason=customer_reason,
             customer_comment=customer_comment,
@@ -1774,17 +1767,20 @@ class SubscriptionService:
             customer_id, options=subscription_repository.get_eager_options()
         )
         for subscription in subscriptions:
-            await self._perform_cancellation(
-                session,
-                subscription,
-                immediately=True,
-                # Benefits are revoked through `benefit.revoke_customer`
-                revoke_benefits=False,
-            )
+            async with SubscriptionUpdateContext(session, subscription, self) as ctx:
+                await self._perform_cancellation(
+                    session,
+                    ctx,
+                    subscription,
+                    immediately=True,
+                    # Benefits are revoked through `benefit.revoke_customer`
+                    revoke_benefits=False,
+                )
 
     async def _perform_cancellation(
         self,
         session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         *,
         customer_reason: CustomerCancellationReason | None = None,
@@ -1794,9 +1790,6 @@ class SubscriptionService:
     ) -> Subscription:
         if not subscription.can_cancel(immediately):
             raise AlreadyCanceledSubscription(subscription)
-
-        previous_status = subscription.status
-        previous_is_canceled = subscription.canceled
 
         now = utc_now()
         subscription.canceled_at = now
@@ -1827,13 +1820,6 @@ class SubscriptionService:
             reason=customer_reason,
         )
         session.add(subscription)
-
-        await self._after_subscription_updated(
-            session,
-            subscription,
-            previous_status=previous_status,
-            previous_is_canceled=previous_is_canceled,
-        )
         return subscription
 
     async def update_meters(

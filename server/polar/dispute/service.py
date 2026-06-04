@@ -23,6 +23,7 @@ from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.repository import ProductRepository
 from polar.refund.service import refund as refund_service
 from polar.subscription.repository import SubscriptionRepository
+from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 from polar.transaction.service.dispute import (
     dispute_transaction as dispute_transaction_service,
@@ -257,7 +258,10 @@ class DisputeService:
             )
             assert subscription is not None
             if subscription.can_cancel(immediately=True):
-                await subscription_service.revoke(session, subscription)
+                async with SubscriptionUpdateContext(
+                    session, subscription, subscription_service
+                ) as ctx:
+                    await subscription_service.revoke(session, ctx, subscription)
         # Revoke the order benefits
         elif dispute.order.product_id is not None:
             product_repository = ProductRepository.from_session(session)

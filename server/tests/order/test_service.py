@@ -3027,7 +3027,7 @@ class TestHandlePaymentFailure:
 
         # Then
         assert result_order.next_payment_attempt_at is None
-        mock_revoke.assert_called_once_with(session, subscription)
+        mock_revoke.assert_called_once_with(session, ANY, subscription)
         mock_mark_past_due.assert_not_called()
 
     @freeze_time("2024-01-01 12:00:00")
@@ -3413,7 +3413,7 @@ class TestHandlePaymentFailure:
 
         # Then — subscription revoked, no further retries
         assert result_order.next_payment_attempt_at is None
-        mock_revoke.assert_called_once_with(session, subscription)
+        mock_revoke.assert_called_once_with(session, ANY, subscription)
 
 
 @pytest.mark.asyncio

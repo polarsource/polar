@@ -208,40 +208,17 @@ class SubscriptionCreatedEvent(Event):
         user_metadata: Mapped[SubscriptionCreatedMetadata]  # type: ignore[assignment]
 
 
-class SubscriptionUpdatedProductMetadata(TypedDict):
-    subscription_id: str
+class SubscriptionUpdatedMetadataFields(TypedDict, total=False):
     product_id: str
     proration_behavior: SubscriptionProrationBehavior
-
-
-class SubscriptionUpdatedDiscountMetadata(TypedDict):
-    subscription_id: str
     discount_id: str | None
-
-
-class SubscriptionUpdatedTrialMetadata(TypedDict):
-    subscription_id: str
     trial_end: str
-
-
-class SubscriptionUpdatedSeatsMetadata(TypedDict):
-    subscription_id: str
     seats: int
-    proration_behavior: SubscriptionProrationBehavior
-
-
-class SubscriptionUpdatedBillingPeriodMetadata(TypedDict):
-    subscription_id: str
     billing_period_end: str
 
 
-SubscriptionUpdatedMetadata = (
-    SubscriptionUpdatedProductMetadata
-    | SubscriptionUpdatedDiscountMetadata
-    | SubscriptionUpdatedTrialMetadata
-    | SubscriptionUpdatedSeatsMetadata
-    | SubscriptionUpdatedBillingPeriodMetadata
-)
+class SubscriptionUpdatedMetadata(SubscriptionUpdatedMetadataFields):
+    subscription_id: str
 
 
 class SubscriptionUpdatedEvent(Event):

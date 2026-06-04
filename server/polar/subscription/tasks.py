@@ -20,6 +20,7 @@ from polar.worker import (
     enqueue_job,
 )
 
+from .service import SubscriptionUpdateContext
 from .service import subscription as subscription_service
 
 log: Logger = structlog.get_logger()
@@ -80,7 +81,10 @@ async def subscription_cycle(subscription_id: uuid.UUID, force: bool = False) ->
                 )
                 return
 
-            await subscription_service.cycle(session, subscription)
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.cycle(session, ctx, subscription)
 
 
 @actor(

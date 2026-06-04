@@ -17,6 +17,7 @@ from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.subscription import sorting
 from polar.subscription.repository import SubscriptionRepository
+from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 from polar.subscription.sorting import SubscriptionSortProperty
 
@@ -406,13 +407,17 @@ async def cancel(
         data = await request.form()
         try:
             form = CancelForm.model_validate_form(data)
-            await subscription_service._perform_cancellation(
-                session,
-                subscription,
-                customer_reason=form.customer_cancellation_reason,
-                customer_comment=form.customer_cancellation_comment,
-                immediately=form.revoke,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service._perform_cancellation(
+                    session,
+                    ctx,
+                    subscription,
+                    customer_reason=form.customer_cancellation_reason,
+                    customer_comment=form.customer_cancellation_comment,
+                    immediately=form.revoke,
+                )
             return HXRedirectResponse(
                 request, str(request.url_for("subscriptions:get", id=id)), 303
             )
@@ -455,7 +460,10 @@ async def uncancel(
         return
 
     if request.method == "POST":
-        await subscription_service.uncancel(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.uncancel(session, ctx, subscription)
         return HXRedirectResponse(
             request, str(request.url_for("subscriptions:get", id=id)), 303
         )
@@ -508,11 +516,15 @@ async def update_billing_period_end(
         data = await request.form()
         try:
             form = UpdateBillingPeriodEndForm.model_validate_form(data)
-            await subscription_service.update_currrent_billing_period_end(
-                session,
-                subscription,
-                new_period_end=form.new_period_end,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_currrent_billing_period_end(
+                    session,
+                    ctx,
+                    subscription,
+                    new_period_end=form.new_period_end,
+                )
             return HXRedirectResponse(
                 request, str(request.url_for("subscriptions:get", id=id)), 303
             )

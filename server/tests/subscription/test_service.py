@@ -3,7 +3,7 @@ from collections import namedtuple
 from collections.abc import Generator
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock, call
+from unittest.mock import ANY, AsyncMock, MagicMock, call
 
 import freezegun
 import pytest
@@ -91,6 +91,7 @@ from polar.subscription.service import (
     NotARecurringProduct,
     NotASeatBasedSubscription,
     SeatsAlreadyAssigned,
+    SubscriptionUpdateContext,
 )
 from polar.subscription.service import subscription as subscription_service
 from polar.subscription.update import generate_subscription_update
@@ -130,6 +131,32 @@ def assert_hooks_called_once(subscription_hooks: Hooks, called: set[str]) -> Non
 def reset_hooks(subscription_hooks: Hooks) -> None:
     for hook in HookNames:
         getattr(subscription_hooks, hook).reset_mock()
+
+
+async def assert_order_exists(
+    session: AsyncSession, subscription: Subscription
+) -> None:
+    order_repository = OrderRepository.from_session(session)
+    orders = await order_repository.get_all_by_subscription(subscription.id)
+    assert len(orders) > 0, (
+        "Expected at least one order to be created for the subscription"
+    )
+
+
+def assert_webhook_sent_once(
+    send_mock: MagicMock,
+    event_type: WebhookEventType,
+    organization: Organization,
+    subscription: Subscription,
+) -> None:
+    send_mock.assert_any_call(ANY, organization, event_type, subscription)
+    event_occurences = 0
+    for mock_calls in send_mock.call_args_list:
+        if mock_calls.args[1] == organization and mock_calls.args[2] == event_type:
+            event_occurences += 1
+    assert event_occurences == 1, (
+        f"Expected webhook {event_type} to be sent once, but was sent {event_occurences} times"
+    )
 
 
 def build_stripe_payment_intent(
@@ -920,16 +947,21 @@ class TestCycle:
         )
 
         with pytest.raises(InactiveSubscription):
-            await subscription_service.cycle(session, subscription)
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.cycle(session, ctx, subscription)
 
     async def test_fixed_price(
         self,
         session: AsyncSession,
         enqueue_job_mock: MagicMock,
         enqueue_email_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
@@ -940,7 +972,12 @@ class TestCycle:
 
         previous_current_period_end = subscription.current_period_end
 
-        updated_subscription = await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         assert updated_subscription.ended_at is None
         assert updated_subscription.current_period_start == previous_current_period_end
@@ -992,6 +1029,13 @@ class TestCycle:
             OrderBillingReasonInternal.subscription_cycle,
         )
 
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated_subscription,
+        )
+
         enqueue_email_mock.assert_not_called()
 
     async def test_free_price(
@@ -1008,7 +1052,10 @@ class TestCycle:
             scheduler_locked_at=utc_now(),
         )
 
-        await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.cycle(session, ctx, subscription)
 
         price = product_recurring_free_price.prices[0]
         assert is_free_price(price)
@@ -1046,19 +1093,28 @@ class TestCycle:
             scheduler_locked_at=utc_now(),
         )
 
-        second_month_subscription = await subscription_service.cycle(
-            session, subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            second_month_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
         assert second_month_subscription.discount == discount
 
-        third_month_subscription = await subscription_service.cycle(
-            session, second_month_subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, second_month_subscription, subscription_service
+        ) as ctx:
+            third_month_subscription = await subscription_service.cycle(
+                session, ctx, second_month_subscription
+            )
         assert third_month_subscription.discount == discount
 
-        fourth_month_subscription = await subscription_service.cycle(
-            session, third_month_subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, third_month_subscription, subscription_service
+        ) as ctx:
+            fourth_month_subscription = await subscription_service.cycle(
+                session, ctx, third_month_subscription
+            )
         assert fourth_month_subscription.discount is None
 
         billing_entry_repository = BillingEntryRepository.from_session(session)
@@ -1098,18 +1154,24 @@ class TestCycle:
         assert first_period_end is not None
         assert first_period_end == first_period_start.replace(month=3)
 
-        second_cycle_subscription = await subscription_service.cycle(
-            session, subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            second_cycle_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
         second_period_start = second_cycle_subscription.current_period_start
         second_period_end = second_cycle_subscription.current_period_end
         assert second_period_start == first_period_end
         assert second_period_end is not None
         assert second_period_end == first_period_end.replace(month=5)
 
-        third_cycle_subscription = await subscription_service.cycle(
-            session, second_cycle_subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, second_cycle_subscription, subscription_service
+        ) as ctx:
+            third_cycle_subscription = await subscription_service.cycle(
+                session, ctx, second_cycle_subscription
+            )
         assert third_cycle_subscription.current_period_start == second_period_end
         assert third_cycle_subscription.current_period_end is not None
         assert third_cycle_subscription.current_period_end == second_period_end.replace(
@@ -1154,9 +1216,12 @@ class TestCycle:
         assert subscription.current_period_start.month == 1
         assert subscription.current_period_end.month == 2
 
-        second_cycle_subscription = await subscription_service.cycle(
-            session, subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            second_cycle_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
         second_period_start = second_cycle_subscription.current_period_start
         assert second_period_start.month == 2
         assert second_period_start.day == 29
@@ -1164,9 +1229,12 @@ class TestCycle:
         assert second_period_end.month == 3
         assert second_period_end.day == 31
 
-        third_cycle_subscription = await subscription_service.cycle(
-            session, second_cycle_subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, second_cycle_subscription, subscription_service
+        ) as ctx:
+            third_cycle_subscription = await subscription_service.cycle(
+                session, ctx, second_cycle_subscription
+            )
         third_period_start = third_cycle_subscription.current_period_start
         assert third_period_start.month == 3
         assert third_period_start.day == 31
@@ -1194,7 +1262,12 @@ class TestCycle:
         previous_current_period_start = subscription.current_period_start
         previous_current_period_end = subscription.current_period_end
 
-        updated_subscription = await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         assert updated_subscription.status == SubscriptionStatus.canceled
         # ended_at should be set to the current time, not to ends_at
@@ -1281,7 +1354,12 @@ class TestCycle:
         assert subscription.ends_at == subscription.current_period_end
         assert subscription.ends_at > cycle_time
 
-        updated_subscription = await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         # ended_at should be set to the current time when the cycle ran, not to ends_at
         assert updated_subscription.status == SubscriptionStatus.canceled
@@ -1306,7 +1384,12 @@ class TestCycle:
         previous_trial_end = subscription.trial_end
         previous_current_period_end = subscription.current_period_end
 
-        updated_subscription = await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         assert updated_subscription.ended_at is None
         assert updated_subscription.current_period_start == previous_current_period_end
@@ -1349,7 +1432,12 @@ class TestCycle:
         assert subscription.trial_end == datetime(2024, 5, 5, 12, 0, 0, tzinfo=UTC)
         assert subscription.current_period_end == subscription.trial_end
 
-        updated_subscription = await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         assert updated_subscription.status == SubscriptionStatus.active
         assert updated_subscription.anchor_day == 5
@@ -1392,7 +1480,12 @@ class TestCycle:
         assert subscription.status == SubscriptionStatus.trialing
 
         # Cycle the subscription (trial ends, first billing cycle)
-        updated_subscription = await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         # Verify discount is STILL applied after trial ends
         # This is the first actual billing cycle, so "once" discount should apply
@@ -1414,9 +1507,12 @@ class TestCycle:
         assert cycle_entries[0].discount_amount > 0
 
         # Now cycle again (second billing period)
-        second_cycle_subscription = await subscription_service.cycle(
-            session, updated_subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, updated_subscription, subscription_service
+        ) as ctx:
+            second_cycle_subscription = await subscription_service.cycle(
+                session, ctx, updated_subscription
+            )
 
         # Verify discount is NOW removed (used up after first billing cycle)
         assert second_cycle_subscription.discount is None
@@ -1459,9 +1555,12 @@ class TestCycle:
         assert subscription.status == SubscriptionStatus.trialing
 
         # Cycle 1: Trial ends, first billing cycle
-        first_billing_subscription = await subscription_service.cycle(
-            session, subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            first_billing_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         # Verify discount_applied_at is now set to the first billing period start
         assert first_billing_subscription.discount == discount
@@ -1473,21 +1572,30 @@ class TestCycle:
         assert first_billing_subscription.status == SubscriptionStatus.active
 
         # Cycle 2: Second billing cycle (2nd month of discount)
-        second_billing_subscription = await subscription_service.cycle(
-            session, first_billing_subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, first_billing_subscription, subscription_service
+        ) as ctx:
+            second_billing_subscription = await subscription_service.cycle(
+                session, ctx, first_billing_subscription
+            )
         assert second_billing_subscription.discount == discount
 
         # Cycle 3: Third billing cycle (3rd month of discount)
-        third_billing_subscription = await subscription_service.cycle(
-            session, second_billing_subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, second_billing_subscription, subscription_service
+        ) as ctx:
+            third_billing_subscription = await subscription_service.cycle(
+                session, ctx, second_billing_subscription
+            )
         assert third_billing_subscription.discount == discount
 
         # Cycle 4: Fourth billing cycle - discount should now be expired
-        fourth_billing_subscription = await subscription_service.cycle(
-            session, third_billing_subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, third_billing_subscription, subscription_service
+        ) as ctx:
+            fourth_billing_subscription = await subscription_service.cycle(
+                session, ctx, third_billing_subscription
+            )
         assert fourth_billing_subscription.discount is None
 
         # Verify billing entries - 3 should have discount, 1 should not
@@ -1534,7 +1642,12 @@ class TestCycle:
 
         previous_current_period_end = subscription.current_period_end
 
-        updated_subscription = await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         assert updated_subscription.ended_at is None
         assert updated_subscription.current_period_start == previous_current_period_end
@@ -1605,7 +1718,12 @@ class TestCycle:
 
         previous_current_period_end = subscription.current_period_end
 
-        updated_subscription = await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         assert updated_subscription.ended_at is None
         assert updated_subscription.current_period_start == previous_current_period_end
@@ -1659,7 +1777,12 @@ class TestCycle:
         old_period_end = subscription.current_period_end
         assert old_period_end is not None
 
-        updated_subscription = await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         # The new period should start exactly at the old period end
         assert updated_subscription.current_period_start == old_period_end
@@ -1702,7 +1825,10 @@ class TestRevoke:
         )
 
         with pytest.raises(AlreadyCanceledSubscription):
-            await subscription_service.revoke(session, subscription)
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.revoke(session, ctx, subscription)
 
     async def test_valid(
         self,
@@ -1720,7 +1846,12 @@ class TestRevoke:
             customer=customer,
         )
 
-        updated_subscription = await subscription_service.revoke(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.revoke(
+                session, ctx, subscription
+            )
 
         assert updated_subscription.status == SubscriptionStatus.canceled
         assert updated_subscription.canceled_at == frozen_time
@@ -1756,7 +1887,10 @@ class TestRevoke:
         assert subscription.cancel_at_period_end is True
         reset_hooks(subscription_hooks)
 
-        await subscription_service.revoke(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.revoke(session, ctx, subscription)
 
         subscription_hooks.canceled.assert_called_once()
         subscription_hooks.revoked.assert_called_once()
@@ -1781,7 +1915,10 @@ class TestCancel:
         assert subscription.cancel_at_period_end is True
 
         with pytest.raises(AlreadyCanceledSubscription):
-            await subscription_service.cancel(session, subscription)
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.cancel(session, ctx, subscription)
 
 
 @pytest.mark.asyncio
@@ -1800,7 +1937,10 @@ class TestUncancel:
         )
 
         with pytest.raises(BadRequest):
-            await subscription_service.uncancel(session, subscription)
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.uncancel(session, ctx, subscription)
 
     async def test_valid(
         self,
@@ -1818,9 +1958,12 @@ class TestUncancel:
             cancel_at_period_end=True,
         )
 
-        updated_subscription = await subscription_service.uncancel(
-            session, subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.uncancel(
+                session, ctx, subscription
+            )
 
         assert updated_subscription.status == SubscriptionStatus.active
         assert updated_subscription.cancel_at_period_end is False
@@ -1844,7 +1987,10 @@ class TestUncancel:
         assert subscription.cancel_at_period_end is False
 
         with pytest.raises(BadRequest):
-            await subscription_service.uncancel(session, subscription)
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.uncancel(session, ctx, subscription)
 
     async def test_uncancel_already_revoked(
         self,
@@ -1867,7 +2013,10 @@ class TestUncancel:
         assert subscription.canceled_at
 
         with pytest.raises(ResourceUnavailable):
-            await subscription_service.uncancel(session, subscription)
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.uncancel(session, ctx, subscription)
 
     async def test_uncancel_past_due(
         self,
@@ -1886,9 +2035,12 @@ class TestUncancel:
             cancel_at_period_end=True,
         )
 
-        updated_subscription = await subscription_service.uncancel(
-            session, subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.uncancel(
+                session, ctx, subscription
+            )
 
         assert updated_subscription.status == SubscriptionStatus.past_due
         assert updated_subscription.cancel_at_period_end is False
@@ -2391,16 +2543,6 @@ class TestList:
         assert subscription_2 in results
 
 
-async def assert_order_exists(
-    session: AsyncSession, subscription: Subscription
-) -> None:
-    order_repository = OrderRepository.from_session(session)
-    orders = await order_repository.get_all_by_subscription(subscription.id)
-    assert len(orders) > 0, (
-        "Expected at least one order to be created for the subscription"
-    )
-
-
 @pytest.mark.asyncio
 class TestUpdate:
     async def test_product_update_prorate(
@@ -2424,16 +2566,23 @@ class TestUpdate:
             recurring_interval=SubscriptionRecurringInterval.month,
         )
 
-        updated = await subscription_service.update(
-            session,
-            subscription,
-            update=SubscriptionUpdateProduct(product_id=new_product.id),
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update(
+                session,
+                ctx,
+                subscription,
+                update=SubscriptionUpdateProduct(product_id=new_product.id),
+            )
 
         assert updated.product == new_product
 
-        webhook_service_send_mock.assert_any_call(
-            session, organization, WebhookEventType.subscription_updated, updated
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
         )
 
     async def test_product_update_invoice(
@@ -2457,19 +2606,26 @@ class TestUpdate:
             recurring_interval=SubscriptionRecurringInterval.month,
         )
 
-        updated = await subscription_service.update(
-            session,
-            subscription,
-            update=SubscriptionUpdateProduct(
-                product_id=new_product.id,
-                proration_behavior=SubscriptionProrationBehavior.invoice,
-            ),
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update(
+                session,
+                ctx,
+                subscription,
+                update=SubscriptionUpdateProduct(
+                    product_id=new_product.id,
+                    proration_behavior=SubscriptionProrationBehavior.invoice,
+                ),
+            )
 
         assert updated.product == new_product
         await assert_order_exists(session, subscription)
-        webhook_service_send_mock.assert_any_call(
-            session, organization, WebhookEventType.subscription_updated, updated
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
         )
 
     async def test_discount_update(
@@ -2487,16 +2643,24 @@ class TestUpdate:
             product=product,
             customer=customer,
         )
-        updated = await subscription_service.update(
-            session,
-            subscription,
-            update=SubscriptionUpdateDiscount(discount_id=discount_percentage_50.id),
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update(
+                session,
+                ctx,
+                subscription,
+                update=SubscriptionUpdateDiscount(
+                    discount_id=discount_percentage_50.id
+                ),
+            )
 
         assert updated.discount == discount_percentage_50
-
-        webhook_service_send_mock.assert_any_call(
-            session, organization, WebhookEventType.subscription_updated, updated
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
         )
 
     async def test_trial_update_extends(
@@ -2518,19 +2682,25 @@ class TestUpdate:
         initial_trial_end = subscription.trial_end
         assert initial_trial_end is not None
 
-        updated = await subscription_service.update(
-            session,
-            subscription,
-            update=SubscriptionUpdateTrial(
-                trial_end=initial_trial_end + timedelta(days=7),
-            ),
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update(
+                session,
+                ctx,
+                subscription,
+                update=SubscriptionUpdateTrial(
+                    trial_end=initial_trial_end + timedelta(days=7),
+                ),
+            )
 
         assert updated.status == SubscriptionStatus.trialing
         assert updated.trial_end == initial_trial_end + timedelta(days=7)
-
-        webhook_service_send_mock.assert_any_call(
-            session, organization, WebhookEventType.subscription_updated, updated
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
         )
 
     async def test_trial_update_ends(
@@ -2553,19 +2723,26 @@ class TestUpdate:
         initial_trial_end = subscription.trial_end
         assert initial_trial_end is not None
 
-        updated = await subscription_service.update(
-            session,
-            subscription,
-            update=SubscriptionUpdateTrial(trial_end="now"),
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update(
+                session,
+                ctx,
+                subscription,
+                update=SubscriptionUpdateTrial(trial_end="now"),
+            )
 
         assert updated.status == SubscriptionStatus.active
         assert updated.trial_end is not None
         assert updated.trial_end == updated.current_period_start
         assert updated.trial_end < initial_trial_end
 
-        webhook_service_send_mock.assert_any_call(
-            session, organization, WebhookEventType.subscription_updated, updated
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
         )
         enqueue_job_mock.assert_any_call(
             "order.create_subscription_order",
@@ -2589,16 +2766,23 @@ class TestUpdate:
             seats=5,
         )
 
-        updated = await subscription_service.update(
-            session,
-            subscription,
-            update=SubscriptionUpdateSeats(seats=10),
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update(
+                session,
+                ctx,
+                subscription,
+                update=SubscriptionUpdateSeats(seats=10),
+            )
 
         assert updated.seats == 10
 
-        webhook_service_send_mock.assert_any_call(
-            session, organization, WebhookEventType.subscription_updated, updated
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
         )
 
     async def test_seats_update_invoice(
@@ -2626,20 +2810,27 @@ class TestUpdate:
             payment_method=payment_method,
         )
 
-        updated = await subscription_service.update(
-            session,
-            subscription,
-            update=SubscriptionUpdateSeats(
-                seats=10, proration_behavior=SubscriptionProrationBehavior.invoice
-            ),
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update(
+                session,
+                ctx,
+                subscription,
+                update=SubscriptionUpdateSeats(
+                    seats=10, proration_behavior=SubscriptionProrationBehavior.invoice
+                ),
+            )
 
         assert updated.seats == 10
         await assert_order_exists(session, subscription)
         trigger_payment_mock.assert_awaited_once()
 
-        webhook_service_send_mock.assert_any_call(
-            session, organization, WebhookEventType.subscription_updated, updated
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
         )
 
     async def test_billing_period_end_update(
@@ -2659,18 +2850,25 @@ class TestUpdate:
         initial_period_end = subscription.current_period_end
         assert initial_period_end is not None
 
-        updated = await subscription_service.update(
-            session,
-            subscription,
-            update=SubscriptionUpdateBillingPeriod(
-                current_billing_period_end=initial_period_end + timedelta(days=7)
-            ),
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update(
+                session,
+                ctx,
+                subscription,
+                update=SubscriptionUpdateBillingPeriod(
+                    current_billing_period_end=initial_period_end + timedelta(days=7)
+                ),
+            )
 
         assert updated.current_period_end == initial_period_end + timedelta(days=7)
 
-        webhook_service_send_mock.assert_any_call(
-            session, organization, WebhookEventType.subscription_updated, updated
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
         )
 
 
@@ -2701,9 +2899,12 @@ class TestUpdateProduct:
             trial_interval_count=1,
         )
 
-        updated = await subscription_service.update_product(
-            session, subscription, product_id=new_product.id
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_product(
+                session, ctx, subscription, product_id=new_product.id
+            )
 
         assert updated.product == new_product
         assert updated.status == SubscriptionStatus.trialing
@@ -2736,9 +2937,12 @@ class TestUpdateProduct:
             trial_interval_count=14,
         )
 
-        updated = await subscription_service.update_product(
-            session, subscription, product_id=new_product.id
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_product(
+                session, ctx, subscription, product_id=new_product.id
+            )
 
         expected_trial_end = TrialInterval.day.get_end(trial_start, 14)
         assert updated.product == new_product
@@ -2775,9 +2979,12 @@ class TestUpdateProduct:
         )
 
         with freezegun.freeze_time(trial_creation_time + timedelta(days=1)):
-            updated = await subscription_service.update_product(
-                session, subscription, product_id=new_product.id
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated = await subscription_service.update_product(
+                    session, ctx, subscription, product_id=new_product.id
+                )
 
         expected_trial_end = TrialInterval.day.get_end(trial_start, 7)
         assert updated.product == new_product
@@ -2814,9 +3021,12 @@ class TestUpdateProduct:
 
         change_time = trial_creation_time + timedelta(days=10)
         with freezegun.freeze_time(change_time):
-            updated = await subscription_service.update_product(
-                session, subscription, product_id=new_product.id
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated = await subscription_service.update_product(
+                    session, ctx, subscription, product_id=new_product.id
+                )
 
         assert updated.product == new_product
         assert updated.status == SubscriptionStatus.active
@@ -2850,9 +3060,12 @@ class TestUpdateProduct:
             recurring_interval=SubscriptionRecurringInterval.month,
         )
 
-        updated = await subscription_service.update_product(
-            session, subscription, product_id=new_product.id
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_product(
+                session, ctx, subscription, product_id=new_product.id
+            )
 
         assert updated.product == new_product
         assert updated.status == SubscriptionStatus.active
@@ -2891,12 +3104,16 @@ class TestUpdateProduct:
             trial_interval_count=2,
         )
 
-        await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=new_product.id,
-            proration_behavior=SubscriptionProrationBehavior.invoice,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.invoice,
+            )
 
         create_subscription_update_order_mock.assert_not_called()
 
@@ -2937,12 +3154,16 @@ class TestUpdateProduct:
             prices=[(3000, "usd"), (meter, Decimal(50), None, "usd")],
         )
 
-        updated_subscription = await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=new_product.id,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
         await session.flush()
 
         assert updated_subscription.product == new_product
@@ -2974,12 +3195,16 @@ class TestUpdateProduct:
             prices=[(meter, Decimal(100), None, "usd")],
         )
 
-        updated_subscription = await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=metered_only_product.id,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=metered_only_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
 
         assert updated_subscription.product == metered_only_product
 
@@ -3016,12 +3241,16 @@ class TestUpdateProduct:
             seats=3,
         )
 
-        updated_subscription = await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=new_seat_product.id,
-            proration_behavior=SubscriptionProrationBehavior.invoice,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_seat_product.id,
+                proration_behavior=SubscriptionProrationBehavior.invoice,
+            )
 
         assert updated_subscription.product == new_seat_product
         create_subscription_update_order_mock.assert_called_once()
@@ -3079,12 +3308,16 @@ class TestUpdateProduct:
 
         enqueue_job_mock = mocker.patch("polar.customer_seat.service.enqueue_job")
 
-        await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=new_seat_product.id,
-            proration_behavior=SubscriptionProrationBehavior.invoice,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_seat_product.id,
+                proration_behavior=SubscriptionProrationBehavior.invoice,
+            )
 
         benefit_grant_calls = [
             c
@@ -3106,6 +3339,7 @@ class TestUpdateProduct:
         product_recurring_multiple_currencies: Product,
         customer: Customer,
         organization: Organization,
+        webhook_service_send_mock: MagicMock,
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
@@ -3116,12 +3350,18 @@ class TestUpdateProduct:
         assert len(subscription.prices) == 1
 
         with pytest.raises(PolarRequestValidationError):
-            await subscription_service.update_product(
-                session,
-                subscription,
-                product_id=product.id,
-                proration_behavior=SubscriptionProrationBehavior.prorate,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=product.id,
+                    proration_behavior=SubscriptionProrationBehavior.prorate,
+                )
+
+        webhook_service_send_mock.assert_not_called()
 
     async def test_available_currency(
         self,
@@ -3140,12 +3380,16 @@ class TestUpdateProduct:
         )
         assert len(subscription.prices) == 1
 
-        updated_subscription = await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=product.id,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
 
         assert updated_subscription.product == product
         assert len(updated_subscription.prices) == 1
@@ -3195,11 +3439,15 @@ class TestUpdateProduct:
         )
 
         with pytest.raises(PolarRequestValidationError):
-            await subscription_service.update_product(
-                session,
-                subscription,
-                product_id=fixed_product.id,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=fixed_product.id,
+                )
 
     async def test_upgrade_from_legacy_recurring_product_to_new_recurring_product(
         self,
@@ -3243,12 +3491,16 @@ class TestUpdateProduct:
             customer=customer,
         )
 
-        updated_subscription = await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=new_product.id,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
 
         assert updated_subscription.product == new_product
 
@@ -3269,12 +3521,16 @@ class TestUpdateProduct:
         )
         assert len(subscription.prices) == 1
 
-        updated_subscription = await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=product.id,
-            proration_behavior=SubscriptionProrationBehavior.next_period,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=product.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
 
         assert updated_subscription.product == product_recurring_multiple_currencies
 
@@ -3329,12 +3585,16 @@ class TestUpdateProduct:
         )
         await save_fixture(subscription_update)
 
-        updated_subscription = await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=product_second.id,
-            proration_behavior=SubscriptionProrationBehavior.next_period,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=product_second.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
 
         assert updated_subscription.product == product_recurring_multiple_currencies
 
@@ -3390,12 +3650,16 @@ class TestUpdateProduct:
         )
         await save_fixture(subscription_update)
 
-        updated_subscription = await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=product_second.id,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=product_second.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
 
         assert updated_subscription.product == product_second
 
@@ -3431,12 +3695,16 @@ class TestUpdateProduct:
         )
         assert len(subscription.prices) == 1
 
-        updated_subscription = await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=product.id,
-            proration_behavior=SubscriptionProrationBehavior.next_period,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=product.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
 
         assert updated_subscription.product == product_recurring_multiple_currencies
 
@@ -3495,18 +3763,26 @@ class TestUpdateProduct:
             save_fixture, product=product_a, customer=customer, seats=5
         )
 
-        await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=8,
-            proration_behavior=SubscriptionProrationBehavior.next_period,
-        )
-        await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=product_b.id,
-            proration_behavior=SubscriptionProrationBehavior.next_period,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=8,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=product_b.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
         await session.flush()
 
         repo = SubscriptionUpdateRepository.from_session(session)
@@ -3556,12 +3832,16 @@ class TestUpdateProduct:
         seat_product.prices.append(seat_price)
         await save_fixture(seat_product)
 
-        updated = await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=seat_product.id,
-            proration_behavior=SubscriptionProrationBehavior.invoice,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=seat_product.id,
+                proration_behavior=SubscriptionProrationBehavior.invoice,
+            )
 
         assert updated.product == seat_product
         assert updated.seats == 1
@@ -3604,12 +3884,16 @@ class TestUpdateProduct:
             prices=[("seat", 1500, "usd")],
         )
 
-        updated = await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=seat_product.id,
-            proration_behavior=SubscriptionProrationBehavior.invoice,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=seat_product.id,
+                proration_behavior=SubscriptionProrationBehavior.invoice,
+            )
 
         await session.refresh(updated.customer)
         assert updated.customer.type == CustomerType.team
@@ -3643,12 +3927,16 @@ class TestUpdateProduct:
             prices=[("seat", 2000, "usd")],
         )
 
-        updated = await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=seat_product.id,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=seat_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
 
         billing_entry_repository = BillingEntryRepository.from_session(session)
         entries = await billing_entry_repository.get_pending_by_subscription(updated.id)
@@ -3694,12 +3982,16 @@ class TestUpdateProduct:
         )
 
         with pytest.raises(PolarRequestValidationError) as exc_info:
-            await subscription_service.update_product(
-                session,
-                subscription,
-                product_id=seat_product.id,
-                proration_behavior=SubscriptionProrationBehavior.next_period,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=seat_product.id,
+                    proration_behavior=SubscriptionProrationBehavior.next_period,
+                )
 
         errors = exc_info.value.errors()
         assert any(
@@ -3728,9 +4020,12 @@ class TestUpdateDiscount:
         )
 
         with pytest.raises(PolarRequestValidationError):
-            await subscription_service.update_discount(
-                session, subscription, discount_id=uuid.uuid4()
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_discount(
+                    session, ctx, subscription, discount_id=uuid.uuid4()
+                )
 
     async def test_same_discount(
         self,
@@ -3749,9 +4044,12 @@ class TestUpdateDiscount:
         )
 
         with pytest.raises(PolarRequestValidationError):
-            await subscription_service.update_discount(
-                session, subscription, discount_id=discount_percentage_50.id
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_discount(
+                    session, ctx, subscription, discount_id=discount_percentage_50.id
+                )
 
     async def test_valid_removed(
         self,
@@ -3768,9 +4066,12 @@ class TestUpdateDiscount:
             discount=discount_percentage_50,
         )
 
-        subscription = await subscription_service.update_discount(
-            session, subscription, discount_id=None
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            subscription = await subscription_service.update_discount(
+                session, ctx, subscription, discount_id=None
+            )
 
         assert subscription.discount is None
 
@@ -3797,9 +4098,12 @@ class TestUpdateDiscount:
             save_fixture, product=product, customer=customer
         )
 
-        subscription = await subscription_service.update_discount(
-            session, subscription, discount_id=discount_percentage_50.id
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            subscription = await subscription_service.update_discount(
+                session, ctx, subscription, discount_id=discount_percentage_50.id
+            )
 
         assert subscription.discount == discount_percentage_50
 
@@ -3830,9 +4134,12 @@ class TestUpdateDiscount:
             discount=discount_percentage_50,
         )
 
-        subscription = await subscription_service.update_discount(
-            session, subscription, discount_id=discount_percentage_100.id
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            subscription = await subscription_service.update_discount(
+                session, ctx, subscription, discount_id=discount_percentage_100.id
+            )
 
         assert subscription.discount == discount_percentage_100
 
@@ -3864,9 +4171,12 @@ class TestUpdateTrial:
         assert subscription.trial_end is not None
         original_trial_end = subscription.trial_end
 
-        updated_subscription = await subscription_service.update_trial(
-            session, subscription, trial_end="now"
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.update_trial(
+                session, ctx, subscription, trial_end="now"
+            )
 
         assert updated_subscription.status == SubscriptionStatus.active
         assert updated_subscription.trial_end is not None
@@ -3893,9 +4203,12 @@ class TestUpdateTrial:
         new_trial_end = original_trial_end + timedelta(days=30)
 
         reset_hooks(subscription_hooks)
-        updated_subscription = await subscription_service.update_trial(
-            session, subscription, trial_end=new_trial_end
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.update_trial(
+                session, ctx, subscription, trial_end=new_trial_end
+            )
 
         assert updated_subscription.status == SubscriptionStatus.trialing
         assert updated_subscription.current_period_end == new_trial_end
@@ -3931,9 +4244,12 @@ class TestUpdateTrial:
         )
 
         with pytest.raises(PolarRequestValidationError) as exc_info:
-            await subscription_service.update_trial(
-                session, subscription, trial_end="now"
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_trial(
+                    session, ctx, subscription, trial_end="now"
+                )
 
         errors = exc_info.value.errors()
         assert len(errors) == 1
@@ -3958,9 +4274,12 @@ class TestUpdateTrial:
 
         trial_end = subscription.current_period_end + timedelta(days=14)
 
-        updated_subscription = await subscription_service.update_trial(
-            session, subscription, trial_end=trial_end
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.update_trial(
+                session, ctx, subscription, trial_end=trial_end
+            )
 
         assert updated_subscription.status == SubscriptionStatus.trialing
         assert updated_subscription.trial_end == trial_end
@@ -3995,9 +4314,12 @@ class TestUpdateTrial:
         trial_end_before_period = subscription.current_period_end - timedelta(days=1)
 
         with pytest.raises(PolarRequestValidationError) as exc_info:
-            await subscription_service.update_trial(
-                session, subscription, trial_end=trial_end_before_period
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_trial(
+                    session, ctx, subscription, trial_end=trial_end_before_period
+                )
 
         errors = exc_info.value.errors()
         assert len(errors) == 1
@@ -4034,9 +4356,12 @@ class TestUpdateTrial:
         new_trial_end = original_trial_end + timedelta(days=30)
 
         # When: Extend trial
-        updated_subscription = await subscription_service.update_trial(
-            session, subscription, trial_end=new_trial_end
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.update_trial(
+                session, ctx, subscription, trial_end=new_trial_end
+            )
 
         # Then: Trial extended, seats preserved
         assert updated_subscription.status == SubscriptionStatus.trialing
@@ -4224,12 +4549,16 @@ class TestUpdateSeats:
         assert subscription.amount == 5000
 
         # When: Increase to 10 seats
-        updated = await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=10,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=10,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
         await session.flush()
 
         # Then: Seats and amount updated
@@ -4289,12 +4618,16 @@ class TestUpdateSeats:
         assert subscription.amount == 5000
 
         # When: Increase to 15 seats (crosses to tier 2)
-        updated = await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=15,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=15,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
         await session.flush()
 
         # Then: Amount = 15 * $8 = $120 (tier 2 pricing)
@@ -4344,7 +4677,12 @@ class TestUpdateSeats:
         # When: Try to decrease to 5 seats
         # Then: Raises error
         with pytest.raises(SeatsAlreadyAssigned) as exc_info:
-            await subscription_service.update_seats(session, subscription, seats=5)
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_seats(
+                    session, ctx, subscription, seats=5
+                )
 
         assert exc_info.value.assigned_count == 7
         assert exc_info.value.requested_seats == 5
@@ -4385,12 +4723,16 @@ class TestUpdateSeats:
             )
 
         # When: Decrease to 5 seats (above assigned count)
-        updated = await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=5,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=5,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
         await session.flush()
 
         # Then: Successfully updated
@@ -4433,7 +4775,12 @@ class TestUpdateSeats:
         # When: Try to set seats=0
         # Then: Raises error
         with pytest.raises(BelowMinimumSeats) as exc_info:
-            await subscription_service.update_seats(session, subscription, seats=0)
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_seats(
+                    session, ctx, subscription, seats=0
+                )
 
         assert exc_info.value.minimum_seats == 1
         assert exc_info.value.requested_seats == 0
@@ -4474,7 +4821,12 @@ class TestUpdateSeats:
 
         # When: Try to set seats below custom minimum
         with pytest.raises(BelowMinimumSeats) as exc_info:
-            await subscription_service.update_seats(session, subscription, seats=2)
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_seats(
+                    session, ctx, subscription, seats=2
+                )
 
         assert exc_info.value.minimum_seats == 3
         assert exc_info.value.requested_seats == 2
@@ -4515,7 +4867,12 @@ class TestUpdateSeats:
 
         # When: Try to set seats above maximum
         with pytest.raises(AboveMaximumSeats) as exc_info:
-            await subscription_service.update_seats(session, subscription, seats=15)
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_seats(
+                    session, ctx, subscription, seats=15
+                )
 
         assert exc_info.value.maximum_seats == 10
         assert exc_info.value.requested_seats == 15
@@ -4555,9 +4912,12 @@ class TestUpdateSeats:
         )
 
         # When: Update seats within limits
-        updated = await subscription_service.update_seats(
-            session, subscription, seats=15
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_seats(
+                session, ctx, subscription, seats=15
+            )
         await session.flush()
 
         # Then: Successfully updated
@@ -4581,7 +4941,12 @@ class TestUpdateSeats:
         # When: Try to update seats
         # Then: Raises error
         with pytest.raises(NotASeatBasedSubscription):
-            await subscription_service.update_seats(session, subscription, seats=10)
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_seats(
+                    session, ctx, subscription, seats=10
+                )
 
     @pytest.mark.parametrize(
         "proration_behavior",
@@ -4607,9 +4972,16 @@ class TestUpdateSeats:
         )
 
         # When: Update with same seat count
-        updated = await subscription_service.update_seats(
-            session, subscription, seats=10, proration_behavior=proration_behavior
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=10,
+                proration_behavior=proration_behavior,
+            )
         await session.flush()
 
         # Then: Successfully updated (no-op)
@@ -4665,9 +5037,16 @@ class TestUpdateSeats:
         )
 
         # When: Update seats during trial
-        updated = await subscription_service.update_seats(
-            session, subscription, seats=10, proration_behavior=proration_behavior
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=10,
+                proration_behavior=proration_behavior,
+            )
         await session.flush()
 
         # Then: Successfully updated
@@ -4706,7 +5085,12 @@ class TestUpdateSeats:
         # When: Try to update seats
         # Then: Raises error
         with pytest.raises(AlreadyCanceledSubscription):
-            await subscription_service.update_seats(session, subscription, seats=10)
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_seats(
+                    session, ctx, subscription, seats=10
+                )
 
     @pytest.mark.parametrize(
         ("initial", "new"),
@@ -4746,12 +5130,16 @@ class TestUpdateSeats:
         )
 
         # When: Update with invoice behavior
-        await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=new,
-            proration_behavior=SubscriptionProrationBehavior.invoice,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=new,
+                proration_behavior=SubscriptionProrationBehavior.invoice,
+            )
         await session.flush()
 
         # Then: Order created and paid immediately
@@ -4793,12 +5181,16 @@ class TestUpdateSeats:
 
         # When: Update with invoice behavior
         with pytest.raises(PaymentFailed):
-            await subscription_service.update_seats(
-                session,
-                subscription,
-                seats=10,
-                proration_behavior=SubscriptionProrationBehavior.invoice,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_seats(
+                    session,
+                    ctx,
+                    subscription,
+                    seats=10,
+                    proration_behavior=SubscriptionProrationBehavior.invoice,
+                )
 
         # Then: subscription is untouched
         await nested.rollback()
@@ -4853,12 +5245,16 @@ class TestUpdateSeats:
                 update_time, new_anchor_day, subscription.recurring_interval_count
             )
 
-            updated_subscription = await subscription_service.update_seats(
-                session,
-                subscription,
-                seats=new,
-                proration_behavior=SubscriptionProrationBehavior.reset,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated_subscription = await subscription_service.update_seats(
+                    session,
+                    ctx,
+                    subscription,
+                    seats=new,
+                    proration_behavior=SubscriptionProrationBehavior.reset,
+                )
             await session.flush()
 
             # Then: Order created and paid immediately
@@ -4907,12 +5303,16 @@ class TestUpdateSeats:
         )
 
         # When: Update with prorate behavior
-        updated = await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=10,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=10,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
         await session.flush()
 
         # Then: Order creation job NOT enqueued for immediate invoice
@@ -4963,12 +5363,16 @@ class TestUpdateSeats:
         )
 
         # When: Update with invoice behavior
-        await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=10,
-            proration_behavior=SubscriptionProrationBehavior.invoice,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=10,
+                proration_behavior=SubscriptionProrationBehavior.invoice,
+            )
         await session.flush()
 
         # Then: subscription.updated event emitted with invoice proration behavior
@@ -5012,12 +5416,16 @@ class TestUpdateSeats:
         await save_fixture(subscription)
 
         # When: Update seats
-        updated = await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=10,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=10,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
         await session.flush()
 
         # Then: Seats updated but no billing entry created
@@ -5060,12 +5468,16 @@ class TestUpdateSeats:
         await save_fixture(subscription)
 
         # When: Update seats
-        updated = await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=10,
-            proration_behavior=SubscriptionProrationBehavior.next_period,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=10,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
         await session.flush()
 
         # Then: seats not updated
@@ -5112,12 +5524,16 @@ class TestUpdateSeats:
         await save_fixture(subscription_update)
 
         # When: Update seats with next_period behavior
-        updated = await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=10,
-            proration_behavior=SubscriptionProrationBehavior.next_period,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=10,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
         await session.flush()
 
         # Then: seats not updated
@@ -5164,12 +5580,16 @@ class TestUpdateSeats:
         await save_fixture(subscription_update)
 
         # When: Update seats with a proration behavior
-        updated = await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=10,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=10,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
         await session.flush()
 
         # Then: seats are updated
@@ -5212,18 +5632,26 @@ class TestUpdateSeats:
             save_fixture, product=product_a, customer=customer, seats=5
         )
 
-        await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=product_b.id,
-            proration_behavior=SubscriptionProrationBehavior.next_period,
-        )
-        await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=8,
-            proration_behavior=SubscriptionProrationBehavior.next_period,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=product_b.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=8,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
         await session.flush()
 
         repo = SubscriptionUpdateRepository.from_session(session)
@@ -5264,19 +5692,27 @@ class TestUpdateSeats:
             save_fixture, product=product_a, customer=customer, seats=5
         )
 
-        await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=product_b.id,
-            proration_behavior=SubscriptionProrationBehavior.next_period,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=product_b.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
 
-        updated = await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=8,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=8,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
         await session.flush()
 
         # Subscription stays on A with seats applied immediately.
@@ -5333,18 +5769,26 @@ class TestUpdateSeats:
             save_fixture, product=product_a, customer=customer, seats=5
         )
 
-        await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=product_b.id,
-            proration_behavior=SubscriptionProrationBehavior.next_period,
-        )
-        await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=8,
-            proration_behavior=SubscriptionProrationBehavior.next_period,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=product_b.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=8,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
         await session.flush()
 
         repo = SubscriptionUpdateRepository.from_session(session)
@@ -5353,12 +5797,16 @@ class TestUpdateSeats:
         merged_pending_id = pending.id
         assert pending.seats == 8
 
-        updated = await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=10,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=10,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
         await session.flush()
 
         assert updated.seats == 10
@@ -5402,20 +5850,28 @@ class TestUpdateSeats:
             save_fixture, product=product_a, customer=customer, seats=5
         )
 
-        await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=product_b.id,
-            proration_behavior=SubscriptionProrationBehavior.next_period,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=product_b.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
         await session.flush()
 
-        await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=5,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=5,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
         await session.flush()
 
         repo = SubscriptionUpdateRepository.from_session(session)
@@ -5449,18 +5905,26 @@ class TestUpdateSeats:
             save_fixture, product=product_a, customer=customer, seats=5
         )
 
-        await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=product_b.id,
-            proration_behavior=SubscriptionProrationBehavior.next_period,
-        )
-        await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=8,
-            proration_behavior=SubscriptionProrationBehavior.next_period,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=product_b.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=8,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
         await session.flush()
 
         repo = SubscriptionUpdateRepository.from_session(session)
@@ -5470,12 +5934,16 @@ class TestUpdateSeats:
         assert pending.product_id == product_b.id
         assert pending.seats == 8
 
-        await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=5,
-            proration_behavior=SubscriptionProrationBehavior.next_period,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=5,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
         await session.flush()
 
         pending = await repo.get_unapplied_by_subscription_id(subscription.id)
@@ -5513,12 +5981,16 @@ class TestUpdateSeats:
             session
         )
 
-        await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=1,
-            proration_behavior=SubscriptionProrationBehavior.next_period,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=1,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
         await session.flush()
         pending = await subscription_update_repository.get_unapplied_by_subscription_id(
             subscription.id
@@ -5526,12 +5998,16 @@ class TestUpdateSeats:
         assert pending is not None
         assert pending.seats == 1
 
-        await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=2,
-            proration_behavior=SubscriptionProrationBehavior.next_period,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=2,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
         await session.flush()
         pending = await subscription_update_repository.get_unapplied_by_subscription_id(
             subscription.id
@@ -5540,12 +6016,16 @@ class TestUpdateSeats:
         assert pending.seats == 2
 
         # Reverting to current seat count must clear the pending update
-        updated = await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=3,
-            proration_behavior=SubscriptionProrationBehavior.next_period,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=3,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
         await session.flush()
 
         assert updated.seats == 3
@@ -5597,12 +6077,16 @@ class TestUpdateSeats:
         assert subscription.amount == 4000
 
         # When: Increase to 10 seats (delta = $50)
-        updated = await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=10,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=10,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
         await session.flush()
 
         # Then: Fixed discount does not change between old and new effective
@@ -5662,12 +6146,16 @@ class TestUpdateSeats:
         )
 
         # When: Increase to 10 seats (delta = $50, 20% discount = $10 off)
-        await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=10,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=10,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
         await session.flush()
 
         # Then: Percentage discount applied
@@ -5727,12 +6215,16 @@ class TestUpdateSeats:
         )
 
         # When: Decrease to 5 seats (credit delta = -$50)
-        await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=5,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=5,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
         await session.flush()
 
         # Then: Fixed discount applies equally to old ($100 → $90) and new
@@ -5775,12 +6267,16 @@ class TestUpdateSeats:
         assert subscription.discount is None
 
         # When: Increase seats
-        await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=10,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=10,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
         await session.flush()
 
         # Then: No discount in billing entry
@@ -5834,12 +6330,16 @@ class TestUpdateSeats:
         assert subscription.seats == 1
 
         # When: Increase to 2 seats with invoice proration behavior
-        updated = await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=2,
-            proration_behavior=SubscriptionProrationBehavior.invoice,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=2,
+                proration_behavior=SubscriptionProrationBehavior.invoice,
+            )
         await session.flush()
 
         # Then: Seats updated successfully, no billing entries created
@@ -5891,12 +6391,16 @@ class TestUpdateSeats:
         assert subscription.seats == 1
 
         # When: Increase to 2 seats with prorate behavior
-        updated = await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=2,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=2,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
         await session.flush()
 
         # Then: Seats updated successfully, no billing entries created
@@ -6056,13 +6560,17 @@ class TestUpdateBillingPeriod:
         assert subscription.current_period_end is not None
         new_period_end = subscription.current_period_end + timedelta(days=7)
 
-        updated_subscription = (
-            await subscription_service.update_currrent_billing_period_end(
-                session,
-                subscription,
-                new_period_end=new_period_end,
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = (
+                await subscription_service.update_currrent_billing_period_end(
+                    session,
+                    ctx,
+                    subscription,
+                    new_period_end=new_period_end,
+                )
             )
-        )
 
         assert updated_subscription.current_period_end == new_period_end
         assert updated_subscription.anchor_day == new_period_end.day
@@ -6094,11 +6602,15 @@ class TestUpdateBillingPeriod:
         new_period_end = utc_now() + timedelta(days=30)
 
         with pytest.raises(AlreadyCanceledSubscription):
-            await subscription_service.update_currrent_billing_period_end(
-                session,
-                subscription,
-                new_period_end=new_period_end,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_currrent_billing_period_end(
+                    session,
+                    ctx,
+                    subscription,
+                    new_period_end=new_period_end,
+                )
 
 
 @pytest.mark.asyncio
@@ -6172,10 +6684,14 @@ class TestClearPendingUpdate:
         await save_fixture(subscription)
 
         # When: Clear the pending update
-        updated_subscription = await subscription_service.clear_pending_update(
-            session,
-            subscription,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.clear_pending_update(
+                session,
+                ctx,
+                subscription,
+            )
         await save_fixture(updated_subscription)
 
         # Then: Pending update is cleared
@@ -6197,10 +6713,14 @@ class TestClearPendingUpdate:
 
         # When/Then: Should raise validation error
         with pytest.raises(PolarRequestValidationError) as exc_info:
-            await subscription_service.clear_pending_update(
-                session,
-                subscription,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.clear_pending_update(
+                    session,
+                    ctx,
+                    subscription,
+                )
 
         errors = exc_info.value.errors()
         assert len(errors) == 1
@@ -6238,10 +6758,14 @@ class TestClearPendingUpdate:
         await save_fixture(subscription)
 
         # When: Clear the pending update
-        updated_subscription = await subscription_service.clear_pending_update(
-            session,
-            subscription,
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.clear_pending_update(
+                session,
+                ctx,
+                subscription,
+            )
         await save_fixture(updated_subscription)
 
         # Then: Pending update is cleared

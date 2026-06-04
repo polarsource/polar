@@ -1,7 +1,7 @@
 'use client'
 
 import type { Client, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import type EventEmitter from 'eventemitter3'
 import { useCallback, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'

@@ -8,7 +8,7 @@ import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown
 import Popover from '@/components/Notifications/NotificationsPopover'
 import { usePostHog } from '@/hooks/posthog'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { usePathname } from 'next/navigation'
 
 const TopbarRight = ({

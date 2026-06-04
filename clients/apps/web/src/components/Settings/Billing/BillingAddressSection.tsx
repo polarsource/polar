@@ -4,7 +4,7 @@ import { useOrganizationBillingDetails } from '@/hooks/queries/billing'
 import { formatCountry } from '@/utils/formatters'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { LoadingBox } from '../../Shared/LoadingBox'
 import { SectionDescription } from '../Section'
 

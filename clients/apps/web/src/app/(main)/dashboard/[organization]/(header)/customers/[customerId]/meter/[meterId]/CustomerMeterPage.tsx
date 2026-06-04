@@ -23,7 +23,7 @@ import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { UTCDate } from '@date-fns/utc'
 import { endOfMonth, startOfMonth, subMonths } from 'date-fns'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import {
   Card,
   CardContent,
@@ -33,7 +33,7 @@ import Link from 'next/link'
 import { parseAsIsoDateTime, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useInViewport } from '@/hooks/utils'
 import { useCallback, useEffect, useMemo } from 'react'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import { Avatar } from '@polar-sh/orbit'
 
 interface CustomerMeterPageProps {
   organization: schemas['Organization']

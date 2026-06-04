@@ -5,7 +5,7 @@ import { useOnboardingData } from '@/components/Onboarding/OnboardingContext'
 import { CONFIG } from '@/utils/config'
 import Link from 'next/link'
 import { Box } from '@polar-sh/orbit/Box'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { usePostHog } from '@/hooks/posthog'
 import { redirect, useRouter } from 'next/navigation'
 

@@ -6,7 +6,7 @@ import {
 import { toast } from '@/components/Toast/use-toast'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { ExternalLink, Plus, Trash2 } from 'lucide-react'
 import React, { useCallback, useState } from 'react'
 import { useOrganization } from '@/hooks/queries'

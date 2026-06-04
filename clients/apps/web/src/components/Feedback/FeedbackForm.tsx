@@ -2,7 +2,7 @@ import { extractApiErrorMessage } from '@/utils/api/errors'
 import { MemoizedMarkdown } from '@/components/Markdown/MemoizedMarkdown'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import {

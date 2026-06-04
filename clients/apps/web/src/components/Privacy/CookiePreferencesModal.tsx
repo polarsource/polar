@@ -1,7 +1,7 @@
 'use client'
 
 import { usePostHog } from '@/hooks/posthog'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import { useState } from 'react'
 import { InlineModalHeader } from '../Modal/InlineModal'

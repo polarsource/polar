@@ -9,7 +9,7 @@ import {
   type AcceptedLocale,
   type SupportedLocale,
 } from '@polar-sh/i18n'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import {
   Elements,

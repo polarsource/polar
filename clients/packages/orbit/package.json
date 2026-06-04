@@ -39,6 +39,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@stylexjs/stylex": "^0.18.2",
     "class-variance-authority": "^0.7.1",

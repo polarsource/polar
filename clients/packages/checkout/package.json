@@ -82,6 +82,7 @@
   "devDependencies": {
     "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
+    "@stylexjs/babel-plugin": "^0.18.2",
     "@stripe/react-stripe-js": "^5.6.1",
     "@stripe/stripe-js": "^8.11.0",
     "@testing-library/jest-dom": "^6.9.1",
@@ -98,6 +99,7 @@
     "@polar-sh/currency": "workspace:^",
     "@polar-sh/client": "workspace:*",
     "@polar-sh/i18n": "workspace:*",
+    "@polar-sh/orbit": "workspace:*",
     "@polar-sh/ui": "workspace:^",
     "date-fns": "^4.1.0",
     "event-source-plus": "^0.1.15",

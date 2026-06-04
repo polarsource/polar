@@ -6,7 +6,7 @@ import {
   useTOTPStatus,
   useTOTPDelete,
 } from '@/hooks'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import ListGroup from '@polar-sh/ui/components/atoms/ListGroup'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'

@@ -1,4 +1,6 @@
 // ─── Components ───────────────────────────────────────────────────────────────
+export { Avatar } from './components/Avatar'
+export type { AvatarProps } from './components/Avatar'
 export { SegmentedControl } from './components/SegmentedControl'
 export type { SegmentedControlProps } from './components/SegmentedControl'
 export { Text } from './components/Text'

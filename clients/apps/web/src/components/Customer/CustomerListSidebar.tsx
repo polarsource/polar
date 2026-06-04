@@ -16,7 +16,7 @@ import FilterList from '@mui/icons-material/FilterList'
 import MoreVert from '@mui/icons-material/MoreVert'
 import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import { Avatar } from '@polar-sh/orbit'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {

@@ -33,7 +33,7 @@ import Link from 'next/link'
 import { parseAsIsoDateTime, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useInViewport } from '@/hooks/utils'
 import { useCallback, useEffect, useMemo } from 'react'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import { Avatar } from '@polar-sh/orbit'
 
 interface CustomerMeterPageProps {
   organization: schemas['Organization']

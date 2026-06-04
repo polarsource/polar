@@ -26,7 +26,7 @@ import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
 import { ClientResponseError, type schemas } from '@polar-sh/client'
 import { AcceptedLocale } from '@polar-sh/i18n'
 import Alert from '@polar-sh/ui/components/atoms/Alert'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import { Avatar } from '@polar-sh/orbit'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import {
   Dialog,

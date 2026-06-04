@@ -4,7 +4,7 @@ import { CustomerContextView } from '@/components/Customer/CustomerContextView'
 import { EventRow } from '@/components/Events/EventRow'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useEventTypes } from '@/hooks/queries/event_types'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import { Avatar } from '@polar-sh/orbit'
 import {
   useEvent,
   useEventVarianceStats,

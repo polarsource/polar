@@ -1,17 +1,9 @@
 'use client'
 
-import { cn } from '@/lib/utils'
 import { ComponentProps, useCallback, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
-const Avatar = ({
-  name,
-  avatar_url,
-  className,
-  height,
-  width,
-  loading = 'eager',
-  CustomImageComponent,
-}: {
+export interface AvatarProps {
   name: string
   avatar_url: string | null
   className?: string
@@ -19,7 +11,17 @@ const Avatar = ({
   width?: number | undefined
   loading?: React.ImgHTMLAttributes<HTMLImageElement>['loading']
   CustomImageComponent?: React.ElementType
-}) => {
+}
+
+const AvatarComponent = ({
+  name,
+  avatar_url,
+  className,
+  height,
+  width,
+  loading = 'eager',
+  CustomImageComponent,
+}: AvatarProps) => {
   const initials = getInitials(name)
 
   // We render the image with opacity: 0 until it's successfully loaded.
@@ -53,7 +55,7 @@ const Avatar = ({
 
   return (
     <div
-      className={cn(
+      className={twMerge(
         'dark:bg-polar-900 dark:border-polar-700 dark:text-polar-500 relative z-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-50 font-sans text-[10px] text-gray-700',
         className,
       )}
@@ -74,7 +76,7 @@ const Avatar = ({
             loading={loading}
             onLoad={onLoad}
             onError={onError}
-            className={cn(
+            className={twMerge(
               'z-1 aspect-square rounded-full object-cover',
               hasLoaded ? 'opacity-100' : 'opacity-0',
             )}
@@ -85,11 +87,9 @@ const Avatar = ({
   )
 }
 
-const AvatarWrapper = (props: ComponentProps<typeof Avatar>) => {
-  return <Avatar {...props} key={props.avatar_url} />
+export const Avatar = (props: ComponentProps<typeof AvatarComponent>) => {
+  return <AvatarComponent {...props} key={props.avatar_url} />
 }
-
-export default AvatarWrapper
 
 const getInitials = (fullName: string) => {
   const allNames = fullName

@@ -67,6 +67,7 @@ from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.models.wallet import WalletType
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.schemas import OrderCreate, OrderUpdate
 from polar.order.service import (
     ManualRetryLimitExceeded,
@@ -5239,6 +5240,28 @@ class TestCreateDraftOrder:
         assert order.subtotal_amount > 0
         assert len(order.items) >= 1
 
+    async def test_fires_order_created_webhook(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        send_webhook_mock = mocker.patch.object(order_service, "send_webhook")
+
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+        )
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+
+        send_webhook_mock.assert_awaited_once_with(
+            session, order, WebhookEventType.order_created
+        )
+
     async def test_multi_currency_falls_back_to_org_default(
         self,
         session: AsyncSession,
@@ -5821,3 +5844,94 @@ class TestFinalizeOrder:
         assert isinstance(charge_arg, stripe_lib.Charge)
         assert charge_arg.id == "ch_finalize_success"
         handle_payment_mock.assert_awaited_once()
+
+    async def test_sends_confirmation_email_once_settled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+        mocker: MockerFixture,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        # The draft flow skips the confirmation email at creation, so finalize
+        # must enqueue it once the order settles as paid.
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+
+        payment_intent = stripe_lib.PaymentIntent.construct_from(
+            {
+                "id": "pi_finalize_success",
+                "status": "succeeded",
+                "latest_charge": {"object": "charge", "id": "ch_finalize_success"},
+            },
+            None,
+        )
+        stripe_service_mock.create_payment_intent.return_value = payment_intent
+
+        def _settle(_session: AsyncSession, settled: Order, _payment: object) -> Order:
+            settled.status = OrderStatus.paid
+            return settled
+
+        mocker.patch(
+            "polar.order.service.payment_service.upsert_from_stripe_charge",
+            new=AsyncMock(return_value=MagicMock()),
+        )
+        mocker.patch.object(
+            order_service, "handle_payment", new=AsyncMock(side_effect=_settle)
+        )
+
+        result = await order_service.finalize_order(
+            session, order, payment_method_id=payment_method.id
+        )
+
+        assert result.status == OrderStatus.paid
+        assert (
+            call("order.confirmation_email", order.id)
+            in enqueue_job_mock.call_args_list
+        )
+
+    async def test_sends_confirmation_email_for_free_product(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        customer: Customer,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        # A $0 (free) draft settles via the under-minimum branch of
+        # trigger_payment (no Stripe charge), which still reaches the paid state.
+        # The confirmation email must be enqueued on that path too.
+        product = await create_product(
+            save_fixture,
+            organization=off_session_organization,
+            recurring_interval=None,
+            prices=[(None, "usd")],
+        )
+        order = await order_service.create_draft_order(
+            session,
+            off_session_organization,
+            OrderCreate(customer_id=customer.id, product_id=product.id),
+        )
+        assert order.status == OrderStatus.draft
+        assert order.due_amount == 0
+
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+
+        result = await order_service.finalize_order(
+            session, order, payment_method_id=payment_method.id
+        )
+
+        assert result.status == OrderStatus.paid
+        assert (
+            call("order.confirmation_email", order.id)
+            in enqueue_job_mock.call_args_list
+        )

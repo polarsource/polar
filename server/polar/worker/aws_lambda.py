@@ -1,0 +1,51 @@
+import asyncio
+from typing import Any
+
+import structlog
+
+from polar.logfire import configure_logfire
+from polar.logging import Logger
+from polar.logging import configure as configure_logging
+from polar.sentry import configure_sentry
+
+from ._runner import bootstrap, run_task
+from ._sqs import parse_envelope
+
+configure_sentry()
+configure_logfire("worker")
+configure_logging(logfire=True)
+
+log: Logger = structlog.get_logger()
+
+# One persistent event loop for the container's lifetime: the SQLAlchemy/asyncpg
+# pool binds connections to the loop that first uses them, so every invocation
+# must run on the same loop (a fresh asyncio.run() per record would break it).
+_loop = asyncio.new_event_loop()
+asyncio.set_event_loop(_loop)
+bootstrap()
+
+
+def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
+    batch_item_failures: list[dict[str, str]] = []
+    for record in event.get("Records", []):
+        message_id = record["messageId"]
+        try:
+            actor, args, kwargs, correlation_id = parse_envelope(record["body"])
+            receive_count = int(
+                record.get("attributes", {}).get("ApproximateReceiveCount", "1")
+            )
+            _loop.run_until_complete(
+                run_task(
+                    actor,
+                    args,
+                    kwargs,
+                    receive_count=receive_count,
+                    source_correlation_id=correlation_id,
+                )
+            )
+        except Exception:
+            log.error(
+                "polar.worker.sqs_task_failed", message_id=message_id, exc_info=True
+            )
+            batch_item_failures.append({"itemIdentifier": message_id})
+    return {"batchItemFailures": batch_item_failures}

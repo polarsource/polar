@@ -90,14 +90,15 @@ from polar.postgres import AsyncReadSession, AsyncSession
 from polar.posthog import posthog
 from polar.product.custom_price import validate_custom_price_amount
 from polar.product.guard import (
+    CustomPrice,
+    SeatPrice,
     is_custom_price,
     is_discount_applicable,
-    is_fixed_price,
-    is_seat_price,
 )
 from polar.product.price_set import (
     NoPricesForCurrencies,
     PriceSet,
+    calculate_upfront_amount,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.schemas import ProductPriceCreateList
@@ -328,11 +329,11 @@ class CheckoutService:
 
         ad_hoc_prices: dict[Product, Sequence[ProductPrice]] = {}
         if isinstance(checkout_create, CheckoutPriceCreate):
-            products, product, price, currency = await self._get_validated_price(
+            products, product, price_set, currency = await self._get_validated_price(
                 session, auth_subject, checkout_create.product_price_id
             )
         elif isinstance(checkout_create, CheckoutProductCreate):
-            products, product, price, currency = await self._get_validated_product(
+            products, product, price_set, currency = await self._get_validated_product(
                 session,
                 auth_subject,
                 checkout_create.product_id,
@@ -364,7 +365,6 @@ class CheckoutService:
 
             try:
                 price_set = PriceSet.from_prices(prices, *currencies)
-                price = price_set.get_default_price()
                 currency = price_set.currency
             except NoPricesForCurrencies as e:
                 raise PolarRequestValidationError(
@@ -377,6 +377,8 @@ class CheckoutService:
                         }
                     ]
                 ) from e
+
+        price = price_set.get_default_price()
 
         if not product.organization.can_authenticate:
             raise NotPermitted()
@@ -432,15 +434,18 @@ class CheckoutService:
         # Validate seats for seat-based pricing
         min_seats = checkout_create.min_seats
         max_seats = checkout_create.max_seats
-        self._validate_checkout_seat_constraints(price, min_seats, max_seats)
+        seat_price = price_set.get_seat_price()
+        self._validate_checkout_seat_constraints(seat_price, min_seats, max_seats)
 
-        if is_seat_price(price):
+        if seat_price is not None:
             if checkout_create.seats is None:
                 checkout_create.seats = (
-                    min_seats if min_seats is not None else price.get_minimum_seats()
+                    min_seats
+                    if min_seats is not None
+                    else seat_price.get_minimum_seats()
                 )
             self._validate_seat_limits(
-                price,
+                seat_price,
                 checkout_create.seats,
                 checkout_min_seats=min_seats,
                 checkout_max_seats=max_seats,
@@ -488,19 +493,11 @@ class CheckoutService:
                 checkout_create.external_customer_id, product.organization_id
             )
 
-        amount = checkout_create.amount
-        if is_fixed_price(price):
-            amount = price.price_amount
-        elif is_custom_price(price):
-            if amount is None:
-                amount = price.preset_amount or price.minimum_amount
-        elif is_seat_price(price):
-            # Calculate amount based on seat count
-            # seats is guaranteed to be set above when is_seat_price(price) is True
-            assert checkout_create.seats is not None
-            amount = price.calculate_amount(checkout_create.seats)
-        else:
-            amount = 0
+        amount = calculate_upfront_amount(
+            price_set.get_static_prices(),
+            custom_amount=checkout_create.amount,
+            seats=checkout_create.seats,
+        )
 
         custom_field_data = validate_custom_field_data(
             product.attached_custom_fields,
@@ -713,28 +710,32 @@ class CheckoutService:
         price = currency_prices.get_default_price()
         currency = currency_prices.currency
 
-        amount = 0
+        seat_price = currency_prices.get_seat_price()
         seats = None
-        if is_fixed_price(price):
-            amount = price.price_amount
-        elif is_custom_price(price):
+        if seat_price is not None:
+            seats = seat_price.get_minimum_seats()
+
+        custom_price = currency_prices.get_custom_price()
+        custom_amount: int | None = None
+        if custom_price is not None:
             query_amount_str = query_prefill.get("amount") if query_prefill else None
 
             # Try to parse and validate query amount
-            valid_query_amount = None
             if query_amount_str is not None and isinstance(query_amount_str, str):
                 try:
                     query_amount_int = int(float(query_amount_str))
-                    validate_custom_price_amount(price, query_amount_int, currency)
-                    valid_query_amount = query_amount_int
+                    validate_custom_price_amount(
+                        custom_price, query_amount_int, currency
+                    )
+                    custom_amount = query_amount_int
                 except (ValueError, TypeError, PolarRequestValidationError):
                     pass
 
-            amount = valid_query_amount or price.preset_amount or price.minimum_amount
-        elif is_seat_price(price):
-            # Default to minimum seats for checkout links with seat-based pricing
-            seats = price.get_minimum_seats()
-            amount = price.calculate_amount(seats)
+        amount = calculate_upfront_amount(
+            currency_prices.get_static_prices(),
+            custom_amount=custom_amount or None,
+            seats=seats,
+        )
 
         discount: Discount | None = None
         if checkout_link.discount_id is not None:
@@ -1425,7 +1426,7 @@ class CheckoutService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         product_price_id: uuid.UUID,
-    ) -> tuple[Sequence[Product], Product, ProductPrice, str]:
+    ) -> tuple[Sequence[Product], Product, PriceSet, str]:
         product_price_repository = ProductPriceRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
         price = await product_price_repository.get_readable_by_id(
@@ -1478,7 +1479,12 @@ class CheckoutService:
 
         currency = price.price_currency
 
-        return [product], product, price, currency
+        # Legacy explicit-price checkout: the caller picked one price by ID, so
+        # the set is exactly that price. Keeps the amount/seat math identical to
+        # selecting it directly (e.g. a metered price still contributes nothing).
+        price_set = PriceSet.from_prices([price], currency)
+
+        return [product], product, price_set, currency
 
     async def _get_validated_product(
         self,
@@ -1487,7 +1493,7 @@ class CheckoutService:
         product_id: uuid.UUID,
         currency: str | None,
         ip_country: str | None,
-    ) -> tuple[Sequence[Product], Product, ProductPrice, str]:
+    ) -> tuple[Sequence[Product], Product, PriceSet, str]:
         product = await product_service.get(session, auth_subject, product_id)
 
         if product is None:
@@ -1543,10 +1549,9 @@ class CheckoutService:
                 ]
             ) from e
 
-        price = currency_prices.get_default_price()
         currency = currency_prices.currency
 
-        return [product], product, price, currency
+        return [product], product, currency_prices, currency
 
     async def _get_validated_products(
         self,
@@ -1849,8 +1854,9 @@ class CheckoutService:
                         }
                     ]
                 ) from e
-            price = currency_prices.get_default_price()
-            checkout = await self._update_price(checkout, checkout_update, price)
+            checkout = await self._update_price(
+                checkout, checkout_update, currency_prices
+            )
         # Product is updated
         elif checkout_update.product_id is not None:
             product_repository = ProductRepository.from_session(session)
@@ -1904,6 +1910,8 @@ class CheckoutService:
                             }
                         ]
                     ) from e
+                # Explicit price selection: the set is exactly that price.
+                currency_prices = PriceSet.from_prices([price], checkout.currency)
             else:
                 # Product and currency are both updated, make sure the product supports it
                 if updated_currency is not None:
@@ -1933,9 +1941,9 @@ class CheckoutService:
                     )
                     checkout.currency = currency_prices.currency
 
-                price = currency_prices.get_default_price()
-
-            checkout = await self._update_price(checkout, checkout_update, price)
+            checkout = await self._update_price(
+                checkout, checkout_update, currency_prices
+            )
 
         # When changing product, remove the discount if it's not applicable
         if (
@@ -1945,31 +1953,38 @@ class CheckoutService:
         ):
             checkout.discount = None
 
-        if (
-            has_product_checkout(checkout)
-            and checkout_update.amount is not None
-            and is_custom_price(checkout.product_price)
-        ):
+        # Resolve the checkout's current price set once, then drive the amount /
+        # seat logic off it rather than the single `product_price` FK.
+        seat_price: SeatPrice | None = None
+        custom_price: CustomPrice | None = None
+        static_prices: list[ProductPrice] = []
+        if has_product_checkout(checkout):
+            price_set = PriceSet.from_prices(
+                checkout.prices[checkout.product.id], checkout.currency
+            )
+            seat_price = price_set.get_seat_price()
+            custom_price = price_set.get_custom_price()
+            static_prices = price_set.get_static_prices()
+
+        if custom_price is not None and checkout_update.amount is not None:
             validate_custom_price_amount(
-                checkout.product_price, checkout_update.amount, checkout.currency
+                custom_price, checkout_update.amount, checkout.currency
             )
             checkout.amount = checkout_update.amount
 
         # Handle seat updates for seat-based pricing
-        if (
-            has_product_checkout(checkout)
-            and checkout_update.seats is not None
-            and is_seat_price(checkout.product_price)
-        ):
+        if seat_price is not None and checkout_update.seats is not None:
             self._validate_seat_limits(
-                checkout.product_price,
+                seat_price,
                 checkout_update.seats,
                 checkout_min_seats=checkout.min_seats,
                 checkout_max_seats=checkout.max_seats,
             )
             checkout.seats = checkout_update.seats
-            checkout.amount = checkout.product_price.calculate_amount(
-                checkout_update.seats
+            checkout.amount = calculate_upfront_amount(
+                static_prices,
+                custom_amount=None,
+                seats=checkout_update.seats,
             )
         elif checkout_update.seats is not None:
             # Seats provided for non-seat-based pricing
@@ -2119,23 +2134,19 @@ class CheckoutService:
         self,
         checkout: Checkout,
         checkout_update: CheckoutUpdate | CheckoutUpdatePublic | CheckoutConfirmStripe,
-        price: ProductPrice,
+        price_set: PriceSet,
     ) -> Checkout:
-        checkout.product_price = price
-        checkout.amount = 0
+        checkout.product_price = price_set.get_default_price()
         checkout.seats = None
-        if is_fixed_price(price):
-            checkout.amount = price.price_amount
-        elif is_custom_price(price):
-            checkout.amount = price.preset_amount or price.minimum_amount
-        elif is_seat_price(price):
-            # Use minimum_seats as default if no seats are set
-            minimum_seats = price.get_minimum_seats()
-            seats = checkout.seats or checkout_update.seats or minimum_seats
-            # Validate seat limits for the new price
-            self._validate_seat_limits(price, seats)
+        seat_price = price_set.get_seat_price()
+        seats: int | None = None
+        if seat_price is not None:
+            seats = checkout_update.seats or seat_price.get_minimum_seats()
+            self._validate_seat_limits(seat_price, seats)
             checkout.seats = seats
-            checkout.amount = price.calculate_amount(seats)
+        checkout.amount = calculate_upfront_amount(
+            price_set.get_static_prices(), custom_amount=None, seats=seats
+        )
 
         return checkout
 
@@ -2321,7 +2332,7 @@ class CheckoutService:
 
     def _validate_seat_limits(
         self,
-        price: ProductPrice,
+        price: SeatPrice | None,
         seats: int,
         loc: tuple[str, ...] = ("body", "seats"),
         *,
@@ -2329,7 +2340,7 @@ class CheckoutService:
         checkout_max_seats: int | None = None,
     ) -> None:
         """Validate that a seat count is within the min/max bounds for a seat-based price."""
-        if not is_seat_price(price):
+        if price is None:
             return
 
         minimum_seats = price.get_minimum_seats()
@@ -2372,7 +2383,7 @@ class CheckoutService:
 
     def _validate_checkout_seat_constraints(
         self,
-        price: ProductPrice,
+        price: SeatPrice | None,
         min_seats: int | None,
         max_seats: int | None,
     ) -> None:
@@ -2380,7 +2391,7 @@ class CheckoutService:
         if min_seats is None and max_seats is None:
             return
 
-        if not is_seat_price(price):
+        if price is None:
             fields: list[ValidationError] = []
             if min_seats is not None:
                 fields.append(

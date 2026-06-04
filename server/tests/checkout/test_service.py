@@ -2367,6 +2367,23 @@ class TestCheckoutLinkCreate:
         assert checkout.success_url == "https://example.com/success"
         assert checkout.user_metadata == {"key": "value"}
 
+    async def test_valid_seat_based_defaults_to_minimum_seats(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_seat_based: Product,
+    ) -> None:
+        price = product_seat_based.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_seat_based]
+        )
+
+        checkout = await checkout_service.checkout_link_create(session, checkout_link)
+
+        assert checkout.seats == price.get_minimum_seats()
+        assert checkout.amount == price.calculate_amount(price.get_minimum_seats())
+
     async def test_valid_with_discount(
         self,
         save_fixture: SaveFixture,

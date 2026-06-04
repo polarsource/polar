@@ -107,25 +107,35 @@ If you want to work with payments and subscriptions, you'll need to set up a Str
 
 1. **Create a Stripe account** at [https://dashboard.stripe.com/register](https://dashboard.stripe.com/register)
 
-2. **Enable billing** in your Stripe account by visiting [Stripe Billing Starter Guide](https://dashboard.stripe.com/billing/starter-guide)
-
-3. **Copy your API keys** from the [Stripe API Keys page](https://dashboard.stripe.com/test/apikeys) and add them to your `server/.env` file:
+2. **Copy your API keys** from the [Stripe API Keys page](https://dashboard.stripe.com/test/apikeys) and add them to your `server/.env` file:
 
     ```
-    STRIPE_SECRET_KEY=sk_test_...
-    STRIPE_PUBLISHABLE_KEY=pk_test_...
+    POLAR_STRIPE_SECRET_KEY=sk_test_...
+    POLAR_STRIPE_PUBLISHABLE_KEY=pk_test_...
     ```
 
-4. **Create a webhook endpoint** to handle Stripe events:
+3. **Enable tax calculation** by visiting [https://dashboard.stripe.com/test/tax](https://dashboard.stripe.com/test/tax)
+
+4. **Create webhook endpoints** to handle Stripe events:
     - Go to [Stripe Webhooks](https://dashboard.stripe.com/test/webhooks)
-    - Click "Add endpoint"
+    - Click "Add destination"
+    - Select "Your account"
+    - Set API version to the latest (not the preview)
+    - Set enabled events to only the one listed in `DIRECT_IMPLEMENTED_WEBHOOKS` (see `polar/integrations/stripe/endpoints.py`)
+    - Click continue, Select Webhook endpoint
     - Set the endpoint URL to: `https://your-domain.ngrok-free.app/v1/integrations/stripe/webhook`
-    - Set enabled events to: `*` (all events)
-    - Set API version to: `2025-02-24.acacia`
     - Copy the webhook signing secret and add it to your `server/.env` file:
         ```
-        STRIPE_WEBHOOK_SECRET=whsec_...
+        POLAR_STRIPE_WEBHOOK_SECRET=whsec_...
         ```
+    - Restart the same operation with:
+        - events listed in `CONNECT_IMPLEMENTED_WEBHOOKS` (see `polar/integrations/stripe/endpoints.py`)
+        - Set the endpoint URL to: `https://your-domain.ngrok-free.app/v1/integrations/stripe/webhook-connect`
+        - Copy the webhook signing secret and add it to your `server/.env` file:
+            ```
+            POLAR_STRIPE_CONNECT_WEBHOOK_SECRET=whsec_...
+            ```
+
 
 ### Setup backend
 

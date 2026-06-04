@@ -75,12 +75,12 @@ Finally, create the `products` view in the `resources/views` directory:
 @foreach ($products as $product)
     <div>
         <h3>{{ $product['name'] }}</h3>
-        <a href="/checkout?priceId={{ $product['prices'][0]['id'] }}">Buy</a>
+        <a href="/checkout?productId={{ $product['id'] }}">Buy</a>
     </div>
 @endforeach
 ```
 
-Notice that we create a link to `/checkout` with a query parameter `priceId`. This is the ID of the price that the user will be charged for when they click the "Buy" button. We will configure this route in the next section.
+Notice that we create a link to `/checkout` with a query parameter `productId`. This is the ID of the product that the user will be purchasing. We will configure this route in the next section.
 
 That's it for the products page. You can now display the products to your users, and they will be able to buy them. Let's now create the checkout endpoint.
 
@@ -112,7 +112,7 @@ class CheckoutController extends Controller
 {
     public function handle(Request $request)
     {
-        $productPriceId = $request->query('priceId', '');
+        $productId = $request->query('productId', '');
         // Polar will replace {CHECKOUT_ID} with the actual checkout ID upon a confirmed checkout
         $confirmationUrl = $request->getSchemeAndHttpHost() . '/confirmation?checkout_id={CHECKOUT_ID}';
 
@@ -122,7 +122,7 @@ class CheckoutController extends Controller
             'Authorization' => 'Bearer ' . env('POLAR_API_KEY'),
             'Content-Type' => 'application/json',
         ])->post('https://sandbox-api.polar.sh/v1/checkouts/custom/', [
-            'product_price_id' => $productPriceId,
+            'products' => [$productId],
             'success_url' => $confirmationUrl,
             'payment_processor' => 'stripe',
         ]);
@@ -136,7 +136,7 @@ class CheckoutController extends Controller
 }
 ```
 
-We can now easily create a checkout session & redirect there by creating a link to `/checkout?priceId={priceId}`. Just like we did when displaying the products above.
+We can now easily create a checkout session & redirect there by creating a link to `/checkout?productId={productId}`. Just like we did when displaying the products above.
 
 Upon Checkout success, the user will be redirected to the confirmation page.
 

@@ -82,6 +82,7 @@
   "devDependencies": {
     "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
+    "@stylexjs/babel-plugin": "^0.18.2",
     "@stripe/react-stripe-js": "^5.6.1",
     "@stripe/stripe-js": "^8.11.0",
     "@testing-library/jest-dom": "^6.9.1",

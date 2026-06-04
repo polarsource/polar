@@ -98,6 +98,13 @@ variable "domains" {
     redirect             = optional(string)
     redirect_status_code = optional(number)
     git_branch           = optional(string)
+    dns = optional(object({
+      zone_id = string
+      type    = optional(string, "CNAME")
+      content = string
+      proxied = optional(bool, false)
+      ttl     = optional(number, 1)
+    }))
   }))
   default = []
 }

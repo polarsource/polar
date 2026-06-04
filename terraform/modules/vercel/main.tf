@@ -116,3 +116,17 @@ resource "vercel_project_domain" "this" {
   redirect_status_code = each.value.redirect_status_code
   git_branch           = each.value.git_branch
 }
+
+# Cloudflare record pointing the hostname at Vercel, for domains that opt in
+# via `dns`. Apex domains use an A record; subdomains a CNAME to the project's
+# Vercel DNS target.
+resource "cloudflare_dns_record" "this" {
+  for_each = { for domain in var.domains : domain.name => domain if domain.dns != null }
+
+  zone_id = each.value.dns.zone_id
+  name    = each.value.name
+  type    = each.value.dns.type
+  content = each.value.dns.content
+  proxied = each.value.dns.proxied
+  ttl     = each.value.dns.ttl
+}

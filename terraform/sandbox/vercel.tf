@@ -12,6 +12,11 @@ import {
   id = "prj_HjPbSesm9rpLRPaK6bLOwVqQzQBD/sandbox.polar.sh"
 }
 
+import {
+  to = module.vercel.cloudflare_dns_record.this["sandbox.polar.sh"]
+  id = "22bcd1b07ec25452aab472486bc8df94/9e0564c9263d6d626b96bf6bed6e216f"
+}
+
 module "vercel" {
   source = "../modules/vercel"
 
@@ -19,7 +24,13 @@ module "vercel" {
   git_repo = "polarsource/polar"
 
   domains = [
-    { name = "sandbox.polar.sh" },
+    {
+      name = "sandbox.polar.sh"
+      dns = {
+        zone_id = "22bcd1b07ec25452aab472486bc8df94"
+        content = "50b537f2e43aa1b6.vercel-dns-016.com"
+      }
+    },
   ]
 
   config = {

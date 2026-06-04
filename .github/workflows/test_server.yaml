@@ -26,7 +26,7 @@ jobs:
       tinybird: ${{ steps.filter.outputs.tinybird }}
       server_files: ${{ steps.filter.outputs.server_files }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -50,7 +50,7 @@ jobs:
     timeout-minutes: 15
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
 
       # - uses: actions/cache@v4
       #   with:
@@ -90,7 +90,7 @@ jobs:
     timeout-minutes: 10
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
 
       - uses: pnpm/action-setup@v6.0.8
         with:
@@ -131,7 +131,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
 
       - name: 🐦 Install Tinybird CLI
         run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
@@ -291,7 +291,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
 
       - name: 💿 MinIO Setup
         working-directory: ./server/.minio

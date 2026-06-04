@@ -39,7 +39,7 @@ jobs:
       BRANCH: ${{ (startsWith(github.event_name, 'pull_request') && github.event.pull_request.head.ref) || github.ref_name }}
       SHA: ${{ (startsWith(github.event_name, 'pull_request') && github.event.pull_request.head.sha) || github.sha }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
 
       - name: Determine action
         id: action

@@ -12,7 +12,13 @@ module "vercel" {
   git_repo = "polarsource/polar"
 
   domains = [
-    { name = "test.polar.sh" },
+    {
+      name = "test.polar.sh"
+      dns = {
+        zone_id = "22bcd1b07ec25452aab472486bc8df94"
+        content = "cname.vercel-dns.com"
+      }
+    },
   ]
 
   config = {

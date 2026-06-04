@@ -40,6 +40,28 @@ import {
   id = "prj_9YDPCLXAX2w3RJqbXV7F1c3cZi9F/www.polar.new"
 }
 
+# --- Cloudflare DNS records (adopt existing live records) ---
+
+import {
+  to = module.vercel.cloudflare_dns_record.this["polar.sh"]
+  id = "22bcd1b07ec25452aab472486bc8df94/8b0ceddb75258af3fa49fd7846655535"
+}
+
+import {
+  to = module.vercel.cloudflare_dns_record.this["www.polar.sh"]
+  id = "22bcd1b07ec25452aab472486bc8df94/1ab226a5a0bb731e56a95fb994eeb51f"
+}
+
+import {
+  to = module.vercel.cloudflare_dns_record.this["dashboard.polar.sh"]
+  id = "22bcd1b07ec25452aab472486bc8df94/ff92f83787a1c170bd97c43107ca233f"
+}
+
+import {
+  to = module.vercel.cloudflare_dns_record.this["blog.polar.sh"]
+  id = "22bcd1b07ec25452aab472486bc8df94/68e8b181600e850ab36dfcb9ebf414b0"
+}
+
 module "vercel" {
   source = "../modules/vercel"
 
@@ -52,10 +74,42 @@ module "vercel" {
   }
 
   domains = [
-    { name = "polar.sh" },
-    { name = "www.polar.sh", redirect = "polar.sh", redirect_status_code = 308 },
-    { name = "dashboard.polar.sh" },
-    { name = "blog.polar.sh" },
+    {
+      name = "polar.sh"
+      dns = {
+        zone_id = "22bcd1b07ec25452aab472486bc8df94"
+        type    = "A"
+        content = "216.150.1.1"
+        ttl     = 600
+      }
+    },
+    {
+      name                 = "www.polar.sh"
+      redirect             = "polar.sh"
+      redirect_status_code = 308
+      dns = {
+        zone_id = "22bcd1b07ec25452aab472486bc8df94"
+        content = "582a8a8790ca4ebf.vercel-dns-016.com"
+        ttl     = 600
+      }
+    },
+    {
+      name = "dashboard.polar.sh"
+      dns = {
+        zone_id = "22bcd1b07ec25452aab472486bc8df94"
+        content = "582a8a8790ca4ebf.vercel-dns-016.com"
+        ttl     = 600
+      }
+    },
+    {
+      name = "blog.polar.sh"
+      dns = {
+        zone_id = "22bcd1b07ec25452aab472486bc8df94"
+        content = "582a8a8790ca4ebf.vercel-dns-016.com"
+        ttl     = 600
+      }
+    },
+    # polar.new and www.polar.new live in a separate zone and are managed separately.
     { name = "polar.new" },
     { name = "www.polar.new", redirect = "polar.new", redirect_status_code = 308 },
   ]

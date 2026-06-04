@@ -406,20 +406,12 @@ Use these instead of hand-rolled tailwind components:
 
 ```tsx
 import { Text } from '@polar-sh/orbit' // typography (variant-driven)
-import { Stack } from '@polar-sh/orbit' // shorthand for flex stacks (when Box is overkill)
-import { Card, CardHeader, CardContent, CardFooter } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
-import {
-  Status,
-  Avatar,
-  Input,
-  SegmentedControl,
-  DataTable,
-} from '@polar-sh/orbit'
+import { Avatar, SegmentedControl } from '@polar-sh/orbit'
 ```
 
 Prefer `Box` when you need full control; prefer the named primitive when one exists for
-your use case (Card for card chrome, Text for any text node, Button for actions).
+your use case (Text for any text node, Button for actions).
 
 ## Legacy Tailwind (deprecated)
 
@@ -514,22 +506,13 @@ const MyForm = () => {
 ```tsx
 // Orbit (preferred — design-system primitives)
 import { Box } from '@polar-sh/orbit/Box'
-import {
-  Text,
-  Button,
-  Stack,
-  Card,
-  CardHeader,
-  CardContent,
-  CardFooter,
-  Avatar,
-  Input,
-  Status,
-  SegmentedControl,
-  DataTable,
-} from '@polar-sh/orbit'
+import { Text, Button, Avatar, SegmentedControl } from '@polar-sh/orbit'
 
 // Legacy @polar-sh/ui (use only when an Orbit equivalent doesn't exist)
+import { Card } from '@polar-sh/ui/components/atoms/Card'
+import { Input } from '@polar-sh/ui/components/atoms/Input'
+import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import {
   Tabs,
   TabsList,

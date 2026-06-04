@@ -87,7 +87,7 @@ jobs:
         ports:
           - 7181:7181
         options: >-
-          --health-cmd "curl -sf http://127.0.0.1:7181/tokens || exit 1" --health-interval 10s --health-timeout 5s --health-retries 5
+          --health-cmd "curl -sf http://127.0.0.1:7181/tokens || exit 1" --health-interval 2s --health-timeout 5s --health-retries 10 --health-start-period 40s
     steps:
       - uses: actions/checkout@v6
       - name: "\U0001F426 Install Tinybird CLI"
@@ -199,13 +199,13 @@ jobs:
           POSTGRES_DB: polar_test
           POSTGRES_PORT: 5432
         options: >-
-          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+          --health-cmd pg_isready --health-interval 1s --health-timeout 5s --health-retries 5 --health-start-period 10s
         ports:
           - 5432:5432
       redis:
         image: redis:7.4-alpine
         options: >-
-          --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+          --health-cmd "redis-cli ping" --health-interval 1s --health-timeout 5s --health-retries 5 --health-start-period 10s
         ports:
           - 6379:6379
       minio:
@@ -217,14 +217,14 @@ jobs:
           MINIO_ROOT_USER: polar
           MINIO_ROOT_PASSWORD: polarpolar
         options: >-
-          --health-cmd "curl -I http://127.0.0.1:9000/minio/health/live" --health-interval 10s --health-timeout 5s --health-retries 5
+          --health-cmd "curl -I http://127.0.0.1:9000/minio/health/live" --health-interval 1s --health-timeout 5s --health-retries 5 --health-start-period 20s
       tinybird:
         image: tinybirdco/tinybird-local:latest
         ports:
           - 7181:7181
           - 7182:7182
         options: >-
-          --health-cmd "curl -s http://127.0.0.1:7181/tokens || exit 1" --health-interval 10s --health-timeout 5s --health-retries 5
+          --health-cmd "curl -s http://127.0.0.1:7181/tokens || exit 1" --health-interval 2s --health-timeout 5s --health-retries 10 --health-start-period 40s
     steps:
       - uses: actions/checkout@v6
       - name: "\U0001F4BF MinIO Setup"

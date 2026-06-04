@@ -97,7 +97,7 @@ export const QuestionFlow = ({
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
-        api: '/feedback/question',
+        api: '/api/feedback/question',
         credentials: 'include',
         body: { conversationId, organizationId },
       }),

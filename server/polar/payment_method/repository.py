@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import update
+from sqlalchemy import Select, update
 from sqlalchemy.orm import joinedload
 
 from polar.enums import PaymentProcessor
@@ -56,6 +56,11 @@ class PaymentMethodRepository(
             .options(*options)
         )
         return await self.get_one_or_none(statement)
+
+    def get_by_customer_statement(
+        self, customer_id: UUID
+    ) -> Select[tuple[PaymentMethod]]:
+        return self.get_base_statement().where(PaymentMethod.customer_id == customer_id)
 
     async def list_by_customer(
         self,

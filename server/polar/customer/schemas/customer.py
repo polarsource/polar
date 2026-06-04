@@ -4,7 +4,15 @@ from typing import Annotated, Literal
 
 from annotated_types import MaxLen
 from fastapi import Path
-from pydantic import UUID4, Discriminator, Field, Tag, computed_field, model_validator
+from pydantic import (
+    UUID4,
+    Discriminator,
+    Field,
+    Tag,
+    TypeAdapter,
+    computed_field,
+    model_validator,
+)
 from pydantic.aliases import AliasChoices
 
 from polar.config import settings
@@ -21,6 +29,7 @@ from polar.kit.schemas import (
     ClassName,
     EmptyStrToNoneValidator,
     IDSchema,
+    MergeJSONSchema,
     Schema,
     SetSchemaReference,
     TimestampedSchema,
@@ -28,6 +37,7 @@ from polar.kit.schemas import (
 from polar.member import MemberOwnerCreate
 from polar.models.customer import CustomerType
 from polar.organization.schemas import OrganizationID
+from polar.payment_method.schemas import PaymentMethodCard, PaymentMethodGeneric
 from polar.tax.tax_id import TaxID
 
 CustomerID = Annotated[UUID4, Path(description="The customer ID.")]
@@ -216,6 +226,13 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         description="The ID of the organization owning the customer.",
         examples=[ORGANIZATION_ID_EXAMPLE],
     )
+    default_payment_method_id: UUID4 | None = Field(
+        default=None,
+        description=(
+            "The ID of the customer's default payment method, if any. "
+            "Use the payment methods endpoint to retrieve its details."
+        ),
+    )
 
     deleted_at: datetime | None = Field(
         description="Timestamp for when the customer was soft deleted."
@@ -256,3 +273,27 @@ CustomerResponse = Annotated[
     SetSchemaReference("Customer"),
     ClassName("Customer"),
 ]
+
+
+_is_default_description = (
+    "Whether this payment method is the customer's default payment method."
+)
+
+
+class CustomerPaymentMethodCard(PaymentMethodCard):
+    is_default: bool = Field(description=_is_default_description, examples=[True])
+
+
+class CustomerPaymentMethodGeneric(PaymentMethodGeneric):
+    is_default: bool = Field(description=_is_default_description, examples=[False])
+
+
+CustomerPaymentMethod = Annotated[
+    CustomerPaymentMethodCard | CustomerPaymentMethodGeneric,
+    SetSchemaReference("CustomerPaymentMethodWithDefault"),
+    MergeJSONSchema({"title": "CustomerPaymentMethodWithDefault"}),
+    ClassName("CustomerPaymentMethodWithDefault"),
+]
+CustomerPaymentMethodTypeAdapter: TypeAdapter[CustomerPaymentMethod] = TypeAdapter(
+    CustomerPaymentMethod
+)

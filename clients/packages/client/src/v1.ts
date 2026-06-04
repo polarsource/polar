@@ -3073,6 +3073,50 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customers/{id}/payment-methods': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Customer Payment Methods
+     * @description Get saved payment methods of a customer.
+     *
+     *     **Scopes**: `customers:read` `customers:write`
+     */
+    get: operations['customers:list_payment_methods']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customers/external/{external_id}/payment-methods': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Customer Payment Methods by External ID
+     * @description Get saved payment methods of a customer by external ID.
+     *
+     *     **Scopes**: `customers:read` `customers:write`
+     */
+    get: operations['customers:list_payment_methods_external']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/members/': {
     parameters: {
       query?: never
@@ -14731,6 +14775,11 @@ export interface components {
        */
       organization_id: string
       /**
+       * Default Payment Method Id
+       * @description The ID of the customer's default payment method, if any. Use the payment methods endpoint to retrieve its details.
+       */
+      default_payment_method_id?: string | null
+      /**
        * Deleted At
        * @description Timestamp for when the customer was soft deleted.
        */
@@ -15433,6 +15482,44 @@ export interface components {
     CustomerPaymentMethod:
       | components['schemas']['PaymentMethodCard']
       | components['schemas']['PaymentMethodGeneric']
+    /** CustomerPaymentMethodCard */
+    CustomerPaymentMethodCard: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      processor: components['schemas']['PaymentProcessor']
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+      /**
+       * Type
+       * @constant
+       */
+      type: 'card'
+      method_metadata: components['schemas']['PaymentMethodCardMetadata']
+      /**
+       * Is Default
+       * @description Whether this payment method is the customer's default payment method.
+       * @example true
+       */
+      is_default: boolean
+    }
     /** CustomerPaymentMethodConfirm */
     CustomerPaymentMethodConfirm: {
       /** Setup Intent Id */
@@ -15472,6 +15559,43 @@ export interface components {
       /** CustomerPaymentMethod */
       payment_method: components['schemas']['CustomerPaymentMethod']
     }
+    /** CustomerPaymentMethodGeneric */
+    CustomerPaymentMethodGeneric: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      processor: components['schemas']['PaymentProcessor']
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+      /** Type */
+      type: string
+      /**
+       * Is Default
+       * @description Whether this payment method is the customer's default payment method.
+       * @example false
+       */
+      is_default: boolean
+    }
+    CustomerPaymentMethodWithDefault:
+      | components['schemas']['CustomerPaymentMethodCard']
+      | components['schemas']['CustomerPaymentMethodGeneric']
     /** CustomerPortalCustomer */
     CustomerPortalCustomer: {
       /**
@@ -16203,6 +16327,11 @@ export interface components {
        */
       organization_id: string
       /**
+       * Default Payment Method Id
+       * @description The ID of the customer's default payment method, if any. Use the payment methods endpoint to retrieve its details.
+       */
+      default_payment_method_id?: string | null
+      /**
        * Deleted At
        * @description Timestamp for when the customer was soft deleted.
        */
@@ -16514,6 +16643,11 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
+      /**
+       * Default Payment Method Id
+       * @description The ID of the customer's default payment method, if any. Use the payment methods endpoint to retrieve its details.
+       */
+      default_payment_method_id?: string | null
       /**
        * Deleted At
        * @description Timestamp for when the customer was soft deleted.
@@ -16977,6 +17111,11 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
+      /**
+       * Default Payment Method Id
+       * @description The ID of the customer's default payment method, if any. Use the payment methods endpoint to retrieve its details.
+       */
+      default_payment_method_id?: string | null
       /**
        * Deleted At
        * @description Timestamp for when the customer was soft deleted.
@@ -19698,6 +19837,11 @@ export interface components {
        */
       organization_id: string
       /**
+       * Default Payment Method Id
+       * @description The ID of the customer's default payment method, if any. Use the payment methods endpoint to retrieve its details.
+       */
+      default_payment_method_id?: string | null
+      /**
        * Deleted At
        * @description Timestamp for when the customer was soft deleted.
        */
@@ -19982,6 +20126,12 @@ export interface components {
     ListResource_CustomerOrder_: {
       /** Items */
       items: components['schemas']['CustomerOrder'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[CustomerPaymentMethodWithDefault] */
+    ListResource_CustomerPaymentMethodWithDefault_: {
+      /** Items */
+      items: components['schemas']['CustomerPaymentMethodWithDefault'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[CustomerPaymentMethod] */
@@ -22054,6 +22204,11 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
+      /**
+       * Default Payment Method Id
+       * @description The ID of the customer's default payment method, if any. Use the payment methods endpoint to retrieve its details.
+       */
+      default_payment_method_id?: string | null
       /**
        * Deleted At
        * @description Timestamp for when the customer was soft deleted.
@@ -28939,6 +29094,11 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
+      /**
+       * Default Payment Method Id
+       * @description The ID of the customer's default payment method, if any. Use the payment methods endpoint to retrieve its details.
+       */
+      default_payment_method_id?: string | null
       /**
        * Deleted At
        * @description Timestamp for when the customer was soft deleted.
@@ -40597,6 +40757,98 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['CustomerState']
+        }
+      }
+      /** @description Customer not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:list_payment_methods': {
+    parameters: {
+      query?: {
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path: {
+        /** @description The customer ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_CustomerPaymentMethodWithDefault_']
+        }
+      }
+      /** @description Customer not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:list_payment_methods_external': {
+    parameters: {
+      query?: {
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path: {
+        /** @description The customer external ID. */
+        external_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_CustomerPaymentMethodWithDefault_']
         }
       }
       /** @description Customer not found. */

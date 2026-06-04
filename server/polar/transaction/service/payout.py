@@ -65,7 +65,10 @@ class PayoutTransactionService(BaseTransactionService):
         return await repository.create(transaction, flush=True)
 
     async def reverse(
-        self, session: AsyncSession, transaction: Transaction
+        self,
+        session: AsyncSession,
+        transaction: Transaction,
+        payout: Payout,
     ) -> Transaction:
         reversed_transaction = Transaction(
             id=generate_uuid(),
@@ -83,7 +86,7 @@ class PayoutTransactionService(BaseTransactionService):
             paid_transactions=[],
             incurred_transactions=[],
             account_incurred_transactions=[],
-            payout=transaction.payout,
+            payout=payout,
         )
 
         repository = PayoutReversalTransactionRepository.from_session(session)

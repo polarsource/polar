@@ -1537,9 +1537,12 @@ class TestComposedStaticPriceDiscountAllocation:
         )
 
         with freezegun.freeze_time(UPDATE_TIME):
-            await subscription_service.update_product(
-                session, subscription, product_id=new_product.id
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session, ctx, subscription, product_id=new_product.id
+                )
 
             repository = BillingEntryRepository.from_session(session)
             entries = await repository.get_pending_by_subscription(subscription.id)
@@ -1603,9 +1606,12 @@ class TestComposedStaticPriceDiscountAllocation:
         )
 
         with freezegun.freeze_time(UPDATE_TIME):
-            await subscription_service.update_product(
-                session, subscription, product_id=new_product.id
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session, ctx, subscription, product_id=new_product.id
+                )
 
             repository = BillingEntryRepository.from_session(session)
             entries = await repository.get_pending_by_subscription(subscription.id)
@@ -1671,12 +1677,16 @@ class TestComposedStaticPriceDiscountAllocation:
         )
 
         with freezegun.freeze_time(UPDATE_TIME):
-            updated = await subscription_service.update_seats(
-                session,
-                subscription,
-                seats=4,
-                proration_behavior=SubscriptionProrationBehavior.prorate,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated = await subscription_service.update_seats(
+                    session,
+                    ctx,
+                    subscription,
+                    seats=4,
+                    proration_behavior=SubscriptionProrationBehavior.prorate,
+                )
             await session.flush()
 
             repository = BillingEntryRepository.from_session(session)
@@ -1732,12 +1742,16 @@ class TestComposedStaticPriceDiscountAllocation:
         )
 
         with freezegun.freeze_time(UPDATE_TIME):
-            updated = await subscription_service.update_seats(
-                session,
-                subscription,
-                seats=4,
-                proration_behavior=SubscriptionProrationBehavior.prorate,
-            )
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated = await subscription_service.update_seats(
+                    session,
+                    ctx,
+                    subscription,
+                    seats=4,
+                    proration_behavior=SubscriptionProrationBehavior.prorate,
+                )
             await session.flush()
 
             repository = BillingEntryRepository.from_session(session)

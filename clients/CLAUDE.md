@@ -606,7 +606,6 @@ Translation files live in `packages/i18n/src/locales/`. When adding new translat
 - Box prop types: `packages/orbit/src/utils/types.ts`
 - Design tokens (spacing, color, radius, shadow, breakpoints): `packages/orbit/src/tokens/tokens.stylex.ts`
 - Orbit barrel exports: `packages/orbit/src/index.ts`
-- Legacy Button: `packages/ui/src/components/atoms/Button.tsx`
 - Legacy Card: `packages/ui/src/components/atoms/Card.tsx`
 - Global styles: `apps/web/src/styles/globals.css`
 - Dashboard layout: `apps/web/src/app/(main)/dashboard/`

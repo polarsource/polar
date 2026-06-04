@@ -1,5 +1,5 @@
 import { getCurrencyDecimalFactor } from '@polar-sh/currency'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import Big from 'big.js'
 import React, {
   ComponentProps,

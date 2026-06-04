@@ -4,7 +4,7 @@ import { useCustomerEmailUpdateRequest } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import type { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 

@@ -9,7 +9,7 @@ import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import CountryStatePicker, {
   COUNTRIES_WITH_FIXED_STATE_OPTIONS,
 } from '@polar-sh/ui/components/atoms/CountryStatePicker'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   Form,

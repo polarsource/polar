@@ -6,7 +6,7 @@ import { useMonthDigitTypeahead } from '@/hooks/useMonthDigitTypeahead'
 import { enums, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import {
   Select,
   SelectContent,

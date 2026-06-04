@@ -5,7 +5,7 @@ import MeterFilterReadOnlyConfiguration from '@/components/Meter/MeterFilterRead
 import MeterFormAggregation from '@/components/Meter/MeterFormAggregation'
 import MeterFormUnit from '@/components/Meter/MeterFormUnit'
 import { schemas } from '@polar-sh/client'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import {
   FormControl,
   FormDescription,

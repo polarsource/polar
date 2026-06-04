@@ -4,7 +4,7 @@ import { TrialConfigurationForm } from '@/components/TrialConfiguration/TrialCon
 import { isLegacyRecurringPrice, isMeteredPrice } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import {
   Select,
   SelectContent,

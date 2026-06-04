@@ -29876,20 +29876,6 @@ export interface components {
        */
       trial_end: string | 'now'
     }
-    /** SubscriptionUpdatedBillingPeriodMetadata */
-    SubscriptionUpdatedBillingPeriodMetadata: {
-      /** Subscription Id */
-      subscription_id: string
-      /** Billing Period End */
-      billing_period_end: string
-    }
-    /** SubscriptionUpdatedDiscountMetadata */
-    SubscriptionUpdatedDiscountMetadata: {
-      /** Subscription Id */
-      subscription_id: string
-      /** Discount Id */
-      discount_id: string | null
-    }
     /**
      * SubscriptionUpdatedEvent
      * @description An event created by Polar when a subscription is updated.
@@ -29963,36 +29949,23 @@ export interface components {
        * @enum {string}
        */
       name: 'subscription.updated'
-      /** Metadata */
-      metadata:
-        | components['schemas']['SubscriptionUpdatedProductMetadata']
-        | components['schemas']['SubscriptionUpdatedDiscountMetadata']
-        | components['schemas']['SubscriptionUpdatedTrialMetadata']
-        | components['schemas']['SubscriptionUpdatedSeatsMetadata']
-        | components['schemas']['SubscriptionUpdatedBillingPeriodMetadata']
+      metadata: components['schemas']['SubscriptionUpdatedMetadata']
     }
-    /** SubscriptionUpdatedProductMetadata */
-    SubscriptionUpdatedProductMetadata: {
-      /** Subscription Id */
-      subscription_id: string
+    /** SubscriptionUpdatedMetadata */
+    SubscriptionUpdatedMetadata: {
       /** Product Id */
-      product_id: string
-      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
-    }
-    /** SubscriptionUpdatedSeatsMetadata */
-    SubscriptionUpdatedSeatsMetadata: {
-      /** Subscription Id */
-      subscription_id: string
-      /** Seats */
-      seats: number
-      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
-    }
-    /** SubscriptionUpdatedTrialMetadata */
-    SubscriptionUpdatedTrialMetadata: {
-      /** Subscription Id */
-      subscription_id: string
+      product_id?: string
+      proration_behavior?: components['schemas']['SubscriptionProrationBehavior']
+      /** Discount Id */
+      discount_id?: string | null
       /** Trial End */
-      trial_end: string
+      trial_end?: string
+      /** Seats */
+      seats?: number
+      /** Billing Period End */
+      billing_period_end?: string
+      /** Subscription Id */
+      subscription_id: string
     }
     /** SubscriptionUser */
     SubscriptionUser: {

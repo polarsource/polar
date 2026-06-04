@@ -267,7 +267,7 @@ class SubscriptionUpdateContext:
 
         match self._billing_effect:
             case "cycle":
-                await self.service.cycle(self.session, self.subscription)
+                await self.service.cycle(self.session, self, self.subscription)
             case "invoice":
                 await self.service._create_subscription_update_order(
                     self.session, self.subscription
@@ -733,6 +733,7 @@ class SubscriptionService:
     async def cycle(
         self,
         session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         update_cycle_dates: bool = True,
     ) -> Subscription:
@@ -866,17 +867,11 @@ class SubscriptionService:
             billing_reason = OrderBillingReasonInternal.subscription_cycle_after_trial
         else:
             billing_reason = OrderBillingReasonInternal.subscription_cycle
+
         enqueue_job(
             "order.create_subscription_order",
             subscription.id,
             billing_reason,
-        )
-
-        await self._after_subscription_updated(
-            session,
-            subscription,
-            previous_status=previous_status,
-            previous_is_canceled=previous_canceled,
         )
 
         return subscription

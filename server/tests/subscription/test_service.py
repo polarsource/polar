@@ -3,7 +3,7 @@ from collections import namedtuple
 from collections.abc import Generator
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock, call
+from unittest.mock import ANY, AsyncMock, MagicMock, call
 
 import freezegun
 import pytest
@@ -131,6 +131,32 @@ def assert_hooks_called_once(subscription_hooks: Hooks, called: set[str]) -> Non
 def reset_hooks(subscription_hooks: Hooks) -> None:
     for hook in HookNames:
         getattr(subscription_hooks, hook).reset_mock()
+
+
+async def assert_order_exists(
+    session: AsyncSession, subscription: Subscription
+) -> None:
+    order_repository = OrderRepository.from_session(session)
+    orders = await order_repository.get_all_by_subscription(subscription.id)
+    assert len(orders) > 0, (
+        "Expected at least one order to be created for the subscription"
+    )
+
+
+def assert_webhook_sent_once(
+    send_mock: MagicMock,
+    event_type: WebhookEventType,
+    organization: Organization,
+    subscription: Subscription,
+) -> None:
+    send_mock.assert_any_call(ANY, organization, event_type, subscription)
+    event_occurences = 0
+    for mock_calls in send_mock.call_args_list:
+        if mock_calls.args[1] == organization and mock_calls.args[2] == event_type:
+            event_occurences += 1
+    assert event_occurences == 1, (
+        f"Expected webhook {event_type} to be sent once, but was sent {event_occurences} times"
+    )
 
 
 def build_stripe_payment_intent(
@@ -921,16 +947,21 @@ class TestCycle:
         )
 
         with pytest.raises(InactiveSubscription):
-            await subscription_service.cycle(session, subscription)
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.cycle(session, ctx, subscription)
 
     async def test_fixed_price(
         self,
         session: AsyncSession,
         enqueue_job_mock: MagicMock,
         enqueue_email_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
@@ -941,7 +972,12 @@ class TestCycle:
 
         previous_current_period_end = subscription.current_period_end
 
-        updated_subscription = await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         assert updated_subscription.ended_at is None
         assert updated_subscription.current_period_start == previous_current_period_end
@@ -993,6 +1029,13 @@ class TestCycle:
             OrderBillingReasonInternal.subscription_cycle,
         )
 
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated_subscription,
+        )
+
         enqueue_email_mock.assert_not_called()
 
     async def test_free_price(
@@ -1009,7 +1052,10 @@ class TestCycle:
             scheduler_locked_at=utc_now(),
         )
 
-        await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.cycle(session, ctx, subscription)
 
         price = product_recurring_free_price.prices[0]
         assert is_free_price(price)
@@ -1047,19 +1093,28 @@ class TestCycle:
             scheduler_locked_at=utc_now(),
         )
 
-        second_month_subscription = await subscription_service.cycle(
-            session, subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            second_month_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
         assert second_month_subscription.discount == discount
 
-        third_month_subscription = await subscription_service.cycle(
-            session, second_month_subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, second_month_subscription, subscription_service
+        ) as ctx:
+            third_month_subscription = await subscription_service.cycle(
+                session, ctx, second_month_subscription
+            )
         assert third_month_subscription.discount == discount
 
-        fourth_month_subscription = await subscription_service.cycle(
-            session, third_month_subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, third_month_subscription, subscription_service
+        ) as ctx:
+            fourth_month_subscription = await subscription_service.cycle(
+                session, ctx, third_month_subscription
+            )
         assert fourth_month_subscription.discount is None
 
         billing_entry_repository = BillingEntryRepository.from_session(session)
@@ -1099,18 +1154,24 @@ class TestCycle:
         assert first_period_end is not None
         assert first_period_end == first_period_start.replace(month=3)
 
-        second_cycle_subscription = await subscription_service.cycle(
-            session, subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            second_cycle_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
         second_period_start = second_cycle_subscription.current_period_start
         second_period_end = second_cycle_subscription.current_period_end
         assert second_period_start == first_period_end
         assert second_period_end is not None
         assert second_period_end == first_period_end.replace(month=5)
 
-        third_cycle_subscription = await subscription_service.cycle(
-            session, second_cycle_subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, second_cycle_subscription, subscription_service
+        ) as ctx:
+            third_cycle_subscription = await subscription_service.cycle(
+                session, ctx, second_cycle_subscription
+            )
         assert third_cycle_subscription.current_period_start == second_period_end
         assert third_cycle_subscription.current_period_end is not None
         assert third_cycle_subscription.current_period_end == second_period_end.replace(
@@ -1155,9 +1216,12 @@ class TestCycle:
         assert subscription.current_period_start.month == 1
         assert subscription.current_period_end.month == 2
 
-        second_cycle_subscription = await subscription_service.cycle(
-            session, subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            second_cycle_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
         second_period_start = second_cycle_subscription.current_period_start
         assert second_period_start.month == 2
         assert second_period_start.day == 29
@@ -1165,9 +1229,12 @@ class TestCycle:
         assert second_period_end.month == 3
         assert second_period_end.day == 31
 
-        third_cycle_subscription = await subscription_service.cycle(
-            session, second_cycle_subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, second_cycle_subscription, subscription_service
+        ) as ctx:
+            third_cycle_subscription = await subscription_service.cycle(
+                session, ctx, second_cycle_subscription
+            )
         third_period_start = third_cycle_subscription.current_period_start
         assert third_period_start.month == 3
         assert third_period_start.day == 31
@@ -1195,7 +1262,12 @@ class TestCycle:
         previous_current_period_start = subscription.current_period_start
         previous_current_period_end = subscription.current_period_end
 
-        updated_subscription = await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         assert updated_subscription.status == SubscriptionStatus.canceled
         # ended_at should be set to the current time, not to ends_at
@@ -1282,7 +1354,12 @@ class TestCycle:
         assert subscription.ends_at == subscription.current_period_end
         assert subscription.ends_at > cycle_time
 
-        updated_subscription = await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         # ended_at should be set to the current time when the cycle ran, not to ends_at
         assert updated_subscription.status == SubscriptionStatus.canceled
@@ -1307,7 +1384,12 @@ class TestCycle:
         previous_trial_end = subscription.trial_end
         previous_current_period_end = subscription.current_period_end
 
-        updated_subscription = await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         assert updated_subscription.ended_at is None
         assert updated_subscription.current_period_start == previous_current_period_end
@@ -1350,7 +1432,12 @@ class TestCycle:
         assert subscription.trial_end == datetime(2024, 5, 5, 12, 0, 0, tzinfo=UTC)
         assert subscription.current_period_end == subscription.trial_end
 
-        updated_subscription = await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         assert updated_subscription.status == SubscriptionStatus.active
         assert updated_subscription.anchor_day == 5
@@ -1393,7 +1480,12 @@ class TestCycle:
         assert subscription.status == SubscriptionStatus.trialing
 
         # Cycle the subscription (trial ends, first billing cycle)
-        updated_subscription = await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         # Verify discount is STILL applied after trial ends
         # This is the first actual billing cycle, so "once" discount should apply
@@ -1415,9 +1507,12 @@ class TestCycle:
         assert cycle_entries[0].discount_amount > 0
 
         # Now cycle again (second billing period)
-        second_cycle_subscription = await subscription_service.cycle(
-            session, updated_subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, updated_subscription, subscription_service
+        ) as ctx:
+            second_cycle_subscription = await subscription_service.cycle(
+                session, ctx, updated_subscription
+            )
 
         # Verify discount is NOW removed (used up after first billing cycle)
         assert second_cycle_subscription.discount is None
@@ -1460,9 +1555,12 @@ class TestCycle:
         assert subscription.status == SubscriptionStatus.trialing
 
         # Cycle 1: Trial ends, first billing cycle
-        first_billing_subscription = await subscription_service.cycle(
-            session, subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            first_billing_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         # Verify discount_applied_at is now set to the first billing period start
         assert first_billing_subscription.discount == discount
@@ -1474,21 +1572,30 @@ class TestCycle:
         assert first_billing_subscription.status == SubscriptionStatus.active
 
         # Cycle 2: Second billing cycle (2nd month of discount)
-        second_billing_subscription = await subscription_service.cycle(
-            session, first_billing_subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, first_billing_subscription, subscription_service
+        ) as ctx:
+            second_billing_subscription = await subscription_service.cycle(
+                session, ctx, first_billing_subscription
+            )
         assert second_billing_subscription.discount == discount
 
         # Cycle 3: Third billing cycle (3rd month of discount)
-        third_billing_subscription = await subscription_service.cycle(
-            session, second_billing_subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, second_billing_subscription, subscription_service
+        ) as ctx:
+            third_billing_subscription = await subscription_service.cycle(
+                session, ctx, second_billing_subscription
+            )
         assert third_billing_subscription.discount == discount
 
         # Cycle 4: Fourth billing cycle - discount should now be expired
-        fourth_billing_subscription = await subscription_service.cycle(
-            session, third_billing_subscription
-        )
+        async with SubscriptionUpdateContext(
+            session, third_billing_subscription, subscription_service
+        ) as ctx:
+            fourth_billing_subscription = await subscription_service.cycle(
+                session, ctx, third_billing_subscription
+            )
         assert fourth_billing_subscription.discount is None
 
         # Verify billing entries - 3 should have discount, 1 should not
@@ -1535,7 +1642,12 @@ class TestCycle:
 
         previous_current_period_end = subscription.current_period_end
 
-        updated_subscription = await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         assert updated_subscription.ended_at is None
         assert updated_subscription.current_period_start == previous_current_period_end
@@ -1606,7 +1718,12 @@ class TestCycle:
 
         previous_current_period_end = subscription.current_period_end
 
-        updated_subscription = await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         assert updated_subscription.ended_at is None
         assert updated_subscription.current_period_start == previous_current_period_end
@@ -1660,7 +1777,12 @@ class TestCycle:
         old_period_end = subscription.current_period_end
         assert old_period_end is not None
 
-        updated_subscription = await subscription_service.cycle(session, subscription)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
 
         # The new period should start exactly at the old period end
         assert updated_subscription.current_period_start == old_period_end
@@ -2421,16 +2543,6 @@ class TestList:
         assert subscription_2 in results
 
 
-async def assert_order_exists(
-    session: AsyncSession, subscription: Subscription
-) -> None:
-    order_repository = OrderRepository.from_session(session)
-    orders = await order_repository.get_all_by_subscription(subscription.id)
-    assert len(orders) > 0, (
-        "Expected at least one order to be created for the subscription"
-    )
-
-
 @pytest.mark.asyncio
 class TestUpdate:
     async def test_product_update_prorate(
@@ -2466,8 +2578,11 @@ class TestUpdate:
 
         assert updated.product == new_product
 
-        webhook_service_send_mock.assert_any_call(
-            session, organization, WebhookEventType.subscription_updated, updated
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
         )
 
     async def test_product_update_invoice(
@@ -2506,8 +2621,11 @@ class TestUpdate:
 
         assert updated.product == new_product
         await assert_order_exists(session, subscription)
-        webhook_service_send_mock.assert_any_call(
-            session, organization, WebhookEventType.subscription_updated, updated
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
         )
 
     async def test_discount_update(
@@ -2538,9 +2656,11 @@ class TestUpdate:
             )
 
         assert updated.discount == discount_percentage_50
-
-        webhook_service_send_mock.assert_any_call(
-            session, organization, WebhookEventType.subscription_updated, updated
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
         )
 
     async def test_trial_update_extends(
@@ -2576,9 +2696,11 @@ class TestUpdate:
 
         assert updated.status == SubscriptionStatus.trialing
         assert updated.trial_end == initial_trial_end + timedelta(days=7)
-
-        webhook_service_send_mock.assert_any_call(
-            session, organization, WebhookEventType.subscription_updated, updated
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
         )
 
     async def test_trial_update_ends(
@@ -2616,8 +2738,11 @@ class TestUpdate:
         assert updated.trial_end == updated.current_period_start
         assert updated.trial_end < initial_trial_end
 
-        webhook_service_send_mock.assert_any_call(
-            session, organization, WebhookEventType.subscription_updated, updated
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
         )
         enqueue_job_mock.assert_any_call(
             "order.create_subscription_order",
@@ -2653,8 +2778,11 @@ class TestUpdate:
 
         assert updated.seats == 10
 
-        webhook_service_send_mock.assert_any_call(
-            session, organization, WebhookEventType.subscription_updated, updated
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
         )
 
     async def test_seats_update_invoice(
@@ -2698,8 +2826,11 @@ class TestUpdate:
         await assert_order_exists(session, subscription)
         trigger_payment_mock.assert_awaited_once()
 
-        webhook_service_send_mock.assert_any_call(
-            session, organization, WebhookEventType.subscription_updated, updated
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
         )
 
     async def test_billing_period_end_update(
@@ -2733,8 +2864,11 @@ class TestUpdate:
 
         assert updated.current_period_end == initial_period_end + timedelta(days=7)
 
-        webhook_service_send_mock.assert_any_call(
-            session, organization, WebhookEventType.subscription_updated, updated
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
         )
 
 

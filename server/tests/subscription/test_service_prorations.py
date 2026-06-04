@@ -1399,7 +1399,10 @@ class TestImmediateSeatChangeWithPendingProductChange:
             # 3. Force cycle past current_period_end so it applies the
             # pending product change.
             frozen_time.move_to(previous_period_end + timedelta(seconds=1))
-            cycled = await subscription_service.cycle(session, updated)
+            async with SubscriptionUpdateContext(
+                session, updated, subscription_service
+            ) as ctx:
+                cycled = await subscription_service.cycle(session, ctx, updated)
             await session.flush()
 
             assert cycled.product_id == product_b.id

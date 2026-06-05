@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
@@ -13,13 +14,18 @@ from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInte
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.models import (
+    BillingEntry,
     Customer,
+    Discount,
     Event,
     Meter,
     Organization,
+    Product,
     Subscription,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
+from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     is_fixed_price,
@@ -32,8 +38,10 @@ from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_discount,
     create_product,
     create_product_price_fixed,
+    create_subscription,
     create_subscription_with_seats,
 )
 
@@ -1413,3 +1421,349 @@ class TestImmediateSeatChangeWithPendingProductChange:
             applied = await sub_update_repo.get_by_id(pending.id)
             assert applied is not None
             assert applied.applied_at is not None
+
+
+# --- Composed static price (fixed + seat) discount allocation -----------------
+#
+# These exercise the not-yet-reachable "fixed base fee + seat price" composition.
+# The factories build the prices and subscription rows directly, bypassing
+# product-price validation. Cases use values where proportional allocation of a
+# fixed discount matters — i.e. where a naive per-price `min(discount, amount)`
+# would distribute the discount differently — so they pin down the behaviour we
+# want once multiple prices ship. Period 2025-06-01 → 2025-07-01 with an update
+# at 2025-06-16 gives a clean proration factor of 0.5.
+
+CYCLE_START = datetime(2025, 6, 1, tzinfo=UTC)
+CYCLE_END = datetime(2025, 7, 1, tzinfo=UTC)
+UPDATE_TIME = datetime(2025, 6, 16, tzinfo=UTC)
+
+
+async def _create_fixed_and_seat_subscription(
+    save_fixture: SaveFixture,
+    *,
+    organization: Organization,
+    customer: Customer,
+    fixed_amount: int,
+    price_per_seat: int,
+    seats: int,
+    discount: Discount | None = None,
+) -> tuple[Product, Subscription]:
+    """Assemble an active subscription with a fixed base fee and a seat price.
+
+    Test-only: production can't yet produce this composition, but the factories
+    construct the DB objects directly without cross-price validation.
+    """
+    product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[(fixed_amount, "usd"), ("seat", price_per_seat, "usd")],
+    )
+    subscription = await create_subscription(
+        save_fixture,
+        product=product,
+        prices=product.prices,
+        customer=customer,
+        status=SubscriptionStatus.active,
+        started_at=CYCLE_START,
+        seats=seats,
+        discount=discount,
+        current_period_start=CYCLE_START,
+        current_period_end=CYCLE_END,
+    )
+    return product, subscription
+
+
+def _amounts_by_price(
+    billing_entries: Sequence[BillingEntry],
+) -> dict[tuple[UUID, BillingEntryDirection], int | None]:
+    return {
+        (entry.product_price_id, entry.direction): entry.amount
+        for entry in billing_entries
+    }
+
+
+def _fixed_price_id(product: Product) -> UUID:
+    return next(p.id for p in product.prices if is_fixed_price(p))
+
+
+def _seat_price_id(product: Product) -> UUID:
+    return next(p.id for p in product.prices if is_seat_price(p))
+
+
+@pytest.mark.asyncio
+class TestComposedStaticPriceDiscountAllocation:
+    async def test_product_change_fixed_discount_distributes(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 90_00},
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+
+        # Old plan: fixed 100_00 + seat 200_00 (1 seat). The 90_00 discount is
+        # split proportionally across the 300_00 total as [30_00, 60_00].
+        old_product, subscription = await _create_fixed_and_seat_subscription(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            fixed_amount=100_00,
+            price_per_seat=200_00,
+            seats=1,
+            discount=discount,
+        )
+        # New plan: fixed 300_00 + seat 200_00 (1 seat). The 90_00 discount is
+        # split proportionally across the 500_00 total as [54_00, 36_00].
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(300_00, "usd"), ("seat", 200_00, "usd")],
+        )
+
+        with freezegun.freeze_time(UPDATE_TIME):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session, ctx, subscription, product_id=new_product.id
+                )
+
+            repository = BillingEntryRepository.from_session(session)
+            entries = await repository.get_pending_by_subscription(subscription.id)
+
+        amounts = _amounts_by_price(entries)
+        # Credit (old plan), factor 0.5:
+        #   fixed: (100_00 - 30_00) * 0.5 = 35_00
+        #   seat:  (200_00 - 60_00) * 0.5 = 70_00
+        assert (
+            amounts[(_fixed_price_id(old_product), BillingEntryDirection.credit)]
+            == 35_00
+        )
+        assert (
+            amounts[(_seat_price_id(old_product), BillingEntryDirection.credit)]
+            == 70_00
+        )
+        # Debit (new plan), factor 0.5:
+        #   fixed: (300_00 - 54_00) * 0.5 = 123_00
+        #   seat:  (200_00 - 36_00) * 0.5 = 82_00
+        assert (
+            amounts[(_fixed_price_id(new_product), BillingEntryDirection.debit)]
+            == 123_00
+        )
+        assert (
+            amounts[(_seat_price_id(new_product), BillingEntryDirection.debit)] == 82_00
+        )
+
+    async def test_product_change_percentage_discount_distributes(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,  # 10%
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+
+        old_product, subscription = await _create_fixed_and_seat_subscription(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            fixed_amount=100_00,
+            price_per_seat=120_00,
+            seats=1,
+            discount=discount,
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(200_00, "usd"), ("seat", 120_00, "usd")],
+        )
+
+        with freezegun.freeze_time(UPDATE_TIME):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session, ctx, subscription, product_id=new_product.id
+                )
+
+            repository = BillingEntryRepository.from_session(session)
+            entries = await repository.get_pending_by_subscription(subscription.id)
+
+        amounts = _amounts_by_price(entries)
+        # Percentage distributes independently, factor 0.5:
+        #   credit fixed: (100_00 - 10_00) * 0.5 = 45_00
+        #   credit seat:  (120_00 - 12_00) * 0.5 = 54_00
+        #   debit  fixed: (200_00 - 20_00) * 0.5 = 90_00
+        #   debit  seat:  (120_00 - 12_00) * 0.5 = 54_00
+        assert (
+            amounts[(_fixed_price_id(old_product), BillingEntryDirection.credit)]
+            == 45_00
+        )
+        assert (
+            amounts[(_seat_price_id(old_product), BillingEntryDirection.credit)]
+            == 54_00
+        )
+        assert (
+            amounts[(_fixed_price_id(new_product), BillingEntryDirection.debit)]
+            == 90_00
+        )
+        assert (
+            amounts[(_seat_price_id(new_product), BillingEntryDirection.debit)] == 54_00
+        )
+
+    async def test_seat_change_fixed_discount_distributes(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 150_00},
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+
+        # Fixed 100_00 + seat 50_00/seat, 2 → 4 seats. The 150_00 discount is
+        # split proportionally between the fixed fee and the seat amount at each
+        # seat count, and we keep the seat's share:
+        #   2 seats: seat 100_00 of 200_00 total → seat share 75_00
+        #   4 seats: seat 200_00 of 300_00 total → seat share 100_00
+        # Effective seat amounts: (100_00 - 75_00) = 25_00, (200_00 - 100_00) = 100_00
+        #   delta = 75_00, prorated = 75_00 * 0.5 = 37_50
+        product, subscription = await _create_fixed_and_seat_subscription(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            fixed_amount=100_00,
+            price_per_seat=50_00,
+            seats=2,
+            discount=discount,
+        )
+
+        with freezegun.freeze_time(UPDATE_TIME):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated = await subscription_service.update_seats(
+                    session,
+                    ctx,
+                    subscription,
+                    seats=4,
+                    proration_behavior=SubscriptionProrationBehavior.prorate,
+                )
+            await session.flush()
+
+            repository = BillingEntryRepository.from_session(session)
+            entries = await repository.get_pending_by_subscription(updated.id)
+
+        seat_entries = [
+            e
+            for e in entries
+            if e.type
+            in (
+                BillingEntryType.subscription_seats_increase,
+                BillingEntryType.subscription_seats_decrease,
+            )
+        ]
+        assert len(seat_entries) == 1
+        entry = seat_entries[0]
+        assert entry.direction == BillingEntryDirection.debit
+        assert entry.amount == 37_50
+
+    async def test_seat_change_percentage_discount(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,  # 10%
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+
+        # Fixed 100_00 + seat 50_00/seat, 2 → 4 seats. Percentage is unaffected
+        # by the fixed fee (each amount discounted independently):
+        #   old seat effective = 100_00 - 10_00 = 90_00
+        #   new seat effective = 200_00 - 20_00 = 180_00
+        #   delta = 90_00, prorated = 90_00 * 0.5 = 45_00
+        product, subscription = await _create_fixed_and_seat_subscription(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            fixed_amount=100_00,
+            price_per_seat=50_00,
+            seats=2,
+            discount=discount,
+        )
+
+        with freezegun.freeze_time(UPDATE_TIME):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated = await subscription_service.update_seats(
+                    session,
+                    ctx,
+                    subscription,
+                    seats=4,
+                    proration_behavior=SubscriptionProrationBehavior.prorate,
+                )
+            await session.flush()
+
+            repository = BillingEntryRepository.from_session(session)
+            entries = await repository.get_pending_by_subscription(updated.id)
+
+        seat_entries = [
+            e
+            for e in entries
+            if e.type
+            in (
+                BillingEntryType.subscription_seats_increase,
+                BillingEntryType.subscription_seats_decrease,
+            )
+        ]
+        assert len(seat_entries) == 1
+        entry = seat_entries[0]
+        assert entry.direction == BillingEntryDirection.debit
+        assert entry.amount == 45_00

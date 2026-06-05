@@ -102,6 +102,9 @@ class Discount(MetadataMixin, RecordModel):
     def get_discount_amount(self, amount: int, currency: str) -> int:
         raise NotImplementedError()
 
+    def allocate_discount_amounts(self, amounts: list[int], currency: str) -> list[int]:
+        raise NotImplementedError()
+
     def is_applicable(self, product: "Product", currency: str) -> bool:
         raise NotImplementedError()
 
@@ -171,6 +174,24 @@ class DiscountFixed(Discount):
     def get_discount_amount(self, amount: int, currency: str) -> int:
         return min(self.amounts[currency], amount)
 
+    def allocate_discount_amounts(self, amounts: list[int], currency: str) -> list[int]:
+        # Distribute the discount across the amounts proportionally, capped at
+        # the combined total. The units lost when flooring each share are handed
+        # to the largest remainders, so the parts always sum to the discount on
+        # the combined total (i.e. `get_discount_amount` of the sum).
+        total = sum(amounts)
+        if total == 0:
+            return [0] * len(amounts)
+
+        discount = min(self.amounts[currency], total)
+        weighted = [discount * amount for amount in amounts]
+        allocations = [weight // total for weight in weighted]
+        for index in sorted(
+            range(len(amounts)), key=lambda i: weighted[i] % total, reverse=True
+        )[: discount - sum(allocations)]:
+            allocations[index] += 1
+        return allocations
+
     @property
     def amount(self) -> int:
         """Backward compatibility for the amount field."""
@@ -204,6 +225,13 @@ class DiscountPercentage(Discount):
     def get_discount_amount(self, amount: int, currency: str) -> int:
         discount_amount_float = amount * (self.basis_points / 10_000)
         return polar_round(discount_amount_float)
+
+    def allocate_discount_amounts(self, amounts: list[int], currency: str) -> list[int]:
+        # Each amount is discounted independently. Because each share is rounded
+        # on its own, the parts can sum to ±(n-1) minor units off the discount on
+        # the combined total; this is accepted because prorations are not
+        # re-pooled at the order level.
+        return [self.get_discount_amount(amount, currency) for amount in amounts]
 
     def is_applicable(self, product: "Product", currency: str) -> bool:
         if len(self.products) == 0:

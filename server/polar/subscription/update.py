@@ -4,9 +4,15 @@ from parse import Decimal
 
 from polar.enums import SubscriptionProrationBehavior
 from polar.kit.utils import utc_now
-from polar.models import BillingEntry, Product, Subscription, SubscriptionUpdate
+from polar.models import (
+    BillingEntry,
+    Product,
+    ProductPrice,
+    Subscription,
+    SubscriptionUpdate,
+)
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
-from polar.models.product_price import ProductPriceSeatUnit
+from polar.models.product_price import ProductPriceFixed, ProductPriceSeatUnit
 from polar.product.guard import (
     is_fixed_price,
     is_recurring_product,
@@ -33,6 +39,23 @@ def _calculate_time_proration(
     return Decimal(time_remaining) / Decimal(period_total)
 
 
+def _collect_proratable_amounts(
+    prices: list[ProductPrice], *, seats: int | None
+) -> list[tuple[ProductPrice, int]]:
+    """Pair each proratable price with its base amount.
+
+    Only fixed and seat prices are prorated; free, custom and metered prices are
+    skipped.
+    """
+    priced_entries: list[tuple[ProductPrice, int]] = []
+    for price in prices:
+        if is_fixed_price(price):
+            priced_entries.append((price, price.price_amount))
+        elif is_seat_price(price) and seats is not None:
+            priced_entries.append((price, price.calculate_amount(seats)))
+    return priced_entries
+
+
 def _generate_product_credit_proration_billing_entries(
     *,
     subscription: Subscription,
@@ -40,32 +63,33 @@ def _generate_product_credit_proration_billing_entries(
     initial_cycle_start: datetime,
     initial_cycle_end: datetime,
 ) -> list[BillingEntry]:
-    billing_entries: list[BillingEntry] = []
-
     initial_cycle_pct_remaining = _calculate_time_proration(
         initial_cycle_start, initial_cycle_end, applies_at
     )
 
-    for initial_price in subscription.prices:
-        # Metered and free prices don't get prorated
-        if is_fixed_price(initial_price):
-            base_amount = initial_price.price_amount
-        elif is_seat_price(initial_price) and subscription.seats is not None:
-            base_amount = initial_price.calculate_amount(subscription.seats)
-        else:
-            continue
-        discount_amount = 0
-        if subscription.discount:
-            discount_amount = subscription.discount.get_discount_amount(
-                base_amount, subscription.currency
-            )
+    priced_entries = _collect_proratable_amounts(
+        PriceSet.from_prices(
+            subscription.prices, subscription.currency
+        ).get_static_prices(),
+        seats=subscription.seats,
+    )
 
+    discount_amounts = [0] * len(priced_entries)
+    if subscription.discount:
+        discount_amounts = subscription.discount.allocate_discount_amounts(
+            [base_amount for _, base_amount in priced_entries], subscription.currency
+        )
+
+    billing_entries: list[BillingEntry] = []
+    for (initial_price, base_amount), discount_amount in zip(
+        priced_entries, discount_amounts, strict=True
+    ):
         # Prorations have discounts applied to the `BillingEntry.amount`
         # immediately.
         # This is because we're really applying the discount from "this" cycle
         # whereas the `cycle` and `meter` BillingEntries should use the
         # discount from the _next_ cycle -- the discount that applies to
-        # that upcoming order. applies to next order applies to the
+        # that upcoming order.
         # For example, if you have a flat "$20 off" discount, part of that
         # $20 discount should _not_ apply to the prorations because the
         # prorations are happening "this cycle" and shouldn't take away
@@ -95,29 +119,30 @@ def _generate_product_debit_proration_billing_entries(
     new_cycle_start: datetime,
     new_cycle_end: datetime,
 ) -> list[BillingEntry]:
-    billing_entries: list[BillingEntry] = []
-
     new_cycle_pct_remaining = _calculate_time_proration(
         new_cycle_start, new_cycle_end, applies_at
     )
 
-    new_prices = PriceSet.from_product(new_product, subscription.currency)
-    for new_price in new_prices:
-        # Metered and free prices don't get prorated
-        if is_fixed_price(new_price):
-            base_amount = new_price.price_amount
-        elif is_seat_price(new_price) and subscription.seats is not None:
-            base_amount = new_price.calculate_amount(subscription.seats)
-        else:
-            continue
-        discount_amount = 0
-        if subscription.discount and subscription.discount.is_applicable(
-            new_price.product, subscription.currency
-        ):
-            discount_amount = subscription.discount.get_discount_amount(
-                base_amount, subscription.currency
-            )
+    priced_entries = _collect_proratable_amounts(
+        PriceSet.from_product(new_product, subscription.currency).get_static_prices(),
+        seats=subscription.seats,
+    )
 
+    discount_amounts = [0] * len(priced_entries)
+    # All prices belong to `new_product`, so applicability is evaluated once and
+    # gates the whole allocation. Unlike the credit path, the discount may not
+    # apply to the product being switched to.
+    if subscription.discount and subscription.discount.is_applicable(
+        new_product, subscription.currency
+    ):
+        discount_amounts = subscription.discount.allocate_discount_amounts(
+            [base_amount for _, base_amount in priced_entries], subscription.currency
+        )
+
+    billing_entries: list[BillingEntry] = []
+    for (new_price, base_amount), discount_amount in zip(
+        priced_entries, discount_amounts, strict=True
+    ):
         entry_remaining_time = BillingEntry(
             type=BillingEntryType.proration,
             direction=BillingEntryDirection.debit,
@@ -211,17 +236,32 @@ def _generate_seats_subscription_update(
     # Computing the discount on the delta double-counts fixed discounts: a $10
     # fixed discount applies once to the subscription total, not again to every
     # seat change.
+    #
+    # When there's also a fixed base fee, the discount is split proportionally
+    # between it and the seat charge, so we allocate across [fixed, seat] and keep
+    # the seat's share. Today no product combines a fixed fee with a seat price,
+    # so this allocates the whole discount to the seat amount.
     old_discount_amount = 0
     new_discount_amount = 0
     if subscription.discount and subscription.discount.is_applicable(
         subscription.product, subscription.currency
     ):
-        old_discount_amount = subscription.discount.get_discount_amount(
-            old_base_amount, subscription.currency
-        )
-        new_discount_amount = subscription.discount.get_discount_amount(
-            new_base_amount, subscription.currency
-        )
+        fixed_price = subscription.get_price_by_type(ProductPriceFixed)
+        fixed_amount = fixed_price.price_amount if fixed_price is not None else None
+
+        def _seat_slice(seat_amount: int) -> int:
+            assert subscription.discount is not None
+            amounts = (
+                [fixed_amount, seat_amount]
+                if fixed_amount is not None
+                else [seat_amount]
+            )
+            return subscription.discount.allocate_discount_amounts(
+                amounts, subscription.currency
+            )[-1]
+
+        old_discount_amount = _seat_slice(old_base_amount)
+        new_discount_amount = _seat_slice(new_base_amount)
 
     start_timestamp = subscription_update.applies_at
     end_timestamp = subscription.current_period_end

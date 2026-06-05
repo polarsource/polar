@@ -465,6 +465,24 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         result = await self.session.execute(stmt.with_only_columns(func.count()))
         return result.scalar_one()
 
+    async def has_claimed_seat_for_product_via_orders(
+        self, product_id: UUID, customer_id: UUID
+    ) -> bool:
+        """Whether a customer already holds a claimed seat for a product via orders.
+
+        Used to avoid re-claiming a seat for a buyer who purchases the same
+        one-time seat product more than once: each purchase mints a new order
+        (a fresh seat container), so the per-container assignment guards can't
+        see the seat claimed on a previous order.
+        """
+        stmt = (
+            self.get_claimed_by_product_via_orders(product_id)
+            .where(CustomerSeat.customer_id == customer_id)
+            .with_only_columns(func.count())
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one() > 0
+
     def get_eager_options_with_prices(self) -> Options:
         return (
             *self.get_eager_options(),

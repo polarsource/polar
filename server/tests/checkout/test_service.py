@@ -33,6 +33,7 @@ from polar.checkout.service import (
 )
 from polar.checkout.service import checkout as checkout_service
 from polar.config import Environment
+from polar.customer_seat.service import SeatService
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
@@ -68,8 +69,9 @@ from polar.models import (
 from polar.models.checkout import CheckoutStatus
 from polar.models.custom_field import CustomFieldType
 from polar.models.customer import CustomerType
+from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
-from polar.models.order import OrderBillingReasonInternal
+from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.product_price import (
     ProductPriceAmountType,
@@ -105,7 +107,9 @@ from tests.fixtures.random_objects import (
     create_checkout_link,
     create_custom_field,
     create_customer,
+    create_customer_seat,
     create_discount,
+    create_order,
     create_product,
     create_product_price_fixed,
     create_product_price_seat_unit,
@@ -135,6 +139,13 @@ def subscription_service_mock(mocker: MockerFixture) -> MagicMock:
 def order_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=OrderService)
     mocker.patch("polar.checkout.service.order_service", new=mock)
+    return mock
+
+
+@pytest.fixture(autouse=True)
+def seat_service_mock(mocker: MockerFixture) -> MagicMock:
+    mock = MagicMock(spec=SeatService)
+    mocker.patch("polar.checkout.service.seat_service", new=mock)
     return mock
 
 
@@ -350,6 +361,18 @@ async def product_seat_based(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[("seat", 1000, "usd")],
+    )
+
+
+@pytest_asyncio.fixture
+async def product_one_time_seat_based(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=None,
         prices=[("seat", 1000, "usd")],
     )
 
@@ -5897,6 +5920,232 @@ class TestHandleSuccess:
         assert len(trial_redemptions) == 1
         trial_redemption = trial_redemptions[0]
         assert trial_redemption.customer_id == customer.id
+
+    async def test_seat_based_single_seat_auto_claims(
+        self,
+        save_fixture: SaveFixture,
+        order_service_mock: MagicMock,
+        subscription_service_mock: MagicMock,
+        seat_service_mock: MagicMock,
+        session: AsyncSession,
+        product_seat_based: Product,
+        customer: Customer,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_seat_based],
+            status=CheckoutStatus.confirmed,
+            seats=1,
+        )
+        subscription_mock = MagicMock()
+        subscription_mock.customer = customer
+        subscription_service_mock.create_or_update_from_checkout.return_value = (
+            subscription_mock,
+            True,
+        )
+
+        await checkout_service.handle_success(session, checkout)
+
+        seat_service_mock.assign_seat.assert_called_once_with(
+            ANY,
+            subscription_mock,
+            email=customer.email,
+            immediate_claim=True,
+        )
+
+    async def test_seat_based_multi_seat_auto_claims_buyer_seat(
+        self,
+        save_fixture: SaveFixture,
+        subscription_service_mock: MagicMock,
+        seat_service_mock: MagicMock,
+        session: AsyncSession,
+        product_seat_based: Product,
+        customer: Customer,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_seat_based],
+            status=CheckoutStatus.confirmed,
+            seats=3,
+        )
+        subscription_mock = MagicMock()
+        subscription_mock.customer = customer
+        subscription_service_mock.create_or_update_from_checkout.return_value = (
+            subscription_mock,
+            True,
+        )
+
+        await checkout_service.handle_success(session, checkout)
+
+        # A single seat is claimed for the buyer; the remaining seats stay
+        # available for them to invite teammates.
+        seat_service_mock.assign_seat.assert_called_once_with(
+            ANY,
+            subscription_mock,
+            email=customer.email,
+            immediate_claim=True,
+        )
+
+    async def test_seat_based_custom_success_url_does_not_auto_claim(
+        self,
+        save_fixture: SaveFixture,
+        subscription_service_mock: MagicMock,
+        seat_service_mock: MagicMock,
+        session: AsyncSession,
+        product_seat_based: Product,
+        customer: Customer,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_seat_based],
+            status=CheckoutStatus.confirmed,
+            seats=1,
+            success_url="https://example.com/thanks",
+        )
+        subscription_mock = MagicMock()
+        subscription_mock.customer = customer
+        subscription_service_mock.create_or_update_from_checkout.return_value = (
+            subscription_mock,
+            True,
+        )
+
+        await checkout_service.handle_success(session, checkout)
+
+        seat_service_mock.assign_seat.assert_not_called()
+
+    async def test_non_seat_based_does_not_auto_claim(
+        self,
+        order_service_mock: MagicMock,
+        subscription_service_mock: MagicMock,
+        seat_service_mock: MagicMock,
+        session: AsyncSession,
+        checkout_confirmed_recurring: Checkout,
+        payment: Payment,
+    ) -> None:
+        subscription_service_mock.create_or_update_from_checkout.return_value = (
+            MagicMock(),
+            True,
+        )
+
+        await checkout_service.handle_success(
+            session, checkout_confirmed_recurring, payment
+        )
+
+        seat_service_mock.assign_seat.assert_not_called()
+
+    async def test_seat_based_one_time_first_purchase_auto_claims(
+        self,
+        save_fixture: SaveFixture,
+        seat_service_mock: MagicMock,
+        session: AsyncSession,
+        product_one_time_seat_based: Product,
+        customer: Customer,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time_seat_based],
+            status=CheckoutStatus.confirmed,
+            seats=1,
+        )
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product_one_time_seat_based,
+            status=OrderStatus.paid,
+        )
+
+        await checkout_service._maybe_auto_claim_buyer_seat(
+            session, checkout, None, order
+        )
+
+        seat_service_mock.assign_seat.assert_called_once_with(
+            ANY,
+            order,
+            email=customer.email,
+            immediate_claim=True,
+        )
+
+    async def test_seat_based_one_time_multi_seat_first_purchase_auto_claims_via_handle_success(
+        self,
+        save_fixture: SaveFixture,
+        order_service_mock: MagicMock,
+        seat_service_mock: MagicMock,
+        session: AsyncSession,
+        product_one_time_seat_based: Product,
+        customer: Customer,
+    ) -> None:
+        # Exercise the public ``handle_success`` entry point (not the private
+        # ``_maybe_auto_claim_buyer_seat`` helper directly) so we verify the
+        # one-time Order minted inside ``handle_success`` is correctly wired
+        # into the auto-claim helper for a multi-seat purchase.
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time_seat_based],
+            status=CheckoutStatus.confirmed,
+            seats=3,
+        )
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product_one_time_seat_based,
+            status=OrderStatus.paid,
+        )
+        order_service_mock.create_from_checkout_one_time.return_value = order
+
+        await checkout_service.handle_success(session, checkout)
+
+        # A single seat is claimed for the buyer; the remaining seats stay
+        # available for them to invite teammates.
+        seat_service_mock.assign_seat.assert_called_once_with(
+            ANY,
+            order,
+            email=customer.email,
+            immediate_claim=True,
+        )
+
+    async def test_seat_based_one_time_repeat_purchase_does_not_reclaim_via_handle_success(
+        self,
+        save_fixture: SaveFixture,
+        order_service_mock: MagicMock,
+        seat_service_mock: MagicMock,
+        session: AsyncSession,
+        product_one_time_seat_based: Product,
+        customer: Customer,
+    ) -> None:
+        # As above, drive the public ``handle_success`` entry point so the
+        # repeat-purchase guard inside ``_maybe_auto_claim_buyer_seat`` sees the
+        # freshly minted one-time Order.
+        previous_order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product_one_time_seat_based,
+            status=OrderStatus.paid,
+        )
+        await create_customer_seat(
+            save_fixture,
+            order=previous_order,
+            customer=customer,
+            status=SeatStatus.claimed,
+            email=customer.email,
+        )
+
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time_seat_based],
+            status=CheckoutStatus.confirmed,
+            seats=3,
+        )
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product_one_time_seat_based,
+            status=OrderStatus.paid,
+        )
+        order_service_mock.create_from_checkout_one_time.return_value = order
+
+        await checkout_service.handle_success(session, checkout)
+
+        seat_service_mock.assign_seat.assert_not_called()
 
 
 @pytest.mark.asyncio

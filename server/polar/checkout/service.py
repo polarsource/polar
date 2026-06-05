@@ -3,6 +3,7 @@ import typing
 import uuid
 from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 
+import sentry_sdk
 import stripe as stripe_lib
 import structlog
 from pydantic import UUID4
@@ -28,6 +29,8 @@ from polar.checkout.schemas import (
 from polar.config import settings
 from polar.custom_field.data import validate_custom_field_data
 from polar.customer.repository import CustomerRepository
+from polar.customer_seat.repository import CustomerSeatRepository
+from polar.customer_seat.service import seat_service
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
@@ -67,6 +70,7 @@ from polar.models import (
     CheckoutLink,
     Customer,
     Discount,
+    Order,
     Organization,
     Payment,
     PaymentMethod,
@@ -94,6 +98,7 @@ from polar.product.guard import (
     SeatPrice,
     is_custom_price,
     is_discount_applicable,
+    is_seat_price,
 )
 from polar.product.price_set import (
     NoPricesForCurrencies,
@@ -1227,6 +1232,7 @@ class CheckoutService:
 
         product = checkout.product
         subscription: Subscription | None = None
+        order: Order | None = None
         if product.is_recurring:
             (
                 subscription,
@@ -1234,7 +1240,7 @@ class CheckoutService:
             ) = await subscription_service.create_or_update_from_checkout(
                 session, checkout, payment_method
             )
-            await order_service.create_from_checkout_subscription(
+            order = await order_service.create_from_checkout_subscription(
                 session,
                 checkout,
                 subscription,
@@ -1244,9 +1250,11 @@ class CheckoutService:
                 payment,
             )
         else:
-            await order_service.create_from_checkout_one_time(
+            order = await order_service.create_from_checkout_one_time(
                 session, checkout, payment
             )
+
+        await self._maybe_auto_claim_buyer_seat(session, checkout, subscription, order)
 
         # Create trial redemption record if this checkout had a trial period
         if checkout.trial_end is not None:
@@ -1317,6 +1325,68 @@ class CheckoutService:
             log.error("Failed to capture PostHog event", error=str(e))
 
         return checkout
+
+    async def _maybe_auto_claim_buyer_seat(
+        self,
+        session: AsyncSession,
+        checkout: Checkout,
+        subscription: Subscription | None,
+        order: Order | None,
+    ) -> None:
+        """When a buyer purchases one or more seats through the default Polar
+        confirmation flow, immediately claim a single seat for themselves so
+        they get access without going through the invitation email loop. Any
+        remaining seats stay available for them to invite teammates.
+        """
+        if checkout.seats is None or checkout.seats < 1:
+            return
+        product_price = checkout.product_price
+        if product_price is None or not is_seat_price(product_price):
+            return
+        # Only apply to the default internal confirmation flow. If the merchant
+        # set a custom success_url, they own the post-checkout seat-assignment
+        # UX and we leave things alone.
+        if checkout._success_url is not None:
+            return
+
+        container: Subscription | Order | None = subscription or order
+        if container is None or container.customer is None:
+            return
+
+        # One-time seat purchases mint a fresh order (and thus a fresh seat
+        # container) on every checkout, so the per-container assignment guards
+        # can't tell that a repeat buyer already self-claimed a seat for this
+        # product on an earlier order. Bail out if they did, to avoid claiming
+        # a duplicate seat for the same person.
+        if isinstance(container, Order):
+            product = container.product
+            if product is not None:
+                seat_repository = CustomerSeatRepository.from_session(session)
+                already_claimed = (
+                    await seat_repository.has_claimed_seat_for_product_via_orders(
+                        product.id, container.customer_id
+                    )
+                )
+                if already_claimed:
+                    return
+
+        # Team customers can have no email of their own; in that case the
+        # checkout's customer_email was backfilled from the owner member earlier
+        # in the confirmation flow, so prefer that as the claim target.
+        email = container.customer.email or checkout.customer_email
+
+        try:
+            await seat_service.assign_seat(
+                session,
+                container,
+                email=email,
+                immediate_claim=True,
+            )
+        except Exception as e:
+            sentry_sdk.capture_exception(
+                e,
+                extras={"checkout_id": str(checkout.id)},
+            )
 
     async def handle_failure(
         self, session: AsyncSession, checkout: Checkout, payment: Payment | None = None

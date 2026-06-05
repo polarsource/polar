@@ -52,6 +52,11 @@ locals {
 # Sandbox
 # =============================================================================
 
+import {
+  to = module.sandbox.cloudflare_dns_record.resend_dkim
+  id = "22bcd1b07ec25452aab472486bc8df94/18ef1ec6c3bae11c97624278b1dc0436"
+}
+
 module "sandbox" {
   source = "../modules/render_service"
 
@@ -73,6 +78,11 @@ module "sandbox" {
   redis_config = {
     host = local.redis_host
     port = local.redis_port
+  }
+
+  resend_dkim = {
+    zone_id    = "22bcd1b07ec25452aab472486bc8df94"
+    public_key = "p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCx8TPulpiuGKqifNLwJchDkpDbZK0R25boNFoztUf8nNT+4h3jzZL6pE3sJ2oSbqOZ4Jfr+4R7E9uXsmSQf5WJcXJOLjVhd8HJOQIdjn9WtJGxzplXs5f1iWFBBsTK7jOkDPVnWOovYBDa2fRypKGdHsSvi0kDZ5sV89/y/1QZlQIDAQAB"
   }
 
   api_service_config = {

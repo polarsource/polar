@@ -289,6 +289,14 @@ variable "cron_jobs" {
   default = {}
 }
 
+variable "resend_dkim" {
+  description = "Resend DKIM TXT record. The record name is derived from backend_config.email_from_domain."
+  type = object({
+    zone_id    = string
+    public_key = string
+  })
+}
+
 variable "tinybird_config" {
   description = "Tinybird configuration (optional)"
   type = object({

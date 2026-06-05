@@ -16,7 +16,8 @@ module "vercel" {
       name = "test.polar.sh"
       dns = {
         zone_id = "22bcd1b07ec25452aab472486bc8df94"
-        content = "cname.vercel-dns.com"
+        content = "9b3437429d7388f1.vercel-dns-016.com"
+        ttl     = 600
       }
     },
   ]

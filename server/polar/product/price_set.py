@@ -9,29 +9,9 @@ from .guard import (
     SeatPrice,
     is_custom_price,
     is_fixed_price,
-    is_free_price,
     is_seat_price,
     is_static_price,
 )
-
-
-def _static_price_order(price: ProductPrice) -> int:
-    """Canonical ordering for static prices: Free → Fixed → Seat → Custom.
-
-    The Fixed-before-Seat part is load-bearing: a fixed-amount discount is
-    allocated as a waterfall across prices in this order, so the base fee
-    absorbs the discount before the seat charge.
-    """
-    if is_free_price(price):
-        return 0
-    if is_fixed_price(price):
-        return 1
-    if is_seat_price(price):
-        return 2
-    if is_custom_price(price):
-        return 3
-
-    raise ValueError(f"unexpected price type: {price.type}")
 
 
 class PriceSetError(PolarError): ...
@@ -120,13 +100,8 @@ class PriceSet:
         return self.prices[0]
 
     def get_static_prices(self) -> list[ProductPrice]:
-        """Return every static price in the set in canonical order.
-
-        Ordering is Free → Fixed → Seat → Custom (see ``_static_price_order``).
-        Consumers that allocate a discount across prices rely on this order.
-        """
-        static_prices = [price for price in self.prices if is_static_price(price)]
-        return sorted(static_prices, key=_static_price_order)
+        """Return every static price in the set (fixed, custom, free, seat)."""
+        return [price for price in self.prices if is_static_price(price)]
 
     def get_seat_price(self) -> SeatPrice | None:
         """Return the lone seat-based price in the set, if any."""

@@ -175,15 +175,21 @@ class DiscountFixed(Discount):
         return min(self.amounts[currency], amount)
 
     def allocate_discount_amounts(self, amounts: list[int], currency: str) -> list[int]:
-        # Waterfall: the first amount absorbs as much of the discount as it can,
-        # the remainder flows to the next, and so on. This guarantees the parts
-        # sum to min(discount, total)
-        remaining = self.amounts[currency]
-        allocations: list[int] = []
-        for amount in amounts:
-            allocated = min(remaining, amount)
-            allocations.append(allocated)
-            remaining -= allocated
+        # Distribute the discount across the amounts proportionally, capped at
+        # the combined total. The units lost when flooring each share are handed
+        # to the largest remainders, so the parts always sum to the discount on
+        # the combined total (i.e. `get_discount_amount` of the sum).
+        total = sum(amounts)
+        if total == 0:
+            return [0] * len(amounts)
+
+        discount = min(self.amounts[currency], total)
+        weighted = [discount * amount for amount in amounts]
+        allocations = [weight // total for weight in weighted]
+        for index in sorted(
+            range(len(amounts)), key=lambda i: weighted[i] % total, reverse=True
+        )[: discount - sum(allocations)]:
+            allocations[index] += 1
         return allocations
 
     @property

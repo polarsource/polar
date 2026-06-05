@@ -12,16 +12,15 @@ def _percentage(basis_points: int) -> DiscountPercentage:
 
 
 class TestDiscountFixedAllocateDiscountAmounts:
-    def test_waterfall_fixed_first(self) -> None:
-        # 1500 over [fixed 1000, seat 1000]: the fixed fee absorbs its full
-        # amount first, the remaining 500 flows to the seat amount.
+    def test_distributes_proportionally(self) -> None:
+        # 1500 over [1000, 1000]: split in proportion to each amount.
         discount = _fixed(1500)
-        assert discount.allocate_discount_amounts([1000, 1000], "usd") == [1000, 500]
+        assert discount.allocate_discount_amounts([1000, 1000], "usd") == [750, 750]
 
-    def test_discount_smaller_than_fixed(self) -> None:
-        # Discount fully absorbed by the fixed fee, nothing left for the seat.
-        discount = _fixed(500)
-        assert discount.allocate_discount_amounts([1000, 1000], "usd") == [500, 0]
+    def test_uneven_proportions(self) -> None:
+        # 750 over [300, 1200]: 1/5 and 4/5 of the combined total.
+        discount = _fixed(750)
+        assert discount.allocate_discount_amounts([300, 1200], "usd") == [150, 600]
 
     def test_discount_larger_than_total(self) -> None:
         # Discount caps at the combined total, never exceeding either amount.
@@ -32,12 +31,18 @@ class TestDiscountFixedAllocateDiscountAmounts:
         discount = _fixed(0)
         assert discount.allocate_discount_amounts([1000, 1000], "usd") == [0, 0]
 
-    def test_single_amount_no_fixed_component(self) -> None:
-        # A single (seat-only) amount receives the whole capped discount — this
-        # is the configuration reachable today, and must match get_discount_amount.
+    def test_single_amount(self) -> None:
+        # A single amount receives the whole capped discount — this is the
+        # configuration reachable today, and must match get_discount_amount.
         discount = _fixed(1500)
         assert discount.allocate_discount_amounts([1000], "usd") == [1000]
         assert discount.allocate_discount_amounts([2000], "usd") == [1500]
+
+    def test_rounding_leftover_goes_to_largest_remainder(self) -> None:
+        # 100 over [100, 200]: proportional shares are 33.33 and 66.67; the unit
+        # lost to flooring goes to the larger remainder (the 200 amount).
+        discount = _fixed(100)
+        assert discount.allocate_discount_amounts([100, 200], "usd") == [33, 67]
 
     def test_empty(self) -> None:
         discount = _fixed(1500)

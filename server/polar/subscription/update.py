@@ -42,11 +42,10 @@ def _calculate_time_proration(
 def _collect_proratable_amounts(
     prices: list[ProductPrice], *, seats: int | None
 ) -> list[tuple[ProductPrice, int]]:
-    """Pair each proratable price with its base amount, preserving order.
+    """Pair each proratable price with its base amount.
 
     Only fixed and seat prices are prorated; free, custom and metered prices are
-    skipped. The input order is preserved so a fixed-amount discount waterfalls
-    across the result correctly.
+    skipped.
     """
     priced_entries: list[tuple[ProductPrice, int]] = []
     for price in prices:
@@ -238,14 +237,10 @@ def _generate_seats_subscription_update(
     # fixed discount applies once to the subscription total, not again to every
     # seat change.
     #
-    # Allocate across [fixed, seat] and take the seat slice, so the seat's
-    # discount cap is defined by what is left after the fixed fee absorbs its share.
-    #
-    # The fixed fee is unchanged by a seat change, so its share is held constant
-    # across the old and new seat counts.
-    #
-    # Today there is no fixed base fee to combine with, so this allocates the full
-    # discount to the seat amount — a noop versus the previous per-amount behaviour.
+    # When there's also a fixed base fee, the discount is split proportionally
+    # between it and the seat charge, so we allocate across [fixed, seat] and keep
+    # the seat's share. Today no product combines a fixed fee with a seat price,
+    # so this allocates the whole discount to the seat amount.
     old_discount_amount = 0
     new_discount_amount = 0
     if subscription.discount and subscription.discount.is_applicable(

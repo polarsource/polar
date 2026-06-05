@@ -65,10 +65,12 @@ class TestGetStaticPrices:
         price_set = PriceSet("usd", [seat])
         assert price_set.get_static_prices() == [seat]
 
-    def test_canonical_order(self) -> None:
+    def test_preserves_input_order(self) -> None:
+        # Ordering is not significant; static prices come back in input order
+        # with metered prices excluded.
         free, fixed, seat, custom = _free(), _fixed(), _seat(), _custom()
         price_set = PriceSet("usd", [custom, seat, fixed, free, _metered()])
-        assert price_set.get_static_prices() == [free, fixed, seat, custom]
+        assert price_set.get_static_prices() == [custom, seat, fixed, free]
 
 
 class TestGetSeatPrice:

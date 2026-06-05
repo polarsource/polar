@@ -1426,13 +1426,12 @@ class TestImmediateSeatChangeWithPendingProductChange:
 # --- Composed static price (fixed + seat) discount allocation -----------------
 #
 # These exercise the not-yet-reachable "fixed base fee + seat price" composition.
-# The factories build the prices and subscription rows directly,
-# bypassing product-price validation. Cases use values where the
-# fixed-amount waterfall allocation matters — i.e. where a
-# naive per-price `min(discount, amount)` would distribute the discount
-# differently — so they pin down the behaviour we want once multiple prices ship.
-# Period 2025-06-01 → 2025-07-01 with an update at 2025-06-16 gives a clean
-# proration factor of 0.5.
+# The factories build the prices and subscription rows directly, bypassing
+# product-price validation. Cases use values where proportional allocation of a
+# fixed discount matters — i.e. where a naive per-price `min(discount, amount)`
+# would distribute the discount differently — so they pin down the behaviour we
+# want once multiple prices ship. Period 2025-06-01 → 2025-07-01 with an update
+# at 2025-06-16 gives a clean proration factor of 0.5.
 
 CYCLE_START = datetime(2025, 6, 1, tzinfo=UTC)
 CYCLE_END = datetime(2025, 7, 1, tzinfo=UTC)
@@ -1494,7 +1493,7 @@ def _seat_price_id(product: Product) -> UUID:
 
 @pytest.mark.asyncio
 class TestComposedStaticPriceDiscountAllocation:
-    async def test_product_change_fixed_discount_waterfall(
+    async def test_product_change_fixed_discount_distributes(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -1509,31 +1508,29 @@ class TestComposedStaticPriceDiscountAllocation:
         discount = await create_discount(
             save_fixture,
             type=DiscountType.fixed,
-            amounts={"usd": 150_00},
+            amounts={"usd": 90_00},
             duration=DiscountDuration.forever,
             organization=organization,
         )
 
-        # Old plan: fixed 100_00 + seat 120_00 (1 seat). Waterfall allocates the
-        # 150_00 discount as [100_00, 50_00] (fixed-first), so the seat keeps a
-        # 70_00 net.
+        # Old plan: fixed 100_00 + seat 200_00 (1 seat). The 90_00 discount is
+        # split proportionally across the 300_00 total as [30_00, 60_00].
         old_product, subscription = await _create_fixed_and_seat_subscription(
             save_fixture,
             organization=organization,
             customer=customer,
             fixed_amount=100_00,
-            price_per_seat=120_00,
+            price_per_seat=200_00,
             seats=1,
             discount=discount,
         )
-        # New plan: fixed 200_00 + seat 120_00 (1 seat). Waterfall allocates
-        # [150_00, 0]: the fixed fee absorbs the whole discount, the seat keeps
-        # its full 120_00.
+        # New plan: fixed 300_00 + seat 200_00 (1 seat). The 90_00 discount is
+        # split proportionally across the 500_00 total as [54_00, 36_00].
         new_product = await create_product(
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(200_00, "usd"), ("seat", 120_00, "usd")],
+            prices=[(300_00, "usd"), ("seat", 200_00, "usd")],
         )
 
         with freezegun.freeze_time(UPDATE_TIME):
@@ -1549,24 +1546,25 @@ class TestComposedStaticPriceDiscountAllocation:
 
         amounts = _amounts_by_price(entries)
         # Credit (old plan), factor 0.5:
-        #   fixed: (100_00 - 100_00) * 0.5 = 0
-        #   seat:  (120_00 -  50_00) * 0.5 = 35_00
+        #   fixed: (100_00 - 30_00) * 0.5 = 35_00
+        #   seat:  (200_00 - 60_00) * 0.5 = 70_00
         assert (
-            amounts[(_fixed_price_id(old_product), BillingEntryDirection.credit)] == 0
+            amounts[(_fixed_price_id(old_product), BillingEntryDirection.credit)]
+            == 35_00
         )
         assert (
             amounts[(_seat_price_id(old_product), BillingEntryDirection.credit)]
-            == 35_00
+            == 70_00
         )
         # Debit (new plan), factor 0.5:
-        #   fixed: (200_00 - 150_00) * 0.5 = 25_00
-        #   seat:  (120_00 -      0) * 0.5 = 60_00
+        #   fixed: (300_00 - 54_00) * 0.5 = 123_00
+        #   seat:  (200_00 - 36_00) * 0.5 = 82_00
         assert (
             amounts[(_fixed_price_id(new_product), BillingEntryDirection.debit)]
-            == 25_00
+            == 123_00
         )
         assert (
-            amounts[(_seat_price_id(new_product), BillingEntryDirection.debit)] == 60_00
+            amounts[(_seat_price_id(new_product), BillingEntryDirection.debit)] == 82_00
         )
 
     async def test_product_change_percentage_discount_distributes(
@@ -1638,7 +1636,7 @@ class TestComposedStaticPriceDiscountAllocation:
             amounts[(_seat_price_id(new_product), BillingEntryDirection.debit)] == 54_00
         )
 
-    async def test_seat_change_fixed_discount_waterfall(
+    async def test_seat_change_fixed_discount_distributes(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -1658,12 +1656,13 @@ class TestComposedStaticPriceDiscountAllocation:
             organization=organization,
         )
 
-        # Fixed 100_00 + seat 50_00/seat, 2 → 4 seats. The fixed fee absorbs
-        # 100_00 of the discount; only 50_00 is left for the seat amount, and
-        # that 50_00 cap is held constant across the old and new seat counts.
-        # So the seat discount doesn't change and the full seat delta prorates:
-        #   delta = (200_00 - 50_00) - (100_00 - 50_00) = 100_00
-        #   prorated = 100_00 * 0.5 = 50_00
+        # Fixed 100_00 + seat 50_00/seat, 2 → 4 seats. The 150_00 discount is
+        # split proportionally between the fixed fee and the seat amount at each
+        # seat count, and we keep the seat's share:
+        #   2 seats: seat 100_00 of 200_00 total → seat share 75_00
+        #   4 seats: seat 200_00 of 300_00 total → seat share 100_00
+        # Effective seat amounts: (100_00 - 75_00) = 25_00, (200_00 - 100_00) = 100_00
+        #   delta = 75_00, prorated = 75_00 * 0.5 = 37_50
         product, subscription = await _create_fixed_and_seat_subscription(
             save_fixture,
             organization=organization,
@@ -1702,7 +1701,7 @@ class TestComposedStaticPriceDiscountAllocation:
         assert len(seat_entries) == 1
         entry = seat_entries[0]
         assert entry.direction == BillingEntryDirection.debit
-        assert entry.amount == 50_00
+        assert entry.amount == 37_50
 
     async def test_seat_change_percentage_discount(
         self,

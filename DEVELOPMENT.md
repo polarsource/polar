@@ -121,7 +121,7 @@ If you want to work with payments and subscriptions, you'll need to set up a Str
     - Click "Add destination"
     - Select "Your account"
     - Set API version to the latest (not the preview)
-    - Set enabled events to only the one listed in `DIRECT_IMPLEMENTED_WEBHOOKS` (see `polar/integrations/stripe/endpoints.py`)
+    - Set enabled events to only the events listed in `DIRECT_IMPLEMENTED_WEBHOOKS` (see `polar/integrations/stripe/endpoints.py`)
     - Click continue, Select Webhook endpoint
     - Set the endpoint URL to: `https://your-domain.ngrok-free.app/v1/integrations/stripe/webhook`
     - Copy the webhook signing secret and add it to your `server/.env` file:

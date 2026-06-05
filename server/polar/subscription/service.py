@@ -997,17 +997,14 @@ class SubscriptionService:
         if isinstance(update, SubscriptionUpdateBase):
             if update.has_product:
                 assert update.product_id is not None
-                async with self.resolve_discount(
-                    session, ctx, subscription, discount=update.discount
-                ) as discount:
-                    subscription = await self.update_product(
-                        session,
-                        ctx,
-                        subscription,
-                        product_id=update.product_id,
-                        proration_behavior=update.proration_behavior,
-                        discount=discount,
-                    )
+                subscription = await self.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=update.product_id,
+                    proration_behavior=update.proration_behavior,
+                    discount=update.discount,
+                )
             # Only update discount if product is not being updated,
             # otherwise it will be handled in update_product()
             # with the right timing depending on proration_behavior
@@ -1079,7 +1076,7 @@ class SubscriptionService:
         *,
         product_id: uuid.UUID,
         proration_behavior: SubscriptionProrationBehavior | None = None,
-        discount: Discount | Literal["unset"] | None = None,
+        discount: uuid.UUID | Literal["unset"] | None = None,
         allowed_visibilities: frozenset[Visibility] = frozenset(Visibility),
     ) -> Subscription:
         if subscription.revoked or subscription.cancel_at_period_end:
@@ -1233,121 +1230,127 @@ class SubscriptionService:
         organization = await organization_repository.get_by_id(product.organization_id)
         assert organization is not None
 
-        assert is_recurring_product(product)
-        # We are checking for product.is_recurring instead of is_recurring_product
-        # because legacy products will have is_recurring but not be of type RecurringProduct
-        # which is_recurring_product asserts.
-        assert previous_product.is_recurring
+        async with self.resolve_discount(
+            session, ctx, subscription, discount=discount, product=product
+        ) as resolved_discount:
+            assert is_recurring_product(product)
+            # We are checking for product.is_recurring instead of is_recurring_product
+            # because legacy products will have is_recurring but not be of type RecurringProduct
+            # which is_recurring_product asserts.
+            assert previous_product.is_recurring
 
-        if proration_behavior is None:
-            proration_behavior = organization.proration_behavior
+            if proration_behavior is None:
+                proration_behavior = organization.proration_behavior
 
-        # Non-seat → seat upgrades: promote `subscription.seats` to the new
-        # product's first seat-price tier minimum so the proration debit and
-        # `apply_update`'s product-branch rebuild both see a valid seat count.
-        # Block `next_period` because the post-apply seat auto-claim has to run
-        # immediately so the billing customer doesn't lose benefit access.
-        is_initial_seat_transition = not old_has_seat_prices and new_has_seat_prices
-        if is_initial_seat_transition:
-            if proration_behavior == SubscriptionProrationBehavior.next_period:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "proration_behavior"),
-                            "msg": "Switching from a non-seat to a seat-based product must apply immediately and can't use the 'next_period' proration behavior.",
-                            "input": proration_behavior,
-                        }
-                    ]
-                )
-            for price in currency_prices:
-                if is_seat_price(price):
-                    subscription.seats = price.get_minimum_seats()
-                    break
+            # Non-seat → seat upgrades: promote `subscription.seats` to the new
+            # product's first seat-price tier minimum so the proration debit and
+            # `apply_update`'s product-branch rebuild both see a valid seat count.
+            # Block `next_period` because the post-apply seat auto-claim has to run
+            # immediately so the billing customer doesn't lose benefit access.
+            is_initial_seat_transition = not old_has_seat_prices and new_has_seat_prices
+            if is_initial_seat_transition:
+                if proration_behavior == SubscriptionProrationBehavior.next_period:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "proration_behavior"),
+                                "msg": "Switching from a non-seat to a seat-based product must apply immediately and can't use the 'next_period' proration behavior.",
+                                "input": proration_behavior,
+                            }
+                        ]
+                    )
+                for price in currency_prices:
+                    if is_seat_price(price):
+                        subscription.seats = price.get_minimum_seats()
+                        break
 
-        subscription_update_repository = SubscriptionUpdateRepository.from_session(
-            session
-        )
-
-        subscription_update, billing_entries = generate_subscription_update(
-            subscription, proration_behavior, product=product, discount=discount
-        )
-        if proration_behavior == SubscriptionProrationBehavior.next_period:
-            subscription.pending_update = await subscription_update_repository.upsert(
-                subscription_update
+            subscription_update_repository = SubscriptionUpdateRepository.from_session(
+                session
             )
-        else:
-            await (
-                subscription_update_repository.soft_delete_unapplied_by_subscription_id(
+
+            subscription_update, billing_entries = generate_subscription_update(
+                subscription,
+                proration_behavior,
+                product=product,
+                discount=resolved_discount,
+            )
+            if proration_behavior == SubscriptionProrationBehavior.next_period:
+                subscription.pending_update = (
+                    await subscription_update_repository.upsert(subscription_update)
+                )
+            else:
+                await subscription_update_repository.soft_delete_unapplied_by_subscription_id(
                     subscription.id
                 )
+                subscription.pending_update = None
+
+                # Skip proration for trialing subscriptions - no billing during trial
+                if not was_trialing:
+                    for entry in billing_entries:
+                        entry.event = event
+                        session.add(entry)
+
+                interval_changed = subscription_update.is_interval_changed()
+                subscription = subscription_update.apply_update()
+                if was_trialing:
+                    if ends_trial:
+                        # End the trial immediately - cycle() below will transition
+                        # to active and bill the customer for the new period.
+                        subscription.trial_end = subscription.current_period_end = (
+                            utc_now()
+                        )
+                    else:
+                        assert new_trial_end is not None
+                        subscription.trial_end = new_trial_end
+                        subscription.current_period_end = new_trial_end
+                session.add(subscription)
+                await session.flush()
+
+                if was_trialing and ends_trial:
+                    ctx.set_billing_effect("cycle")
+                elif (
+                    (proration_behavior.is_immediate() or interval_changed)
+                    and not was_trialing
+                    and billing_entries
+                ):
+                    ctx.set_billing_effect("invoice")
+
+                # When transitioning from non-seat to seat-based pricing, promote
+                # the billing customer to a 'team' customer and claim a seat for
+                # them so they keep benefit access immediately after the switch.
+                if is_initial_seat_transition:
+                    await self._maybe_upgrade_customer_to_team(
+                        session, subscription.customer
+                    )
+                    await seat_service.assign_seat(
+                        session,
+                        subscription,
+                        customer_id=subscription.customer_id,
+                        immediate_claim=True,
+                    )
+
+                await self.enqueue_benefits_grants(session, subscription)
+
+                # Seat-based subscriptions short-circuit enqueue_benefits_grants
+                # while active, so existing claimed seats won't pick up the new
+                # product's benefits without an explicit re-sync.
+                if product.has_seat_based_price and subscription.active:
+                    await seat_service.update_subscription_benefits_grants(
+                        session, subscription
+                    )
+
+                # Send product change email notification
+                await self.send_subscription_updated_email(
+                    session, subscription, product, proration_behavior
+                )
+
+            ctx.add_event_metadata(
+                product_id=str(product.id),
+                proration_behavior=proration_behavior,
             )
-            subscription.pending_update = None
 
-            # Skip proration for trialing subscriptions - no billing during trial
-            if not was_trialing:
-                for entry in billing_entries:
-                    entry.event = event
-                    session.add(entry)
-
-            interval_changed = subscription_update.is_interval_changed()
-            subscription = subscription_update.apply_update()
-            if was_trialing:
-                if ends_trial:
-                    # End the trial immediately - cycle() below will transition
-                    # to active and bill the customer for the new period.
-                    subscription.trial_end = subscription.current_period_end = utc_now()
-                else:
-                    assert new_trial_end is not None
-                    subscription.trial_end = new_trial_end
-                    subscription.current_period_end = new_trial_end
-            session.add(subscription)
-            await session.flush()
-
-            if was_trialing and ends_trial:
-                ctx.set_billing_effect("cycle")
-            elif (
-                (proration_behavior.is_immediate() or interval_changed)
-                and not was_trialing
-                and billing_entries
-            ):
-                ctx.set_billing_effect("invoice")
-
-            # When transitioning from non-seat to seat-based pricing, promote
-            # the billing customer to a 'team' customer and claim a seat for
-            # them so they keep benefit access immediately after the switch.
-            if is_initial_seat_transition:
-                await self._maybe_upgrade_customer_to_team(
-                    session, subscription.customer
-                )
-                await seat_service.assign_seat(
-                    session,
-                    subscription,
-                    customer_id=subscription.customer_id,
-                    immediate_claim=True,
-                )
-
-            await self.enqueue_benefits_grants(session, subscription)
-
-            # Seat-based subscriptions short-circuit enqueue_benefits_grants
-            # while active, so existing claimed seats won't pick up the new
-            # product's benefits without an explicit re-sync.
-            if product.has_seat_based_price and subscription.active:
-                await seat_service.update_subscription_benefits_grants(
-                    session, subscription
-                )
-
-            # Send product change email notification
-            await self.send_subscription_updated_email(
-                session, subscription, product, proration_behavior
-            )
-
-        ctx.add_event_metadata(
-            product_id=str(product.id),
-            proration_behavior=proration_behavior,
-        )
-
-        return subscription
+            return subscription
 
     async def clear_pending_update(
         self,
@@ -1401,6 +1404,7 @@ class SubscriptionService:
         subscription: Subscription,
         *,
         discount: uuid.UUID | Literal["unset"] | None,
+        product: Product,
     ) -> AsyncGenerator[Discount | Literal["unset"] | None, None]:
         if discount is None:
             yield None
@@ -1414,7 +1418,7 @@ class SubscriptionService:
             session,
             discount,
             subscription.organization,
-            products=[subscription.product],
+            products=[product],
         )
         if resolved_discount is None:
             raise PolarRequestValidationError(
@@ -1459,7 +1463,7 @@ class SubscriptionService:
     ) -> Subscription:
         repository = SubscriptionRepository.from_session(session)
         async with self.resolve_discount(
-            session, ctx, subscription, discount=discount
+            session, ctx, subscription, discount=discount, product=subscription.product
         ) as resolved_discount:
             assert resolved_discount is not None
             ctx.add_event_metadata(

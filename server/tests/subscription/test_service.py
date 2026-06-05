@@ -3020,6 +3020,62 @@ class TestUpdate:
             updated,
         )
 
+    async def test_product_and_discount_update_with_discount_for_new_product(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        webhook_service_send_mock: MagicMock,
+    ) -> None:
+        # Create a discount that is only applicable to a new product
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        discount_for_new_product = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5_000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            code="DISCOUNT_FOR_NEW_PRODUCT",
+            products=[new_product],
+        )
+
+        # Create a subscription with the original product (no discount)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        # Update both product and discount in a single request
+        # The discount should be validated against the new product, not the old one
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update(
+                session,
+                ctx,
+                subscription,
+                update=SubscriptionUpdateBase(
+                    product_id=new_product.id,
+                    discount_id=discount_for_new_product.id,
+                ),
+            )
+
+        assert updated.product == new_product
+        assert updated.discount == discount_for_new_product
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
+        )
+
 
 @pytest.mark.asyncio
 class TestUpdateProduct:

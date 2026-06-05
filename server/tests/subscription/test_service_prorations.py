@@ -1,4 +1,5 @@
 import typing
+import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -1268,24 +1269,28 @@ class TestUpdateProductProrations:
         else:
             old_discount_arg = None
 
-        new_discount_arg: Discount | typing.Literal["unset"]
+        new_discount_arg: uuid.UUID | typing.Literal["unset"]
         if new_discount is not None:
             if new_discount[0] == DiscountType.percentage:
-                new_discount_arg = await create_discount(
-                    save_fixture,
-                    type=DiscountType.percentage,
-                    basis_points=new_discount[1],
-                    organization=organization,
-                    duration=DiscountDuration.forever,
-                )
+                new_discount_arg = (
+                    await create_discount(
+                        save_fixture,
+                        type=DiscountType.percentage,
+                        basis_points=new_discount[1],
+                        organization=organization,
+                        duration=DiscountDuration.forever,
+                    )
+                ).id
             else:
-                new_discount_arg = await create_discount(
-                    save_fixture,
-                    type=DiscountType.fixed,
-                    amounts={"usd": new_discount[1]},
-                    organization=organization,
-                    duration=DiscountDuration.forever,
-                )
+                new_discount_arg = (
+                    await create_discount(
+                        save_fixture,
+                        type=DiscountType.fixed,
+                        amounts={"usd": new_discount[1]},
+                        organization=organization,
+                        duration=DiscountDuration.forever,
+                    )
+                ).id
         else:
             new_discount_arg = "unset"
 

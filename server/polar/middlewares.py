@@ -6,7 +6,7 @@ import dramatiq
 import logfire
 import sentry_sdk
 import structlog
-from starlette.datastructures import MutableHeaders
+from starlette.datastructures import Headers, MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from polar.logging import CorrelationID, Logger
@@ -37,10 +37,32 @@ class LogCorrelationIdMiddleware:
         if root_span is not None and root_span.is_recording():
             root_span.set_attribute("correlation_id", correlation_id)
 
+        # Capture client identification headers (sent by the mobile app)
+        # so we can correlate API traffic to specific client builds for
+        # retrocompatibility monitoring.
+        headers = Headers(scope=scope)
+        client_context = {
+            key: value
+            for key, value in (
+                ("client_version", headers.get("x-polar-client-version")),
+                ("client_runtime", headers.get("x-polar-client-runtime")),
+                ("client_update", headers.get("x-polar-client-update")),
+            )
+            if value is not None
+        }
+        if client_context:
+            structlog.contextvars.bind_contextvars(**client_context)
+            for key, value in client_context.items():
+                sentry_sdk.set_tag(key, value)
+                if root_span is not None and root_span.is_recording():
+                    root_span.set_attribute(key, value)
+
         await self.app(scope, receive, send)
 
         logfire_stack.close()
-        structlog.contextvars.unbind_contextvars("correlation_id", "method", "path")
+        structlog.contextvars.unbind_contextvars(
+            "correlation_id", "method", "path", *client_context.keys()
+        )
         CorrelationID.clear()
 
 

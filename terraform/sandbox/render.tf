@@ -57,6 +57,16 @@ import {
   id = "22bcd1b07ec25452aab472486bc8df94/18ef1ec6c3bae11c97624278b1dc0436"
 }
 
+import {
+  to = module.sandbox.cloudflare_dns_record.resend_spf_mx
+  id = "22bcd1b07ec25452aab472486bc8df94/d63d2cb0fe67c06b91baec8ed9f9546b"
+}
+
+import {
+  to = module.sandbox.cloudflare_dns_record.resend_spf_txt
+  id = "22bcd1b07ec25452aab472486bc8df94/eb6326cb55c1a417eacc2f984c9ecf88"
+}
+
 module "sandbox" {
   source = "../modules/render_service"
 
@@ -80,9 +90,10 @@ module "sandbox" {
     port = local.redis_port
   }
 
-  resend_dkim = {
-    zone_id    = "22bcd1b07ec25452aab472486bc8df94"
-    public_key = "p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCx8TPulpiuGKqifNLwJchDkpDbZK0R25boNFoztUf8nNT+4h3jzZL6pE3sJ2oSbqOZ4Jfr+4R7E9uXsmSQf5WJcXJOLjVhd8HJOQIdjn9WtJGxzplXs5f1iWFBBsTK7jOkDPVnWOovYBDa2fRypKGdHsSvi0kDZ5sV89/y/1QZlQIDAQAB"
+  resend_domain = {
+    zone_id         = "22bcd1b07ec25452aab472486bc8df94"
+    dkim_public_key = "p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCx8TPulpiuGKqifNLwJchDkpDbZK0R25boNFoztUf8nNT+4h3jzZL6pE3sJ2oSbqOZ4Jfr+4R7E9uXsmSQf5WJcXJOLjVhd8HJOQIdjn9WtJGxzplXs5f1iWFBBsTK7jOkDPVnWOovYBDa2fRypKGdHsSvi0kDZ5sV89/y/1QZlQIDAQAB"
+    spf_policy      = "\"v=spf1 include:amazonses.com -all\""
   }
 
   api_service_config = {

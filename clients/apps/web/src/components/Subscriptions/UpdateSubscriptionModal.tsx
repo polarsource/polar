@@ -44,9 +44,7 @@ import { ProrationBehavior } from '../Settings/ProrationBehavior'
 import { toast } from '../Toast/use-toast'
 
 const validationDiscriminators = [
-  'SubscriptionUpdateProduct',
-  'SubscriptionUpdateDiscount',
-  'SubscriptionUpdateTrial',
+  'SubscriptionUpdateBase',
   'SubscriptionUpdateBillingPeriod',
 ]
 
@@ -64,7 +62,7 @@ const UpdateProduct = ({
   const defaultProrationBehavior =
     organization.subscription_settings.proration_behavior
 
-  const form = useForm<schemas['SubscriptionUpdateProduct']>({
+  const form = useForm<schemas['SubscriptionUpdateBase']>({
     defaultValues: {
       proration_behavior: defaultProrationBehavior,
     },
@@ -115,7 +113,7 @@ const UpdateProduct = ({
   const trialOutcome = useTrialChangeOutcome(subscription, selectedProduct)
 
   const onSubmit = useCallback(
-    async (body: schemas['SubscriptionUpdateProduct']) => {
+    async (body: schemas['SubscriptionUpdateBase']) => {
       await updateSubscription.mutateAsync(body).then(({ error }) => {
         if (error) {
           if (error.detail)
@@ -164,7 +162,7 @@ const UpdateProduct = ({
 
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      defaultValue={field.value || undefined}
                     >
                       <SelectTrigger className="h-14">
                         <SelectValue placeholder="Select a new product" />
@@ -306,7 +304,7 @@ const UpdateDiscount = ({
     subscription.discount_id,
   )
 
-  const form = useForm<schemas['SubscriptionUpdateDiscount']>({
+  const form = useForm<schemas['SubscriptionUpdateBase']>({
     defaultValues: {
       discount_id: subscription.discount_id || '',
     },
@@ -314,7 +312,7 @@ const UpdateDiscount = ({
   const { control, handleSubmit, setError } = form
 
   const onSubmit = useCallback(
-    async (body: schemas['SubscriptionUpdateDiscount']) => {
+    async (body: schemas['SubscriptionUpdateBase']) => {
       await updateSubscription.mutateAsync(body).then(({ error }) => {
         if (error) {
           if (error.detail)
@@ -443,7 +441,7 @@ const UpdateTrial = ({
     return undefined
   }, [subscription])
 
-  const form = useForm<schemas['SubscriptionUpdateTrial']>({
+  const form = useForm<schemas['SubscriptionUpdateBase']>({
     defaultValues: {
       trial_end: subscription.trial_end || undefined,
     },
@@ -488,7 +486,7 @@ const UpdateTrial = ({
   }, [updateSubscription, subscription, setError, onUpdate, hideConfirmModal])
 
   const onSubmit = useCallback(
-    async (body: schemas['SubscriptionUpdateTrial']) => {
+    async (body: schemas['SubscriptionUpdateBase']) => {
       // Don't submit if trial_end is 'now' - that should use the separate flow
       if (body.trial_end === 'now') {
         return
@@ -556,7 +554,11 @@ const UpdateTrial = ({
                       <FormLabel>Trial End Date</FormLabel>
 
                       <DateTimePicker
-                        value={field.value === 'now' ? undefined : field.value}
+                        value={
+                          field.value === 'now'
+                            ? undefined
+                            : field.value || undefined
+                        }
                         onChange={field.onChange}
                         disabled={minDate ? { before: minDate } : undefined}
                       />

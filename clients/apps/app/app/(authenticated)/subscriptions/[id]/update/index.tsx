@@ -34,7 +34,7 @@ export default function Index() {
 
   const updateSubscription = useUpdateSubscription(id as string)
 
-  const form = useForm<schemas['SubscriptionUpdateProduct']>({
+  const form = useForm<schemas['SubscriptionUpdateBase']>({
     defaultValues: {
       proration_behavior: 'prorate',
     },
@@ -66,7 +66,7 @@ export default function Index() {
   )
 
   const onSubmit = useCallback(
-    async (body: schemas['SubscriptionUpdateProduct']) => {
+    async (body: schemas['SubscriptionUpdateBase']) => {
       await updateSubscription.mutateAsync(body).then(({ error }) => {
         console.log({ error })
         if (error) {
@@ -224,7 +224,7 @@ const ProrationBehaviorSelector = ({
   form,
 }: {
   organization: schemas['Organization']
-  form: UseFormReturn<schemas['SubscriptionUpdateProduct']>
+  form: UseFormReturn<schemas['SubscriptionUpdateBase']>
 }) => {
   const { watch, setValue } = form
 

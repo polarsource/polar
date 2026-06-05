@@ -90,6 +90,7 @@ export default [
       'e2e/**',
       'playwright-report/**',
       'babel.config.js',
+      'scripts/**',
     ],
   },
 ]

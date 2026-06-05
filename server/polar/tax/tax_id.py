@@ -270,12 +270,12 @@ class CONITValidator(ValidatorProtocol):
             raise InvalidTaxID(number, country) from e
 
 
-# Juridical/company RUC (third digit "9") that the SRI issues without a usable
-# módulo-11 check digit: province (2) + "9" + 7-digit identifier + "001" matriz.
-# Only consulted after stdnum raises InvalidChecksum, i.e. once length, digits
-# and a valid province code are already guaranteed.
+# Structural fallback for company RUCs the SRI issues without a usable módulo-11
+# check digit (see ECRUCValidator for the full breakdown). Self-contained so the
+# recovery path validates the structure itself rather than trusting stdnum,
+# whose checksum we already know to be unreliable for these numbers.
 # Upstream: https://github.com/arthurdejong/python-stdnum/issues/497
-_EC_RUC_NO_CHECKSUM = re.compile(r"[0-9]{2}9[0-9]{7}001")
+_EC_RUC_NO_CHECKSUM = re.compile(r"(0[1-9]|1[0-9]|2[0-4]|30)9[0-d]{7}001")
 
 
 class ECRUCValidator(ValidatorProtocol):
@@ -284,12 +284,21 @@ class ECRUCValidator(ValidatorProtocol):
     Some valid juridical RUCs (third digit "9") carry no recomputable check
     digit: the SRI issues them without applying the módulo-11 algorithm, so
     stdnum rejects them with InvalidChecksum even though they are active,
-    registered companies.
+    registered companies (e.g. 1793213150001 -> CARNADA S.A.S.).
 
-    We keep stdnum's full validation (length, province, entity type,
-    establishment number) but forgive the checksum, and only for this
-    juridical/company class. Natural-person (third digit 0-5) and public (6)
-    RUCs keep their full checksum, so personal numbers stay strictly validated.
+    When stdnum reports a bad checksum we fall back to validating the structure
+    ourselves against _EC_RUC_NO_CHECKSUM, which matches, in order:
+
+    - ``(0[1-9]|1[0-9]|2[0-4]|30)`` -- province code: 01-24 (the 24 provinces)
+      or 30 (registered abroad); 25-29 are reserved,
+    - ``9`` -- third digit: company/juridical taxpayer,
+    - ``[0-d]{7}`` -- 7-digit identifier (the sequential plus the unused check
+      digit slot),
+    - ``001`` -- establishment: the head office (matriz).
+
+    The pattern only matches companies, so the checksum is forgiven solely for
+    them: a natural-person (third digit 0-5, i.e. sole proprietor) or public (6)
+    RUC that reaches this fallback fails to match and is rejected.
     """
 
     def validate(self, number: str, country: str) -> str:

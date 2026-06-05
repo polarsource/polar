@@ -738,6 +738,9 @@ class PolarSelfService:
         return plan
 
     def _product_fixed_price_amount(self, product: "Product") -> int:
+        # Intentionally considers only the fixed component: Polar's self-billing
+        # plans are flat-fee, and this helper only picks a proration direction, so
+        # any seat-based component composed alongside the fixed price is irrelevant.
         for price in product.prices:
             if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
                 return price.price_amount

@@ -1,9 +1,11 @@
 # =============================================================================
 # Vercel — Test frontend (test.polar.sh)
 # =============================================================================
-#
-# Created fresh by Terraform (no import blocks): Terraform owns the project,
-# its domain and every env var declared here from the start.
+
+import {
+  to = module.vercel.cloudflare_dns_record.this["test.polar.sh"]
+  id = "22bcd1b07ec25452aab472486bc8df94/7eee3c07157a8904f30fc3fd27b7ba27"
+}
 
 module "vercel" {
   source = "../modules/vercel"

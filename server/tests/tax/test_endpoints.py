@@ -168,3 +168,41 @@ class TestListTaxJurisdictions:
 
         # Default sort is by net tax remitted, descending.
         assert [item["id"] for item in json["items"]] == ["GB", "US-CA", "US-NY"]
+
+
+@pytest.mark.asyncio
+class TestGetTaxSummary:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/taxes/summary")
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_not_organization_member(
+        self, client: AsyncClient, tax_transactions: None
+    ) -> None:
+        response = await client.get("/v1/taxes/summary")
+        assert response.status_code == 200
+        json = response.json()
+        assert json["tax_amount"] == 0
+        assert json["order_count"] == 0
+        assert json["jurisdiction_count"] == 0
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_read}))
+    async def test_user_valid(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        tax_transactions: None,
+    ) -> None:
+        response = await client.get("/v1/taxes/summary")
+        assert response.status_code == 200
+        json = response.json()
+
+        # Totals span every jurisdiction, not just a single page:
+        # tax = 120 (US-CA) + 80 (US-NY) + 300 (GB)
+        assert json["tax_amount"] == 500
+        # orders = 3 (US-CA) + 1 (US-NY) + 2 (GB), no double counting
+        assert json["order_count"] == 6
+        assert json["jurisdiction_count"] == 3
+        # Representative currency comes from the largest tax bucket (GB).
+        assert json["currency"] == "usd"

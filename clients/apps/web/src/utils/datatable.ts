@@ -19,7 +19,9 @@ export const sortingStateToQueryParam = <S extends string>(
   return state.map(({ id, desc }) => `${desc ? '-' : ''}${id}` as S)
 }
 
-const sortingQueryParamToState = (param: string[]): DataTableSortingState => {
+export const sortingQueryParamToState = (
+  param: string[],
+): DataTableSortingState => {
   return param.map((id) => {
     if (id[0] === '-') {
       return { id: id.slice(1), desc: true }

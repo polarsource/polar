@@ -2,7 +2,12 @@
 
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { useTaxJurisdictions } from '@/hooks/queries'
+import { useTaxJurisdictions, useTaxSummary } from '@/hooks/queries'
+import {
+  DataTableSortingState,
+  sortingQueryParamToState,
+  sortingStateToQueryParam,
+} from '@/utils/datatable'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -16,7 +21,7 @@ import {
   Button,
 } from '@polar-sh/orbit'
 import { endOfDay, endOfMonth, endOfToday, startOfMonth } from 'date-fns'
-import { parseAsString, useQueryState } from 'nuqs'
+import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
 import { useMemo } from 'react'
 
 const getDefaultStartDate = () => toISODate(startOfMonth(endOfToday()))
@@ -49,6 +54,7 @@ const columns: DataTableColumnDef<schemas['TaxJurisdiction']>[] = [
   },
   {
     id: 'status',
+    enableSorting: false,
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Status" />
     ),
@@ -128,6 +134,11 @@ export default function TaxesPage({
     parseAsString.withDefault(getDefaultEndDate()),
   )
 
+  const [sortingParam, setSortingParam] = useQueryState(
+    'sorting',
+    parseAsArrayOf(parseAsString).withDefault(['-tax_amount']),
+  )
+
   const dateRange = useMemo(
     () => ({
       from: fromISODate(startDateISOString),
@@ -136,30 +147,35 @@ export default function TaxesPage({
     [startDateISOString, endDateISOString],
   )
 
+  const sorting = useMemo(
+    () => sortingQueryParamToState(sortingParam),
+    [sortingParam],
+  )
+
+  const onSortingChange = (
+    updater:
+      | DataTableSortingState
+      | ((old: DataTableSortingState) => DataTableSortingState),
+  ) => {
+    const next = typeof updater === 'function' ? updater(sorting) : updater
+    setSortingParam(sortingStateToQueryParam(next))
+  }
+
   const { data, isLoading } = useTaxJurisdictions({
     organization_id: organization.id,
     start_date: startDateISOString,
     end_date: endDateISOString,
-    sorting: ['-tax_amount'],
+    sorting: sortingParam as schemas['TaxJurisdictionSortProperty'][],
     limit: 100,
   })
 
-  const jurisdictions = useMemo(() => data?.items ?? [], [data])
+  const { data: summary } = useTaxSummary({
+    organization_id: organization.id,
+    start_date: startDateISOString,
+    end_date: endDateISOString,
+  })
 
-  const summary = useMemo(() => {
-    const totalRemitted = jurisdictions.reduce(
-      (sum, j) => sum + j.tax_amount,
-      0,
-    )
-    const totalOrders = jurisdictions.reduce((sum, j) => sum + j.order_count, 0)
-    const currency = jurisdictions[0]?.currency ?? 'usd'
-    return {
-      totalRemitted,
-      totalOrders,
-      currency,
-      jurisdictionCount: data?.pagination.total_count ?? jurisdictions.length,
-    }
-  }, [jurisdictions, data])
+  const jurisdictions = useMemo(() => data?.items ?? [], [data])
 
   return (
     <DashboardBody wrapperClassName="max-w-(--breakpoint-lg)!">
@@ -198,15 +214,15 @@ export default function TaxesPage({
           <SummaryCard
             label="Tax remitted by Polar"
             value={formatCurrency('accounting')(
-              summary.totalRemitted,
-              summary.currency,
+              summary?.tax_amount ?? 0,
+              summary?.currency ?? 'usd',
             )}
             hint="Filed and paid for you"
           />
           <SummaryCard
             label="Jurisdictions covered"
-            value={summary.jurisdictionCount.toLocaleString()}
-            hint={`${summary.totalOrders.toLocaleString()} orders processed`}
+            value={(summary?.jurisdiction_count ?? 0).toLocaleString()}
+            hint={`${(summary?.order_count ?? 0).toLocaleString()} orders processed`}
           />
         </Box>
 
@@ -229,6 +245,8 @@ export default function TaxesPage({
             columns={columns}
             data={jurisdictions}
             isLoading={isLoading}
+            sorting={sorting}
+            onSortingChange={onSortingChange}
           />
         </Box>
       </Box>

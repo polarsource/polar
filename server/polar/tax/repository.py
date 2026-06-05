@@ -3,6 +3,7 @@ from datetime import date, timedelta
 from uuid import UUID
 
 from sqlalchemy import Select, case, func, select
+from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.sql.expression import asc, desc
 
 from polar.kit.repository import RepositoryBase
@@ -78,3 +79,37 @@ class TaxJurisdictionRepository(RepositoryBase[Transaction]):
         statement = statement.order_by(*order_by_clauses)
 
         return statement
+
+    def get_summary_statement(
+        self,
+        organization_ids: Sequence[UUID],
+        *,
+        start_date: date | None = None,
+        end_date: date | None = None,
+    ) -> Select[tuple[str | None, int, int, int]]:
+        # Aggregate the per-jurisdiction breakdown into a single net total so
+        # the summary reflects the full filtered dataset rather than whatever
+        # page the breakdown is currently showing.
+        grouped = self.get_jurisdictions_statement(
+            organization_ids,
+            start_date=start_date,
+            end_date=end_date,
+            sorting=[],
+        ).subquery()
+
+        # Each order belongs to exactly one (country, state, currency) bucket,
+        # so summing the per-bucket order counts yields the distinct order
+        # total without double counting.
+        return select(
+            # Representative currency: the one from the largest tax bucket,
+            # matching the breakdown's default `-tax_amount` ordering. NULL
+            # (no rows) is handled by the caller.
+            func.array_agg(
+                aggregate_order_by(
+                    grouped.c.currency, func.abs(grouped.c.tax_amount).desc()
+                )
+            )[1].label("currency"),
+            func.coalesce(func.sum(grouped.c.tax_amount), 0).label("tax_amount"),
+            func.coalesce(func.sum(grouped.c.order_count), 0).label("order_count"),
+            func.count().label("jurisdiction_count"),
+        ).select_from(grouped)

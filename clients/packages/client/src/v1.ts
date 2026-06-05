@@ -1368,6 +1368,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/taxes/summary': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Tax Summary
+     * @description **Scopes**: `orders:read`
+     */
+    get: operations['taxes:get_summary']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/auth/logout': {
     parameters: {
       query?: never
@@ -30408,6 +30428,35 @@ export interface components {
       | 'country'
       | '-country'
     /**
+     * TaxSummary
+     * @description Aggregated tax remitted by Polar across all jurisdictions.
+     *
+     *     Totals span the full filtered dataset, independent of the pagination
+     *     applied to the jurisdiction breakdown.
+     */
+    TaxSummary: {
+      /**
+       * Currency
+       * @description Currency of the remitted tax amount.
+       */
+      currency: string
+      /**
+       * Tax Amount
+       * @description Net tax remitted by Polar across all jurisdictions, in the currency's minor unit. Refunds and disputes are netted out.
+       */
+      tax_amount: number
+      /**
+       * Order Count
+       * @description Number of orders that contributed tax across all jurisdictions.
+       */
+      order_count: number
+      /**
+       * Jurisdiction Count
+       * @description Number of distinct jurisdictions tax was remitted in.
+       */
+      jurisdiction_count: number
+    }
+    /**
      * TimeInterval
      * @enum {string}
      */
@@ -35342,6 +35391,42 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ListResource_TaxJurisdiction_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'taxes:get_summary': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Only include tax remitted on or after this date. */
+        start_date?: string | null
+        /** @description Only include tax remitted on or before this date. */
+        end_date?: string | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TaxSummary']
         }
       }
       /** @description Validation Error */

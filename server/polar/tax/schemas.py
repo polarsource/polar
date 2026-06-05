@@ -59,6 +59,12 @@ class TaxJurisdiction(Schema):
         tax_amount: int,
         order_count: int,
     ) -> "TaxJurisdiction":
+        # Normalize codes to upper case so the constructed ID is stable
+        # regardless of how the underlying transaction stored them (e.g. `us`
+        # and `US` must resolve to the same `US-CA` identifier).
+        country = country.upper()
+        state = state.upper() if state else None
+
         country_obj = pycountry.countries.get(alpha_2=country)
         country_name = cast(Any, country_obj).name if country_obj else country
 
@@ -77,3 +83,25 @@ class TaxJurisdiction(Schema):
             tax_amount=tax_amount,
             order_count=order_count,
         )
+
+
+class TaxSummary(Schema):
+    """Aggregated tax remitted by Polar across all jurisdictions.
+
+    Totals span the full filtered dataset, independent of the pagination
+    applied to the jurisdiction breakdown.
+    """
+
+    currency: str = Field(description="Currency of the remitted tax amount.")
+    tax_amount: int = Field(
+        description=(
+            "Net tax remitted by Polar across all jurisdictions, in the "
+            "currency's minor unit. Refunds and disputes are netted out."
+        )
+    )
+    order_count: int = Field(
+        description="Number of orders that contributed tax across all jurisdictions."
+    )
+    jurisdiction_count: int = Field(
+        description="Number of distinct jurisdictions tax was remitted in."
+    )

@@ -22,3 +22,20 @@ export const useTaxJurisdictions = (variables: {
     retry: defaultRetry,
     enabled: !!variables.organization_id,
   })
+
+export const useTaxSummary = (variables: {
+  organization_id?: string
+  start_date?: string
+  end_date?: string
+}): UseQueryResult<schemas['TaxSummary']> =>
+  useQuery({
+    queryKey: ['tax_summary', { ...variables }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/taxes/summary', {
+          params: { query: { ...variables } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!variables.organization_id,
+  })

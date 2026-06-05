@@ -10,7 +10,7 @@ from polar.kit.sorting import Sorting
 from polar.postgres import AsyncReadSession
 
 from .repository import TaxJurisdictionRepository
-from .schemas import TaxJurisdiction
+from .schemas import TaxJurisdiction, TaxSummary
 from .sorting import TaxJurisdictionSortProperty
 
 
@@ -26,16 +26,13 @@ class TaxService:
         pagination: PaginationParams,
         sorting: list[Sorting[TaxJurisdictionSortProperty]],
     ) -> tuple[Sequence[TaxJurisdiction], int]:
-        accessible_org_ids = await get_accessible_org_ids(
-            session, auth_subject, permission=OrganizationPermission.finance_read
+        organization_ids = await self._resolve_organization_ids(
+            session, auth_subject, organization_id
         )
-        organization_ids: set[UUID] = set(accessible_org_ids)
-        if organization_id is not None:
-            organization_ids &= set(organization_id)
 
         repository = TaxJurisdictionRepository.from_session(session)
         statement = repository.get_jurisdictions_statement(
-            list(organization_ids),
+            organization_ids,
             start_date=start_date,
             end_date=end_date,
             sorting=sorting,
@@ -53,6 +50,49 @@ class TaxService:
             for country, state, currency, tax_amount, order_count in rows
         ]
         return jurisdictions, count
+
+    async def get_summary(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        organization_id: Sequence[UUID] | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None,
+    ) -> TaxSummary:
+        organization_ids = await self._resolve_organization_ids(
+            session, auth_subject, organization_id
+        )
+
+        repository = TaxJurisdictionRepository.from_session(session)
+        statement = repository.get_summary_statement(
+            organization_ids,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+        result = await session.execute(statement)
+        row = result.one()
+        return TaxSummary(
+            currency=row.currency or "usd",
+            tax_amount=row.tax_amount,
+            order_count=row.order_count,
+            jurisdiction_count=row.jurisdiction_count,
+        )
+
+    async def _resolve_organization_ids(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization_id: Sequence[UUID] | None,
+    ) -> list[UUID]:
+        accessible_org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.finance_read
+        )
+        organization_ids: set[UUID] = set(accessible_org_ids)
+        if organization_id is not None:
+            organization_ids &= set(organization_id)
+        return list(organization_ids)
 
 
 tax = TaxService()

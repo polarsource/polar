@@ -10,7 +10,7 @@ from polar.postgres import AsyncReadSession, get_db_read_session
 from polar.routing import APIRouter
 
 from . import auth, sorting
-from .schemas import TaxJurisdiction
+from .schemas import TaxJurisdiction, TaxSummary
 from .service import tax as tax_service
 
 router = APIRouter(prefix="/taxes", tags=["taxes", APITag.private])
@@ -49,3 +49,32 @@ async def list_jurisdictions(
     )
 
     return ListResource.from_paginated_results(results, count, pagination)
+
+
+@router.get(
+    "/summary",
+    summary="Get Tax Summary",
+    response_model=TaxSummary,
+)
+async def get_summary(
+    auth_subject: auth.TaxRead,
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
+    start_date: date | None = Query(
+        None,
+        description="Only include tax remitted on or after this date.",
+    ),
+    end_date: date | None = Query(
+        None,
+        description="Only include tax remitted on or before this date.",
+    ),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> TaxSummary:
+    return await tax_service.get_summary(
+        session,
+        auth_subject,
+        organization_id=organization_id,
+        start_date=start_date,
+        end_date=end_date,
+    )

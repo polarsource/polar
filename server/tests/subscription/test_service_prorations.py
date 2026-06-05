@@ -49,19 +49,13 @@ from tests.fixtures.random_objects import (
     create_subscription_with_seats,
 )
 
-# Sonar Atlas graduated seat schedule: 1–50 @ $0 (included), 51–100 @ $20,
+# Graduated seat schedule: 1–50 @ $0 (included), 51–100 @ $20,
 # 101–200 @ $17.50, 201+ @ $15.
-SONAR_SEAT_TIERS: list[dict[str, object]] = [
+GRADUATED_SEAT_TIERS: list[dict[str, object]] = [
     {"min_seats": 1, "max_seats": 50, "price_per_seat": 0},
     {"min_seats": 51, "max_seats": 100, "price_per_seat": 2000},
     {"min_seats": 101, "max_seats": 200, "price_per_seat": 1750},
     {"min_seats": 201, "max_seats": None, "price_per_seat": 1500},
-]
-
-# Example B: $200 base, 1–10 @ $0 (included), 11+ @ $20.
-INCLUDED_SEAT_TIERS: list[dict[str, object]] = [
-    {"min_seats": 1, "max_seats": 10, "price_per_seat": 0},
-    {"min_seats": 11, "max_seats": None, "price_per_seat": 2000},
 ]
 
 # This tests Subscription updates with prorations, where the subscription is
@@ -1982,7 +1976,7 @@ class TestFixedSeatProrations:
             save_fixture,
             organization=organization,
             fixed_amount=99900,
-            tiers=SONAR_SEAT_TIERS,
+            tiers=GRADUATED_SEAT_TIERS,
             seat_tier_type=SeatTierType.graduated,
         )
         fixed_price = next(p for p in product.prices if is_fixed_price(p))
@@ -2013,7 +2007,7 @@ class TestFixedSeatProrations:
                 )
             await session.flush()
 
-        # Sonar 143-seat case: $999 + (50×$0 + 50×$20 + 43×$17.50) = $2,751.50
+        # 143-seat case: $999 + (50×$0 + 50×$20 + 43×$17.50) = $2,751.50
         assert updated.seats == 143
         assert updated.amount == 275150
         assert updated.amount == (
@@ -2033,7 +2027,7 @@ class TestFixedSeatProrations:
         assert seat_entries[0].direction == BillingEntryDirection.debit
         assert seat_entries[0].type == BillingEntryType.subscription_seats_increase
 
-    @pytest.mark.parametrize("seats", [1, 10, 11])
+    @pytest.mark.parametrize("seats", [1, 50, 51])
     async def test_included_seats_composition(
         self,
         session: AsyncSession,
@@ -2046,7 +2040,7 @@ class TestFixedSeatProrations:
             save_fixture,
             organization=organization,
             fixed_amount=20000,
-            tiers=INCLUDED_SEAT_TIERS,
+            tiers=GRADUATED_SEAT_TIERS,
             seat_tier_type=SeatTierType.graduated,
         )
         fixed_price = next(p for p in product.prices if is_fixed_price(p))
@@ -2060,7 +2054,7 @@ class TestFixedSeatProrations:
         )
 
         # Seats within the included tier contribute nothing on top of the base.
-        if seats <= 10:
+        if seats <= 50:
             assert seat_price.calculate_amount(seats) == 0
 
         assert subscription.amount == (

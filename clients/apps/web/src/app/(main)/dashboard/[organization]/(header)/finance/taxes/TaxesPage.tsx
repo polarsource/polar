@@ -201,9 +201,15 @@ export default function TaxesPage({
               need for you to register or file in any jurisdictions.
             </Text>
           </Box>
-          <Button variant="default" size="sm">
-            Learn more
-          </Button>
+          <a
+            href="https://polar.sh/docs/merchant-of-record/introduction"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Button variant="default" size="sm">
+              Learn more
+            </Button>
+          </a>
         </Box>
         <Box
           display="flex"

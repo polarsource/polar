@@ -3,7 +3,7 @@ import { FormField } from '@polar-sh/ui/components/ui/form'
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import {
   Select,
   SelectContent,

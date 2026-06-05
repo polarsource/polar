@@ -16,7 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/atoms/DropdownMenu'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'

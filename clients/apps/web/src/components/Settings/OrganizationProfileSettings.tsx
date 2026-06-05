@@ -21,7 +21,7 @@ import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import {
   Select,
   SelectContent,
@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
-import TextArea from '@polar-sh/ui/components/atoms/TextArea'
+import { TextArea } from '@polar-sh/orbit'
 import {
   Form,
   FormControl,

@@ -3,7 +3,7 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import {
   Select,
   SelectContent,
@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
-import TextArea from '@polar-sh/ui/components/atoms/TextArea'
+import { TextArea } from '@polar-sh/orbit'
 import { useState } from 'react'
 
 const FUNDING_OPTIONS = [

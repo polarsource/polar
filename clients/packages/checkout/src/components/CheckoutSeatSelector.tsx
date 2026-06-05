@@ -8,7 +8,7 @@ import {
   type AcceptedLocale,
 } from '@polar-sh/i18n'
 import { Button } from '@polar-sh/orbit'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getSeatPrice, type ProductCheckoutPublic } from '../guards'
 import { ErrorResponse } from '../providers/CheckoutProvider'

@@ -1,4 +1,4 @@
-import { Input as ShadInput } from '@/components/ui/input'
+import { Input as ShadInput } from './ui/input'
 import { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -36,4 +36,4 @@ const Input = ({ ref, preSlot, postSlot, className, ...props }: InputProps) => {
 
 Input.displayName = 'Input'
 
-export default Input
+export { Input }

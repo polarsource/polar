@@ -16,7 +16,7 @@ import RefreshOutlined from '@mui/icons-material/RefreshOutlined'
 import Search from '@mui/icons-material/Search'
 import { operations, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import {
   Select,

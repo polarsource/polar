@@ -6,8 +6,8 @@ import { useAupValidation } from '@/hooks/useAupValidation'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
-import Input from '@polar-sh/ui/components/atoms/Input'
-import TextArea from '@polar-sh/ui/components/atoms/TextArea'
+import { Input } from '@polar-sh/orbit'
+import { TextArea } from '@polar-sh/orbit'
 import {
   Form,
   FormControl,

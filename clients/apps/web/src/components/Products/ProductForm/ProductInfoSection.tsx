@@ -1,7 +1,7 @@
 'use client'
 
 import { Section } from '@/components/Layout/Section'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import {
   FormControl,
   FormField,

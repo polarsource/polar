@@ -7,7 +7,7 @@ import Close from '@mui/icons-material/Close'
 import Search from '@mui/icons-material/Search'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import {
   Popover,

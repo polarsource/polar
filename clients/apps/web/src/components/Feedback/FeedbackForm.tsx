@@ -4,7 +4,7 @@ import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
-import TextArea from '@polar-sh/ui/components/atoms/TextArea'
+import { TextArea } from '@polar-sh/orbit'
 import {
   Form,
   FormControl,

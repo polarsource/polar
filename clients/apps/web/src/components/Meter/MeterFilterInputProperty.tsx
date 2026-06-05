@@ -1,6 +1,6 @@
 'use client'
 
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import {
   Select,
   SelectContent,

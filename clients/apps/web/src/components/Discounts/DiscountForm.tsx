@@ -10,7 +10,7 @@ import {
   AccordionTrigger,
 } from '@polar-sh/ui/components/atoms/Accordion'
 import { Button } from '@polar-sh/orbit'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import PercentageInput from '@polar-sh/ui/components/atoms/PercentageInput'
 import {

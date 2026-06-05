@@ -2,7 +2,7 @@ import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { schemas } from '@polar-sh/client'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import TextArea from '@polar-sh/ui/components/atoms/TextArea'
+import { TextArea } from '@polar-sh/orbit'
 
 const numberFormat = new Intl.NumberFormat(undefined, {})
 

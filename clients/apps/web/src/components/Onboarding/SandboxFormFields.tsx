@@ -2,7 +2,7 @@
 
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   FormControl,

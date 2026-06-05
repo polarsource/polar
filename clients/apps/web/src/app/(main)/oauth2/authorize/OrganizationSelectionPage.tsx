@@ -9,7 +9,7 @@ import { setValidationErrors } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   Form,

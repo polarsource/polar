@@ -2,7 +2,7 @@
 
 import { useEventNames } from '@/hooks/queries/events'
 import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import { useMemo, useState } from 'react'
 import { ControllerRenderProps, FieldPath, FieldValues } from 'react-hook-form'
 

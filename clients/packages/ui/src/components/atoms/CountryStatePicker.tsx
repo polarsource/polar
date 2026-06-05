@@ -1,6 +1,6 @@
 'use client'
 
-import Input from './Input'
+import { Input } from '@polar-sh/orbit'
 import {
   Select,
   SelectContent,

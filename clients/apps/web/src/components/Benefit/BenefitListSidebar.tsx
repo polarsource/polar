@@ -16,7 +16,7 @@ import ArrowUpward from '@mui/icons-material/ArrowUpward'
 import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Input } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import {

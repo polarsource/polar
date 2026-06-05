@@ -1,4 +1,4 @@
-import { Textarea } from '@/components/ui/textarea'
+import { Textarea } from './ui/textarea'
 import { twMerge } from 'tailwind-merge'
 
 export interface TextAreaProps extends React.ComponentProps<'textarea'> {
@@ -22,4 +22,4 @@ const TextArea = ({
 
 TextArea.displayName = 'TextArea'
 
-export default TextArea
+export { TextArea }

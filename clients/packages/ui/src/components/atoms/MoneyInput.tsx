@@ -1,7 +1,7 @@
 import { getCurrencyDecimalFactor, isDecimalCurrency } from '@polar-sh/currency'
 import { ChangeEvent, FocusEvent, useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Input from './Input'
+import { Input } from '@polar-sh/orbit'
 
 interface Props {
   name: string

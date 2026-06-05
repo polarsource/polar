@@ -44,8 +44,12 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
 from polar.product.guard import (
+    is_custom_price,
+    is_fixed_price,
+    is_free_price,
     is_legacy_price,
     is_metered_price,
+    is_seat_price,
     is_static_price,
 )
 from polar.product.repository import ProductRepository
@@ -630,19 +634,66 @@ class ProductService:
             )
 
         # Track price structure per currency for cross-currency validation
-        price_structure_per_currency: dict[str, tuple[int, int]] = {}
+        price_structure_per_currency: dict[str, tuple[bool, bool, bool, bool, int]] = {}
 
         for currency, currency_prices in prices_per_currency.items():
-            # Check that only one static price exists per currency
+            # Classify the static prices in this currency. A product may compose
+            # one fixed price with one seat-based price (billed `fixed + seat_charge`),
+            # plus any number of metered prices. Custom and free prices stand alone.
             static_prices = [p for p, _ in currency_prices if is_static_price(p)]
-            if len(static_prices) > 1:
-                # Bypass that rule for legacy recurring products
-                if not all(is_legacy_price(p) for p in static_prices):
+            fixed_prices = [p for p in static_prices if is_fixed_price(p)]
+            free_prices = [p for p in static_prices if is_free_price(p)]
+            custom_prices = [p for p in static_prices if is_custom_price(p)]
+            seat_prices = [p for p in static_prices if is_seat_price(p)]
+
+            # Bypass these rules for legacy recurring products, which predate the
+            # static-composition model and may carry one static price per interval.
+            if not all(is_legacy_price(p) for p in static_prices):
+                if len(fixed_prices) > 1:
                     errors.append(
                         {
                             "type": "value_error",
                             "loc": error_prefix,
-                            "msg": "Only one static price is allowed.",
+                            "msg": "Only one fixed price is allowed.",
+                            "input": prices_schema,
+                        }
+                    )
+                if len(seat_prices) > 1:
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": error_prefix,
+                            "msg": "Only one seat-based price is allowed.",
+                            "input": prices_schema,
+                        }
+                    )
+                if len(custom_prices) > 1:
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": error_prefix,
+                            "msg": "Only one custom price is allowed.",
+                            "input": prices_schema,
+                        }
+                    )
+                if free_prices and len(static_prices) > 1:
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": error_prefix,
+                            "msg": "A free price cannot be combined with other prices.",
+                            "input": prices_schema,
+                        }
+                    )
+                if custom_prices and (fixed_prices or seat_prices):
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": error_prefix,
+                            "msg": (
+                                "A custom price cannot be combined with "
+                                "a fixed or seat-based price."
+                            ),
                             "input": prices_schema,
                         }
                     )
@@ -676,9 +727,13 @@ class ProductService:
                     }
                 )
 
-            # Record the structure: (static_count, metered_count)
+            # Record the structure:
+            # (has_fixed, has_seat, has_custom, has_free, metered_count)
             price_structure_per_currency[currency] = (
-                len(static_prices),
+                len(fixed_prices) > 0,
+                len(seat_prices) > 0,
+                len(custom_prices) > 0,
+                len(free_prices) > 0,
                 len(currency_meters),
             )
 

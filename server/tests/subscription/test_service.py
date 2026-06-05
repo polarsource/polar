@@ -70,6 +70,8 @@ from polar.product.guard import (
     is_fixed_price,
     is_free_price,
     is_metered_price,
+    is_seat_price,
+    is_static_price,
 )
 from polar.product.price_set import PriceSet
 from polar.subscription.repository import SubscriptionUpdateRepository
@@ -109,6 +111,7 @@ from tests.fixtures.random_objects import (
     create_meter,
     create_payment_method,
     create_product,
+    create_product_fixed_and_seat,
     create_subscription,
     create_subscription_with_seats,
     create_trialing_subscription,
@@ -6770,3 +6773,89 @@ class TestClearPendingUpdate:
 
         # Then: Pending update is cleared
         assert updated_subscription.pending_update is None
+
+
+@pytest.mark.asyncio
+class TestFixedSeatComposition:
+    """A product composing a fixed price with a seat-based price bills F + S(n)."""
+
+    async def test_subscription_has_two_static_prices_and_combined_amount(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_fixed_and_seat(
+            save_fixture,
+            organization=organization,
+            fixed_amount=99900,
+            price_per_seat=2000,
+        )
+        fixed_price = next(p for p in product.prices if is_fixed_price(p))
+        seat_price = next(p for p in product.prices if is_seat_price(p))
+
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=10,
+        )
+
+        static_prices = [
+            spp
+            for spp in subscription.subscription_product_prices
+            if is_static_price(spp.product_price)
+        ]
+        assert len(static_prices) == 2
+        assert subscription.amount == (
+            fixed_price.price_amount + seat_price.calculate_amount(10)
+        )
+
+    async def test_cycle_emits_two_static_billing_entries(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_fixed_and_seat(
+            save_fixture,
+            organization=organization,
+            fixed_amount=99900,
+            price_per_seat=2000,
+        )
+        fixed_price = next(p for p in product.prices if is_fixed_price(p))
+        seat_price = next(p for p in product.prices if is_seat_price(p))
+
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=10,
+            scheduler_locked_at=utc_now(),
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.cycle(session, ctx, subscription)
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert len(billing_entries) == 2
+        assert all(
+            entry.direction == BillingEntryDirection.debit for entry in billing_entries
+        )
+
+        by_price = {entry.product_price_id: entry for entry in billing_entries}
+        assert by_price[fixed_price.id].amount == fixed_price.price_amount
+        assert by_price[seat_price.id].amount == seat_price.calculate_amount(10)
+        # The two static entries together reconstruct the combined amount F + S(n).
+        assert subscription.amount == (
+            fixed_price.price_amount + seat_price.calculate_amount(10)
+        )

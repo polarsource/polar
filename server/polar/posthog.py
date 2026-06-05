@@ -6,6 +6,7 @@ from posthog import Posthog
 
 from polar.auth.models import AuthSubject, Subject, is_organization, is_user
 from polar.config import settings
+from polar.logging import ClientContext
 from polar.models import Organization, User
 
 ORGANIZATION_EVENT_DISTINCT_ID = "organization_event"
@@ -92,6 +93,8 @@ class Service:
             groups=groups,
             properties={
                 **self._get_common_properties(),
+                # Mobile client identification
+                **ClientContext.get(),
                 **(properties or {}),
             },
         )

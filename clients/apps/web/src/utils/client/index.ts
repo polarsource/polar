@@ -16,8 +16,18 @@ const errorMiddleware: Middleware = {
   },
 }
 
+const CLIENT_VERSION_HEADERS = {
+  'X-Polar-Client-Version': `web/${
+    process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 8) ?? 'dev'
+  }`,
+}
+
 export const createClientSideAPI = (token?: string): Client => {
-  const api = baseCreateClient(process.env.NEXT_PUBLIC_API_URL as string, token)
+  const api = baseCreateClient(
+    process.env.NEXT_PUBLIC_API_URL as string,
+    token,
+    CLIENT_VERSION_HEADERS,
+  )
   api.use(errorMiddleware)
   return api
 }
@@ -25,7 +35,7 @@ export const createClientSideAPI = (token?: string): Client => {
 export const api = createClientSideAPI()
 
 export const getSSRHeaders = (): Record<string, string> => {
-  const headers: Record<string, string> = {}
+  const headers: Record<string, string> = { ...CLIENT_VERSION_HEADERS }
 
   if (process.env.POLAR_PREVIEW_ACCESS_TOKEN) {
     headers['X-Preview-Token'] = process.env.POLAR_PREVIEW_ACCESS_TOKEN
@@ -39,7 +49,7 @@ export const createServerSideAPI = async (
   cookies: ReadonlyRequestCookies,
   token?: string,
 ): Promise<Client> => {
-  let apiHeaders = {}
+  let apiHeaders: Record<string, string> = { ...CLIENT_VERSION_HEADERS }
 
   const xForwardedFor = headers.get('X-Forwarded-For')
 

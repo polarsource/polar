@@ -9,10 +9,7 @@ import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
-import {
-  DataTable,
-  DataTableColumnHeader,
-} from '@polar-sh/orbit'
+import { DataTable, DataTableColumnHeader } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Link from 'next/link'
 

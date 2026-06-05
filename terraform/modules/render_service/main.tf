@@ -506,9 +506,26 @@ resource "render_env_group_link" "memory_profile" {
 }
 
 resource "cloudflare_dns_record" "resend_dkim" {
-  zone_id = var.resend_dkim.zone_id
+  zone_id = var.resend_domain.zone_id
   name    = "resend._domainkey.${var.backend_config.email_from_domain}"
   type    = "TXT"
-  content = var.resend_dkim.public_key
+  content = var.resend_domain.dkim_public_key
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "resend_spf_mx" {
+  zone_id  = var.resend_domain.zone_id
+  name     = "send.${var.backend_config.email_from_domain}"
+  type     = "MX"
+  content  = "feedback-smtp.us-east-1.amazonses.com"
+  priority = 10
+  ttl      = 1
+}
+
+resource "cloudflare_dns_record" "resend_spf_txt" {
+  zone_id = var.resend_domain.zone_id
+  name    = "send.${var.backend_config.email_from_domain}"
+  type    = "TXT"
+  content = var.resend_domain.spf_policy
   ttl     = 1
 }

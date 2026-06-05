@@ -289,11 +289,12 @@ variable "cron_jobs" {
   default = {}
 }
 
-variable "resend_dkim" {
-  description = "Resend DKIM TXT record. The record name is derived from backend_config.email_from_domain."
+variable "resend_domain" {
+  description = "Resend domain DNS records (DKIM + SPF). Record names are derived from backend_config.email_from_domain."
   type = object({
-    zone_id    = string
-    public_key = string
+    zone_id         = string
+    dkim_public_key = string
+    spf_policy      = string
   })
 }
 

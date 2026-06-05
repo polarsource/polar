@@ -1,4 +1,5 @@
 import json
+import re
 from collections.abc import Sequence
 from enum import StrEnum
 from typing import TYPE_CHECKING, Annotated, Any, Protocol
@@ -6,6 +7,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Protocol
 import stdnum.ca.bn
 import stdnum.cl.rut
 import stdnum.co.nit
+import stdnum.ec.ruc
 import stdnum.exceptions
 import stdnum.il.idnr
 import stdnum.in_.gstin
@@ -268,6 +270,40 @@ class CONITValidator(ValidatorProtocol):
             raise InvalidTaxID(number, country) from e
 
 
+# Juridical/company RUC (third digit "9") that the SRI issues without a usable
+# módulo-11 check digit: province (2) + "9" + 7-digit identifier + "001" matriz.
+# Only consulted after stdnum raises InvalidChecksum, i.e. once length, digits
+# and a valid province code are already guaranteed.
+# Upstream: https://github.com/arthurdejong/python-stdnum/issues/497
+_EC_RUC_NO_CHECKSUM = re.compile(r"[0-9]{2}9[0-9]{7}001")
+
+
+class ECRUCValidator(ValidatorProtocol):
+    """Validate Ecuadorian RUC.
+
+    Some valid juridical RUCs (third digit "9") carry no recomputable check
+    digit: the SRI issues them without applying the módulo-11 algorithm, so
+    stdnum rejects them with InvalidChecksum even though they are active,
+    registered companies.
+
+    We keep stdnum's full validation (length, province, entity type,
+    establishment number) but forgive the checksum, and only for this
+    juridical/company class. Natural-person (third digit 0-5) and public (6)
+    RUCs keep their full checksum, so personal numbers stay strictly validated.
+    """
+
+    def validate(self, number: str, country: str) -> str:
+        number = stdnum.ec.ruc.compact(number)
+        try:
+            return stdnum.ec.ruc.validate(number)
+        except stdnum.exceptions.InvalidChecksum as e:
+            if _EC_RUC_NO_CHECKSUM.fullmatch(number):
+                return number
+            raise InvalidTaxID(number, country) from e
+        except stdnum.exceptions.ValidationError as e:
+            raise InvalidTaxID(number, country) from e
+
+
 class TRTINValidator(ValidatorProtocol):
     def validate(self, number: str, country: str) -> str:
         number = stdnum.tr.vkn.compact(number)
@@ -343,6 +379,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return CLTINValidator()
         case TaxIDFormat.co_nit:
             return CONITValidator()
+        case TaxIDFormat.ec_ruc:
+            return ECRUCValidator()
         case TaxIDFormat.ge_vat:
             return GEVATValidator()
         case TaxIDFormat.il_vat:

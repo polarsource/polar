@@ -113,12 +113,10 @@ from .schemas import (
     SubscriptionCreateCustomer,
     SubscriptionRevoke,
     SubscriptionUpdate,
+    SubscriptionUpdateBase,
     SubscriptionUpdateBillingPeriod,
     SubscriptionUpdateClear,
-    SubscriptionUpdateDiscount,
-    SubscriptionUpdateProduct,
     SubscriptionUpdateSeats,
-    SubscriptionUpdateTrial,
 )
 from .sorting import SubscriptionSortProperty
 from .update import generate_subscription_update
@@ -972,47 +970,51 @@ class SubscriptionService:
         update: SubscriptionUpdate,
     ) -> Subscription:
         if (
-            isinstance(update, SubscriptionUpdateProduct | SubscriptionUpdateSeats)
-            and update.proration_behavior == SubscriptionProrationBehavior.reset
-        ):
-            organization = subscription.customer.organization
-            if not organization.feature_settings.get(
-                "reset_proration_behavior_enabled"
-            ):
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "proration_behavior"),
-                            "msg": "The 'reset' proration behavior is not enabled for this organization.",
-                            "input": update.proration_behavior,
-                        }
-                    ]
+            isinstance(update, SubscriptionUpdateBase) and update.has_product
+        ) or isinstance(update, SubscriptionUpdateSeats):
+            if update.proration_behavior == SubscriptionProrationBehavior.reset:
+                organization = subscription.organization
+                if not organization.feature_settings.get(
+                    "reset_proration_behavior_enabled"
+                ):
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "proration_behavior"),
+                                "msg": "The 'reset' proration behavior is not enabled for this organization.",
+                                "input": update.proration_behavior,
+                            }
+                        ]
+                    )
+
+        if isinstance(update, SubscriptionUpdateBase):
+            if update.has_product:
+                assert update.product_id is not None
+                subscription = await self.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=update.product_id,
+                    proration_behavior=update.proration_behavior,
                 )
-        if isinstance(update, SubscriptionUpdateProduct):
-            return await self.update_product(
-                session,
-                ctx,
-                subscription,
-                product_id=update.product_id,
-                proration_behavior=update.proration_behavior,
-            )
 
-        if isinstance(update, SubscriptionUpdateDiscount):
-            return await self.update_discount(
-                session,
-                ctx,
-                subscription,
-                discount_id=update.discount_id,
-            )
+            if update.has_discount:
+                subscription = await self.update_discount(
+                    session,
+                    ctx,
+                    subscription,
+                    discount_id=update.discount_id,
+                )
 
-        if isinstance(update, SubscriptionUpdateTrial):
-            return await self.update_trial(
-                session, ctx, subscription, trial_end=update.trial_end
-            )
+            if update.has_trial_end:
+                assert update.trial_end is not None
+                subscription = await self.update_trial(
+                    session, ctx, subscription, trial_end=update.trial_end
+                )
 
         if isinstance(update, SubscriptionUpdateSeats):
-            return await self.update_seats(
+            subscription = await self.update_seats(
                 session,
                 ctx,
                 subscription,
@@ -1021,7 +1023,7 @@ class SubscriptionService:
             )
 
         if isinstance(update, SubscriptionUpdateBillingPeriod):
-            return await self.update_currrent_billing_period_end(
+            subscription = await self.update_currrent_billing_period_end(
                 session,
                 ctx,
                 subscription,
@@ -1032,18 +1034,18 @@ class SubscriptionService:
             uncancel = update.cancel_at_period_end is False
 
             if uncancel:
-                return await self.uncancel(session, ctx, subscription)
-
-            return await self.cancel(
-                session,
-                ctx,
-                subscription,
-                customer_reason=update.customer_cancellation_reason,
-                customer_comment=update.customer_cancellation_comment,
-            )
+                subscription = await self.uncancel(session, ctx, subscription)
+            else:
+                subscription = await self.cancel(
+                    session,
+                    ctx,
+                    subscription,
+                    customer_reason=update.customer_cancellation_reason,
+                    customer_comment=update.customer_cancellation_comment,
+                )
 
         if isinstance(update, SubscriptionRevoke):
-            return await self._perform_cancellation(
+            subscription = await self._perform_cancellation(
                 session,
                 ctx,
                 subscription,
@@ -1053,7 +1055,9 @@ class SubscriptionService:
             )
 
         if isinstance(update, SubscriptionUpdateClear):
-            return await self.clear_pending_update(session, ctx, subscription)
+            subscription = await self.clear_pending_update(session, ctx, subscription)
+
+        return subscription
 
     async def update_product(
         self,
@@ -1069,8 +1073,6 @@ class SubscriptionService:
             raise AlreadyCanceledSubscription(subscription)
 
         previous_product = subscription.product
-        previous_status = subscription.status
-        previous_is_canceled = subscription.canceled
         previous_prices = [*subscription.prices]
 
         product_repository = ProductRepository.from_session(session)
@@ -1595,9 +1597,6 @@ class SubscriptionService:
         subscription_update, billing_entries = generate_subscription_update(
             subscription, proration_behavior, seats=seats
         )
-
-        previous_status = subscription.status
-        previous_is_canceled = subscription.canceled
 
         if proration_behavior == SubscriptionProrationBehavior.next_period:
             subscription.pending_update = await subscription_update_repository.upsert(

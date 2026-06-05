@@ -76,11 +76,9 @@ from polar.subscription.repository import SubscriptionUpdateRepository
 from polar.subscription.schemas import (
     SubscriptionCreateCustomer,
     SubscriptionCreateExternalCustomer,
+    SubscriptionUpdateBase,
     SubscriptionUpdateBillingPeriod,
-    SubscriptionUpdateDiscount,
-    SubscriptionUpdateProduct,
     SubscriptionUpdateSeats,
-    SubscriptionUpdateTrial,
 )
 from polar.subscription.service import (
     AboveMaximumSeats,
@@ -2573,7 +2571,7 @@ class TestUpdate:
                 session,
                 ctx,
                 subscription,
-                update=SubscriptionUpdateProduct(product_id=new_product.id),
+                update=SubscriptionUpdateBase(product_id=new_product.id),
             )
 
         assert updated.product == new_product
@@ -2613,7 +2611,7 @@ class TestUpdate:
                 session,
                 ctx,
                 subscription,
-                update=SubscriptionUpdateProduct(
+                update=SubscriptionUpdateBase(
                     product_id=new_product.id,
                     proration_behavior=SubscriptionProrationBehavior.invoice,
                 ),
@@ -2650,9 +2648,7 @@ class TestUpdate:
                 session,
                 ctx,
                 subscription,
-                update=SubscriptionUpdateDiscount(
-                    discount_id=discount_percentage_50.id
-                ),
+                update=SubscriptionUpdateBase(discount_id=discount_percentage_50.id),
             )
 
         assert updated.discount == discount_percentage_50
@@ -2689,7 +2685,7 @@ class TestUpdate:
                 session,
                 ctx,
                 subscription,
-                update=SubscriptionUpdateTrial(
+                update=SubscriptionUpdateBase(
                     trial_end=initial_trial_end + timedelta(days=7),
                 ),
             )
@@ -2730,7 +2726,7 @@ class TestUpdate:
                 session,
                 ctx,
                 subscription,
-                update=SubscriptionUpdateTrial(trial_end="now"),
+                update=SubscriptionUpdateBase(trial_end="now"),
             )
 
         assert updated.status == SubscriptionStatus.active
@@ -2863,6 +2859,101 @@ class TestUpdate:
             )
 
         assert updated.current_period_end == initial_period_end + timedelta(days=7)
+
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
+        )
+
+    async def test_combined_update_product_discount(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        discount_percentage_50: Discount,
+        webhook_service_send_mock: MagicMock,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update(
+                session,
+                ctx,
+                subscription,
+                update=SubscriptionUpdateBase(
+                    product_id=new_product.id, discount_id=discount_percentage_50.id
+                ),
+            )
+
+        assert updated.product == new_product
+        assert updated.discount == discount_percentage_50
+
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
+        )
+
+    async def test_combined_update_product_trial_end(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        webhook_service_send_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update(
+                session,
+                ctx,
+                subscription,
+                update=SubscriptionUpdateBase(
+                    product_id=new_product.id, trial_end="now"
+                ),
+            )
+
+        assert updated.product == new_product
+        assert updated.active
+
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            updated.id,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+        )
 
         assert_webhook_sent_once(
             webhook_service_send_mock,

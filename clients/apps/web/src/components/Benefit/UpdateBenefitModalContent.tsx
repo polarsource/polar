@@ -91,6 +91,7 @@ const UpdateBenefitModalContent = ({
             <UpdateBenefitForm
               organization={organization}
               type={benefit.type}
+              benefitId={benefit.id}
               onUploadingChange={setIsUploading}
             />
             <div className="mt-4 flex flex-row items-center gap-x-4">

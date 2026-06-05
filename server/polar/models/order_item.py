@@ -61,6 +61,20 @@ class OrderItem(RecordModel):
         return not self.proration
 
     @classmethod
+    def format_price_label(
+        cls, product: "Product", price: ProductPrice, *, seats: int | None
+    ) -> str:
+        """
+        Human-readable label for a static-price line item: the product name,
+        with a seat count appended for seat-based prices (e.g.
+        "Acme Pro (14 seats)"). Falls back to the bare product name for every
+        other price type, or when the seat count is unknown.
+        """
+        if isinstance(price, ProductPriceSeatUnit) and seats is not None:
+            return f"{product.name} ({seats} seat{'' if seats == 1 else 's'})"
+        return product.name
+
+    @classmethod
     def from_price(
         cls,
         price: ProductPrice,
@@ -79,7 +93,9 @@ class OrderItem(RecordModel):
             assert seats is not None, "seats must be provided for seat-based prices"
             amount = price.calculate_amount(seats)
         return cls(
-            label=label if label is not None else price.product.name,
+            label=label
+            if label is not None
+            else cls.format_price_label(price.product, price, seats=seats),
             amount=amount,
             tax_amount=tax_amount,
             net_amount=amount,

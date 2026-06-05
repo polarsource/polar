@@ -197,6 +197,9 @@ async def create_static_price_billing_entry(
         amount = price.price_amount
     elif is_free_price(price):
         amount = 0
+    elif is_seat_price(price):
+        assert subscription.seats is not None
+        amount = price.calculate_amount(subscription.seats)
     elif is_custom_price(price):
         raise NotImplementedError()
 
@@ -612,6 +615,10 @@ class TestCreateOrderItemsFromPending:
             order_item_2 = order_items[1]
             assert product.name in order_item_2.label
             assert order_item_2.proration is True
+
+            # Fixed-only product: no seats qualifier should appear.
+            assert "seat" not in order_item_1.label
+            assert "seat" not in order_item_2.label
 
             order = await create_order(
                 save_fixture,

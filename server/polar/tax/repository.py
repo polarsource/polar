@@ -1,8 +1,9 @@
 from collections.abc import Sequence
 from datetime import date, timedelta
+from typing import cast
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import ColumnElement, Select, func, select
 from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.sql.expression import asc, desc
 
@@ -41,8 +42,11 @@ class TaxJurisdictionRepository(RepositoryBase[Transaction]):
         # Group by whatever `tax_state` the transaction stored. Today only US
         # and Canada populate it (see transaction.service.payment), but grouping
         # on the raw column means the breakdown picks up state-level data from
-        # any country automatically if that ever changes.
-        state_column = Transaction.tax_state.label("state")
+        # any country automatically if that ever changes. `tax_state` is nullable
+        # despite its `Mapped[str]` annotation, so cast to reflect that.
+        state_column = cast(
+            "ColumnElement[str | None]", Transaction.tax_state
+        ).label("state")
         # Sum `tax_amount` across every tax-bearing transaction (payments,
         # refunds, disputes and their reversals — see the `type` filter below),
         # which yields the net tax Polar remitted on the merchant's behalf after

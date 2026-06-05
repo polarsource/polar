@@ -74,17 +74,27 @@ This is how `expo-updates` works by default: it downloads updates in the backgro
 
 ### Publishing an OTA update
 
+Publish through `pnpm ota`, **not** raw `eas update`. It runs a preflight guard
+(`tooling/ota-preflight/`) that refuses to publish if the update can't safely
+reach devices then forwards to `eas update` for you:
+
 ```bash
-# Test on preview first
-eas update --channel preview --message "Description of changes"
+# Test on preview first if it's a larger change
+pnpm ota --channel preview --message "Description of changes"
 
 # Then push to production
-eas update --channel production --message "Description of changes"
+pnpm ota --channel production --message "Description of changes"
 ```
 
-### Runtime version
+The guard verifies, per platform, against the latest finished build on the channel:
 
-The `runtimeVersion` in `app.config.js` uses the `fingerprint` policy. This automatically generates a hash of all native dependencies, config plugins, and native project files. OTA updates are only delivered to app builds with a matching fingerprint. If any native code changes (e.g. adding a native module or bumping a native dependency), the fingerprint changes automatically, preventing OTA updates from being delivered to incompatible builds.
+1. **A build with the current runtime exists** otherwise the update would reach
+   0 devices (the classic "I published but nothing changed" trap).
+2. **The native layer matches that build** comparing fingerprints while ignoring
+   pnpm's virtual-store path churn, so only _real_ native changes block you.
+
+If it blocks, you need a new native build (see below) — not an OTA. Use
+`--check-only` to run the checks without publishing.
 
 ### When to OTA vs native build
 
@@ -132,11 +142,11 @@ You don't need to rebuild the preview build for every change — only when nativ
 ### Recommended workflow
 
 1. Make your JS changes
-2. Push to preview: `eas update --channel preview --message "Description"`
+2. Push to preview: `pnpm ota --channel preview --message "Description"`
 3. Open the preview build on your device and verify
-4. Ship to users: `eas update --channel production --message "Description"`
+4. Ship to users: `pnpm ota --channel production --message "Description"`
 
-When making native changes:
+When making native changes (or if `pnpm ota` blocks you):
 
 1. Bump `version` in `app.config.js`
 2. Run `eas build --profile production`

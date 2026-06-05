@@ -10,6 +10,7 @@
     "web": "expo start --web",
     "test": "jest",
     "test:watch": "jest --watchAll",
+    "ota": "node tooling/ota-preflight",
     "build:production": "eas build --platform all --profile production",
     "build:development": "eas build --platform all --profile development",
     "build:simulator": "eas build --platform all --profile simulator",

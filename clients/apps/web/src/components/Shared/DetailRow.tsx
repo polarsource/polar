@@ -1,8 +1,3 @@
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/ui/components/ui/tooltip'
 import { twMerge } from 'tailwind-merge'
 
 export interface DetailRowProps {

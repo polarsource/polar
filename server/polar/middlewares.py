@@ -9,7 +9,7 @@ import structlog
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from polar.logging import CorrelationID, Logger
+from polar.logging import ClientContext, CorrelationID, Logger
 from polar.operational_errors import handle_operational_error
 from polar.worker import JobQueueManager
 
@@ -51,6 +51,7 @@ class LogCorrelationIdMiddleware:
             if value is not None
         }
         if client_context:
+            ClientContext.set(client_context)
             structlog.contextvars.bind_contextvars(**client_context)
             for key, value in client_context.items():
                 sentry_sdk.set_tag(key, value)
@@ -64,6 +65,7 @@ class LogCorrelationIdMiddleware:
             "correlation_id", "method", "path", *client_context.keys()
         )
         CorrelationID.clear()
+        ClientContext.clear()
 
 
 class FlushEnqueuedWorkerJobsMiddleware:

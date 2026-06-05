@@ -108,7 +108,7 @@ export default {
         },
         included: {
           _mode: 'plural',
-          '=1': '# seat included',
+          '=1': 'One seat included',
           other: '# seats included',
         },
         range: {

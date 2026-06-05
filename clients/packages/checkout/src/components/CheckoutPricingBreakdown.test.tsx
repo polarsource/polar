@@ -771,7 +771,7 @@ describe('CheckoutPricingBreakdown', () => {
       expect(paidRow).toHaveTextContent('$30')
     })
 
-    it('uses the singular "1 seat included" when a single seat is free', () => {
+    it('uses the singular "One seat included" when a single seat is free', () => {
       const checkout = createCheckout({
         amount: 1000,
         net_amount: 1000,
@@ -794,7 +794,7 @@ describe('CheckoutPricingBreakdown', () => {
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
       expect(
-        screen.getByTestId('detail-row-1 seat included'),
+        screen.getByTestId('detail-row-One seat included'),
       ).toBeInTheDocument()
     })
 

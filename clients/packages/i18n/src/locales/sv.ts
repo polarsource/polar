@@ -101,6 +101,11 @@ export default {
         minimum: 'Minst {min} platser',
         maximum: 'Högst {max} platser',
         updateFailed: 'Det gick inte att uppdatera platserna',
+        included: {
+          '=1': 'En plats ingår',
+          other: '# platser ingår',
+          _mode: 'plural',
+        },
       },
       inclTax: 'Moms (ingår)',
     },

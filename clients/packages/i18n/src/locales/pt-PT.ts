@@ -101,6 +101,11 @@ export default {
         minimum: 'Mínimo de {min} licenças',
         maximum: 'Máximo de {max} licenças',
         updateFailed: 'Não foi possível atualizar as licenças',
+        included: {
+          '=1': '1 licença incluída',
+          other: '# licenças incluídas',
+          _mode: 'plural',
+        },
       },
       inclTax: 'IVA (incluído)',
     },

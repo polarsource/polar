@@ -101,6 +101,11 @@ export default {
         minimum: '최소 {min}석',
         maximum: '최대 {max}석',
         updateFailed: '좌석 수를 업데이트하지 못했습니다',
+        included: {
+          '=1': '1석 포함',
+          other: '#석 포함',
+          _mode: 'plural',
+        },
       },
       inclTax: '부가세 (포함)',
     },

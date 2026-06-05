@@ -101,6 +101,11 @@ export default {
         minimum: 'Legalább {min} felhasználói hely',
         maximum: 'Legfeljebb {max} felhasználói hely',
         updateFailed: 'A felhasználói helyek frissítése nem sikerült',
+        included: {
+          '=1': '1 felhasználói hely benne van',
+          other: '# felhasználói hely benne van',
+          _mode: 'plural',
+        },
       },
       inclTax: 'ÁFA (tartalmazza)',
     },

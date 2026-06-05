@@ -740,6 +740,88 @@ describe('CheckoutPricingBreakdown', () => {
     })
   })
 
+  describe('included (free) seat tier', () => {
+    it('renders "N seats included" without a price when the first tier is free', () => {
+      const checkout = createCheckout({
+        amount: 3000,
+        net_amount: 3000,
+        tax_amount: null,
+        total_amount: 3000,
+        seats: 8,
+        product_price: createSeatBasedPrice({
+          seat_tiers: {
+            seat_tier_type: 'graduated',
+            tiers: [
+              { min_seats: 1, max_seats: 5, price_per_seat: 0 },
+              { min_seats: 6, max_seats: null, price_per_seat: 1000 },
+            ],
+            minimum_seats: 1,
+            maximum_seats: null,
+          },
+        }),
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      const includedRow = screen.getByTestId('detail-row-5 seats included')
+      expect(includedRow).not.toHaveTextContent('$')
+
+      const paidRow = screen.getByTestId('detail-row-3 seats')
+      expect(paidRow).toHaveTextContent('$10 per seat')
+      expect(paidRow).toHaveTextContent('$30')
+    })
+
+    it('uses the singular "One seat included" when a single seat is free', () => {
+      const checkout = createCheckout({
+        amount: 1000,
+        net_amount: 1000,
+        tax_amount: null,
+        total_amount: 1000,
+        seats: 2,
+        product_price: createSeatBasedPrice({
+          seat_tiers: {
+            seat_tier_type: 'graduated',
+            tiers: [
+              { min_seats: 1, max_seats: 1, price_per_seat: 0 },
+              { min_seats: 2, max_seats: null, price_per_seat: 1000 },
+            ],
+            minimum_seats: 1,
+            maximum_seats: null,
+          },
+        }),
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(
+        screen.getByTestId('detail-row-One seat included'),
+      ).toBeInTheDocument()
+    })
+
+    it('renders a priced row (not "included") when the free tier has no maximum', () => {
+      const checkout = createCheckout({
+        amount: 0,
+        net_amount: 0,
+        tax_amount: null,
+        total_amount: 0,
+        seats: 4,
+        product_price: createSeatBasedPrice({
+          seat_tiers: {
+            seat_tier_type: 'volume',
+            tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 0 }],
+            minimum_seats: 1,
+            maximum_seats: null,
+          },
+        }),
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(screen.queryByText(/seats included/i)).not.toBeInTheDocument()
+      expect(screen.getByTestId('detail-row-4 seats')).toBeInTheDocument()
+    })
+  })
+
   describe('no currency set', () => {
     it('shows "Free" text', () => {
       const checkout = createBaseCheckout({

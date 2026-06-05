@@ -8,9 +8,9 @@ import {
   useGetNotificationRecipient,
 } from '@/hooks/polar/notifications'
 import {
-  useOrganization,
-  useUpdateOrganization,
-} from '@/hooks/polar/organizations'
+  useUpdateUserOrganizationNotificationSettings,
+  useUserOrganizationNotificationSettings,
+} from '@/hooks/polar/userOrganizations'
 import { useNotifications } from '@/providers/NotificationsProvider'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useToast } from '@/providers/ToastProvider'
@@ -25,10 +25,12 @@ export default function NotificationsPage() {
   const theme = useTheme()
 
   const { organization } = useContext(OrganizationContext)
+
   const {
-    refetch: refetchOrganization,
-    isRefetching: isRefetchingOrganization,
-  } = useOrganization()
+    data: userNotificationSettings,
+    refetch: refetchNotificationSettings,
+    isRefetching: isRefetchingNotificationSettings,
+  } = useUserOrganizationNotificationSettings(organization?.id)
 
   const {
     enablePushNotifications,
@@ -36,26 +38,31 @@ export default function NotificationsPage() {
     pushNotificationsEnabled,
   } = usePushNotifications()
 
-  const { mutateAsync: updateOrganization } = useUpdateOrganization()
+  const { mutateAsync: updateNotificationSettings } =
+    useUpdateUserOrganizationNotificationSettings()
+
+  // TODO (maxime): default to organization settings is temporary while user level is Nullable.
+  // once backfill script ran and user level is non-nullable, we can remove the fallback to organization settings.
+  const notificationSettings =
+    userNotificationSettings?.notification_settings ??
+    organization?.notification_settings
 
   const createNotificationSettingHandler = useCallback(
     (key: keyof schemas['OrganizationNotificationSettings']) =>
       async (value: boolean) => {
-        if (!organization?.id) {
+        if (!organization?.id || !notificationSettings) {
           return
         }
 
-        await updateOrganization({
-          organizationId: organization?.id,
-          update: {
-            notification_settings: {
-              ...organization?.notification_settings,
-              [key]: value,
-            },
+        await updateNotificationSettings({
+          organizationId: organization.id,
+          notification_settings: {
+            ...notificationSettings,
+            [key]: value,
           },
         })
       },
-    [organization, updateOrganization],
+    [organization?.id, notificationSettings, updateNotificationSettings],
   )
 
   return (
@@ -64,8 +71,8 @@ export default function NotificationsPage() {
       <ScrollView
         refreshControl={
           <RefreshControl
-            refreshing={isRefetchingOrganization}
-            onRefresh={refetchOrganization}
+            refreshing={isRefetchingNotificationSettings}
+            onRefresh={refetchNotificationSettings}
           />
         }
         contentContainerStyle={{
@@ -91,7 +98,7 @@ export default function NotificationsPage() {
           variant="static"
         >
           <Switch
-            value={organization?.notification_settings.new_order}
+            value={notificationSettings?.new_order ?? false}
             onValueChange={createNotificationSettingHandler('new_order')}
           />
         </SettingsItem>
@@ -101,7 +108,7 @@ export default function NotificationsPage() {
           variant="static"
         >
           <Switch
-            value={organization?.notification_settings.new_subscription}
+            value={notificationSettings?.new_subscription ?? false}
             onValueChange={createNotificationSettingHandler('new_subscription')}
           />
         </SettingsItem>

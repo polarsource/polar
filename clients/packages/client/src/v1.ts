@@ -61,6 +61,34 @@ export interface paths {
     patch: operations['users:update_authenticated']
     trace?: never
   }
+  '/v1/users/me/organizations/{organization_id}/notification-settings': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Authenticated Notification Settings
+     * @description Get the authenticated user's notification settings for an organization.
+     *
+     *     **Scopes**: `user:read` `user:write`
+     */
+    get: operations['users:get_authenticated_notification_settings']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Update Authenticated Notification Settings
+     * @description Update the authenticated user's notification settings for an organization.
+     *
+     *     **Scopes**: `user:write`
+     */
+    patch: operations['users:update_authenticated_notification_settings']
+    trace?: never
+  }
   '/v1/users/me/scopes': {
     parameters: {
       query?: never
@@ -30752,6 +30780,18 @@ export interface components {
       /** Email Verified */
       email_verified?: boolean | null
     }
+    /** UserOrganizationNotificationSettings */
+    UserOrganizationNotificationSettings: {
+      /** @description The authenticated user's notification preferences for this organization. */
+      notification_settings?:
+        | components['schemas']['OrganizationNotificationSettings']
+        | null
+    }
+    /** UserOrganizationNotificationSettingsUpdate */
+    UserOrganizationNotificationSettingsUpdate: {
+      /** @description The notification settings to store for the current user on this organization. */
+      notification_settings: components['schemas']['OrganizationNotificationSettings']
+    }
     /** UserRead */
     UserRead: {
       /**
@@ -32490,6 +32530,90 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['UserRead']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'users:get_authenticated_notification_settings': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        organization_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['UserOrganizationNotificationSettings']
+        }
+      }
+      /** @description User is not a member of this organization. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'users:update_authenticated_notification_settings': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        organization_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UserOrganizationNotificationSettingsUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['UserOrganizationNotificationSettings']
+        }
+      }
+      /** @description User is not a member of this organization. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */

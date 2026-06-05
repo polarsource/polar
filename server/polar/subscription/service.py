@@ -2198,26 +2198,25 @@ class SubscriptionService:
     ) -> None:
         product = subscription.product
 
-        if product.organization.notification_settings["new_subscription"]:
-            await notifications_service.send_to_org_members(
-                session,
-                org_id=product.organization_id,
-                notif=PartialNotification(
-                    type=NotificationType.maintainer_new_paid_subscription,
-                    payload=MaintainerNewPaidSubscriptionNotificationPayload(
-                        subscriber_name=subscription.customer.display_name,
-                        subscriber_email=subscription.customer.email,
-                        tier_name=product.name,
-                        tier_price_amount=subscription.amount,
-                        tier_price_recurring_interval=subscription.recurring_interval,
-                        tier_price_recurring_interval_count=subscription.recurring_interval_count,
-                        tier_organization_name=product.organization.name,
-                        tier_organization_slug=product.organization.slug,
-                        subscription_id=str(subscription.id),
-                        currency=subscription.currency,
-                    ),
+        await notifications_service.send_to_org_members(
+            session,
+            org_id=product.organization_id,
+            notif=PartialNotification(
+                type=NotificationType.maintainer_new_paid_subscription,
+                payload=MaintainerNewPaidSubscriptionNotificationPayload(
+                    subscriber_name=subscription.customer.display_name,
+                    subscriber_email=subscription.customer.email,
+                    tier_name=product.name,
+                    tier_price_amount=subscription.amount,
+                    tier_price_recurring_interval=subscription.recurring_interval,
+                    tier_price_recurring_interval_count=subscription.recurring_interval_count,
+                    tier_organization_name=product.organization.name,
+                    tier_organization_slug=product.organization.slug,
+                    subscription_id=str(subscription.id),
+                    currency=subscription.currency,
                 ),
-            )
+            ),
+        )
 
     async def _send_webhook(
         self,

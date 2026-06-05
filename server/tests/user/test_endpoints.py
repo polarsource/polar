@@ -167,3 +167,135 @@ class TestImpersonationGate:
     async def test_cannot_delete_me(self, user: User, client: AsyncClient) -> None:
         response = await client.delete("/v1/users/me")
         assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+class TestGetMyNotificationSettings:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(
+            f"/v1/users/me/organizations/{organization.id}/notification-settings"
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_member(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        user_organization.notification_settings = {
+            "new_order": True,
+            "new_subscription": False,
+        }
+        await save_fixture(user_organization)
+
+        response = await client.get(
+            f"/v1/users/me/organizations/{organization.id}/notification-settings"
+        )
+
+        assert response.status_code == 200
+        assert response.json()["notification_settings"] == {
+            "new_order": True,
+            "new_subscription": False,
+        }
+
+    # TODO (maxime): default to organization settings is temporary while user level is Nullable.
+    # once backfill script ran and user level is non-nullable, we can remove the fallback to organization settings.
+    @pytest.mark.auth
+    async def test_member_without_settings_returns_null(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Mirrors the migration window: rows added by the column migration
+        # are NULL until the backfill runs. The frontend relies on this to
+        # fall back to the org-level default.
+        user_organization.notification_settings = None  # type: ignore[assignment]
+        await save_fixture(user_organization)
+
+        response = await client.get(
+            f"/v1/users/me/organizations/{organization.id}/notification-settings"
+        )
+
+        assert response.status_code == 200
+        assert response.json()["notification_settings"] is None
+
+    @pytest.mark.auth
+    async def test_non_member_returns_404(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        # Authed user is not a member of `organization` (no user_organization
+        # fixture requested). The frontend treats this 404 as "no settings".
+        response = await client.get(
+            f"/v1/users/me/organizations/{organization.id}/notification-settings"
+        )
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestUpdateMyNotificationSettings:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.patch(
+            f"/v1/users/me/organizations/{organization.id}/notification-settings",
+            json={
+                "notification_settings": {
+                    "new_order": True,
+                    "new_subscription": True,
+                }
+            },
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_member_updates_and_persists(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        url = f"/v1/users/me/organizations/{organization.id}/notification-settings"
+        response = await client.patch(
+            url,
+            json={
+                "notification_settings": {
+                    "new_order": False,
+                    "new_subscription": True,
+                }
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["notification_settings"] == {
+            "new_order": False,
+            "new_subscription": True,
+        }
+
+        # Persisted: a subsequent read returns the new value.
+        get_response = await client.get(url)
+        assert get_response.json()["notification_settings"] == {
+            "new_order": False,
+            "new_subscription": True,
+        }
+
+    @pytest.mark.auth
+    async def test_non_member_returns_404(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.patch(
+            f"/v1/users/me/organizations/{organization.id}/notification-settings",
+            json={
+                "notification_settings": {
+                    "new_order": True,
+                    "new_subscription": True,
+                }
+            },
+        )
+        assert response.status_code == 404

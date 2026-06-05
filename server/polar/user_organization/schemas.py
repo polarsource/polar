@@ -6,7 +6,10 @@ from pydantic import AliasPath, Field
 
 from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import Schema
-from polar.models.user_organization import OrganizationRole
+from polar.models.user_organization import (
+    OrganizationNotificationSettings,
+    OrganizationRole,
+)
 
 
 class OrganizationMember(Schema):
@@ -34,4 +37,17 @@ class OrganizationMemberRoleUpdate(Schema):
             "The role to assign. `owner` is rejected — ownership transfers "
             "go through a separate flow."
         ),
+    )
+
+
+class UserOrganizationNotificationSettings(Schema):
+    notification_settings: OrganizationNotificationSettings | None = Field(
+        default=None,
+        description="The authenticated user's notification preferences for this organization.",
+    )
+
+
+class UserOrganizationNotificationSettingsUpdate(Schema):
+    notification_settings: OrganizationNotificationSettings = Field(
+        description="The notification settings to store for the current user on this organization.",
     )

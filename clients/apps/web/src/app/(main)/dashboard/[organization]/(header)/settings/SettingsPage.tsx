@@ -13,6 +13,7 @@ import OrganizationProfileSettings from '@/components/Settings/OrganizationProfi
 import OrganizationSubscriptionSettings from '@/components/Settings/OrganizationSubscriptionSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import { useHasPermission } from '@/hooks/permissions'
+import { useUserOrganizationNotificationSettings } from '@/hooks/queries/user_organizations'
 import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
 import Alert from '@polar-sh/ui/components/atoms/Alert'
@@ -24,6 +25,8 @@ export default function ClientPage({
   organization: schemas['Organization']
 }) {
   const canManageOrganization = useHasPermission(org.id, 'organization:manage')
+  const { data: userNotificationSettings } =
+    useUserOrganizationNotificationSettings(org.id)
 
   return (
     <DashboardBody
@@ -90,10 +93,15 @@ export default function ClientPage({
 
         <Section id="account-notifications">
           <SectionDescription
-            title="Account notifications"
-            description="Emails sent to members of your organization for account and product activity"
+            title="Your notifications"
+            description="Choose which emails you receive as a member of this organization."
           />
-          <OrganizationNotificationSettings organization={org} />
+          {userNotificationSettings && (
+            <OrganizationNotificationSettings
+              organization={org}
+              userNotificationSettings={userNotificationSettings}
+            />
+          )}
         </Section>
 
         <Section id="features">

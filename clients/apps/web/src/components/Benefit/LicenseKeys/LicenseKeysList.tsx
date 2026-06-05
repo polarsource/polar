@@ -5,7 +5,7 @@ import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from '@polar-sh/ui/components/atoms/DataTable'
+} from '@polar-sh/orbit'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import {
   OnChangeFn,

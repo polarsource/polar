@@ -7,10 +7,7 @@ import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import {
-  DataTable,
-  DataTableColumnDef,
-} from '@polar-sh/ui/components/atoms/DataTable'
+import { DataTable, DataTableColumnDef } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
 import { useCallback } from 'react'

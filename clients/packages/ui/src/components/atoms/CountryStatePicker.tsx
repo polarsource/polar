@@ -7,7 +7,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from './Select'
+} from '@polar-sh/orbit'
 
 export const FIXED_STATE_OPTIONS: Record<string, Record<string, string>> = {
   US: {

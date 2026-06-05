@@ -13,7 +13,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
+} from '@polar-sh/orbit'
 import { useMemo, useState } from 'react'
 
 import { ROLE_LABELS, ROLE_ORDER } from './constants'

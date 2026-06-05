@@ -21,7 +21,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '../ui/table'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import { DataTablePagination } from './DataTablePagination'

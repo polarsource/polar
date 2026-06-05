@@ -24,7 +24,7 @@ import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from '@polar-sh/ui/components/atoms/DataTable'
+} from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { RowSelectionState } from '@tanstack/react-table'

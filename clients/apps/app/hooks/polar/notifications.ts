@@ -90,8 +90,6 @@ export const useDeleteNotificationRecipient = () => {
 
 export type Notification = schemas['NotificationsList']['notifications'][number]
 
-export type MaintainerCreateAccountNotificationPayload =
-  schemas['MaintainerCreateAccountNotificationPayload']
 export type MaintainerNewPaidSubscriptionNotificationPayload =
   schemas['MaintainerNewPaidSubscriptionNotificationPayload']
 export type MaintainerNewProductSaleNotificationPayload =

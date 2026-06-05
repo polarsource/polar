@@ -2,7 +2,6 @@ import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
 import {
   MaintainerAccountCreditsGrantedNotificationPayload,
-  MaintainerCreateAccountNotificationPayload,
   MaintainerNewPaidSubscriptionNotificationPayload,
   MaintainerNewProductSaleNotificationPayload,
 } from '@/hooks/polar/notifications'
@@ -17,7 +16,6 @@ export interface NotificationProps {
   type: string
   createdAt: string
   payload:
-    | MaintainerCreateAccountNotificationPayload
     | MaintainerNewPaidSubscriptionNotificationPayload
     | MaintainerNewProductSaleNotificationPayload
     | MaintainerAccountCreditsGrantedNotificationPayload
@@ -49,14 +47,6 @@ export const Notification = ({
             color={theme.colors.text}
           />
         )
-      case 'MaintainerCreateAccountNotification':
-        return (
-          <MaterialIcons
-            name="person-outline"
-            size={20}
-            color={theme.colors.text}
-          />
-        )
       case 'MaintainerAccountCreditsGrantedNotification':
         return <MaterialIcons name="bolt" size={20} color={theme.colors.text} />
       default:
@@ -76,8 +66,6 @@ export const Notification = ({
         return 'New Subscription'
       case 'MaintainerNewProductSaleNotification':
         return 'New Product Sale'
-      case 'MaintainerCreateAccountNotification':
-        return 'New Account Created'
       case 'MaintainerAccountCreditsGrantedNotification':
         return 'Credits Granted'
       default:
@@ -101,8 +89,6 @@ export const Notification = ({
         return `${customer_name} bought ${product_name} for ${formatCurrency(
           'compact',
         )(product_price_amount, saleCurrency || 'usd')}`
-      case 'MaintainerCreateAccountNotification':
-        return 'A new account has been created'
       case 'MaintainerAccountCreditsGrantedNotification':
         const {
           organization_name,

@@ -959,13 +959,6 @@ export interface components {
       /** Formatted Amount */
       readonly formatted_amount: string
     }
-    /** MaintainerCreateAccountNotificationPayload */
-    MaintainerCreateAccountNotificationPayload: {
-      /** Organization Name */
-      organization_name: string
-      /** Url */
-      url: string
-    }
     /** MaintainerNewPaidSubscriptionNotificationPayload */
     MaintainerNewPaidSubscriptionNotificationPayload: {
       /** Subscriber Name */
@@ -1082,16 +1075,6 @@ export interface components {
     }
     MetadataOutputType: {
       [key: string]: string | number | boolean
-    }
-    /** NotificationCreateAccountEmail */
-    NotificationCreateAccountEmail: {
-      /**
-       * Template
-       * @default notification_create_account
-       * @constant
-       */
-      template: 'notification_create_account'
-      props: components['schemas']['MaintainerCreateAccountNotificationPayload']
     }
     /** NotificationCreditsGrantedEmail */
     NotificationCreditsGrantedEmail: {

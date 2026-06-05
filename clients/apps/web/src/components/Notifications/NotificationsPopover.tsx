@@ -1,7 +1,6 @@
 import { useNotifications, useNotificationsMarkRead } from '@/hooks/queries'
 import { useOutsideClick } from '@/utils/useOutsideClick'
 import BoltOutlined from '@mui/icons-material/BoltOutlined'
-import InfoOutlined from '@mui/icons-material/InfoOutlined'
 import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -235,30 +234,6 @@ const MaintainerNewProductSale = ({
   )
 }
 
-const MaintainerCreateAccount = ({
-  n,
-}: {
-  n: schemas['MaintainerCreateAccountNotification']
-}) => {
-  const { payload } = n
-  return (
-    <Item n={n} iconClasses="bg-yellow-200 text-yellow-500">
-      {{
-        text: (
-          <>
-            Create a{' '}
-            <InternalLink href={payload.url}>
-              <span>payout account</span>
-            </InternalLink>{' '}
-            now for {payload.organization_name} to receive funds.
-          </>
-        ),
-        icon: <InfoOutlined fontSize="small" />,
-      }}
-    </Item>
-  )
-}
-
 const MaintainerAccountCreditsGranted = ({
   n,
 }: {
@@ -298,9 +273,6 @@ const Notification = ({
 
     case 'MaintainerNewProductSaleNotification':
       return <MaintainerNewProductSale n={n} />
-
-    case 'MaintainerCreateAccountNotification':
-      return <MaintainerCreateAccount n={n} />
 
     case 'MaintainerAccountCreditsGrantedNotification':
       return <MaintainerAccountCreditsGranted n={n} />

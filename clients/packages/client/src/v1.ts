@@ -20632,32 +20632,6 @@ export interface components {
       /** Formatted Amount */
       readonly formatted_amount: string
     }
-    /** MaintainerCreateAccountNotification */
-    MaintainerCreateAccountNotification: {
-      /**
-       * Id
-       * Format: uuid4
-       */
-      id: string
-      /**
-       * Created At
-       * Format: date-time
-       */
-      created_at: string
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'MaintainerCreateAccountNotification'
-      payload: components['schemas']['MaintainerCreateAccountNotificationPayload']
-    }
-    /** MaintainerCreateAccountNotificationPayload */
-    MaintainerCreateAccountNotificationPayload: {
-      /** Organization Name */
-      organization_name: string
-      /** Url */
-      url: string
-    }
     /** MaintainerNewPaidSubscriptionNotification */
     MaintainerNewPaidSubscriptionNotification: {
       /**
@@ -21868,7 +21842,6 @@ export interface components {
       notifications: (
         | components['schemas']['MaintainerNewPaidSubscriptionNotification']
         | components['schemas']['MaintainerNewProductSaleNotification']
-        | components['schemas']['MaintainerCreateAccountNotification']
         | components['schemas']['MaintainerAccountCreditsGrantedNotification']
       )[]
       /** Last Read Notification Id */
@@ -56427,9 +56400,6 @@ export const licenseKeyStatusValues: ReadonlyArray<
 export const maintainerAccountCreditsGrantedNotificationTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MaintainerAccountCreditsGrantedNotification']['type']
 > = ['MaintainerAccountCreditsGrantedNotification']
-export const maintainerCreateAccountNotificationTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['MaintainerCreateAccountNotification']['type']
-> = ['MaintainerCreateAccountNotification']
 export const maintainerNewPaidSubscriptionNotificationTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MaintainerNewPaidSubscriptionNotification']['type']
 > = ['MaintainerNewPaidSubscriptionNotification']

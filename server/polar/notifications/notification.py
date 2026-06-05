@@ -18,7 +18,6 @@ if TYPE_CHECKING:
 class NotificationType(StrEnum):
     maintainer_new_paid_subscription = "MaintainerNewPaidSubscriptionNotification"
     maintainer_new_product_sale = "MaintainerNewProductSaleNotification"
-    maintainer_create_account = "MaintainerCreateAccountNotification"
     maintainer_account_credits_granted = "MaintainerAccountCreditsGrantedNotification"
 
 
@@ -170,25 +169,6 @@ class MaintainerNewProductSaleNotification(NotificationBase):
     payload: MaintainerNewProductSaleNotificationPayload
 
 
-class MaintainerCreateAccountNotificationPayload(NotificationPayloadBase):
-    organization_name: str
-    url: str
-
-    def subject(self) -> str:
-        return (
-            f"Create a payout account for {self.organization_name} now to receive funds"
-        )
-
-    @classmethod
-    def template_name(cls) -> str:
-        return "notification_create_account"
-
-
-class MaintainerCreateAccountNotification(NotificationBase):
-    type: Literal[NotificationType.maintainer_create_account]
-    payload: MaintainerCreateAccountNotificationPayload
-
-
 class MaintainerAccountCreditsGrantedNotificationPayload(NotificationPayloadBase):
     organization_name: str
     amount: int
@@ -214,14 +194,12 @@ class MaintainerAccountCreditsGrantedNotification(NotificationBase):
 NotificationPayload = (
     MaintainerNewPaidSubscriptionNotificationPayload
     | MaintainerNewProductSaleNotificationPayload
-    | MaintainerCreateAccountNotificationPayload
     | MaintainerAccountCreditsGrantedNotificationPayload
 )
 
 Notification = Annotated[
     MaintainerNewPaidSubscriptionNotification
     | MaintainerNewProductSaleNotification
-    | MaintainerCreateAccountNotification
     | MaintainerAccountCreditsGrantedNotification,
     Discriminator(discriminator="type"),
 ]

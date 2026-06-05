@@ -6,7 +6,6 @@ from polar.auth.scope import Scope
 from polar.models import (
     Customer,
     Order,
-    Organization,
     Product,
     Transaction,
     UserOrganization,
@@ -20,7 +19,6 @@ from tests.fixtures.random_objects import create_order
 async def create_tax_transaction(
     save_fixture: SaveFixture,
     *,
-    organization: Organization,
     order: Order,
     tax_amount: int,
     tax_country: str,
@@ -28,6 +26,8 @@ async def create_tax_transaction(
     type: TransactionType = TransactionType.payment,
     currency: str = "usd",
 ) -> Transaction:
+    # The org link flows through `order` (Order.organization_id); the
+    # transaction itself is on the Polar side and is not tied to an account.
     transaction = Transaction(
         type=type,
         account=None,
@@ -39,7 +39,6 @@ async def create_tax_transaction(
         tax_amount=tax_amount,
         tax_country=tax_country,
         tax_state=tax_state,
-        payment_organization_id=organization.id,
         order=order,
     )
     await save_fixture(transaction)
@@ -49,7 +48,6 @@ async def create_tax_transaction(
 @pytest_asyncio.fixture
 async def tax_transactions(
     save_fixture: SaveFixture,
-    organization: Organization,
     product: Product,
     customer: Customer,
 ) -> None:
@@ -61,7 +59,6 @@ async def tax_transactions(
     # US / California: two payments and one refund (net 100 + 50 - 30 = 120).
     await create_tax_transaction(
         save_fixture,
-        organization=organization,
         order=await order(),
         tax_amount=100,
         tax_country="US",
@@ -69,7 +66,6 @@ async def tax_transactions(
     )
     await create_tax_transaction(
         save_fixture,
-        organization=organization,
         order=await order(),
         tax_amount=50,
         tax_country="US",
@@ -77,7 +73,6 @@ async def tax_transactions(
     )
     await create_tax_transaction(
         save_fixture,
-        organization=organization,
         order=await order(),
         tax_amount=-30,
         tax_country="US",
@@ -88,7 +83,6 @@ async def tax_transactions(
     # US / New York: a separate state-level jurisdiction.
     await create_tax_transaction(
         save_fixture,
-        organization=organization,
         order=await order(),
         tax_amount=80,
         tax_country="US",
@@ -98,7 +92,6 @@ async def tax_transactions(
     # United Kingdom: country-level only (tax_state must be ignored).
     await create_tax_transaction(
         save_fixture,
-        organization=organization,
         order=await order(),
         tax_amount=200,
         tax_country="GB",
@@ -106,7 +99,6 @@ async def tax_transactions(
     )
     await create_tax_transaction(
         save_fixture,
-        organization=organization,
         order=await order(),
         tax_amount=100,
         tax_country="GB",
@@ -129,7 +121,7 @@ class TestListTaxJurisdictions:
         json = response.json()
         assert json["pagination"]["total_count"] == 0
 
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_read}))
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.transactions_read}))
     async def test_user_valid(
         self,
         client: AsyncClient,
@@ -187,7 +179,7 @@ class TestGetTaxSummary:
         assert json["order_count"] == 0
         assert json["jurisdiction_count"] == 0
 
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_read}))
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.transactions_read}))
     async def test_user_valid(
         self,
         client: AsyncClient,

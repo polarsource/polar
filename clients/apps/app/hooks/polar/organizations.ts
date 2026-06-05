@@ -1,8 +1,8 @@
 import { usePolarClient } from '@/providers/PolarClientProvider'
 import { queryClient } from '@/utils/query'
-import { operations, schemas, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import * as Sentry from '@sentry/react-native'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 
 export const useOrganizations = (
   {
@@ -37,32 +37,6 @@ export const useOrganizations = (
   })
 }
 
-export const useOrganization = (
-  organizationId?: string,
-  parameters?: Omit<
-    operations['organizations:list']['parameters']['query'],
-    'organization_id'
-  >,
-) => {
-  const { polar } = usePolarClient()
-
-  return useQuery({
-    queryKey: ['organizations', organizationId, parameters],
-    queryFn: () =>
-      unwrap(
-        polar.GET('/v1/organizations/', {
-          param: {
-            query: {
-              organization_id: organizationId,
-              ...(parameters || {}),
-            },
-          },
-        }),
-      ),
-    enabled: !!organizationId,
-  })
-}
-
 export const useCreateOrganization = () => {
   const { polar } = usePolarClient()
 
@@ -75,33 +49,6 @@ export const useCreateOrganization = () => {
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] })
-    },
-  })
-}
-
-export const useUpdateOrganization = () => {
-  const { polar } = usePolarClient()
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: ({
-      organizationId,
-      update,
-    }: {
-      organizationId: string
-      update: schemas['OrganizationUpdate']
-    }) => {
-      return unwrap(
-        polar.PATCH('/v1/organizations/{id}', {
-          params: { path: { id: organizationId } },
-          body: update,
-        }),
-      )
-    },
-    onSettled: (data, error, variables, context) => {
-      queryClient.invalidateQueries({
-        queryKey: ['organizations'],
-      })
     },
   })
 }

@@ -82,7 +82,9 @@ Use **subscriptions** for ongoing team access. Use **one-time purchases** for pe
 </Steps>
 
 <Info>
-Unlike standard subscriptions, seat-based products **do not grant benefits to the billing manager**. Benefits are only granted to team members who claim their assigned seats. The billing manager can assign a seat to themselves if they also want to receive benefits — this counts toward the purchased seat total.
+When using the default Polar confirmation page (no custom `success_url`), the buyer's seat is automatically claimed during checkout, granting them immediate access to benefits. Any remaining seats can be assigned to teammates.
+
+If you set a custom `success_url`, the buyer will need to manually assign themselves a seat through the Customer Portal or API if they also want benefits.
 </Info>
 
 ## Managing seats

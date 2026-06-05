@@ -25,6 +25,23 @@ from polar.tax.tax_id import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
         ("234567899", "CA", ("234567899", TaxIDFormat.ca_bn)),
         ("12.531.909-2", "CL", ("125319092", TaxIDFormat.cl_tin)),
         ("12531909-2", "CL", ("125319092", TaxIDFormat.cl_tin)),
+        # EC RUC: normal juridical / public numbers (pass stdnum checksum)
+        ("1792060346001", "EC", ("1792060346001", TaxIDFormat.ec_ruc)),
+        ("1792060346-001", "EC", ("1792060346001", TaxIDFormat.ec_ruc)),
+        ("1793221293001", "EC", ("1793221293001", TaxIDFormat.ec_ruc)),
+        # EC RUC: valid company numbers the SRI issues without a check digit
+        # (stdnum raises InvalidChecksum, relaxed for third digit "9").
+        # See https://github.com/arthurdejong/python-stdnum/issues/497
+        (
+            "1793213150001",
+            "EC",
+            ("1793213150001", TaxIDFormat.ec_ruc),
+        ),  # CARNADA S.A.S.
+        (
+            "0993370026001",
+            "EC",
+            ("0993370026001", TaxIDFormat.ec_ruc),
+        ),  # PONTEDORA S.A.S.
         ("213.123.432-1", "CO", ("2131234321", TaxIDFormat.co_nit)),
         ("213-123-432-1", "CO", ("2131234321", TaxIDFormat.co_nit)),
         ("213 123 432 1", "CO", ("2131234321", TaxIDFormat.co_nit)),
@@ -72,6 +89,11 @@ def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> No
         ("123456789", "IL"),
         ("516179150", "IL"),
         ("2131234325", "CO"),  # Wrong check digit
+        ("1714307104001", "EC"),  # natural-person RUC (3rd digit 1), bad checksum
+        ("1763154690001", "EC"),  # public RUC (3rd digit 6), bad checksum
+        ("1793213150002", "EC"),  # 3rd digit 9 but branch establishment (not 001)
+        ("179321315001", "EC"),  # too short
+        ("2593213150001", "EC"),  # invalid province code (25)
         ("4030000375890", "MK"),  # Wrong check digit
         ("12345678", "GE"),  # Too short
         ("1234567890", "GE"),  # Between supported lengths (10)

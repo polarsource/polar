@@ -1,4 +1,5 @@
 import json
+import re
 from collections.abc import Sequence
 from enum import StrEnum
 from typing import TYPE_CHECKING, Annotated, Any, Protocol
@@ -6,6 +7,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Protocol
 import stdnum.ca.bn
 import stdnum.cl.rut
 import stdnum.co.nit
+import stdnum.ec.ruc
 import stdnum.exceptions
 import stdnum.il.idnr
 import stdnum.in_.gstin
@@ -268,6 +270,49 @@ class CONITValidator(ValidatorProtocol):
             raise InvalidTaxID(number, country) from e
 
 
+# Structural fallback for company RUCs the SRI issues without a usable módulo-11
+# check digit (see ECRUCValidator for the full breakdown). Self-contained so the
+# recovery path validates the structure itself rather than trusting stdnum,
+# whose checksum we already know to be unreliable for these numbers.
+# Upstream: https://github.com/arthurdejong/python-stdnum/issues/497
+_EC_RUC_NO_CHECKSUM = re.compile(r"(0[1-9]|1[0-9]|2[0-4]|30)9[0-d]{7}001")
+
+
+class ECRUCValidator(ValidatorProtocol):
+    """Validate Ecuadorian RUC.
+
+    Some valid juridical RUCs (third digit "9") carry no recomputable check
+    digit: the SRI issues them without applying the módulo-11 algorithm, so
+    stdnum rejects them with InvalidChecksum even though they are active,
+    registered companies (e.g. 1793213150001 -> CARNADA S.A.S.).
+
+    When stdnum reports a bad checksum we fall back to validating the structure
+    ourselves against _EC_RUC_NO_CHECKSUM, which matches, in order:
+
+    - ``(0[1-9]|1[0-9]|2[0-4]|30)`` -- province code: 01-24 (the 24 provinces)
+      or 30 (registered abroad); 25-29 are reserved,
+    - ``9`` -- third digit: company/juridical taxpayer,
+    - ``[0-d]{7}`` -- 7-digit identifier (the sequential plus the unused check
+      digit slot),
+    - ``001`` -- establishment: the head office (matriz).
+
+    The pattern only matches companies, so the checksum is forgiven solely for
+    them: a natural-person (third digit 0-5, i.e. sole proprietor) or public (6)
+    RUC that reaches this fallback fails to match and is rejected.
+    """
+
+    def validate(self, number: str, country: str) -> str:
+        number = stdnum.ec.ruc.compact(number)
+        try:
+            return stdnum.ec.ruc.validate(number)
+        except stdnum.exceptions.InvalidChecksum as e:
+            if _EC_RUC_NO_CHECKSUM.fullmatch(number):
+                return number
+            raise InvalidTaxID(number, country) from e
+        except stdnum.exceptions.ValidationError as e:
+            raise InvalidTaxID(number, country) from e
+
+
 class TRTINValidator(ValidatorProtocol):
     def validate(self, number: str, country: str) -> str:
         number = stdnum.tr.vkn.compact(number)
@@ -343,6 +388,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return CLTINValidator()
         case TaxIDFormat.co_nit:
             return CONITValidator()
+        case TaxIDFormat.ec_ruc:
+            return ECRUCValidator()
         case TaxIDFormat.ge_vat:
             return GEVATValidator()
         case TaxIDFormat.il_vat:

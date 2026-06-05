@@ -1,6 +1,15 @@
 import type { schemas } from '@polar-sh/client'
 import { describe, expect, it } from 'vitest'
-import { hasProductCheckout, isLegacyRecurringProductPrice } from './guards'
+import {
+  createCheckout,
+  createFixedPrice,
+  createSeatBasedPrice,
+} from './test-utils/makeCheckout'
+import {
+  getFixedPrice,
+  hasProductCheckout,
+  isLegacyRecurringProductPrice,
+} from './guards'
 
 describe('hasProductCheckout', () => {
   const baseCheckout = {
@@ -48,6 +57,29 @@ describe('hasProductCheckout', () => {
     } as unknown as schemas['CheckoutPublic']
 
     expect(hasProductCheckout(checkout)).toBe(false)
+  })
+})
+
+describe('getFixedPrice', () => {
+  it('returns the fixed price when combined with a seat price', () => {
+    const fixedPrice = createFixedPrice({ id: 'price_fixed' })
+    const seatPrice = createSeatBasedPrice({ id: 'price_seat' })
+    const checkout = createCheckout({
+      product_price: seatPrice,
+      prices: { prod_1: [fixedPrice, seatPrice] },
+    })
+
+    expect(getFixedPrice(checkout)).toBe(fixedPrice)
+  })
+
+  it('returns null when there is no fixed price', () => {
+    const seatPrice = createSeatBasedPrice({ id: 'price_seat' })
+    const checkout = createCheckout({
+      product_price: seatPrice,
+      prices: { prod_1: [seatPrice] },
+    })
+
+    expect(getFixedPrice(checkout)).toBeNull()
   })
 })
 

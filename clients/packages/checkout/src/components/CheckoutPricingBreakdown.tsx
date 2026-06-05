@@ -10,7 +10,12 @@ import {
 import { formatDate } from '@polar-sh/i18n/formatters/date'
 import { addDays, addMonths, addWeeks, addYears } from 'date-fns'
 import { useMemo } from 'react'
-import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
+import {
+  getFixedPrice,
+  getSeatPrice,
+  hasProductCheckout,
+  isLegacyRecurringProductPrice,
+} from '../guards'
 import { getSeatRows } from '../utils/seats'
 import { getDiscountDisplay } from '../utils/discount'
 import { getMeteredPrices } from '../utils/product'
@@ -157,6 +162,13 @@ const CheckoutPricingBreakdown = ({
 
   const seatRows = useMemo(() => getSeatRows(checkout), [checkout])
 
+  // A product may combine a fixed base fee with per-seat pricing. When both
+  // exist, the fixed portion is baked into `checkout.amount` but has no row of
+  // its own — without it the seat rows visibly sum to less than the subtotal.
+  const fixedPrice = useMemo(() => getFixedPrice(checkout), [checkout])
+  const seatPrice = useMemo(() => getSeatPrice(checkout), [checkout])
+  const showBasePrice = Boolean(fixedPrice && seatPrice)
+
   if (checkout.is_free_product_price) {
     return null
   }
@@ -165,6 +177,21 @@ const CheckoutPricingBreakdown = ({
     <div className="flex flex-col gap-y-2">
       {checkout.currency ? (
         <>
+          {showBasePrice && fixedPrice && (
+            <DetailRow
+              title={t('checkout.pricing.basePrice')}
+              className="text-gray-600"
+            >
+              <AmountLabel
+                amount={fixedPrice.price_amount}
+                currency={checkout.currency}
+                interval={interval}
+                intervalCount={intervalCount}
+                mode="standard"
+                locale={locale}
+              />
+            </DetailRow>
+          )}
           {seatRows?.map((row, i) => (
             <DetailRow
               key={i}

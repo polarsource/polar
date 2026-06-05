@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createBaseCheckout,
   createCheckout,
+  createFixedPrice,
   createMeteredPrice,
   createSeatBasedPrice,
 } from '../test-utils/makeCheckout'
@@ -737,6 +738,75 @@ describe('CheckoutPricingBreakdown', () => {
       expect(tier1).toHaveTextContent('$10 per seat')
       expect(tier1).toHaveTextContent('$50')
       expect(screen.queryByTestId('detail-row-0 seats')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('fixed + seat pricing', () => {
+    const seatPrice = createSeatBasedPrice({
+      id: 'price_seat',
+      seat_tiers: {
+        seat_tier_type: 'volume',
+        tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 2000 }],
+        minimum_seats: 1,
+        maximum_seats: null,
+      },
+    })
+
+    it('shows a base price row above the seat rows', () => {
+      const fixedPrice = createFixedPrice({
+        id: 'price_fixed',
+        price_amount: 2900,
+      })
+      const checkout = createCheckout({
+        amount: 12900,
+        net_amount: 12900,
+        tax_amount: null,
+        total_amount: 12900,
+        seats: 5,
+        product_price: seatPrice,
+        prices: { prod_1: [fixedPrice, seatPrice] },
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(getRowValue('Base price')).toBe('$29')
+      const seatRow = screen.getByTestId('detail-row-5 seats')
+      expect(seatRow).toHaveTextContent('$20 per seat')
+      expect(seatRow).toHaveTextContent('$100')
+      expect(getRowValue('Subtotal')).toBe('$129')
+      expect(getRowValue('Total')).toBe('$129')
+    })
+
+    it('does not show a base price row for seat-only pricing', () => {
+      const checkout = createCheckout({
+        amount: 5000,
+        net_amount: 5000,
+        tax_amount: null,
+        total_amount: 5000,
+        seats: 5,
+        product_price: seatPrice,
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(
+        screen.queryByTestId('detail-row-Base price'),
+      ).not.toBeInTheDocument()
+    })
+
+    it('does not show a base price row for fixed-only pricing', () => {
+      const checkout = createBaseCheckout({
+        amount: 999,
+        net_amount: 999,
+        tax_amount: null,
+        total_amount: 999,
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(
+        screen.queryByTestId('detail-row-Base price'),
+      ).not.toBeInTheDocument()
     })
   })
 

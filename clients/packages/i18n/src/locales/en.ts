@@ -98,6 +98,11 @@ export default {
       additionalMeteredUsage: 'Additional metered usage',
       perUnit: '/ unit',
       perSeat: 'per seat',
+      basePrice: {
+        value: 'Base price',
+        _llmContext:
+          'Label for the flat, fixed portion of a product that combines a fixed base fee with per-seat pricing. Shown as a line item above the per-seat rows in the checkout pricing breakdown.',
+      },
       seats: {
         label: 'Seats',
         numberOfSeats: 'Number of seats',

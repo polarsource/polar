@@ -6,7 +6,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-} from '@polar-sh/ui/components/atoms/Select'
+} from '@polar-sh/orbit'
 
 const PRORATION_BEHAVIOR_LABELS: Record<
   schemas['SubscriptionProrationBehavior'],

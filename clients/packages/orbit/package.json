@@ -39,10 +39,13 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@stylexjs/stylex": "^0.18.2",
+    "@tanstack/react-table": "^8.21.3",
     "class-variance-authority": "^0.7.1",
+    "lucide-react": "^0.577.0",
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {

@@ -12,7 +12,7 @@ const BILLING_REASON_LABELS: Record<schemas['OrderBillingReason'], string> = {
 }
 import { formatCurrency } from '@polar-sh/currency'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
+import { DataTable } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
 import Link from 'next/link'
 

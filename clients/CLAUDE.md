@@ -507,12 +507,11 @@ const MyForm = () => {
 // Orbit (preferred — design-system primitives)
 import { Box } from '@polar-sh/orbit/Box'
 import { Text, Button, Avatar, SegmentedControl } from '@polar-sh/orbit'
+import { DataTable, Select } from '@polar-sh/orbit'
 
 // Legacy @polar-sh/ui (use only when an Orbit equivalent doesn't exist)
 import { Card } from '@polar-sh/ui/components/atoms/Card'
-import { Input } from '@polar-sh/ui/components/atoms/Input'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
-import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import {
   Tabs,
   TabsList,

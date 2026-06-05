@@ -10,7 +10,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
+} from '@polar-sh/orbit'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'

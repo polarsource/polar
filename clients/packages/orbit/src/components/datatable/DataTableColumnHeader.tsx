@@ -2,7 +2,7 @@ import { Column } from '@tanstack/react-table'
 
 import { MoveDown, MoveUp } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
-import { Button } from '@polar-sh/orbit'
+import { Button } from '../Button'
 
 interface DataTableColumnHeaderProps<
   TData,

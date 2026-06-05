@@ -24,7 +24,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
+} from '@polar-sh/orbit'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'

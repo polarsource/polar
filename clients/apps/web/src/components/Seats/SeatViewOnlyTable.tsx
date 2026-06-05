@@ -1,6 +1,6 @@
 'use client'
 
-import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
+import { DataTable } from '@polar-sh/orbit'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { twMerge } from 'tailwind-merge'
 

@@ -5,7 +5,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from 'lucide-react'
-import { Button } from '@polar-sh/orbit'
+import { Button } from '../Button'
 import {
   Select,
   SelectContent,

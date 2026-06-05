@@ -22,7 +22,7 @@ import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from '@polar-sh/ui/components/atoms/DataTable'
+} from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { CellContext } from '@tanstack/react-table'
 import { useRouter, useSearchParams } from 'next/navigation'

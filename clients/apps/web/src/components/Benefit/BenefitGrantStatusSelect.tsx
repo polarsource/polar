@@ -6,7 +6,7 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
+} from '@polar-sh/orbit'
 import React from 'react'
 
 export type BenefitGrantStatusFilter = 'any' | 'granted' | 'revoked'

@@ -106,6 +106,11 @@ export default {
           '=1': '# seat',
           other: '# seats',
         },
+        included: {
+          _mode: 'plural',
+          '=1': '# seat included',
+          other: '# seats included',
+        },
         range: {
           value: '{min} - {max} seats',
           _llmContext:

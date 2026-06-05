@@ -46,7 +46,7 @@ This three-entity model gives you flexibility that a simple "buyer = user" model
 
 - **Benefit grants** reference a `member`, not just a `customer`. Always use `grant.member` to identify who received the benefit.
 - **Webhooks** include a `member` object on seat and grant events. Use it instead of `customer_id` to identify the end user.
-- **Benefits are not granted at purchase time.** Seats must be assigned and claimed before benefits are granted.
+- **Benefits are not granted at purchase time.** Seats must be assigned and claimed before benefits are granted. (Exception: when using the default Polar confirmation page, the buyer's seat is auto-claimed.)
 
 ```
 Purchase → Assign seats → Members claim → Benefits granted
@@ -230,7 +230,7 @@ On subscription cancellation, each seat is revoked individually. A subscription 
 
 - **Use `grant.member` everywhere** — not `grant.customer_id` — to identify who has access
 - **Use seat metadata** to store department, role, or cost center for your own tracking
-- **Communicate clearly** to billing managers that they won't receive benefits automatically — they can assign a seat to themselves if they also want access
+- **Communicate clearly** to billing managers about seat assignment: if using the default Polar confirmation page, their seat is auto-claimed; if using a custom success URL, they'll need to assign themselves a seat through the portal
 
 ## Troubleshooting
 

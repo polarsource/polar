@@ -10,6 +10,7 @@ import { useModal } from '@/components/Modal/useModal'
 import Spinner from '@/components/Shared/Spinner'
 import { useInfiniteBenefits } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
+import { usePushRouteWithoutCache } from '@/utils/router'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import ArrowDownward from '@mui/icons-material/ArrowDownward'
 import ArrowUpward from '@mui/icons-material/ArrowUpward'
@@ -25,7 +26,7 @@ import {
   parseAsStringLiteral,
   useQueryState,
 } from 'nuqs'
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export const BenefitListSidebar = ({
@@ -35,6 +36,7 @@ export const BenefitListSidebar = ({
 }) => {
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const pushRouteWithoutCache = usePushRouteWithoutCache()
 
   const [sorting, setSorting] = useQueryState(
     'sorting',
@@ -95,6 +97,27 @@ export const BenefitListSidebar = ({
     }
     return null
   }, [pathname])
+
+  const handleSelectBenefit = useCallback(
+    (benefit: schemas['Benefit']) => {
+      hideCreateBenefitModal()
+
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('query')
+      params.delete('create_benefit')
+      const queryString = params.toString()
+
+      pushRouteWithoutCache(
+        `/dashboard/${organization.slug}/products/benefits/${benefit.id}${queryString ? `?${queryString}` : ''}`,
+      )
+    },
+    [
+      hideCreateBenefitModal,
+      searchParams,
+      pushRouteWithoutCache,
+      organization.slug,
+    ],
+  )
 
   return (
     <>
@@ -189,10 +212,7 @@ export const BenefitListSidebar = ({
           <CreateBenefitModalContent
             organization={organization}
             hideModal={hideCreateBenefitModal}
-            onSelectBenefit={(benefit) => {
-              hideCreateBenefitModal()
-              window.location.href = `/dashboard/${organization.slug}/products/benefits/${benefit.id}`
-            }}
+            onSelectBenefit={handleSelectBenefit}
           />
         }
       />

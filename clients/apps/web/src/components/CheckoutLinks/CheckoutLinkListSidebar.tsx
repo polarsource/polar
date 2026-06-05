@@ -8,6 +8,7 @@ import Spinner from '@/components/Shared/Spinner'
 import { toast } from '@/components/Toast/use-toast'
 import { useCheckoutLinks } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
+import { usePushRouteWithoutCache } from '@/utils/router'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import ArrowDownward from '@mui/icons-material/ArrowDownward'
 import ArrowUpward from '@mui/icons-material/ArrowUpward'
@@ -15,7 +16,7 @@ import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import Link from 'next/link'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import {
   parseAsArrayOf,
   parseAsBoolean,
@@ -23,7 +24,7 @@ import {
   parseAsStringLiteral,
   useQueryState,
 } from 'nuqs'
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export const CheckoutLinkListSidebar = ({
@@ -32,8 +33,8 @@ export const CheckoutLinkListSidebar = ({
   organization: schemas['Organization']
 }) => {
   const pathname = usePathname()
-  const router = useRouter()
   const searchParams = useSearchParams()
+  const pushRouteWithoutCache = usePushRouteWithoutCache()
 
   const [productIds, setProductIds] = useQueryState(
     'productId',
@@ -94,6 +95,26 @@ export const CheckoutLinkListSidebar = ({
     }
     return null
   }, [pathname])
+
+  const handleCreateCheckoutLinkClose = useCallback(
+    (checkoutLink: schemas['CheckoutLink']) => {
+      hideCreateCheckoutLinkModal()
+
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('productId')
+      const queryString = params.toString()
+
+      pushRouteWithoutCache(
+        `/dashboard/${organization.slug}/products/checkout-links/${checkoutLink.id}${queryString ? `?${queryString}` : ''}`,
+      )
+    },
+    [
+      hideCreateCheckoutLinkModal,
+      searchParams,
+      pushRouteWithoutCache,
+      organization.slug,
+    ],
+  )
 
   return (
     <>
@@ -204,13 +225,7 @@ export const CheckoutLinkListSidebar = ({
           <CheckoutLinkManagementModal
             organization={organization}
             productIds={productIds ?? []}
-            onClose={(checkoutLink) => {
-              setProductIds([])
-              hideCreateCheckoutLinkModal()
-              router.push(
-                `/dashboard/${organization.slug}/products/checkout-links/${checkoutLink.id}`,
-              )
-            }}
+            onClose={handleCreateCheckoutLinkClose}
           />
         }
       />

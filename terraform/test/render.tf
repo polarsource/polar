@@ -160,7 +160,7 @@ module "test" {
     authentication_session_cookie_domain = "polar.sh"
     oauth2_session_state_cookie_domain   = "polar.sh"
     debug                                = "0"
-    email_sender                         = "logger"
+    email_sender                         = "resend"
     email_from_name                      = "[TEST] Polar"
     email_from_domain                    = "notifications.test.polar.sh"
     frontend_base_url                    = "https://test.polar.sh"

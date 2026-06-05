@@ -1,28 +1,28 @@
 'use client'
 
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { useTaxJurisdictions } from '@/hooks/queries'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { Status } from '@polar-sh/ui/components/atoms/Status'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
 } from '@polar-sh/ui/components/atoms/DataTable'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { endOfDay, endOfMonth, endOfToday, startOfMonth } from 'date-fns'
 import { parseAsString, useQueryState } from 'nuqs'
 import { useMemo } from 'react'
-import { buildTaxSummary, TaxJurisdiction, TaxSummary } from './data'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
 
 const getDefaultStartDate = () => toISODate(startOfMonth(endOfToday()))
 const getDefaultEndDate = () => toISODate(endOfMonth(endOfToday()))
 
-const columns: DataTableColumnDef<TaxJurisdiction>[] = [
+const columns: DataTableColumnDef<schemas['TaxJurisdiction']>[] = [
   {
     accessorKey: 'country',
     header: ({ column }) => (
@@ -30,27 +30,15 @@ const columns: DataTableColumnDef<TaxJurisdiction>[] = [
     ),
     cell: ({ row: { original } }) => (
       <Box display="flex" flexDirection="column" rowGap="xs">
-        <Text>{original.region}</Text>
+        <Text>{original.state_name ?? original.country_name}</Text>
         <Text color="muted">
-          {original.country} · {original.countryCode}
+          {original.country_name} · {original.country}
         </Text>
       </Box>
     ),
   },
   {
-    accessorKey: 'taxType',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Tax" />
-    ),
-    cell: ({ row: { original } }) => (
-      <Text>
-        {original.taxType} · {(original.rate * 100).toFixed(2)}%
-      </Text>
-    ),
-    size: 140,
-  },
-  {
-    accessorKey: 'orderCount',
+    accessorKey: 'order_count',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Orders" />
     ),
@@ -73,7 +61,7 @@ const columns: DataTableColumnDef<TaxJurisdiction>[] = [
     size: 140,
   },
   {
-    accessorKey: 'taxRemitted',
+    accessorKey: 'tax_amount',
     header: ({ column }) => (
       <DataTableColumnHeader
         column={column}
@@ -81,9 +69,11 @@ const columns: DataTableColumnDef<TaxJurisdiction>[] = [
         className="flex justify-end"
       />
     ),
-    cell: ({ getValue }) => (
+    cell: ({ row: { original } }) => (
       <Box textAlign="right">
-        <Text>{formatCurrency('accounting')(getValue() as number, 'usd')}</Text>
+        <Text>
+          {formatCurrency('accounting')(original.tax_amount, original.currency)}
+        </Text>
       </Box>
     ),
     size: 160,
@@ -146,10 +136,30 @@ export default function TaxesPage({
     [startDateISOString, endDateISOString],
   )
 
-  const summary: TaxSummary = useMemo(
-    () => buildTaxSummary(dateRange.from, dateRange.to),
-    [dateRange],
-  )
+  const { data, isLoading } = useTaxJurisdictions({
+    organization_id: organization.id,
+    start_date: startDateISOString,
+    end_date: endDateISOString,
+    sorting: ['-tax_amount'],
+    limit: 100,
+  })
+
+  const jurisdictions = useMemo(() => data?.items ?? [], [data])
+
+  const summary = useMemo(() => {
+    const totalRemitted = jurisdictions.reduce(
+      (sum, j) => sum + j.tax_amount,
+      0,
+    )
+    const totalOrders = jurisdictions.reduce((sum, j) => sum + j.order_count, 0)
+    const currency = jurisdictions[0]?.currency ?? 'usd'
+    return {
+      totalRemitted,
+      totalOrders,
+      currency,
+      jurisdictionCount: data?.pagination.total_count ?? jurisdictions.length,
+    }
+  }, [jurisdictions, data])
 
   return (
     <DashboardBody wrapperClassName="max-w-(--breakpoint-lg)!">
@@ -187,7 +197,10 @@ export default function TaxesPage({
         >
           <SummaryCard
             label="Tax remitted by Polar"
-            value={formatCurrency('accounting')(summary.totalRemitted, 'usd')}
+            value={formatCurrency('accounting')(
+              summary.totalRemitted,
+              summary.currency,
+            )}
             hint="Filed and paid for you"
           />
           <SummaryCard
@@ -214,8 +227,8 @@ export default function TaxesPage({
           </Box>
           <DataTable
             columns={columns}
-            data={summary.jurisdictions}
-            isLoading={false}
+            data={jurisdictions}
+            isLoading={isLoading}
           />
         </Box>
       </Box>

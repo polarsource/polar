@@ -1348,6 +1348,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/taxes/jurisdictions': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Tax Jurisdictions
+     * @description **Scopes**: `orders:read`
+     */
+    get: operations['taxes:list_jurisdictions']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/auth/logout': {
     parameters: {
       query?: never
@@ -20337,6 +20357,12 @@ export interface components {
       items: components['schemas']['Subscription'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[TaxJurisdiction] */
+    ListResource_TaxJurisdiction_: {
+      /** Items */
+      items: components['schemas']['TaxJurisdiction'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[Transaction] */
     ListResource_Transaction_: {
       /** Items */
@@ -30320,6 +30346,68 @@ export interface components {
       | 'vn_tin'
       | 'za_vat'
     /**
+     * TaxJurisdiction
+     * @description Aggregated tax remitted by Polar for a single jurisdiction.
+     *
+     *     US and Canadian jurisdictions are reported at the state/province level;
+     *     every other country is aggregated at the country level.
+     */
+    TaxJurisdiction: {
+      /**
+       * Id
+       * @description Stable identifier for the jurisdiction. For US/Canada it is `{country}-{state}` (e.g. `US-CA`), otherwise the country code (e.g. `GB`).
+       */
+      id: string
+      /**
+       * Country
+       * @description ISO 3166-1 alpha-2 country code.
+       * @example US
+       * @example GB
+       */
+      country: string
+      /**
+       * Country Name
+       * @description Human-readable country name.
+       */
+      country_name: string
+      /**
+       * State
+       * @description ISO 3166-2 subdivision code, without the country prefix (e.g. `CA`). Only set for US and Canadian jurisdictions.
+       */
+      state?: string | null
+      /**
+       * State Name
+       * @description Human-readable state/province name. Only set for US and Canadian jurisdictions.
+       */
+      state_name?: string | null
+      /**
+       * Currency
+       * @description Currency of the remitted tax amount.
+       */
+      currency: string
+      /**
+       * Tax Amount
+       * @description Net tax remitted by Polar in this jurisdiction, in the currency's minor unit. Refunds and disputes are netted out.
+       */
+      tax_amount: number
+      /**
+       * Order Count
+       * @description Number of orders that contributed tax to this jurisdiction.
+       */
+      order_count: number
+    }
+    /**
+     * TaxJurisdictionSortProperty
+     * @enum {string}
+     */
+    TaxJurisdictionSortProperty:
+      | 'tax_amount'
+      | '-tax_amount'
+      | 'order_count'
+      | '-order_count'
+      | 'country'
+      | '-country'
+    /**
      * TimeInterval
      * @enum {string}
      */
@@ -35212,6 +35300,48 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['TransactionsSummary']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'taxes:list_jurisdictions': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Only include tax remitted on or after this date. */
+        start_date?: string | null
+        /** @description Only include tax remitted on or before this date. */
+        end_date?: string | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?: components['schemas']['TaxJurisdictionSortProperty'][] | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_TaxJurisdiction_']
         }
       }
       /** @description Validation Error */
@@ -57771,6 +57901,16 @@ export const taxIDFormatValues: ReadonlyArray<
   've_rif',
   'vn_tin',
   'za_vat',
+]
+export const taxJurisdictionSortPropertyValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['TaxJurisdictionSortProperty']
+> = [
+  'tax_amount',
+  '-tax_amount',
+  'order_count',
+  '-order_count',
+  'country',
+  '-country',
 ]
 export const timeIntervalValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TimeInterval']

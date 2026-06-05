@@ -162,6 +162,9 @@ class OrganizationFeatureSettings(Schema):
     billing_enabled: bool = Field(
         False, description="If this organization has billing enabled"
     )
+    slack_benefit_enabled: bool = Field(
+        False, description="Enables the slack shared channel benefit"
+    )
 
     @field_validator("overview_metrics", mode="before")
     @classmethod

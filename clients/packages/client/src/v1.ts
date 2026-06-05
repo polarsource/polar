@@ -24122,6 +24122,12 @@ export interface components {
        * @default false
        */
       billing_enabled: boolean
+      /**
+       * Slack Benefit Enabled
+       * @description Enables the slack shared channel benefit
+       * @default false
+       */
+      slack_benefit_enabled: boolean
     }
     /** OrganizationIndividualLegalEntitySchema */
     OrganizationIndividualLegalEntitySchema: {

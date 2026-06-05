@@ -50,22 +50,23 @@ class LogCorrelationIdMiddleware:
             )
             if value is not None
         }
-        if client_context:
-            ClientContext.set(client_context)
-            structlog.contextvars.bind_contextvars(**client_context)
-            for key, value in client_context.items():
-                sentry_sdk.set_tag(key, value)
-                if root_span is not None and root_span.is_recording():
-                    root_span.set_attribute(key, value)
+        try:
+            if client_context:
+                ClientContext.set(client_context)
+                structlog.contextvars.bind_contextvars(**client_context)
+                for key, value in client_context.items():
+                    sentry_sdk.set_tag(key, value)
+                    if root_span is not None and root_span.is_recording():
+                        root_span.set_attribute(key, value)
 
-        await self.app(scope, receive, send)
-
-        logfire_stack.close()
-        structlog.contextvars.unbind_contextvars(
-            "correlation_id", "method", "path", *client_context.keys()
-        )
-        CorrelationID.clear()
-        ClientContext.clear()
+            await self.app(scope, receive, send)
+        finally:
+            logfire_stack.close()
+            structlog.contextvars.unbind_contextvars(
+                "correlation_id", "method", "path", *client_context.keys()
+            )
+            CorrelationID.clear()
+            ClientContext.clear()
 
 
 class FlushEnqueuedWorkerJobsMiddleware:

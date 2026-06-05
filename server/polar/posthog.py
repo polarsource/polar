@@ -93,6 +93,8 @@ class Service:
             groups=groups,
             properties={
                 **self._get_common_properties(),
+                # Mobile client identification
+                **ClientContext.get(),
                 **(properties or {}),
             },
         )
@@ -196,8 +198,6 @@ class Service:
     def _get_common_properties(self) -> dict[str, Any]:
         return {
             "_environment": settings.ENV,
-            # Mobile client identification
-            **ClientContext.get(),
         }
 
     def _get_user_properties(self, user: User) -> dict[str, Any]:

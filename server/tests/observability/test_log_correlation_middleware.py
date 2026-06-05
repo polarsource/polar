@@ -7,8 +7,11 @@ context for the duration of a request and cleans them up afterwards.
 import asyncio
 from typing import Any, cast
 
+import pytest
 import structlog
 from starlette.types import Receive, Scope, Send
+
+from polar.logging import ClientContext
 
 
 def _run(scope: Scope) -> dict[str, Any]:
@@ -26,9 +29,7 @@ def _run(scope: Scope) -> dict[str, Any]:
     async def noop_send(message: dict[str, Any]) -> None:
         pass
 
-    asyncio.get_event_loop().run_until_complete(
-        middleware(scope, cast(Receive, None), cast(Send, noop_send))
-    )
+    asyncio.run(middleware(scope, cast(Receive, None), cast(Send, noop_send)))
     return captured
 
 
@@ -75,3 +76,23 @@ class TestClientHeaderCapture:
         _run(_http_scope([(b"x-polar-client-version", b"mobile/1.4.0")]))
         # Context must not leak past the request lifecycle.
         assert "client_version" not in structlog.contextvars.get_contextvars()
+
+    def test_cleans_up_context_when_app_raises(self) -> None:
+        # The cleanup runs in a finally block, so a failing request must not
+        # leak client identification into error-path logging or later requests.
+        from polar.middlewares import LogCorrelationIdMiddleware
+
+        async def failing_app(scope: Scope, receive: Receive, send: Send) -> None:
+            raise RuntimeError("boom")
+
+        middleware = LogCorrelationIdMiddleware(failing_app)
+
+        async def noop_send(message: dict[str, Any]) -> None:
+            pass
+
+        scope = _http_scope([(b"x-polar-client-version", b"mobile/1.4.0")])
+        with pytest.raises(RuntimeError, match="boom"):
+            asyncio.run(middleware(scope, cast(Receive, None), cast(Send, noop_send)))
+
+        assert "client_version" not in structlog.contextvars.get_contextvars()
+        assert ClientContext.get() == {}

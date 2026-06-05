@@ -177,19 +177,22 @@ export const ProductPriceSeatBasedItem: React.FC<
         <FormLabel>
           <span className="flex items-center gap-x-1.5">Tiering model</span>
         </FormLabel>
-        <Select
-          value={tieringModel}
-          onValueChange={(v) => handleTieringModelChange(v as TieringModel)}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="fixed">Fixed price per seat</SelectItem>
-            <SelectItem value="graduated">Graduated</SelectItem>
-            <SelectItem value="volume">Volume discounts</SelectItem>
-          </SelectContent>
-        </Select>
+        <div>
+          {/* We need an extra div for space-y-2 to work */}
+          <Select
+            value={tieringModel}
+            onValueChange={(v) => handleTieringModelChange(v as TieringModel)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="fixed">Fixed price per seat</SelectItem>
+              <SelectItem value="graduated">Graduated</SelectItem>
+              <SelectItem value="volume">Volume discounts</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </FormItem>
 
       {/* Hidden field to keep seat_tier_type in sync */}

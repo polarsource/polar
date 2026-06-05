@@ -44,9 +44,9 @@ class TaxJurisdictionRepository(RepositoryBase[Transaction]):
         # on the raw column means the breakdown picks up state-level data from
         # any country automatically if that ever changes. `tax_state` is nullable
         # despite its `Mapped[str]` annotation, so cast to reflect that.
-        state_column = cast(
-            "ColumnElement[str | None]", Transaction.tax_state
-        ).label("state")
+        state_column = cast("ColumnElement[str | None]", Transaction.tax_state).label(
+            "state"
+        )
         # Sum `tax_amount` across every tax-bearing transaction (payments,
         # refunds, disputes and their reversals — see the `type` filter below),
         # which yields the net tax Polar remitted on the merchant's behalf after

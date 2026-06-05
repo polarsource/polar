@@ -30,6 +30,7 @@ from polar.models import (
 from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.organization import OrganizationStatus
+from polar.models.product_price import ProductPriceSeatUnit
 from polar.postgres import AsyncSession
 from polar.tax.calculation import TaxCalculationService
 from polar.tax.calculation.base import TaxabilityReason
@@ -41,6 +42,7 @@ from tests.fixtures.random_objects import (
     create_discount,
     create_organization,
     create_product,
+    create_product_fixed_and_seat,
     create_webhook_endpoint,
 )
 
@@ -451,6 +453,44 @@ class TestCreateCheckout:
         assert json["seats"] == 6
         assert json["amount"] == 1500 * 6
         assert json["product_price"]["id"] == str(product.prices[0].id)
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    async def test_valid_fixed_and_seat_checkout(
+        self,
+        api_prefix: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        product = await create_product_fixed_and_seat(
+            save_fixture,
+            organization=organization,
+            fixed_amount=99900,
+            price_per_seat=2000,
+        )
+        fixed_price, seat_price = product.prices[0], product.prices[1]
+        assert isinstance(seat_price, ProductPriceSeatUnit)
+
+        response = await client.post(
+            f"{api_prefix}/",
+            json={
+                "payment_processor": "stripe",
+                "products": [str(product.id)],
+                "seats": 10,
+            },
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["seats"] == 10
+        # Combined amount: fixed base + seat charge.
+        assert json["amount"] == 99900 + seat_price.calculate_amount(10)
+        # FK points at the fixed price (the default).
+        assert json["product_price"]["id"] == str(fixed_price.id)
+        # Both static prices are exposed on the product.
+        assert len(json["product"]["prices"]) == 2
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
     async def test_seat_based_missing_seats_defaults_to_minimum(

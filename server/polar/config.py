@@ -585,7 +585,7 @@ class Settings(BaseSettings):
         return self.is_environment({Environment.testing})
 
     def is_sandbox(self) -> bool:
-        return self.is_environment({Environment.sandbox})
+        return self.is_environment({Environment.sandbox, Environment.test})
 
     def is_production(self) -> bool:
         return self.is_environment({Environment.production})

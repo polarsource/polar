@@ -37,7 +37,7 @@ clients/
 ├── packages/
 │   ├── ui/                     # Shared UI components
 │   │   └── src/components/
-│   │       ├── atoms/          # Basic components (Button, Input, Card)
+│   │       ├── atoms/          # Legacy basic components (Card, Status, Tabs)
 │   │       ├── molecules/      # Composite components (Banner)
 │   │       └── ui/             # shadcn/ui base components
 │   ├── client/                 # Generated API client
@@ -603,7 +603,14 @@ const MyForm = () => {
 ```tsx
 // Orbit (preferred — design-system primitives)
 import { Box } from '@polar-sh/orbit/Box'
-import { Text, Button, Avatar, SegmentedControl } from '@polar-sh/orbit'
+import {
+  Text,
+  Button,
+  Avatar,
+  SegmentedControl,
+  Input,
+  TextArea,
+} from '@polar-sh/orbit'
 import { DataTable, Select } from '@polar-sh/orbit'
 
 // Legacy @polar-sh/ui (use only when an Orbit equivalent doesn't exist)

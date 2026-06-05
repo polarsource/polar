@@ -4,6 +4,8 @@ import { getSeatPrice } from '../guards'
 export interface SeatRow {
   seats: number
   pricePerSeat: number
+  min: number
+  max: number | null
 }
 
 export function getSeatRows(
@@ -26,7 +28,12 @@ export function getSeatRows(
       const tierEnd = tier.max_seats ?? seats
       const seatsInTier = Math.min(seats, tierEnd) - allocated
       if (seatsInTier > 0) {
-        rows.push({ seats: seatsInTier, pricePerSeat: tier.price_per_seat })
+        rows.push({
+          seats: seatsInTier,
+          pricePerSeat: tier.price_per_seat,
+          min: tier.min_seats,
+          max: tier.max_seats ?? null,
+        })
       }
       allocated += seatsInTier
     }
@@ -37,5 +44,12 @@ export function getSeatRows(
     (t) =>
       seats >= t.min_seats && (t.max_seats == null || seats <= t.max_seats),
   )
-  return [{ seats, pricePerSeat: matchingTier?.price_per_seat ?? 0 }]
+  return [
+    {
+      seats,
+      pricePerSeat: matchingTier?.price_per_seat ?? 0,
+      min: matchingTier?.min_seats ?? 1,
+      max: matchingTier?.max_seats ?? null,
+    },
+  ]
 }

@@ -181,7 +181,9 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.seats.included.=1": "One seat included",
+    "checkout.pricing.seats.included.other": "# seats included"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -365,7 +367,9 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.seats.included.=1": "One seat included",
+    "checkout.pricing.seats.included.other": "# seats included"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -549,7 +553,9 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.seats.included.=1": "One seat included",
+    "checkout.pricing.seats.included.other": "# seats included"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -733,7 +739,9 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.seats.included.=1": "One seat included",
+    "checkout.pricing.seats.included.other": "# seats included"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -917,7 +925,9 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.seats.included.=1": "One seat included",
+    "checkout.pricing.seats.included.other": "# seats included"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1093,7 +1103,9 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.seats.included.=1": "One seat included",
+    "checkout.pricing.seats.included.other": "# seats included"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1269,7 +1281,9 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.seats.included.=1": "One seat included",
+    "checkout.pricing.seats.included.other": "# seats included"
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1445,7 +1459,9 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.seats.included.=1": "One seat included",
+    "checkout.pricing.seats.included.other": "# seats included"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1621,7 +1637,9 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.seats.included.=1": "One seat included",
+    "checkout.pricing.seats.included.other": "# seats included"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1797,6 +1815,8 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.seats.included.=1": "One seat included",
+    "checkout.pricing.seats.included.other": "# seats included"
   }
 }

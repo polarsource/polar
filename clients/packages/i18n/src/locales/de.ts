@@ -101,6 +101,11 @@ export default {
         minimum: 'Mindestens {min} Plätze',
         maximum: 'Maximal {max} Plätze',
         updateFailed: 'Plätze konnten nicht aktualisiert werden',
+        included: {
+          '=1': 'Ein Platz enthalten',
+          other: '# Plätze enthalten',
+          _mode: 'plural',
+        },
       },
       inclTax: 'MwSt. (inklusive)',
     },

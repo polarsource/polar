@@ -101,6 +101,11 @@ export default {
         minimum: 'Minimo {min} postazioni',
         maximum: 'Massimo {max} postazioni',
         updateFailed: 'Impossibile aggiornare le postazioni',
+        included: {
+          '=1': 'Una postazione inclusa',
+          other: '# postazioni incluse',
+          _mode: 'plural',
+        },
       },
       inclTax: 'IVA (inclusa)',
     },

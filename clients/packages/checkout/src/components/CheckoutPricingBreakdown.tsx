@@ -18,6 +18,7 @@ import { unreachable } from '../utils/unreachable'
 import AmountLabel from './AmountLabel'
 import DetailRow from './DetailRow'
 import MeteredPriceLabel from './MeteredPriceLabel'
+import SeatDetailRow from './SeatDetailRow'
 
 function formatShortDate(date: Date, locale: AcceptedLocale): string {
   const isCurrentYear = date.getFullYear() === new Date().getFullYear()
@@ -166,29 +167,14 @@ const CheckoutPricingBreakdown = ({
       {checkout.currency ? (
         <>
           {seatRows?.map((row, i) => (
-            <DetailRow
+            <SeatDetailRow
               key={i}
-              title={t('checkout.pricing.seats.count', { count: row.seats })}
-              subtitle={
-                '· ' +
-                formatCurrency('standard', locale)(
-                  row.pricePerSeat,
-                  checkout.currency!,
-                ) +
-                ' ' +
-                t('checkout.pricing.perSeat')
-              }
-              className="text-gray-600"
-            >
-              <AmountLabel
-                amount={row.seats * row.pricePerSeat}
-                currency={checkout.currency!}
-                interval={interval}
-                intervalCount={intervalCount}
-                mode="standard"
-                locale={locale}
-              />
-            </DetailRow>
+              row={row}
+              currency={checkout.currency!}
+              interval={interval}
+              intervalCount={intervalCount}
+              locale={locale}
+            />
           ))}
           <DetailRow
             title={t('checkout.pricing.subtotal')}

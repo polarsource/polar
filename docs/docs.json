@@ -264,7 +264,9 @@
                   "api-reference/customers/delete",
                   "api-reference/customers/get-external",
                   "api-reference/customers/update-external",
-                  "api-reference/customers/delete-external"
+                  "api-reference/customers/delete-external",
+                  "api-reference/customers/list-payment-methods",
+                  "api-reference/customers/list-payment-methods-external"
                 ]
               },
               {

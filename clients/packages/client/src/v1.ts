@@ -1357,7 +1357,7 @@ export interface paths {
     }
     /**
      * List Tax Jurisdictions
-     * @description **Scopes**: `orders:read`
+     * @description **Scopes**: `transactions:read`
      */
     get: operations['taxes:list_jurisdictions']
     put?: never
@@ -1377,7 +1377,7 @@ export interface paths {
     }
     /**
      * Get Tax Summary
-     * @description **Scopes**: `orders:read`
+     * @description **Scopes**: `transactions:read`
      */
     get: operations['taxes:get_summary']
     put?: never
@@ -30386,20 +30386,10 @@ export interface components {
        */
       country: string
       /**
-       * Country Name
-       * @description Human-readable country name.
-       */
-      country_name: string
-      /**
        * State
        * @description ISO 3166-2 subdivision code, without the country prefix (e.g. `CA`). Only set for US and Canadian jurisdictions.
        */
       state?: string | null
-      /**
-       * State Name
-       * @description Human-readable state/province name. Only set for US and Canadian jurisdictions.
-       */
-      state_name?: string | null
       /**
        * Currency
        * @description Currency of the remitted tax amount.
@@ -30415,6 +30405,16 @@ export interface components {
        * @description Number of orders that contributed tax to this jurisdiction.
        */
       order_count: number
+      /**
+       * Country Name
+       * @description Human-readable country name.
+       */
+      readonly country_name: string
+      /**
+       * State Name
+       * @description Human-readable state/province name. Only set for US and Canadian jurisdictions.
+       */
+      readonly state_name: string | null
     }
     /**
      * TaxJurisdictionSortProperty

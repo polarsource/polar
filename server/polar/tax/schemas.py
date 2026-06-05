@@ -1,7 +1,7 @@
 from typing import Any, cast
 
 import pycountry
-from pydantic import Field
+from pydantic import Field, computed_field
 
 from polar.kit.schemas import Schema
 
@@ -23,19 +23,11 @@ class TaxJurisdiction(Schema):
     country: str = Field(
         description="ISO 3166-1 alpha-2 country code.", examples=["US", "GB"]
     )
-    country_name: str = Field(description="Human-readable country name.")
     state: str | None = Field(
         None,
         description=(
             "ISO 3166-2 subdivision code, without the country prefix "
             "(e.g. `CA`). Only set for US and Canadian jurisdictions."
-        ),
-    )
-    state_name: str | None = Field(
-        None,
-        description=(
-            "Human-readable state/province name. "
-            "Only set for US and Canadian jurisdictions."
         ),
     )
     currency: str = Field(description="Currency of the remitted tax amount.")
@@ -48,6 +40,25 @@ class TaxJurisdiction(Schema):
     order_count: int = Field(
         description="Number of orders that contributed tax to this jurisdiction."
     )
+
+    @computed_field(description="Human-readable country name.")  # type: ignore[prop-decorator]
+    @property
+    def country_name(self) -> str:
+        country_obj = pycountry.countries.get(alpha_2=self.country)
+        return cast(Any, country_obj).name if country_obj else self.country
+
+    @computed_field(  # type: ignore[prop-decorator]
+        description=(
+            "Human-readable state/province name. "
+            "Only set for US and Canadian jurisdictions."
+        )
+    )
+    @property
+    def state_name(self) -> str | None:
+        if self.state is None:
+            return None
+        subdivision = pycountry.subdivisions.get(code=f"{self.country}-{self.state}")
+        return cast(Any, subdivision).name if subdivision else self.state
 
     @classmethod
     def from_aggregate(
@@ -65,20 +76,10 @@ class TaxJurisdiction(Schema):
         country = country.upper()
         state = state.upper() if state else None
 
-        country_obj = pycountry.countries.get(alpha_2=country)
-        country_name = cast(Any, country_obj).name if country_obj else country
-
-        state_name: str | None = None
-        if state:
-            subdivision = pycountry.subdivisions.get(code=f"{country}-{state}")
-            state_name = cast(Any, subdivision).name if subdivision else state
-
         return cls(
             id=f"{country}-{state}" if state else country,
             country=country,
-            country_name=country_name,
             state=state,
-            state_name=state_name,
             currency=currency,
             tax_amount=tax_amount,
             order_count=order_count,

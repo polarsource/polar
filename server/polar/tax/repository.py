@@ -2,13 +2,14 @@ from collections.abc import Sequence
 from datetime import date, timedelta
 from uuid import UUID
 
-from sqlalchemy import Select, case, func, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.sql.expression import asc, desc
 
 from polar.kit.repository import RepositoryBase
 from polar.kit.sorting import Sorting
-from polar.models import Transaction
+from polar.models import Order, Transaction
+from polar.models.transaction import TransactionType
 
 from .sorting import TaxJurisdictionSortProperty
 
@@ -24,18 +25,14 @@ class TaxJurisdictionRepository(RepositoryBase[Transaction]):
         end_date: date | None = None,
         sorting: list[Sorting[TaxJurisdictionSortProperty]],
     ) -> Select[tuple[str, str | None, str, int, int]]:
-        # Only US and Canada are reported at the state level; everywhere else is
-        # aggregated to the country. Transactions already store `tax_state` as
-        # NULL outside US/CA (see transaction.service.payment), but we guard
-        # explicitly here so the grouping honors the requirement regardless of
-        # what is stored.
-        state_column = case(
-            (Transaction.tax_country.in_(("US", "CA")), Transaction.tax_state),
-            else_=None,
-        ).label("state")
-        # `tax_amount` is positive for payments and negative for refunds and
-        # disputes, so summing across every tax-bearing transaction yields the
-        # net amount Polar remitted on the merchant's behalf.
+        # Group by whatever `tax_state` the transaction stored. Today only US
+        # and Canada populate it (see transaction.service.payment), but grouping
+        # on the raw column means the breakdown picks up state-level data from
+        # any country automatically if that ever changes.
+        state_column = Transaction.tax_state.label("state")
+        # Tax is only reported on `payment` transactions (see the `type` filter
+        # below), so summing `tax_amount` yields the gross tax Polar collected on
+        # the merchant's behalf.
         tax_amount_column = func.sum(Transaction.tax_amount).label("tax_amount")
         order_count_column = func.count(func.distinct(Transaction.order_id)).label(
             "order_count"
@@ -49,9 +46,11 @@ class TaxJurisdictionRepository(RepositoryBase[Transaction]):
                 tax_amount_column,
                 order_count_column,
             )
+            .join(Order, Order.id == Transaction.order_id)
             .where(
                 Transaction.tax_country.is_not(None),
-                Transaction.payment_organization_id.in_(organization_ids),
+                Transaction.type == TransactionType.payment,
+                Order.organization_id.in_(organization_ids),
             )
             .group_by(
                 Transaction.tax_country,

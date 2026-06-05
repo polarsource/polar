@@ -287,6 +287,130 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/integrations/slack/integration': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Integration
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['integrations_slack:get_integration']
+    put?: never
+    post?: never
+    /**
+     * Delete Integration
+     * @description **Scopes**: `organizations:write`
+     */
+    delete: operations['integrations_slack:delete_integration']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/integrations/slack/users': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Workspace Users
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['integrations_slack:list_workspace_users']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/integrations/slack/manifest': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Post Manifest
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['integrations_slack:post_manifest']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/integrations/slack/credentials': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Post Credentials
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['integrations_slack:post_credentials']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/integrations/slack/authorize': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Authorize
+     * @description **Scopes**: `organizations:write`
+     */
+    get: operations['integrations_slack:authorize']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/integrations/slack/callback': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Integrations.Slack.Callback
+     * @description **Scopes**: `organizations:write`
+     */
+    get: operations['integrations_slack:integrations.slack.callback']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/notifications': {
     parameters: {
       query?: never
@@ -28311,6 +28435,184 @@ export interface components {
        */
       total_seats: number
     }
+    /** SlackIntegration */
+    SlackIntegration: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description ID of the Slack integration.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description Organization that owns the Slack integration.
+       */
+      organization_id: string
+      /**
+       * Display Name
+       * @description Display name used by the Slack app.
+       */
+      display_name: string
+      /**
+       * Slack App Id
+       * @description Slack app ID.
+       */
+      slack_app_id: string
+      /**
+       * Client Id
+       * @description Slack client ID.
+       */
+      client_id: string
+      /**
+       * Client Id Last 4
+       * @description Last four characters of the Client ID (display only).
+       */
+      client_id_last_4: string
+      /**
+       * Client Secret Last 4
+       * @description Last four characters of the client secret (display only).
+       */
+      client_secret_last_4: string
+      /**
+       * Signing Secret Last 4
+       * @description Last four characters of the signing secret (display only).
+       */
+      signing_secret_last_4: string
+      /**
+       * Team Id
+       * @description Slack workspace ID, if installed.
+       */
+      team_id: string | null
+      /**
+       * Team Name
+       * @description Slack workspace name, if installed.
+       */
+      team_name: string | null
+      /**
+       * Bot User Id
+       * @description Installed bot user ID, if any.
+       */
+      bot_user_id: string | null
+      /**
+       * Authed User Id
+       * @description Slack user ID that authorized the app, if installed.
+       */
+      authed_user_id: string | null
+      /**
+       * Scopes
+       * @description Granted Slack bot scopes, if any.
+       */
+      scopes: string[] | null
+      /**
+       * Installed At
+       * @description Timestamp when the Slack app was installed.
+       */
+      installed_at: string | null
+      /**
+       * Revoked At
+       * @description Timestamp when the Slack app was revoked or uninstalled.
+       */
+      revoked_at: string | null
+    }
+    /** SlackIntegrationCredentialsUpdate */
+    SlackIntegrationCredentialsUpdate: {
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description Organization the integration belongs to.
+       */
+      organization_id: string
+      /**
+       * Display Name
+       * @description Display name used by the bot user in your Slack workspace. Reflected in the manifest.
+       */
+      display_name: string
+      /**
+       * Slack App Id
+       * @description App ID from your Slack app's Basic Information page.
+       */
+      slack_app_id: string
+      /**
+       * Client Id
+       * @description Client ID from your Slack app's Basic Information page.
+       */
+      client_id: string
+      /**
+       * Client Secret
+       * @description Client Secret from your Slack app's Basic Information page. Omit to keep the existing value when updating other fields.
+       */
+      client_secret?: string | null
+      /**
+       * Signing Secret
+       * @description Signing Secret from your Slack app's Basic Information page. Omit to keep the existing value when updating other fields.
+       */
+      signing_secret?: string | null
+    }
+    /** SlackIntegrationManifest */
+    SlackIntegrationManifest: {
+      /**
+       * Manifest
+       * @description YAML manifest to paste into Slack.
+       */
+      manifest: string
+    }
+    /** SlackIntegrationManifestRequest */
+    SlackIntegrationManifestRequest: {
+      /**
+       * Display Name
+       * @description Name shown in your Slack workspace for the app and bot user. Defaults to your organization name; customize before pasting into Slack.
+       */
+      display_name: string
+    }
+    /** SlackWorkspaceUser */
+    SlackWorkspaceUser: {
+      /**
+       * Id
+       * @description Slack user ID (e.g. U01234567).
+       */
+      id: string
+      /**
+       * Name
+       * @description Username (handle without @).
+       */
+      name: string
+      /**
+       * Real Name
+       * @description Display name, if set.
+       */
+      real_name?: string | null
+      /**
+       * Image Url
+       * @description Avatar URL (image_72), if available.
+       */
+      image_url?: string | null
+      /**
+       * Is Admin
+       * @description Whether the user is a workspace admin.
+       * @default false
+       */
+      is_admin: boolean
+    }
+    /** SlackWorkspaceUsersResponse */
+    SlackWorkspaceUsersResponse: {
+      /**
+       * Users
+       * @description Active, non-bot users in the connected Slack workspace.
+       */
+      users: components['schemas']['SlackWorkspaceUser'][]
+    }
     /**
      * StatisticsPeriod
      * @description Event statistics for a single time period.
@@ -32918,6 +33220,263 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['DiscordGuild']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'integrations_slack:get_integration': {
+    parameters: {
+      query: {
+        integration_id: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SlackIntegration']
+        }
+      }
+      /** @description No Slack integration configured. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'integrations_slack:delete_integration': {
+    parameters: {
+      query: {
+        integration_id: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description No Slack integration configured. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'integrations_slack:list_workspace_users': {
+    parameters: {
+      query: {
+        integration_id: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SlackWorkspaceUsersResponse']
+        }
+      }
+      /** @description No Slack integration configured. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'integrations_slack:post_manifest': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SlackIntegrationManifestRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SlackIntegrationManifest']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'integrations_slack:post_credentials': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SlackIntegrationCredentialsUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SlackIntegration']
+        }
+      }
+      /** @description No Slack integration configured. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'integrations_slack:authorize': {
+    parameters: {
+      query: {
+        integration_id: string
+        return_to?: string | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description No Slack integration configured. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'integrations_slack:integrations.slack.callback': {
+    parameters: {
+      query: {
+        code?: string | null
+        error?: string | null
+        state: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
         }
       }
       /** @description Validation Error */

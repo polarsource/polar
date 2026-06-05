@@ -16,7 +16,7 @@ from polar.product.price_set import PriceSet
 from .subscription_product_price import SubscriptionProductPrice
 
 if TYPE_CHECKING:
-    from polar.models import Product, Subscription
+    from polar.models import Discount, Product, Subscription
 
 
 class SubscriptionUpdate(RecordModel):
@@ -89,6 +89,21 @@ class SubscriptionUpdate(RecordModel):
     seats: Mapped[int | None] = mapped_column(Integer, nullable=True)
     """Number of seats to apply to the subscription."""
 
+    discount_unset: Mapped[bool] = mapped_column(nullable=False, default=False)
+    """
+    Whether to unset the subscription's discount when applying the update.
+    If true, any existing discount on the subscription will be removed when applying the update.
+    """
+
+    discount_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True
+    )
+    """ID of the `Discount` to apply to the subscription."""
+
+    @declared_attr
+    def discount(cls) -> Mapped["Discount | None"]:
+        return relationship("Discount", lazy="raise")
+
     def is_interval_changed(self) -> bool:
         """Return True if the subscription update includes a change of billing interval."""
         if self.product is None:
@@ -130,6 +145,20 @@ class SubscriptionUpdate(RecordModel):
                 for spp in subscription.subscription_product_prices
             ]
 
+        if self.discount_unset:
+            subscription.discount = None
+        elif self.discount is not None:
+            subscription.discount = self.discount
+
         self.applied_at = utc_now()
 
         return subscription
+
+    @property
+    def after_update_discount(self) -> Discount | None:
+        """Return the discount that would be applied to the subscription after applying the update."""
+        if self.discount_unset:
+            return None
+        if self.discount is not None:
+            return self.discount
+        return self.subscription.discount

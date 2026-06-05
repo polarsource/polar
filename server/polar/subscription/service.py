@@ -1,5 +1,6 @@
+import contextlib
 import uuid
-from collections.abc import Sequence
+from collections.abc import AsyncGenerator, Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from types import TracebackType
@@ -24,7 +25,7 @@ from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.customer_seat.service import seat_service
-from polar.discount.repository import DiscountRedemptionRepository
+from polar.discount.repository import DiscountRedemptionRepository, DiscountRepository
 from polar.discount.service import discount as discount_service
 from polar.email.schemas import EmailAdapter
 from polar.email.sender import enqueue_email_template
@@ -774,6 +775,11 @@ class SubscriptionService:
                     )
                 else:
                     pending_update.product = None
+                if pending_update.discount_id is not None:
+                    discount_repository = DiscountRepository.from_session(session)
+                    pending_update.discount = await discount_repository.get_by_id(
+                        pending_update.discount_id
+                    )
                 # Check before apply_update() changes subscription.product
                 pending_update_changed_interval = pending_update.is_interval_changed()
                 pending_update.apply_update()
@@ -991,20 +997,26 @@ class SubscriptionService:
         if isinstance(update, SubscriptionUpdateBase):
             if update.has_product:
                 assert update.product_id is not None
-                subscription = await self.update_product(
-                    session,
-                    ctx,
-                    subscription,
-                    product_id=update.product_id,
-                    proration_behavior=update.proration_behavior,
-                )
-
-            if update.has_discount:
+                async with self.resolve_discount(
+                    session, ctx, subscription, discount=update.discount
+                ) as discount:
+                    subscription = await self.update_product(
+                        session,
+                        ctx,
+                        subscription,
+                        product_id=update.product_id,
+                        proration_behavior=update.proration_behavior,
+                        discount=discount,
+                    )
+            # Only update discount if product is not being updated,
+            # otherwise it will be handled in update_product()
+            # with the right timing depending on proration_behavior
+            elif update.discount:
                 subscription = await self.update_discount(
                     session,
                     ctx,
                     subscription,
-                    discount_id=update.discount_id,
+                    discount=update.discount,
                 )
 
             if update.has_trial_end:
@@ -1067,6 +1079,7 @@ class SubscriptionService:
         *,
         product_id: uuid.UUID,
         proration_behavior: SubscriptionProrationBehavior | None = None,
+        discount: Discount | Literal["unset"] | None = None,
         allowed_visibilities: frozenset[Visibility] = frozenset(Visibility),
     ) -> Subscription:
         if subscription.revoked or subscription.cancel_at_period_end:
@@ -1257,7 +1270,7 @@ class SubscriptionService:
         )
 
         subscription_update, billing_entries = generate_subscription_update(
-            subscription, proration_behavior, product=product
+            subscription, proration_behavior, product=product, discount=discount
         )
         if proration_behavior == SubscriptionProrationBehavior.next_period:
             subscription.pending_update = await subscription_update_repository.upsert(
@@ -1380,72 +1393,90 @@ class SubscriptionService:
 
         return subscription
 
+    @contextlib.asynccontextmanager
+    async def resolve_discount(
+        self,
+        session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
+        subscription: Subscription,
+        *,
+        discount: uuid.UUID | Literal["unset"] | None,
+    ) -> AsyncGenerator[Discount | Literal["unset"] | None, None]:
+        if discount is None:
+            yield None
+            return
+
+        if discount == "unset":
+            yield "unset"
+            return
+
+        resolved_discount = await discount_service.get_by_id_and_organization(
+            session,
+            discount,
+            subscription.organization,
+            products=[subscription.product],
+        )
+        if resolved_discount is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "discount_id"),
+                        "msg": (
+                            "Discount does not exist, "
+                            "is not applicable to this product "
+                            "or is not redeemable."
+                        ),
+                        "input": discount,
+                    }
+                ]
+            )
+        if resolved_discount == subscription.discount:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "discount_id"),
+                        "msg": "This discount is already applied to the subscription.",
+                        "input": discount,
+                    }
+                ]
+            )
+
+        async with discount_service.redeem_discount(
+            session, resolved_discount
+        ) as redemption:
+            redemption.subscription = subscription
+            yield resolved_discount
+
     async def update_discount(
         self,
         session: AsyncSession,
         ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         *,
-        discount_id: uuid.UUID | None = None,
+        discount: uuid.UUID | Literal["unset"],
     ) -> Subscription:
-        discount: Discount | None = None
-
-        if discount_id is not None:
-            discount = await discount_service.get_by_id_and_organization(
-                session,
-                discount_id,
-                subscription.organization,
-                products=[subscription.product],
-            )
-            if discount is None:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "discount_id"),
-                            "msg": (
-                                "Discount does not exist, "
-                                "is not applicable to this product "
-                                "or is not redeemable."
-                            ),
-                            "input": discount_id,
-                        }
-                    ]
-                )
-            if discount == subscription.discount:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "discount_id"),
-                            "msg": "This discount is already applied to the subscription.",
-                            "input": discount_id,
-                        }
-                    ]
-                )
-
-        async def _update_discount(
-            session: AsyncSession,
-            subscription: Subscription,
-            discount: Discount | None,
-        ) -> Subscription:
-            repository = SubscriptionRepository.from_session(session)
+        repository = SubscriptionRepository.from_session(session)
+        async with self.resolve_discount(
+            session, ctx, subscription, discount=discount
+        ) as resolved_discount:
+            assert resolved_discount is not None
             ctx.add_event_metadata(
-                discount_id=str(discount.id) if discount else None,
+                discount_id=None
+                if resolved_discount == "unset"
+                else str(resolved_discount.id),
             )
             subscription = await repository.update(
-                subscription, update_dict={"discount": discount}, flush=True
+                subscription,
+                update_dict={
+                    "discount": None
+                    if resolved_discount == "unset"
+                    else resolved_discount
+                },
+                flush=True,
             )
             return subscription
-
-        if discount is None:
-            return await _update_discount(session, subscription, None)
-
-        async with discount_service.redeem_discount(
-            session, discount
-        ) as discount_redemption:
-            discount_redemption.subscription = subscription
-            return await _update_discount(session, subscription, discount)
 
     async def update_trial(
         self,
@@ -1879,6 +1910,11 @@ class SubscriptionService:
                 )
             else:
                 pending_update.product = None
+            if pending_update.discount_id is not None:
+                discount_repository = DiscountRepository.from_session(session)
+                pending_update.discount = await discount_repository.get_by_id(
+                    pending_update.discount_id
+                )
             pending_update.apply_update()
 
         # If subscription is set to cancel at period end, there's no base charge

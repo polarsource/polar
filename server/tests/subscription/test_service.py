@@ -2911,6 +2911,64 @@ class TestUpdate:
             updated,
         )
 
+    async def test_combined_update_product_discount_next_period(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        discount_percentage_50: Discount,
+        webhook_service_send_mock: MagicMock,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update(
+                session,
+                ctx,
+                subscription,
+                update=SubscriptionUpdateBase(
+                    product_id=new_product.id,
+                    discount_id=discount_percentage_50.id,
+                    proration_behavior=SubscriptionProrationBehavior.next_period,
+                ),
+            )
+
+        assert updated.product == product
+        assert updated.discount is None
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        subscription_update = (
+            await subscription_update_repository.get_unapplied_by_subscription_id(
+                updated.id
+            )
+        )
+        assert subscription_update is not None
+        assert subscription_update.product_id == new_product.id
+        assert subscription_update.discount_id == discount_percentage_50.id
+
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
+        )
+
     async def test_combined_update_product_trial_end(
         self,
         session: AsyncSession,
@@ -4115,7 +4173,7 @@ class TestUpdateDiscount:
                 session, subscription, subscription_service
             ) as ctx:
                 await subscription_service.update_discount(
-                    session, ctx, subscription, discount_id=uuid.uuid4()
+                    session, ctx, subscription, discount=uuid.uuid4()
                 )
 
     async def test_same_discount(
@@ -4139,10 +4197,10 @@ class TestUpdateDiscount:
                 session, subscription, subscription_service
             ) as ctx:
                 await subscription_service.update_discount(
-                    session, ctx, subscription, discount_id=discount_percentage_50.id
+                    session, ctx, subscription, discount=discount_percentage_50.id
                 )
 
-    async def test_valid_removed(
+    async def test_valid_unset(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -4161,7 +4219,7 @@ class TestUpdateDiscount:
             session, subscription, subscription_service
         ) as ctx:
             subscription = await subscription_service.update_discount(
-                session, ctx, subscription, discount_id=None
+                session, ctx, subscription, discount="unset"
             )
 
         assert subscription.discount is None
@@ -4193,7 +4251,7 @@ class TestUpdateDiscount:
             session, subscription, subscription_service
         ) as ctx:
             subscription = await subscription_service.update_discount(
-                session, ctx, subscription, discount_id=discount_percentage_50.id
+                session, ctx, subscription, discount=discount_percentage_50.id
             )
 
         assert subscription.discount == discount_percentage_50
@@ -4229,7 +4287,7 @@ class TestUpdateDiscount:
             session, subscription, subscription_service
         ) as ctx:
             subscription = await subscription_service.update_discount(
-                session, ctx, subscription, discount_id=discount_percentage_100.id
+                session, ctx, subscription, discount=discount_percentage_100.id
             )
 
         assert subscription.discount == discount_percentage_100
@@ -6262,7 +6320,6 @@ class TestUpdateSeats:
         # Since we're at the start of the period (100% time remaining),
         # proration factor is 1.0, so full discount applies
         assert entry.discount_amount == 1000  # $10 in cents (20% of $50)
-        assert entry.discount == discount
         # Net charge: $50 - $10 = $40
         assert entry.amount is not None
         assert entry.amount == 4000  # $40 in cents

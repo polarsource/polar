@@ -300,15 +300,19 @@ class SubscriptionUpdateBase(Schema):
 
     @property
     def has_product(self) -> bool:
-        return "product_id" in self.model_fields_set
-
-    @property
-    def has_discount(self) -> bool:
-        return "discount_id" in self.model_fields_set
+        return self.product_id is not None
 
     @property
     def has_trial_end(self) -> bool:
-        return "trial_end" in self.model_fields_set
+        return self.trial_end is not None
+
+    @property
+    def discount(self) -> UUID4 | Literal["unset"] | None:
+        if self.discount_id is not None:
+            return self.discount_id
+        if "discount_id" in self.model_fields_set:
+            return "unset"
+        return None
 
 
 class SubscriptionUpdateSeats(Schema):

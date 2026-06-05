@@ -1,7 +1,7 @@
 import { createClientSideAPI } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
+import { DataTable } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useTheme } from 'next-themes'

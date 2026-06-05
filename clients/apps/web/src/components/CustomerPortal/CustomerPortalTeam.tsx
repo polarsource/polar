@@ -24,7 +24,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
+} from '@polar-sh/orbit'
 import { useState } from 'react'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { toast } from '../Toast/use-toast'

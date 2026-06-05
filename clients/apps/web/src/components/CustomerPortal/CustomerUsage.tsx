@@ -3,7 +3,7 @@
 import { useCustomerCustomerMeters } from '@/hooks/queries/customerPortal'
 import Search from '@mui/icons-material/Search'
 import { Client } from '@polar-sh/client'
-import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
+import { DataTable } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import { Tabs, TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
 import { useMemo, useState } from 'react'

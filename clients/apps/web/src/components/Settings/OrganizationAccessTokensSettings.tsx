@@ -19,7 +19,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
+} from '@polar-sh/orbit'
 import Banner from '@polar-sh/ui/components/molecules/Banner'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {

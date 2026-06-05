@@ -12,7 +12,7 @@ import { Button } from '@polar-sh/orbit'
 import {
   DataTable,
   DataTableColumnHeader,
-} from '@polar-sh/ui/components/atoms/DataTable'
+} from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Link from 'next/link'
 

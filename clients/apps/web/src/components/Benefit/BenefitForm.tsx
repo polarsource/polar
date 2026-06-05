@@ -12,7 +12,7 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
+} from '@polar-sh/orbit'
 import { TextArea } from '@polar-sh/orbit'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {

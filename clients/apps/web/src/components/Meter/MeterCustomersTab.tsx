@@ -7,11 +7,9 @@ import { Avatar } from '@polar-sh/orbit'
 import {
   DataTable,
   DataTableColumnHeader,
-} from '@polar-sh/ui/components/atoms/DataTable'
-import {
   DataTablePaginationState,
   DataTableSortingState,
-} from '@polar-sh/ui/components/atoms/datatable/DataTable'
+} from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Link from 'next/link'
 import { useState } from 'react'

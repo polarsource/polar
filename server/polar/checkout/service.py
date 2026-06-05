@@ -98,6 +98,7 @@ from polar.product.guard import (
     SeatPrice,
     is_custom_price,
     is_discount_applicable,
+    is_seat_price,
 )
 from polar.product.price_set import (
     NoPricesForCurrencies,

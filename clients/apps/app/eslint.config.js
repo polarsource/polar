@@ -50,4 +50,20 @@ module.exports = defineConfig([
       '@polar/no-hardcoded-dimensions': 'error',
     },
   },
+  {
+    files: ['tooling/**/*.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        require: 'readonly',
+        module: 'writable',
+        __dirname: 'readonly',
+      },
+    },
+    rules: {
+      'no-console': 'off',
+    },
+  },
 ])

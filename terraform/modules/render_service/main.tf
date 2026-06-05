@@ -504,3 +504,11 @@ resource "render_env_group_link" "memory_profile" {
   env_group_id = render_env_group.memory_profile[0].id
   service_ids  = concat([render_web_service.api.id], local.worker_ids)
 }
+
+resource "cloudflare_dns_record" "resend_dkim" {
+  zone_id = var.resend_dkim.zone_id
+  name    = "resend._domainkey.${var.backend_config.email_from_domain}"
+  type    = "TXT"
+  content = var.resend_dkim.public_key
+  ttl     = 1
+}

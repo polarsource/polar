@@ -119,6 +119,11 @@ module "test" {
     port = local.redis_port
   }
 
+  resend_dkim = {
+    zone_id    = "22bcd1b07ec25452aab472486bc8df94"
+    public_key = "p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCsvUiyJlml2c1COR9sPotdXJ9PS+IFyBaJurKwkPQzJwECB3reBiTr7L1TeDuz0FuFfs3fRrdXZwZumF1lmwbAp6Kx+5uua4Px3nRheoHJPtX2KXoY80TIRQhDTXHB/C1K/03m1HgvtlxWq37uUcJHSACSuUw+m+MBQEONqO12qQIDAQAB"
+  }
+
   api_service_config = {
     allowed_hosts          = "[\"test.polar.sh\"]"
     cors_origins           = "[\"https://test.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"

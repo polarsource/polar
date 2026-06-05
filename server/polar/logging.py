@@ -174,3 +174,25 @@ class CorrelationID:
     @classmethod
     def clear(cls) -> None:
         cls._correlation_id.set(None)
+
+
+class ClientContext:
+    """Mobile client identification headers for the current request,
+    so they can be attached to events emitted outside the logging
+    path — notably PostHog. Empty outside an HTTP request (e.g. workers)."""
+
+    _client_context: typing.ClassVar[contextvars.ContextVar[dict[str, str] | None]] = (
+        contextvars.ContextVar("polar.client_context", default=None)
+    )
+
+    @classmethod
+    def set(cls, context: dict[str, str]) -> None:
+        cls._client_context.set(context)
+
+    @classmethod
+    def get(cls) -> dict[str, str]:
+        return cls._client_context.get() or {}
+
+    @classmethod
+    def clear(cls) -> None:
+        cls._client_context.set(None)

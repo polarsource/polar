@@ -6,10 +6,10 @@ import dramatiq
 import logfire
 import sentry_sdk
 import structlog
-from starlette.datastructures import MutableHeaders
+from starlette.datastructures import Headers, MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from polar.logging import CorrelationID, Logger
+from polar.logging import ClientContext, CorrelationID, Logger
 from polar.operational_errors import handle_operational_error
 from polar.worker import JobQueueManager
 
@@ -37,11 +37,36 @@ class LogCorrelationIdMiddleware:
         if root_span is not None and root_span.is_recording():
             root_span.set_attribute("correlation_id", correlation_id)
 
-        await self.app(scope, receive, send)
+        # Capture client identification headers (sent by the mobile app)
+        # so we can correlate API traffic to specific client builds for
+        # retrocompatibility monitoring.
+        headers = Headers(scope=scope)
+        client_context = {
+            key: value
+            for key, value in (
+                ("client_version", headers.get("x-polar-client-version")),
+                ("client_runtime", headers.get("x-polar-client-runtime")),
+                ("client_update", headers.get("x-polar-client-update")),
+            )
+            if value is not None
+        }
+        try:
+            if client_context:
+                ClientContext.set(client_context)
+                structlog.contextvars.bind_contextvars(**client_context)
+                for key, value in client_context.items():
+                    sentry_sdk.set_tag(key, value)
+                    if root_span is not None and root_span.is_recording():
+                        root_span.set_attribute(key, value)
 
-        logfire_stack.close()
-        structlog.contextvars.unbind_contextvars("correlation_id", "method", "path")
-        CorrelationID.clear()
+            await self.app(scope, receive, send)
+        finally:
+            logfire_stack.close()
+            structlog.contextvars.unbind_contextvars(
+                "correlation_id", "method", "path", *client_context.keys()
+            )
+            CorrelationID.clear()
+            ClientContext.clear()
 
 
 class FlushEnqueuedWorkerJobsMiddleware:

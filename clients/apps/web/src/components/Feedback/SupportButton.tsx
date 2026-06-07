@@ -1,10 +1,10 @@
 import SupportIcon from '@mui/icons-material/Support'
 import { schemas } from '@polar-sh/client'
 import { useSidebar } from '@polar-sh/ui/components/atoms/Sidebar'
-import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { FeedbackModal } from './FeedbackModal'
+import { useSupportModal } from './useSupportModal'
 
 export const SupportButton = ({
   organization,
@@ -13,13 +13,13 @@ export const SupportButton = ({
 }) => {
   const { state } = useSidebar()
   const isCollapsed = state === 'collapsed'
-  const [isShown, setIsShown] = useState(false)
+  const { isShown, defaultType, open, hide } = useSupportModal()
 
   return (
     <>
       <button
         type="button"
-        onClick={() => setIsShown(true)}
+        onClick={open}
         className={twMerge(
           'flex cursor-pointer flex-row items-center rounded-lg border border-transparent px-2 text-sm transition-colors dark:border-transparent',
           'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
@@ -30,8 +30,9 @@ export const SupportButton = ({
       </button>
       <FeedbackModal
         isShown={isShown}
-        hide={() => setIsShown(false)}
+        hide={hide}
         organization={organization}
+        defaultType={defaultType}
       />
     </>
   )

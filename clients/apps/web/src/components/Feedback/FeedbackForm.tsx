@@ -41,19 +41,21 @@ const MAX_MESSAGE_LENGTH = 5000
 export const FeedbackForm = ({
   organization,
   conversationId,
+  defaultType = 'question',
   onSuccess,
   onAskQuestion,
   onCancel,
 }: {
   organization: schemas['Organization']
   conversationId: string
+  defaultType?: schemas['FeedbackType']
   onSuccess: (type: schemas['FeedbackType']) => void
   onAskQuestion: (message: string) => void
   onCancel: () => void
 }) => {
   const form = useForm<FormSchema>({
     defaultValues: {
-      type: 'question',
+      type: defaultType,
       message: '',
     },
   })

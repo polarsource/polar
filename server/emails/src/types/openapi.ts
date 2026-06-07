@@ -1303,9 +1303,9 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /**
        * Invoice Number
-       * @description The invoice number associated with this order.
+       * @description The invoice number associated with this order. `null` while the order is in `draft` status; assigned at finalize.
        */
-      invoice_number: string
+      invoice_number: string | null
       /**
        * Is Invoice Generated
        * @description Whether an invoice has been generated for this order.
@@ -1408,7 +1408,13 @@ export interface components {
      * OrderStatus
      * @enum {string}
      */
-    OrderStatus: 'pending' | 'paid' | 'refunded' | 'partially_refunded' | 'void'
+    OrderStatus:
+      | 'draft'
+      | 'pending'
+      | 'paid'
+      | 'refunded'
+      | 'partially_refunded'
+      | 'void'
     /** Organization */
     Organization: {
       /**
@@ -1898,12 +1904,6 @@ export interface components {
        */
       checkout_localization_enabled: boolean
       /**
-       * Account Review V2 Enabled
-       * @description If this organization sees the new account review checklist UI.
-       * @default false
-       */
-      account_review_v2_enabled: boolean
-      /**
        * Overview Metrics
        * @description Ordered list of metric slugs shown on the dashboard overview.
        * @default null
@@ -1916,11 +1916,23 @@ export interface components {
        */
       reset_proration_behavior_enabled: boolean
       /**
+       * Off Session Charges Enabled
+       * @description If this organization can create and finalize draft orders via the API (off-session charges against a saved payment method).
+       * @default false
+       */
+      off_session_charges_enabled: boolean
+      /**
        * Billing Enabled
        * @description If this organization has billing enabled
        * @default false
        */
       billing_enabled: boolean
+      /**
+       * Slack Benefit Enabled
+       * @description Enables the slack shared channel benefit
+       * @default false
+       */
+      slack_benefit_enabled: boolean
     }
     /** OrganizationInviteEmail */
     OrganizationInviteEmail: {
@@ -2148,7 +2160,7 @@ export interface components {
       benefits: components['schemas']['Benefit'][]
     }
     /**
-     * ProductVisibility
+     * Visibility
      * @enum {string}
      */
     ProductVisibility: 'draft' | 'private' | 'public'

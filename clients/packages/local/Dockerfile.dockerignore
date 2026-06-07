@@ -1,0 +1,20 @@
+# Scoped to the @polar-sh/local image build (context = clients/ workspace root).
+# BuildKit prefers <dockerfile>.dockerignore over a context-wide .dockerignore,
+# so this keeps the sidecar build lean without adding a root-level ignore file.
+
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/*.tsbuildinfo
+
+# Local state that must never leak into the image.
+**/local.db
+**/local.db-*
+**/.env
+**/.env.*
+
+# VCS / editor / OS noise.
+.git
+**/.DS_Store

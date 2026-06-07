@@ -12,10 +12,10 @@
  * against Polar's limits AND local's integer-metadata rule before it's stored;
  * the store assigns the canonical seq/id and deduplicates on external_id.
  */
-import { Clock, Data, Effect } from "effect";
-import type { UsageEvent } from "./events";
-import { validateIntegerMetadata, validatePolarEvent } from "./polar";
-import type { DraftEvent, EventStore } from "./store";
+import { Clock, Data, Effect } from 'effect'
+import type { UsageEvent } from './events'
+import { validateIntegerMetadata, validatePolarEvent } from './polar'
+import type { DraftEvent, EventStore } from './store'
 
 /**
  * A submitted event — Polar-shaped, with our required external_id; timestamp
@@ -25,15 +25,15 @@ import type { DraftEvent, EventStore } from "./store";
  */
 export type RawEvent = DraftEvent extends infer T
   ? T extends unknown
-    ? Omit<T, "timestamp"> & { readonly timestamp?: string }
+    ? Omit<T, 'timestamp'> & { readonly timestamp?: string }
     : never
-  : never;
+  : never
 
 /** Raised when a submitted event violates Polar's limits or the integer-metadata rule. */
-export class IngestError extends Data.TaggedError("IngestError")<{
-  readonly index: number;
-  readonly external_id: string;
-  readonly reason: string;
+export class IngestError extends Data.TaggedError('IngestError')<{
+  readonly index: number
+  readonly external_id: string
+  readonly reason: string
 }> {}
 
 /**
@@ -47,17 +47,22 @@ export const ingest = (
   raw: readonly RawEvent[],
 ): Effect.Effect<UsageEvent[], IngestError> =>
   Effect.gen(function* () {
-    const nowIso = new Date(yield* Clock.currentTimeMillis).toISOString();
-    const out: UsageEvent[] = [];
+    const nowIso = new Date(yield* Clock.currentTimeMillis).toISOString()
+    const out: UsageEvent[] = []
     for (let i = 0; i < raw.length; i++) {
       // Cast: spreading the customer union widens it in the type system, but the
       // runtime object keeps whichever customer field was supplied.
-      const draft = { ...raw[i]!, timestamp: raw[i]!.timestamp ?? nowIso } as DraftEvent;
-      const reason = validatePolarEvent(draft) ?? validateIntegerMetadata(draft);
+      const draft = {
+        ...raw[i]!,
+        timestamp: raw[i]!.timestamp ?? nowIso,
+      } as DraftEvent
+      const reason = validatePolarEvent(draft) ?? validateIntegerMetadata(draft)
       if (reason) {
-        return yield* Effect.fail(new IngestError({ index: i, external_id: draft.external_id, reason }));
+        return yield* Effect.fail(
+          new IngestError({ index: i, external_id: draft.external_id, reason }),
+        )
       }
-      out.push(store.append(draft));
+      out.push(store.append(draft))
     }
-    return out;
-  });
+    return out
+  })

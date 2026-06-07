@@ -15,39 +15,40 @@
  * The delivery primitive (`deliver`) is shared with self-heal (selfheal.ts),
  * which re-sends a targeted set of events without touching the cursor.
  */
-import { Clock, Effect, Schedule } from "effect";
-import type { EventStore } from "./store";
-import type { IngestionSink } from "./sink";
-import type { UsageEvent } from "./events";
+import { Clock, Effect, Schedule } from 'effect'
+import type { EventStore } from './store'
+import type { IngestionSink } from './sink'
+import type { UsageEvent } from './events'
 
 export interface FlushOptions {
   /** Cursor name — lets multiple independent sinks track their own progress. */
-  readonly cursorName?: string;
-  readonly batchSize?: number;
+  readonly cursorName?: string
+  readonly batchSize?: number
   /**
    * Retry policy for transient (ApiUnavailable) failures within a single send.
    * Default: jittered exponential backoff, ~5 attempts. Tests pass a no-delay
    * schedule for speed.
    */
-  readonly retrySchedule?: Schedule.Schedule<unknown, unknown>;
+  readonly retrySchedule?: Schedule.Schedule<unknown, unknown>
 }
 
 export interface FlushReport {
-  readonly delivered: number;
-  readonly deadLettered: number;
-  readonly batches: number;
+  readonly delivered: number
+  readonly deadLettered: number
+  readonly batches: number
   /** True if the tick stopped early on a transient failure (events buffered). */
-  readonly halted: boolean;
+  readonly halted: boolean
 }
 
-const defaultRetry = Schedule.exponential("100 millis").pipe(
+const defaultRetry = Schedule.exponential('100 millis').pipe(
   Schedule.jittered,
   Schedule.intersect(Schedule.recurs(5)),
-);
+)
 
-const lastSeq = (events: readonly UsageEvent[]): number => events[events.length - 1]!.seq;
+const lastSeq = (events: readonly UsageEvent[]): number =>
+  events[events.length - 1]!.seq
 
-export type SendOutcome = "ok" | "rejected" | "unavailable";
+export type SendOutcome = 'ok' | 'rejected' | 'unavailable'
 
 /**
  * One send attempt, retrying only transient (ApiUnavailable) failures. Collapses
@@ -59,26 +60,28 @@ export const trySend = (
   schedule: Schedule.Schedule<unknown, unknown> = defaultRetry,
 ): Effect.Effect<SendOutcome> =>
   sink.send(events).pipe(
-    Effect.retry({ schedule, while: (e) => e._tag === "ApiUnavailable" }),
-    Effect.map(() => "ok" as const),
-    Effect.catchTag("BatchRejected", () => Effect.succeed("rejected" as const)),
-    Effect.catchTag("ApiUnavailable", () => Effect.succeed("unavailable" as const)),
-  );
+    Effect.retry({ schedule, while: (e) => e._tag === 'ApiUnavailable' }),
+    Effect.map(() => 'ok' as const),
+    Effect.catchTag('BatchRejected', () => Effect.succeed('rejected' as const)),
+    Effect.catchTag('ApiUnavailable', () =>
+      Effect.succeed('unavailable' as const),
+    ),
+  )
 
 export interface DeliverResult {
-  readonly delivered: number;
-  readonly deadLettered: number;
-  readonly batches: number;
-  readonly halted: boolean;
+  readonly delivered: number
+  readonly deadLettered: number
+  readonly batches: number
+  readonly halted: boolean
 }
 
 export interface DeliverOptions {
-  readonly batchSize?: number;
-  readonly retrySchedule?: Schedule.Schedule<unknown, unknown>;
+  readonly batchSize?: number
+  readonly retrySchedule?: Schedule.Schedule<unknown, unknown>
   /** Called with the seq of each event/batch as it's confirmed delivered or dead-lettered. */
-  readonly onProgress?: (seq: number) => void;
+  readonly onProgress?: (seq: number) => void
   /** Dead-letter reason recorded for permanently-rejected events. */
-  readonly reason?: string;
+  readonly reason?: string
 }
 
 /**
@@ -94,51 +97,51 @@ export const deliver = (
   options: DeliverOptions = {},
 ): Effect.Effect<DeliverResult> =>
   Effect.gen(function* () {
-    const batchSize = options.batchSize ?? 100;
-    const schedule = options.retrySchedule ?? defaultRetry;
-    const onProgress = options.onProgress;
-    const reason = options.reason ?? "rejected by sink (4xx)";
+    const batchSize = options.batchSize ?? 100
+    const schedule = options.retrySchedule ?? defaultRetry
+    const onProgress = options.onProgress
+    const reason = options.reason ?? 'rejected by sink (4xx)'
 
-    let delivered = 0;
-    let deadLettered = 0;
-    let batches = 0;
-    let halted = false;
+    let delivered = 0
+    let deadLettered = 0
+    let batches = 0
+    let halted = false
 
     for (let i = 0; i < events.length && !halted; i += batchSize) {
-      const batch = events.slice(i, i + batchSize);
-      batches += 1;
+      const batch = events.slice(i, i + batchSize)
+      batches += 1
 
-      const fast = yield* trySend(sink, batch, schedule);
-      if (fast === "ok") {
-        delivered += batch.length;
-        onProgress?.(lastSeq(batch));
-        continue;
+      const fast = yield* trySend(sink, batch, schedule)
+      if (fast === 'ok') {
+        delivered += batch.length
+        onProgress?.(lastSeq(batch))
+        continue
       }
-      if (fast === "unavailable") {
-        halted = true; // transient — leave the rest for a later attempt
-        break;
+      if (fast === 'unavailable') {
+        halted = true // transient — leave the rest for a later attempt
+        break
       }
 
       // rejected: isolate, in order, so good events go through and the poison parks.
       for (const event of batch) {
-        const one = yield* trySend(sink, [event], schedule);
-        if (one === "unavailable") {
-          halted = true;
-          break;
+        const one = yield* trySend(sink, [event], schedule)
+        if (one === 'unavailable') {
+          halted = true
+          break
         }
-        if (one === "rejected") {
-          const at = yield* Clock.currentTimeMillis;
-          store.deadLetter(event, reason, at);
-          deadLettered += 1;
+        if (one === 'rejected') {
+          const at = yield* Clock.currentTimeMillis
+          store.deadLetter(event, reason, at)
+          deadLettered += 1
         } else {
-          delivered += 1;
+          delivered += 1
         }
-        onProgress?.(event.seq);
+        onProgress?.(event.seq)
       }
     }
 
-    return { delivered, deadLettered, batches, halted };
-  });
+    return { delivered, deadLettered, batches, halted }
+  })
 
 /** Drain the outbox once: keep pulling batches from the cursor until empty or halted. */
 export const flushOnce = (
@@ -147,33 +150,33 @@ export const flushOnce = (
   options: FlushOptions = {},
 ): Effect.Effect<FlushReport> =>
   Effect.gen(function* () {
-    const cursorName = options.cursorName ?? "polar";
-    const batchSize = options.batchSize ?? 100;
-    const schedule = options.retrySchedule ?? defaultRetry;
+    const cursorName = options.cursorName ?? 'polar'
+    const batchSize = options.batchSize ?? 100
+    const schedule = options.retrySchedule ?? defaultRetry
 
-    let delivered = 0;
-    let deadLettered = 0;
-    let batches = 0;
-    let halted = false;
+    let delivered = 0
+    let deadLettered = 0
+    let batches = 0
+    let halted = false
 
     while (!halted) {
-      const batch = store.read(store.getCursor(cursorName), batchSize);
-      if (batch.length === 0) break;
+      const batch = store.read(store.getCursor(cursorName), batchSize)
+      if (batch.length === 0) break
 
       // Advancing the cursor on progress is what makes delivery durable and resumable.
       const r = yield* deliver(store, sink, batch, {
         batchSize,
         retrySchedule: schedule,
         onProgress: (seq) => store.setCursor(cursorName, seq),
-      });
-      delivered += r.delivered;
-      deadLettered += r.deadLettered;
-      batches += r.batches;
-      if (r.halted) halted = true;
+      })
+      delivered += r.delivered
+      deadLettered += r.deadLettered
+      batches += r.batches
+      if (r.halted) halted = true
     }
 
-    return { delivered, deadLettered, batches, halted };
-  });
+    return { delivered, deadLettered, batches, halted }
+  })
 
 /**
  * Run the flusher forever on a fixed interval. Returns an Effect you fork as a
@@ -189,8 +192,10 @@ export const runFlusher = (
   flushOnce(store, sink, options).pipe(
     Effect.flatMap((report) =>
       report.delivered + report.deadLettered > 0
-        ? Effect.logInfo(`flushed ${report.delivered} delivered, ${report.deadLettered} dead-lettered`)
+        ? Effect.logInfo(
+            `flushed ${report.delivered} delivered, ${report.deadLettered} dead-lettered`,
+          )
         : Effect.void,
     ),
     Effect.repeat(Schedule.spaced(`${intervalMillis} millis`)),
-  ) as Effect.Effect<never>;
+  ) as Effect.Effect<never>

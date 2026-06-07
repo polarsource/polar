@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import goldenInvoice from "./golden/invoice.json";
 import { events, period, plan } from "./fixtures";
 import { invoice, replay, restore, snapshot } from "../src/engine";

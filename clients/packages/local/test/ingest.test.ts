@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { Effect, Exit, TestClock, TestContext } from "effect";
 import { ingest, type RawEvent } from "../src/ingest";
 import { MemoryEventStore } from "../src/store";

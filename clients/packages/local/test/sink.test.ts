@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { Effect, Exit } from "effect";
 import type { UsageEvent } from "../src/events";
 import { polarClient } from "../src/polar-client";

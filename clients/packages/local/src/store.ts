@@ -17,7 +17,7 @@
  * timestamp) lifted into columns. `append` is idempotent on `external_id`
  * (UNIQUE) — Polar's dedup key, doubling as ours.
  */
-import { Database } from "bun:sqlite";
+import { DatabaseSync } from "node:sqlite";
 import { customerKey, type UsageEvent } from "./events";
 import type { PolarEvent } from "./polar";
 
@@ -77,15 +77,15 @@ interface DeadLetterRow extends EventRow {
 }
 
 export class SqliteEventStore implements EventStore {
-  private readonly db: Database;
+  private readonly db: DatabaseSync;
 
   constructor(path = "local.db") {
-    this.db = new Database(path, { create: true });
+    this.db = new DatabaseSync(path);
     // WAL + NORMAL: durable across an app crash with low write latency. Bump to
     // `synchronous = FULL` if you must survive OS/power loss of the last commit.
-    this.db.run("PRAGMA journal_mode = WAL;");
-    this.db.run("PRAGMA synchronous = NORMAL;");
-    this.db.run(`
+    this.db.exec("PRAGMA journal_mode = WAL;");
+    this.db.exec("PRAGMA synchronous = NORMAL;");
+    this.db.exec(`
       CREATE TABLE IF NOT EXISTS events (
         seq         INTEGER PRIMARY KEY AUTOINCREMENT,
         external_id TEXT    NOT NULL UNIQUE,
@@ -95,12 +95,12 @@ export class SqliteEventStore implements EventStore {
         v           INTEGER NOT NULL,
         payload     TEXT    NOT NULL
       )`);
-    this.db.run(`
+    this.db.exec(`
       CREATE TABLE IF NOT EXISTS cursors (
         name TEXT PRIMARY KEY,
         seq  INTEGER NOT NULL
       )`);
-    this.db.run(`
+    this.db.exec(`
       CREATE TABLE IF NOT EXISTS dead_letters (
         seq         INTEGER NOT NULL,
         external_id TEXT    NOT NULL,
@@ -113,90 +113,63 @@ export class SqliteEventStore implements EventStore {
 
   append(draft: DraftEvent): UsageEvent {
     const payload = JSON.stringify(draft);
-    const tx = this.db.transaction((): EventRow => {
-      this.db
-        .query(
-          `INSERT INTO events (external_id, name, customer_key, timestamp, v, payload)
-           VALUES ($x, $n, $c, $t, $v, $p)
-           ON CONFLICT(external_id) DO NOTHING`,
-        )
-        .run({
-          $x: draft.external_id,
-          $n: draft.name,
-          $c: customerKey(draft),
-          $t: draft.timestamp,
-          $v: 1,
-          $p: payload,
-        });
-      // Always re-read by key: the freshly inserted row OR the existing one on
-      // conflict. That's what makes append idempotent.
-      return this.db
-        .query<EventRow, { $x: string }>(`SELECT seq, v, payload FROM events WHERE external_id = $x`)
-        .get({ $x: draft.external_id })!;
-    });
-    const row = tx();
+    // Single-process, synchronous driver: insert then re-read runs atomically
+    // back-to-back. The re-read returns the fresh row or the existing one on
+    // conflict, which is what makes append idempotent on external_id.
+    this.db
+      .prepare(
+        `INSERT INTO events (external_id, name, customer_key, timestamp, v, payload)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(external_id) DO NOTHING`,
+      )
+      .run(draft.external_id, draft.name, customerKey(draft), draft.timestamp, 1, payload);
+    const row = this.db
+      .prepare(`SELECT seq, v, payload FROM events WHERE external_id = ?`)
+      .get(draft.external_id) as unknown as EventRow;
     return toEvent(row.payload, row.seq, row.v);
   }
 
   read(afterSeq: number, limit: number): UsageEvent[] {
-    return this.db
-      .query<EventRow, { $s: number; $l: number }>(
-        `SELECT seq, v, payload FROM events WHERE seq > $s ORDER BY seq ASC LIMIT $l`,
-      )
-      .all({ $s: afterSeq, $l: limit })
-      .map((r) => toEvent(r.payload, r.seq, r.v));
+    const rows = this.db
+      .prepare(`SELECT seq, v, payload FROM events WHERE seq > ? ORDER BY seq ASC LIMIT ?`)
+      .all(afterSeq, limit) as unknown as EventRow[];
+    return rows.map((r) => toEvent(r.payload, r.seq, r.v));
   }
 
   all(): UsageEvent[] {
-    return this.db
-      .query<EventRow, []>(`SELECT seq, v, payload FROM events ORDER BY seq ASC`)
-      .all()
-      .map((r) => toEvent(r.payload, r.seq, r.v));
+    const rows = this.db.prepare(`SELECT seq, v, payload FROM events ORDER BY seq ASC`).all() as unknown as EventRow[];
+    return rows.map((r) => toEvent(r.payload, r.seq, r.v));
   }
 
   getCursor(name: string): number {
-    const row = this.db
-      .query<{ seq: number }, { $n: string }>(`SELECT seq FROM cursors WHERE name = $n`)
-      .get({ $n: name });
+    const row = this.db.prepare(`SELECT seq FROM cursors WHERE name = ?`).get(name) as unknown as { seq: number } | undefined;
     return row?.seq ?? -1;
   }
 
   setCursor(name: string, seq: number): void {
     this.db
-      .query(
-        `INSERT INTO cursors (name, seq) VALUES ($n, $s)
-         ON CONFLICT(name) DO UPDATE SET seq = excluded.seq`,
-      )
-      .run({ $n: name, $s: seq });
+      .prepare(`INSERT INTO cursors (name, seq) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET seq = excluded.seq`)
+      .run(name, seq);
   }
 
   deadLetter(event: UsageEvent, reason: string, at: number): void {
     this.db
-      .query(
+      .prepare(
         `INSERT INTO dead_letters (seq, external_id, v, payload, reason, failed_at)
-         VALUES ($seq, $x, $v, $p, $r, $f)`,
+         VALUES (?, ?, ?, ?, ?, ?)`,
       )
-      .run({
-        $seq: event.seq,
-        $x: event.external_id,
-        $v: event.v,
-        $p: JSON.stringify(stripEnvelope(event)),
-        $r: reason,
-        $f: at,
-      });
+      .run(event.seq, event.external_id, event.v, JSON.stringify(stripEnvelope(event)), reason, at);
   }
 
   deadLetters(): DeadLetter[] {
-    return this.db
-      .query<DeadLetterRow, []>(`SELECT * FROM dead_letters ORDER BY seq ASC`)
-      .all()
-      .map((r) => ({
-        seq: r.seq,
-        external_id: r.external_id,
-        reason: r.reason,
-        failedAt: r.failed_at,
-        event: toEvent(r.payload, r.seq, r.v),
-      }));
+    const rows = this.db.prepare(`SELECT * FROM dead_letters ORDER BY seq ASC`).all() as unknown as DeadLetterRow[];
+    return rows.map((r) => ({
+      seq: r.seq,
+      external_id: r.external_id,
+      reason: r.reason,
+      failedAt: r.failed_at,
+      event: toEvent(r.payload, r.seq, r.v),
+    }));
   }
 
   close(): void {

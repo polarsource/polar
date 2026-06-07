@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { compileMeters } from "../src/compile";
 import { product, perUnit } from "../src/dsl";
 import { count, lastOf, maxOf, sumOf } from "../src/meter";

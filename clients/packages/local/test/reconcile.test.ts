@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { Effect } from "effect";
 import { compileMeters } from "../src/compile";
 import { product, perUnit } from "../src/dsl";

@@ -4,8 +4,8 @@
  * previews from the versioned ruleset, and forwards to Polar in the background.
  *
  * The HTTP routing is a plain `(Request) => Promise<Response>` so it's testable
- * without binding a port (see test/service.test.ts). `main.ts` wires it to
- * `Bun.serve` and forks the background flusher.
+ * without binding a port (see test/service.test.ts). `main.ts` adapts it to a
+ * `node:http` server and forks the background flusher.
  *
  * Endpoints:
  *   POST /v1/ingest        { events: RawEvent[] }     → { ingested }

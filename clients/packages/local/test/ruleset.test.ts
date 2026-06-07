@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { product, perUnit } from "../src/dsl";
 import type { Period, UsageEvent } from "../src/events";
 import { sumOf } from "../src/meter";

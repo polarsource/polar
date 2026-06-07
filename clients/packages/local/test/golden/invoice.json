@@ -1,0 +1,46 @@
+{
+  "customerKey": "ext:acme",
+  "lines": [
+    {
+      "amount": "150",
+      "meter": "requests",
+      "quantity": "3",
+      "sourceEventIds": [
+        "evt_1",
+        "evt_4",
+        "evt_6"
+      ],
+      "unitPrice": "50"
+    },
+    {
+      "amount": "3500000000",
+      "meter": "seats",
+      "quantity": "7",
+      "sourceEventIds": [
+        "evt_2",
+        "evt_5",
+        "evt_7"
+      ],
+      "unitPrice": "500000000"
+    },
+    {
+      "amount": "3500000",
+      "meter": "tokens",
+      "quantity": "1750000",
+      "sourceEventIds": [
+        "evt_0",
+        "evt_3",
+        "evt_8"
+      ],
+      "unitPrice": "2"
+    }
+  ],
+  "period": {
+    "from": 1767225600000,
+    "to": 1769904000000
+  },
+  "product": "api-access",
+  "rulesetVersion": "2026.1.0",
+  "subtotal": "3503500150",
+  "totalCents": "3504"
+}

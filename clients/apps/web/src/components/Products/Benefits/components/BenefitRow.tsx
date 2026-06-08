@@ -4,10 +4,11 @@ import {
   benefitsDisplayNames,
   resolveBenefitIcon,
 } from '@/components/Benefit/utils'
-import { useDeleteBenefit } from '@/hooks/queries'
+import { useDeleteBenefit, useUpdateBenefit } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
   DropdownMenu,
@@ -15,9 +16,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { MoreVertical } from 'lucide-react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
+import { Eye, EyeOff, MoreVertical } from 'lucide-react'
 import { useCallback, useRef } from 'react'
-import { twMerge } from 'tailwind-merge'
 import UpdateBenefitModalContent from '../../../Benefit/UpdateBenefitModalContent'
 import { ConfirmModal } from '../../../Modal/ConfirmModal'
 import { InlineModal } from '../../../Modal/InlineModal'
@@ -73,6 +78,28 @@ export const BenefitRow = ({
   }, [])
 
   const deleteBenefit = useDeleteBenefit(organization.id)
+  const updateBenefit = useUpdateBenefit(organization.id)
+
+  const isPublic = benefit.visibility === 'public'
+
+  const handleVisibilityToggle = useCallback(() => {
+    updateBenefit
+      .mutateAsync({
+        id: benefit.id,
+        body: {
+          type: benefit.type,
+          visibility: isPublic ? 'private' : 'public',
+        },
+      })
+      .then(({ error }) => {
+        if (error) {
+          toast({
+            title: 'Benefit Update Failed',
+            description: `Error updating benefit visibility: ${extractApiErrorMessage(error)}`,
+          })
+        }
+      })
+  }, [updateBenefit, benefit, isPublic])
 
   const handleDeleteBenefit = useCallback(() => {
     deleteBenefit.mutateAsync({ id: benefit.id }).then(({ error }) => {
@@ -90,37 +117,77 @@ export const BenefitRow = ({
     })
   }, [deleteBenefit, benefit])
 
+  const VisibilityIcon = isPublic ? Eye : EyeOff
+
   return (
     <>
-      <div
-        className={twMerge(
-          'flex items-center justify-between px-4 py-3 transition-colors',
-          selected
-            ? 'dark:bg-polar-800/50 bg-blue-50/50'
-            : 'dark:hover:bg-polar-800/30 hover:bg-gray-50',
-        )}
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="between"
+        paddingHorizontal="l"
+        paddingVertical="m"
+        backgroundColor={{
+          base: selected ? 'background-card' : 'background-primary',
+          hover: 'background-card',
+        }}
       >
-        <div className="flex items-center gap-3">
-          <div
-            className={twMerge(
-              'flex h-8 w-8 items-center justify-center rounded-lg',
-              selected
-                ? 'bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-400'
-                : 'dark:bg-polar-700 dark:text-polar-400 bg-gray-100 text-gray-500',
-            )}
+        <Box display="flex" alignItems="center" columnGap="m">
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            width={32}
+            height={32}
+            borderRadius="m"
+            backgroundColor={
+              selected ? 'background-secondary' : 'background-card'
+            }
+            color={selected ? 'text-primary' : 'text-secondary'}
           >
             {resolveBenefitIcon(benefit.type, 'h-4 w-4')}
-          </div>
-          <div className="flex flex-col">
-            <span className={twMerge('text-sm', selected ? 'font-medium' : '')}>
+          </Box>
+          <Box display="flex" flexDirection="column">
+            <Text variant="default" color={selected ? 'default' : 'default'}>
               {benefit.description}
-            </span>
-            <span className="dark:text-polar-500 text-xs text-gray-500">
+            </Text>
+            <Text variant="caption" color="muted">
               {benefitsDisplayNames[benefit.type]}
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
+            </Text>
+          </Box>
+        </Box>
+        <Box display="flex" alignItems="center" columnGap="s">
+          {selected ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="secondary"
+                  onClick={handleVisibilityToggle}
+                  disabled={updateBenefit.isPending}
+                  aria-label={
+                    isPublic
+                      ? 'Hide from customer portal'
+                      : 'Show in customer portal'
+                  }
+                  aria-pressed={isPublic}
+                  className={
+                    isPublic
+                      ? 'border-none bg-transparent text-black transition-opacity dark:bg-transparent dark:text-white'
+                      : 'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
+                  }
+                >
+                  <VisibilityIcon className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {isPublic
+                  ? 'Visible in customer portal'
+                  : 'Hidden from customer portal'}
+              </TooltipContent>
+            </Tooltip>
+          ) : null}
           <Switch
             checked={selected}
             onCheckedChange={(checked) => onToggle(benefit, checked)}
@@ -148,8 +215,8 @@ export const BenefitRow = ({
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-      </div>
+        </Box>
+      </Box>
       <InlineModal
         isShown={isEditShown}
         hide={requestClose}

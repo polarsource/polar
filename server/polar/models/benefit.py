@@ -13,6 +13,7 @@ from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
+from polar.kit.visibility import VisibilityMixin
 
 if TYPE_CHECKING:
     from polar.benefit.strategies import BenefitProperties
@@ -62,7 +63,7 @@ class BenefitType(StrEnum):
             raise TaxApplicationMustBeSpecified(self) from e
 
 
-class Benefit(MetadataMixin, RecordModel):
+class Benefit(VisibilityMixin, MetadataMixin, RecordModel):
     __tablename__ = "benefits"
     __table_args__ = (
         Index(

@@ -134,11 +134,15 @@ class CaseParticipant(RecordModel):
 
     __tablename__ = "case_participants"
     __table_args__ = (
+        # The subject column is determined by ``kind`` — exactly one is set.
         CheckConstraint(
-            "(organization_id IS NOT NULL)::int "
-            "+ (user_id IS NOT NULL)::int "
-            "+ (customer_id IS NOT NULL)::int = 1",
-            name="single_subject_check",
+            "(kind = 'polar' AND staff_user_id IS NOT NULL "
+            "AND organization_id IS NULL AND customer_id IS NULL) "
+            "OR (kind = 'merchant' AND organization_id IS NOT NULL "
+            "AND staff_user_id IS NULL AND customer_id IS NULL) "
+            "OR (kind = 'customer' AND customer_id IS NOT NULL "
+            "AND staff_user_id IS NULL AND organization_id IS NULL)",
+            name="subject_matches_kind",
         ),
     )
 
@@ -155,7 +159,8 @@ class CaseParticipant(RecordModel):
         nullable=True,
         default=None,
     )
-    user_id: Mapped[UUID | None] = mapped_column(
+    # Polar staff (kind=polar only).
+    staff_user_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("users.id", ondelete="cascade"), nullable=True, default=None
     )
     customer_id: Mapped[UUID | None] = mapped_column(

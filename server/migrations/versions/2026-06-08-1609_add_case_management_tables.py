@@ -106,7 +106,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("organization_id", sa.Uuid(), nullable=True),
-        sa.Column("user_id", sa.Uuid(), nullable=True),
+        sa.Column("staff_user_id", sa.Uuid(), nullable=True),
         sa.Column("customer_id", sa.Uuid(), nullable=True),
         sa.Column("last_read_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("id", sa.Uuid(), nullable=False),
@@ -114,8 +114,13 @@ def upgrade() -> None:
         sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("deleted_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.CheckConstraint(
-            "(organization_id IS NOT NULL)::int + (user_id IS NOT NULL)::int + (customer_id IS NOT NULL)::int = 1",
-            name=op.f("case_participants_single_subject_check_check"),
+            "(kind = 'polar' AND staff_user_id IS NOT NULL "
+            "AND organization_id IS NULL AND customer_id IS NULL) "
+            "OR (kind = 'merchant' AND organization_id IS NOT NULL "
+            "AND staff_user_id IS NULL AND customer_id IS NULL) "
+            "OR (kind = 'customer' AND customer_id IS NOT NULL "
+            "AND staff_user_id IS NULL AND organization_id IS NULL)",
+            name=op.f("case_participants_subject_matches_kind"),
         ),
         sa.ForeignKeyConstraint(
             ["case_id"],
@@ -136,9 +141,9 @@ def upgrade() -> None:
             ondelete="cascade",
         ),
         sa.ForeignKeyConstraint(
-            ["user_id"],
+            ["staff_user_id"],
             ["users.id"],
-            name=op.f("case_participants_user_id_fkey"),
+            name=op.f("case_participants_staff_user_id_fkey"),
             ondelete="cascade",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("case_participants_pkey")),

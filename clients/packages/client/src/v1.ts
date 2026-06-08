@@ -18791,7 +18791,10 @@ export interface components {
     }
     /** EmailOTPRequest */
     EmailOTPRequest: {
-      /** Email */
+      /**
+       * Email
+       * Format: email
+       */
       email: string
     }
     /** EmailOTPVerify */

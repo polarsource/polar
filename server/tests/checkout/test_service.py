@@ -5847,6 +5847,30 @@ class TestHandleSuccess:
         )
         subscription_service_mock.create_or_update_from_checkout.assert_not_called()
 
+    async def test_archived_price_fulfills(
+        self,
+        save_fixture: SaveFixture,
+        order_service_mock: MagicMock,
+        subscription_service_mock: MagicMock,
+        session: AsyncSession,
+        checkout_confirmed_one_time: Checkout,
+        payment: Payment,
+    ) -> None:
+        product_price = checkout_confirmed_one_time.product_price
+        assert product_price is not None
+        product_price.is_archived = True
+        await save_fixture(product_price)
+
+        checkout = await checkout_service.handle_success(
+            session, checkout_confirmed_one_time, payment
+        )
+
+        assert checkout.status == CheckoutStatus.succeeded
+        order_service_mock.create_from_checkout_one_time.assert_called_once_with(
+            ANY, checkout, payment
+        )
+        subscription_service_mock.create_or_update_from_checkout.assert_not_called()
+
     async def test_recurring(
         self,
         order_service_mock: MagicMock,

@@ -187,16 +187,6 @@ class NotConfirmedCheckout(CheckoutError):
         super().__init__(message)
 
 
-class ArchivedPriceCheckout(CheckoutError):
-    def __init__(self, checkout: Checkout) -> None:
-        self.checkout = checkout
-        self.price = checkout.product_price
-        message = (
-            f"Checkout {checkout.id} has an archived price: {checkout.product_price_id}"
-        )
-        super().__init__(message)
-
-
 class NoPaymentMethodOnIntent(CheckoutError):
     def __init__(self, checkout: Checkout, intent_id: str) -> None:
         self.checkout = checkout
@@ -1228,7 +1218,11 @@ class CheckoutService:
 
         product_price = checkout.product_price
         if product_price.is_archived:
-            raise ArchivedPriceCheckout(checkout)
+            log.warning(
+                "Fulfilling checkout with archived price",
+                checkout_id=str(checkout.id),
+                price_id=str(product_price.id),
+            )
 
         product = checkout.product
         subscription: Subscription | None = None

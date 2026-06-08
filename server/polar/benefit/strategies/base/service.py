@@ -58,6 +58,17 @@ class BenefitActionRequiredError(BenefitServiceError):
     Typically, we need the customer to connect an external OAuth account.
     """
 
+    grant_properties: BenefitGrantProperties | None
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        grant_properties: BenefitGrantProperties | None = None,
+    ) -> None:
+        self.grant_properties = grant_properties
+        super().__init__(message)
+
 
 class BenefitServiceProtocol[BP: BenefitProperties, BGP: BenefitGrantProperties](
     Protocol

@@ -12,6 +12,7 @@ from .downloadables.properties import BenefitGrantDownloadablesProperties
 from .feature_flag.properties import BenefitGrantFeatureFlagProperties
 from .github_repository.properties import BenefitGrantGitHubRepositoryProperties
 from .license_keys.properties import BenefitGrantLicenseKeysProperties
+from .slack_shared_channel.properties import BenefitGrantSlackSharedChannelProperties
 
 BenefitGrantProperties = (
     BenefitGrantDiscordProperties
@@ -20,6 +21,7 @@ BenefitGrantProperties = (
     | BenefitGrantLicenseKeysProperties
     | BenefitGrantCustomProperties
     | BenefitGrantFeatureFlagProperties
+    | BenefitGrantSlackSharedChannelProperties
 )
 
 __all__ = [

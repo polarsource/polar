@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated, Literal, TypedDict
 
-from pydantic import UUID4, Discriminator, TypeAdapter
+from pydantic import UUID4, Discriminator, EmailStr, TypeAdapter
 
 from polar.benefit.strategies.custom.properties import BenefitGrantCustomProperties
 from polar.benefit.strategies.custom.schemas import BenefitCustomSubscriber
@@ -33,6 +33,12 @@ from polar.benefit.strategies.meter_credit.properties import (
     BenefitGrantMeterCreditProperties,
 )
 from polar.benefit.strategies.meter_credit.schemas import BenefitMeterCreditSubscriber
+from polar.benefit.strategies.slack_shared_channel.properties import (
+    BenefitGrantSlackSharedChannelProperties,
+)
+from polar.benefit.strategies.slack_shared_channel.schemas import (
+    BenefitSlackSharedChannelSubscriber,
+)
 from polar.kit.schemas import (
     ClassName,
     IDSchema,
@@ -103,6 +109,12 @@ class CustomerBenefitGrantFeatureFlag(CustomerBenefitGrantBase):
     properties: BenefitGrantFeatureFlagProperties
 
 
+class CustomerBenefitGrantSlackSharedChannel(CustomerBenefitGrantBase):
+    customer: CustomerPortalCustomer
+    benefit: BenefitSlackSharedChannelSubscriber
+    properties: BenefitGrantSlackSharedChannelProperties
+
+
 CustomerBenefitGrant = Annotated[
     CustomerBenefitGrantDiscord
     | CustomerBenefitGrantGitHubRepository
@@ -110,7 +122,8 @@ CustomerBenefitGrant = Annotated[
     | CustomerBenefitGrantLicenseKeys
     | CustomerBenefitGrantCustom
     | CustomerBenefitGrantMeterCredit
-    | CustomerBenefitGrantFeatureFlag,
+    | CustomerBenefitGrantFeatureFlag
+    | CustomerBenefitGrantSlackSharedChannel,
     SetSchemaReference("CustomerBenefitGrant"),
     MergeJSONSchema({"title": "CustomerBenefitGrant"}),
     ClassName("CustomerBenefitGrant"),
@@ -168,6 +181,15 @@ class CustomerBenefitGrantFeatureFlagUpdate(CustomerBenefitGrantUpdateBase):
     benefit_type: Literal[BenefitType.feature_flag]
 
 
+class CustomerBenefitGrantSlackSharedChannelPropertiesUpdate(TypedDict):
+    invited_email: EmailStr
+
+
+class CustomerBenefitGrantSlackSharedChannelUpdate(CustomerBenefitGrantUpdateBase):
+    benefit_type: Literal[BenefitType.slack_shared_channel]
+    properties: CustomerBenefitGrantSlackSharedChannelPropertiesUpdate
+
+
 CustomerBenefitGrantUpdate = Annotated[
     CustomerBenefitGrantDiscordUpdate
     | CustomerBenefitGrantGitHubRepositoryUpdate
@@ -175,7 +197,8 @@ CustomerBenefitGrantUpdate = Annotated[
     | CustomerBenefitGrantLicenseKeysUpdate
     | CustomerBenefitGrantCustomUpdate
     | CustomerBenefitGrantMeterCreditUpdate
-    | CustomerBenefitGrantFeatureFlagUpdate,
+    | CustomerBenefitGrantFeatureFlagUpdate
+    | CustomerBenefitGrantSlackSharedChannelUpdate,
     SetSchemaReference("CustomerBenefitGrantUpdate"),
     MergeJSONSchema({"title": "CustomerBenefitGrantUpdate"}),
     Discriminator("benefit_type"),

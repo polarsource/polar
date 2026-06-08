@@ -4,7 +4,11 @@ from typing import Any
 import pytest
 
 from polar.models import Meter, Product
-from polar.models.product_price import ProductPriceSeatUnit, SeatTierType
+from polar.models.product_price import (
+    ProductPriceFixed,
+    ProductPriceSeatUnit,
+    SeatTierType,
+)
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_product_price_metered_unit
 
@@ -78,6 +82,19 @@ async def test_get_amount_and_label(
     amount, label = price.get_amount_and_label(units)
     assert amount == expected_amount
     assert label == expected_label
+
+
+class TestFixedPriceIsFree:
+    """A fixed price with an amount of 0 is the free-pricing representation and must
+    behave like a free price (`is_free` is True)."""
+
+    def test_zero_amount_is_free(self) -> None:
+        price = ProductPriceFixed(price_amount=0, price_currency="usd")
+        assert price.is_free is True
+
+    def test_positive_amount_is_not_free(self) -> None:
+        price = ProductPriceFixed(price_amount=1000, price_currency="usd")
+        assert price.is_free is False
 
 
 def _make_seat_price(

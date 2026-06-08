@@ -6,11 +6,11 @@ import pytest
 from polar.config import settings
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.trial import TrialInterval
-from polar.models import Checkout, Product
+from polar.models import Checkout, Organization, Product
 from polar.models.checkout import BillingAddressFieldMode, CheckoutStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_checkout
+from tests.fixtures.random_objects import create_checkout, create_product
 
 
 @pytest.mark.asyncio
@@ -119,6 +119,25 @@ async def test_success_url(
 
     expected = expected_factory(checkout)
     assert checkout.success_url == expected
+
+
+@pytest.mark.asyncio
+async def test_is_free_product_price_for_zero_fixed_price(
+    save_fixture: SaveFixture,
+    organization: Organization,
+) -> None:
+    """A fixed price of 0 must be treated as a free product price, so checkout skips
+    the payment form just like a free-typed price."""
+    product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=None,
+        prices=[(0, "usd")],
+    )
+    checkout = await create_checkout(save_fixture, products=[product])
+
+    assert checkout.is_free_product_price is True
+    assert checkout.is_payment_form_required is False
 
 
 @pytest.mark.asyncio

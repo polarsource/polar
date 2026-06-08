@@ -14,7 +14,6 @@ from polar.product import sorting
 from polar.product.guard import (
     is_custom_price,
     is_fixed_price,
-    is_free_price,
     is_metered_price,
     is_seat_price,
 )
@@ -30,7 +29,7 @@ router = APIRouter()
 
 def _format_price_display(price: ProductPrice) -> str:
     """Format a price for display based on its amount type."""
-    if is_free_price(price):
+    if price.is_free and not is_seat_price(price):
         return "Free"
     elif is_custom_price(price):
         parts = []

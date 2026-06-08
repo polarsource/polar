@@ -33,7 +33,6 @@ from polar.kit.trial import TrialConfigurationMixin, TrialInterval
 from polar.kit.utils import utc_now
 from polar.product.guard import (
     is_discount_applicable,
-    is_free_price,
     is_metered_price,
 )
 from polar.tax.calculation import TaxBreakdownItem
@@ -322,7 +321,7 @@ class Checkout(
     def is_free_product_price(self) -> bool:
         if self.product_prices is None:
             return False
-        return all(is_free_price(price) for price in self.product_prices)
+        return all(price.is_free for price in self.product_prices)
 
     @property
     def has_metered_prices(self) -> bool:

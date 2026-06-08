@@ -398,6 +398,12 @@ module "application_access_production" {
   }
 }
 
+# Adopt the IAM user that already exists in AWS (console-created).
+import {
+  to = module.application_access_production.aws_iam_user.this
+  id = "polar-production-files"
+}
+
 # =============================================================================
 # Athena for Span Logs
 # =============================================================================

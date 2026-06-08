@@ -15,6 +15,12 @@ module "application_access_sandbox" {
   }
 }
 
+# Adopt the IAM user that already exists in AWS (console-created).
+import {
+  to = module.application_access_sandbox.aws_iam_user.this
+  id = "polar-sandbox-files"
+}
+
 # =============================================================================
 # Image Resizer Lambda@Edge
 # =============================================================================

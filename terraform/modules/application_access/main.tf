@@ -14,6 +14,10 @@ variable "username" {
   type        = string
 }
 
+resource "aws_iam_user" "this" {
+  name = var.username
+}
+
 variable "buckets" {
   description = "Bucket names and policy descriptions"
   type = object({
@@ -146,31 +150,31 @@ resource "aws_iam_policy" "logs" {
 }
 
 resource "aws_iam_user_policy_attachment" "customer_invoices" {
-  user       = var.username
+  user       = aws_iam_user.this.name
   policy_arn = aws_iam_policy.customer_invoices.arn
 }
 
 resource "aws_iam_user_policy_attachment" "customer_receipts" {
-  user       = var.username
+  user       = aws_iam_user.this.name
   policy_arn = aws_iam_policy.customer_receipts.arn
 }
 
 resource "aws_iam_user_policy_attachment" "payout_invoices" {
-  user       = var.username
+  user       = aws_iam_user.this.name
   policy_arn = aws_iam_policy.payout_invoices.arn
 }
 
 resource "aws_iam_user_policy_attachment" "files" {
-  user       = var.username
+  user       = aws_iam_user.this.name
   policy_arn = aws_iam_policy.files.arn
 }
 
 resource "aws_iam_user_policy_attachment" "public_files" {
-  user       = var.username
+  user       = aws_iam_user.this.name
   policy_arn = aws_iam_policy.public_files.arn
 }
 
 resource "aws_iam_user_policy_attachment" "logs" {
-  user       = var.username
+  user       = aws_iam_user.this.name
   policy_arn = aws_iam_policy.logs.arn
 }

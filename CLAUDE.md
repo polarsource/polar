@@ -80,9 +80,10 @@ See subdirectory CLAUDE.md files for detailed patterns:
 ```
 
 For Stripe, add to `server/.env`:
-- `STRIPE_SECRET_KEY`
-- `STRIPE_PUBLISHABLE_KEY`
-- `STRIPE_WEBHOOK_SECRET`
+- `POLAR_STRIPE_SECRET_KEY`
+- `POLAR_STRIPE_PUBLISHABLE_KEY`
+- `POLAR_STRIPE_WEBHOOK_SECRET`
+- `POLAR_STRIPE_CONNECT_WEBHOOK_SECRET`
 
 ## Key Integrations
 

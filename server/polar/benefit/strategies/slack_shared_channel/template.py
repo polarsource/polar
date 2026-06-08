@@ -9,6 +9,7 @@ _FIXED_PLACEHOLDERS = {"customer_name", "customer_email_local"}
 _METADATA_PREFIX = "metadata."
 _PLACEHOLDER_RE = re.compile(r"\{([^{}]*)\}")
 _PLACEHOLDER_NAME_RE = re.compile(r"^[\w.]+$")
+_METADATA_PLACEHOLDER_RE = re.compile(r"^metadata\.[\w-]+(?:\.[\w-]+)*$")
 _SLACK_CHANNEL_NAME_MAX_LENGTH = 80
 _NON_ALPHANUMERIC = re.compile(r"[^a-z0-9]+")
 
@@ -28,7 +29,7 @@ def validate_template(template: str) -> None:
     for name in _iter_placeholder_names(template):
         if name in _FIXED_PLACEHOLDERS:
             continue
-        if name.startswith(_METADATA_PREFIX) and len(name) > len(_METADATA_PREFIX):
+        if _METADATA_PLACEHOLDER_RE.fullmatch(name):
             continue
         raise InvalidTemplateError(
             f"Unknown placeholder: {{{name}}}. "
@@ -75,7 +76,7 @@ def render_channel_name(
 def _resolve(name: str, context: TemplateContext, *, tolerant: bool) -> str:
     if name in _FIXED_PLACEHOLDERS:
         return str(getattr(context, name))
-    if name.startswith(_METADATA_PREFIX):
+    if _METADATA_PLACEHOLDER_RE.fullmatch(name):
         key = name[len(_METADATA_PREFIX) :]
         value = get_nested_metadata_value(context.metadata, key)
         if value is None:
@@ -98,7 +99,7 @@ def _render_permissive(template: str) -> str:
     def sub(name: str) -> str:
         if name in _FIXED_PLACEHOLDERS:
             return str(getattr(sample, name))
-        if name.startswith(_METADATA_PREFIX):
+        if _METADATA_PLACEHOLDER_RE.fullmatch(name):
             return "sample"
         return ""
 
@@ -110,7 +111,10 @@ def _iter_placeholder_names(template: str) -> Iterator[str]:
     for match in _PLACEHOLDER_RE.finditer(template):
         _raise_for_malformed_braces(template[position : match.start()])
         name = match.group(1)
-        if _PLACEHOLDER_NAME_RE.fullmatch(name) is None:
+        if (
+            _PLACEHOLDER_NAME_RE.fullmatch(name) is None
+            and _METADATA_PLACEHOLDER_RE.fullmatch(name) is None
+        ):
             raise _malformed_placeholder(f"{{{name}}}")
         yield name
         position = match.end()

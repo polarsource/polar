@@ -198,12 +198,17 @@ class BenefitSlackSharedChannelService(
             return {"invited_email": grant_properties.get("invited_email", "")}
 
         try:
-            await self._client.conversations_archive(
+            result = await self._client.conversations_archive(
                 bot_token=integration.bot_token, channel=channel_id
             )
         except httpx.HTTPError as e:
             bound_logger.warning("Slack archive failed", error=str(e))
             raise BenefitRetriableError() from e
+
+        if not result.get("ok"):
+            error = result.get("error", "")
+            bound_logger.warning("Slack archive returned error", error=error)
+            raise BenefitRetriableError()
 
         return {"invited_email": grant_properties.get("invited_email", "")}
 

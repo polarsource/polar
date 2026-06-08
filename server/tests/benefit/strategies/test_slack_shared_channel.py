@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock
 
 import httpx
 import pytest
+from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
 from polar.benefit.strategies import (
@@ -12,6 +13,9 @@ from polar.benefit.strategies import (
 from polar.benefit.strategies.slack_shared_channel.properties import (
     BenefitGrantSlackSharedChannelProperties,
     BenefitSlackSharedChannelProperties,
+)
+from polar.benefit.strategies.slack_shared_channel.schemas import (
+    BenefitSlackSharedChannelCreateProperties,
 )
 from polar.benefit.strategies.slack_shared_channel.service import (
     BenefitSlackSharedChannelService,
@@ -1024,6 +1028,37 @@ class TestSlackSharedChannelRevoke:
         client = _mock_client(
             mocker,
             conversations_archive=AsyncMock(side_effect=httpx.ConnectError("boom")),
+        )
+        strategy = _strategy(session, redis, client)
+
+        with pytest.raises(BenefitRetriableError):
+            await strategy.revoke(
+                benefit,
+                customer,
+                {"invited_email": "admin@customer.example", "channel_id": "C123"},
+            )
+
+    async def test_revoke_archive_slack_error_raises_retriable(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        client = _mock_client(
+            mocker,
+            conversations_archive=AsyncMock(
+                return_value={"ok": False, "error": "ratelimited"}
+            ),
         )
         strategy = _strategy(session, redis, client)
 

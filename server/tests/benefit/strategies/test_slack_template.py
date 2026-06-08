@@ -66,6 +66,18 @@ class TestRenderChannelName:
         )
         assert render_channel_name("{metadata.tier}-acme", context) == "gold-acme"
 
+    def test_metadata_lookup_with_hyphenated_key(self) -> None:
+        context = TemplateContext(
+            customer_name="Acme",
+            customer_email_local="admin",
+            metadata={"plan-name": "gold"},
+        )
+        validate_template("{metadata.plan-name}-{customer_name}")
+        assert (
+            render_channel_name("{metadata.plan-name}-{customer_name}", context)
+            == "gold-acme"
+        )
+
     def test_metadata_missing_key_raises(self) -> None:
         context = TemplateContext(
             customer_name="Acme",

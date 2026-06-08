@@ -10,6 +10,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
+    from polar.models.case import Case
     from polar.models.organization import Organization
 
 
@@ -74,9 +75,24 @@ class OrganizationReview(RecordModel):
         String, nullable=True, default=None
     )
 
+    # Pointer to the live conversation case for this review (case management).
+    # Cleared on soft-delete of the case; the archived case keeps the
+    # historical back-link via Case.resource_id.
+    case_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("cases.id"),
+        nullable=True,
+        unique=True,
+        default=None,
+    )
+
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise", back_populates="review")
+
+    @declared_attr
+    def case(cls) -> Mapped["Case | None"]:
+        return relationship("Case", lazy="raise")
 
     def clear_appeal_state(self) -> None:
         self.appeal_submitted_at = None

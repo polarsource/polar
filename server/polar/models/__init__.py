@@ -8,6 +8,13 @@ from .benefit import Benefit
 from .benefit_grant import BenefitGrant
 from .billing_entry import BillingEntry
 from .campaign import Campaign
+from .case import (
+    Case,
+    CaseAttachment,
+    CaseMessage,
+    CaseParticipant,
+    CaseType,
+)
 from .checkout import Checkout
 from .checkout_link import CheckoutLink
 from .checkout_link_product import CheckoutLinkProduct
@@ -106,6 +113,11 @@ __all__ = [
     "BenefitGrant",
     "BillingEntry",
     "Campaign",
+    "Case",
+    "CaseAttachment",
+    "CaseMessage",
+    "CaseParticipant",
+    "CaseType",
     "Checkout",
     "CheckoutLink",
     "CheckoutLinkProduct",

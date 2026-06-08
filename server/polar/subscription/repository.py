@@ -585,6 +585,9 @@ class SubscriptionUpdateRepository(
             existing.new_cycle_end = object.new_cycle_end
         if object.seats is not None:
             existing.seats = object.seats
+        if object.discount is not None or object.discount_unset:
+            existing.discount_unset = object.discount_unset
+            existing.discount = object.discount
         return await self.update(existing, flush=flush)
 
     async def soft_delete_unapplied_by_subscription_id(

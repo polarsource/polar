@@ -30223,14 +30223,35 @@ export interface components {
       recurring_interval_count: number
     }
     SubscriptionUpdate:
-      | components['schemas']['SubscriptionUpdateProduct']
-      | components['schemas']['SubscriptionUpdateDiscount']
-      | components['schemas']['SubscriptionUpdateTrial']
+      | components['schemas']['SubscriptionUpdateBase']
       | components['schemas']['SubscriptionUpdateSeats']
       | components['schemas']['SubscriptionUpdateBillingPeriod']
       | components['schemas']['SubscriptionCancel']
       | components['schemas']['SubscriptionRevoke']
       | components['schemas']['SubscriptionUpdateClear']
+    /** SubscriptionUpdateBase */
+    SubscriptionUpdateBase: {
+      /**
+       * Product Id
+       * @description Update subscription to another product.
+       * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
+       */
+      product_id?: string | null
+      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      proration_behavior?:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | null
+      /**
+       * Discount Id
+       * @description Update the subscription to apply a new discount. If set to `null`, the discount will be removed. The change will be applied on the next billing cycle.
+       */
+      discount_id?: string | null
+      /**
+       * Trial End
+       * @description Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately.
+       */
+      trial_end?: string | 'now' | null
+    }
     /** SubscriptionUpdateBillingPeriod */
     SubscriptionUpdateBillingPeriod: {
       /**
@@ -30330,28 +30351,6 @@ export interface components {
       /** Subscription Id */
       subscription_id: string
     }
-    /** SubscriptionUpdateDiscount */
-    SubscriptionUpdateDiscount: {
-      /**
-       * Discount Id
-       * @description Update the subscription to apply a new discount. If set to `null`, the discount will be removed. The change will be applied on the next billing cycle.
-       */
-      discount_id: string | null
-    }
-    /** SubscriptionUpdateProduct */
-    SubscriptionUpdateProduct: {
-      /**
-       * Product Id
-       * Format: uuid4
-       * @description Update subscription to another product.
-       * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
-       */
-      product_id: string
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
-      proration_behavior?:
-        | components['schemas']['SubscriptionProrationBehavior']
-        | null
-    }
     /** SubscriptionUpdateSeats */
     SubscriptionUpdateSeats: {
       /**
@@ -30363,14 +30362,6 @@ export interface components {
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
         | null
-    }
-    /** SubscriptionUpdateTrial */
-    SubscriptionUpdateTrial: {
-      /**
-       * Trial End
-       * @description Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately.
-       */
-      trial_end: string | 'now'
     }
     /**
      * SubscriptionUpdatedEvent

@@ -269,8 +269,9 @@ class SubscriptionCreateExternalCustomer(SubscriptionCreateBase):
 SubscriptionCreate = SubscriptionCreateCustomer | SubscriptionCreateExternalCustomer
 
 
-class SubscriptionUpdateProduct(Schema):
-    product_id: UUID4 = Field(
+class SubscriptionUpdateBase(Schema):
+    product_id: UUID4 | None = Field(
+        default=None,
         description="Update subscription to another product.",
         examples=[PRODUCT_ID_EXAMPLE],
     )
@@ -281,25 +282,37 @@ class SubscriptionUpdateProduct(Schema):
             "If not provided, will use the default organization setting."
         ),
     )
-
-
-class SubscriptionUpdateDiscount(Schema):
     discount_id: UUID4 | None = Field(
+        default=None,
         description=(
             "Update the subscription to apply a new discount. "
             "If set to `null`, the discount will be removed."
             " The change will be applied on the next billing cycle."
         ),
     )
-
-
-class SubscriptionUpdateTrial(Schema):
-    trial_end: FutureDatetime | Literal["now"] = Field(
+    trial_end: FutureDatetime | Literal["now"] | None = Field(
+        default=None,
         description=(
             "Set or extend the trial period of the subscription. "
             "If set to `now`, the trial will end immediately."
         ),
     )
+
+    @property
+    def has_product(self) -> bool:
+        return self.product_id is not None
+
+    @property
+    def has_trial_end(self) -> bool:
+        return self.trial_end is not None
+
+    @property
+    def discount(self) -> UUID4 | Literal["unset"] | None:
+        if self.discount_id is not None:
+            return self.discount_id
+        if "discount_id" in self.model_fields_set:
+            return "unset"
+        return None
 
 
 class SubscriptionUpdateSeats(Schema):
@@ -324,7 +337,7 @@ class SubscriptionUpdateBillingPeriod(Schema):
 
             It is not possible to update the current billing period on a canceled subscription.
             """
-        )
+        ),
     )
 
 
@@ -396,9 +409,7 @@ class SubscriptionUpdateClear(Schema):
 
 
 SubscriptionUpdate = Annotated[
-    SubscriptionUpdateProduct
-    | SubscriptionUpdateDiscount
-    | SubscriptionUpdateTrial
+    SubscriptionUpdateBase
     | SubscriptionUpdateSeats
     | SubscriptionUpdateBillingPeriod
     | SubscriptionCancel

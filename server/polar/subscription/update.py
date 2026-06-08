@@ -1,3 +1,4 @@
+import typing
 from datetime import datetime
 
 from parse import Decimal
@@ -6,6 +7,7 @@ from polar.enums import SubscriptionProrationBehavior
 from polar.kit.utils import utc_now
 from polar.models import (
     BillingEntry,
+    Discount,
     Product,
     ProductPrice,
     Subscription,
@@ -118,6 +120,7 @@ def _generate_product_debit_proration_billing_entries(
     applies_at: datetime,
     new_cycle_start: datetime,
     new_cycle_end: datetime,
+    new_discount: Discount | None,
 ) -> list[BillingEntry]:
     new_cycle_pct_remaining = _calculate_time_proration(
         new_cycle_start, new_cycle_end, applies_at
@@ -132,10 +135,8 @@ def _generate_product_debit_proration_billing_entries(
     # All prices belong to `new_product`, so applicability is evaluated once and
     # gates the whole allocation. Unlike the credit path, the discount may not
     # apply to the product being switched to.
-    if subscription.discount and subscription.discount.is_applicable(
-        new_product, subscription.currency
-    ):
-        discount_amounts = subscription.discount.allocate_discount_amounts(
+    if new_discount and new_discount.is_applicable(new_product, subscription.currency):
+        discount_amounts = new_discount.allocate_discount_amounts(
             [base_amount for _, base_amount in priced_entries], subscription.currency
         )
 
@@ -174,6 +175,7 @@ def _generate_product_subscription_update(
     new_product = subscription_update.product
     assert new_product is not None
     assert is_recurring_product(new_product)
+    new_discount = subscription_update.after_update_discount
 
     if (
         subscription_update.is_interval_changed()
@@ -211,6 +213,7 @@ def _generate_product_subscription_update(
             applies_at=subscription_update.applies_at,
             new_cycle_start=new_cycle_start,
             new_cycle_end=new_cycle_end,
+            new_discount=new_discount,
         )
     )
 
@@ -322,7 +325,6 @@ def _generate_seats_subscription_update(
         discount_amount=prorated_discount_amount
         if prorated_discount_amount > 0
         else None,
-        discount=subscription.discount if entry_discount_amount > 0 else None,
         currency=subscription.currency,
         direction=direction,
         type=entry_type,
@@ -337,6 +339,7 @@ def generate_subscription_update(
     *,
     product: Product | None = None,
     seats: int | None = None,
+    discount: Discount | typing.Literal["unset"] | None = None,
 ) -> tuple[SubscriptionUpdate, list[BillingEntry]]:
     match proration_behavior:
         case (
@@ -355,6 +358,8 @@ def generate_subscription_update(
         subscription_id=subscription.id,
         product=product,
         seats=seats,
+        discount_unset=discount == "unset",
+        discount=discount if discount != "unset" else None,
     )
 
     if product is not None:

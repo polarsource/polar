@@ -1,3 +1,5 @@
+import typing
+import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -1183,6 +1185,175 @@ class TestUpdateProductProrations:
             assert billing_entries[1].product_price_id == new_price.id
             # assert billing_entries[1].event_id == event.id
             assert billing_entries[1].amount == 20000
+            assert billing_entries[1].currency == new_price.price_currency
+            # fmt: on
+
+    @pytest.mark.parametrize(
+        ("old_discount", "new_discount", "expected_credit", "expected_debit"),
+        [
+            pytest.param(
+                (DiscountType.percentage, 25_00),  # 25% discount
+                (DiscountType.percentage, 50_00),  # 50% discount
+                37_50,  # $100 with 25% discount, prorated for 15/30 days
+                250_00,  # $1000 with 50% discount, prorated for 15/30 days
+                id="percentage-discount-change",
+            ),
+            pytest.param(
+                None,
+                (DiscountType.percentage, 50_00),  # 50% discount
+                50_00,  # $100 with no discount, prorated for 15/30 days
+                250_00,  # $1000 with 50% discount, prorated for 15/30 days
+                id="new-percentage-discount",
+            ),
+            pytest.param(
+                (DiscountType.percentage, 25_00),  # 25% discount
+                None,
+                37_50,  # $100 with 25% discount, prorated for 15/30 days
+                500_00,  # $1000 with no discount, prorated for 15/30 days
+                id="removed-percentage-discount",
+            ),
+            pytest.param(
+                (DiscountType.fixed, 25_00),  # $25 discount
+                (DiscountType.fixed, 50_00),  # $50 discount
+                37_50,  # $100 with $25 discount, prorated for 15/30 days
+                475_00,  # $1000 with $50 discount, prorated for 15/30 days
+                id="fixed-discount-change",
+            ),
+        ],
+    )
+    async def test_proration_with_discount_change(
+        self,
+        old_discount: tuple[DiscountType, int] | None,
+        new_discount: tuple[DiscountType, int] | None,
+        expected_credit: int,
+        expected_debit: int,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        cycle_start = datetime(2025, 6, 1, tzinfo=UTC)
+        time_of_update = datetime(2025, 6, 16, tzinfo=UTC)
+
+        old_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(100_00, "usd")],
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1000_00, "usd")],
+        )
+
+        old_discount_arg: Discount | None
+        if old_discount is not None:
+            if old_discount[0] == DiscountType.percentage:
+                old_discount_arg = await create_discount(
+                    save_fixture,
+                    type=DiscountType.percentage,
+                    basis_points=old_discount[1],
+                    organization=organization,
+                    duration=DiscountDuration.forever,
+                )
+            else:
+                old_discount_arg = await create_discount(
+                    save_fixture,
+                    type=DiscountType.fixed,
+                    amounts={"usd": old_discount[1]},
+                    organization=organization,
+                    duration=DiscountDuration.forever,
+                )
+        else:
+            old_discount_arg = None
+
+        new_discount_arg: uuid.UUID | typing.Literal["unset"]
+        if new_discount is not None:
+            if new_discount[0] == DiscountType.percentage:
+                new_discount_arg = (
+                    await create_discount(
+                        save_fixture,
+                        type=DiscountType.percentage,
+                        basis_points=new_discount[1],
+                        organization=organization,
+                        duration=DiscountDuration.forever,
+                    )
+                ).id
+            else:
+                new_discount_arg = (
+                    await create_discount(
+                        save_fixture,
+                        type=DiscountType.fixed,
+                        amounts={"usd": new_discount[1]},
+                        organization=organization,
+                        duration=DiscountDuration.forever,
+                    )
+                ).id
+        else:
+            new_discount_arg = "unset"
+
+        with freezegun.freeze_time(cycle_start) as frozen_time:
+            subscription = await create_active_subscription(
+                save_fixture,
+                product=old_product,
+                customer=customer,
+                discount=old_discount_arg,
+            )
+
+            previous_period_start = subscription.current_period_start
+            previous_period_end = subscription.current_period_end
+
+            frozen_time.move_to(time_of_update)
+
+            # Actually update subscription
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated_subscription = await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=new_product.id,
+                    discount=new_discount_arg,
+                    proration_behavior=SubscriptionProrationBehavior.prorate,
+                )
+
+            billing_entry_repository = BillingEntryRepository.from_session(session)
+            billing_entries = (
+                await billing_entry_repository.get_pending_by_subscription(
+                    subscription.id
+                )
+            )
+            assert len(billing_entries) == 2
+
+            billing_entries = sorted(
+                billing_entries, key=lambda e: (e.start_timestamp, e.direction)
+            )
+
+            old_price = old_product.prices[0]
+            new_price = new_product.prices[0]
+            assert is_fixed_price(old_price)
+            assert is_fixed_price(new_price)
+
+            # fmt: off
+            assert billing_entries[0].start_timestamp == time_of_update
+            assert billing_entries[0].end_timestamp == previous_period_end
+            assert billing_entries[0].direction == BillingEntryDirection.credit
+            assert billing_entries[0].customer_id == customer.id
+            assert billing_entries[0].product_price_id == old_price.id
+            assert billing_entries[0].amount == expected_credit
+            assert billing_entries[0].currency == old_price.price_currency
+            # fmt: on
+
+            # fmt: off
+            assert billing_entries[1].start_timestamp == time_of_update
+            assert billing_entries[1].end_timestamp == updated_subscription.current_period_end
+            assert billing_entries[1].direction == BillingEntryDirection.debit
+            assert billing_entries[1].customer_id == customer.id
+            assert billing_entries[1].product_price_id == new_price.id
+            assert billing_entries[1].amount == expected_debit
             assert billing_entries[1].currency == new_price.price_currency
             # fmt: on
 

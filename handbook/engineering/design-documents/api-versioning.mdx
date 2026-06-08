@@ -1,0 +1,308 @@
+---
+title: "API Versioning"
+description: "Proposal for a date-based API versioning strategy with strict change policies and predictable release cadence"
+---
+
+<Info>
+**Status**: Draft
+
+**Created**: 2026-06-08
+
+**Comments**: All aspects of this proposal are open for debate, particularly release cadence and support window duration.
+
+</Info>
+
+## Abstract
+
+This RFC proposes a date-based API versioning strategy for Polar with the following characteristics:
+
+- **Version lifecycle**: 3 versions maintained with ~9-month support window — open for discussion
+- **Release cadence**: Quarterly (January, April, July, October) — open for discussion
+- **Change policy**: Strict freeze on Current and Deprecated versions; all contract changes through Next version
+- **Version naming**: `YYYY-MM` format (e.g., `2026-01`, `2026-04`)
+- **Versioning mechanism**: `Polar-Version` header, defaulting to Current version
+
+The goal is to establish a predictable, disciplined API evolution process that balances innovation with stability.
+
+## Motivation
+
+### Problems with Current Approach
+
+Currently, Polar lacks a formal API versioning strategy. Our current approach is "best-effort", where we _try_ to limit breaking changes and maintain backward compatibility, but we have no guarantees or clear policies. This leads to several issues:
+
+- No strong guarantees for consumers about stability and support duration
+- Deprecated fields and endpoints accumulate over time, increasing technical debt
+- SDK versioning is inconsistent and often lags behind API changes
+
+### Desired Outcomes
+
+Our goal is to implement a robust API versioning strategy that provides clear guarantees to consumers, enables disciplined API evolution, and reduces technical debt; while maintaining a **fast-paced** and **innovative** development process.
+
+## Proposal
+
+### Release Schedule
+
+Releases occur on a **quarterly cadence** during the **first week of each quarter** (January, April, July, October).
+
+The release is **calendar-driven**: it happens on the scheduled date regardless of feature completion. Incomplete work is deferred to the Next version.
+
+<Note>
+  The release cadence (quarterly vs. semi-annual) is open for discussion. See
+  [Alternatives Considered](#alternatives-considered).
+</Note>
+
+### Version Lifecycle
+
+Exactly **3 versions** are maintained at any time:
+
+```
+[Deprecated] → [Current: default] → [Next: in development]
+```
+
+#### State Transitions
+
+On each release:
+
+1. The **oldest version (Deprecated)** is **removed**
+2. The **Current version** becomes **Deprecated**
+3. The **Next version** becomes **Current** (and default)
+4. A **new Next version** is created for ongoing development
+
+#### Timeline Example
+
+```
+Before Q2 2026 release:
+  2025-10  (Deprecated, to be removed)
+  2026-01  (Current, default)
+  2026-04  (Next, in development)
+
+After Q2 2026 release:
+  2026-01  (Deprecated, to be removed on next release)
+  2026-04  (Current, default) ← was Next
+  2026-07  (Next, in development)
+  (2025-10 is now removed)
+```
+
+Each version follows this lifecycle:
+
+- **~3 months**: Next (development phase, accepts all changes)
+- **~3 months**: Current (frozen, default version)
+- **~3 months**: Deprecated (frozen, removal pending)
+- **Total**: ~9 months of support
+
+<Note>
+  The support window duration (9 months vs. 12 months) is open for discussion.
+  See [Alternatives Considered](#alternatives-considered).
+</Note>
+
+### Change Policy
+
+#### Strict Freeze Rule
+
+**Deprecated and Current versions are completely frozen for contract changes.**
+
+| **Change Type**                          | **Deprecated** | **Current** | **Next** |
+| ---------------------------------------- | -------------- | ----------- | -------- |
+| Add endpoint                             | ❌             | ❌          | ✅       |
+| Remove endpoint                          | ❌             | ❌          | ✅       |
+| Modify schema (add/remove/change fields) | ❌             | ❌          | ✅       |
+| Change input/output format               | ❌             | ❌          | ✅       |
+| Bug fixes                                | ✅             | ✅          | ✅       |
+| Performance improvements                 | ✅             | ✅          | ✅       |
+| Internal implementation changes          | ✅             | ✅          | ✅       |
+
+**Rationale**: This strict policy prevents any contract changes from affecting stable versions, ensuring maximum stability for consumers and clarity for engineering team. Even backward-compatible changes (adding optional fields) must go through the Next version.
+
+#### Development Flow
+
+1. All contract changes are developed against the **Next** version
+2. When released, Next becomes Current and is frozen
+3. New contract changes target the new Next version
+4. Bug fixes can be applied to any maintained version
+
+### Version Increment
+
+The version **always increments on schedule**, even if no contract changes have been made in that quarter.
+
+**Rationale**: Maintaining a regular cadence with predictable version numbers simplifies planning and avoids gaps in the version sequence.
+
+### Removal Policy
+
+Deprecated versions are **removed on the next release date** (hard cutoff).
+
+<Note>
+  Adding a grace period (e.g., 30 days after deprecation window) is open for
+  discussion.
+</Note>
+
+### Version Naming
+
+API versions use the `YYYY-MM` format representing the quarter of release:
+
+```
+2026-01  # Q1 2026 (January release)
+2026-04  # Q2 2026 (April release)
+2026-07  # Q3 2026 (July release)
+2026-10  # Q4 2026 (October release)
+2027-01  # Q1 2027 (January release)
+```
+
+**Rationale**: This format decouples the naming scheme from the release cadence. If we later decide to release monthly or semi-annually, the naming scheme remains valid without migration.
+
+### Versioning Mechanism
+
+#### Request Header
+
+Clients specify the API version using a custom header:
+
+```http
+Polar-Version: 2026-01
+```
+
+#### Default Behavior
+
+When the `Polar-Version` header is omitted, requests are routed to the **Current** version.
+
+<Warning>
+  The default version changes over time as new versions are released. **Clients
+  should explicitly set the `Polar-Version` header to avoid unexpected
+  disruptions when the Current version changes.**
+</Warning>
+
+## SDK Strategy
+
+The SDK will follow the API versioning with patch versions for bug fixes:
+
+- **Format**: `2026-01.0`, `2026-01.1`, `2026-04.0`, etc.
+- **Support**: Exactly 3 SDK versions maintained, matching the API policy
+- **Versioning**: Patch versions (`2026-01.1`) include only bug fixes; major versions (`2026-04`) include contract changes
+
+## Implementation
+
+### Backend: Header-based routing POC
+
+A way to implement this is to consider each version as a separate FastAPI app. The main app routes requests to the appropriate version based on the `Polar-Version` header. In each business logic module (e.g. `customers`), we'll have a submodule for each version, containing the schemas and endpoints for that version. Common logic, like `service.py`, can be shared across versions.
+
+To serve the right OpenAPI document for each version, we can generate separate OpenAPI specs for each version and serve them at different endpoints (e.g., `/openapi/2026-01.json`, `/openapi/2026-04.json`).
+
+```
+polar/
+├── customer/
+│   ├── __init__.py
+│   ├── service.py
+│   ├── 2026_04/
+│   │   ├── __init__.py
+│   │   ├── schemas.py
+│   │   └── endpoints.py
+│   ├── 2026_07/
+│   │   ├── __init__.py
+│   │   ├── schemas.py
+│   │   └── endpoints.py
+│   └── 2026_10/
+│       ├── __init__.py
+│       ├── schemas.py
+│       └── endpoints.py
+├── apps/
+│   ├── __init__.py
+│   ├── 2026_04.py
+│   ├── 2026_07.py
+│   └── 2026_10.py
+└── app.py
+```
+
+Of course, this should be tooled so when we create a new version, the necessary files and boilerplate are generated automatically.
+
+### Documentation
+
+1. **Version selector**: Allow users to view docs for each maintained version
+2. **Version indicators**: Clearly mark deprecated versions in documentation
+3. **Changelog**: Maintain per-version changelog
+4. **Migration guides**: Provide guides for migrating between versions
+
+### Monitoring
+
+1. Track usage of each version
+2. Alert when deprecated version usage exceeds thresholds
+3. Monitor error rates per version
+
+## Alternatives Considered
+
+### 1. Semi-Annual Cadence
+
+**Proposal**: Release 2 versions per year (January, July) instead of 4.
+
+| **Aspect**                | **Quarterly** | **Semi-Annual** |
+| ------------------------- | ------------- | --------------- |
+| Innovation velocity       | High          | Moderate        |
+| Consumer migration burden | High          | Low             |
+| Operational overhead      | Moderate      | Low             |
+| Cleanup frequency         | High          | Moderate        |
+
+**Tradeoff**: Less frequent releases reduce consumer burden but slow down API evolution.
+
+### 2. Extended Support Window (12 months)
+
+**Proposal**: Maintain 4 versions with 12-month support window.
+
+```
+Lifecycle: Next (3 mo) → Current (6 mo) → Deprecated (3 mo) → Removed
+Total: 12 months support
+Versions maintained: 4
+```
+
+**Tradeoff**: Longer support window improves enterprise compatibility but increases maintenance burden.
+
+### 3. Grace Period on Removal
+
+**Proposal**: Add 30-day grace period after deprecation window before removal.
+
+**Tradeoff**: Gives lagging consumers more time but delays cleanup.
+
+## Open Questions
+
+1. **Cadence**: Should we adopt quarterly or semi-annual release schedule?
+2. **Support window**: 9 months (3 versions) or 12 months (4 versions)?
+3. **Removal timing**: Hard cutoff on release date or 30-day grace period?
+
+## Appendix: Version Timeline Examples
+
+### Scenario A: Quarterly Cadence, 9-month Support (Proposed)
+
+```
+Jan 2026:  Release 2026-01
+  Maintained: 2025-10 (deprecated), 2026-01 (current), 2026-04 (next)
+
+Apr 2026:  Release 2026-04
+  Maintained: 2026-01 (deprecated), 2026-04 (current), 2026-07 (next)
+  Removed: 2025-10
+
+Jul 2026:  Release 2026-07
+  Maintained: 2026-04 (deprecated), 2026-07 (current), 2026-10 (next)
+  Removed: 2026-01
+
+Oct 2026:  Release 2026-10
+  Maintained: 2026-07 (deprecated), 2026-10 (current), 2027-01 (next)
+  Removed: 2026-04
+```
+
+### Scenario B: Quarterly Cadence, 12-month Support
+
+```
+Jan 2026:  Release 2026-01
+  Maintained: 2025-07 (deprecated), 2025-10 (deprecated), 2026-01 (current), 2026-04 (next)
+
+Apr 2026:  Release 2026-04
+  Maintained: 2025-10 (deprecated), 2026-01 (deprecated), 2026-04 (current), 2026-07 (next)
+  Removed: 2025-07
+```
+
+### Scenario C: Semi-Annual Cadence, 12-month Support
+
+```
+Jan 2026:  Release 2026-01
+  Maintained: 2025-07 (deprecated), 2026-01 (current), 2026-07 (next)
+
+Jul 2026:  Release 2026-07
+  Maintained: 2026-01 (deprecated), 2026-07 (current), 2027-01 (next)
+  Removed: 2025-07
+```

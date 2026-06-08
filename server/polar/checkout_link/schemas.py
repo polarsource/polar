@@ -66,6 +66,14 @@ _discount_id_description = (
     "If the discount is not applicable anymore when opening the checkout link, "
     "it'll be ignored."
 )
+_seats_description = (
+    "Preconfigured number of seats for seat-based pricing. "
+    "When set, checkout sessions created from this link are locked to this number "
+    "of seats and the customer won't be able to change it. "
+    "All products on the link must use seat-based pricing and allow this number of "
+    "seats. If the products no longer accommodate this value when the link is "
+    "opened, it'll be ignored."
+)
 
 
 class CheckoutLinkCreateBase(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
@@ -83,6 +91,9 @@ class CheckoutLinkCreateBase(TrialConfigurationInputMixin, MetadataInputMixin, S
     )
     discount_id: UUID4 | None = Field(
         default=None, description=_discount_id_description
+    )
+    seats: int | None = Field(
+        default=None, ge=1, le=1000, description=_seats_description
     )
     success_url: SuccessURL = None
     return_url: ReturnURL = None
@@ -143,6 +154,9 @@ class CheckoutLinkUpdate(MetadataInputMixin, TrialConfigurationInputMixin):
     discount_id: UUID4 | None = Field(
         default=None, description=_discount_id_description
     )
+    seats: int | None = Field(
+        default=None, ge=1, le=1000, description=_seats_description
+    )
     success_url: SuccessURL = None
     return_url: ReturnURL = None
 
@@ -173,6 +187,7 @@ class CheckoutLinkBase(
         description=_require_billing_address_description
     )
     discount_id: UUID4 | None = Field(description=_discount_id_description)
+    seats: int | None = Field(description=_seats_description)
     organization_id: OrganizationID
 
     @computed_field  # type: ignore[prop-decorator]

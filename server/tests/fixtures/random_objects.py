@@ -1612,6 +1612,7 @@ async def create_checkout_link(
     success_url: str | None = None,
     trial_interval: TrialInterval | None = None,
     trial_interval_count: int | None = None,
+    seats: int | None = None,
     user_metadata: dict[str, Any] = {},
 ) -> CheckoutLink:
     checkout_link = CheckoutLink(
@@ -1628,6 +1629,7 @@ async def create_checkout_link(
         discount=discount,
         trial_interval=trial_interval,
         trial_interval_count=trial_interval_count,
+        seats=seats,
         user_metadata=user_metadata,
     )
     await save_fixture(checkout_link)

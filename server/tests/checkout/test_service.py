@@ -2429,6 +2429,46 @@ class TestCheckoutLinkCreate:
         assert checkout.seats == price.get_minimum_seats()
         assert checkout.amount == price.calculate_amount(price.get_minimum_seats())
 
+    async def test_valid_seat_lock(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_seat_based_with_min_max: Product,
+    ) -> None:
+        price = product_seat_based_with_min_max.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_seat_based_with_min_max], seats=5
+        )
+
+        checkout = await checkout_service.checkout_link_create(session, checkout_link)
+
+        assert checkout.seats == 5
+        assert checkout.min_seats == 5
+        assert checkout.max_seats == 5
+        assert checkout.amount == price.calculate_amount(5)
+
+    async def test_seat_lock_drift_falls_back_to_minimum(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_seat_based_with_min: Product,
+    ) -> None:
+        # Link locked to a seat count the product's tiers no longer accommodate
+        # (e.g. the tiers changed after the link was created): fall back to the
+        # tier minimum, unlocked, rather than blocking the customer.
+        price = product_seat_based_with_min.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_seat_based_with_min], seats=2
+        )
+
+        checkout = await checkout_service.checkout_link_create(session, checkout_link)
+
+        assert checkout.seats == price.get_minimum_seats()
+        assert checkout.min_seats is None
+        assert checkout.max_seats is None
+
     async def test_valid_with_discount(
         self,
         save_fixture: SaveFixture,

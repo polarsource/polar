@@ -40,6 +40,8 @@ class CheckoutLink(TrialConfigurationMixin, MetadataMixin, RecordModel):
         Boolean, nullable=False, default=False
     )
 
+    # Preconfigured seat count for seat-based pricing. When set, checkout sessions
+    # created from this link are locked to this number of seats (min == max == seats).
     seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
     discount_id: Mapped[UUID | None] = mapped_column(

@@ -30,6 +30,7 @@ from polar.models import (
     User,
 )
 from polar.postgres import AsyncSession
+from polar.product.guard import SeatPrice, is_seat_price
 from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.service import product as product_service
 
@@ -155,6 +156,9 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                 session, checkout_link_create.discount_id, organization, products
             )
 
+        if checkout_link_create.seats is not None:
+            self._validate_seats_for_products(checkout_link_create.seats, products)
+
         checkout_link = CheckoutLink(
             client_secret=generate_token(prefix=CHECKOUT_LINK_CLIENT_SECRET_PREFIX),
             organization=organization,
@@ -228,12 +232,30 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                 )
                 checkout_link.discount = discount
 
+        # An explicit `seats` value is strict-validated against the (possibly
+        # updated) product set. A products-only change that leaves the existing lock
+        # invalid auto-clears it, mirroring how trial config is dropped above.
+        if "seats" in checkout_link_update.model_fields_set:
+            if checkout_link_update.seats is not None:
+                self._validate_seats_for_products(
+                    checkout_link_update.seats, checkout_link.products
+                )
+            checkout_link.seats = checkout_link_update.seats
+        elif (
+            checkout_link_update.products is not None
+            and checkout_link.seats is not None
+            and not self._seats_valid_for_products(
+                checkout_link.seats, checkout_link.products
+            )
+        ):
+            checkout_link.seats = None
+
         repository = CheckoutLinkRepository.from_session(session)
         return await repository.update(
             checkout_link,
             update_dict=checkout_link_update.model_dump(
                 exclude_unset=True,
-                exclude={"products", "discount_id"},
+                exclude={"products", "discount_id", "seats"},
                 by_alias=True,
             ),
         )
@@ -414,6 +436,73 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             )
 
         return discount
+
+    def _get_seat_price(self, product: Product) -> SeatPrice | None:
+        for price in product.prices:
+            if is_seat_price(price):
+                return price
+        return None
+
+    def _seats_valid_for_products(
+        self, seats: int, products: Sequence[Product]
+    ) -> bool:
+        """Whether `seats` fits the seat tiers of *every* product on the link.
+
+        Seat-count bounds are currency-independent, so no currency is needed.
+        """
+        for product in products:
+            seat_price = self._get_seat_price(product)
+            if seat_price is None:
+                return False
+            minimum_seats = seat_price.get_minimum_seats()
+            maximum_seats = seat_price.get_maximum_seats()
+            if seats < minimum_seats or (
+                maximum_seats is not None and seats > maximum_seats
+            ):
+                return False
+        return True
+
+    def _validate_seats_for_products(
+        self, seats: int, products: Sequence[Product]
+    ) -> None:
+        """Strict-validate a seat lock against every product, raising on mismatch."""
+        for product in products:
+            seat_price = self._get_seat_price(product)
+            if seat_price is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "seats"),
+                            "msg": (
+                                "Seats can only be preconfigured when all products "
+                                "use seat-based pricing."
+                            ),
+                            "input": seats,
+                        }
+                    ]
+                )
+            minimum_seats = seat_price.get_minimum_seats()
+            maximum_seats = seat_price.get_maximum_seats()
+            if seats < minimum_seats or (
+                maximum_seats is not None and seats > maximum_seats
+            ):
+                maximum_label = (
+                    str(maximum_seats) if maximum_seats is not None else "unlimited"
+                )
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "seats"),
+                            "msg": (
+                                f"Product '{product.name}' allows between "
+                                f"{minimum_seats} and {maximum_label} seats."
+                            ),
+                            "input": seats,
+                        }
+                    ]
+                )
 
 
 checkout_link = CheckoutLinkService(CheckoutLink)

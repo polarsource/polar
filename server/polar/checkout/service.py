@@ -707,8 +707,23 @@ class CheckoutService:
 
         seat_price = currency_prices.get_seat_price()
         seats = None
+        min_seats: int | None = None
+        max_seats: int | None = None
         if seat_price is not None:
             seats = seat_price.get_minimum_seats()
+            # Honor a seat lock preconfigured on the checkout link, but only if it
+            # still fits the product's current seat tiers. On drift (tiers changed
+            # since the link was created, or a different product was selected), fall
+            # back to the tier minimum so the customer is never blocked.
+            if checkout_link.seats is not None:
+                tier_minimum = seat_price.get_minimum_seats()
+                tier_maximum = seat_price.get_maximum_seats()
+                if checkout_link.seats >= tier_minimum and (
+                    tier_maximum is None or checkout_link.seats <= tier_maximum
+                ):
+                    seats = checkout_link.seats
+                    min_seats = checkout_link.seats
+                    max_seats = checkout_link.seats
 
         custom_price = currency_prices.get_custom_price()
         custom_amount: int | None = None
@@ -754,6 +769,8 @@ class CheckoutService:
             amount=amount,
             currency=currency,
             seats=seats,
+            min_seats=min_seats,
+            max_seats=max_seats,
             trial_interval=checkout_link.trial_interval,
             trial_interval_count=checkout_link.trial_interval_count,
             allow_discount_codes=checkout_link.allow_discount_codes,

@@ -6,9 +6,11 @@ from sqlalchemy import (
     TIMESTAMP,
     CheckConstraint,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     String,
     Text,
+    UniqueConstraint,
     Uuid,
     text,
 )
@@ -144,6 +146,28 @@ class CaseParticipant(RecordModel):
             "AND staff_user_id IS NULL AND organization_id IS NULL)",
             name="subject_matches_kind",
         ),
+        # At most one live participant per subject within a case.
+        Index(
+            "ix_case_participants_unique_organization",
+            "case_id",
+            "organization_id",
+            unique=True,
+            postgresql_where=text("organization_id IS NOT NULL AND deleted_at IS NULL"),
+        ),
+        Index(
+            "ix_case_participants_unique_staff_user",
+            "case_id",
+            "staff_user_id",
+            unique=True,
+            postgresql_where=text("staff_user_id IS NOT NULL AND deleted_at IS NULL"),
+        ),
+        Index(
+            "ix_case_participants_unique_customer",
+            "case_id",
+            "customer_id",
+            unique=True,
+            postgresql_where=text("customer_id IS NOT NULL AND deleted_at IS NULL"),
+        ),
     )
 
     case_id: Mapped[UUID] = mapped_column(
@@ -196,6 +220,11 @@ class CaseMessage(RecordModel):
     """
 
     __tablename__ = "case_messages"
+    __table_args__ = (
+        # Target for the case_attachments composite FK, so an attachment's
+        # message is guaranteed to belong to the same case.
+        UniqueConstraint("case_id", "id", name="case_messages_case_id_id_key"),
+    )
 
     case_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("cases.id", ondelete="cascade"), nullable=False, index=True
@@ -220,29 +249,31 @@ class CaseMessage(RecordModel):
     def case(cls) -> Mapped["Case"]:
         return relationship("Case", lazy="raise", back_populates="messages")
 
-    @declared_attr
-    def attachments(cls) -> Mapped[list["CaseAttachment"]]:
-        return relationship("CaseAttachment", lazy="raise", back_populates="message")
-
 
 class CaseAttachment(RecordModel):
     """A file attached to a case, optionally to a specific message.
 
     Carries its own ``audience`` (e.g. an internal evidence file vs. a
-    merchant-visible upload). Backed by the shared ``File`` model.
+    merchant-visible upload). Backed by the shared ``File`` model. When
+    ``message_id`` is set, the composite FK guarantees that message belongs
+    to the same case.
     """
 
     __tablename__ = "case_attachments"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["case_id", "message_id"],
+            ["case_messages.case_id", "case_messages.id"],
+            name="case_attachments_message_fkey",
+            ondelete="cascade",
+        ),
+    )
 
     case_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("cases.id", ondelete="cascade"), nullable=False, index=True
     )
     message_id: Mapped[UUID | None] = mapped_column(
-        Uuid,
-        ForeignKey("case_messages.id", ondelete="cascade"),
-        nullable=True,
-        default=None,
-        index=True,
+        Uuid, nullable=True, default=None, index=True
     )
     file_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("files.id"), nullable=False)
     audience: Mapped[list[CaseAudience]] = mapped_column(
@@ -254,7 +285,3 @@ class CaseAttachment(RecordModel):
     @declared_attr
     def case(cls) -> Mapped["Case"]:
         return relationship("Case", lazy="raise", back_populates="attachments")
-
-    @declared_attr
-    def message(cls) -> Mapped["CaseMessage | None"]:
-        return relationship("CaseMessage", lazy="raise", back_populates="attachments")

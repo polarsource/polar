@@ -78,6 +78,7 @@ def upgrade() -> None:
             ondelete="cascade",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("case_messages_pkey")),
+        sa.UniqueConstraint("case_id", "id", name=op.f("case_messages_case_id_id_key")),
     )
     op.create_index(
         op.f("ix_case_messages_case_id"), "case_messages", ["case_id"], unique=False
@@ -166,6 +167,27 @@ def upgrade() -> None:
         ["deleted_at"],
         unique=False,
     )
+    op.create_index(
+        "ix_case_participants_unique_organization",
+        "case_participants",
+        ["case_id", "organization_id"],
+        unique=True,
+        postgresql_where=sa.text("organization_id IS NOT NULL AND deleted_at IS NULL"),
+    )
+    op.create_index(
+        "ix_case_participants_unique_staff_user",
+        "case_participants",
+        ["case_id", "staff_user_id"],
+        unique=True,
+        postgresql_where=sa.text("staff_user_id IS NOT NULL AND deleted_at IS NULL"),
+    )
+    op.create_index(
+        "ix_case_participants_unique_customer",
+        "case_participants",
+        ["case_id", "customer_id"],
+        unique=True,
+        postgresql_where=sa.text("customer_id IS NOT NULL AND deleted_at IS NULL"),
+    )
     op.create_table(
         "case_attachments",
         sa.Column("case_id", sa.Uuid(), nullable=False),
@@ -190,9 +212,9 @@ def upgrade() -> None:
             ["file_id"], ["files.id"], name=op.f("case_attachments_file_id_fkey")
         ),
         sa.ForeignKeyConstraint(
-            ["message_id"],
-            ["case_messages.id"],
-            name=op.f("case_attachments_message_id_fkey"),
+            ["case_id", "message_id"],
+            ["case_messages.case_id", "case_messages.id"],
+            name=op.f("case_attachments_message_fkey"),
             ondelete="cascade",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("case_attachments_pkey")),
@@ -262,6 +284,15 @@ def downgrade() -> None:
         op.f("ix_case_participants_created_at"), table_name="case_participants"
     )
     op.drop_index(op.f("ix_case_participants_case_id"), table_name="case_participants")
+    op.drop_index(
+        "ix_case_participants_unique_customer", table_name="case_participants"
+    )
+    op.drop_index(
+        "ix_case_participants_unique_staff_user", table_name="case_participants"
+    )
+    op.drop_index(
+        "ix_case_participants_unique_organization", table_name="case_participants"
+    )
     op.drop_table("case_participants")
     op.drop_index(op.f("ix_case_messages_type"), table_name="case_messages")
     op.drop_index(op.f("ix_case_messages_deleted_at"), table_name="case_messages")

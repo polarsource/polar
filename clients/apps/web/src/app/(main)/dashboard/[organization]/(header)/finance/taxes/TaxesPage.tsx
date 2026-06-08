@@ -194,22 +194,23 @@ export default function TaxesPage({
         >
           <Box display="flex" flexDirection="column" rowGap="xs">
             <Text variant="body" as="h2">
-              Merchant of record
+              Merchant of Record
             </Text>
             <Text variant="body" color="muted">
               Polar collects and remits sales taxes for you automatically. No
               need for you to register or file in any jurisdictions.
             </Text>
           </Box>
-          <a
-            href="https://polar.sh/docs/merchant-of-record/introduction"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button variant="default" size="sm">
+
+          <Button variant="default" asChild>
+            <a
+              href="https://polar.sh/docs/merchant-of-record/introduction"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               Learn more
-            </Button>
-          </a>
+            </a>
+          </Button>
         </Box>
         <Box
           display="flex"

@@ -1227,7 +1227,13 @@ class CheckoutService:
             raise NotImplementedError()
 
         product_price = checkout.product_price
-        if product_price.is_archived:
+        # If a payment has already been captured (e.g. `charge.succeeded`
+        # webhook), the merchant has already received funds and we must
+        # fulfill regardless of whether the price was archived between
+        # checkout creation and capture. The archived-price check still
+        # guards pre-charge paths (free checkouts, setup intents) where
+        # no money has been collected yet.
+        if product_price.is_archived and payment is None:
             raise ArchivedPriceCheckout(checkout)
 
         product = checkout.product

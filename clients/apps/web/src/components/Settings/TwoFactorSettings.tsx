@@ -6,6 +6,7 @@ import {
   useTOTPStatus,
   useTOTPDelete,
 } from '@/hooks'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { Button } from '@polar-sh/orbit'
 import ListGroup from '@polar-sh/ui/components/atoms/ListGroup'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
@@ -14,6 +15,7 @@ import { useState } from 'react'
 import TOTPSetupModal from './TOTPSetupModal'
 import BackupCodesModal from './BackupCodesModal'
 import BackupCodesRegenerateModal from './BackupCodesRegenerateModal'
+import { toast } from '../Toast/use-toast'
 import { KeyRoundIcon, ShieldCheckIcon } from 'lucide-react'
 
 const AuthenticationMethod = ({
@@ -76,9 +78,18 @@ const TwoFactorSettings = () => {
   const [newBackupCodes, setNewBackupCodes] = useState<string[] | null>(null)
 
   const handleDeleteTOTP = async () => {
-    await totpDelete.mutateAsync()
+    const { error } = await totpDelete.mutateAsync()
+    if (error) {
+      toast({
+        title: 'Error',
+        description: extractApiErrorMessage(error),
+        variant: 'error',
+      })
+      return
+    }
     await totpStatus.refetch()
     hideDeleteConfirmModal()
+    toast({ title: 'Two-factor authentication disabled' })
   }
 
   return (
@@ -132,9 +143,18 @@ const TwoFactorSettings = () => {
                 ) : (
                   <Button
                     onClick={async () => {
-                      const result = await backupCodesEnroll.mutateAsync()
-                      if (result.data?.codes) {
-                        setNewBackupCodes(result.data.codes)
+                      const { data, error } =
+                        await backupCodesEnroll.mutateAsync()
+                      if (error) {
+                        toast({
+                          title: 'Error',
+                          description: extractApiErrorMessage(error),
+                          variant: 'error',
+                        })
+                        return
+                      }
+                      if (data?.codes) {
+                        setNewBackupCodes(data.codes)
                         await backupCodesStatus.refetch()
                         showBackupCodesModal()
                       }
@@ -156,9 +176,17 @@ const TwoFactorSettings = () => {
         onEnabled={async () => {
           hideTOTPModal()
           await totpStatus.refetch()
-          const result = await backupCodesEnroll.mutateAsync()
-          if (result.data?.codes) {
-            setNewBackupCodes(result.data.codes)
+          const { data, error } = await backupCodesEnroll.mutateAsync()
+          if (error) {
+            toast({
+              title: 'Error',
+              description: extractApiErrorMessage(error),
+              variant: 'error',
+            })
+            return
+          }
+          if (data?.codes) {
+            setNewBackupCodes(data.codes)
             await backupCodesStatus.refetch()
             showBackupCodesModal()
           }
@@ -179,12 +207,20 @@ const TwoFactorSettings = () => {
         isShown={isBackupCodesRegenerateModalShown}
         hide={hideBackupCodesRegenerateModal}
         onRegenerate={async () => {
-          const result = await backupCodesEnroll.mutateAsync()
-          if (result.data?.codes) {
-            setNewBackupCodes(result.data.codes)
+          const { data, error } = await backupCodesEnroll.mutateAsync()
+          if (error) {
+            toast({
+              title: 'Error',
+              description: extractApiErrorMessage(error),
+              variant: 'error',
+            })
+            return null
+          }
+          if (data?.codes) {
+            setNewBackupCodes(data.codes)
             await backupCodesStatus.refetch()
             showBackupCodesModal()
-            return result.data
+            return data
           }
           return null
         }}

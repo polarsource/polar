@@ -1069,7 +1069,9 @@ async def _subscribe_seeded_orgs_to_polar_self(
     return subscribed
 
 
-async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
+async def create_seed_data(
+    session: AsyncSession, redis: Redis, *, skip_tinybird: bool = False
+) -> None:
     """Create sample data for development and testing."""
 
     # Check if seed data already exists
@@ -1924,9 +1926,10 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     pending_tinybird_events.extend(inserted)
                     pending_tinybird_ancestors.update(ancestors_by_event)
 
-        await _flush_tinybird_events(
-            pending_tinybird_events, pending_tinybird_ancestors
-        )
+        if not skip_tinybird:
+            await _flush_tinybird_events(
+                pending_tinybird_events, pending_tinybird_ancestors
+            )
 
         # Create real Subscription rows for acme-corp customers so that PG-based
         # metrics (MRR, Trial MRR, Active Subscriptions) have data to display.
@@ -2197,7 +2200,7 @@ def _write_webhook_secret_to_env(secret: str) -> None:
 
 
 async def create_single_org_seed(
-    session: AsyncSession, redis: Redis, slug: str
+    session: AsyncSession, redis: Redis, slug: str, *, skip_tinybird: bool = False
 ) -> None:
     """Create a single organization with products, customers, and timeline events."""
     name = slug.replace("-", " ").title()
@@ -2346,7 +2349,10 @@ async def create_single_org_seed(
                 pending_tinybird_events.extend(inserted)
                 pending_tinybird_ancestors.update(ancestors_by_event)
 
-    await _flush_tinybird_events(pending_tinybird_events, pending_tinybird_ancestors)
+    if not skip_tinybird:
+        await _flush_tinybird_events(
+            pending_tinybird_events, pending_tinybird_ancestors
+        )
 
     await session.commit()
     print(f"✅ Created organization '{name}' ({slug})")
@@ -2363,6 +2369,11 @@ def seeds_load(
         "--new-org",
         help="Create a single new organization with this slug, with products, customers, and timeline events.",
     ),
+    skip_tinybird: bool = typer.Option(
+        False,
+        "--skip-tinybird",
+        help="Skip seeding events to Tinybird.",
+    ),
 ) -> None:
     """Load sample/test data into the database."""
     if ctx.invoked_subcommand is not None:
@@ -2375,9 +2386,11 @@ def seeds_load(
             sessionmaker = create_async_sessionmaker(engine)
             async with sessionmaker() as session:
                 if new_org:
-                    await create_single_org_seed(session, redis, new_org)
+                    await create_single_org_seed(
+                        session, redis, new_org, skip_tinybird=skip_tinybird
+                    )
                 else:
-                    await create_seed_data(session, redis)
+                    await create_seed_data(session, redis, skip_tinybird=skip_tinybird)
 
     asyncio.run(run())
 

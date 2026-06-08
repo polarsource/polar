@@ -16,6 +16,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
+from polar.kit.visibility import Visibility
 from polar.models import Benefit, Organization, ProductBenefit, User
 from polar.models.benefit import BenefitType
 from polar.models.webhook_endpoint import WebhookEventType
@@ -41,6 +42,7 @@ class BenefitService:
         organization_id: Sequence[uuid.UUID] | None = None,
         id_in: Sequence[uuid.UUID] | None = None,
         id_not_in: Sequence[uuid.UUID] | None = None,
+        visibility: Sequence[Visibility] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[BenefitSortProperty]] = [
@@ -68,6 +70,9 @@ class BenefitService:
 
         if query is not None:
             statement = statement.where(Benefit.description.ilike(f"%{query}%"))
+
+        if visibility is not None:
+            statement = statement.where(Benefit.visibility.in_(visibility))
 
         if metadata is not None:
             statement = apply_metadata_clause(Benefit, statement, metadata)

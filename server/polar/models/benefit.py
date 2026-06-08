@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 from uuid import UUID
 
 from alembic_utils.pg_function import PGFunction
@@ -13,7 +13,8 @@ from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
-from polar.kit.visibility import VisibilityMixin
+from polar.kit.schemas import SetSchemaReference
+from polar.kit.visibility import Visibility, VisibilityMixin
 
 if TYPE_CHECKING:
     from polar.benefit.strategies import BenefitProperties
@@ -25,6 +26,9 @@ class TaxApplicationMustBeSpecified(PolarError):
         self.type = type
         message = "The tax application should be specified for this type."
         super().__init__(message)
+
+
+BenefitVisibility = Annotated[Visibility, SetSchemaReference("BenefitVisibility")]
 
 
 class BenefitType(StrEnum):

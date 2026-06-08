@@ -144,6 +144,7 @@ Individual payment transaction.
 | Field | Type | Description |
 |-------|------|-------------|
 | `email`, `name` | str | Contact info |
+| `billing_name` | str | Name for invoices (falls back to `name`) |
 | `stripe_customer_id` | str | Stripe link |
 | `billing_address` | Address | Stored address |
 | `tax_id` | str | For tax compliance |

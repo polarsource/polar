@@ -61,5 +61,5 @@ On the next Terraform run, the new variable will be copied to Render and made av
 If you need to add an environment variable to the frontend, follow the pattern in:
 
 - `terraform/modules/vercel/variables.tf` for shared config/secrets
-- `terraform/{production,sandbox}/vercel.tf` for environment-specific variables
-- `terraform/global/{production,sandbox}.tf` for Terraform Cloud variables (prefixed with `vercel_`)
+- `terraform/{production,sandbox,test}/vercel.tf` for environment-specific variables
+- `terraform/global/{production,sandbox,test}.tf` for Terraform Cloud variables (prefixed with `vercel_`)

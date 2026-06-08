@@ -37,9 +37,11 @@ export const getSeatPrice = (
   }
 
   return (
-    prices.find(
-      (price): price is schemas['ProductPriceSeatBased'] =>
-        price.amount_type === 'seat_based',
-    ) ?? null
+    prices
+      .filter((price) => price.price_currency === checkout.currency)
+      .find(
+        (price): price is schemas['ProductPriceSeatBased'] =>
+          price.amount_type === 'seat_based',
+      ) ?? null
   )
 }

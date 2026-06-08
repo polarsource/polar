@@ -220,9 +220,9 @@ Core subscription operations:
 create_or_update_from_checkout(checkout, payment_method) → (Subscription, created)
 
 # Updates
-update_product(subscription, product_id, proration_behavior)
+update_product(subscription, product_id, proration_behavior, discount=None)
 update_seats(subscription, seats, proration_behavior)
-update_discount(subscription, discount_id)
+update_discount(subscription, discount)  # discount: UUID | Literal["unset"]
 update_trial(subscription, trial_end)
 
 # Lifecycle

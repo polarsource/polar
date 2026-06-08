@@ -90,7 +90,7 @@ class BillingEntryService:
         ):
             static_price = cast(StaticPrice, entry.product_price)
             static_line_item = await self._get_static_price_line_item(
-                session, static_price, entry
+                session, static_price, entry, seats=subscription.seats
             )
             yield static_line_item, [entry.id]
 
@@ -182,7 +182,12 @@ class BillingEntryService:
             yield metered_line_item, pending_entries_ids
 
     async def _get_static_price_line_item(
-        self, session: AsyncSession, price: StaticPrice, entry: BillingEntry
+        self,
+        session: AsyncSession,
+        price: StaticPrice,
+        entry: BillingEntry,
+        *,
+        seats: int | None,
     ) -> StaticLineItem:
         assert entry.amount is not None
         assert entry.currency is not None
@@ -195,12 +200,14 @@ class BillingEntryService:
         end = format_date(entry.end_timestamp.date(), locale="en_US")
         amount = entry.amount
 
+        price_label = OrderItem.format_price_label(product, price, seats=seats)
+
         match entry.direction:
             case BillingEntryDirection.credit:
-                label = f"Remaining time on {product.name} — From {start} to {end}"
+                label = f"Remaining time on {price_label} — From {start} to {end}"
                 amount = -amount
             case BillingEntryDirection.debit:
-                label = f"{product.name} — From {start} to {end}"
+                label = f"{price_label} — From {start} to {end}"
                 amount = amount
 
         return StaticLineItem(

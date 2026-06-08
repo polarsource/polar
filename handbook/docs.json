@@ -86,7 +86,8 @@
               "engineering/design-documents/event-storage",
               "engineering/design-documents/platform-api",
               "engineering/design-documents/rbac",
-              "engineering/design-documents/polar-for-polar"
+              "engineering/design-documents/polar-for-polar",
+              "engineering/design-documents/case-management"
             ]
           },
           "engineering/tech-notes",

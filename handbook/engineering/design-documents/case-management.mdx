@@ -1,0 +1,177 @@
+---
+title: "Case Management"
+description: "A shared case primitive — messaging thread, participants, attachments, open/closed — underpinning review appeals, disputes, and future refund requests"
+---
+
+<Info>
+**Status**: Draft — addresses [polarsource/feedback#151](https://github.com/polarsource/feedback/issues/151)
+
+**Created**: 2026-06-08
+
+**Comments**: Open for debate — notably the merchant access level (owner-only vs owner+admin), the `event_type` vocabulary, and whether to introduce case assignment.
+
+</Info>
+
+## The bet
+
+Our highest-value next support/risk flows — **dispute management, review appeals, customer refund requests** — all share one shape: a stateful domain object with structured happy-path actions, plus an inevitable need for free-text back-and-forth when the happy path doesn't hold.
+
+Today that free-text escape hatch is support email / Plain, which means every in-app object has a shadow conversation living *outside* Polar. As the organization-appeals experience painfully showed, if it doesn't resolve in-app, the conversation moves to support anyway.
+
+The bet: a thin shared **`case`** primitive (a messaging thread + participants + attachments + open/closed state, with per-recipient visibility) absorbs that escape hatch. Everything type-specific — deadlines, state machines, structured forms, which actions are available when — stays on the **domain object** and is derived from the **case type**, never from the case itself. The merchant-visible UX is the structured action, with messaging embedded inside it as an affordance, not a separate surface.
+
+## Goals
+
+- Review appeals (and later disputes) are fully resolvable in Polar — including the messy cases — without falling back to support email.
+- A shared, intentionally thin `case` primitive underpins every type.
+- The data model accommodates a **customer** participant for future three-way conversations (refund requests).
+
+## Non-goals
+
+- Any email integration (inbound parsing, reply-to). All communication is in-app.
+- Refund requests themselves — included only to inform the data model.
+- A notification-system refactor. We add a couple of case-activity notification types and stop there.
+
+## Scope & sequencing
+
+We **flip** the issue's default and start with **review appeals**, not chargebacks, then iterate.
+
+Rationale:
+- Appeals already have a stateful domain object (`OrganizationReview`), a merchant-facing flow, and the proven pain point — but the flow is single-shot (one `appeal_reason`, AI re-review, binary verdict; on denial the merchant is dead-ended to "contact support", with no Plain ticket even created). Adding the thread is the smallest change that realizes the bet on a real pain point.
+- Chargebacks are received-only today (`Dispute` mirrors Stripe/ChargebackStop state; there is **no** merchant action, evidence, or challenge flow). Doing chargebacks first would mean building the entire dispute-response flow *and* the case primitive at once — a bigger, riskier bet.
+- We **backtest** the abstraction against disputes before generalizing (see below). The check passes, so the primitive is de-risked without building disputes yet.
+
+## Core concepts
+
+A case is **thin and type-agnostic**: a thread of messages, a list of participants, attachments, and an `open/closed` state. It knows nothing about any domain type beyond a `type` discriminator.
+
+- **The domain object owns its status and its link to the case.** `case.status` is *only* a conversation-lifecycle flag (`open`/`closed`), fully orthogonal to domain resolution. An appeal can be `REJECTED` on the domain while its case is reopened and chatting; the org stays `DENIED` until someone takes the actual approve action.
+- **Structured action inputs live on the domain object; free-text lives in the case.** `appeal_reason` is the structured input to the "submit appeal" action (like dispute *evidence* will be) — it stays a first-class domain field and is **not** duplicated into messages. The timeline UI composes (domain action inputs) + (case messages).
+- **Reopen is delegated to the type.** The generic case only exposes the hook; whether an inbound event reopens a closed case is a type-specific policy keyed on `(case_type, author_kind)`. For `review_appeal`: a *merchant* message reopens; a Polar *internal note* does not. Reopening is inert — it does not touch the domain object until an explicit action (a domain-state transition) is taken.
+- **Close on resolution; reopen on a qualifying message.** No separate reopen button needed.
+- **The thread is the audit log.** AI verdicts, approve/deny decisions, *and* lifecycle transitions (`opened`/`closed`/`reopened`) are all `author_kind=system` messages carrying an `event_type`. `case.status` is a denormalized current-state for cheap querying; the thread is the source of truth for history.
+
+## Data model (v1)
+
+```
+cases
+  id
+  type            enum: review_appeal            # later: dispute, refund_request
+  status          enum: open | closed            # conversation lifecycle only
+  created_at, updated_at                          # updated_at = last activity
+  closed_at       (nullable, convenience = most-recent close)
+
+organization_reviews                             # existing table
+  + case_id       FK cases (unique, nullable)    # domain owns the link
+    appeal_reason (unchanged — structured action input)
+
+case_participants
+  id, case_id
+  kind            enum: polar | merchant | customer
+  organization_id (nullable)   # kind=merchant — org-level; access gated by role
+  user_id         (nullable)   # kind=polar — staff (User.is_admin)
+  customer_id     (nullable)   # kind=customer — refunds, later
+  last_read_at    (nullable)   # → unread badges + "new message" notifications
+  created_at
+  CHECK: exactly one subject column set, matching kind
+
+case_messages
+  id, case_id
+  author_kind     enum: polar | merchant | system
+  author_user_id  (nullable — null for system/AI)
+  body            text
+  visibility      enum: internal | merchant       # generalizes to a recipient set for customer
+  event_type      (nullable — set for system msgs: opened | closed | reopened | ...)
+  created_at
+
+case_attachments
+  id, case_id
+  message_id      (nullable)
+  s3_ref
+  visibility      enum: internal | merchant
+  created_at
+```
+
+### Why `case_id` on the domain object (and not typed columns on `case`)
+
+Keeps the `case` table 100% generic — it never learns about any type. Each new type adds a `case_id` column to *its own* table, so "each type owns its link." case→domain resolves via the `type` registry; domain→case is a plain FK. Preserves FK integrity without a per-type column or a CHECK on the case table.
+
+## Review-appeal flow
+
+```
+appeal submitted
+  → case(type=review_appeal) created, linked via organization_reviews.case_id
+  → appeal_reason stored on OrganizationReview (structured input)
+  → AI auto-review runs (fast-track — unchanged; our lever for enabling merchants fast)
+      ├─ APPROVE → domain activated; verdict posted as system message; case closed
+      └─ DENY    → verdict posted as system message; case STAYS OPEN
+                   merchant can reply (free-text) → notifies Polar staff in backoffice
+                   staff converse; staff can take the approve action → closes case
+```
+
+The change vs. today: denial stops being a "contact support" dead-end and becomes an open conversation a human can still flip to approved — the escape hatch, realized on the smallest surface.
+
+## Access control
+
+Polar has a real role model: `OrganizationRole = owner | admin | member` (one owner per org, DB-enforced), and Polar staff are `User.is_admin`. So access is **enforced in the backend**, not UI-gated.
+
+- Merchant participation is modeled **org-level** (one `kind=merchant` row referencing `organization_id`); the **access filter** runs at the service layer.
+- Polar participant references a staff `user_id` (disambiguated by `kind=polar`).
+
+## Notifications
+
+Delivery is **not in-app only** — case activity must reach merchants by **email** too, at least until the notification system is refactored (out of scope here). We're equipped for this without new infra: the existing pipeline already ships email alongside in-app (and web push). Every `NotificationType` bundles its email (`subject()` + react-email template via `to_email()`), and the `notifications.send` actor emails `notif.user.email` (`notifications/tasks/email.py`). Adding a case notification = a new `NotificationType` + payload + template; we ride the current system as-is, with **no dependency on the refactor**.
+
+No refactor. Minimal set for v1:
+- "New message on your case" → merchant (in-app + email).
+- "Appeal denied — you can respond" → merchant (in-app + email; replaces the dead-end).
+
+Notes:
+- Notifications are **per-user** (`Notification.user_id`); merchant-side events fan out to the relevant org members via the existing `send_to_org_members` path (respects notification settings).
+- All existing types are org/maintainer-side — there is **no customer-facing notification type yet**. Out of v1 scope, but it'll matter when refund requests bring the customer participant in.
+- `case_participants.last_read_at` backs unread state and notification targeting.
+
+## Backoffice surface
+
+The Polar participant's UI is **backoffice** (not Plain). For appeals, this lives on the **existing org-review screen**. We expect one type-specific UI per case type over the shared primitive.
+
+## Chargeback backtest
+
+Mapping v1 onto the existing `Dispute` model (`models/dispute.py`, `dispute/service.py`) — the abstraction holds. Verified against code; the table separates what exists today from what disputes would add.
+
+| Case concept | Disputes | Status |
+|---|---|---|
+| Link | `dispute.case_id`, `case.type='dispute'` | net-new (consistent with option B) |
+| Domain owns status | `DisputeStatus` (`prevented`, `early_warning`, `needs_response`, `under_review`, `won`, `lost`) stays on `Dispute` | **exists** |
+| Structured action input | dispute **evidence** + accept/challenge choice, on the domain | **net-new** — no merchant action/evidence flow exists today; the service is pure webhook upsert |
+| Deadlines from type | Stripe's evidence deadline (`evidence_details.due_by`), rendered by the type | **net-new** — not persisted today; `Dispute` has no deadline/evidence fields |
+| External transitions | Stripe/ChargebackStop webhooks post status changes as `system` messages | ingestion **exists** (`upsert_from_stripe`, `upsert_from_chargeback_stop`); the system-message bridge is net-new |
+| Reopen policy per type | `won/lost` are effectively terminal; **`prevented` already reopens** at the domain level when prevention came too late (`service.py:147-153`) | **exists** — and confirms reopen is genuinely domain/type-driven, not just conversational |
+| Participants | merchant (org) + Polar; **no customer** (cardholder disputes via their bank) | conceptual |
+
+Frictions to handle in dispute-type behavior (none break the primitive):
+1. **Evidence files ≠ conversational attachments.** Evidence must sync to Stripe and submit before a deadline; conversational attachments don't. Two file lifecycles — keep them distinct.
+2. **No AI first-responder.** The first move is the merchant choosing accept vs. challenge. Confirms AI auto-review is appeal-type behavior, not part of the primitive.
+3. **Domain-level reopen is real.** Unlike the appeal case (where reopen is purely conversational until a human acts), a `prevented` dispute can be reopened by Stripe itself. The type's reopen policy must reconcile externally-driven domain reopens with the conversation's open/closed state.
+
+The genuinely new shapes disputes add — "structured action input that syncs to an external processor" and "externally-driven domain reopens" — are domain/type territory, not the case's problem. The thin case primitive is unaffected.
+
+## Resolved decisions
+
+- Appeals first; backtest disputes (done — passes); iterate after.
+- Domain object owns status **and** the case link (`case_id` on the domain).
+- Case is thin/generic; `status` = open/closed conversation flag only.
+- Reopen delegated to the type, keyed on `(case_type, author_kind)`; inert until a domain action.
+- Close on resolution; reopen on qualifying message.
+- `appeal_reason` stays a domain field — not duplicated into messages.
+- AI verdicts, decisions, and lifecycle events are `system` messages; lifecycle carries `event_type`.
+- AI auto-review stays as the fast-track first responder; denial keeps the case open.
+- Participants table in v1: org-level merchant, `kind=polar` staff `user_id`, customer deferred; `last_read_at` for read state.
+- No notification refactor — two new case-activity types.
+- Backoffice on the org-review screen; one UI per type.
+
+## Open questions
+
+- Owner-only vs owner+admin for merchant access
+- Exact `event_type` vocabulary beyond `opened/closed/reopened`.
+- Whether Polar wants case **assignment** (single staff owner) — would give the `kind=polar` participant row more weight;

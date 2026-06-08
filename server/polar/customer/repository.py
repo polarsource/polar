@@ -97,6 +97,12 @@ class CustomerRepository(
             if changed:
                 updated_fields["name"] = value
 
+            # `billing_name` is exposed via a property; the mapped column
+            # attribute is `_billing_name`, so inspect that for changes.
+            changed, value = _get_changed_value(inspection, "_billing_name")
+            if changed:
+                updated_fields["billing_name"] = value
+
             changed, value = _get_changed_value(inspection, "email")
             if changed:
                 updated_fields["email"] = value

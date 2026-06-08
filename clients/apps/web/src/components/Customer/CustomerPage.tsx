@@ -575,6 +575,16 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 }
               />
               <DetailRow
+                label="Created At"
+                value={<FormattedDateTime datetime={customer.created_at} />}
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-4">
+            <h4 className="text-lg">Billing Information</h4>
+            <div className="flex flex-col">
+              <DetailRow label="Billing Name" value={customer.billing_name} />
+              <DetailRow
                 label="Tax ID"
                 value={
                   customer.tax_id ? (
@@ -591,15 +601,6 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                   )
                 }
               />
-              <DetailRow
-                label="Created At"
-                value={<FormattedDateTime datetime={customer.created_at} />}
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-4">
-            <h4 className="text-lg">Billing Address</h4>
-            <div className="flex flex-col">
               <DetailRow
                 label="Line 1"
                 value={customer.billing_address?.line1}
@@ -627,16 +628,18 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
               />
             </div>
           </div>
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-row items-center justify-between gap-2">
-              <h3 className="text-lg">Metadata</h3>
+          {Object.keys(customer.metadata).length > 0 && (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-row items-center justify-between gap-2">
+                <h3 className="text-lg">Metadata</h3>
+              </div>
+              <div className="flex flex-col">
+                {Object.entries(customer.metadata).map(([key, value]) => (
+                  <DetailRow key={key} label={key} value={value} />
+                ))}
+              </div>
             </div>
-            <div className="flex flex-col">
-              {Object.entries(customer.metadata).map(([key, value]) => (
-                <DetailRow key={key} label={key} value={value} />
-              ))}
-            </div>
-          </div>
+          )}
         </ShadowBox>
       </TabsContent>
       <CustomerUsageView

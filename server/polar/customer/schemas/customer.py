@@ -219,6 +219,13 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         examples=["individual"],
     )
     name: str | None = Field(description=_name_description, examples=[_name_example])
+    billing_name: str | None = Field(
+        description=(
+            "The name that should appear on the customer's invoices. "
+            "Falls back to the customer name when not explicitly set."
+        ),
+        examples=[_name_example],
+    )
     billing_address: Address | None
     tax_id: TaxID | None
     locale: str | None = None

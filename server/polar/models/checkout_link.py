@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, String, Uuid
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Uuid
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -39,6 +39,8 @@ class CheckoutLink(TrialConfigurationMixin, MetadataMixin, RecordModel):
     require_billing_address: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )
+
+    seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
     discount_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True

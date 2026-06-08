@@ -10,8 +10,8 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
-    from polar.models.case import Case
     from polar.models.organization import Organization
+    from polar.models.support_case import Case
 
 
 class OrganizationReview(RecordModel):

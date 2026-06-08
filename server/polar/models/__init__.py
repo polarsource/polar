@@ -8,13 +8,6 @@ from .benefit import Benefit
 from .benefit_grant import BenefitGrant
 from .billing_entry import BillingEntry
 from .campaign import Campaign
-from .case import (
-    Case,
-    CaseAttachment,
-    CaseMessage,
-    CaseParticipant,
-    CaseType,
-)
 from .checkout import Checkout
 from .checkout_link import CheckoutLink
 from .checkout_link_product import CheckoutLinkProduct
@@ -91,6 +84,13 @@ from .subscription import Subscription
 from .subscription_meter import SubscriptionMeter
 from .subscription_product_price import SubscriptionProductPrice
 from .subscription_update import SubscriptionUpdate
+from .support_case import (
+    Case,
+    CaseAttachment,
+    CaseMessage,
+    CaseParticipant,
+    CaseType,
+)
 from .totp_enrollment import TOTPEnrollment
 from .transaction import Transaction
 from .trial_redemption import TrialRedemption

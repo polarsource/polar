@@ -240,3 +240,36 @@ class TestGetTaxSummary:
 
         assert json["jurisdiction_count"] == 1  # US-CA, despite two currencies
         assert json["order_count"] == 2
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.transactions_read}))
+    async def test_representative_currency_is_deterministic_on_ties(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Two jurisdictions with equal-magnitude tax but different currencies:
+        # the representative currency must be chosen deterministically (by
+        # currency code as a tiebreaker), not arbitrarily. `eur` < `usd`.
+        await create_tax_transaction(
+            save_fixture,
+            order=await create_order(save_fixture, product=product, customer=customer),
+            tax_amount=100,
+            tax_country="US",
+            tax_state="CA",
+            currency="usd",
+        )
+        await create_tax_transaction(
+            save_fixture,
+            order=await create_order(save_fixture, product=product, customer=customer),
+            tax_amount=100,
+            tax_country="US",
+            tax_state="NY",
+            currency="eur",
+        )
+
+        response = await client.get("/v1/taxes/summary")
+        assert response.status_code == 200
+        assert response.json()["currency"] == "eur"

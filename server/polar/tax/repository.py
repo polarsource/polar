@@ -121,11 +121,15 @@ class TaxJurisdictionRepository(RepositoryBase[Transaction]):
         # total without double counting.
         return select(
             # Representative currency: the one from the largest tax bucket,
-            # matching the breakdown's default `-tax_amount` ordering. NULL
-            # (no rows) is handled by the caller.
+            # matching the breakdown's default `-tax_amount` ordering. The
+            # currency code is a deterministic tiebreaker so equal-magnitude
+            # buckets in different currencies resolve to a stable result rather
+            # than an arbitrary one. NULL (no rows) is handled by the caller.
             func.array_agg(
                 aggregate_order_by(
-                    grouped.c.currency, func.abs(grouped.c.tax_amount).desc()
+                    grouped.c.currency,
+                    func.abs(grouped.c.tax_amount).desc(),
+                    grouped.c.currency.asc(),
                 )
             )[1].label("currency"),
             func.coalesce(func.sum(grouped.c.tax_amount), 0).label("tax_amount"),
@@ -134,7 +138,7 @@ class TaxJurisdictionRepository(RepositoryBase[Transaction]):
             # splits each one by currency, so counting grouped rows would
             # over-count a jurisdiction that remitted tax in several currencies.
             # Count distinct `(country, state)` pairs instead.
-            func.count(
-                func.distinct(tuple_(grouped.c.country, grouped.c.state))
-            ).label("jurisdiction_count"),
+            func.count(func.distinct(tuple_(grouped.c.country, grouped.c.state))).label(
+                "jurisdiction_count"
+            ),
         ).select_from(grouped)

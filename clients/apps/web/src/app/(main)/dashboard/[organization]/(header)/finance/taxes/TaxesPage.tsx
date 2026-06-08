@@ -3,12 +3,14 @@
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useTaxJurisdictions, useTaxSummary } from '@/hooks/queries'
+import { useDismissed } from '@/hooks/useDismissed'
 import {
   DataTableSortingState,
   sortingQueryParamToState,
   sortingStateToQueryParam,
 } from '@/utils/datatable'
 import { fromISODate, toISODate } from '@/utils/metrics'
+import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
@@ -37,7 +39,9 @@ const columns: DataTableColumnDef<schemas['TaxJurisdiction']>[] = [
       <Box display="flex" flexDirection="column" rowGap="xs">
         <Text>{original.state_name ?? original.country_name}</Text>
         <Text color="muted">
-          {original.country_name} · {original.country}
+          {original.state_name
+            ? `${original.country_name} · ${original.country}`
+            : original.country}
         </Text>
       </Box>
     ),
@@ -177,41 +181,57 @@ export default function TaxesPage({
 
   const jurisdictions = useMemo(() => data?.items ?? [], [data])
 
+  const { isDismissed: isMoRDismissed, dismiss: dismissMoR } = useDismissed(
+    `mor_banner:${organization.id}`,
+  )
+
   return (
     <DashboardBody wrapperClassName="max-w-(--breakpoint-lg)!">
       <Box display="flex" flexDirection="column" rowGap="2xl">
-        <Box
-          display="flex"
-          flexDirection="column"
-          alignItems="start"
-          columnGap="l"
-          rowGap="l"
-          borderRadius="l"
-          borderWidth={1}
-          borderStyle="solid"
-          borderColor="border-primary"
-          padding="xl"
-        >
-          <Box display="flex" flexDirection="column" rowGap="xs">
-            <Text variant="body" as="h2">
-              Merchant of Record
-            </Text>
-            <Text variant="body" color="muted">
-              Polar collects and remits sales taxes for you automatically. No
-              need for you to register or file in any jurisdictions.
-            </Text>
-          </Box>
+        {!isMoRDismissed && (
+          <Box
+            position="relative"
+            display="flex"
+            flexDirection="column"
+            alignItems="start"
+            columnGap="l"
+            rowGap="l"
+            borderRadius="l"
+            borderWidth={1}
+            borderStyle="solid"
+            borderColor="border-primary"
+            padding="xl"
+          >
+            <Box display="flex" flexDirection="column" rowGap="xs">
+              <Text variant="body" as="h2">
+                Merchant of Record
+              </Text>
+              <Text variant="body" color="muted">
+                Polar collects and remits sales taxes for you automatically. No
+                need for you to register or file in any jurisdictions.
+              </Text>
+            </Box>
 
-          <Button variant="default" asChild>
-            <a
-              href="https://polar.sh/docs/merchant-of-record/introduction"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Button variant="default" asChild>
+              <a
+                href="https://polar.sh/docs/merchant-of-record/introduction"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Learn more
+              </a>
+            </Button>
+
+            <button
+              type="button"
+              onClick={dismissMoR}
+              aria-label="Dismiss"
+              className="dark:text-polar-500 dark:hover:text-polar-300 absolute top-6 right-6 cursor-pointer text-gray-400 transition-colors hover:text-gray-600"
             >
-              Learn more
-            </a>
-          </Button>
-        </Box>
+              <CloseOutlined fontSize="small" />
+            </button>
+          </Box>
+        )}
         <Box
           display="flex"
           flexDirection={{ base: 'column', md: 'row' }}

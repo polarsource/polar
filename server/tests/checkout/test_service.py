@@ -124,6 +124,9 @@ PRESET_AMOUNT = 5000
 @pytest.fixture(autouse=True)
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
+    # By default, the fallback Stripe customer lookup finds nothing so that
+    # tests exercising customer creation continue to create new customers.
+    mock.find_customer_by_email_and_organization.return_value = None
     mocker.patch("polar.checkout.service.stripe_service", new=mock)
     return mock
 
@@ -5819,6 +5822,89 @@ class TestConfirm:
         assert checkout.customer == customer
         assert checkout.customer_email == customer.email
         assert checkout.customer_session_token is None
+
+    async def test_stripe_customer_creation_uses_idempotency_key(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        """Stripe customer creation must pass an idempotency key derived from
+        the checkout ID so that a retry after a transaction rollback reuses
+        the previously created Stripe customer instead of creating a new one.
+        """
+        stripe_service_mock.find_customer_by_email_and_organization.return_value = None
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+        )
+
+        stripe_service_mock.create_customer.assert_called_once()
+        call_kwargs = stripe_service_mock.create_customer.call_args.kwargs
+        assert (
+            call_kwargs["idempotency_key"]
+            == f"checkout-customer-{checkout_one_time_fixed.id}"
+        )
+        assert call_kwargs["metadata"] == {
+            "organization_id": str(checkout_one_time_fixed.organization_id)
+        }
+
+    async def test_stripe_customer_fallback_lookup_on_retry(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        """When a previous attempt left an orphaned Stripe customer (DB
+        rolled back but Stripe customer persisted), the fallback lookup must
+        find it and reuse it instead of creating a new one.
+        """
+        stripe_service_mock.find_customer_by_email_and_organization.return_value = (
+            SimpleNamespace(id="ORPHANED_STRIPE_CUSTOMER_ID")
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+        )
+
+        stripe_service_mock.find_customer_by_email_and_organization.assert_called_once_with(
+            "customer@example.com", str(checkout.organization_id)
+        )
+        stripe_service_mock.create_customer.assert_not_called()
+        stripe_service_mock.update_customer.assert_called_once()
+        assert checkout.customer is not None
+        assert checkout.customer.stripe_customer_id == "ORPHANED_STRIPE_CUSTOMER_ID"
 
 
 @pytest.mark.asyncio

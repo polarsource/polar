@@ -388,14 +388,38 @@ class StripeService:
         return await stripe_lib.SetupIntent.retrieve_async(id, **params)
 
     async def create_customer(
-        self, **params: Unpack[CustomerCreateParams]
+        self,
+        *,
+        idempotency_key: str | None = None,
+        **params: Unpack[CustomerCreateParams],
     ) -> stripe_lib.Customer:
         log.info(
             "stripe.customer.create",
             email=params.get("email"),
             name=params.get("name"),
+            idempotency_key=idempotency_key,
         )
-        return await stripe_lib.Customer.create_async(**params)
+        return await stripe_lib.Customer.create_async(
+            idempotency_key=idempotency_key, **params
+        )
+
+    async def find_customer_by_email_and_organization(
+        self, email: str, organization_id: str
+    ) -> stripe_lib.Customer | None:
+        """Look up an existing Stripe customer by email and Polar organization ID.
+
+        Used as a fallback to prevent creating duplicate Stripe customers when
+        a previous creation attempt was rolled back from the Polar database but
+        persisted in Stripe (e.g. due to a payment intent failure).
+        """
+        query = (
+            f'email:"{email}" '
+            f'AND metadata["organization_id"]:"{organization_id}"'
+        )
+        result = await stripe_lib.Customer.search_async(query=query, limit=1)
+        if result.data:
+            return result.data[0]
+        return None
 
     async def update_customer(
         self,

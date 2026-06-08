@@ -2578,7 +2578,22 @@ class CheckoutService:
         stripe_customer_id = customer.stripe_customer_id
         customer_name = checkout.customer_billing_name or checkout.customer_name
         if stripe_customer_id is None:
-            create_params: CustomerCreateParams = {}
+            # Fallback lookup: a previous attempt for the same email and
+            # organization may have created a Stripe customer that became
+            # orphaned when the Polar database transaction rolled back.
+            if customer.email is not None:
+                existing_stripe_customer = (
+                    await stripe_service.find_customer_by_email_and_organization(
+                        customer.email, str(checkout.organization.id)
+                    )
+                )
+                if existing_stripe_customer is not None:
+                    stripe_customer_id = existing_stripe_customer.id
+
+        if stripe_customer_id is None:
+            create_params: CustomerCreateParams = {
+                "metadata": {"organization_id": str(checkout.organization.id)},
+            }
             if customer.email is not None:
                 create_params["email"] = customer.email
             if customer_name is not None:
@@ -2589,8 +2604,13 @@ class CheckoutService:
                 create_params["tax_id_data"] = [
                     to_stripe_tax_id(checkout.customer_tax_id)
                 ]
-            stripe_customer = await stripe_service.create_customer(**create_params)
+            stripe_customer = await stripe_service.create_customer(
+                idempotency_key=f"checkout-customer-{checkout.id}",
+                **create_params,
+            )
             stripe_customer_id = stripe_customer.id
+            customer.stripe_customer_id = stripe_customer_id
+            await session.flush()
         else:
             update_params: CustomerModifyParams = {}
             if customer.email is not None:

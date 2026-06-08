@@ -58,6 +58,7 @@ def api_prefix(request: pytest.FixtureRequest) -> str:
 @pytest.fixture(autouse=True)
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
+    mock.find_customer_by_email_and_organization.return_value = None
     mocker.patch("polar.checkout.service.stripe_service", new=mock)
     return mock
 

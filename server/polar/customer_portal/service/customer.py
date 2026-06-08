@@ -219,7 +219,9 @@ class CustomerService:
         payment_method_create: CustomerPaymentMethodCreate,
     ) -> CustomerPaymentMethodCreateResponse:
         if customer.stripe_customer_id is None:
-            params: CustomerCreateParams = {}
+            params: CustomerCreateParams = {
+                "metadata": {"organization_id": str(customer.organization_id)},
+            }
             if customer.email is not None:
                 params["email"] = customer.email
             if customer.name is not None:
@@ -228,7 +230,10 @@ class CustomerService:
                 params["address"] = customer.billing_address.to_dict()  # type: ignore
             if customer.tax_id is not None:
                 params["tax_id_data"] = [to_stripe_tax_id(customer.tax_id)]
-            stripe_customer = await stripe_service.create_customer(**params)
+            stripe_customer = await stripe_service.create_customer(
+                idempotency_key=f"customer-portal-customer-{customer.id}",
+                **params,
+            )
             repository = CustomerRepository.from_session(session)
             customer = await repository.update(
                 customer, update_dict={"stripe_customer_id": stripe_customer.id}

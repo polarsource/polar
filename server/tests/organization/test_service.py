@@ -156,7 +156,6 @@ class TestCreate:
         assert organization.feature_settings == {
             "member_model_enabled": True,
             "seat_based_pricing_enabled": True,
-            "account_review_v2_enabled": True,
         }
 
         user_organization = await user_organization_service.get_by_user_and_org(
@@ -222,7 +221,6 @@ class TestCreate:
             "issue_funding_enabled": False,
             "member_model_enabled": True,
             "seat_based_pricing_enabled": True,
-            "account_review_v2_enabled": True,
         }
 
     @pytest.mark.auth

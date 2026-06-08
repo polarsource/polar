@@ -321,6 +321,10 @@ const orgFinanceSubRoutesList = (org?: schemas['Organization']): SubRoute[] => [
     link: `/dashboard/${org?.slug}/finance/payouts`,
   },
   {
+    title: 'Taxes',
+    link: `/dashboard/${org?.slug}/finance/taxes`,
+  },
+  {
     title: 'Account',
     link: `/dashboard/${org?.slug}/finance/account`,
   },

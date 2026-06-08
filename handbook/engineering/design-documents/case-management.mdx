@@ -46,10 +46,10 @@ Rationale:
 A case is **thin and type-agnostic**: a thread of messages, a list of participants, attachments, and an `open/closed` state. It knows nothing about any domain type beyond a `type` discriminator.
 
 - **The domain object owns its status and its link to the case.** `case.status` is *only* a conversation-lifecycle flag (`open`/`closed`), fully orthogonal to domain resolution. An appeal can be `REJECTED` on the domain while its case is reopened and chatting; the org stays `DENIED` until someone takes the actual approve action.
-- **Structured action inputs live on the domain object; free-text lives in the case.** `appeal_reason` is the structured input to the "submit appeal" action (like dispute *evidence* will be) — it stays a first-class domain field and is **not** duplicated into messages. The timeline UI composes (domain action inputs) + (case messages).
+- **Domain object = current state; the thread = the timeline.** Structured, authoritative data lives on the domain object (`appeal_reason`, the `Refund` row, dispute *evidence*) — it is the single source of truth and reflects only the present. The case thread is the chronological timeline: free-text chat **plus** immutable *event messages* that record each action. Structured inputs are not duplicated as live mirrors; an event message that restates a value is a frozen point-in-time snapshot, never kept in sync. (If the underlying state later changes, that is a *new* event → a new message, not an edit to the old one.)
 - **Reopen is delegated to the type.** The generic case only exposes the hook; whether an inbound event reopens a closed case is a type-specific policy keyed on `(case_type, author_kind)`. For `review_appeal`: a *merchant* message reopens; a Polar *internal note* does not. Reopening is inert — it does not touch the domain object until an explicit action (a domain-state transition) is taken.
 - **Close on resolution; reopen on a qualifying message.** No separate reopen button needed.
-- **The thread is the audit log.** AI verdicts, approve/deny decisions, *and* lifecycle transitions (`opened`/`closed`/`reopened`) are all `author_kind=system` messages carrying an `event_type`. `case.status` is a denormalized current-state for cheap querying; the thread is the source of truth for history.
+- **Every meaningful action emits an event message.** A message is *chat* when `event_type` is null and an *event message* when it's set — this widens `event_type` from just lifecycle (`opened`/`closed`/`reopened`) to **all** actions: AI verdicts, approve/deny, `info_requested`, `refund_issued`, `evidence_submitted`, … The actor is the message's author fields (`author_kind` + `author_user_id`), the *when* is `created_at`, the *why/what* is `body` (e.g. "Pieter asked for more info to approve the appeal"). This buys two things flagged in review: API consumers get **one chronological stream** instead of stitching the timeline from per-domain-object fields, and we get a **uniform home for action provenance** that domain objects don't retain — a `Refund` has only a creation date, no who/when/why. `case.status` stays a denormalized current-state for cheap querying; the thread is the historical record.
 
 ## Data model (v1)
 
@@ -77,12 +77,17 @@ case_participants
 
 case_messages
   id, case_id
-  author_kind     enum: polar | merchant | system
-  author_user_id  (nullable — null for system/AI)
-  body            text
-  visibility      enum: internal | merchant       # generalizes to a recipient set for customer
-  event_type      (nullable — set for system msgs: opened | closed | reopened | ...)
-  created_at
+  author_kind     enum: polar | merchant | system   # system = automated (AI); humans use polar/merchant
+  author_user_id  (nullable)                         # the actor; null for system/AI
+  body            text                               # chat text, or human-readable event summary
+  event_type      (nullable)                         # null      → chat message
+                                                     # lifecycle → opened | closed | reopened
+                                                     # actions   → appeal_approved | appeal_denied |
+                                                     #             info_requested | refund_issued |
+                                                     #             evidence_submitted | ...  (type-specific)
+  payload         jsonb (nullable)                   # optional structured snapshot / domain-object ref for events
+  visibility      enum: internal | merchant          # generalizes to a recipient set for customer
+  created_at                                          # the "when"; event messages are immutable
 
 case_attachments
   id, case_id
@@ -103,8 +108,8 @@ appeal submitted
   → case(type=review_appeal) created, linked via organization_reviews.case_id
   → appeal_reason stored on OrganizationReview (structured input)
   → AI auto-review runs (fast-track — unchanged; our lever for enabling merchants fast)
-      ├─ APPROVE → domain activated; verdict posted as system message; case closed
-      └─ DENY    → verdict posted as system message; case STAYS OPEN
+      ├─ APPROVE → domain activated; verdict posted as event message; case closed
+      └─ DENY    → verdict posted as event message; case STAYS OPEN
                    merchant can reply (free-text) → notifies Polar staff in backoffice
                    staff converse; staff can take the approve action → closes case
 ```
@@ -164,7 +169,7 @@ The genuinely new shapes disputes add — "structured action input that syncs to
 - Reopen delegated to the type, keyed on `(case_type, author_kind)`; inert until a domain action.
 - Close on resolution; reopen on qualifying message.
 - `appeal_reason` stays a domain field — not duplicated into messages.
-- AI verdicts, decisions, and lifecycle events are `system` messages; lifecycle carries `event_type`.
+- The thread is a single chronological stream: free-text chat + immutable **event messages** (`event_type` set) for every action and lifecycle transition. Domain object = current state; event message = time-based provenance (actor + when + why), never synced.
 - AI auto-review stays as the fast-track first responder; denial keeps the case open.
 - Participants table in v1: org-level merchant, `kind=polar` staff `user_id`, customer deferred; `last_read_at` for read state.
 - No notification refactor — two new case-activity types.
@@ -173,5 +178,5 @@ The genuinely new shapes disputes add — "structured action input that syncs to
 ## Open questions
 
 - Owner-only vs owner+admin for merchant access
-- Exact `event_type` vocabulary beyond `opened/closed/reopened`.
+- The per-type action `event_type` vocabulary (lifecycle is `opened/closed/reopened`; actions like `appeal_approved`, `refund_issued`, `info_requested` are type-specific) — and whether `payload` is needed in v1 or events can stay text-only at first.
 - Whether Polar wants case **assignment** (single staff owner) — would give the `kind=polar` participant row more weight;

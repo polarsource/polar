@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import date, timedelta
 from uuid import UUID
 
-from sqlalchemy import Select, case, func, select
+from sqlalchemy import Select, case, func, select, tuple_
 from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.sql.expression import asc, desc
 
@@ -130,5 +130,11 @@ class TaxJurisdictionRepository(RepositoryBase[Transaction]):
             )[1].label("currency"),
             func.coalesce(func.sum(grouped.c.tax_amount), 0).label("tax_amount"),
             func.coalesce(func.sum(grouped.c.order_count), 0).label("order_count"),
-            func.count().label("jurisdiction_count"),
+            # A jurisdiction is `(country, state)`; the breakdown additionally
+            # splits each one by currency, so counting grouped rows would
+            # over-count a jurisdiction that remitted tax in several currencies.
+            # Count distinct `(country, state)` pairs instead.
+            func.count(
+                func.distinct(tuple_(grouped.c.country, grouped.c.state))
+            ).label("jurisdiction_count"),
         ).select_from(grouped)

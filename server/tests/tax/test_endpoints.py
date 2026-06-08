@@ -201,3 +201,42 @@ class TestGetTaxSummary:
         assert json["jurisdiction_count"] == 3
         # Representative currency comes from the largest tax bucket (GB).
         assert json["currency"] == "usd"
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.transactions_read}))
+    async def test_multi_currency_jurisdiction_counted_once(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # One jurisdiction (US-CA) that remitted tax in two currencies appears as
+        # two (country, state, currency) buckets in the breakdown, but it is
+        # still a single jurisdiction — `jurisdiction_count` must count it once,
+        # not once per currency.
+        usd_order = await create_order(save_fixture, product=product, customer=customer)
+        eur_order = await create_order(save_fixture, product=product, customer=customer)
+        await create_tax_transaction(
+            save_fixture,
+            order=usd_order,
+            tax_amount=100,
+            tax_country="US",
+            tax_state="CA",
+            currency="usd",
+        )
+        await create_tax_transaction(
+            save_fixture,
+            order=eur_order,
+            tax_amount=80,
+            tax_country="US",
+            tax_state="CA",
+            currency="eur",
+        )
+
+        response = await client.get("/v1/taxes/summary")
+        assert response.status_code == 200
+        json = response.json()
+
+        assert json["jurisdiction_count"] == 1  # US-CA, despite two currencies
+        assert json["order_count"] == 2

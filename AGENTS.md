@@ -229,6 +229,7 @@ The backend uses a custom authentication system built on FastAPI's dependency in
 
 - **Stripe**: Handles payments and subscriptions. Requires API keys and a webhook secret in `server/.env`.
 - **GitHub**: Used for authentication and repository-related features. Requires a GitHub App to be configured for local development.
+- **Slack**: Provides Slack workspace integration for notifications and user management. Configured via OAuth at runtime (no `.env` setup required).
 
 ## Documentation
 

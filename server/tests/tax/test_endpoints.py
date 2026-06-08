@@ -89,20 +89,23 @@ async def tax_transactions(
         tax_state="NY",
     )
 
-    # United Kingdom: country-level only (tax_state must be ignored).
+    # United Kingdom: country-level only. The write path never stores a
+    # `tax_state` outside US/CA, but if bad data ever does, the breakdown must
+    # still aggregate GB at the country level rather than fragment it into
+    # spurious sub-jurisdictions — so seed a stray state to lock that guarantee in.
     await create_tax_transaction(
         save_fixture,
         order=await order(),
         tax_amount=200,
         tax_country="GB",
-        tax_state=None,
+        tax_state="EN",
     )
     await create_tax_transaction(
         save_fixture,
         order=await order(),
         tax_amount=100,
         tax_country="GB",
-        tax_state=None,
+        tax_state="SC",
     )
 
 

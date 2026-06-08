@@ -1,9 +1,8 @@
 from collections.abc import Sequence
 from datetime import date, timedelta
-from typing import cast
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, Select, func, select
+from sqlalchemy import Select, case, func, select
 from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.sql.expression import asc, desc
 
@@ -39,14 +38,17 @@ class TaxJurisdictionRepository(RepositoryBase[Transaction]):
         end_date: date | None = None,
         sorting: list[Sorting[TaxJurisdictionSortProperty]],
     ) -> Select[tuple[str, str | None, str, int, int]]:
-        # Group by whatever `tax_state` the transaction stored. Today only US
-        # and Canada populate it (see transaction.service.payment), but grouping
-        # on the raw column means the breakdown picks up state-level data from
-        # any country automatically if that ever changes. `tax_state` is nullable
-        # despite its `Mapped[str]` annotation, so cast to reflect that.
-        state_column = cast("ColumnElement[str | None]", Transaction.tax_state).label(
-            "state"
-        )
+        # Only US and Canada are reported at the state level; everywhere else is
+        # aggregated to the country. Transactions already store `tax_state` as
+        # NULL outside US/CA (see transaction.service.payment), but we guard
+        # explicitly here so the breakdown honors that contract regardless of
+        # what is stored — a stray non-US/CA `tax_state` must not fragment a
+        # country into spurious sub-jurisdictions. `else_=None` also makes the
+        # column correctly nullable despite `tax_state`'s `Mapped[str]` annotation.
+        state_column = case(
+            (Transaction.tax_country.in_(("US", "CA")), Transaction.tax_state),
+            else_=None,
+        ).label("state")
         # Sum `tax_amount` across every tax-bearing transaction (payments,
         # refunds, disputes and their reversals — see the `type` filter below),
         # which yields the net tax Polar remitted on the merchant's behalf after

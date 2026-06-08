@@ -276,6 +276,7 @@ export default {
     downloadables: 'Filnedladdningar',
     meter_credit: 'Mätarkrediter',
     feature_flag: 'Feature flag',
+    slack_shared_channel: 'Delad Slack-kanal',
   },
   ordinal: {
     zero: ':e',

@@ -280,6 +280,7 @@ export default {
     downloadables: 'Fichiers',
     meter_credit: 'Crédits prépayés',
     feature_flag: 'Accès à une fonctionnalité',
+    slack_shared_channel: 'Canal partagé Slack',
   },
   ordinal: {
     zero: 'e',

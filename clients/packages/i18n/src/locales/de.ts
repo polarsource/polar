@@ -282,6 +282,7 @@ export default {
     downloadables: 'Dateidownloads',
     meter_credit: 'Verbrauchsguthaben',
     feature_flag: 'Feature-Flag',
+    slack_shared_channel: 'Geteilter Slack-Kanal',
   },
   ordinal: {
     zero: '.',

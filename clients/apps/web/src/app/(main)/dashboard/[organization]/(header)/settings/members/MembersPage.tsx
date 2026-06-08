@@ -143,13 +143,11 @@ export default function ClientPage({
         <DataTableColumnHeader column={column} title="User" />
       ),
       cell: ({ row: { original: member } }) => {
-        const isCurrentUser = member.user_id === currentUser?.id
         return (
           <Box display="flex" flexDirection="row" alignItems="center" gap="s">
             <Avatar avatar_url={member.avatar_url} name={member.email} />
             <Text>{member.email}</Text>
             <RowBadge>{ROLE_LABELS[member.role]}</RowBadge>
-            {isCurrentUser && <RowBadge>You</RowBadge>}
           </Box>
         )
       },

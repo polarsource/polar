@@ -1,7 +1,7 @@
 import typing
 from collections.abc import Iterable
 
-from pydantic import UUID4
+from pydantic import UUID4, EmailStr
 from reauth.authentication_session import (
     AuthenticationSession as AuthenticationSessionDataclass,
 )
@@ -38,7 +38,7 @@ class AuthenticationSession(Schema):
 
 
 class EmailOTPRequest(Schema):
-    email: str
+    email: EmailStr
 
 
 class EmailOTPVerify(Schema):

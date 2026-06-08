@@ -1,13 +1,14 @@
 'use client'
 
 import { LoadingBox } from '@/components/Shared/LoadingBox'
+import { useAccountSetup } from '@/providers/accountSetup'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useContext, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { StatusIcon } from './StatusIcon'
 import { COMMON_REASON_LABELS, STEP_CONFIG } from './sections'
 
@@ -18,7 +19,20 @@ interface Props {
 
 export const ChecklistRow = ({ step, isLoading }: Props) => {
   const { organization } = useContext(OrganizationContext)
+  const { targetStepKey, setTargetStepKey } = useAccountSetup()
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isDeepLinkTarget] = useState(
+    () => targetStepKey != null && step?.key === targetStepKey,
+  )
+
+  useEffect(() => {
+    if (!isDeepLinkTarget) {
+      return
+    }
+    setTargetStepKey(null)
+    const timeout = setTimeout(() => setIsExpanded(true), 750)
+    return () => clearTimeout(timeout)
+  }, [isDeepLinkTarget, setTargetStepKey])
 
   if (isLoading || !step) {
     return (

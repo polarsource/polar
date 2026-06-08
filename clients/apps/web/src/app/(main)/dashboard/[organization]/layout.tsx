@@ -1,3 +1,4 @@
+import { AccountSetupProvider } from '@/providers/accountSetup'
 import { OrganizationContextProvider } from '@/providers/maintainerOrganization'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
@@ -48,7 +49,7 @@ export default async function Layout(props: {
       organization={organization}
       organizations={userOrganizations}
     >
-      {children}
+      <AccountSetupProvider>{children}</AccountSetupProvider>
     </OrganizationContextProvider>
   )
 }

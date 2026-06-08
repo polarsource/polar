@@ -187,16 +187,6 @@ class NotConfirmedCheckout(CheckoutError):
         super().__init__(message)
 
 
-class ArchivedPriceCheckout(CheckoutError):
-    def __init__(self, checkout: Checkout) -> None:
-        self.checkout = checkout
-        self.price = checkout.product_price
-        message = (
-            f"Checkout {checkout.id} has an archived price: {checkout.product_price_id}"
-        )
-        super().__init__(message)
-
-
 class NoPaymentMethodOnIntent(CheckoutError):
     def __init__(self, checkout: Checkout, intent_id: str) -> None:
         self.checkout = checkout
@@ -1227,14 +1217,12 @@ class CheckoutService:
             raise NotImplementedError()
 
         product_price = checkout.product_price
-        # If a payment has already been captured (e.g. `charge.succeeded`
-        # webhook), the merchant has already received funds and we must
-        # fulfill regardless of whether the price was archived between
-        # checkout creation and capture. The archived-price check still
-        # guards pre-charge paths (free checkouts, setup intents) where
-        # no money has been collected yet.
-        if product_price.is_archived and payment is None:
-            raise ArchivedPriceCheckout(checkout)
+        if product_price.is_archived:
+            log.warning(
+                "Fulfilling checkout with archived price",
+                checkout_id=str(checkout.id),
+                price_id=str(product_price.id),
+            )
 
         product = checkout.product
         subscription: Subscription | None = None

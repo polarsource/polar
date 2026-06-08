@@ -25,7 +25,6 @@ from polar.checkout.schemas import (
 )
 from polar.checkout.service import (
     AlreadyActiveSubscriptionError,
-    ArchivedPriceCheckout,
     CheckoutCustomerDeleted,
     CheckoutCustomerExternalIdMismatch,
     NotConfirmedCheckout,
@@ -5848,23 +5847,7 @@ class TestHandleSuccess:
         )
         subscription_service_mock.create_or_update_from_checkout.assert_not_called()
 
-    async def test_archived_price_without_payment_raises(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        checkout_confirmed_one_time: Checkout,
-    ) -> None:
-        # Pre-charge paths (no captured payment) must still refuse to
-        # fulfill on an archived price.
-        checkout_confirmed_one_time.product_price.is_archived = True
-        await save_fixture(checkout_confirmed_one_time.product_price)
-
-        with pytest.raises(ArchivedPriceCheckout):
-            await checkout_service.handle_success(
-                session, checkout_confirmed_one_time
-            )
-
-    async def test_archived_price_with_payment_fulfills(
+    async def test_archived_price_fulfills(
         self,
         save_fixture: SaveFixture,
         order_service_mock: MagicMock,
@@ -5873,10 +5856,6 @@ class TestHandleSuccess:
         checkout_confirmed_one_time: Checkout,
         payment: Payment,
     ) -> None:
-        # Regression: when the price is archived after checkout creation
-        # but a charge has already been captured (charge.succeeded path),
-        # fulfillment must proceed so the merchant receives funds and the
-        # customer gets an order + payment record.
         checkout_confirmed_one_time.product_price.is_archived = True
         await save_fixture(checkout_confirmed_one_time.product_price)
 

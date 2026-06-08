@@ -220,6 +220,7 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
     )
     name: str | None = Field(description=_name_description, examples=[_name_example])
     billing_name: str | None = Field(
+        default=None,
         description=(
             "The name that should appear on the customer's invoices. "
             "Falls back to the customer name when not explicitly set."

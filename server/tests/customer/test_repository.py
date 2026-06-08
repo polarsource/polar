@@ -2,6 +2,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.customer.repository import CustomerRepository
+from polar.event.system import SystemEvent
 from polar.models import Customer, Organization
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
@@ -56,3 +57,42 @@ async def test_create_context(
             raise RuntimeError("Simulated error")
 
     enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_update_tracks_billing_name(
+    mocker: MockerFixture,
+    customer: Customer,
+    repository: CustomerRepository,
+) -> None:
+    enqueue_job_mock = mocker.patch("polar.customer.repository.enqueue_job")
+
+    # `billing_name` is exposed via a property backed by the `_billing_name`
+    # column, which is exactly the path the customer portal update goes through.
+    customer.billing_name = "New Billing Name"
+    await repository.update(customer)
+
+    enqueue_job_mock.assert_any_call(
+        "customer.event",
+        customer.id,
+        SystemEvent.customer_updated,
+        {"billing_name": "New Billing Name"},
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_without_changes_emits_empty_updated_fields(
+    mocker: MockerFixture,
+    customer: Customer,
+    repository: CustomerRepository,
+) -> None:
+    enqueue_job_mock = mocker.patch("polar.customer.repository.enqueue_job")
+
+    await repository.update(customer)
+
+    enqueue_job_mock.assert_any_call(
+        "customer.event",
+        customer.id,
+        SystemEvent.customer_updated,
+        {},
+    )

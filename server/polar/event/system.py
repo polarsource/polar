@@ -156,6 +156,7 @@ class CustomerCreatedEvent(Event):
 
 class CustomerUpdatedFields(TypedDict):
     name: NotRequired[str | None]
+    billing_name: NotRequired[str | None]
     email: NotRequired[str | None]
     billing_address: NotRequired[AddressDict | None]
     tax_id: NotRequired[str | None]

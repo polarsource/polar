@@ -1037,6 +1037,15 @@ class TestSlackSharedChannelRevoke:
 
 @pytest.mark.asyncio
 class TestSlackSharedChannelValidate:
+    async def test_schema_rejects_invalid_slack_integration_id(self) -> None:
+        with pytest.raises(ValidationError):
+            BenefitSlackSharedChannelCreateProperties.model_validate(
+                {
+                    "slack_integration_id": "not-a-uuid",
+                    "channel_name_template": "support-{customer_name}",
+                }
+            )
+
     async def test_validate_rejects_unknown_placeholder(
         self,
         session: AsyncSession,

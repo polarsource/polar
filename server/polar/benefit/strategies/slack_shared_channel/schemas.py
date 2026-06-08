@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import Field, StringConstraints
+from pydantic import UUID4, Field, StringConstraints
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.schemas import Schema
@@ -18,7 +18,7 @@ WelcomeMessage = Annotated[str | None, StringConstraints(max_length=4000)]
 
 
 class BenefitSlackSharedChannelProperties(Schema):
-    slack_integration_id: str | None = Field(
+    slack_integration_id: UUID4 | None = Field(
         default=None,
         description="Polar Slack integration ID linked to this benefit, if any.",
     )
@@ -51,7 +51,7 @@ class BenefitSlackSharedChannelProperties(Schema):
 
 
 class BenefitSlackSharedChannelCreateProperties(Schema):
-    slack_integration_id: str | None = None
+    slack_integration_id: UUID4 | None = None
     channel_name_template: ChannelNameTemplate
     private: bool = True
     welcome_message: WelcomeMessage = None

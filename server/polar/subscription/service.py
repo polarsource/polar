@@ -780,6 +780,8 @@ class SubscriptionService:
                     pending_update.discount = await discount_repository.get_by_id(
                         pending_update.discount_id
                     )
+                else:
+                    pending_update.discount = None
                 # Check before apply_update() changes subscription.product
                 pending_update_changed_interval = pending_update.is_interval_changed()
                 pending_update.apply_update()
@@ -1919,6 +1921,8 @@ class SubscriptionService:
                 pending_update.discount = await discount_repository.get_by_id(
                     pending_update.discount_id
                 )
+            else:
+                pending_update.discount = None
             pending_update.apply_update()
 
         # If subscription is set to cancel at period end, there's no base charge

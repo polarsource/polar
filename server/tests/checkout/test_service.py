@@ -5856,8 +5856,10 @@ class TestHandleSuccess:
         checkout_confirmed_one_time: Checkout,
         payment: Payment,
     ) -> None:
-        checkout_confirmed_one_time.product_price.is_archived = True
-        await save_fixture(checkout_confirmed_one_time.product_price)
+        product_price = checkout_confirmed_one_time.product_price
+        assert product_price is not None
+        product_price.is_archived = True
+        await save_fixture(product_price)
 
         checkout = await checkout_service.handle_success(
             session, checkout_confirmed_one_time, payment

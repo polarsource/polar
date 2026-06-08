@@ -1,7 +1,5 @@
 import { useAuth } from '@/hooks'
-import { useOrganizationKYC } from '@/hooks/queries/org'
 import { useUpdateOrganization } from '@/hooks/queries'
-import { api } from '@/utils/client'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useURLValidation } from '@/hooks/useURLValidation'
 import { setValidationErrors } from '@/utils/api/errors'
@@ -23,14 +21,6 @@ import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardI
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import { Input } from '@polar-sh/orbit'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@polar-sh/orbit'
-import { TextArea } from '@polar-sh/orbit'
-import {
   Form,
   FormControl,
   FormField,
@@ -40,35 +30,15 @@ import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import React, { useCallback } from 'react'
 import { FileRejection } from 'react-dropzone'
-import {
-  ControllerRenderProps,
-  FieldValues,
-  useForm,
-  useFormContext,
-  useWatch,
-} from 'react-hook-form'
+import { useForm, useFormContext, useWatch } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../FileUpload'
 import { toast } from '../Toast/use-toast'
-import ConfirmationButton from '../ui/ConfirmationButton'
-import {
-  SettingsGroup,
-  SettingsGroupActions,
-  SettingsGroupItem,
-} from './SettingsGroup'
+import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationDetailsFormProps {
   organization: schemas['Organization']
-  inKYCMode: boolean
   readOnly: boolean
-}
-
-const SwitchingFromOptions = {
-  paddle: 'Paddle',
-  lemon_squeezy: 'Lemon Squeezy',
-  gumroad: 'Gumroad',
-  stripe: 'Stripe',
-  other: 'Other',
 }
 
 const SOCIAL_PLATFORM_DOMAINS: Record<string, string> = {
@@ -88,15 +58,13 @@ const SOCIAL_PLATFORM_DOMAINS: Record<string, string> = {
 }
 
 interface OrganizationSocialLinksProps {
-  required?: boolean
   readOnly: boolean
 }
 
 const OrganizationSocialLinks = ({
-  required,
   readOnly,
 }: OrganizationSocialLinksProps) => {
-  const { control, formState } = useFormContext<schemas['OrganizationUpdate']>()
+  const { control } = useFormContext<schemas['OrganizationUpdate']>()
 
   const getIcon = (platform: string, className: string) => {
     switch (platform) {
@@ -158,10 +126,6 @@ const OrganizationSocialLinks = ({
       name="socials"
       render={({ field }) => {
         const socials = field.value || []
-        const hasValidSocial = socials.some(
-          (social) => social.url && social.url.trim() !== '',
-        )
-        const showError = required && formState.isSubmitted && !hasValidSocial
 
         return (
           <div className="space-y-3">
@@ -220,11 +184,6 @@ const OrganizationSocialLinks = ({
                 Add Social
               </Button>
             </span>
-            {showError && (
-              <p className="text-destructive text-sm font-medium">
-                At least one social media link is required
-              </p>
-            )}
           </div>
         )
       }}
@@ -232,26 +191,8 @@ const OrganizationSocialLinks = ({
   )
 }
 
-const CompactTextArea = ({
-  field,
-  placeholder,
-  rows = 3,
-}: {
-  field: ControllerRenderProps<FieldValues, string>
-  placeholder: string
-  rows?: number
-}) => (
-  <TextArea
-    {...field}
-    rows={rows}
-    placeholder={placeholder}
-    className="resize-none"
-  />
-)
-
 const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
   organization,
-  inKYCMode,
   readOnly,
 }) => {
   const { control, setError, setValue } =
@@ -485,154 +426,39 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
         {/* Social Links - Progressive Disclosure */}
         <div>
           <div className="mb-4 flex flex-col items-start">
-            <label className="block text-sm font-medium">
-              Social Media {inKYCMode && '*'}
-            </label>
+            <label className="block text-sm font-medium">Social Media</label>
             <p className="dark:text-polar-400 mt-2 text-xs text-gray-600">
               Your personal social media links are used for identity
               verification. They will never be shown publicly.
             </p>
           </div>
-          <OrganizationSocialLinks required={inKYCMode} readOnly={readOnly} />
+          <OrganizationSocialLinks readOnly={readOnly} />
         </div>
       </div>
-
-      {/* Business Details - KYC Mode Only */}
-      {inKYCMode && (
-        <div className="border-t pt-8">
-          <div className="mb-6">
-            <h3 className="mb-2 text-lg font-medium">Business Details</h3>
-            <p className="dark:text-polar-400 text-sm text-gray-600">
-              Help us understand your business for compliance and payment setup.
-            </p>
-          </div>
-
-          <div className="space-y-6">
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                Describe your product *
-              </label>
-              <p className="dark:text-polar-400 mb-2 text-xs text-gray-600">
-                Describe what your product is and does, and who it&rsquo;s for,
-                including your pricing model (e.g. subscription, one-time
-                payment).
-              </p>
-              <FormField
-                control={control}
-                name="details.product_description"
-                rules={{
-                  required: 'Please describe what you sell',
-                  minLength: {
-                    value: 30,
-                    message: 'Please provide at least 30 characters',
-                  },
-                  maxLength: {
-                    value: 3000,
-                    message: 'Please keep under 3000 characters',
-                  },
-                }}
-                render={({ field }) => (
-                  <div>
-                    <CompactTextArea
-                      field={field}
-                      placeholder="SaaS project management tool with team collaboration, file sharing, and reporting. $29/month per user."
-                    />
-                    <div className="mt-1 flex items-center justify-between">
-                      <FormMessage />
-                      <span className="text-xs text-gray-500">
-                        {field.value?.length || 0}/3000 characters (min 30)
-                      </span>
-                    </div>
-                  </div>
-                )}
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                Currently using
-              </label>
-              <FormField
-                control={control}
-                name="details.switching_from"
-                render={({ field }) => (
-                  <div>
-                    <Select
-                      value={field.value || 'none'}
-                      onValueChange={(value) => {
-                        field.onChange(value === 'none' ? null : value)
-                        setValue('details.switching', value !== 'none', {
-                          shouldDirty: true,
-                        })
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a platform" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">
-                          This is my first payment platform
-                        </SelectItem>
-                        {Object.entries(SwitchingFromOptions).map(
-                          ([key, label]) => (
-                            <SelectItem key={key} value={key}>
-                              {label}
-                            </SelectItem>
-                          ),
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </div>
-                )}
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
 
 interface OrganizationProfileSettingsProps {
   organization: schemas['Organization']
-  kyc?: boolean
-  onSubmitted?: () => void
   readOnly: boolean
 }
 
 const OrganizationProfileSettings: React.FC<
   OrganizationProfileSettingsProps
-> = ({ organization: _organization, kyc, onSubmitted, readOnly }) => {
+> = ({ organization: _organization, readOnly }) => {
   const organization = _organization as schemas['Organization'] & {
     default_presentment_currency: schemas['PresentmentCurrency']
     country?: schemas['CountryAlpha2Input']
   }
-  const inKYCMode = kyc === true
   const router = useRouter()
-
-  const { data: kycData, isLoading: isKYCLoading } = useOrganizationKYC(
-    organization.id,
-    inKYCMode,
-  )
 
   const form = useForm<schemas['OrganizationUpdate']>({
     defaultValues: {
       ...organization,
-      ...(kycData?.details ? { details: kycData.details } : {}),
     },
   })
-  const { handleSubmit, setError, formState, reset } = form
-
-  // Reset form when KYC data loads to merge details into defaults
-  React.useEffect(() => {
-    if (kycData?.details) {
-      reset({
-        ...organization,
-        details: kycData.details,
-      })
-    }
-  }, [kycData, organization, reset])
+  const { setError, reset } = form
 
   const { currentUser } = useAuth()
 
@@ -685,86 +511,23 @@ const OrganizationProfileSettings: React.FC<
       return
     }
 
-    if (inKYCMode) {
-      const submitReviewResult = await api.POST(
-        '/v1/organizations/{id}/submit-review',
-        {
-          params: { path: { id: organization.id } },
-        },
-      )
-      const { data: submittedOrganization, error: submitError } =
-        submitReviewResult
-
-      if (submitError) {
-        const errorMessage = Array.isArray(submitError.detail)
-          ? submitError.detail[0]?.msg ||
-            'An error occurred while submitting the organization for review'
-          : typeof submitError.detail === 'string'
-            ? submitError.detail
-            : 'An error occurred while submitting the organization for review'
-
-        if (isValidationError(submitError.detail)) {
-          setValidationErrors(submitError.detail, setError)
-        } else {
-          setError('root', { message: errorMessage })
-        }
-
-        toast({
-          title: 'Review Submission Failed',
-          description: errorMessage,
-        })
-
-        return
-      }
-
-      reset({
-        ...submittedOrganization,
-        default_presentment_currency:
-          submittedOrganization.default_presentment_currency as schemas['PresentmentCurrency'],
-        country: submittedOrganization.country as
-          | schemas['CountryAlpha2Input']
-          | undefined,
-        socials: [...(submittedOrganization.socials || []), ...emptySocials],
-        details: cleanedBody.details,
-      })
-    }
-
-    if (!inKYCMode) {
-      reset({
-        ...data,
-        default_presentment_currency:
-          data.default_presentment_currency as schemas['PresentmentCurrency'],
-        country: data.country as schemas['CountryAlpha2Input'] | undefined,
-        socials: [...(data.socials || []), ...emptySocials],
-      })
-    }
+    reset({
+      ...data,
+      default_presentment_currency:
+        data.default_presentment_currency as schemas['PresentmentCurrency'],
+      country: data.country as schemas['CountryAlpha2Input'] | undefined,
+      socials: [...(data.socials || []), ...emptySocials],
+    })
 
     // Refresh the router to get the updated organization data from the server
     router.refresh()
-
-    if (onSubmitted) {
-      onSubmitted()
-    }
-  }
-
-  const handleFormSubmit = () => {
-    handleSubmit(onSave)()
   }
 
   useAutoSave({
     form,
     onSave,
     delay: 1000,
-    enabled: !inKYCMode,
   })
-
-  if (inKYCMode && isKYCLoading) {
-    return (
-      <div className="mx-auto flex max-w-2xl items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-      </div>
-    )
-  }
 
   return (
     <Form {...form}>
@@ -775,64 +538,44 @@ const OrganizationProfileSettings: React.FC<
         className="mx-auto max-w-2xl"
       >
         <SettingsGroup>
-          {!inKYCMode && (
-            <>
-              <SettingsGroupItem
-                title="Identifier"
-                description="Unique identifier for your organization"
-              >
-                <FormControl>
-                  <CopyToClipboardInput
-                    value={organization.id}
-                    onCopy={() => {
-                      toast({
-                        title: 'Copied To Clipboard',
-                        description: `Organization ID was copied to clipboard`,
-                      })
-                    }}
-                  />
-                </FormControl>
-              </SettingsGroupItem>
-              <SettingsGroupItem
-                title="Organization Slug"
-                description="Used for Customer Portal, Transaction Statements, etc."
-              >
-                <FormControl>
-                  <CopyToClipboardInput
-                    value={organization.slug}
-                    onCopy={() => {
-                      toast({
-                        title: 'Copied To Clipboard',
-                        description: `Organization Slug was copied to clipboard`,
-                      })
-                    }}
-                  />
-                </FormControl>
-              </SettingsGroupItem>
-            </>
-          )}
+          <SettingsGroupItem
+            title="Identifier"
+            description="Unique identifier for your organization"
+          >
+            <FormControl>
+              <CopyToClipboardInput
+                value={organization.id}
+                onCopy={() => {
+                  toast({
+                    title: 'Copied To Clipboard',
+                    description: `Organization ID was copied to clipboard`,
+                  })
+                }}
+              />
+            </FormControl>
+          </SettingsGroupItem>
+          <SettingsGroupItem
+            title="Organization Slug"
+            description="Used for Customer Portal, Transaction Statements, etc."
+          >
+            <FormControl>
+              <CopyToClipboardInput
+                value={organization.slug}
+                onCopy={() => {
+                  toast({
+                    title: 'Copied To Clipboard',
+                    description: `Organization Slug was copied to clipboard`,
+                  })
+                }}
+              />
+            </FormControl>
+          </SettingsGroupItem>
           <div className="flex flex-col gap-y-4 p-4">
             <OrganizationDetailsForm
               organization={organization}
-              inKYCMode={inKYCMode}
               readOnly={readOnly}
             />
           </div>
-
-          {inKYCMode && (
-            <SettingsGroupActions>
-              <ConfirmationButton
-                onConfirm={handleFormSubmit}
-                warningMessage="This information cannot be changed once submitted. Are you sure?"
-                buttonText="Submit for Review"
-                size="default"
-                confirmText="Submit"
-                disabled={!formState.isDirty}
-                loading={updateOrganization.isPending}
-                requireConfirmation={true}
-              />
-            </SettingsGroupActions>
-          )}
         </SettingsGroup>
       </form>
     </Form>

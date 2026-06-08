@@ -17512,6 +17512,8 @@ export interface components {
     CustomerUpdatedFields: {
       /** Name */
       name?: string | null
+      /** Billing Name */
+      billing_name?: string | null
       /** Email */
       email?: string | null
       billing_address?: components['schemas']['AddressDict'] | null

@@ -27123,7 +27123,7 @@ export interface components {
       tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       /**
        * Price Amount
-       * @description The price in cents.
+       * @description The price in cents. Set to `0` for a free price.
        *     Minimum amounts per currency:
        *     - USD: 0.5
        *     - AED: 2

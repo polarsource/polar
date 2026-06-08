@@ -1,6 +1,7 @@
 import { usePolarClient } from '@/providers/PolarClientProvider'
 import { queryClient } from '@/utils/query'
-import { schemas, unwrap } from '@polar-sh/client'
+import { ClientResponseError, schemas, unwrap } from '@polar-sh/client'
+import { defaultRetry } from './retry'
 import {
   skipToken,
   useMutation,
@@ -21,6 +22,16 @@ export const useOrganizationAccount = (organizationId?: string) => {
             }),
           )
       : skipToken,
+    retry: (failureCount, error) => {
+      if (
+        error instanceof ClientResponseError &&
+        (error.response.status === 403 || error.response.status === 404)
+      ) {
+        return false
+      }
+      return defaultRetry(failureCount, error as ClientResponseError)
+    },
+    throwOnError: false,
   })
 }
 
@@ -37,6 +48,8 @@ export const usePayoutAccount = (payoutAccountId?: string) => {
             }),
           )
       : skipToken,
+    retry: defaultRetry,
+    throwOnError: false,
   })
 }
 

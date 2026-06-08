@@ -16,6 +16,10 @@ variable "username" {
 
 resource "aws_iam_user" "this" {
   name = var.username
+
+  lifecycle {
+    ignore_changes = [tags, tags_all]
+  }
 }
 
 variable "buckets" {

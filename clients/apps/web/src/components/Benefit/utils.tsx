@@ -71,4 +71,5 @@ export const benefitsDisplayNames: {
   custom: 'Custom',
   meter_credit: 'Meter Credits',
   feature_flag: 'Feature Flag',
+  slack_shared_channel: 'Slack Shared Channel',
 }

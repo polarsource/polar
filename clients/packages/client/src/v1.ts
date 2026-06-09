@@ -411,6 +411,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/integrations/slack/link': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Link
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['integrations_slack:link']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/notifications': {
     parameters: {
       query?: never
@@ -10262,6 +10282,7 @@ export interface components {
       | 'license_keys'
       | 'meter_credit'
       | 'feature_flag'
+      | 'slack_shared_channel'
     /**
      * BenefitUpdatedEvent
      * @description An event created by Polar when a benefit is updated.
@@ -28620,6 +28641,35 @@ export interface components {
        */
       signing_secret?: string | null
     }
+    /** SlackIntegrationLink */
+    SlackIntegrationLink: {
+      /**
+       * Benefit Id
+       * Format: uuid4
+       * @description Benefit to link the integration to.
+       */
+      benefit_id: string
+      /**
+       * Integration Id
+       * Format: uuid4
+       * @description Slack integration to link.
+       */
+      integration_id: string
+    }
+    /** SlackIntegrationLinkBadRequestResponse */
+    SlackIntegrationLinkBadRequestResponse: {
+      /**
+       * Error
+       * @enum {string}
+       */
+      error:
+        | 'BadRequest'
+        | 'SlackIntegrationAlreadyLinked'
+        | 'SlackIntegrationNotInstalled'
+        | 'SlackIntegrationBenefitAlreadyLinked'
+      /** Detail */
+      detail: string
+    }
     /** SlackIntegrationManifest */
     SlackIntegrationManifest: {
       /**
@@ -28635,6 +28685,16 @@ export interface components {
        * @description Name shown in your Slack workspace for the app and bot user. Defaults to your organization name; customize before pasting into Slack.
        */
       display_name: string
+    }
+    /** SlackIntegrationQueryBadRequestResponse */
+    SlackIntegrationQueryBadRequestResponse: {
+      /**
+       * Error
+       * @constant
+       */
+      error: 'BadRequest'
+      /** Detail */
+      detail: string
     }
     /** SlackWorkspaceUser */
     SlackWorkspaceUser: {
@@ -33383,8 +33443,9 @@ export interface operations {
   }
   'integrations_slack:get_integration': {
     parameters: {
-      query: {
-        integration_id: string
+      query?: {
+        integration_id?: string | null
+        benefit_id?: string | null
       }
       header?: never
       path?: never
@@ -33399,6 +33460,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['SlackIntegration']
+        }
+      }
+      /** @description Provide exactly one of integration_id or benefit_id. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SlackIntegrationQueryBadRequestResponse']
         }
       }
       /** @description No Slack integration configured. */
@@ -33626,6 +33696,55 @@ export interface operations {
         content: {
           'application/json': unknown
         }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'integrations_slack:link': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SlackIntegrationLink']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SlackIntegration']
+        }
+      }
+      /** @description Slack integration is not installed, already linked, or belongs to a different organization. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SlackIntegrationLinkBadRequestResponse']
+        }
+      }
+      /** @description Benefit or Slack integration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -55511,6 +55630,7 @@ export const benefitTypeValues: ReadonlyArray<
   'license_keys',
   'meter_credit',
   'feature_flag',
+  'slack_shared_channel',
 ]
 export const benefitUpdatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitUpdatedEvent']['name']
@@ -58268,6 +58388,14 @@ export const seatStatusValues: ReadonlyArray<
 export const seatTierTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SeatTierType']
 > = ['volume', 'graduated']
+export const slackIntegrationLinkBadRequestResponseErrorValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SlackIntegrationLinkBadRequestResponse']['error']
+> = [
+  'BadRequest',
+  'SlackIntegrationAlreadyLinked',
+  'SlackIntegrationNotInstalled',
+  'SlackIntegrationBenefitAlreadyLinked',
+]
 export const stripeAccountCountryValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['StripeAccountCountry']
 > = [

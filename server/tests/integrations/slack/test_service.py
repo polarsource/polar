@@ -4,32 +4,60 @@ from uuid import uuid4
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.benefit.grant.repository import BenefitGrantRepository
+from polar.benefit.repository import BenefitRepository
 from polar.config import settings
 from polar.integrations.slack.repository import SlackAppRepository
 from polar.integrations.slack.schemas import SlackIntegrationCredentialsUpdate
 from polar.integrations.slack.service import (
     OAUTH_STATE_JWT_TYPE,
     SlackAppService,
+    SlackIntegrationAlreadyLinked,
     SlackIntegrationAppIdAlreadyLinked,
+    SlackIntegrationBenefitAlreadyLinked,
     SlackIntegrationInvalidCredentials,
     SlackIntegrationInvalidState,
     SlackIntegrationNotConfigured,
+    SlackIntegrationNotInstalled,
 )
 from polar.kit import jwt
 from polar.models import (
+    Benefit,
+    Customer,
     Organization,
     SlackApp,
 )
+from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_benefit, create_benefit_grant
 
 _REDIRECT_URI = "https://api.polar.sh/v1/integrations/slack/callback"
+_BASE_PROPERTIES = {
+    "channel_name_template": "support-{customer_name}",
+    "private": True,
+    "welcome_message": None,
+    "archive_on_revoke": True,
+    "team_invitees": [],
+}
+
+
+async def _create_benefit(
+    save_fixture: SaveFixture, organization: Organization
+) -> Benefit:
+    return await create_benefit(
+        save_fixture,
+        organization=organization,
+        type=BenefitType.slack_shared_channel,
+        properties=_BASE_PROPERTIES,
+    )
 
 
 async def _create_integration(
     save_fixture: SaveFixture,
     organization: Organization,
     *,
+    benefit: Benefit | None = None,
     bot_token: str | None = "xoxb-test-token",
     slack_app_id: str = "A0TESTAPPID",
 ) -> SlackApp:
@@ -48,6 +76,12 @@ async def _create_integration(
         scopes=["channels:manage"] if bot_token else None,
     )
     await save_fixture(integration)
+    if benefit is not None:
+        benefit.properties = {
+            **benefit.properties,
+            "slack_integration_id": str(integration.id),
+        }
+        await save_fixture(benefit)
     return integration
 
 
@@ -391,6 +425,81 @@ class TestHandleEvent:
             event={"type": "tokens_revoked"},
         )
 
+    async def test_channel_shared_records_connected_team(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        benefit = await _create_benefit(save_fixture, organization)
+        await _create_integration(save_fixture, organization, benefit=benefit)
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit,
+            properties={
+                "invited_email": "a@example.com",
+                "channel_id": "C123",
+            },
+        )
+        await session.flush()
+        service, _client = _service_with_mock(mocker)
+
+        await service.handle_event(
+            session,
+            api_app_id="A0TESTAPPID",
+            event={
+                "type": "channel_shared",
+                "channel": "C123",
+                "connected_team_id": "TCUST",
+            },
+        )
+
+        repo = BenefitGrantRepository.from_session(session)
+        refreshed = await repo.get_by_id(grant.id)
+        assert refreshed is not None
+        assert (refreshed.properties or {}).get("connected_team_id") == "TCUST"
+
+    async def test_channel_shared_ignores_same_channel_id_for_other_benefit(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        benefit = await _create_benefit(save_fixture, organization)
+        other_benefit = await _create_benefit(save_fixture, organization)
+        await _create_integration(save_fixture, organization, benefit=benefit)
+        other_grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            other_benefit,
+            properties={
+                "invited_email": "a@example.com",
+                "channel_id": "C123",
+            },
+        )
+        await session.flush()
+        service, _client = _service_with_mock(mocker)
+
+        await service.handle_event(
+            session,
+            api_app_id="A0TESTAPPID",
+            event={
+                "type": "channel_shared",
+                "channel": "C123",
+                "connected_team_id": "TCUST",
+            },
+        )
+
+        repo = BenefitGrantRepository.from_session(session)
+        refreshed = await repo.get_by_id(other_grant.id)
+        assert refreshed is not None
+        assert "connected_team_id" not in (refreshed.properties or {})
+
 
 @pytest.mark.asyncio
 class TestDelete:
@@ -409,3 +518,106 @@ class TestDelete:
         await service.delete(session, integration)
 
         assert await service.get(session, created.id) is None
+
+
+@pytest.mark.asyncio
+class TestLink:
+    async def test_links_installed_integration(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+    ) -> None:
+        benefit = await _create_benefit(save_fixture, organization)
+        integration = await _create_integration(save_fixture, organization)
+        service, _client = _service_with_mock(mocker)
+        get_by_id_for_update = mocker.spy(SlackAppRepository, "get_by_id_for_update")
+
+        linked = await service.link(session, benefit, integration)
+
+        assert linked.id == integration.id
+        assert get_by_id_for_update.call_count == 1
+        assert get_by_id_for_update.call_args.args[1] == integration.id
+        repo = BenefitRepository.from_session(session)
+        refreshed = await repo.get_by_id(benefit.id)
+        assert refreshed is not None
+        assert dict(refreshed.properties)["slack_integration_id"] == str(integration.id)
+
+    async def test_idempotent_when_already_linked_to_same_benefit(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+    ) -> None:
+        benefit = await _create_benefit(save_fixture, organization)
+        integration = await _create_integration(
+            save_fixture, organization, benefit=benefit
+        )
+        service, _client = _service_with_mock(mocker)
+
+        linked = await service.link(session, benefit, integration)
+
+        assert linked.id == integration.id
+        repo = BenefitRepository.from_session(session)
+        refreshed = await repo.get_by_id(benefit.id)
+        assert refreshed is not None
+        assert dict(refreshed.properties)["slack_integration_id"] == str(integration.id)
+
+    async def test_rejects_uninstalled_integration(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+    ) -> None:
+        benefit = await _create_benefit(save_fixture, organization)
+        integration = await _create_integration(
+            save_fixture, organization, bot_token=None
+        )
+        service, _client = _service_with_mock(mocker)
+
+        with pytest.raises(SlackIntegrationNotInstalled):
+            await service.link(session, benefit, integration)
+
+    async def test_rejects_integration_linked_to_another_benefit(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+    ) -> None:
+        other_benefit = await _create_benefit(save_fixture, organization)
+        integration = await _create_integration(
+            save_fixture, organization, benefit=other_benefit
+        )
+        benefit = await _create_benefit(save_fixture, organization)
+        service, _client = _service_with_mock(mocker)
+
+        with pytest.raises(SlackIntegrationAlreadyLinked):
+            await service.link(session, benefit, integration)
+
+        repo = BenefitRepository.from_session(session)
+        refreshed = await repo.get_by_id(benefit.id)
+        assert refreshed is not None
+        assert "slack_integration_id" not in dict(refreshed.properties)
+
+    async def test_rejects_benefit_already_linked(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+    ) -> None:
+        benefit = await _create_benefit(save_fixture, organization)
+        await _create_integration(
+            save_fixture, organization, benefit=benefit, slack_app_id="A0FIRSTAPPX"
+        )
+        other_integration = await _create_integration(
+            save_fixture, organization, slack_app_id="A0SECONDAPP"
+        )
+        service, _client = _service_with_mock(mocker)
+
+        with pytest.raises(SlackIntegrationBenefitAlreadyLinked):
+            await service.link(session, benefit, other_integration)

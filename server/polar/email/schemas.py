@@ -7,7 +7,6 @@ from pydantic import BaseModel, Discriminator, TypeAdapter
 
 from polar.notifications.notification import (
     MaintainerAccountCreditsGrantedNotificationPayload,
-    MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
 )
@@ -45,7 +44,6 @@ class EmailTemplate(StrEnum):
     webhook_endpoint_disabled = "webhook_endpoint_disabled"
     notification_new_sale = "notification_new_sale"
     notification_new_subscription = "notification_new_subscription"
-    notification_create_account = "notification_create_account"
     notification_credits_granted = "notification_credits_granted"
     polar_self_subscription_confirmation = "polar_self_subscription_confirmation"
     polar_self_subscription_cycled = "polar_self_subscription_cycled"
@@ -373,13 +371,6 @@ class NotificationNewSubscriptionEmail(BaseModel):
     props: MaintainerNewPaidSubscriptionNotificationPayload
 
 
-class NotificationCreateAccountEmail(BaseModel):
-    template: Literal[EmailTemplate.notification_create_account] = (
-        EmailTemplate.notification_create_account
-    )
-    props: MaintainerCreateAccountNotificationPayload
-
-
 class NotificationCreditsGrantedEmail(BaseModel):
     template: Literal[EmailTemplate.notification_credits_granted] = (
         EmailTemplate.notification_credits_granted
@@ -461,7 +452,6 @@ Email = Annotated[
     | WebhookEndpointDisabledEmail
     | NotificationNewSaleEmail
     | NotificationNewSubscriptionEmail
-    | NotificationCreateAccountEmail
     | NotificationCreditsGrantedEmail
     | PolarSelfSubscriptionConfirmationEmail
     | PolarSelfSubscriptionCycledEmail

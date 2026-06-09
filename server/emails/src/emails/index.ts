@@ -3,7 +3,6 @@ import { CustomerEmailUpdateVerification } from './customer_email_update_verific
 import { CustomerSessionCode } from './customer_session_code'
 import { EmailUpdate } from './email_update'
 import { LoginCode } from './login_code'
-import { NotificationCreateAccount } from './notification_create_account'
 import { NotificationCreditsGranted } from './notification_credits_granted'
 import { NotificationNewSale } from './notification_new_sale'
 import { NotificationNewSubscription } from './notification_new_subscription'
@@ -59,7 +58,6 @@ const TEMPLATES: Record<string, React.FC<never>> = {
   webhook_endpoint_disabled: WebhookEndpointDisabled,
   notification_new_sale: NotificationNewSale,
   notification_new_subscription: NotificationNewSubscription,
-  notification_create_account: NotificationCreateAccount,
   notification_credits_granted: NotificationCreditsGranted,
   polar_self_subscription_confirmation: PolarSelfSubscriptionConfirmation,
   polar_self_subscription_cycled: PolarSelfSubscriptionCycled,

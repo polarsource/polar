@@ -7,7 +7,6 @@ from polar.email.react import render_email_template
 from polar.models.order import OrderBillingReasonInternal
 from polar.notifications.notification import (
     MaintainerAccountCreditsGrantedNotificationPayload,
-    MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
     NotificationPayloadBase,
@@ -88,16 +87,6 @@ async def test_MaintainerNewProductSaleNotification() -> None:
 
 
 @pytest.mark.asyncio
-async def test_MaintainerCreateAccountNotificationPayload() -> None:
-    n = MaintainerCreateAccountNotificationPayload(
-        organization_name="orgname",
-        url="https://example.com/url",
-    )
-
-    await check_diff(n)
-
-
-@pytest.mark.asyncio
 async def test_MaintainerAccountCreditsGrantedNotification() -> None:
     n = MaintainerAccountCreditsGrantedNotificationPayload(
         organization_name="Test Org",
@@ -121,10 +110,6 @@ async def test_MaintainerAccountCreditsGrantedNotification() -> None:
             organization_name="{{ 123456 * 9 }}",
             organization_slug="{{ 123456 * 9 }}",
             billing_reason=OrderBillingReasonInternal.purchase,
-        ),
-        MaintainerCreateAccountNotificationPayload(
-            organization_name="{{ 123456 * 9 }}",
-            url="https://example.com/url",
         ),
         MaintainerNewPaidSubscriptionNotificationPayload(
             subscriber_name="John Doe",

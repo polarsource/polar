@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { MouseEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { UpdateBenefitForm } from '../Benefit/BenefitForm'
-import { isInteractiveBenefitType } from '../Benefit/utils'
+import { isBenefitVisibilityConfigurable } from '../Benefit/utils'
 import { toast } from '../Toast/use-toast'
 
 interface UpdateBenefitModalContentProps {
@@ -30,7 +30,7 @@ const UpdateBenefitModalContent = ({
 }: UpdateBenefitModalContentProps) => {
   const router = useRouter()
   const defaultValues = useMemo((): BenefitUpdate => {
-    if (isInteractiveBenefitType(benefit.type)) {
+    if (!isBenefitVisibilityConfigurable(benefit.type)) {
       const { visibility: _visibility, ...values } = benefit
       return values
     }

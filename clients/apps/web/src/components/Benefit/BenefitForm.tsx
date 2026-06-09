@@ -32,7 +32,11 @@ import { GitHubRepositoryBenefitForm } from './GitHubRepositoryBenefitForm'
 import { LicenseKeysBenefitForm } from './LicenseKeys/BenefitForm'
 import { MeterCreditBenefitForm } from './MeterCredit/BenefitForm'
 import { BenefitVisibilityField } from './BenefitVisibilityField'
-import { benefitsDisplayNames, getDefaultBenefitVisibility } from './utils'
+import {
+  benefitsDisplayNames,
+  getDefaultBenefitVisibility,
+  isBenefitVisibilityConfigurable,
+} from './utils'
 
 export const NewBenefitForm = ({
   organization,
@@ -116,6 +120,14 @@ const BenefitForm = ({
       />
 
       {!update ? <BenefitTypeSelect /> : null}
+      {type !== 'usage' && isBenefitVisibilityConfigurable(type) ? (
+        <BenefitVisibilityField
+          key={type}
+          defaultValue={
+            update ? undefined : getDefaultBenefitVisibility(type)
+          }
+        />
+      ) : null}
       {type === 'custom' && <CustomBenefitForm update={update} />}
       {type === 'discord' && <DiscordBenefitForm />}
       {type === 'github_repository' && (
@@ -147,7 +159,6 @@ const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
 
   return (
     <>
-      <BenefitVisibilityField />
       <FormField
         control={control}
         name="properties.note"
@@ -181,7 +192,6 @@ const FeatureFlagBenefitForm = () => {
 
   return (
     <>
-      <BenefitVisibilityField />
       <FormField
         control={control}
         name="metadata"
@@ -401,7 +411,7 @@ const DiscordBenefitForm = () => {
 }
 
 const BenefitTypeSelect = () => {
-  const { control, setValue } = useFormContext<schemas['BenefitCreate']>()
+  const { control } = useFormContext<schemas['BenefitCreate']>()
 
   return (
     <FormField
@@ -415,18 +425,7 @@ const BenefitTypeSelect = () => {
               <FormLabel>Type</FormLabel>
             </div>
             <FormControl>
-              <Select
-                onValueChange={(value) => {
-                  field.onChange(value)
-                  const visibility = getDefaultBenefitVisibility(
-                    value as schemas['BenefitType'],
-                  )
-                  if (visibility) {
-                    setValue('visibility', visibility)
-                  }
-                }}
-                defaultValue={field.value}
-              >
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a benefit type" />
                 </SelectTrigger>

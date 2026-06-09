@@ -22,8 +22,6 @@ import {
 import { useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 
-import { BenefitVisibilityField } from '../BenefitVisibilityField'
-
 export const LicenseKeysBenefitForm = () => {
   const { control, watch, setValue } =
     useFormContext<schemas['BenefitLicenseKeysCreate']>()
@@ -47,7 +45,6 @@ export const LicenseKeysBenefitForm = () => {
 
   return (
     <>
-      <BenefitVisibilityField />
       <FormField
         control={control}
         name="properties.prefix"

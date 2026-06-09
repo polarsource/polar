@@ -2,6 +2,7 @@
 
 import {
   benefitsDisplayNames,
+  isBenefitVisibilityConfigurable,
   resolveBenefitIcon,
 } from '@/components/Benefit/utils'
 import { useDeleteBenefit, useUpdateBenefit } from '@/hooks/queries'
@@ -80,7 +81,10 @@ export const BenefitRow = ({
   const deleteBenefit = useDeleteBenefit(organization.id)
   const updateBenefit = useUpdateBenefit(organization.id)
 
+  const visibilityConfigurable = isBenefitVisibilityConfigurable(benefit.type)
   const isPublic = benefit.visibility === 'public'
+  const showVisibilityControl = selected || visibilityConfigurable
+  const canToggleVisibility = selected && visibilityConfigurable
 
   const handleVisibilityToggle = useCallback(() => {
     updateBenefit
@@ -157,7 +161,7 @@ export const BenefitRow = ({
           </Box>
         </Box>
         <Box display="flex" alignItems="center" columnGap="s">
-          {selected ? (
+          {showVisibilityControl ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -165,11 +169,13 @@ export const BenefitRow = ({
                   size="icon"
                   variant="secondary"
                   onClick={handleVisibilityToggle}
-                  disabled={updateBenefit.isPending}
+                  disabled={!canToggleVisibility || updateBenefit.isPending}
                   aria-label={
-                    isPublic
-                      ? 'Hide from customer portal'
-                      : 'Show in customer portal'
+                    visibilityConfigurable
+                      ? isPublic
+                        ? 'Hide from customer portal'
+                        : 'Show in customer portal'
+                      : 'Always visible in customer portal'
                   }
                   aria-pressed={isPublic}
                   className={
@@ -182,9 +188,11 @@ export const BenefitRow = ({
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                {isPublic
-                  ? 'Visible in customer portal'
-                  : 'Hidden from customer portal'}
+                {visibilityConfigurable
+                  ? isPublic
+                    ? 'Visible in customer portal'
+                    : 'Hidden from customer portal'
+                  : 'Always visible in customer portal'}
               </TooltipContent>
             </Tooltip>
           ) : null}

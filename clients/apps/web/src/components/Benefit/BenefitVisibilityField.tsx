@@ -28,7 +28,13 @@ const visibilityCardClass = (selected: boolean) =>
       : 'dark:border-polar-700 dark:hover:border-polar-700 dark:text-polar-500 dark:hover:bg-polar-700 dark:bg-polar-900 border-gray-100 text-gray-500 hover:border-gray-200',
   )
 
-export const BenefitVisibilityField = () => {
+interface BenefitVisibilityFieldProps {
+  defaultValue?: schemas['BenefitVisibility']
+}
+
+export const BenefitVisibilityField = ({
+  defaultValue,
+}: BenefitVisibilityFieldProps) => {
   const { control } = useFormContext<BenefitVisibilityFormValues>()
 
   return (
@@ -36,6 +42,7 @@ export const BenefitVisibilityField = () => {
       control={control}
       name="visibility"
       shouldUnregister
+      defaultValue={defaultValue}
       render={({ field }) => (
         <FormItem>
           <FormLabel>Visibility</FormLabel>

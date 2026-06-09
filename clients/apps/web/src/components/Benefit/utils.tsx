@@ -73,23 +73,23 @@ export const benefitsDisplayNames: {
   feature_flag: 'Feature Flag',
 }
 
-export const INTERACTIVE_BENEFIT_TYPES = [
-  'discord',
-  'github_repository',
-  'downloadables',
+export const VISIBILITY_CONFIGURABLE_BENEFIT_TYPES = [
+  'custom',
+  'license_keys',
+  'meter_credit',
+  'feature_flag',
 ] as const satisfies readonly schemas['BenefitType'][]
 
-export type InteractiveBenefitType = (typeof INTERACTIVE_BENEFIT_TYPES)[number]
+export type VisibilityConfigurableBenefitType =
+  (typeof VISIBILITY_CONFIGURABLE_BENEFIT_TYPES)[number]
 
-export const isInteractiveBenefitType = (
+export function isBenefitVisibilityConfigurable(
   type: schemas['BenefitType'],
-): type is InteractiveBenefitType =>
-  (INTERACTIVE_BENEFIT_TYPES as readonly string[]).includes(type)
-
-type VisibilityConfigurableBenefitType = Exclude<
-  schemas['BenefitType'],
-  InteractiveBenefitType
->
+): type is VisibilityConfigurableBenefitType {
+  return (VISIBILITY_CONFIGURABLE_BENEFIT_TYPES as readonly string[]).includes(
+    type,
+  )
+}
 
 export const DEFAULT_BENEFIT_VISIBILITY = {
   custom: 'public',
@@ -104,19 +104,8 @@ export const DEFAULT_BENEFIT_VISIBILITY = {
 export const getDefaultBenefitVisibility = (
   type: schemas['BenefitType'],
 ): schemas['BenefitVisibility'] | undefined => {
-  if (isInteractiveBenefitType(type)) {
+  if (!isBenefitVisibilityConfigurable(type)) {
     return undefined
   }
   return DEFAULT_BENEFIT_VISIBILITY[type]
 }
-
-export const benefitVisibilityDisplayNames: Record<
-  schemas['BenefitVisibility'],
-  string
-> = {
-  public: 'Visible',
-  private: 'Hidden',
-}
-
-export const BENEFIT_VISIBILITY_DISPLAY_COLOR =
-  'bg-gray-100 text-gray-600 dark:bg-polar-700 dark:text-polar-400'

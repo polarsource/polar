@@ -332,6 +332,36 @@ describe('middleware function', () => {
   })
 })
 
+describe('customer portal search header', () => {
+  it('forwards the query string as x-portal-search on portal routes', async () => {
+    const request = new NextRequest(
+      'https://example.com/my-org/portal/overview?customer_session_token=abc&locale=sv',
+    )
+
+    const response = await proxy(request)
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('x-portal-search')).toBe(
+      '?customer_session_token=abc&locale=sv',
+    )
+  })
+
+  it('sets an empty x-portal-search on portal routes without a query string', async () => {
+    const request = new NextRequest('https://example.com/my-org/portal')
+    const response = await proxy(request)
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('x-portal-search')).toBe('')
+  })
+
+  it('does not set x-portal-search on non-portal routes', async () => {
+    const request = new NextRequest('https://example.com/my-org/products')
+    const response = await proxy(request)
+
+    expect(response.headers.get('x-portal-search')).toBeNull()
+  })
+})
+
 describe('the /to/ dance', () => {
   it('bounces /to/* to the sandbox host when polar_env cookie does not match the current env', async () => {
     const request = new NextRequest('https://polar.sh/to/dashboard/products')

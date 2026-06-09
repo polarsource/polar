@@ -5,6 +5,7 @@ import { useCustomerPortalSession } from '@/hooks/queries/customerPortal'
 import { createClientSideAPI } from '@/utils/client'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import { schemas } from '@polar-sh/client'
+import { type AcceptedLocale } from '@polar-sh/i18n'
 import { Avatar } from '@polar-sh/orbit'
 import { TooltipProvider } from '@polar-sh/ui/components/ui/tooltip'
 import Link from 'next/link'
@@ -12,11 +13,13 @@ import { useSearchParams } from 'next/navigation'
 
 interface CustomerPortalLayoutWrapperProps {
   organization: schemas['CustomerOrganization']
+  locale: AcceptedLocale
   children: React.ReactNode
 }
 
 export function CustomerPortalLayoutWrapper({
   organization,
+  locale,
   children,
 }: CustomerPortalLayoutWrapperProps) {
   const searchParams = useSearchParams()
@@ -32,6 +35,7 @@ export function CustomerPortalLayoutWrapper({
       token={token}
       organizationId={organization.id}
       organizationSlug={organization.slug}
+      locale={locale}
       baseUrl={process.env.NEXT_PUBLIC_API_URL}
     >
       <TooltipProvider>

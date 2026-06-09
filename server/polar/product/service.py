@@ -39,7 +39,7 @@ from polar.models import (
     User,
 )
 from polar.models.product_custom_field import ProductCustomField
-from polar.models.product_price import ProductPriceSource
+from polar.models.product_price import ProductPriceFixed, ProductPriceSource
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
@@ -56,6 +56,7 @@ from .schemas import (
     ExistingProductPrice,
     ProductCreate,
     ProductPriceCreate,
+    ProductPriceFreeCreate,
     ProductPriceMeteredCreateBase,
     ProductPriceSeatBasedCreate,
     ProductUpdate,
@@ -572,8 +573,20 @@ class ProductService:
                 existing_prices.add(price)
             else:
                 model_class = price_schema.get_model_class()
+                price_kwargs = price_schema.model_dump()
+                # We no longer create `free` prices: we're dropping the free price
+                # type in favor of a fixed price with an amount of 0. Incoming `free`
+                # prices are still accepted for backward compatibility, but persisted
+                # as a fixed price with an amount of 0.
+                if isinstance(price_schema, ProductPriceFreeCreate):
+                    model_class = ProductPriceFixed
+                    price_kwargs = {
+                        "price_currency": price_schema.price_currency,
+                        "tax_behavior": price_schema.tax_behavior,
+                        "price_amount": 0,
+                    }
                 price = model_class(
-                    product=product, source=source, **price_schema.model_dump()
+                    product=product, source=source, **price_kwargs
                 )
                 if isinstance(price_schema, ProductPriceSeatBasedCreate):
                     if not organization.feature_settings.get(

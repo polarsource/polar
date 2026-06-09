@@ -80,6 +80,13 @@ class SupportCase(RecordModel):
     """
 
     __tablename__ = "support_cases"
+    __table_args__ = (
+        # A review_appeal case must link to a review — and only that type may.
+        CheckConstraint(
+            "(type = 'review_appeal') = (organization_review_id IS NOT NULL)",
+            name="organization_review_matches_type",
+        ),
+    )
 
     type: Mapped[SupportCaseType] = mapped_column(
         StringEnum(SupportCaseType, length=32), nullable=False, index=True
@@ -118,9 +125,7 @@ class ReviewAppealSupportCase(SupportCase):
 
     @declared_attr
     def organization_review(cls) -> Mapped["OrganizationReview"]:
-        return relationship(
-            "OrganizationReview", lazy="raise", back_populates="support_case"
-        )
+        return relationship("OrganizationReview", lazy="raise")
 
 
 # One live review-appeal case per organization review.

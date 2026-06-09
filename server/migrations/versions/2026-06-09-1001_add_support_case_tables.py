@@ -35,6 +35,10 @@ def upgrade() -> None:
         sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("deleted_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("organization_review_id", sa.Uuid(), nullable=True),
+        sa.CheckConstraint(
+            "(type = 'review_appeal') = (organization_review_id IS NOT NULL)",
+            name=op.f("support_cases_organization_review_matches_type_check"),
+        ),
         sa.ForeignKeyConstraint(
             ["organization_review_id"],
             ["organization_reviews.id"],

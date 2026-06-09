@@ -11,7 +11,6 @@ from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
     from polar.models.organization import Organization
-    from polar.models.support_case import ReviewAppealSupportCase
 
 
 class OrganizationReview(RecordModel):
@@ -78,15 +77,6 @@ class OrganizationReview(RecordModel):
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise", back_populates="review")
-
-    @declared_attr
-    def support_case(cls) -> Mapped["ReviewAppealSupportCase | None"]:
-        return relationship(
-            "ReviewAppealSupportCase",
-            lazy="raise",
-            back_populates="organization_review",
-            uselist=False,
-        )
 
     def clear_appeal_state(self) -> None:
         self.appeal_submitted_at = None

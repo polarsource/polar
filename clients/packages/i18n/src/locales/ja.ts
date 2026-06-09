@@ -87,6 +87,11 @@ export default {
         minimum: '最低 {min}席',
         maximum: '最大 {max}席',
         updateFailed: '席数の更新に失敗しました',
+        included: {
+          '=1': '1席分を含みます',
+          other: '#席分を含みます',
+          _mode: 'plural',
+        },
       },
       discount: {
         duration: {
@@ -236,14 +241,13 @@ export default {
     confirmation: {
       confirmPayment: '支払いを確認',
       processingTitle: 'ご注文を処理しています',
-      successTitle: 'ご注文が完了しました',
       failedTitle: 'ご注文の処理中に問題が発生しました',
       processingDescription:
         'お支払いを確認しています。しばらくお待ちください。',
-      successDescription:
-        '{product} の特典をご利用いただけるようになりました。',
       failedDescription:
         'もう一度お試しいただくか、サポートまでお問い合わせください。',
+      successTitle: 'ご注文ありがとうございます！',
+      successDescription: 'これで{product}をご利用いただけます。',
     },
     loading: {
       processingOrder: '注文を処理しています...',

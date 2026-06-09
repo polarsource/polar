@@ -1954,10 +1954,10 @@
     "checkout.benefits.licenseKey.activationDeactivationFailed": "Activation Deactivation Failed",
     "checkout.confirmation.confirmPayment": "Confirm payment",
     "checkout.confirmation.processingTitle": "We are processing your order",
-    "checkout.confirmation.successTitle": "Your order was successful!",
+    "checkout.confirmation.successTitle": "Thank you for your order!",
     "checkout.confirmation.failedTitle": "A problem occurred while processing your order",
     "checkout.confirmation.processingDescription": "Please wait while we confirm your payment.",
-    "checkout.confirmation.successDescription": "You're now eligible for the benefits of {product}.",
+    "checkout.confirmation.successDescription": "You now have access to {product}.",
     "checkout.confirmation.failedDescription": "Please try again or contact support.",
     "checkout.loading.processingOrder": "Processing order...",
     "checkout.loading.processingPayment": "Processing payment",
@@ -1993,6 +1993,8 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.seats.included.=1": "One seat included",
+    "checkout.pricing.seats.included.other": "# seats included"
   }
 }

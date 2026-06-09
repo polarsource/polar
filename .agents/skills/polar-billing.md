@@ -174,6 +174,7 @@ Individual payment transaction.
 |-------------------|-------------|
 | `ProductPriceFixed` | Fixed amount (set `price_amount=0` for free) |
 | `ProductPriceCustom` | Merchant sets at checkout |
+| `ProductPriceFree` | Legacy type (no new records; free prices now stored as `ProductPriceFixed` with `price_amount=0`) |
 | `ProductPriceMeteredUnit` | Pay-per-unit |
 | `ProductPriceSeatUnit` | Per-seat with tiers |
 

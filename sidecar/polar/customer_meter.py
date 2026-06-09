@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import Any
 
 from polar.kit.metadata import get_nested_metadata_value
@@ -9,9 +10,33 @@ from polar.meter.aggregation import (
 )
 from polar.meter.event import BufferedEvent
 from polar.meter.filter import Filter
+from polar.models import CustomerMeter
 from polar.repository import EventRepository
 
 log = logging.getLogger("polar.sidecar.customer_meter")
+
+
+def snapshot_from_response(
+    customer_meter: dict[str, Any], polled_at: datetime
+) -> CustomerMeter:
+    """Project an upstream customer meter response into a cache row, keeping the raw
+    payload in `snapshot` so it can be replayed verbatim when Polar is unreachable."""
+    customer = customer_meter["customer"]
+    meter = customer_meter["meter"]
+    return CustomerMeter(
+        id=customer_meter["id"],
+        customer_id=customer_meter["customer_id"],
+        meter_id=customer_meter["meter_id"],
+        external_customer_id=customer.get("external_id"),
+        filter=meter["filter"],
+        aggregation=meter["aggregation"],
+        consumed_units=float(customer_meter["consumed_units"]),
+        credited_units=int(customer_meter["credited_units"]),
+        balance=float(customer_meter["balance"]),
+        last_balanced_event_id=customer_meter["last_balanced_event_id"],
+        snapshot=customer_meter,
+        polled_at=polled_at,
+    )
 
 
 async def merge_customer_meter(

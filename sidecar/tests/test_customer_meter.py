@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from polar.app import app
 from polar.models import Event
+from polar.repository import CustomerMeterRepository
 
 FILTER = {
     "conjunction": "and",
@@ -72,8 +73,15 @@ def _list(*meters: dict[str, Any]) -> dict[str, Any]:
 async def set_upstream() -> AsyncIterator[Callable[..., None]]:
     clients: list[httpx.AsyncClient] = []
 
-    def _set(payload: dict[str, Any], status: int = 200) -> None:
+    def _set(
+        payload: dict[str, Any] | None = None,
+        status: int = 200,
+        *,
+        unavailable: bool = False,
+    ) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
+            if unavailable:
+                raise httpx.ConnectError("upstream down")
             return httpx.Response(status, json=payload)
 
         upstream = httpx.AsyncClient(
@@ -284,3 +292,135 @@ async def test_get_by_id_merges(
     body = response.json()
     assert body["consumed_units"] == 8.0
     assert body["balance"] == 92.0
+
+
+@pytest.mark.asyncio
+async def test_successful_read_caches_raw_snapshot(
+    client: httpx.AsyncClient,
+    session: AsyncSession,
+    set_upstream: Callable[..., None],
+) -> None:
+    set_upstream(
+        _list(
+            _meter(
+                consumed=5,
+                credited=100,
+                last_balanced="polar_w",
+                aggregation=SUM_TOKENS,
+            )
+        )
+    )
+
+    await client.get("/v1/customer-meters/")
+
+    cached = await CustomerMeterRepository(session).get_by_id("cm_1")
+    assert cached is not None
+    assert cached.consumed_units == 5.0  # the raw upstream base, not the merged value
+    assert cached.snapshot["consumed_units"] == 5
+
+
+@pytest.mark.asyncio
+async def test_get_by_id_served_from_cache_when_upstream_down(
+    client: httpx.AsyncClient,
+    session: AsyncSession,
+    set_upstream: Callable[..., None],
+) -> None:
+    session.add_all(
+        [_event("e0", "polar_w", tokens=5), _event("e1", "polar_1", tokens=3)]
+    )
+    await session.flush()
+    set_upstream(
+        _meter(
+            consumed=5, credited=100, last_balanced="polar_w", aggregation=SUM_TOKENS
+        )
+    )
+    await client.get("/v1/customer-meters/cm_1")  # primes the cache
+
+    set_upstream(unavailable=True)
+    response = await client.get("/v1/customer-meters/cm_1")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["consumed_units"] == 8.0  # cached base 5 + delta 3
+    assert body["balance"] == 92.0
+
+
+@pytest.mark.asyncio
+async def test_5xx_serves_from_cache(
+    client: httpx.AsyncClient,
+    session: AsyncSession,
+    set_upstream: Callable[..., None],
+) -> None:
+    session.add_all(
+        [_event("e0", "polar_w", tokens=5), _event("e1", "polar_1", tokens=3)]
+    )
+    await session.flush()
+    set_upstream(
+        _meter(
+            consumed=5, credited=100, last_balanced="polar_w", aggregation=SUM_TOKENS
+        )
+    )
+    await client.get("/v1/customer-meters/cm_1")
+
+    set_upstream({"error": "boom"}, status=503)
+    response = await client.get("/v1/customer-meters/cm_1")
+
+    assert response.status_code == 200
+    assert response.json()["consumed_units"] == 8.0
+
+
+@pytest.mark.asyncio
+async def test_list_served_from_cache_when_upstream_down(
+    client: httpx.AsyncClient,
+    session: AsyncSession,
+    set_upstream: Callable[..., None],
+) -> None:
+    session.add_all(
+        [_event("e0", "polar_w", tokens=5), _event("e1", "polar_1", tokens=3)]
+    )
+    await session.flush()
+    set_upstream(
+        _list(
+            _meter(
+                consumed=5,
+                credited=100,
+                last_balanced="polar_w",
+                aggregation=SUM_TOKENS,
+            )
+        )
+    )
+    await client.get("/v1/customer-meters/")
+
+    set_upstream(unavailable=True)
+    response = await client.get("/v1/customer-meters/")
+
+    assert response.status_code == 200
+    item = response.json()["items"][0]
+    assert item["consumed_units"] == 8.0
+
+
+@pytest.mark.asyncio
+async def test_uncached_and_upstream_down_returns_503(
+    client: httpx.AsyncClient,
+    session: AsyncSession,
+    set_upstream: Callable[..., None],
+) -> None:
+    set_upstream(unavailable=True)
+
+    response = await client.get("/v1/customer-meters/cm_unknown")
+
+    assert response.status_code == 503
+
+
+@pytest.mark.asyncio
+async def test_4xx_passes_through_without_cache(
+    client: httpx.AsyncClient,
+    session: AsyncSession,
+    set_upstream: Callable[..., None],
+) -> None:
+    set_upstream({"detail": "Not found"}, status=404)
+
+    response = await client.get("/v1/customer-meters/cm_1")
+
+    assert response.status_code == 404
+    assert await CustomerMeterRepository(session).get_by_id("cm_1") is None

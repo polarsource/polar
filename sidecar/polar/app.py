@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
@@ -11,11 +12,13 @@ from polar_sdk.models import EventsIngest, EventsIngestResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from polar.config import get_base_url
-from polar.customer_meter import merge_customer_meter
+from polar.customer_meter import merge_customer_meter, snapshot_from_response
 from polar.db import engine, get_db_session, init_db
-from polar.repository import EventRepository
+from polar.repository import CustomerMeterRepository, EventRepository
 from polar.sync import run_flush_loop
 from polar.validation import validate_event
+
+log = logging.getLogger("polar.sidecar.app")
 
 BASE_URL = get_base_url()
 
@@ -109,18 +112,76 @@ def _proxied_response(upstream: httpx.Response) -> Response:
     )
 
 
+def _upstream_unavailable(status_code: int) -> bool:
+    """Polar is unreachable rather than answering — fall back to the cache."""
+    return status_code >= 500 or status_code in (408, 429)
+
+
+async def _cache_meters(
+    session: AsyncSession,
+    repository: CustomerMeterRepository,
+    items: list[dict[str, Any]],
+) -> None:
+    """Snapshot upstream meters into the cache. Best-effort: a cache write failure
+    must not break a read that upstream already answered."""
+    try:
+        for item in items:
+            await repository.upsert(snapshot_from_response(item, datetime.now(UTC)))
+        await session.commit()
+    except Exception:
+        log.exception("failed to cache customer meters")
+        await session.rollback()
+
+
+async def _serve_meter_from_cache(
+    id: str, events: EventRepository, cache: CustomerMeterRepository
+) -> Response:
+    cached = await cache.get_by_id(id)
+    if cached is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Polar is unreachable and this customer meter is not cached.",
+        )
+    return JSONResponse(await merge_customer_meter(events, cached.snapshot))
+
+
+async def _serve_list_from_cache(
+    request: Request, events: EventRepository, cache: CustomerMeterRepository
+) -> Response:
+    external_customer_id = request.query_params.get("external_customer_id")
+    customer_id = request.query_params.get("customer_id")
+    if external_customer_id is not None:
+        cached = await cache.get_by_external_customer_id(external_customer_id)
+    elif customer_id is not None:
+        cached = await cache.get_by_customer_id(customer_id)
+    else:
+        cached = await cache.get_all()
+    items = [await merge_customer_meter(events, meter.snapshot) for meter in cached]
+    return JSONResponse(
+        {"items": items, "pagination": {"total_count": len(items), "max_page": 1}}
+    )
+
+
 @app.get("/v1/customer-meters/")
 async def list_customer_meters(
     request: Request, session: AsyncSession = Depends(get_db_session)
 ) -> Response:
-    """Pass through the upstream list, merging the local delta into each meter."""
-    upstream = await _forward(request)
+    """Merge the local delta into the upstream list, caching each meter; serve from
+    the cache when Polar is unreachable."""
+    events = EventRepository(session)
+    cache = CustomerMeterRepository(session)
+    try:
+        upstream = await _forward(request)
+    except httpx.RequestError:
+        return await _serve_list_from_cache(request, events, cache)
+    if _upstream_unavailable(upstream.status_code):
+        return await _serve_list_from_cache(request, events, cache)
     if upstream.status_code != 200:
         return _proxied_response(upstream)
     payload = upstream.json()
-    repository = EventRepository(session)
+    await _cache_meters(session, cache, payload["items"])
     payload["items"] = [
-        await merge_customer_meter(repository, item) for item in payload["items"]
+        await merge_customer_meter(events, item) for item in payload["items"]
     ]
     return JSONResponse(payload)
 
@@ -129,13 +190,21 @@ async def list_customer_meters(
 async def get_customer_meter(
     id: str, request: Request, session: AsyncSession = Depends(get_db_session)
 ) -> Response:
-    """Pass through the upstream meter, merging in the local delta."""
-    upstream = await _forward(request)
+    """Merge the local delta into the upstream meter, caching it; serve from the
+    cache when Polar is unreachable."""
+    events = EventRepository(session)
+    cache = CustomerMeterRepository(session)
+    try:
+        upstream = await _forward(request)
+    except httpx.RequestError:
+        return await _serve_meter_from_cache(id, events, cache)
+    if _upstream_unavailable(upstream.status_code):
+        return await _serve_meter_from_cache(id, events, cache)
     if upstream.status_code != 200:
         return _proxied_response(upstream)
-    repository = EventRepository(session)
-    merged = await merge_customer_meter(repository, upstream.json())
-    return JSONResponse(merged)
+    item = upstream.json()
+    await _cache_meters(session, cache, [item])
+    return JSONResponse(await merge_customer_meter(events, item))
 
 
 @app.api_route(

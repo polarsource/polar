@@ -107,3 +107,16 @@ class CustomerMeterRepository:
         )
         result = await self.session.execute(statement)
         return result.scalars().all()
+
+    async def get_by_external_customer_id(
+        self, external_customer_id: str
+    ) -> Sequence[CustomerMeter]:
+        statement = select(CustomerMeter).where(
+            CustomerMeter.external_customer_id == external_customer_id
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().all()
+
+    async def get_all(self) -> Sequence[CustomerMeter]:
+        result = await self.session.execute(select(CustomerMeter))
+        return result.scalars().all()

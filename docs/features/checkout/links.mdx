@@ -60,6 +60,12 @@ If the link's products are subscriptions, you can configure a trial period direc
 
 This is useful for running campaigns with longer (or shorter) trials than your default, without having to duplicate the product. If left empty, the product's own trial configuration is used.
 
+### Seats
+
+If the link's products use seat-based pricing, you can preconfigure a fixed number of seats. When set, the checkout session is locked to that seat count—the customer cannot change it. This is useful for creating links with a predetermined team size.
+
+If the products no longer support the configured seat count when the link is opened (e.g., tier limits changed), the value is ignored and the customer can select freely.
+
 ### Metadata
 
 An optional key-value object for storing extra information. Metadata set on the link is copied to the generated Checkout Session, and propagates to the resulting Order and/or Subscription on success.

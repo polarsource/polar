@@ -7,7 +7,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-06-02T07:36:19.137336Z"
+exclude-newer = "2026-06-02T14:59:17.547926Z"
 exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
@@ -863,10 +863,12 @@ source = { virtual = "." }
 dependencies = [
     { name = "aiosqlite" },
     { name = "alembic" },
+    { name = "annotated-types" },
     { name = "asyncpg" },
     { name = "fastapi" },
     { name = "logfire", extra = ["fastapi", "httpx", "redis", "sqlalchemy"] },
     { name = "polar-sdk" },
+    { name = "pydantic" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "typer" },
     { name = "uvicorn", extra = ["standard"] },
@@ -888,10 +890,12 @@ dev = [
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.22.1" },
     { name = "alembic", specifier = ">=1.9.2" },
+    { name = "annotated-types", specifier = ">=0.6" },
     { name = "asyncpg", specifier = ">=0.29.0" },
     { name = "fastapi", specifier = ">=0.136.3" },
     { name = "logfire", extras = ["fastapi", "httpx", "sqlalchemy", "redis"], specifier = ">=4.34.0" },
     { name = "polar-sdk", url = "https://files.pythonhosted.org/packages/21/6c/b858596fcc39fdfb0757e24f24b86e96990e17d1ffed86639b04121c6e8c/polar_sdk-0.31.5-py3-none-any.whl" },
+    { name = "pydantic", specifier = ">=2.0" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.50" },
     { name = "typer", specifier = ">=0.26.2" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.48.0" },

@@ -13,6 +13,8 @@ dependencies = [
   "logfire[fastapi,httpx,sqlalchemy,redis]>=4.34.0",
   "polar-sdk==0.31.5",
   "aiosqlite>=0.22.1",
+  "pydantic>=2.0",
+  "annotated-types>=0.6",
 ]
 
 [dependency-groups]

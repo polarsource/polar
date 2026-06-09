@@ -67,7 +67,7 @@ class BenefitType(StrEnum):
             raise TaxApplicationMustBeSpecified(self) from e
 
     def is_visibility_configurable(self) -> bool:
-        return self not in INTERACTIVE_BENEFIT_TYPES
+        return self in VISIBILITY_CONFIGURABLE_BENEFIT_TYPES
 
     def default_visibility(self) -> Visibility:
         match self:
@@ -78,16 +78,18 @@ class BenefitType(StrEnum):
 
     def resolve_visibility(self, visibility: Visibility | None) -> Visibility:
         if not self.is_visibility_configurable():
+            # Benefits requiring customer action in the portal (e.g. Discord,
+            # GitHub, downloads) must stay visible.
             return Visibility.public
         return visibility if visibility is not None else self.default_visibility()
 
 
-# Benefits that requires customer action to redeem. Visibility should be public.
-INTERACTIVE_BENEFIT_TYPES: frozenset[BenefitType] = frozenset(
+VISIBILITY_CONFIGURABLE_BENEFIT_TYPES: frozenset[BenefitType] = frozenset(
     {
-        BenefitType.discord,
-        BenefitType.github_repository,
-        BenefitType.downloadables,
+        BenefitType.custom,
+        BenefitType.license_keys,
+        BenefitType.meter_credit,
+        BenefitType.feature_flag,
     }
 )
 

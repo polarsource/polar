@@ -491,7 +491,7 @@ class TestUpdate:
         enqueue_benefit_grant_updates_mock.assert_awaited_once()
 
     @pytest.mark.auth
-    async def test_rejects_visibility_update_for_interactive_benefit(
+    async def test_rejects_visibility_update_for_non_configurable_benefit(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,

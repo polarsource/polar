@@ -36,7 +36,7 @@ class TestBenefitTypeVisibility:
     ) -> None:
         assert benefit_type.default_visibility() == expected
 
-    def test_resolve_visibility_forces_public_for_interactive(self) -> None:
+    def test_resolve_visibility_forces_public_when_not_configurable(self) -> None:
         assert (
             BenefitType.discord.resolve_visibility(Visibility.private)
             == Visibility.public

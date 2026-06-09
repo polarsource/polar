@@ -6,10 +6,12 @@ from typing import Any
 
 import httpx
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi.responses import JSONResponse
 from polar_sdk.models import EventsIngest, EventsIngestResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from polar.config import get_base_url
+from polar.customer_meter import merge_customer_meter
 from polar.db import engine, get_db_session, init_db
 from polar.repository import EventRepository
 from polar.sync import run_flush_loop
@@ -105,6 +107,35 @@ def _proxied_response(upstream: httpx.Response) -> Response:
         status_code=upstream.status_code,
         headers=headers,
     )
+
+
+@app.get("/v1/customer-meters/")
+async def list_customer_meters(
+    request: Request, session: AsyncSession = Depends(get_db_session)
+) -> Response:
+    """Pass through the upstream list, merging the local delta into each meter."""
+    upstream = await _forward(request)
+    if upstream.status_code != 200:
+        return _proxied_response(upstream)
+    payload = upstream.json()
+    repository = EventRepository(session)
+    payload["items"] = [
+        await merge_customer_meter(repository, item) for item in payload["items"]
+    ]
+    return JSONResponse(payload)
+
+
+@app.get("/v1/customer-meters/{id}")
+async def get_customer_meter(
+    id: str, request: Request, session: AsyncSession = Depends(get_db_session)
+) -> Response:
+    """Pass through the upstream meter, merging in the local delta."""
+    upstream = await _forward(request)
+    if upstream.status_code != 200:
+        return _proxied_response(upstream)
+    repository = EventRepository(session)
+    merged = await merge_customer_meter(repository, upstream.json())
+    return JSONResponse(merged)
 
 
 @app.api_route(

@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -60,3 +60,30 @@ class EventRepository:
                 .values(polar_event_id=polar_event_id)
             )
             await self.session.execute(statement)
+
+    async def get_local_id_for_polar_event(self, polar_event_id: str) -> int | None:
+        statement = select(Event.id).where(Event.polar_event_id == polar_event_id)
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def get_customer_delta_events(
+        self,
+        *,
+        customer_id: str | None,
+        external_customer_id: str | None,
+        watermark_local_id: int | None,
+    ) -> Sequence[Event]:
+        conditions = []
+        if external_customer_id is not None:
+            conditions.append(
+                Event.body["external_customer_id"].as_string() == external_customer_id
+            )
+        if customer_id is not None:
+            conditions.append(Event.body["customer_id"].as_string() == customer_id)
+        statement = select(Event).where(or_(*conditions))
+        if watermark_local_id is not None:
+            statement = statement.where(
+                or_(Event.polar_event_id.is_(None), Event.id > watermark_local_id)
+            )
+        result = await self.session.execute(statement.order_by(Event.id))
+        return result.scalars().all()

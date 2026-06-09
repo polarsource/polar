@@ -585,9 +585,7 @@ class ProductService:
                         "tax_behavior": price_schema.tax_behavior,
                         "price_amount": 0,
                     }
-                price = model_class(
-                    product=product, source=source, **price_kwargs
-                )
+                price = model_class(product=product, source=source, **price_kwargs)
                 if isinstance(price_schema, ProductPriceSeatBasedCreate):
                     if not organization.feature_settings.get(
                         "seat_based_pricing_enabled", False

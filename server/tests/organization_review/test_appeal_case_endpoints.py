@@ -107,9 +107,7 @@ class TestGetAppealCase:
         denied_review: OrganizationReview,
         user_organization: UserOrganization,
     ) -> None:
-        response = await client.get(
-            f"/v1/organizations/{organization.id}/appeal/case"
-        )
+        response = await client.get(f"/v1/organizations/{organization.id}/appeal/case")
         assert response.status_code == 404
 
     @pytest.mark.auth
@@ -126,9 +124,7 @@ class TestGetAppealCase:
             session, denied_review, reason=REASON, requested_by_user_id=user.id
         )
         await session.flush()
-        response = await client.get(
-            f"/v1/organizations/{organization.id}/appeal/case"
-        )
+        response = await client.get(f"/v1/organizations/{organization.id}/appeal/case")
         assert response.status_code == 200
         data = response.json()
         assert data["case"]["is_open"] is True
@@ -156,9 +152,7 @@ class TestGetAppealCase:
             internal=True,
         )
         await session.flush()
-        response = await client.get(
-            f"/v1/organizations/{organization.id}/appeal/case"
-        )
+        response = await client.get(f"/v1/organizations/{organization.id}/appeal/case")
         assert response.status_code == 200
         assert "internal staff note" not in [
             m["body"] for m in response.json()["messages"]

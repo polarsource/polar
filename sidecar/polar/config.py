@@ -7,6 +7,7 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///./sidecar.db"
 POLAR_ACCESS_TOKEN = os.environ.get("POLAR_ACCESS_TOKEN")
 FLUSH_INTERVAL_SECONDS = float(os.environ.get("FLUSH_INTERVAL_SECONDS", "5"))
 FLUSH_BATCH_SIZE = int(os.environ.get("FLUSH_BATCH_SIZE", "100"))
+SQLITE_BUSY_TIMEOUT_MS = int(os.environ.get("SQLITE_BUSY_TIMEOUT_MS", "5000"))
 
 SERVERS = {
     "production": "https://api.polar.sh",

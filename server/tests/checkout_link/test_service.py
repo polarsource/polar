@@ -10,7 +10,7 @@ from polar.checkout_link.schemas import (
     CheckoutLinkUpdate,
 )
 from polar.checkout_link.service import checkout_link as checkout_link_service
-from polar.enums import PaymentProcessor
+from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.models import Discount, Organization, Product, User, UserOrganization
@@ -21,7 +21,49 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_checkout_link,
+    create_product,
+    create_product_price_seat_unit,
 )
+
+
+@pytest_asyncio.fixture
+async def product_seat_based(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    """Seat-based product allowing 1+ seats (no maximum)."""
+    product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[],
+    )
+    price = await create_product_price_seat_unit(
+        save_fixture, product=product, price_per_seat=1000
+    )
+    product.prices = [price]
+    return product
+
+
+@pytest_asyncio.fixture
+async def product_seat_based_2_to_20(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    """Seat-based product requiring between 2 and 20 seats."""
+    product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[],
+    )
+    price = await create_product_price_seat_unit(
+        save_fixture,
+        product=product,
+        price_per_seat=1000,
+        minimum_seats=2,
+        maximum_seats=20,
+    )
+    product.prices = [price]
+    return product
 
 
 @pytest_asyncio.fixture
@@ -204,6 +246,106 @@ class TestCreate:
 
 
 @pytest.mark.asyncio
+class TestCreateSeats:
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_seat_based_2_to_20: Product,
+    ) -> None:
+        checkout_link = await checkout_link_service.create(
+            session,
+            CheckoutLinkCreateProducts(
+                payment_processor=PaymentProcessor.stripe,
+                products=[product_seat_based_2_to_20.id],
+                seats=5,
+            ),
+            auth_subject,
+        )
+
+        assert checkout_link.seats == 5
+
+    @pytest.mark.auth
+    async def test_non_seat_based_product(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_link_service.create(
+                session,
+                CheckoutLinkCreateProducts(
+                    payment_processor=PaymentProcessor.stripe,
+                    products=[product_one_time.id],
+                    seats=5,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_mixed_seat_and_non_seat_products(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_seat_based_2_to_20: Product,
+        product_one_time: Product,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_link_service.create(
+                session,
+                CheckoutLinkCreateProducts(
+                    payment_processor=PaymentProcessor.stripe,
+                    products=[product_seat_based_2_to_20.id, product_one_time.id],
+                    seats=5,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_seats_below_minimum(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_seat_based_2_to_20: Product,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_link_service.create(
+                session,
+                CheckoutLinkCreateProducts(
+                    payment_processor=PaymentProcessor.stripe,
+                    products=[product_seat_based_2_to_20.id],
+                    seats=1,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_seats_above_maximum(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_seat_based_2_to_20: Product,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_link_service.create(
+                session,
+                CheckoutLinkCreateProducts(
+                    payment_processor=PaymentProcessor.stripe,
+                    products=[product_seat_based_2_to_20.id],
+                    seats=21,
+                ),
+                auth_subject,
+            )
+
+
+@pytest.mark.asyncio
 class TestUpdate:
     @pytest.mark.auth
     async def test_metadata(
@@ -343,6 +485,119 @@ class TestUpdate:
 
         assert updated.trial_interval is None
         assert updated.trial_interval_count is None
+
+    @pytest.mark.auth
+    async def test_seats_valid(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_seat_based_2_to_20: Product,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_seat_based_2_to_20]
+        )
+
+        updated = await checkout_link_service.update(
+            session,
+            checkout_link,
+            CheckoutLinkUpdate(seats=10),
+            auth_subject,
+        )
+
+        assert updated.seats == 10
+
+    @pytest.mark.auth
+    async def test_seats_invalid(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_seat_based_2_to_20: Product,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_seat_based_2_to_20]
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_link_service.update(
+                session,
+                checkout_link,
+                CheckoutLinkUpdate(seats=21),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_seats_explicit_clear(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_seat_based_2_to_20: Product,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_seat_based_2_to_20], seats=5
+        )
+
+        updated = await checkout_link_service.update(
+            session,
+            checkout_link,
+            CheckoutLinkUpdate(seats=None),
+            auth_subject,
+        )
+
+        assert updated.seats is None
+
+    @pytest.mark.auth
+    async def test_products_change_auto_clears_incompatible_seats(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_seat_based_2_to_20: Product,
+        product_one_time: Product,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_seat_based_2_to_20], seats=5
+        )
+
+        updated = await checkout_link_service.update(
+            session,
+            checkout_link,
+            CheckoutLinkUpdate(products=[product_one_time.id]),
+            auth_subject,
+        )
+        await session.flush()
+
+        assert updated.seats is None
+
+    @pytest.mark.auth
+    async def test_products_change_keeps_compatible_seats(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_seat_based: Product,
+        product_seat_based_2_to_20: Product,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_seat_based], seats=5
+        )
+
+        updated = await checkout_link_service.update(
+            session,
+            checkout_link,
+            CheckoutLinkUpdate(products=[product_seat_based_2_to_20.id]),
+            auth_subject,
+        )
+        await session.flush()
+
+        assert updated.seats == 5
 
 
 @pytest.mark.asyncio

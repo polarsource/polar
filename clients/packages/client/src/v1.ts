@@ -11168,6 +11168,11 @@ export interface components {
        */
       discount_id: string | null
       /**
+       * Seats
+       * @description Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+       */
+      seats: number | null
+      /**
        * Organization Id
        * Format: uuid4
        * @description The organization ID.
@@ -11252,6 +11257,11 @@ export interface components {
        */
       discount_id?: string | null
       /**
+       * Seats
+       * @description Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+       */
+      seats?: number | null
+      /**
        * Success Url
        * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
        */
@@ -11327,6 +11337,11 @@ export interface components {
        */
       discount_id?: string | null
       /**
+       * Seats
+       * @description Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+       */
+      seats?: number | null
+      /**
        * Success Url
        * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
        */
@@ -11399,6 +11414,11 @@ export interface components {
        * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
        */
       discount_id?: string | null
+      /**
+       * Seats
+       * @description Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+       */
+      seats?: number | null
       /**
        * Success Url
        * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
@@ -11565,6 +11585,11 @@ export interface components {
        * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
        */
       discount_id?: string | null
+      /**
+       * Seats
+       * @description Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+       */
+      seats?: number | null
       /**
        * Success Url
        * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.

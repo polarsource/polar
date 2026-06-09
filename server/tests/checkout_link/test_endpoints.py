@@ -127,6 +127,43 @@ class TestCreateCheckoutLink:
         assert json["client_secret"] in json["url"]
         assert "metadata" in json
 
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkout_links_write}))
+    async def test_valid_seats(
+        self,
+        client: AsyncClient,
+        product_recurring_seat_based: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/checkout-links/",
+            json={
+                "payment_processor": "stripe",
+                "products": [str(product_recurring_seat_based.id)],
+                "seats": 5,
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.json()["seats"] == 5
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkout_links_write}))
+    async def test_seats_on_non_seat_based_product(
+        self,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/checkout-links/",
+            json={
+                "payment_processor": "stripe",
+                "products": [str(product.id)],
+                "seats": 5,
+            },
+        )
+
+        assert response.status_code == 422
+
 
 @pytest.mark.asyncio
 class TestUpdateCheckoutLink:

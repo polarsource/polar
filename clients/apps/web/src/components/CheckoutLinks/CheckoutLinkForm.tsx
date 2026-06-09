@@ -31,6 +31,7 @@ import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
 import ProductSelect from '../Products/ProductSelect'
 import { toast } from '../Toast/use-toast'
 import { TrialConfigurationForm } from '../TrialConfiguration/TrialConfigurationForm'
+import { CheckoutLinkSeatsField } from './CheckoutLinkSeatsField'
 
 type CheckoutLinkCreateForm = Omit<
   schemas['CheckoutLinkCreateProducts'],
@@ -84,6 +85,7 @@ export const CheckoutLinkForm = ({
         success_url: checkoutLink.success_url ?? '',
         return_url: checkoutLink.return_url ?? '',
         discount_id: checkoutLink.discount_id ?? '',
+        seats: checkoutLink.seats ?? null,
       }
     }
 
@@ -96,6 +98,7 @@ export const CheckoutLinkForm = ({
       success_url: '',
       return_url: '',
       discount_id: '',
+      seats: null,
     }
   }, [checkoutLink, productIds])
 
@@ -428,6 +431,8 @@ export const CheckoutLinkForm = ({
             )
           }}
         />
+
+        <CheckoutLinkSeatsField selectedProducts={selectedProducts} />
 
         {hasRecurringProducts && (
           <TrialConfigurationForm bottomText="This will override the trial configuration set on products." />

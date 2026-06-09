@@ -3,7 +3,7 @@ import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
 import { DeniedBanner } from './DeniedBanner'
 import { OffboardingBanner } from './OffboardingBanner'
-import { TestModeBanner } from './TestModeBanner'
+import { OnboardingChecklistCard } from './OnboardingChecklistCard'
 
 interface OrganizationStatusBannerProps {
   organization: schemas['Organization']
@@ -29,7 +29,7 @@ export const OrganizationStatusBanner = ({
   }
 
   if (paymentStatus?.organization_status === 'created') {
-    return <TestModeBanner organization={organization} />
+    return <OnboardingChecklistCard organization={organization} />
   }
 
   return null

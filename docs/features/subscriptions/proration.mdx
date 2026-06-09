@@ -96,17 +96,17 @@ For an upgrade the difference is positive, so the customer is charged; for a dow
 
 ### Upgrade
 
-A customer subscribed to a $5/month plan on a 30-day month (2,592,000 seconds total). After 1 day (86,400 seconds elapsed, 2,505,600 seconds remaining) they upgrade to a $20/month plan.
+A customer subscribed to a \$5/month plan on a 30-day month (2,592,000 seconds total). After 1 day (86,400 seconds elapsed, 2,505,600 seconds remaining) they upgrade to a \$20/month plan.
 
 - Unused credit on the $5 plan: `$5 * 2,505,600 / 2,592,000 = $4.83`
 - New charge for the remaining 2,505,600 seconds on the $20 plan: `$20 * 2,505,600 / 2,592,000 = $19.33`
 - **Prorated difference: $14.50**
 
-With `invoice`, that $14.50 is charged immediately. With `prorate`, it's added to the next monthly invoice (which is also the new $20 charge for the next cycle).
+With `invoice`, that \$14.50 is charged immediately. With `prorate`, it's added to the next monthly invoice (which is also the new \$20 charge for the next cycle).
 
 ### Downgrade
 
-A customer subscribed to a $20/month plan on a 30-day month (2,592,000 seconds total). After 1 day (2,505,600 seconds remaining) they downgrade to a $5/month plan.
+A customer subscribed to a \$20/month plan on a 30-day month (2,592,000 seconds total). After 1 day (2,505,600 seconds remaining) they downgrade to a \$5/month plan.
 
 - Unused credit on the $20 plan: `$20 * 2,505,600 / 2,592,000 = $19.33`
 - New charge for the remaining 2,505,600 seconds on the $5 plan: `$5 * 2,505,600 / 2,592,000 = $4.83`

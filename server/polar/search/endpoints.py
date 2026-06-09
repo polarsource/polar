@@ -16,7 +16,7 @@ router = APIRouter(tags=["search", APITag.private])
 async def search(
     auth_subject: auth.SearchRead,
     organization_id: UUID4 = Query(..., description="Organization ID to search within"),
-    query: str = Query(..., description="Search query string"),
+    query: str = Query(..., max_length=200, description="Search query string"),
     limit: int = Query(20, ge=1, le=50, description="Maximum number of results"),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> SearchResults:

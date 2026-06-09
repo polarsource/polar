@@ -23,6 +23,8 @@ import { SpinnerNoMargin } from '@/components/Shared/Spinner'
 import { useMeters } from '@/hooks/queries/meters'
 import { Button } from '@polar-sh/orbit'
 
+import { BenefitVisibilityField } from '../BenefitVisibilityField'
+
 export const MeterCreditBenefitForm = ({
   organization,
 }: {
@@ -51,14 +53,18 @@ export const MeterCreditBenefitForm = ({
 
   if (!meters) {
     return (
-      <div className="flex w-full items-center justify-center py-4">
-        <SpinnerNoMargin />
-      </div>
+      <>
+        <BenefitVisibilityField />
+        <div className="flex w-full items-center justify-center py-4">
+          <SpinnerNoMargin />
+        </div>
+      </>
     )
   }
 
   return (
     <>
+      <BenefitVisibilityField />
       {meters.items.length === 0 ? (
         <Button
           onClick={(e) => {

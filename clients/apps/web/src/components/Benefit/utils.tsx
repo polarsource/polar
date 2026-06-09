@@ -72,3 +72,40 @@ export const benefitsDisplayNames: {
   meter_credit: 'Meter Credits',
   feature_flag: 'Feature Flag',
 }
+
+export const INTERACTIVE_BENEFIT_TYPES = [
+  'discord',
+  'github_repository',
+  'downloadables',
+] as const satisfies readonly schemas['BenefitType'][]
+
+export type InteractiveBenefitType = (typeof INTERACTIVE_BENEFIT_TYPES)[number]
+
+export const isInteractiveBenefitType = (
+  type: schemas['BenefitType'],
+): type is InteractiveBenefitType =>
+  (INTERACTIVE_BENEFIT_TYPES as readonly string[]).includes(type)
+
+type VisibilityConfigurableBenefitType = Exclude<
+  schemas['BenefitType'],
+  InteractiveBenefitType
+>
+
+export const DEFAULT_BENEFIT_VISIBILITY = {
+  custom: 'public',
+  license_keys: 'public',
+  meter_credit: 'public',
+  feature_flag: 'private',
+} as const satisfies Record<
+  VisibilityConfigurableBenefitType,
+  schemas['BenefitVisibility']
+>
+
+export const getDefaultBenefitVisibility = (
+  type: schemas['BenefitType'],
+): schemas['BenefitVisibility'] | undefined => {
+  if (isInteractiveBenefitType(type)) {
+    return undefined
+  }
+  return DEFAULT_BENEFIT_VISIBILITY[type]
+}

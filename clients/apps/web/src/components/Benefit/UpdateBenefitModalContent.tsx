@@ -4,9 +4,10 @@ import { isValidationError, operations, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
-import { MouseEvent, useCallback, useEffect, useState } from 'react'
+import { MouseEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { UpdateBenefitForm } from '../Benefit/BenefitForm'
+import { isInteractiveBenefitType } from '../Benefit/utils'
 import { toast } from '../Toast/use-toast'
 
 interface UpdateBenefitModalContentProps {
@@ -28,8 +29,15 @@ const UpdateBenefitModalContent = ({
   onDirtyChange,
 }: UpdateBenefitModalContentProps) => {
   const router = useRouter()
+  const defaultValues = useMemo((): BenefitUpdate => {
+    if (isInteractiveBenefitType(benefit.type)) {
+      const { visibility: _visibility, ...values } = benefit
+      return values
+    }
+    return benefit
+  }, [benefit])
   const form = useForm<BenefitUpdate>({
-    defaultValues: benefit,
+    defaultValues,
   })
   const { setError } = form
 

@@ -31,7 +31,8 @@ import { DownloadablesBenefitForm } from './Downloadables/BenefitForm'
 import { GitHubRepositoryBenefitForm } from './GitHubRepositoryBenefitForm'
 import { LicenseKeysBenefitForm } from './LicenseKeys/BenefitForm'
 import { MeterCreditBenefitForm } from './MeterCredit/BenefitForm'
-import { benefitsDisplayNames } from './utils'
+import { BenefitVisibilityField } from './BenefitVisibilityField'
+import { benefitsDisplayNames, getDefaultBenefitVisibility } from './utils'
 
 export const NewBenefitForm = ({
   organization,
@@ -145,30 +146,33 @@ const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
   const { control } = useFormContext<schemas['BenefitCustomCreate']>()
 
   return (
-    <FormField
-      control={control}
-      name="properties.note"
-      render={({ field }) => {
-        return (
-          <FormItem>
-            <div className="flex flex-row items-center justify-between">
-              <FormLabel>Private note</FormLabel>
-              <span className="dark:text-polar-500 text-sm text-gray-500">
-                Markdown Format
-              </span>
-            </div>
-            <FormControl>
-              <TextArea
-                {...field}
-                value={field.value || ''}
-                placeholder="Write a secret note here. Like your private email address for premium support or link to premium content."
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )
-      }}
-    />
+    <>
+      <BenefitVisibilityField />
+      <FormField
+        control={control}
+        name="properties.note"
+        render={({ field }) => {
+          return (
+            <FormItem>
+              <div className="flex flex-row items-center justify-between">
+                <FormLabel>Private note</FormLabel>
+                <span className="dark:text-polar-500 text-sm text-gray-500">
+                  Markdown Format
+                </span>
+              </div>
+              <FormControl>
+                <TextArea
+                  {...field}
+                  value={field.value || ''}
+                  placeholder="Write a secret note here. Like your private email address for premium support or link to premium content."
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
+    </>
   )
 }
 
@@ -176,11 +180,13 @@ const FeatureFlagBenefitForm = () => {
   const { control } = useFormContext<schemas['BenefitFeatureFlagCreate']>()
 
   return (
-    <FormField
-      control={control}
-      name="metadata"
-      defaultValue={{}}
-      render={({ field }) => {
+    <>
+      <BenefitVisibilityField />
+      <FormField
+        control={control}
+        name="metadata"
+        defaultValue={{}}
+        render={({ field }) => {
         const entries = Object.entries(field.value || {})
         return (
           <FormItem>
@@ -238,7 +244,8 @@ const FeatureFlagBenefitForm = () => {
           </FormItem>
         )
       }}
-    />
+      />
+    </>
   )
 }
 
@@ -394,7 +401,7 @@ const DiscordBenefitForm = () => {
 }
 
 const BenefitTypeSelect = () => {
-  const { control } = useFormContext<schemas['BenefitCustomCreate']>()
+  const { control, setValue } = useFormContext<schemas['BenefitCreate']>()
 
   return (
     <FormField
@@ -408,7 +415,18 @@ const BenefitTypeSelect = () => {
               <FormLabel>Type</FormLabel>
             </div>
             <FormControl>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select
+                onValueChange={(value) => {
+                  field.onChange(value)
+                  const visibility = getDefaultBenefitVisibility(
+                    value as schemas['BenefitType'],
+                  )
+                  if (visibility) {
+                    setValue('visibility', visibility)
+                  }
+                }}
+                defaultValue={field.value}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a benefit type" />
                 </SelectTrigger>

@@ -1,5 +1,4 @@
 import { enums, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import {
   Select,
@@ -8,7 +7,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/orbit'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   FormControl,
   FormField,
@@ -17,8 +15,9 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, type MouseEvent } from 'react'
+import { useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
+import { TreeMultiSelect } from '../TreeMultiSelect'
 
 type CreateOrUpdate =
   | schemas['WebhookEndpointCreate']
@@ -172,91 +171,35 @@ export const FieldFormat = () => {
 }
 
 export const FieldEvents = () => {
-  const { control, setValue, watch } = useFormContext<CreateOrUpdate>()
-
-  const allEvents = useMemo(
-    () => Object.values(enums.webhookEventTypeValues),
-    [],
-  )
-
-  const currentEvents = watch('events')
-
-  const allSelected = useMemo(
-    () => allEvents.every((event) => currentEvents?.includes(event)),
-    [currentEvents, allEvents],
-  )
-
-  const onToggleAll = useCallback(
-    (e: MouseEvent<HTMLButtonElement>) => {
-      e.preventDefault()
-
-      let values: Array<schemas['WebhookEventType']> = []
-      if (!allSelected) {
-        values = allEvents
-      }
-      setValue('events', values)
-    },
-    [setValue, allSelected, allEvents],
-  )
+  const { control } = useFormContext<CreateOrUpdate>()
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-row items-center">
-        <h2 className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-          Events
-        </h2>
-
-        <div className="flex-auto text-right">
-          <Button onClick={onToggleAll} variant="secondary" size="sm">
-            {!allSelected ? 'Select All' : 'Unselect All'}
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-y-2">
-        {allEvents.map((event) => (
-          <FormField
-            key={event}
-            control={control}
-            name="events"
-            render={({ field }) => {
-              const href = `https://polar.sh/docs/api-reference/webhooks/${event}`
-
-              return (
-                <FormItem className="flex flex-row items-center space-y-0 space-x-3">
-                  <FormControl>
-                    <Checkbox
-                      checked={
-                        field.value ? field.value.includes(event) : false
-                      }
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          field.onChange([...(field.value || []), event])
-                        } else {
-                          field.onChange(
-                            (field.value || []).filter((v) => v !== event),
-                          )
-                        }
-                      }}
-                    />
-                  </FormControl>
-                  <FormLabel className="text-sm leading-none">
-                    {event}
-                  </FormLabel>
-                  <Link
-                    className="text-xs text-blue-400"
-                    href={href}
-                    target="_blank"
-                  >
-                    Schema
-                  </Link>
-                  <FormMessage />
-                </FormItem>
-              )
-            }}
-          />
-        ))}
-      </div>
-    </div>
+    <FormField
+      control={control}
+      name="events"
+      render={({ field }) => (
+        <FormItem>
+          <FormControl>
+            <TreeMultiSelect
+              title="Events"
+              options={enums.webhookEventTypeValues}
+              value={field.value ?? []}
+              onChange={field.onChange}
+              separator="."
+              renderOptionSuffix={(event) => (
+                <Link
+                  className="text-xs text-blue-400"
+                  href={`https://polar.sh/docs/api-reference/webhooks/${event}`}
+                  target="_blank"
+                >
+                  Schema
+                </Link>
+              )}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
   )
 }

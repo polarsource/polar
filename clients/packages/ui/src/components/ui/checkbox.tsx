@@ -1,7 +1,7 @@
 'use client'
 
 import * as CheckboxPrimitive from '@radix-ui/react-checkbox'
-import { Check } from 'lucide-react'
+import { Check, Minus } from 'lucide-react'
 import * as React from 'react'
 
 import { cn } from '@/lib/utils'
@@ -20,9 +20,15 @@ const Checkbox = ({
     {...props}
   >
     <CheckboxPrimitive.Indicator
-      className={cn('flex items-center justify-center text-current')}
+      className={cn(
+        'group flex h-full w-full items-center justify-center text-current',
+      )}
     >
-      <Check className="h-4 w-4" />
+      <Check className="h-4 w-4 group-data-[state=indeterminate]:hidden" />
+      <Minus
+        className="text-primary hidden h-3 w-3 group-data-[state=indeterminate]:block"
+        strokeWidth={3}
+      />
     </CheckboxPrimitive.Indicator>
   </CheckboxPrimitive.Root>
 )

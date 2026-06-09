@@ -85,28 +85,34 @@ export const UseCases = () => {
       <div className="mx-auto w-full max-w-7xl py-32">
         <Box
           display="flex"
-          flexDirection={{ base: 'column', md: 'row' }}
-          columnGap="5xl"
-          rowGap="3xl"
+          flexDirection="column"
+          rowGap={{ base: '2xl', md: '3xl' }}
         >
           <Box
             display="flex"
-            flexDirection="column"
-            rowGap="3xl"
-            flex={1}
+            flexDirection={{ base: 'column', xl: 'row' }}
+            rowGap="2xl"
             paddingHorizontal={{ base: 'l', md: 'none' }}
           >
-            <Text variant="heading-xl" as="h2" wrap="balance">
-              Built for the shape of AI.
-            </Text>
+            <Box display="flex" flex={1}>
+              <Text variant="heading-xl" as="h2" wrap="balance">
+                Built for the shape of AI
+              </Text>
+            </Box>
             <Box
-              borderTopWidth={3}
-              borderStyle="solid"
-              borderColor="border-primary"
-              width="3rem"
-            />
-            <Box maxWidth="32rem">
-              <Text variant="heading-xs" color="muted">
+              display="flex"
+              flex={1}
+              flexDirection="column"
+              rowGap="xl"
+              justifyContent="between"
+            >
+              <Box
+                borderTopWidth={4}
+                borderColor="border-primary"
+                width="3rem"
+                display={{ base: 'none', xl: 'flex' }}
+              />
+              <Text variant="heading-xs" wrap="pretty">
                 From token-metered APIs to autonomous agents and GPU workloads.
                 Polar fits how modern AI products actually charge.
               </Text>
@@ -114,7 +120,6 @@ export const UseCases = () => {
           </Box>
 
           <Box
-            flex={1}
             display="flex"
             flexDirection="column"
             overflow="hidden"

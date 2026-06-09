@@ -51,3 +51,12 @@ class EventRepository:
             .values(acknowledged_at=acknowledged_at)
         )
         await self.session.execute(statement)
+
+    async def record_polar_ids(self, polar_ids: dict[str, str]) -> None:
+        for external_id, polar_event_id in polar_ids.items():
+            statement = (
+                update(Event)
+                .where(Event.external_id == external_id)
+                .values(polar_event_id=polar_event_id)
+            )
+            await self.session.execute(statement)

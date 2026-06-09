@@ -23,11 +23,19 @@ async def flush_once(client: httpx.AsyncClient) -> None:
             return
         response = await client.post(
             "/v1/events/ingest",
+            params={"return_events": "true"},
             json={"events": [event.body for event in events]},
             headers={"Authorization": f"Bearer {POLAR_ACCESS_TOKEN}"},
         )
         response.raise_for_status()
+        polar_ids = {
+            returned["external_id"]: returned["id"]
+            for returned in response.json().get("events") or []
+            if returned.get("external_id") is not None
+        }
         await repository.acknowledge([event.id for event in events], datetime.now(UTC))
+        if polar_ids:
+            await repository.record_polar_ids(polar_ids)
         await session.commit()
         log.info("flushed %d events upstream", len(events))
 

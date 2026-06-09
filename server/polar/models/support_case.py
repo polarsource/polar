@@ -116,7 +116,7 @@ class ReviewAppealSupportCase(SupportCase):
 
     __mapper_args__ = {"polymorphic_identity": SupportCaseType.review_appeal}
 
-    organization_review_id: Mapped[UUID | None] = mapped_column(
+    organization_review_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("organization_reviews.id", ondelete="restrict"),
         nullable=True,

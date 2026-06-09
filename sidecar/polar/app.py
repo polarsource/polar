@@ -5,13 +5,15 @@ from datetime import UTC, datetime
 from typing import Any
 
 import httpx
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from polar_sdk.models import EventsIngest, EventsIngestResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from polar.config import get_base_url
-from polar.db import async_session, engine, init_db
+from polar.db import engine, get_db_session, init_db
 from polar.repository import EventRepository
 from polar.sync import run_flush_loop
+from polar.validation import validate_event
 
 BASE_URL = get_base_url()
 
@@ -51,33 +53,28 @@ app = FastAPI(title="Polar Sidecar", lifespan=lifespan)
 @app.post(
     "/v1/events/ingest", summary="Ingest Events", response_model=EventsIngestResponse
 )
-async def ingest_events(ingest: EventsIngest, request: Request) -> EventsIngestResponse:
+async def ingest_events(
+    ingest: EventsIngest,
+    request: Request,
+    session: AsyncSession = Depends(get_db_session),
+) -> EventsIngestResponse:
     """Buffer ingested events locally; the sync loop forwards them upstream."""
     raw = await request.json()
-    timestamp = datetime.now(UTC).isoformat()
     errors: list[dict[str, Any]] = []
-    bodies: list[dict[str, Any]] = []
-    for index, event in enumerate(raw["events"]):
-        external_id = event.get("external_id")
-        if not isinstance(external_id, str) or not external_id:
-            errors.append(
-                {
-                    "type": "missing",
-                    "loc": ["body", "events", index, "external_id"],
-                    "msg": "external_id is required.",
-                    "input": external_id,
-                }
-            )
-            continue
-        body: dict[str, Any] = {**event}
-        body.setdefault("timestamp", timestamp)
-        bodies.append(body)
+    for index, event in enumerate(ingest.events):
+        errors.extend(validate_event(index, event))
     if errors:
         raise HTTPException(status_code=422, detail=errors)
-    async with async_session() as session:
-        repository = EventRepository(session)
-        inserted, duplicates = await repository.buffer(bodies)
-        await session.commit()
+
+    timestamp = datetime.now(UTC).isoformat()
+    bodies: list[dict[str, Any]] = []
+    for raw_event in raw["events"]:
+        body: dict[str, Any] = {**raw_event}
+        body.setdefault("timestamp", timestamp)
+        bodies.append(body)
+    repository = EventRepository(session)
+    inserted, duplicates = await repository.buffer(bodies)
+    await session.commit()
     return EventsIngestResponse(inserted=inserted, duplicates=duplicates)
 
 

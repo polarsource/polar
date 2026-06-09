@@ -1,7 +1,7 @@
 export default {
   checkout: {
     footer: {
-      poweredBy: '提供:',
+      poweredBy: 'Powered by',
       merchantOfRecord:
         'この注文は、当社のオンライン再販業者兼販売元である Polar により処理されます。Polar は注文に関するお問い合わせや返品も対応します。',
       mandateSubscriptionTrial:
@@ -31,7 +31,7 @@ export default {
         province: '都道府県',
         stateProvince: '都道府県',
       },
-      taxId: '税番号',
+      taxId: '納税者番号',
       discountCode: '割引コード',
       addDiscountCode: '割引コードを追加',
       optional: '任意',
@@ -170,7 +170,7 @@ export default {
     productSwitcher: {
       billedRecurring: '{frequency}ごとに請求',
       oneTimePurchase: '買い切り',
-      fromPrefix: '最安',
+      fromPrefix: '最低',
     },
     productDescription: {
       readMore: 'もっと見る',
@@ -282,8 +282,8 @@ export default {
     two: '番目',
     few: '番目',
     other: '番目',
-    zero: '番',
-    many: '番',
+    zero: '番目',
+    many: '番目',
   },
   embedPaymentMethod: {
     title: '支払い方法を追加',

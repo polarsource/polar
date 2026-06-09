@@ -634,6 +634,9 @@ class EventMetadataOutput(  # type: ignore[call-arg]
 class UserEvent(BaseEvent):
     """An event you created through the ingestion API."""
 
+    external_id: str | None = Field(
+        description="Your unique identifier for this event, if provided at ingestion."
+    )
     name: str = Field(description=_NAME_DESCRIPTION)
     source: Literal[EventSource.user] = Field(description=_SOURCE_DESCRIPTION)
     metadata: EventMetadataOutput = Field(

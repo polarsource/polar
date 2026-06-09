@@ -31290,6 +31290,11 @@ export interface components {
        */
       label: string
       /**
+       * External Id
+       * @description Your unique identifier for this event, if provided at ingestion.
+       */
+      external_id: string | null
+      /**
        * Name
        * @description The name of the event.
        */

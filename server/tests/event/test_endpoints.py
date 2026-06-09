@@ -400,6 +400,7 @@ class TestIngest:
             [
                 {
                     "name": "event1",
+                    "external_id": "EXTERNAL_EVENT_ID",
                     "external_customer_id": "CUSTOMER_ID",
                     "metadata": {"usage": 127.32},
                 }
@@ -423,6 +424,7 @@ class TestIngest:
         assert len(json["events"]) == len(events)
         ingested = json["events"][0]
         assert "id" in ingested
+        assert ingested["external_id"] == "EXTERNAL_EVENT_ID"
         assert ingested["external_customer_id"] == "CUSTOMER_ID"
         assert ingested["name"] == "event1"
 

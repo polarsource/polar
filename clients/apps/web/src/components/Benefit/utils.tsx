@@ -109,3 +109,14 @@ export const getDefaultBenefitVisibility = (
   }
   return DEFAULT_BENEFIT_VISIBILITY[type]
 }
+
+export const benefitVisibilityDisplayNames: Record<
+  schemas['BenefitVisibility'],
+  string
+> = {
+  public: 'Visible',
+  private: 'Hidden',
+}
+
+export const BENEFIT_VISIBILITY_DISPLAY_COLOR =
+  'bg-gray-100 text-gray-600 dark:bg-polar-700 dark:text-polar-400'

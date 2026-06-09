@@ -4,6 +4,8 @@ import { BenefitPage } from '@/components/Benefit/BenefitPage'
 import { LicenseKeysPage } from '@/components/Benefit/LicenseKeysPage'
 import UpdateBenefitModalContent from '@/components/Benefit/UpdateBenefitModalContent'
 import {
+  BENEFIT_VISIBILITY_DISPLAY_COLOR,
+  benefitVisibilityDisplayNames,
   benefitsDisplayNames,
   resolveBenefitIcon,
 } from '@/components/Benefit/utils'
@@ -18,6 +20,7 @@ import { usePushRouteWithoutCache } from '@/utils/router'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
+import { twMerge } from 'tailwind-merge'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
+import { Eye, EyeOff } from 'lucide-react'
 import { useCallback, useRef } from 'react'
 
 interface ClientPageProps {
@@ -119,11 +123,26 @@ const ClientPage: React.FC<ClientPageProps> = ({
               {resolveBenefitIcon(benefit.type, 'h-4 w-4')}
             </span>
             <div className="flex flex-col">
-              <p className="text-lg">
-                {(benefit.description?.length ?? 0) > 0
-                  ? benefit.description
-                  : '—'}
-              </p>
+              <div className="flex min-w-0 flex-row items-center gap-4">
+                <p className="truncate text-lg">
+                  {(benefit.description?.length ?? 0) > 0
+                    ? benefit.description
+                    : '—'}
+                </p>
+                <div
+                  className={twMerge(
+                    'flex flex-row items-center justify-center gap-1.5 rounded-[0.5em] px-[0.7em] py-[0.3em] text-sm',
+                    BENEFIT_VISIBILITY_DISPLAY_COLOR,
+                  )}
+                >
+                  {benefit.visibility === 'public' ? (
+                    <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                  ) : (
+                    <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
+                  )}
+                  {benefitVisibilityDisplayNames[benefit.visibility]}
+                </div>
+              </div>
               <div className="dark:text-polar-500 flex flex-row items-center gap-2 font-mono text-sm text-gray-500">
                 <span>{benefitsDisplayNames[benefit.type]}</span>
               </div>

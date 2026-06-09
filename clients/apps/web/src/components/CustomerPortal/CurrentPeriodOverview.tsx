@@ -3,6 +3,7 @@ import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { useMemo } from 'react'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
+import { OverviewSummaryCard } from './OverviewSummaryCard'
 
 interface CurrentPeriodOverviewProps {
   subscription: schemas['CustomerSubscription']
@@ -73,137 +74,126 @@ export const CurrentPeriodOverview = ({
     dateLabel = 'Subscription Ends'
   }
 
+  const chargeDateLabel = `${dateLabel} — ${
+    chargeDate
+      ? new Date(chargeDate).toLocaleDateString('en-US', {
+          dateStyle: 'medium',
+        })
+      : 'N/A'
+  }`
+
   return (
-    <div className="dark:border-polar-700 flex flex-col gap-4 rounded-3xl border border-gray-200 p-8">
-      <div className="items-center justify-between space-y-1.5 sm:flex sm:space-y-0">
-        <h4 className="text-lg font-medium">{headerTitle}</h4>
-        <span className="dark:text-polar-500 text-sm text-gray-500">
-          {dateLabel} —{' '}
-          {chargeDate
-            ? new Date(chargeDate).toLocaleDateString('en-US', {
-                dateStyle: 'medium',
-              })
-            : 'N/A'}
-        </span>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        {product && subscriptionPreview && (
-          <div className="flex items-center justify-between">
-            <span className="dark:text-polar-400 text-gray-600">
-              {product.name}
-            </span>
-            <span
-              className={
-                isCancelingAtPeriodEnd ? 'text-gray-500' : 'font-medium'
-              }
-            >
-              {isCancelingAtPeriodEnd ? (
-                'Canceled'
-              ) : (
-                <ProductPriceLabel
-                  product={product}
-                  currency={subscription.currency}
-                />
-              )}
-            </span>
-          </div>
-        )}
-
-        {hasMeters && (
-          <>
-            <span className="font-medium">Metered Charges</span>
-
-            {subscription.meters.map((meter) => (
-              <div key={meter.id} className="flex items-center justify-between">
-                <span className="dark:text-polar-400 text-gray-600">
-                  {meter.meter.name}
-                </span>
-                <span className="font-medium">
-                  {formatCurrency('compact')(
-                    meter.amount,
-                    subscription.currency,
-                  )}
-                </span>
-              </div>
-            ))}
-          </>
-        )}
-
-        <div className="dark:border-polar-700 mt-2 border-t border-gray-200 pt-2">
-          {(hasTaxes || hasDiscount) && (
-            <div className="dark:text-polar-500 mb-1.5 flex items-center justify-between text-gray-500">
-              <span>Subtotal</span>
-              <span>
-                {formatCurrency('compact')(
-                  subscriptionPreview.subtotal_amount,
-                  subscription.currency,
-                )}
-              </span>
-            </div>
-          )}
-
-          {hasDiscount && (
-            <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
-              <span>Discount</span>
-              <span>
-                {formatCurrency('compact')(
-                  -1 * subscriptionPreview.discount_amount,
-                  subscription.currency,
-                )}
-              </span>
-            </div>
-          )}
-
-          {hasTaxes && (
-            <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
-              <span>Taxes</span>
-              <span>
-                {formatCurrency('compact')(
-                  subscriptionPreview.tax_amount,
-                  subscription.currency,
-                )}
-              </span>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between">
-            <span className="font-medium">
-              {hasMeters ? 'Estimated Total' : 'Total'}
-            </span>
-            <span className="text-lg font-medium">
-              {subscriptionPreview ? (
-                formatCurrency('compact')(
-                  subscriptionPreview.total_amount,
-                  subscription.currency,
-                )
-              ) : (
-                <span className="dark:text-polar-500 animate-pulse text-gray-500">
-                  Loading…
-                </span>
-              )}
-            </span>
-          </div>
-
-          {isCancelingAtPeriodEnd && (
-            <p className="max-w-sm text-xs text-gray-500">
-              This will be the final charge before the subscription ends.
-              {hasMeters &&
-                ' Final amount may vary based on usage until the end of the billing period.'}
-            </p>
-          )}
-
-          {!isCancelingAtPeriodEnd && hasMeters && (
-            <p className="max-w-sm text-xs text-gray-500">
-              {isActive
-                ? 'Final charges may vary based on usage until the end of the billing period.'
-                : isTrialing
-                  ? 'Final charges may vary based on usage during the trial period.'
-                  : 'Final charges may vary.'}
-            </p>
-          )}
+    <OverviewSummaryCard title={headerTitle} meta={chargeDateLabel}>
+      {product && subscriptionPreview && (
+        <div className="flex items-center justify-between">
+          <span className="dark:text-polar-400 text-gray-600">
+            {product.name}
+          </span>
+          <span
+            className={isCancelingAtPeriodEnd ? 'text-gray-500' : 'font-medium'}
+          >
+            {isCancelingAtPeriodEnd ? (
+              'Canceled'
+            ) : (
+              <ProductPriceLabel
+                product={product}
+                currency={subscription.currency}
+              />
+            )}
+          </span>
         </div>
+      )}
+
+      {hasMeters && (
+        <>
+          <span className="font-medium">Metered Charges</span>
+
+          {subscription.meters.map((meter) => (
+            <div key={meter.id} className="flex items-center justify-between">
+              <span className="dark:text-polar-400 text-gray-600">
+                {meter.meter.name}
+              </span>
+              <span className="font-medium">
+                {formatCurrency('compact')(meter.amount, subscription.currency)}
+              </span>
+            </div>
+          ))}
+        </>
+      )}
+
+      <div className="dark:border-polar-700 mt-2 border-t border-gray-200 pt-2">
+        {(hasTaxes || hasDiscount) && (
+          <div className="dark:text-polar-500 mb-1.5 flex items-center justify-between text-gray-500">
+            <span>Subtotal</span>
+            <span>
+              {formatCurrency('compact')(
+                subscriptionPreview.subtotal_amount,
+                subscription.currency,
+              )}
+            </span>
+          </div>
+        )}
+
+        {hasDiscount && (
+          <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
+            <span>Discount</span>
+            <span>
+              {formatCurrency('compact')(
+                -1 * subscriptionPreview.discount_amount,
+                subscription.currency,
+              )}
+            </span>
+          </div>
+        )}
+
+        {hasTaxes && (
+          <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
+            <span>Taxes</span>
+            <span>
+              {formatCurrency('compact')(
+                subscriptionPreview.tax_amount,
+                subscription.currency,
+              )}
+            </span>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <span className="font-medium">
+            {hasMeters ? 'Estimated Total' : 'Total'}
+          </span>
+          <span className="text-lg font-medium">
+            {subscriptionPreview ? (
+              formatCurrency('compact')(
+                subscriptionPreview.total_amount,
+                subscription.currency,
+              )
+            ) : (
+              <span className="dark:text-polar-500 animate-pulse text-gray-500">
+                Loading…
+              </span>
+            )}
+          </span>
+        </div>
+
+        {isCancelingAtPeriodEnd && (
+          <p className="max-w-sm text-xs text-gray-500">
+            This will be the final charge before the subscription ends.
+            {hasMeters &&
+              ' Final amount may vary based on usage until the end of the billing period.'}
+          </p>
+        )}
+
+        {!isCancelingAtPeriodEnd && hasMeters && (
+          <p className="max-w-sm text-xs text-gray-500">
+            {isActive
+              ? 'Final charges may vary based on usage until the end of the billing period.'
+              : isTrialing
+                ? 'Final charges may vary based on usage during the trial period.'
+                : 'Final charges may vary.'}
+          </p>
+        )}
       </div>
-    </div>
+    </OverviewSummaryCard>
   )
 }

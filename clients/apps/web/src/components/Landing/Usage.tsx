@@ -34,11 +34,10 @@ export const Usage = () => (
         </div>
         {/* Label */}
         <div className="flex flex-col px-8 py-8">
-          <div className="flex flex-col gap-8">
-            <span className="font-display text-3xl text-gray-900 dark:text-white">
+          <div className="flex flex-col gap-4">
+            <span className="font-display text-2xl text-gray-900 dark:text-white">
               {l.id} — {l.name}
             </span>
-            <div className="dark:bg-polar-600 h-[2px] w-10 bg-gray-200" />
             <span className="dark:text-polar-500 text-xl text-gray-500">
               {l.desc}
             </span>

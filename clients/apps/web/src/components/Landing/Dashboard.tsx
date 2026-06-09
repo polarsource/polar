@@ -19,64 +19,59 @@ export const Dashboard = () => {
       >
         <Box display="flex" flex={1}>
           <Text variant="heading-xl" as="h2" wrap="balance">
-            Watch your revenue happen
+            Know your unit economics
           </Text>
         </Box>
         <Box
           display="flex"
           flex={1}
           flexDirection="column"
-          rowGap="2xl"
+          rowGap="xl"
           justifyContent="between"
         >
           <Box
             borderTopWidth={4}
             borderColor="border-primary"
-            width="4rem"
+            width="3rem"
             display={{ base: 'none', xl: 'flex' }}
           />
-          <Text variant="heading-xs">
-            Orders, subscriptions, and customers the moment they land. Made for
-            teams moving as fast as the models.
+          <Text variant="heading-xs" wrap="pretty">
+            Revenue, costs & margins in one overview. The unit economics every
+            AI startup needs to scale with confidence.
           </Text>
         </Box>
       </Box>
       <Box
         width="100%"
         overflow="hidden"
-        borderRadius="l"
+        position="relative"
+        borderRadius="m"
         borderWidth={1}
         borderStyle="solid"
-        borderColor="border-secondary"
-        padding="m"
+        borderColor="border-primary"
+        padding={{
+          base: 'l',
+          md: '5xl',
+        }}
       >
-        <Box
-          width="100%"
-          overflow="hidden"
-          borderRadius="s"
-          borderWidth={1}
-          borderStyle="solid"
-          borderColor="border-primary"
-        >
-          <StaticImage
-            src="/assets/landing/dash-light.jpg"
-            alt="Polar dashboard"
-            width={3840}
-            height={2160}
-            className="block h-auto w-full dark:hidden"
-            sizes="(min-width: 1280px) 1280px, 100vw"
-            priority
-          />
-          <StaticImage
-            src="/assets/landing/dash-dark.jpg"
-            alt="Polar dashboard"
-            width={3840}
-            height={2160}
-            className="hidden h-auto w-full dark:block"
-            sizes="(min-width: 1280px) 1280px, 100vw"
-            priority
-          />
-        </Box>
+        <StaticImage
+          src="/assets/landing/dashboard.jpg"
+          alt="Polar dashboard"
+          width={3840}
+          height={2160}
+          className="relative z-10 h-auto w-full rounded-xs md:rounded-xl"
+          sizes="(min-width: 1280px) 1280px, 100vw"
+          priority
+        />
+        <StaticImage
+          src="/assets/brand/polar_gradient.jpg"
+          alt="Polar dashboard"
+          width={3840}
+          height={2160}
+          className="absolute inset-0 h-full object-cover"
+          sizes="(min-width: 1280px) 1280px, 100vw"
+          priority
+        />
       </Box>
     </Box>
   )

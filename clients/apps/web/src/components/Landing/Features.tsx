@@ -5,6 +5,7 @@ import { LinkedRings } from './graphics/LinkedRings'
 import { VectorField } from './graphics/VectorField'
 import { VennCluster } from './graphics/VennCluster'
 import { WaveBars } from './graphics/WaveBars'
+import { Text } from '@polar-sh/orbit'
 
 const TILES = [
   {
@@ -47,12 +48,12 @@ const TILES = [
 
 export const Features = () => {
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-y-12 md:gap-y-24">
-      <h1 className="font-display px-4 text-4xl leading-snug! md:px-0 md:text-7xl">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-y-12 md:gap-y-16">
+      <Text variant="heading-xl">
         Any pricing model.
         <br />
         Ships in an afternoon.
-      </h1>
+      </Text>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {TILES.map((tile) => {

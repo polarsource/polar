@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import select, update
+from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from polar.models import Event
@@ -12,13 +13,26 @@ class EventRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def buffer(self, bodies: list[dict[str, Any]]) -> list[Event]:
-        events = [
-            Event(external_id=body.get("external_id"), body=body) for body in bodies
-        ]
-        self.session.add_all(events)
-        await self.session.flush()
-        return events
+    async def buffer(self, bodies: list[dict[str, Any]]) -> tuple[int, int]:
+        seen: set[str] = set()
+        rows: list[dict[str, Any]] = []
+        for body in bodies:
+            external_id = body["external_id"]
+            if external_id in seen:
+                continue
+            seen.add(external_id)
+            rows.append({"external_id": external_id, "body": body})
+        if not rows:
+            return 0, len(bodies)
+        statement = (
+            insert(Event)
+            .values(rows)
+            .on_conflict_do_nothing(index_elements=["external_id"])
+            .returning(Event.id)
+        )
+        result = await self.session.execute(statement)
+        inserted = len(result.scalars().all())
+        return inserted, len(bodies) - inserted
 
     async def get_unacknowledged(self, limit: int) -> Sequence[Event]:
         statement = (

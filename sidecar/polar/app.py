@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import httpx
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response
 from polar_sdk.models import EventsIngest, EventsIngestResponse
 
 from polar.config import get_base_url
@@ -55,16 +55,30 @@ async def ingest_events(ingest: EventsIngest, request: Request) -> EventsIngestR
     """Buffer ingested events locally; the sync loop forwards them upstream."""
     raw = await request.json()
     timestamp = datetime.now(UTC).isoformat()
+    errors: list[dict[str, Any]] = []
     bodies: list[dict[str, Any]] = []
-    for event in raw["events"]:
+    for index, event in enumerate(raw["events"]):
+        external_id = event.get("external_id")
+        if not isinstance(external_id, str) or not external_id:
+            errors.append(
+                {
+                    "type": "missing",
+                    "loc": ["body", "events", index, "external_id"],
+                    "msg": "external_id is required.",
+                    "input": external_id,
+                }
+            )
+            continue
         body: dict[str, Any] = {**event}
         body.setdefault("timestamp", timestamp)
         bodies.append(body)
+    if errors:
+        raise HTTPException(status_code=422, detail=errors)
     async with async_session() as session:
         repository = EventRepository(session)
-        await repository.buffer(bodies)
+        inserted, duplicates = await repository.buffer(bodies)
         await session.commit()
-    return EventsIngestResponse(inserted=len(bodies), duplicates=0)
+    return EventsIngestResponse(inserted=inserted, duplicates=duplicates)
 
 
 @app.api_route(

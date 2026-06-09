@@ -5,11 +5,12 @@ export default {
       merchantOfRecord:
         'Bu sipariş, siparişle ilgili soruları ve iadeleri de yöneten çevrimiçi satıcımız ve Kayıtlı Satıcımız (Merchant of Record) Polar tarafından işlenmektedir.',
       mandateSubscriptionTrial:
-        '"{buttonLabel}" butonuna tıklayarak, çevrimiçi satıcımız ve kayıtlı satıcımız olan Polar Software, Inc.\'e, deneme sürenizin sonunda ve iptal edene kadar sonraki her fatura tarihinde seçtiğiniz ödeme yönteminden yukarıda gösterilen tutarı tahsil etmesi için yetki vermiş olursunuz. Ücretlendirilmemek için deneme süreniz sona ermeden istediğiniz zaman iptal edebilirsiniz.',
+        '"{buttonLabel}" düğmesine tıklayarak, çevrimiçi satıcımız ve kayıtlı satıcı olarak Polar Software, Inc.\'in, deneme sürenizin sonunda ve sonraki her fatura tarihinde, siz iptal edene kadar seçtiğiniz ödeme yönteminden yukarıda gösterilen tutarı tahsil etmesine yetki vermiş ve {buyerTermsLink} koşullarını kabul etmiş olursunuz. Tahsilat yapılmaması için deneme süreniz sona ermeden istediğiniz zaman iptal edebilirsiniz.',
       mandateSubscription:
-        '"{buttonLabel}" butonuna tıklayarak, çevrimiçi satıcımız ve kayıtlı satıcımız olan Polar Software, Inc.\'e, seçtiğiniz ödeme yönteminden yukarıda gösterilen tutarı hemen tahsil etmesi ve iptal edene kadar sonraki her fatura tarihinde aynı tutarı tahsil etmesi için yetki vermiş olursunuz.',
+        '"{buttonLabel}" düğmesine tıklayarak, çevrimiçi satıcımız ve kayıtlı satıcı olarak Polar Software, Inc.\'in, seçtiğiniz ödeme yönteminden yukarıda gösterilen tutarı derhal tahsil etmesine ve siz iptal edene kadar sonraki her fatura tarihinde aynı tutarı tahsil etmesine yetki vermiş ve {buyerTermsLink} koşullarını kabul etmiş olursunuz.',
       mandateOneTime:
-        '"{buttonLabel}" butonuna tıklayarak, çevrimiçi satıcımız ve kayıtlı satıcımız olan Polar Software, Inc.\'e, seçtiğiniz ödeme yönteminden yukarıda gösterilen tutarı tahsil etmesi için yetki vermiş olursunuz. Bu tek seferlik bir ödemedir.',
+        '"{buttonLabel}" düğmesine tıklayarak, çevrimiçi satıcımız ve kayıtlı satıcı olarak Polar Software, Inc.\'in, seçtiğiniz ödeme yönteminden yukarıda gösterilen tutarı tahsil etmesine yetki vermiş ve {buyerTermsLink} koşullarını kabul etmiş olursunuz. Bu tek seferlik bir tahsilattır.',
+      buyerTermsLink: 'Alıcı Koşulları',
     },
     form: {
       email: 'E-posta',
@@ -87,6 +88,26 @@ export default {
         },
         until: '{date} tarihine kadar',
       },
+      inclTax: 'Vergiler dahil',
+      perSeat: 'koltuk başına',
+      seats: {
+        label: 'Koltuk sayısı',
+        numberOfSeats: 'Koltuk sayısı',
+        count: {
+          '=1': '# koltuk',
+          other: '# koltuk',
+          _mode: 'plural',
+        },
+        included: {
+          '=1': '1 koltuk dahil',
+          other: '# koltuk dahil',
+          _mode: 'plural',
+        },
+        range: '{min} - {max} koltuk',
+        minimum: 'En az {min} koltuk',
+        maximum: 'En fazla {max} koltuk',
+        updateFailed: 'Koltuklar güncellenemedi',
+      },
     },
     trial: {
       ends: 'Deneme süresi {endDate} tarihinde bitiyor',
@@ -154,6 +175,7 @@ export default {
     productSwitcher: {
       billedRecurring: '{frequency} faturalandırılır',
       oneTimePurchase: 'Tek seferlik satın alma',
+      fromPrefix: 'Başlayan',
     },
     productDescription: {
       readMore: 'Daha fazla oku',
@@ -217,13 +239,12 @@ export default {
     confirmation: {
       confirmPayment: 'Ödemeyi onayla',
       processingTitle: 'Siparişinizi işliyoruz',
-      successTitle: 'Siparişiniz başarılı!',
       failedTitle: 'Siparişiniz işlenirken bir sorun oluştu',
       processingDescription: 'Ödemenizi onaylarken lütfen bekleyin.',
-      successDescription:
-        'Artık {product} avantajlarından yararlanabilirsiniz.',
       failedDescription:
         'Lütfen tekrar deneyin veya destek ekibiyle iletişime geçin.',
+      successTitle: 'Siparişiniz için teşekkürler!',
+      successDescription: '{product} erişiminiz artık hazır.',
     },
     loading: {
       processingOrder: 'Sipariş işleniyor...',
@@ -264,5 +285,18 @@ export default {
     few: '.',
     many: '.',
     other: '.',
+  },
+  embedPaymentMethod: {
+    title: 'Ödeme yöntemi ekle',
+    close: 'Kapat',
+    submit: 'Ödeme yöntemi ekle',
+    processing: 'Ödeme yöntemi ekleniyor…',
+    fallbackError: 'Bir sorun oluştu. Lütfen tekrar deneyin.',
+    errors: {
+      invalidRequest: 'Gerekli parametreler eksik.',
+      unauthorized: 'Oturumun süresi doldu.',
+      processingFailed: 'Ödeme yöntemi işlenemedi. Lütfen tekrar deneyin.',
+      unknown: 'Bir sorun oluştu.',
+    },
   },
 } as const

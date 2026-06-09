@@ -35083,12 +35083,14 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description Invalid request. */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
       }
     }
   }
@@ -35165,12 +35167,14 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description Case is locked or request is invalid. */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
       }
     }
   }

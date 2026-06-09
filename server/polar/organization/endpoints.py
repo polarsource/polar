@@ -705,7 +705,6 @@ async def submit_appeal(
     responses={
         200: {"description": "Human review case opened."},
         404: SupportCaseNotFound,
-        422: {"description": "Invalid request."},
     },
     tags=[APITag.private],
 )
@@ -796,7 +795,6 @@ async def get_appeal_case(
     responses={
         200: {"description": "Reply posted."},
         404: SupportCaseNotFound,
-        422: {"description": "Case is locked or request is invalid."},
     },
     tags=[APITag.private],
 )

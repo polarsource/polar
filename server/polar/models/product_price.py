@@ -241,6 +241,10 @@ class _ProductPriceFixed(ProductPrice):
         use_existing_column=True, default=ProductPriceAmountType.fixed
     )
 
+    @property
+    def is_free(self) -> bool:
+        return self.price_amount == 0
+
     __mapper_args__ = {
         "polymorphic_abstract": True,
         "polymorphic_load": "inline",

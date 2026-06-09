@@ -161,7 +161,16 @@ class ProductPriceFixedCreate(ProductPriceCreateBase):
     """
 
     amount_type: Literal[ProductPriceAmountType.fixed]
-    price_amount: PriceAmount
+    price_amount: Annotated[
+        PriceAmount,
+        Field(
+            ge=0,
+            description=(
+                "The price in cents. Set to `0` for a free price.\n"
+                f"Minimum amounts per currency:\n{MINIMUM_PRICE_PER_CURRENCY_DOCSTRING}"
+            ),
+        ),
+    ]
 
     @field_validator("price_amount")
     @classmethod
@@ -171,7 +180,7 @@ class ProductPriceFixedCreate(ProductPriceCreateBase):
             # price_currency failed its own validation; skip currency-specific check
             # (Pydantic will already report the currency error)
             return v
-        return validate_price_amount(currency, v)
+        return validate_price_amount(currency, v, allow_zero=True)
 
     def get_model_class(self) -> builtins.type[ProductPriceFixedModel]:
         return ProductPriceFixedModel

@@ -250,6 +250,26 @@ class TestProductPriceFixedCurrencyMinimums:
         )
         assert price.price_amount == amount
 
+    @pytest.mark.parametrize(
+        "currency",
+        [
+            PresentmentCurrency.usd,
+            PresentmentCurrency.inr,
+            PresentmentCurrency.gbp,
+        ],
+    )
+    def test_zero_amount_is_accepted_as_free(
+        self, currency: PresentmentCurrency
+    ) -> None:
+        """A fixed price of 0 is the free-pricing representation and must be allowed,
+        even though it is below the currency minimum."""
+        price = ProductPriceFixedCreate(
+            amount_type=ProductPriceAmountType.fixed,
+            price_amount=0,
+            price_currency=currency,
+        )
+        assert price.price_amount == 0
+
     def test_error_loc_includes_price_amount(self) -> None:
         """Ensure the error loc targets price_amount so frontend can show inline error."""
         with pytest.raises(ValidationError) as exc_info:

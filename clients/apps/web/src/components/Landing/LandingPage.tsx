@@ -15,6 +15,7 @@ import { Features } from './Features'
 import { Logotypes } from './Logotypes'
 import { UseCases } from './UseCases'
 import { Dashboard } from './Dashboard'
+import { CostInsights } from './CostInsights'
 
 export default function Page() {
   return (
@@ -51,6 +52,7 @@ const PageContent = () => {
       <Features />
 
       <Section>
+        <CostInsights />
         <Vision />
       </Section>
 

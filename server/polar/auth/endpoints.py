@@ -274,12 +274,19 @@ async def totp_enable(
 async def totp_delete(
     auth_subject: AuthorizeWebUserWrite,
     totp_factor: TOTPFactor = Depends(get_totp_factor),
+    backup_codes_factor: BackupCodesFactor = Depends(get_backup_codes_factor),
 ) -> None:
     user = auth_subject.subject
     enrollment = await totp_factor.get_enrollment(user.id)
     if enrollment is None:
         raise ResourceNotFound()
     await totp_factor.delete(enrollment)
+
+    # Disable backup codes as well since they are meant to be used as a backup for TOTP
+    backup_codes_enrollment = await backup_codes_factor.get_enrollment(user.id)
+    if backup_codes_enrollment is not None:
+        await backup_codes_factor.delete(backup_codes_enrollment)
+
     return None
 
 

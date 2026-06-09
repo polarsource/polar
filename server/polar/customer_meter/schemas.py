@@ -40,5 +40,10 @@ class CustomerMeterBase(TimestampedSchema, IDSchema):
 class CustomerMeter(CustomerMeterBase):
     """An active customer meter, with current consumed and credited units."""
 
+    last_balanced_event_id: UUID4 | None = Field(
+        default=None,
+        description="The ID of the last event the meter was balanced against.",
+        examples=["f0d201ef-3b2b-4f1a-9d0e-1f2c3d4e5f6a"],
+    )
     customer: Customer = Field(description="The customer associated with this meter.")
     meter: Meter = Field(description="The meter associated with this customer.")

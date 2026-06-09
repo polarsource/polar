@@ -15141,6 +15141,12 @@ export interface components {
        * @example 75
        */
       balance: number
+      /**
+       * Last Balanced Event Id
+       * @description The ID of the last event the meter was balanced against.
+       * @example f0d201ef-3b2b-4f1a-9d0e-1f2c3d4e5f6a
+       */
+      last_balanced_event_id?: string | null
       /** @description The customer associated with this meter. */
       customer: components['schemas']['Customer']
       /** @description The meter associated with this customer. */

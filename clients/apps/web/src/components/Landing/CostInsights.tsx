@@ -125,6 +125,7 @@ export const CostInsights = () => {
           gridColumn={{ base: 'auto', lg: 'span 2' }}
           overflow="hidden"
           backgroundColor="background-secondary"
+          display={{ base: 'none', md: 'block' }}
         >
           {/* Column headers */}
           <Box
@@ -136,21 +137,13 @@ export const CostInsights = () => {
             paddingVertical="m"
             borderBottomWidth={1}
             borderStyle="solid"
-            borderColor="border-primary"
+            borderColor="border-secondary"
           >
             <Text color="muted">Customer</Text>
-            <Text
-              color="muted"
-              align="right"
-              display={{ base: 'none', md: 'block' }}
-            >
+            <Text color="muted" align="right">
               Revenue
             </Text>
-            <Text
-              color="muted"
-              align="right"
-              display={{ base: 'none', md: 'block' }}
-            >
+            <Text color="muted" align="right">
               LLM cost
             </Text>
             <Text color="muted" align="right">
@@ -183,14 +176,8 @@ export const CostInsights = () => {
                     </Text>
                   </Box>
                 </Box>
-                <Text align="right" display={{ base: 'none', md: 'block' }}>
-                  {currency(row.revenue)}
-                </Text>
-                <Text
-                  align="right"
-                  color="muted"
-                  display={{ base: 'none', md: 'block' }}
-                >
+                <Text align="right">{currency(row.revenue)}</Text>
+                <Text align="right" color="muted">
                   {currency(row.cost)}
                 </Text>
                 <Box

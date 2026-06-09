@@ -45,7 +45,10 @@ export const Dashboard = () => {
         width="100%"
         overflow="hidden"
         position="relative"
-        borderRadius="l"
+        borderRadius={{
+          base: 's',
+          md: 'm',
+        }}
         borderWidth={1}
         borderStyle="solid"
         borderColor="border-primary"

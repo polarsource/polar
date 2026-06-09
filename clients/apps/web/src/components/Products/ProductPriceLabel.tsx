@@ -27,7 +27,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
     return null
   }
 
-  if (staticPrice.amount_type === 'fixed') {
+  if (staticPrice.amount_type === 'fixed' && staticPrice.price_amount !== 0) {
     return (
       <AmountLabel
         amount={staticPrice.price_amount}

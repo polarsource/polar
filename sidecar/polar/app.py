@@ -78,26 +78,24 @@ async def ingest_events(
     return EventsIngestResponse(inserted=inserted, duplicates=duplicates)
 
 
-@app.api_route(
-    "/{path:path}",
-    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
-)
-async def passthrough(path: str, request: Request) -> Response:
-    """Fallback that passes any other request through to the Polar API."""
+async def _forward(request: Request) -> httpx.Response:
     client: httpx.AsyncClient = request.app.state.client
     headers = {
         key: value
         for key, value in request.headers.items()
         if key.lower() not in HOP_BY_HOP
     }
-    upstream = await client.request(
+    return await client.request(
         request.method,
-        f"/{path}",
+        request.url.path,
         params=request.query_params,
         headers=headers,
         content=await request.body(),
     )
-    response_headers = {
+
+
+def _proxied_response(upstream: httpx.Response) -> Response:
+    headers = {
         key: value
         for key, value in upstream.headers.items()
         if key.lower() not in HOP_BY_HOP
@@ -105,5 +103,14 @@ async def passthrough(path: str, request: Request) -> Response:
     return Response(
         content=upstream.content,
         status_code=upstream.status_code,
-        headers=response_headers,
+        headers=headers,
     )
+
+
+@app.api_route(
+    "/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+)
+async def passthrough(path: str, request: Request) -> Response:
+    """Fallback that passes any other request through to the Polar API."""
+    return _proxied_response(await _forward(request))

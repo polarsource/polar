@@ -6,7 +6,7 @@ from sqlalchemy import or_, select, update
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from polar.models import Event
+from polar.models import CustomerMeter, Event
 
 
 class EventRepository:
@@ -86,4 +86,24 @@ class EventRepository:
                 or_(Event.polar_event_id.is_(None), Event.id > watermark_local_id)
             )
         result = await self.session.execute(statement.order_by(Event.id))
+        return result.scalars().all()
+
+
+class CustomerMeterRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def upsert(self, customer_meter: CustomerMeter) -> None:
+        await self.session.merge(customer_meter)
+
+    async def get_by_id(self, id: str) -> CustomerMeter | None:
+        statement = select(CustomerMeter).where(CustomerMeter.id == id)
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def get_by_customer_id(self, customer_id: str) -> Sequence[CustomerMeter]:
+        statement = select(CustomerMeter).where(
+            CustomerMeter.customer_id == customer_id
+        )
+        result = await self.session.execute(statement)
         return result.scalars().all()

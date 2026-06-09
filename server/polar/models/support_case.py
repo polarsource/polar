@@ -64,7 +64,6 @@ class SupportCaseMessageType(StrEnum):
     # lifecycle (generic)
     opened = "opened"
     closed = "closed"
-    reopened = "reopened"
     # actions (review_appeal)
     appeal_approved = "appeal_approved"
     appeal_denied = "appeal_denied"

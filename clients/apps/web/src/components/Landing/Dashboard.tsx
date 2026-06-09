@@ -45,30 +45,17 @@ export const Dashboard = () => {
         width="100%"
         overflow="hidden"
         position="relative"
-        borderRadius="m"
+        borderRadius="l"
         borderWidth={1}
         borderStyle="solid"
         borderColor="border-primary"
-        padding={{
-          base: 'l',
-          md: '5xl',
-        }}
       >
         <StaticImage
           src="/assets/landing/dashboard.jpg"
           alt="Polar dashboard"
           width={3840}
           height={2160}
-          className="relative z-10 h-auto w-full rounded-xs md:rounded-xl"
-          sizes="(min-width: 1280px) 1280px, 100vw"
-          priority
-        />
-        <StaticImage
-          src="/assets/brand/polar_gradient.jpg"
-          alt="Polar dashboard"
-          width={3840}
-          height={2160}
-          className="absolute inset-0 h-full object-cover"
+          className="relative z-10 h-auto w-full"
           sizes="(min-width: 1280px) 1280px, 100vw"
           priority
         />

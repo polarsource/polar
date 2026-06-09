@@ -239,7 +239,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
             .where(
                 BenefitGrant.is_deleted.is_(False),
                 BenefitGrant.is_revoked.is_(False),
-                Benefit.visibility == Visibility.public
+                Benefit.visibility == Visibility.public,
             )
             .options(
                 contains_eager(BenefitGrant.benefit).options(

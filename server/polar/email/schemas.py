@@ -5,13 +5,13 @@ from typing import Annotated, Literal
 
 from pydantic import AfterValidator, BaseModel, Discriminator, TypeAdapter
 
+from polar.kit.visibility import Visibility
 from polar.notifications.notification import (
     MaintainerAccountCreditsGrantedNotificationPayload,
     MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
 )
-from polar.kit.visibility import Visibility
 from polar.order.schemas import OrderBase, OrderItemSchema
 from polar.organization.schemas import Organization
 from polar.product.schemas import BenefitList, ProductBase

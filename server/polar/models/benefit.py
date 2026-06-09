@@ -66,6 +66,31 @@ class BenefitType(StrEnum):
         except KeyError as e:
             raise TaxApplicationMustBeSpecified(self) from e
 
+    def is_visibility_configurable(self) -> bool:
+        return self not in INTERACTIVE_BENEFIT_TYPES
+
+    def default_visibility(self) -> Visibility:
+        match self:
+            case BenefitType.feature_flag:
+                return Visibility.private
+            case _:
+                return Visibility.public
+
+    def resolve_visibility(self, visibility: Visibility | None) -> Visibility:
+        if not self.is_visibility_configurable():
+            return Visibility.public
+        return visibility if visibility is not None else self.default_visibility()
+
+
+# Benefits that requires customer action to redeem. Visibility should be public.
+INTERACTIVE_BENEFIT_TYPES: frozenset[BenefitType] = frozenset(
+    {
+        BenefitType.discord,
+        BenefitType.github_repository,
+        BenefitType.downloadables,
+    }
+)
+
 
 class Benefit(VisibilityMixin, MetadataMixin, RecordModel):
     __tablename__ = "benefits"

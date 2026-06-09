@@ -34,6 +34,10 @@ class BenefitCreateBase(MetadataInputMixin, Schema):
             "**Required unless you use an organization token.**"
         ),
     )
+    visibility: BenefitVisibility | None = Field(
+        None,
+        description="The visibility of the benefit in the customer portal.",
+    )
 
 
 class BenefitUpdateBase(MetadataInputMixin, Schema):
@@ -67,6 +71,11 @@ class BenefitPublicBase(TimestampedSchema, IDSchema):
     visibility: BenefitVisibility = Field(
         description="The visibility of the benefit in the customer portal."
     )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def visibility_configurable(self) -> bool:
+        return self.type.is_visibility_configurable()
 
 
 class BenefitBase(MetadataOutputMixin, BenefitPublicBase): ...

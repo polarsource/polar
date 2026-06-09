@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from polar.config import get_base_url
 from polar.customer_meter import merge_customer_meter, snapshot_from_response
 from polar.db import engine, get_db_session, init_db
+from polar.poll import run_poll_loop
 from polar.repository import CustomerMeterRepository, EventRepository
 from polar.sync import run_flush_loop
 from polar.validation import validate_event
@@ -42,12 +43,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await init_db()
     app.state.client = httpx.AsyncClient(base_url=BASE_URL, timeout=30.0)
     flush_task = asyncio.create_task(run_flush_loop(BASE_URL))
+    poll_task = asyncio.create_task(run_poll_loop(BASE_URL))
     try:
         yield
     finally:
         flush_task.cancel()
+        poll_task.cancel()
         with suppress(asyncio.CancelledError):
             await flush_task
+        with suppress(asyncio.CancelledError):
+            await poll_task
         await app.state.client.aclose()
         await engine.dispose()
 

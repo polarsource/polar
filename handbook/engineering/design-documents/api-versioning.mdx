@@ -46,39 +46,34 @@ Releases occur on a **quarterly cadence** during the **first week of each quarte
 
 The release is **calendar-driven**: it happens on the scheduled date regardless of feature completion. Incomplete work is deferred to the Next version.
 
-<Note>
-  The release cadence (quarterly vs. semi-annual) is open for discussion. See
-  [Alternatives Considered](#alternatives-considered).
-</Note>
-
 ### Version Lifecycle
 
-Exactly **3 versions** are maintained at any time:
+Exactly **4 versions** are maintained at any time:
 
 ```
-[Deprecated] → [Current: default] → [Next: in development]
+[N-1: deprecated] → [N: default] → [Next: in development]
 ```
 
 #### State Transitions
 
 On each release:
 
-1. The **oldest version (Deprecated)** is **removed**
-2. The **Current version** becomes **Deprecated**
-3. The **Next version** becomes **Current** (and default)
+1. **N-1** is **removed**
+2. **N** becomes **N-1** and is **deprecated**
+3. The **Next version** becomes **N** and is the new default. It is **frozen** for contract changes.
 4. A **new Next version** is created for ongoing development
 
 #### Timeline Example
 
 ```
 Before Q2 2026 release:
-  2025-10  (Deprecated, to be removed)
-  2026-01  (Current, default)
+  2025-10  (N-1, to be removed)
+  2026-01  (N, default)
   2026-04  (Next, in development)
 
 After Q2 2026 release:
-  2026-01  (Deprecated, to be removed on next release)
-  2026-04  (Current, default) ← was Next
+  2026-01  (N-1, to be removed on next release)
+  2026-04  (N, default) ← was Next
   2026-07  (Next, in development)
   (2025-10 is now removed)
 ```
@@ -91,8 +86,9 @@ Each version follows this lifecycle:
 - **Total**: ~9 months of support
 
 <Note>
-  The support window duration (9 months vs. 12 months) is open for discussion.
-  See [Alternatives Considered](#alternatives-considered).
+  If this is seen as too aggressive, we can consider a longer support window
+  (e.g., 12 months) by maintaining 4 versions instead of 3. See Appendix for
+  timeline examples.
 </Note>
 
 ### Change Policy
@@ -120,6 +116,8 @@ Each version follows this lifecycle:
 3. New contract changes target the new Next version
 4. Bug fixes can be applied to any maintained version
 
+Polar dashboard and mobile app will always use the **Next** version, so it can benefit from latest features immediately. Breaking changes are less disruptive for internal clients since we control both sides of the contract.
+
 ### Version Increment
 
 The version **always increments on schedule**, even if no contract changes have been made in that quarter.
@@ -129,11 +127,6 @@ The version **always increments on schedule**, even if no contract changes have 
 ### Removal Policy
 
 Deprecated versions are **removed on the next release date** (hard cutoff).
-
-<Note>
-  Adding a grace period (e.g., 30 days after deprecation window) is open for
-  discussion.
-</Note>
 
 ### Version Naming
 
@@ -181,36 +174,235 @@ The SDK will follow the API versioning with patch versions for bug fixes:
 
 ### Backend: Header-based routing POC
 
-A way to implement this is to consider each version as a separate FastAPI app. The main app routes requests to the appropriate version based on the `Polar-Version` header. In each business logic module (e.g. `customers`), we'll have a submodule for each version, containing the schemas and endpoints for that version. Common logic, like `service.py`, can be shared across versions.
+We introduce a new `version` decorator to put on top of routes. By default, without the decorator, the route is available on all versions. If the decorator is used, the route is only available on the specified version(s). A more specific version takes precedence over a more general one.
 
-To serve the right OpenAPI document for each version, we can generate separate OpenAPI specs for each version and serve them at different endpoints (e.g., `/openapi/2026-01.json`, `/openapi/2026-04.json`).
+Custom routing classes will then take care to create sub-FastAPI apps that expose the right endpoints and schemas for each version. The main app will route requests to the appropriate sub-app based on the `Polar-Version` header.
 
+```python Usage
+class ItemOld(BaseModel):
+    name: str
+    description: str
+
+
+class ItemNew(BaseModel):
+    name: str
+
+
+# Standard router definition
+router = APIRouter(prefix="/v1/items", tags=[APITag.public])
+
+
+@router.get("/")
+@version(APIVersion(2026, 1))
+async def item_old() -> ItemOld:
+    # Old endpoint with version decorator, should only be included in version 2026-01.
+    return ItemOld(name="Old Item", description="This is an old item.")
+
+
+@router.get("/")
+async def item_new() -> ItemNew:
+    # New endpoint without version decorator, should be included in all versions.
+    return ItemNew(name="New Item")
+
+
+# Generate a wrapper router that'll include only the endpoints relevant for the specified version.
+old_router = VersionedAPIRouter(version=APIVersion(2026, 1))
+old_router.include_router(router)
+# Include the wrapper router in a FastAPI app to generate the OpenAPI schema for that version.
+old_app = FastAPI(openapi_url="/2026-01/openapi.json", version="2026-01")
+old_app.include_router(old_router)
+
+
+new_router = VersionedAPIRouter(version=APIVersion(2026, 4))
+new_router.include_router(router)
+new_app = FastAPI(openapi_url="/2026-04/openapi.json", version="2026-04")
+new_app.include_router(new_router)
+
+# Add versioned apps as routes in a main FastAPI app
+# with a custom route class that matches the incoming version header and dispatches to the correct app.
+app = FastAPI()
+app.routes.append(
+    VersionRoute(
+        version=APIVersion(2026, 1), current_version=APIVersion(2026, 4), app=old_app
+    )
+)
+app.routes.append(
+    VersionRoute(
+        version=APIVersion(2026, 4), current_version=APIVersion(2026, 4), app=new_app
+    )
+)
 ```
-polar/
-├── customer/
-│   ├── __init__.py
-│   ├── service.py
-│   ├── 2026_04/
-│   │   ├── __init__.py
-│   │   ├── schemas.py
-│   │   └── endpoints.py
-│   ├── 2026_07/
-│   │   ├── __init__.py
-│   │   ├── schemas.py
-│   │   └── endpoints.py
-│   └── 2026_10/
-│       ├── __init__.py
-│       ├── schemas.py
-│       └── endpoints.py
-├── apps/
-│   ├── __init__.py
-│   ├── 2026_04.py
-│   ├── 2026_07.py
-│   └── 2026_10.py
-└── app.py
+
+```python POC Implementation expandable
+import functools
+import typing
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+from ratelimit.types import Scope
+from starlette.datastructures import Headers
+from starlette.routing import BaseRoute, Match, Route
+from starlette.types import ASGIApp, Receive, Send
+
+from polar.openapi import APITag
+from polar.routing import APIRouter
+
+
+class APIVersion:
+    __slots__ = ("month", "year")
+    year: int
+    month: int
+
+    def __init__(self, year: int, month: int):
+        self.year = year
+        self.month = month
+
+    def __str__(self) -> str:
+        return f"{self.year}-{self.month:02d}"
+
+    def __eq__(self, value: object, /) -> bool:
+        if not isinstance(value, APIVersion):
+            return NotImplemented
+        return value.year == self.year and value.month == self.month
+
+    def __lt__(self, value: object, /) -> bool:
+        if not isinstance(value, APIVersion):
+            return NotImplemented
+        if self.year != value.year:
+            return self.year < value.year
+        return self.month < value.month
+
+    def __le__(self, value: object, /) -> bool:
+        if not isinstance(value, APIVersion):
+            return NotImplemented
+        if self.year != value.year:
+            return self.year < value.year
+        return self.month <= value.month
+
+    def __gt__(self, value: object, /) -> bool:
+        if not isinstance(value, APIVersion):
+            return NotImplemented
+        if self.year != value.year:
+            return self.year > value.year
+        return self.month > value.month
+
+    def __ge__(self, value: object, /) -> bool:
+        if not isinstance(value, APIVersion):
+            return NotImplemented
+        if self.year != value.year:
+            return self.year > value.year
+        return self.month >= value.month
+
+    @classmethod
+    def parse(cls, version_str: str) -> "APIVersion":
+        try:
+            year_str, month_str = version_str.split("-")
+            return cls(year=int(year_str), month=int(month_str))
+        except ValueError as e:
+            raise ValueError(f"Invalid version string: {version_str}") from e
+
+
+def version(*versions: APIVersion):
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            return await func(*args, **kwargs)
+
+        wrapper._api_versions = versions  # type: ignore[attr-defined]
+        return wrapper
+
+    return decorator
+
+
+class VersionedAPIRouter(APIRouter):
+    def __init__(self, version: APIVersion, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.version = version
+
+    def add_api_route(self, path, endpoint, *, methods=None, **kwargs):
+        endpoint_versions = getattr(endpoint, "_api_versions", None)
+        conflicting_route = self._get_conflicting_route(path, methods)
+
+        if endpoint_versions is None:
+            if conflicting_route is not None:
+                conflicting_route_versions = getattr(
+                    conflicting_route.endpoint, "_api_versions", None
+                )
+                if conflicting_route_versions is not None:
+                    return
+        elif self.version not in endpoint_versions:
+            return
+
+        if conflicting_route is not None:
+            self.routes.remove(conflicting_route)
+
+        super().add_api_route(path, endpoint, methods=methods, **kwargs)
+
+    def _get_conflicting_route(
+        self, path: str, methods: set[str] | list[str] | None
+    ) -> Route | None:
+        for route in self.routes:
+            if not isinstance(route, Route):
+                continue
+            if route.path == path and route.methods == set(methods or []):
+                return route
+        return None
+
+
+class VersionRoute(BaseRoute):
+    def __init__(
+        self,
+        version: APIVersion,
+        current_version: APIVersion,
+        app: ASGIApp,
+        name: str | None = None,
+    ) -> None:
+        self.version = version
+        self.current_version = current_version
+        self.app = app
+        self.name = name
+
+    @property
+    def routes(self) -> list[BaseRoute]:
+        return getattr(self.app, "routes", [])
+
+    def matches(self, scope: Scope) -> tuple[Match, Scope]:
+        if scope["type"] in ("http", "websocket"):
+            headers = Headers(scope=scope)
+            raw_version = headers.get("polar-version")
+            try:
+                request_version = (
+                    APIVersion.parse(raw_version)
+                    if raw_version
+                    else self.current_version
+                )
+            except ValueError:
+                return Match.NONE, scope
+
+            if request_version == self.version:
+                child_scope = {"endpoint": self.app}
+                return Match.FULL, child_scope
+        return Match.NONE, {}
+
+    async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
+        await self.app(scope, receive, send)
+
+    def __eq__(self, other: typing.Any) -> bool:
+        if not isinstance(other, VersionRoute):
+            return NotImplemented
+        return self.version == other.version and self.app == other.app
+
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        name = self.name or ""
+        return (
+            f"{class_name}(version={self.version!r}, name={name!r}, app={self.app!r})"
+        )
 ```
 
-Of course, this should be tooled so when we create a new version, the necessary files and boilerplate are generated automatically.
+### Testing
+
+We should have tests that lock the schema for N-1 and N versions to ensure no contract changes are allowed. If a change is attempted, the test should fail, indicating that the change must be made in the Next version instead.
 
 ### Documentation
 
@@ -221,48 +413,7 @@ Of course, this should be tooled so when we create a new version, the necessary 
 
 ### Monitoring
 
-1. Track usage of each version
-2. Alert when deprecated version usage exceeds thresholds
-3. Monitor error rates per version
-
-## Alternatives Considered
-
-### 1. Semi-Annual Cadence
-
-**Proposal**: Release 2 versions per year (January, July) instead of 4.
-
-| **Aspect**                | **Quarterly** | **Semi-Annual** |
-| ------------------------- | ------------- | --------------- |
-| Innovation velocity       | High          | Moderate        |
-| Consumer migration burden | High          | Low             |
-| Operational overhead      | Moderate      | Low             |
-| Cleanup frequency         | High          | Moderate        |
-
-**Tradeoff**: Less frequent releases reduce consumer burden but slow down API evolution.
-
-### 2. Extended Support Window (12 months)
-
-**Proposal**: Maintain 4 versions with 12-month support window.
-
-```
-Lifecycle: Next (3 mo) → Current (6 mo) → Deprecated (3 mo) → Removed
-Total: 12 months support
-Versions maintained: 4
-```
-
-**Tradeoff**: Longer support window improves enterprise compatibility but increases maintenance burden.
-
-### 3. Grace Period on Removal
-
-**Proposal**: Add 30-day grace period after deprecation window before removal.
-
-**Tradeoff**: Gives lagging consumers more time but delays cleanup.
-
-## Open Questions
-
-1. **Cadence**: Should we adopt quarterly or semi-annual release schedule?
-2. **Support window**: 9 months (3 versions) or 12 months (4 versions)?
-3. **Removal timing**: Hard cutoff on release date or 30-day grace period?
+We should track adoption of each version and monitor for errors. After one or two release cycles, we can evaluate if the cadence and support window are working as intended or if adjustments are needed.
 
 ## Appendix: Version Timeline Examples
 
@@ -270,18 +421,18 @@ Versions maintained: 4
 
 ```
 Jan 2026:  Release 2026-01
-  Maintained: 2025-10 (deprecated), 2026-01 (current), 2026-04 (next)
+  Maintained: 2025-10 (N-1), 2026-01 (N), 2026-04 (next)
 
 Apr 2026:  Release 2026-04
-  Maintained: 2026-01 (deprecated), 2026-04 (current), 2026-07 (next)
+  Maintained: 2026-01 (N-1), 2026-04 (N), 2026-07 (next)
   Removed: 2025-10
 
 Jul 2026:  Release 2026-07
-  Maintained: 2026-04 (deprecated), 2026-07 (current), 2026-10 (next)
+  Maintained: 2026-04 (N-1), 2026-07 (N), 2026-10 (next)
   Removed: 2026-01
 
 Oct 2026:  Release 2026-10
-  Maintained: 2026-07 (deprecated), 2026-10 (current), 2027-01 (next)
+  Maintained: 2026-07 (N-1), 2026-10 (N), 2027-01 (next)
   Removed: 2026-04
 ```
 
@@ -289,20 +440,9 @@ Oct 2026:  Release 2026-10
 
 ```
 Jan 2026:  Release 2026-01
-  Maintained: 2025-07 (deprecated), 2025-10 (deprecated), 2026-01 (current), 2026-04 (next)
+  Maintained: 2025-07 (N-2), 2025-10 (N-1), 2026-01 (N), 2026-04 (next)
 
 Apr 2026:  Release 2026-04
-  Maintained: 2025-10 (deprecated), 2026-01 (deprecated), 2026-04 (current), 2026-07 (next)
-  Removed: 2025-07
-```
-
-### Scenario C: Semi-Annual Cadence, 12-month Support
-
-```
-Jan 2026:  Release 2026-01
-  Maintained: 2025-07 (deprecated), 2026-01 (current), 2026-07 (next)
-
-Jul 2026:  Release 2026-07
-  Maintained: 2026-01 (deprecated), 2026-07 (current), 2027-01 (next)
+  Maintained: 2025-10 (N-2), 2026-01 (N-1), 2026-04 (N), 2026-07 (next)
   Removed: 2025-07
 ```

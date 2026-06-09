@@ -974,6 +974,72 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/appeal/human-review': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Request Human Review
+     * @description Open a human-review case after the AI appeal was denied.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['organizations:request_human_review']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/appeal/case': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Appeal Case
+     * @description Get the merchant's human-review case and its visible timeline.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['organizations:get_appeal_case']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/appeal/case/messages': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Reply to Appeal Case
+     * @description Post a merchant reply to the human-review case.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['organizations:reply_to_appeal_case']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organizations/{id}/ai-onboarding-complete': {
     parameters: {
       query?: never
@@ -19624,6 +19690,11 @@ export interface components {
       /** Detail */
       detail?: components['schemas']['ValidationError'][]
     }
+    /** HumanReviewRequest */
+    HumanReviewRequest: {
+      /** Reason */
+      reason: string
+    }
     /**
      * IdentityVerificationStatus
      * @enum {string}
@@ -30615,6 +30686,77 @@ export interface components {
       /** Github Username */
       github_username?: string | null
     }
+    /** SupportCase */
+    SupportCase: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      type: components['schemas']['SupportCaseType']
+      /** Is Open */
+      is_open: boolean
+    }
+    /** SupportCaseMessage */
+    SupportCaseMessage: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /** Type */
+      type: string
+      author_kind: components['schemas']['SupportCaseMessageAuthorKind']
+      /** Body */
+      body: string | null
+    }
+    /**
+     * SupportCaseMessageAuthorKind
+     * @enum {string}
+     */
+    SupportCaseMessageAuthorKind:
+      | 'platform'
+      | 'merchant'
+      | 'customer'
+      | 'system'
+    /** SupportCaseMessageCreate */
+    SupportCaseMessageCreate: {
+      /** Body */
+      body: string
+    }
+    /** SupportCaseThread */
+    SupportCaseThread: {
+      case: components['schemas']['SupportCase']
+      /** Messages */
+      messages: components['schemas']['SupportCaseMessage'][]
+    }
+    /**
+     * SupportCaseType
+     * @enum {string}
+     */
+    SupportCaseType: 'review_appeal'
     SystemEvent:
       | components['schemas']['MeterCreditEvent']
       | components['schemas']['MeterResetEvent']
@@ -34905,6 +35047,130 @@ export interface operations {
         content: {
           'application/json': components['schemas']['HTTPValidationError']
         }
+      }
+    }
+  }
+  'organizations:request_human_review': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['HumanReviewRequest']
+      }
+    }
+    responses: {
+      /** @description Human review case opened. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SupportCase']
+        }
+      }
+      /** @description Support case not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Invalid request. */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  'organizations:get_appeal_case': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Appeal case thread returned. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SupportCaseThread']
+        }
+      }
+      /** @description Support case not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:reply_to_appeal_case': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SupportCaseMessageCreate']
+      }
+    }
+    responses: {
+      /** @description Reply posted. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SupportCaseMessage']
+        }
+      }
+      /** @description Support case not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Case is locked or request is invalid. */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
       }
     }
   }
@@ -58622,6 +58888,12 @@ export const subscriptionUpdateClearedEventNameValues: ReadonlyArray<
 export const subscriptionUpdatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionUpdatedEvent']['name']
 > = ['subscription.updated']
+export const supportCaseMessageAuthorKindValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SupportCaseMessageAuthorKind']
+> = ['platform', 'merchant', 'customer', 'system']
+export const supportCaseTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SupportCaseType']
+> = ['review_appeal']
 export const taxBehaviorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TaxBehavior']
 > = ['inclusive', 'exclusive']

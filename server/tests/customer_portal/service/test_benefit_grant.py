@@ -8,6 +8,7 @@ from polar.customer_portal.service.benefit_grant import (
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
+from polar.kit.visibility import Visibility
 from polar.models import Benefit, Customer, Member, Organization, Subscription
 from polar.models.member import MemberRole
 from tests.fixtures.auth import MEMBER_AUTH_SUBJECT, AuthSubjectFixture
@@ -84,6 +85,44 @@ class TestList:
 
         assert count == 2
         assert len(grants) == 2
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    async def test_excludes_non_public_benefits(
+        self,
+        auth_subject: AuthSubject[Customer],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        benefit_organization_second: Benefit,
+        customer: Customer,
+    ) -> None:
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+        )
+
+        benefit_organization_second.visibility = Visibility.private
+        await save_fixture(benefit_organization_second)
+
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization_second,
+            granted=True,
+            subscription=subscription,
+        )
+
+        grants, count = await customer_benefit_grant_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10)
+        )
+
+        assert count == 1
+        assert len(grants) == 1
+        assert grants[0].benefit_id == benefit_organization.id
 
     @pytest.mark.parametrize(
         "sorting",
@@ -237,6 +276,35 @@ class TestGetById:
 
         assert result is not None
         assert result.id == customer_grant.id
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    async def test_private_benefit(
+        self,
+        auth_subject: AuthSubject[Customer],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        customer: Customer,
+    ) -> None:
+        benefit_organization.visibility = Visibility.private
+        await save_fixture(benefit_organization)
+
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+        )
+
+        session.expunge_all()
+
+        result = await customer_benefit_grant_service.get_by_id(
+            session, auth_subject, grant.id
+        )
+
+        assert result is None
 
 
 @pytest.mark.asyncio

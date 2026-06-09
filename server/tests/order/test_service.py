@@ -42,6 +42,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.math import polar_round
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
+from polar.kit.visibility import Visibility
 from polar.models import (
     Account,
     BillingEntry,
@@ -109,6 +110,7 @@ from polar.wallet.service import wallet as wallet_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_benefit,
     create_active_subscription,
     create_billing_entry,
     create_canceled_subscription,
@@ -121,6 +123,7 @@ from tests.fixtures.random_objects import (
     create_payment,
     create_payment_method,
     create_product,
+    set_product_benefits,
     create_subscription,
     create_trialing_subscription,
     create_wallet,
@@ -2370,6 +2373,56 @@ class TestSendConfirmationEmail:
         assert isinstance(enqueue_email_mock.call_args[0][0], OrderConfirmationEmail)
         attachments = enqueue_email_mock.call_args[1]["attachments"]
         assert len(attachments) == 1
+
+    async def test_excludes_non_public_benefits(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        public_benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            description="Public benefit",
+        )
+        private_benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            description="Private benefit",
+        )
+        private_benefit.visibility = Visibility.private
+        await save_fixture(private_benefit)
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+        )
+        product = await set_product_benefits(
+            save_fixture,
+            product=product,
+            benefits=[public_benefit, private_benefit],
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, OrderConfirmationEmail)
+        assert email.props.product is not None
+        assert [benefit.description for benefit in email.props.product.benefits] == [
+            "Public benefit"
+        ]
 
 
 @pytest.mark.asyncio

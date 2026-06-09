@@ -24,11 +24,11 @@ export default {
         line1: 'Açık adres',
         line2: 'Daire veya bina no',
         postalCode: 'Posta kodu',
-        city: 'İl',
+        city: 'Şehir',
         country: 'Ülke',
         state: 'Eyalet',
-        province: 'Bölge',
-        stateProvince: 'Eyalet / Bölge',
+        province: 'İlçe',
+        stateProvince: 'Eyalet / İlçe',
       },
       taxId: 'Vergi numarası',
       discountCode: 'İndirim kodu',
@@ -230,7 +230,7 @@ export default {
       processingPayment: 'Ödeme işleniyor',
       paymentSuccessful: 'Ödeme başarılı! Ürünleriniz hazırlanıyor...',
       confirmationTokenFailed:
-        'Onay belirteci oluşturulamadı, lütfen daha sonra tekrar deneyin.',
+        'Onay anahtarı oluşturulamadı, lütfen daha sonra tekrar deneyin.',
     },
     cta: {
       startTrial: 'Denemeyi başlat',

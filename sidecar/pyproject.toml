@@ -1,0 +1,105 @@
+[project]
+name = "polar-sidecar"
+version = "0.0.0"
+readme = "README.md"
+requires-python = ">=3.14.0"
+dependencies = [
+  "fastapi>=0.136.3",
+  "uvicorn[standard]>=0.48.0",
+  "asyncpg>=0.29.0",
+  "alembic>=1.9.2",
+  "sqlalchemy[asyncio]>=2.0.50",
+  "typer>=0.26.2",
+  "logfire[fastapi,httpx,sqlalchemy,redis]>=4.34.0",
+  "polar-sdk==0.31.5",
+  "aiosqlite>=0.22.1",
+]
+
+[dependency-groups]
+dev = [
+  "mypy>=2.1.0",
+  "pytest<10",
+  "pytest-sugar>=1.0.0",
+  "typer>=0.26.2",
+  "coverage>=7.14.1",
+  "pytest-mock>=3.10.0",
+  "ruff>=0.15.14",
+  "pytest-asyncio>=1.4.0",
+]
+
+[tool.taskipy.tasks]
+api = { cmd = "env AUTHLIB_INSECURE_TRANSPORT=true uvicorn polar.app:app --reload --workers 1 --host 127.0.0.1 --port 8000", help = "run api service" }
+test = { cmd = "POLAR_ENV=testing python -m pytest --cov polar/ --cov-report=term-missing", help = "run all tests" }
+test_fast = { cmd = "POLAR_ENV=testing python -m pytest -n auto -p no:sugar --no-cov", help = "run all tests, but fast" }
+lint = { cmd = "ruff format . && ruff check --fix . && task lint_subquery", help = "run linters with autofix" }
+lint_check = { cmd = "ruff format --check . && ruff check . && task lint_subquery", help = "run ruff linter" }
+lint_types = { cmd = "mypy --num-workers 2 polar scripts tests", help = "run mypy type verify" }
+db_migrate = { cmd = "python -m scripts.db upgrade", help = "run alembic upgrade" }
+db_recreate = { cmd = "python -m scripts.db recreate", help = "drop and recreate database" }
+db_reparent = { cmd = "python -m scripts.db reparent", help = "try to auto-fix conflicting migrations" }
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+markers = ["auth"]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.coverage.run]
+concurrency = ["thread", "greenlet"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+] # See: https://github.com/nedbat/coveragepy/issues/831
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+extend-select = [
+  "I",
+  "UP",
+  "T20",
+  "B039",
+  "PT",
+  "RUF022",
+  "RUF023",
+  "RUF10",
+  "RUF20",
+]
+ignore = [
+  "F841", # remove unused variables
+  "PT012",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"migrations/*" = [
+  "F401", # remove unused import
+]
+"scripts/*" = ["T20"]
+
+[tool.mypy]
+ignore_missing_imports = true
+plugins = ["pydantic.mypy"]
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_any_generics = true
+check_untyped_defs = true
+no_implicit_reexport = true
+strict_equality = true
+disallow_untyped_defs = true
+skip_cache_mtime_checks = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = false
+warn_untyped_fields = true
+
+[tool.uv]
+exclude-newer = "1 week"
+exclude-newer-package = { reauth = false } # Reauth is brand new, but remember to remove this exclusion when stabilized
+
+[tool.uv.sources]
+polar-sdk = { url = "https://files.pythonhosted.org/packages/21/6c/b858596fcc39fdfb0757e24f24b86e96990e17d1ffed86639b04121c6e8c/polar_sdk-0.31.5-py3-none-any.whl" }

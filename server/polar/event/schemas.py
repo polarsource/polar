@@ -213,13 +213,6 @@ class EventsIngest(Schema):
     events: list[EventCreate] = Field(description="List of events to ingest.")
 
 
-class EventsIngestResponse(Schema):
-    inserted: int = Field(description="Number of events inserted.")
-    duplicates: int = Field(
-        default=0, description="Number of duplicate events skipped."
-    )
-
-
 class BaseEvent(IDSchema):
     timestamp: datetime = Field(description="The timestamp of the event.")
     organization_id: OrganizationID = Field(
@@ -656,6 +649,20 @@ Event = Annotated[
 ]
 
 EventTypeAdapter: TypeAdapter[Event] = TypeAdapter(Event)
+
+
+class EventsIngestResponse(Schema):
+    inserted: int = Field(description="Number of events inserted.")
+    duplicates: int = Field(
+        default=0, description="Number of duplicate events skipped."
+    )
+    events: list[Event] | None = Field(
+        default=None,
+        description=(
+            "The inserted events. "
+            "Only present when the `return_events` query parameter is set to `true`."
+        ),
+    )
 
 
 class EventName(Schema):

@@ -391,7 +391,40 @@ class TestIngest:
 
         assert response.status_code == 200
         json = response.json()
-        assert json == {"inserted": len(events), "duplicates": 0}
+        assert json == {"inserted": len(events), "duplicates": 0, "events": None}
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.parametrize(
+        "events",
+        [
+            [
+                {
+                    "name": "event1",
+                    "external_customer_id": "CUSTOMER_ID",
+                    "metadata": {"usage": 127.32},
+                }
+            ]
+        ],
+    )
+    async def test_return_events(
+        self, events: list[dict[str, Any]], client: AsyncClient
+    ) -> None:
+        response = await client.post(
+            "/v1/events/ingest",
+            params={"return_events": "true"},
+            json={"events": events},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["inserted"] == len(events)
+        assert json["duplicates"] == 0
+        assert json["events"] is not None
+        assert len(json["events"]) == len(events)
+        ingested = json["events"][0]
+        assert "id" in ingested
+        assert ingested["external_customer_id"] == "CUSTOMER_ID"
+        assert ingested["name"] == "event1"
 
 
 SQLI_PAYLOADS = [

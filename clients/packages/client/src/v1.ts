@@ -19273,6 +19273,11 @@ export interface components {
        * @default 0
        */
       duplicates: number
+      /**
+       * Events
+       * @description The inserted events. Only present when the `return_events` query parameter is set to `true`.
+       */
+      events?: components['schemas']['Event'][] | null
     }
     /**
      * ExistingProductPrice
@@ -47734,7 +47739,10 @@ export interface operations {
   }
   'events:ingest': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Whether to return the inserted events in the response. */
+        return_events?: boolean
+      }
       header?: never
       path?: never
       cookie?: never

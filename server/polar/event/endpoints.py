@@ -582,7 +582,13 @@ async def get(
 async def ingest(
     ingest: EventsIngest,
     auth_subject: auth.EventWrite,
+    return_events: bool = Query(
+        False,
+        description="Whether to return the inserted events in the response.",
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> EventsIngestResponse:
     """Ingest batch of events."""
-    return await event_service.ingest(session, auth_subject, ingest)
+    return await event_service.ingest(
+        session, auth_subject, ingest, return_events=return_events
+    )

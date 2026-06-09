@@ -57,6 +57,7 @@ from .schemas import (
     EventsIngest,
     EventsIngestResponse,
     EventStatistics,
+    EventTypeAdapter,
     ListCustomerStats,
     ListPropertyGroupStats,
     ListStatisticsTimeseries,
@@ -874,6 +875,7 @@ class EventService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         ingest: EventsIngest,
+        return_events: bool = False,
     ) -> EventsIngestResponse:
         validate_organization_id = await self._get_organization_validation_function(
             session, auth_subject
@@ -938,11 +940,15 @@ class EventService:
         event_ids, duplicates_count = await repository.insert_batch(events)
 
         # Temporarily: fetch inserted events and create meter_events
+        inserted_events: Sequence[Event] = []
         with logfire.span("create_meter_events", event_count=len(event_ids)):
             if event_ids:
-                inserted_events = await repository.get_all(
-                    repository.get_base_statement().where(Event.id.in_(event_ids))
+                statement = repository.get_base_statement().where(
+                    Event.id.in_(event_ids)
                 )
+                if return_events:
+                    statement = statement.options(*repository.get_eager_options())
+                inserted_events = await repository.get_all(statement)
                 await self._create_meter_events(session, inserted_events)
 
         # Parent resolution and root_id propagation run out-of-band in the
@@ -951,7 +957,16 @@ class EventService:
         enqueue_events(*event_ids)
 
         return EventsIngestResponse(
-            inserted=len(event_ids), duplicates=duplicates_count
+            inserted=len(event_ids),
+            duplicates=duplicates_count,
+            events=(
+                [
+                    EventTypeAdapter.validate_python(event, from_attributes=True)
+                    for event in inserted_events
+                ]
+                if return_events
+                else None
+            ),
         )
 
     async def create_event(self, session: AsyncSession, event: Event) -> Event:

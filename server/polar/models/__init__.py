@@ -84,6 +84,14 @@ from .subscription import Subscription
 from .subscription_meter import SubscriptionMeter
 from .subscription_product_price import SubscriptionProductPrice
 from .subscription_update import SubscriptionUpdate
+from .support_case import (
+    ReviewAppealSupportCase,
+    SupportCase,
+    SupportCaseAttachment,
+    SupportCaseMessage,
+    SupportCaseParticipant,
+    SupportCaseType,
+)
 from .totp_enrollment import TOTPEnrollment
 from .transaction import Transaction
 from .trial_redemption import TrialRedemption
@@ -182,12 +190,18 @@ __all__ = [
     "ProductPriceSeatUnit",
     "ProductVisibility",
     "Refund",
+    "ReviewAppealSupportCase",
     "SeatStatus",
     "SlackApp",
     "Subscription",
     "SubscriptionMeter",
     "SubscriptionProductPrice",
     "SubscriptionUpdate",
+    "SupportCase",
+    "SupportCaseAttachment",
+    "SupportCaseMessage",
+    "SupportCaseParticipant",
+    "SupportCaseType",
     "TOTPEnrollment",
     "TimestampedModel",
     "Transaction",

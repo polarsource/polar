@@ -6,6 +6,7 @@ import httpx
 import structlog
 
 from polar.auth.models import AuthSubject
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.integrations.slack.client import SlackClient
 from polar.integrations.slack.repository import SlackAppRepository
 from polar.kit.db.postgres import AsyncSession
@@ -132,6 +133,8 @@ class BenefitSlackSharedChannelService(
         if existing_channel_id:
             channel_id = existing_channel_id
             channel_name = grant_properties.get("channel_name", "")
+        elif sibling_channel := await self._find_sibling_channel(benefit, customer):
+            channel_id, channel_name = sibling_channel
         else:
             channel_id, channel_name = await self._create_channel(
                 bot_token=bot_token,
@@ -314,6 +317,20 @@ class BenefitSlackSharedChannelService(
         ):
             return None
         return integration
+
+    async def _find_sibling_channel(
+        self, benefit: Benefit, customer: Customer
+    ) -> tuple[str, str] | None:
+        repository = BenefitGrantRepository.from_session(self.session)
+        grants = await repository.list_granted_by_benefit_and_customer(
+            benefit, customer
+        )
+        for grant in grants:
+            channel_id = grant.properties.get("channel_id")
+            if isinstance(channel_id, str) and channel_id:
+                channel_name = grant.properties.get("channel_name")
+                return channel_id, channel_name if isinstance(channel_name, str) else ""
+        return None
 
     def _build_context(self, customer: Customer) -> TemplateContext:
         email = customer.email or ""

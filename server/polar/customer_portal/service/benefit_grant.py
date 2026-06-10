@@ -225,13 +225,11 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 **benefit_grant.properties,
                 **benefit_grant_update.properties,
             }
-            if (
-                isinstance(
-                    benefit_grant_update, CustomerBenefitGrantSlackSharedChannelUpdate
-                )
-                and benefit_grant_update.properties["invited_email"]
-                != benefit_grant.properties.get("invited_email")
-            ):
+            if isinstance(
+                benefit_grant_update, CustomerBenefitGrantSlackSharedChannelUpdate
+            ) and benefit_grant_update.properties[
+                "invited_email"
+            ] != benefit_grant.properties.get("invited_email"):
                 properties.pop("invite_id", None)
                 properties.pop("invite_url", None)
             benefit_grant.properties = cast(Any, properties)

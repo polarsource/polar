@@ -317,21 +317,6 @@ class MeterService:
 
         return meter
 
-    async def events(
-        self,
-        session: AsyncSession,
-        meter: Meter,
-        *,
-        pagination: PaginationParams,
-    ) -> tuple[Sequence[Event], int]:
-        repository = EventRepository.from_session(session)
-        statement = repository.get_meter_statement(meter).order_by(
-            Event.timestamp.desc()
-        )
-        return await repository.paginate(
-            statement, limit=pagination.limit, page=pagination.page
-        )
-
     async def get_quantities(
         self,
         session: AsyncReadSession,

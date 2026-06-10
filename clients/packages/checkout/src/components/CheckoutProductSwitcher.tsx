@@ -35,7 +35,12 @@ export const CheckoutProductSwitcherItemPrice = ({
   checkout,
   locale,
 }: CheckoutProductSwitcherItemPriceProps) => {
-  const productPrices = checkout.prices[product.id] ?? []
+  // Products with presentment currencies hold the same logical price in several
+  // currencies. Filter to the checkout's currency first, otherwise `find` could
+  // return a fixed/seat price in the wrong currency and show the wrong amounts.
+  const productPrices = (checkout.prices[product.id] ?? []).filter(
+    (p) => p.price_currency === checkout.currency,
+  )
   const fixedPrice = productPrices.find(
     (p): p is schemas['ProductPriceFixed'] => p.amount_type === 'fixed',
   )

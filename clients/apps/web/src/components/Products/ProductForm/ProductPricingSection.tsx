@@ -352,8 +352,24 @@ export const ProductPricingSection = ({
           .reverse()
 
         indicesToRemove.forEach((i) => remove(i))
-      } else {
+      } else if (!hasPriceCurrency(priceToRemove)) {
         remove(indexToRemove)
+      } else {
+        // Static prices are kept in sync across currencies by their position
+        // within each currency group (see handleAmountTypeChange). Remove the
+        // corresponding price in every currency so the rows don't desynchronize.
+        const removedCurrency = priceToRemove.price_currency || 'usd'
+        const pricesByCurr = groupPricesByCurrency(currentPrices)
+        const positionInCurrency = (
+          pricesByCurr.get(removedCurrency) || []
+        ).findIndex((p) => p.index === indexToRemove)
+
+        const indicesToRemove = Array.from(pricesByCurr.values())
+          .map((currencyPrices) => currencyPrices[positionInCurrency]?.index)
+          .filter((i): i is number => i !== undefined)
+          .sort((a, b) => b - a)
+
+        indicesToRemove.forEach((i) => remove(i))
       }
     },
     [getValues, remove],

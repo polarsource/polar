@@ -12,7 +12,7 @@ import {
   ActiveSubscriptionsOverview,
   InactiveSubscriptionsOverview,
 } from './CustomerPortalSubscriptions'
-import { EmptyState } from './EmptyState'
+import { EmptyState } from '../Shared/EmptyState'
 import { LatestPurchaseOverview } from './LatestPurchaseOverview'
 export interface CustomerPortalProps {
   organization: schemas['CustomerOrganization']

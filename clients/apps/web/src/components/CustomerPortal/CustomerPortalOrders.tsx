@@ -9,8 +9,8 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
-import { OrderStatus } from '../Orders/OrderStatus'
 import CustomerPortalOrder from './CustomerPortalOrder'
+import { OrderStatus } from './OrderStatus'
 import { useTranslations } from './PortalLocaleProvider'
 
 export interface CustomerPortalOrdersProps {

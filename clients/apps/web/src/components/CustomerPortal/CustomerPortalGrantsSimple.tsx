@@ -1,9 +1,12 @@
 'use client'
 
+import {
+  usePortalLocale,
+  useTranslations,
+} from '@/components/CustomerPortal/PortalLocaleProvider'
 import { Client, schemas } from '@polar-sh/client'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { BenefitGrant } from '../Benefit/BenefitGrant'
-import { useTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 
 export interface CustomerPortalGrantsSimpleProps {
   organization?: schemas['CustomerOrganization']
@@ -16,6 +19,7 @@ export const CustomerPortalGrantsSimple = ({
   benefitGrants,
 }: CustomerPortalGrantsSimpleProps) => {
   const t = useTranslations()
+  const locale = usePortalLocale()
   return (
     <div className="flex w-full flex-col gap-4">
       <h3 className="text-xl">{t('portal.benefits.title')}</h3>
@@ -26,7 +30,11 @@ export const CustomerPortalGrantsSimple = ({
               key={benefitGrant.id}
               className="py-6 hover:bg-transparent dark:hover:bg-transparent"
             >
-              <BenefitGrant api={api} benefitGrant={benefitGrant} />
+              <BenefitGrant
+                api={api}
+                benefitGrant={benefitGrant}
+                locale={locale}
+              />
             </ListItem>
           ))}
         </List>

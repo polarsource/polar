@@ -2,42 +2,17 @@
 
 import { canRetryOrderPayment } from '@/utils/order'
 import { Client, schemas } from '@polar-sh/client'
-import { type TranslateFn } from '@polar-sh/i18n'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { OrderDownloadActions } from '../Orders/OrderDownloadActions'
 import { DetailRow } from '../Shared/DetailRow'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
 import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
+import { OrderStatus } from './OrderStatus'
 import { useTranslations } from './PortalLocaleProvider'
 import { SeatManagementTable } from './SeatManagementTable'
-
-const getOrderStatusDisplayTitle = (
-  t: TranslateFn,
-): Record<schemas['Order']['status'], string> => ({
-  draft: t('portal.orders.statusTitle.draft'),
-  paid: t('portal.orders.statusTitle.paid'),
-  pending: t('portal.orders.statusTitle.pending'),
-  refunded: t('portal.orders.statusTitle.refunded'),
-  partially_refunded: t('portal.orders.statusTitle.partiallyRefunded'),
-  void: t('portal.orders.statusTitle.void'),
-})
-
-const OrderStatusDisplayColor: Record<schemas['Order']['status'], string> = {
-  draft: 'bg-gray-100 text-gray-500 dark:bg-gray-900 dark:text-gray-400',
-  paid: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500',
-  pending:
-    'bg-yellow-100 text-yellow-500 dark:bg-yellow-950 dark:text-yellow-500',
-  refunded:
-    'bg-violet-100 text-violet-500 dark:bg-violet-950 dark:text-violet-400',
-  partially_refunded:
-    'bg-violet-100 text-violet-500 dark:bg-violet-950 dark:text-violet-400',
-  void: 'bg-red-100 text-red-500 dark:bg-red-950 dark:text-red-400',
-}
 
 const CustomerPortalOrder = ({
   api,
@@ -51,7 +26,6 @@ const CustomerPortalOrder = ({
   themingPreset: ThemingPresetProps
 }) => {
   const t = useTranslations()
-  const orderStatusDisplayTitle = getOrderStatusDisplayTitle(t)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
 
   const isPartiallyOrFullyRefunded = useMemo(() => {
@@ -70,10 +44,7 @@ const CustomerPortalOrder = ({
       <div className="flex w-full flex-col gap-8">
         <div className="flex flex-row flex-wrap gap-x-4">
           <h3 className="text-2xl">{order.description}</h3>
-          <Status
-            status={orderStatusDisplayTitle[order.status]}
-            className={twMerge(OrderStatusDisplayColor[order.status])}
-          />
+          <OrderStatus status={order.status} />
 
           {/* Retry button */}
           {canRetryOrderPayment(order) && (

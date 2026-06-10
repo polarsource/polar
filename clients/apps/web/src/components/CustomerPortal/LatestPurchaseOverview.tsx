@@ -1,6 +1,6 @@
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { OrderStatus } from '../Orders/OrderStatus'
+import { OrderStatus } from './OrderStatus'
 import { OverviewSummaryCard } from './OverviewSummaryCard'
 import { useTranslations } from './PortalLocaleProvider'
 

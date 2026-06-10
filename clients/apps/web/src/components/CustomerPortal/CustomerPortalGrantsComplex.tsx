@@ -1,8 +1,11 @@
 'use client'
 
 import { useCustomerBenefitGrants } from '@/hooks/queries/customerPortal'
+import {
+  usePortalLocale,
+  useTranslations,
+} from '@/components/CustomerPortal/PortalLocaleProvider'
 import { Client } from '@polar-sh/client'
-import { useTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { Input } from '@polar-sh/orbit'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { Loader2, Search } from 'lucide-react'
@@ -22,6 +25,7 @@ export const CustomerPortalGrantsComplex = ({
   orderId,
 }: CustomerPortalGrantsComplexProps) => {
   const t = useTranslations()
+  const locale = usePortalLocale()
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 10
@@ -81,7 +85,11 @@ export const CustomerPortalGrantsComplex = ({
                   key={benefitGrant.id}
                   className="py-6 hover:bg-transparent dark:hover:bg-transparent"
                 >
-                  <BenefitGrant api={api} benefitGrant={benefitGrant} />
+                  <BenefitGrant
+                    api={api}
+                    benefitGrant={benefitGrant}
+                    locale={locale}
+                  />
                 </ListItem>
               ))}
             </List>

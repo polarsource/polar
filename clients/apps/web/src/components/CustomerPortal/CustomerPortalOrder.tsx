@@ -13,7 +13,7 @@ import { OrderDownloadActions } from '../Orders/OrderDownloadActions'
 import { DetailRow } from '../Shared/DetailRow'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
 import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
-import { usePortalTranslations } from './PortalLocaleProvider'
+import { useTranslations } from './PortalLocaleProvider'
 import { SeatManagementTable } from './SeatManagementTable'
 
 const getOrderStatusDisplayTitle = (
@@ -50,7 +50,7 @@ const CustomerPortalOrder = ({
   customerSessionToken: string
   themingPreset: ThemingPresetProps
 }) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const orderStatusDisplayTitle = getOrderStatusDisplayTitle(t)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
 

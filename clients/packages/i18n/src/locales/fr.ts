@@ -304,4 +304,448 @@ export default {
       unknown: 'Une erreur s’est produite.',
     },
   },
+  portal: {
+    navigation: {
+      overview: 'Aperçu',
+      orders: 'Commandes',
+      usage: 'Utilisation',
+      billing: 'Facturation',
+      selectPage: 'Sélectionner une page',
+    },
+    common: {
+      cancel: 'Annuler',
+      close: 'Fermer',
+      save: 'Enregistrer',
+      saveChanges: 'Enregistrer les modifications',
+      edit: 'Modifier',
+      delete: 'Supprimer',
+      confirm: 'Confirmer',
+      back: 'Retour',
+      loading: 'Chargement…',
+      saving: 'Enregistrement…',
+      download: 'Télécharger',
+      viewAll: 'Tout afficher',
+      somethingWentWrong: "Une erreur s'est produite. Veuillez réessayer.",
+      date: 'Date',
+      amount: 'Montant',
+      status: 'Statut',
+      product: 'Produit',
+      actions: 'Actions',
+      pageOf: 'Page {page} sur {totalPages}',
+    },
+    overview: {
+      teamSeatAccess: {
+        title: 'Accès aux sièges d’équipe',
+        description: 'Accès fourni via un abonnement d’équipe',
+      },
+      emptyState: {
+        noActiveSubscriptions: {
+          title: 'Aucun abonnement actif',
+          description: 'Vous n’avez aucun abonnement actif pour le moment.',
+        },
+        noTeamAccess: {
+          title: 'Aucun accès d’équipe',
+          description:
+            'Vous n’avez aucun accès à un siège d’équipe pour le moment.',
+        },
+      },
+      currentPeriod: {
+        nextCharge: 'Prochain prélèvement',
+        nextInvoice: 'Prochaine facture',
+        firstChargeAfterTrial: 'Premier prélèvement après l’essai',
+        trialEnds: 'Fin de l’essai',
+        finalCharge: 'Dernier prélèvement',
+        subscriptionEnds: 'Fin de l’abonnement',
+        notAvailable: 'N/D',
+        dateLabel: '{label} — {date}',
+        canceled: 'Annulé',
+        meteredCharges: 'Frais à l’usage',
+        subtotal: 'Sous-total',
+        discount: 'Remise',
+        taxes: 'Taxes',
+        estimatedTotal: 'Total estimé',
+        total: 'Total',
+        finalChargeNotice:
+          'Ce sera le dernier prélèvement avant la fin de l’abonnement.',
+        finalChargeMeteredNotice:
+          'Le montant final peut varier selon l’utilisation jusqu’à la fin de la période de facturation.',
+        meteredNoticeActive:
+          'Les frais finaux peuvent varier selon l’utilisation jusqu’à la fin de la période de facturation.',
+        meteredNoticeTrialing:
+          'Les frais finaux peuvent varier selon l’utilisation pendant la période d’essai.',
+        meteredNoticeDefault: 'Les frais finaux peuvent varier.',
+      },
+      latestPurchase: {
+        title: 'Dernier achat',
+        purchasedOn: 'Acheté — {date}',
+        total: 'Total',
+      },
+      subscriptions: {
+        title: 'Abonnements',
+        noSubscriptionsFound: 'Aucun abonnement trouvé',
+        inactiveTitle: 'Abonnements inactifs',
+        endedAt: 'Date de fin',
+        retryPayment: 'Réessayer le paiement',
+        manageSubscription: 'Gérer l’abonnement',
+      },
+    },
+    orders: {
+      orderHistory: 'Historique des commandes',
+      description: 'Description',
+      viewOrder: 'Voir la commande',
+      retryPayment: 'Réessayer le paiement',
+      invoiceNumber: 'Numéro de facture',
+      orderItems: 'Articles de la commande',
+      subtotal: 'Sous-total',
+      discount: 'Remise',
+      netAmount: 'Montant net',
+      tax: 'Taxe',
+      total: 'Total',
+      appliedBalance: 'Solde appliqué',
+      toBePaid: 'À payer',
+      refundedAmount: 'Montant remboursé',
+      statusTitle: {
+        draft: 'Brouillon',
+        paid: 'Payé',
+        pending: 'En attente',
+        refunded: 'Remboursé',
+        partiallyRefunded: 'Partiellement remboursé',
+        void: 'Annulé',
+      },
+      payment: {
+        orderSummary: 'Récapitulatif de la commande',
+        descriptionLabel: 'Description :',
+        amountLabel: 'Montant :',
+        paymentMethod: 'Moyen de paiement',
+        payNow: 'Payer maintenant',
+        processing: 'Traitement...',
+        confirming: 'Confirmation...',
+        loading: 'Chargement...',
+        processingPayment: 'Traitement de votre paiement...',
+        processingHint:
+          'Cela peut prendre quelques instants. Veuillez ne pas fermer cette fenêtre.',
+        processingPaymentShort: 'Traitement du paiement...',
+        usingSavedMethod: 'Utilisation de votre moyen de paiement enregistré',
+        tryAgain: 'Réessayer',
+        paymentSuccessfulTitle: 'Paiement effectué avec succès !',
+        paymentFailedTitle: 'Échec du paiement',
+        paymentSuccessfulDescription:
+          'Merci pour votre paiement. Vous pouvez maintenant fermer cette fenêtre.',
+        paymentFailedDescription:
+          'Vous pouvez réessayer ou contacter l’assistance si le problème persiste.',
+        updatePaymentMethod: 'Mettre à jour le moyen de paiement',
+        toastSuccessTitle: 'Paiement effectué avec succès',
+        toastSuccessDescription: 'Votre paiement a été traité avec succès !',
+        toastFailedTitle: 'Échec du paiement',
+        paymentFailed: 'Paiement échoué',
+        paymentFailedRetry: 'Paiement échoué. Veuillez réessayer.',
+        paymentFailedTryAgain: 'Paiement échoué, veuillez réessayer.',
+        confirmationTimeout:
+          'La confirmation du paiement prend plus de temps que prévu. Votre paiement est peut-être encore en cours de traitement. Veuillez vérifier le statut de votre commande ou contacter l’assistance si nécessaire.',
+        networkConfirmationError:
+          'Impossible de confirmer le statut du paiement en raison d’un problème réseau. Veuillez vérifier le statut de votre commande ou contacter l’assistance.',
+        stripeRequired:
+          'Une instance Stripe est requise pour les actions de paiement',
+        additionalAuthenticationRequired:
+          'Le paiement nécessite une authentification supplémentaire',
+        authenticationFailed: 'Échec de l’authentification du paiement',
+        processDetailsFailed:
+          'Impossible de traiter les détails du paiement. Veuillez vérifier vos informations et réessayer.',
+        createTokenFailed:
+          'Impossible de créer le jeton de paiement. Veuillez réessayer.',
+        processPaymentFailed:
+          'Impossible de traiter le paiement. Veuillez vérifier vos informations de paiement et réessayer.',
+        networkError:
+          'Une erreur réseau s’est produite. Veuillez vérifier votre connexion et réessayer.',
+      },
+    },
+    subscription: {
+      free: 'Gratuit',
+      details: {
+        startDate: 'Date de début',
+        trialEnds: 'Fin de l’essai',
+        expiryDate: 'Date d’expiration',
+        renewalDate: 'Date de renouvellement',
+        expired: 'Expiré',
+        meteredUsage: 'Utilisation à l’usage',
+        uncancel: 'Annuler la résiliation',
+        manageSubscription: 'Gérer l’abonnement',
+        changePlan: 'Changer d’offre',
+      },
+      pendingUpdate: {
+        title: 'Modification en attente',
+        cancelScheduledChange: 'Annuler la modification planifiée',
+        newProduct: 'Nouveau produit',
+        seats: 'Sièges',
+        effectiveFrom: 'Modification applicable à partir du',
+        clearConfirmDescription:
+          'Votre abonnement restera inchangé lors du prochain cycle de facturation. Voulez-vous vraiment annuler cette modification en attente ?',
+      },
+      invoices: {
+        title: 'Factures',
+      },
+      cancel: {
+        title: 'Résilier l’abonnement',
+        ariaLabel: 'Résilier l’abonnement',
+        heading: 'Nous sommes désolés de vous voir partir !',
+        description:
+          'Vous serez toujours le bienvenu ! Dites-nous pourquoi vous partez pour nous aider à améliorer notre produit.',
+        changedMind: 'J’ai changé d’avis',
+        commentPlaceholder: 'Autre chose à partager ? (Facultatif)',
+        reason: {
+          unused: 'Pas assez utilisé',
+          tooExpensive: 'Trop cher',
+          missingFeatures: 'Fonctionnalités manquantes',
+          switchedService: 'Passé à un autre service',
+          customerService: 'Service client',
+          lowQuality: 'Pas satisfait de la qualité',
+          tooComplex: 'Trop compliqué',
+          other: 'Autre (veuillez préciser ci-dessous)',
+        },
+        toast: {
+          title: 'Abonnement annulé',
+          description: 'L’abonnement a été annulé avec succès',
+        },
+      },
+      changePlan: {
+        title: 'Changer d’offre',
+        currentPlan: 'Offre actuelle',
+        availablePlans: 'Offres disponibles',
+        noOtherPlans: 'Aucune autre offre disponible',
+        benefitsAdded: 'Vous aurez accès aux avantages suivants',
+        benefitsRemoved: 'Vous perdrez l’accès aux avantages suivants',
+        needPaymentMethod:
+          'Vous devez ajouter un moyen de paiement avant de mettre à jour votre offre. Rendez-vous dans les paramètres du portail client pour ajouter un moyen de paiement.',
+        confirmEndTrial: 'Changer d’offre et mettre fin à l’essai',
+        invoicing: {
+          trialContinues:
+            'Votre essai se poursuivra jusqu’au {date}. Vous ne serez pas facturé avant cette date.',
+          trialEnds:
+            'Cela mettra fin à mon essai et me facturera immédiatement {product}.',
+          periodMonthly: 'mensuel',
+          periodYearly: 'annuel',
+          immediateCharge:
+            'Je serai facturé immédiatement pour la nouvelle offre {period}.',
+          immediateCredit:
+            'Mon paiement précédent apparaîtra comme un avoir sur ma prochaine facture.',
+          prorationInvoice:
+            'Je serai facturé immédiatement au prorata pour le mois en cours.',
+          prorationProrate:
+            'Votre prochaine facture inclura la nouvelle offre ainsi que le prorata pour le mois en cours.',
+          prorationNextPeriod:
+            'La nouvelle offre sera appliquée lors de votre prochain cycle de facturation.',
+        },
+        update: {
+          failed: 'Impossible de mettre à jour l’abonnement',
+          errorTitle: 'Erreur lors de la mise à jour de l’abonnement',
+          successTitle: 'Abonnement mis à jour',
+          successDescription: 'L’abonnement a été mis à jour avec succès',
+        },
+      },
+    },
+    settings: {
+      title: 'Paramètres de facturation',
+      paymentMethods: {
+        title: 'Moyens de paiement',
+        description:
+          'Moyens utilisés pour les abonnements et les achats ponctuels',
+        add: 'Ajouter un moyen de paiement',
+        addedTitle: 'Moyen de paiement ajouté',
+        addFailedTitle: 'Impossible d’ajouter le moyen de paiement',
+        addFailedDescription: 'Veuillez réessayer.',
+      },
+      paymentMethod: {
+        defaultMethod: 'Moyen par défaut',
+        makeDefault: 'Définir par défaut',
+        deleteAriaLabel: 'Supprimer le moyen de paiement',
+        deletedTitle: 'Moyen de paiement supprimé',
+        deletedDescription:
+          'Votre moyen de paiement a été supprimé avec succès.',
+        deleteFailedTitle: 'Impossible de supprimer le moyen de paiement',
+        deleteFailedDescription:
+          'Une erreur s’est produite lors de la suppression du moyen de paiement.',
+        defaultUpdatedTitle: 'Moyen de paiement par défaut mis à jour',
+        defaultUpdatedDescription:
+          'Ce moyen de paiement est maintenant votre moyen par défaut.',
+        defaultUpdateFailedTitle:
+          'Impossible de mettre à jour le moyen de paiement par défaut',
+        defaultUpdateFailedDescription:
+          'Une erreur s’est produite lors de la mise à jour du moyen de paiement par défaut.',
+      },
+      savedCards: {
+        title: 'Moyens de paiement enregistrés',
+        empty: 'Aucun moyen de paiement enregistré trouvé.',
+        addNewCard: 'Ajouter une nouvelle carte',
+        useDifferentCard: 'Utiliser une autre carte',
+        expires: 'Expire le {date}',
+      },
+      billingDetailsSection: {
+        title: 'Coordonnées de facturation',
+        description: 'Mettre à jour vos coordonnées de facturation',
+      },
+      billingDetails: {
+        email: 'E-mail',
+        billingName: 'Nom de facturation',
+        billingNamePlaceholder:
+          'Nom de l’entreprise ou nom légal pour les factures (facultatif)',
+        billingAddress: 'Adresse de facturation',
+        line1: 'Ligne 1',
+        line2: 'Ligne 2',
+        postalCode: 'Code postal',
+        city: 'Ville',
+        state: 'État',
+        province: 'Province',
+        taxId: 'Numéro de TVA',
+        fieldRequired: 'Ce champ est requis',
+        submit: 'Mettre à jour les coordonnées de facturation',
+      },
+      emailSection: {
+        title: 'Adresse e-mail',
+        description: 'Modifier l’e-mail associé à votre compte',
+      },
+      changeEmail: {
+        currentEmail: 'E-mail actuel',
+        newEmail: 'Nouvel e-mail',
+        newEmailPlaceholder: 'Saisissez une nouvelle adresse e-mail',
+        emailRequired: 'L’e-mail est requis',
+        requestChange: 'Demander le changement d’e-mail',
+        sendVerification: 'Envoyer la vérification',
+        nevermind: 'Laisser tomber',
+        verificationSentPrefix: 'Nous avons envoyé un lien de vérification à',
+        verificationSentSuffix:
+          '. Suivez les instructions pour confirmer votre nouvelle adresse e-mail.',
+        verificationSentHint:
+          'Vous avez changé d’avis ? Ignorez simplement l’e-mail et votre adresse actuelle restera active.',
+      },
+      billingManagers: {
+        title: 'Gestionnaires de facturation',
+        description:
+          'Les gestionnaires de facturation peuvent gérer les coordonnées de facturation, les moyens de paiement et les abonnements.',
+      },
+      privacy: {
+        title: 'Confidentialité',
+        description: 'Télécharger une copie de toutes vos données personnelles',
+        exportData: 'Exporter les données',
+      },
+      team: {
+        roles: {
+          owner: 'Propriétaire',
+          billingManager: 'Gestionnaire de facturation',
+          member: 'Membre',
+        },
+        emailPlaceholder: 'email@example.com',
+        emailRequired: 'L’e-mail est requis',
+        invalidEmail: 'Format d’e-mail invalide',
+        invite: 'Inviter le gestionnaire de facturation',
+        columnMember: 'Membre',
+        columnRole: 'Rôle',
+        you: '(vous)',
+        removeFromTeam: 'Retirer de l’équipe',
+        memberFallback: 'Membre',
+        thisMemberFallback: 'ce membre',
+        genericError: 'Une erreur s’est produite.',
+        addedTitle: 'Gestionnaire de facturation ajouté',
+        addedDescription:
+          '{email} a été ajouté en tant que gestionnaire de facturation.',
+        addFailedTitle: 'Impossible d’ajouter le gestionnaire de facturation',
+        roleUpdatedTitle: 'Rôle mis à jour',
+        roleUpdatedDescription: '{name} est maintenant un(e) {role}.',
+        roleUpdateFailedTitle: 'Impossible de mettre à jour le rôle',
+        removedTitle: 'Membre retiré',
+        removedDescription: '{name} a été retiré(e) de l’équipe.',
+        removeFailedTitle: 'Impossible de retirer le membre',
+        removeModalTitle: 'Retirer un membre de l’équipe',
+        removeModalDescription:
+          'Voulez-vous vraiment retirer {name} de l’équipe ? Cette personne perdra l’accès à toutes les ressources de l’équipe.',
+        removeConfirm: 'Retirer',
+      },
+    },
+    usage: {
+      title: 'Utilisation',
+      searchPlaceholder: 'Rechercher un compteur d’utilisation',
+      overview: 'Aperçu',
+      columnName: 'Nom',
+      columnConsumed: 'Consommé',
+      columnCredited: 'Crédité',
+      columnBalance: 'Solde',
+    },
+    benefits: {
+      title: 'Octrois d’avantages',
+      searchPlaceholder: 'Rechercher des octrois d’avantages...',
+      empty: 'Aucun octroi d’avantages trouvé',
+    },
+    seats: {
+      title: 'Gestion des sièges',
+      totalSeats: 'Sièges totaux',
+      updateSeats: 'Mettre à jour les sièges',
+      columnEmail: 'E-mail',
+      statusLabel: {
+        pending: 'En attente',
+        claimed: 'Réclamé',
+        revoked: 'Révoqué',
+      },
+      resendInvitation: 'Renvoyer l’invitation',
+      revokeSeat: 'Révoquer le siège',
+      invite: 'Inviter',
+      inviteMember: 'Inviter un membre',
+      emailRequired: 'L’e-mail est requis',
+      emailInvalid: 'Format d’e-mail invalide',
+      assignError: 'Impossible d’attribuer le siège',
+      invitationSendError: 'Impossible d’envoyer l’invitation',
+      genericError: 'Une erreur s’est produite.',
+      seatCount: {
+        '=1': '# siège',
+        other: '# sièges',
+        _mode: 'plural',
+      },
+      availableSeats: {
+        '=1': 'Un siège supplémentaire disponible',
+        other: '# sièges supplémentaires disponibles',
+        _mode: 'plural',
+      },
+      cannotDecrease: {
+        '=1': 'Impossible de descendre en dessous de # siège attribué. Révoquez d’abord des sièges.',
+        other:
+          'Impossible de descendre en dessous de # sièges attribués. Révoquez d’abord des sièges.',
+        _mode: 'plural',
+      },
+      invoicingMessage: {
+        invoice:
+          'Je serai facturé immédiatement au prorata pour le mois en cours.',
+        prorate:
+          'Votre prochaine facture inclura les nouveaux sièges ainsi que le prorata pour le mois en cours.',
+        nextPeriod:
+          'La mise à jour des sièges sera appliquée lors de votre prochain cycle de facturation.',
+      },
+      updateSuccess: {
+        title: 'Sièges mis à jour',
+        invoice:
+          'L’abonnement a maintenant {seats}. Je serai facturé immédiatement au prorata pour le mois en cours.',
+        prorate:
+          'L’abonnement a maintenant {seats}. Votre prochaine facture inclura les nouveaux sièges ainsi que le prorata pour le mois en cours.',
+        nextPeriod:
+          'L’abonnement aura {seats} à partir de votre prochain cycle de facturation.',
+        default: 'L’abonnement a maintenant {seats}.',
+      },
+      updateError: {
+        title: 'Erreur lors de la mise à jour des sièges',
+        description: 'Impossible de mettre à jour les sièges',
+        unexpected: 'Une erreur inattendue s’est produite',
+      },
+      revokeSuccess: {
+        title: 'Siège révoqué avec succès',
+        description: 'Le siège a été révoqué et est maintenant disponible.',
+      },
+      revokeError: {
+        title: 'Impossible de révoquer le siège',
+      },
+      resendSuccess: {
+        title: 'Invitation renvoyée',
+        description: 'L’e-mail d’invitation a été envoyé à nouveau.',
+      },
+      resendError: {
+        title: 'Impossible de renvoyer l’invitation',
+      },
+    },
+  },
 } as const

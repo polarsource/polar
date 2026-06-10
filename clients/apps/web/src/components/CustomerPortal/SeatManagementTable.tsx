@@ -6,7 +6,7 @@ import {
   useResendSeatInvitation,
   useRevokeSeat,
 } from '@/hooks/queries/customerPortal'
-import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
+import { useTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { validateEmail } from '@/utils/validation'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { Client, schemas } from '@polar-sh/client'
@@ -65,7 +65,7 @@ export const SeatManagementTable = ({
   identifier,
   prorationBehavior,
 }: SeatManagementTableProps) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const { data: seatsData, isLoading: isLoadingSeats } = useCustomerSeats(
     api,
     isSeatBasedSubscription(identifier)

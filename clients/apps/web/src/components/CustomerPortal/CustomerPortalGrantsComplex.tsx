@@ -2,7 +2,7 @@
 
 import { useCustomerBenefitGrants } from '@/hooks/queries/customerPortal'
 import { Client } from '@polar-sh/client'
-import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
+import { useTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { Input } from '@polar-sh/orbit'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { Loader2, Search } from 'lucide-react'
@@ -21,7 +21,7 @@ export const CustomerPortalGrantsComplex = ({
   subscriptionId,
   orderId,
 }: CustomerPortalGrantsComplexProps) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 10

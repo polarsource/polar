@@ -1,6 +1,6 @@
 'use client'
 
-import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
+import { useTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { UploadImage } from '@/components/Image/Image'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -11,7 +11,7 @@ interface WalletCardProps {
 }
 
 const WalletCard = ({ organization, wallet }: WalletCardProps) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
 
   return (
     <div className="dark:bg-polar-800 relative w-full max-w-md overflow-hidden rounded-3xl border border-gray-200 bg-gray-100 p-8 shadow-lg dark:border-transparent">

@@ -3,7 +3,7 @@
 import { Client, schemas } from '@polar-sh/client'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { BenefitGrant } from '../Benefit/BenefitGrant'
-import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
+import { useTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 
 export interface CustomerPortalGrantsSimpleProps {
   organization?: schemas['CustomerOrganization']
@@ -15,7 +15,7 @@ export const CustomerPortalGrantsSimple = ({
   api,
   benefitGrants,
 }: CustomerPortalGrantsSimpleProps) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   return (
     <div className="flex w-full flex-col gap-4">
       <h3 className="text-xl">{t('portal.benefits.title')}</h3>

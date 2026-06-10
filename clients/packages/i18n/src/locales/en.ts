@@ -948,5 +948,10 @@ export default {
         title: 'Failed to resend invitation',
       },
     },
+    wallet: {
+      availableBalance: 'Available Balance',
+      organization: 'Organization',
+      currency: 'Currency',
+    },
   },
 } as const

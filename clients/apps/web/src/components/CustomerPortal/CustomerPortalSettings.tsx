@@ -1,7 +1,7 @@
 'use client'
 
 import revalidate from '@/app/actions'
-import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
+import { useTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { toast } from '@/components/Toast/use-toast'
 import {
   useCustomerPaymentMethods,
@@ -32,7 +32,7 @@ export const CustomerPortalSettings = ({
   customerSessionToken,
   organization,
 }: CustomerPortalSettingsProps) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const api = createClientSideAPI(customerSessionToken)
   const router = useRouter()
   const theme = useTheme()

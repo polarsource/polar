@@ -2,7 +2,7 @@
 
 import {
   DEFAULT_LOCALE,
-  useTranslations,
+  useTranslations as useLocaleTranslations,
   type AcceptedLocale,
   type TranslateFn,
 } from '@polar-sh/i18n'
@@ -28,6 +28,6 @@ export function usePortalLocale(): AcceptedLocale {
   return useContext(PortalLocaleContext)
 }
 
-export function usePortalTranslations(): TranslateFn {
-  return useTranslations(usePortalLocale())
+export function useTranslations(): TranslateFn {
+  return useLocaleTranslations(usePortalLocale())
 }

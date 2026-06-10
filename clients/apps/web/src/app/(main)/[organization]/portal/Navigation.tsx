@@ -1,6 +1,6 @@
 'use client'
 
-import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
+import { useTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { usePortalAuthenticatedUser } from '@/hooks/queries/customerPortal'
 import { createClientSideAPI } from '@/utils/client'
 import { hasBillingPermission } from '@/utils/customerPortal'
@@ -73,7 +73,7 @@ const NavigationContent = ({
   searchParams: URLSearchParams
 }) => {
   const router = useRouter()
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
 
   const buildPath = (path: string) => {

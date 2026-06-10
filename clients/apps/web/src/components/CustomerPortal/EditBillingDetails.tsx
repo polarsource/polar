@@ -1,4 +1,4 @@
-import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
+import { useTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { useCustomerPortalCustomer } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import { enums, type schemas } from '@polar-sh/client'
@@ -20,7 +20,7 @@ import { useForm } from 'react-hook-form'
 type CustomerPortalCustomerUpdate = schemas['CustomerPortalCustomerUpdate']
 
 const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const { data: customer, update } = useCustomerPortalCustomer()
 
   const form = useForm<CustomerPortalCustomerUpdate>({
@@ -254,10 +254,10 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
                       value={field.value || undefined}
                       onChange={field.onChange}
                       placeholder={
-                      country === 'US'
-                        ? t('portal.settings.billingDetails.state')
-                        : t('portal.settings.billingDetails.province')
-                    }
+                        country === 'US'
+                          ? t('portal.settings.billingDetails.state')
+                          : t('portal.settings.billingDetails.province')
+                      }
                     />
                     <FormMessage />
                   </div>

@@ -8,13 +8,13 @@ import { Input } from '@polar-sh/orbit'
 import { Tabs, TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
 import { useMemo, useState } from 'react'
 import FormattedUnits from '../Meter/FormattedUnits'
-import { usePortalTranslations } from './PortalLocaleProvider'
+import { useTranslations } from './PortalLocaleProvider'
 export interface CustomerUsageProps {
   api: Client
 }
 
 export const CustomerUsage = ({ api }: CustomerUsageProps) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const [query, setQuery] = useState<string | null>(null)
   const { data, isLoading } = useCustomerCustomerMeters(api, { query })
   const customerMeters = useMemo(() => data?.items ?? [], [data])

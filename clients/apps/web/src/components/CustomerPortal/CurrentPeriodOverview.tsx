@@ -4,7 +4,7 @@ import { formatCurrency } from '@polar-sh/currency'
 import { useMemo } from 'react'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import { OverviewSummaryCard } from './OverviewSummaryCard'
-import { usePortalTranslations } from './PortalLocaleProvider'
+import { useTranslations } from './PortalLocaleProvider'
 
 interface CurrentPeriodOverviewProps {
   subscription: schemas['CustomerSubscription']
@@ -17,7 +17,7 @@ export const CurrentPeriodOverview = ({
   products,
   api,
 }: CurrentPeriodOverviewProps) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const { data: subscriptionPreview } = useCustomerSubscriptionChargePreview(
     api,
     subscription.id,

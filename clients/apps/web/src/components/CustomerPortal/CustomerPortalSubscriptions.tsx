@@ -13,7 +13,7 @@ import { useModal } from '../Modal/useModal'
 import CustomerSubscriptionDetails from './CustomerSubscriptionDetails'
 import CustomerPortalSubscription from './CustomerPortalSubscription'
 import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
-import { usePortalTranslations } from './PortalLocaleProvider'
+import { useTranslations } from './PortalLocaleProvider'
 
 interface SubscriptionsOverviewProps {
   organization: schemas['CustomerOrganization']
@@ -29,7 +29,7 @@ export const ActiveSubscriptionsOverview = ({
   api,
   customerSessionToken,
 }: SubscriptionsOverviewProps) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const onSubscriptionUpdate = useCallback(async () => {
     await revalidate(`customer_portal`)
   }, [])
@@ -71,7 +71,7 @@ export const InactiveSubscriptionsOverview = ({
   api,
   customerSessionToken,
 }: SubscriptionsOverviewProps) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const router = useRouter()
   const theme = useTheme()
   const themingPreset = getThemePreset(theme.resolvedTheme as 'light' | 'dark')

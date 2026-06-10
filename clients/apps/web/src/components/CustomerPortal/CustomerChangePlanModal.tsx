@@ -15,7 +15,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
-import { usePortalTranslations } from './PortalLocaleProvider'
+import { useTranslations } from './PortalLocaleProvider'
 import { toast } from '../Toast/use-toast'
 
 const ProductPriceListItem = ({
@@ -60,7 +60,7 @@ const CustomerChangePlanModal = ({
   ) => void
 }) => {
   const router = useRouter()
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const products = useMemo(
     () =>
       _products.filter((p) => p.is_recurring && !hasLegacyRecurringPrices(p)),
@@ -238,7 +238,9 @@ const CustomerChangePlanModal = ({
     if (data) {
       toast({
         title: t('portal.subscription.changePlan.update.successTitle'),
-        description: t('portal.subscription.changePlan.update.successDescription'),
+        description: t(
+          'portal.subscription.changePlan.update.successDescription',
+        ),
       })
       onUserSubscriptionUpdate(data)
       router.refresh()

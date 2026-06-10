@@ -15,7 +15,7 @@ import {
 } from '@stripe/stripe-js'
 import { WalletCards } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { usePortalTranslations } from './PortalLocaleProvider'
+import { useTranslations } from './PortalLocaleProvider'
 
 interface OrderPaymentRetryProps {
   order: schemas['CustomerOrder']
@@ -40,7 +40,7 @@ export const OrderPaymentRetry = ({
   onClose,
   onBack,
 }: OrderPaymentRetryProps) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const confirmOrderPayment = useCustomerOrderConfirmPayment(api)
   const checkPaymentStatus = useCustomerOrderPaymentStatus(api)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -222,8 +222,7 @@ export const OrderPaymentRetry = ({
 
       if (submitError) {
         const errorMessage =
-          submitError.message ||
-          t('portal.orders.payment.processDetailsFailed')
+          submitError.message || t('portal.orders.payment.processDetailsFailed')
         handlePaymentCompletion(false, errorMessage)
         return
       }
@@ -268,8 +267,7 @@ export const OrderPaymentRetry = ({
 
       if (!confirmationToken || error) {
         const errorMessage =
-          error?.message ||
-          t('portal.orders.payment.processPaymentFailed')
+          error?.message || t('portal.orders.payment.processPaymentFailed')
         handlePaymentCompletion(false, errorMessage)
         return
       }
@@ -293,10 +291,7 @@ export const OrderPaymentRetry = ({
           await handlePaymentStatus(result)
         }
       } catch {
-        handlePaymentCompletion(
-          false,
-          t('portal.orders.payment.networkError'),
-        )
+        handlePaymentCompletion(false, t('portal.orders.payment.networkError'))
       }
     },
     [
@@ -339,10 +334,7 @@ export const OrderPaymentRetry = ({
         await handlePaymentStatus(result)
       }
     } catch {
-      handlePaymentCompletion(
-        false,
-        t('portal.orders.payment.networkError'),
-      )
+      handlePaymentCompletion(false, t('portal.orders.payment.networkError'))
     }
   }, [
     isProcessing,

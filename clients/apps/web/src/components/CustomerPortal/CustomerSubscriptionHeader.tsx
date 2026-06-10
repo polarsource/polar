@@ -2,7 +2,7 @@ import AmountLabel from '@/components/Shared/AmountLabel'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { useMemo } from 'react'
-import { usePortalTranslations } from './PortalLocaleProvider'
+import { useTranslations } from './PortalLocaleProvider'
 import { getCustomerSubscriptionBasePrice } from './pricing'
 
 export const CustomerSubscriptionHeader = ({
@@ -10,7 +10,7 @@ export const CustomerSubscriptionHeader = ({
 }: {
   subscription: schemas['CustomerSubscription']
 }) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const pendingUpdate = subscription.pending_update
   const hasPendingProduct = pendingUpdate?.product_id != null
 

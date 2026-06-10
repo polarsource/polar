@@ -1,6 +1,6 @@
 'use client'
 
-import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
+import { useTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { useCustomerUpdateSubscription } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import { Client, isValidationError, schemas } from '@polar-sh/client'
@@ -27,7 +27,7 @@ export const CustomerSeatQuantityManager = ({
   prorationBehavior,
   onUpdate,
 }: CustomerSeatQuantityManagerProps) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const updateSubscription = useCustomerUpdateSubscription(api)
 
   const assignedSeats = totalSeats - availableSeats
@@ -120,7 +120,14 @@ export const CustomerSeatQuantityManager = ({
         }
       }
     },
-    [updateSubscription, subscriptionId, prorationBehavior, onUpdate, setError, t],
+    [
+      updateSubscription,
+      subscriptionId,
+      prorationBehavior,
+      onUpdate,
+      setError,
+      t,
+    ],
   )
 
   const handleIncrement = () => {

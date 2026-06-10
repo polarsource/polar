@@ -1,4 +1,4 @@
-import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
+import { useTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { toast } from '@/components/Toast/use-toast'
 import {
   useCustomerPortalCustomer,
@@ -29,7 +29,7 @@ const PaymentMethod = ({
   paymentMethod: PaymentMethodType
   deletable: boolean
 }) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const deletePaymentMethod = useDeleteCustomerPaymentMethod(api)
   const { update: updateCustomer } = useCustomerPortalCustomer()
   const isDefault = paymentMethod.id === customer.default_payment_method_id
@@ -60,7 +60,9 @@ const PaymentMethod = ({
       })
       toast({
         title: t('portal.settings.paymentMethod.defaultUpdatedTitle'),
-        description: t('portal.settings.paymentMethod.defaultUpdatedDescription'),
+        description: t(
+          'portal.settings.paymentMethod.defaultUpdatedDescription',
+        ),
       })
     } catch (error) {
       toast({
@@ -68,9 +70,7 @@ const PaymentMethod = ({
         description:
           error instanceof Error
             ? error.message
-            : t(
-                'portal.settings.paymentMethod.defaultUpdateFailedDescription',
-              ),
+            : t('portal.settings.paymentMethod.defaultUpdateFailedDescription'),
         variant: 'error',
       })
     }

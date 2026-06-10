@@ -1,6 +1,6 @@
 'use client'
 
-import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
+import { useTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { useCustomerEmailUpdateRequest } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import type { schemas } from '@polar-sh/client'
@@ -14,7 +14,7 @@ interface ChangeEmailFormProps {
 }
 
 const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const [isEditing, setIsEditing] = useState(false)
   const [successEmail, setSuccessEmail] = useState<string | null>(null)
   const emailUpdateRequest = useCustomerEmailUpdateRequest()

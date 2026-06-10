@@ -1,5 +1,5 @@
 import { schemas } from '@polar-sh/client'
-import WalletCard from '../Wallet/WalletCard'
+import WalletCard from './WalletCard'
 
 export interface CustomerPortalWalletProps {
   organization: schemas['CustomerOrganization']

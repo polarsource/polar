@@ -1,6 +1,6 @@
 'use client'
 
-import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
+import { useTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import type { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { useState } from 'react'
@@ -21,7 +21,7 @@ export const SavedCardsSelector = ({
   onAddNewCard,
   disabled = false,
 }: SavedCardsSelectorProps) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null)
 
   const handleCardSelect = (paymentMethodId: string) => {
@@ -54,9 +54,7 @@ export const SavedCardsSelector = ({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <h4 className="font-medium">
-          {t('portal.settings.savedCards.title')}
-        </h4>
+        <h4 className="font-medium">{t('portal.settings.savedCards.title')}</h4>
         <div className="space-y-2">
           {paymentMethods.map((paymentMethod) => {
             const { brand, last4, exp_year, exp_month } =

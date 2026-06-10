@@ -1,6 +1,6 @@
 'use client'
 
-import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
+import { useTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import {
   useAddCustomerPortalMember,
   useCustomerPortalMembers,
@@ -58,7 +58,7 @@ const roleToDisplayName = (role: string, t: TranslateFn): string => {
 export const CustomerPortalTeamSection = ({
   api,
 }: CustomerPortalTeamSectionProps) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const availableRoles = getAvailableRoles(t)
   const { data: members } = useCustomerPortalMembers(api)
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)

@@ -2,7 +2,7 @@ import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { OrderStatus } from '../Orders/OrderStatus'
 import { OverviewSummaryCard } from './OverviewSummaryCard'
-import { usePortalTranslations } from './PortalLocaleProvider'
+import { useTranslations } from './PortalLocaleProvider'
 
 interface LatestPurchaseOverviewProps {
   order: schemas['CustomerOrder']
@@ -11,7 +11,7 @@ interface LatestPurchaseOverviewProps {
 export const LatestPurchaseOverview = ({
   order,
 }: LatestPurchaseOverviewProps) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   return (
     <OverviewSummaryCard
       title={t('portal.overview.latestPurchase.title')}

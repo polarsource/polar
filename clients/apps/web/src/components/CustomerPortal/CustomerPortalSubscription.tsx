@@ -21,7 +21,7 @@ import { DetailRow } from '../Shared/DetailRow'
 import CustomerCancellationModal from './CustomerCancellationModal'
 import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
-import { usePortalTranslations } from './PortalLocaleProvider'
+import { useTranslations } from './PortalLocaleProvider'
 import { SeatManagementTable } from './SeatManagementTable'
 
 const CustomerPortalSubscription = ({
@@ -35,7 +35,7 @@ const CustomerPortalSubscription = ({
   subscription: schemas['CustomerSubscription']
   products: schemas['CustomerProduct'][]
 }) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const {
     show: showCancelModal,
     hide: hideCancelModal,

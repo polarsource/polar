@@ -23,7 +23,7 @@ import { DetailRow } from '../Shared/DetailRow'
 import CustomerCancellationModal from './CustomerCancellationModal'
 import CustomerChangePlanModal from './CustomerChangePlanModal'
 import { CustomerSubscriptionHeader } from './CustomerSubscriptionHeader'
-import { usePortalTranslations } from './PortalLocaleProvider'
+import { useTranslations } from './PortalLocaleProvider'
 
 const CustomerSubscriptionDetails = ({
   subscription,
@@ -40,7 +40,7 @@ const CustomerSubscriptionDetails = ({
   ) => void
   customerSessionToken: string
 }) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [showClearPendingUpdateModal, setShowClearPendingUpdateModal] =

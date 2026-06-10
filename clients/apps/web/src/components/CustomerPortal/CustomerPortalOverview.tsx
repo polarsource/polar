@@ -5,7 +5,7 @@ import { createClientSideAPI } from '@/utils/client'
 import { hasBillingPermission } from '@/utils/customerPortal'
 import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
 import { schemas } from '@polar-sh/client'
-import { usePortalTranslations } from './PortalLocaleProvider'
+import { useTranslations } from './PortalLocaleProvider'
 import { CurrentPeriodOverview } from './CurrentPeriodOverview'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
 import { CustomerPortalOrders } from './CustomerPortalOrders'
@@ -32,7 +32,7 @@ export const CustomerPortalOverview = ({
   orders,
   customerSessionToken,
 }: CustomerPortalProps) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const api = createClientSideAPI(customerSessionToken)
 
   // Check if the user has billing permissions
@@ -84,7 +84,9 @@ export const CustomerPortalOverview = ({
       {activeClaimedSubscriptions.length > 0 && (
         <div className="flex flex-col gap-y-4">
           <div className="flex flex-col gap-y-2">
-            <h3 className="text-xl">{t('portal.overview.teamSeatAccess.title')}</h3>
+            <h3 className="text-xl">
+              {t('portal.overview.teamSeatAccess.title')}
+            </h3>
             <p className="dark:text-polar-500 text-gray-500">
               {t('portal.overview.teamSeatAccess.description')}
             </p>

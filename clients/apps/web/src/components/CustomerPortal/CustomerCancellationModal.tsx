@@ -22,7 +22,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
-import { usePortalTranslations } from './PortalLocaleProvider'
+import { useTranslations } from './PortalLocaleProvider'
 import { toast } from '../Toast/use-toast'
 
 const CancellationReasonRadio = ({
@@ -58,7 +58,7 @@ const CustomerCancellationModal = ({
   ...props
 }: CustomerCancellationModalProps) => {
   const router = useRouter()
-  const t = usePortalTranslations()
+  const t = useTranslations()
 
   const handleCancel = useCallback(() => {
     onAbort?.()
@@ -113,7 +113,9 @@ const CustomerCancellationModal = ({
       modalContent={
         <div className="flex flex-col gap-y-6 p-6 sm:p-12">
           <div className="flex flex-col gap-y-2">
-            <h3 className="text-2xl">{t('portal.subscription.cancel.heading')}</h3>
+            <h3 className="text-2xl">
+              {t('portal.subscription.cancel.heading')}
+            </h3>
             <p className="dark:text-polar-500 leading-relaxed text-balance text-gray-500">
               {t('portal.subscription.cancel.description')}
             </p>

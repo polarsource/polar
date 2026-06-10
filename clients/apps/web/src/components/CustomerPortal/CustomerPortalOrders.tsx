@@ -11,7 +11,7 @@ import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 import { OrderStatus } from '../Orders/OrderStatus'
 import CustomerPortalOrder from './CustomerPortalOrder'
-import { usePortalTranslations } from './PortalLocaleProvider'
+import { useTranslations } from './PortalLocaleProvider'
 
 export interface CustomerPortalOrdersProps {
   organization: schemas['CustomerOrganization']
@@ -24,7 +24,7 @@ export const CustomerPortalOrders = ({
   orders,
   customerSessionToken,
 }: CustomerPortalOrdersProps) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const api = createClientSideAPI(customerSessionToken)
 
   const [selectedOrder, setSelectedOrder] = useState<

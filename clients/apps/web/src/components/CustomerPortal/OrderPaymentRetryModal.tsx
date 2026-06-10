@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { loadPolarStripe } from '@/utils/stripe'
 import { Modal } from '../Modal'
 import { OrderPaymentRetry } from './OrderPaymentRetry'
-import { usePortalTranslations } from './PortalLocaleProvider'
+import { useTranslations } from './PortalLocaleProvider'
 import { SavedCardsSelector } from './SavedCardsSelector'
 
 interface OrderPaymentRetryModalProps {
@@ -31,7 +31,7 @@ export const OrderPaymentRetryModal = ({
   onSuccess,
   themingPreset,
 }: OrderPaymentRetryModalProps) => {
-  const t = usePortalTranslations()
+  const t = useTranslations()
   const [error, setError] = useState<string>('')
   const [useNewCard, setUseNewCard] = useState<boolean>(false)
   const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<

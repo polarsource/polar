@@ -3,6 +3,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { StillaAI } from './Logos'
 import { Avatar } from '@polar-sh/orbit'
+import { SectionHeader } from './SectionHeader'
 
 export const companyTestimonials = [
   {
@@ -95,10 +96,10 @@ const userTestimonials = [
 
 export const Testimonials = () => (
   <Box display="flex" flexDirection="column" rowGap="3xl">
-    <Text variant="heading-xl" as="h2" wrap="balance">
-      What industry leaders
-      <br /> think about Polar.
-    </Text>
+    <SectionHeader
+      title="What industry leaders think about Polar"
+      description="From AI startups to infrastructure veterans, the teams building the future ship production billing on Polar in days, not weeks."
+    />
     <Box
       display="grid"
       gridTemplateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }}

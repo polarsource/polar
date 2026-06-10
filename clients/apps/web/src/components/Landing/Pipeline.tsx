@@ -192,18 +192,13 @@ export const Pipeline = () => {
         display="grid"
         gridTemplateColumns={{ base: '1fr', lg: '1fr 1fr' }}
         gap={{ base: '2xl', lg: '4xl' }}
-        alignItems="center"
+        alignItems="start"
       >
         {/* Accordion */}
         <Box as="ul" display="flex" flexDirection="column" rowGap="2xl">
           <Box display="flex" flexDirection="column" rowGap="2xl">
             <Text variant="heading-l" as="h2" wrap="balance">
               Everything between usage & revenue
-            </Text>
-            <Text variant="heading-xxs" color="muted" wrap="pretty">
-              Usage goes in, settled revenue goes out to your bank account. In
-              between, Polar handles billing, invoicing, metrics, tax, payments
-              & fraud as your merchant of record.
             </Text>
           </Box>
 

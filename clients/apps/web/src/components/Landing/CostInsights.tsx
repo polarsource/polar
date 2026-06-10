@@ -1,6 +1,7 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { MarginPulse } from './graphics/MarginPulse'
+import { SectionHeader } from './SectionHeader'
 
 interface MarginRow {
   name: string
@@ -69,35 +70,10 @@ export const CostInsights = () => {
       paddingTop={{ base: 'l', md: '3xl' }}
       paddingBottom={{ base: '2xl', md: '4xl' }}
     >
-      <Box
-        gridTemplateColumns={{ base: '1fr', lg: '1fr 1fr' }}
-        gap="xl"
-        display="grid"
-      >
-        <Box display="flex" flex={1}>
-          <Text variant="heading-xl" as="h2" wrap="balance">
-            Your power users cost you money
-          </Text>
-        </Box>
-        <Box
-          display="flex"
-          flex={1}
-          flexDirection="column"
-          rowGap="xl"
-          justifyContent="between"
-        >
-          <Box
-            borderTopWidth={4}
-            borderColor="border-primary"
-            width="3rem"
-            display={{ base: 'none', xl: 'flex' }}
-          />
-          <Text variant="heading-xs" wrap="pretty">
-            Polar breaks down LLM spend customer by customer, so you catch the
-            ones bleeding your margins before they bleed your runway.
-          </Text>
-        </Box>
-      </Box>
+      <SectionHeader
+        title="Your power users cost you money"
+        description="Polar breaks down LLM spend customer by customer, so you catch the ones bleeding your margins before they bleed your runway."
+      />
 
       <Box
         display="grid"

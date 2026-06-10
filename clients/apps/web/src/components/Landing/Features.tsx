@@ -5,8 +5,7 @@ import { LinkedRings } from './graphics/LinkedRings'
 import { VectorField } from './graphics/VectorField'
 import { VennCluster } from './graphics/VennCluster'
 import { WaveBars } from './graphics/WaveBars'
-import { Text } from '@polar-sh/orbit'
-import { Box } from '@polar-sh/orbit/Box'
+import { SectionHeader } from './SectionHeader'
 
 const TILES = [
   {
@@ -49,36 +48,11 @@ const TILES = [
 
 export const Features = () => {
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-y-12 md:gap-y-16">
-      <Box
-        display="flex"
-        flexDirection={{ base: 'column', xl: 'row' }}
-        rowGap="2xl"
-      >
-        <Box display="flex" flex={1}>
-          <Text variant="heading-xl" as="h2" wrap="balance">
-            Ship any pricing model in an afternoon
-          </Text>
-        </Box>
-        <Box
-          display="flex"
-          flex={1}
-          flexDirection="column"
-          rowGap="xl"
-          justifyContent="between"
-        >
-          <Box
-            borderTopWidth={4}
-            borderColor="border-primary"
-            width="3rem"
-            display={{ base: 'none', xl: 'flex' }}
-          />
-          <Text variant="heading-xs" wrap="pretty">
-            Subscriptions, usage, seats, credits, trials, and discounts. Compose
-            them however your product charges.
-          </Text>
-        </Box>
-      </Box>
+    <div className="flex w-full flex-col gap-y-12 md:gap-y-16">
+      <SectionHeader
+        title="Ship any pricing model in an afternoon"
+        description="Subscriptions, usage, seats, credits, trials, and discounts. Compose them however your product charges."
+      />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {TILES.map((tile) => {

@@ -33,6 +33,7 @@ const textVariants = cva('', {
       label: 'text-xs font-medium',
       caption: 'text-xs leading-snug',
       mono: 'font-mono text-xs',
+      'heading-2xl': `${HEADING_BASE} font-display text-6xl md:text-8xl`,
       'heading-xl': `${HEADING_BASE} font-display text-5xl md:text-7xl`,
       'heading-l': `${HEADING_BASE} font-display text-4xl md:text-5xl`,
       'heading-m': `${HEADING_BASE} text-3xl md:text-5xl`,

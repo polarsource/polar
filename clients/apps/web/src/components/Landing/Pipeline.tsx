@@ -45,7 +45,7 @@ const ASPECTS: Aspect[] = [
   },
   {
     title: 'Cost Anomalies & Insights',
-    desc: 'LLM spend attributed back to each customer, so your true COGS is never a guess.',
+    desc: 'Spot runaway spend and unprofitable customers the moment costs spike, not at month end.',
     href: '/docs/features/cost-insights/introduction',
   },
   {
@@ -217,7 +217,7 @@ export const Pipeline = () => {
                   borderBottomWidth={1}
                   borderStyle="solid"
                   borderColor="border-secondary"
-                  paddingVertical="l"
+                  paddingVertical="xl"
                   display="flex"
                   flexDirection="column"
                   rowGap="l"
@@ -235,12 +235,6 @@ export const Pipeline = () => {
                         variant="heading-xxs"
                         color={open ? undefined : 'muted'}
                       >
-                        0{index + 1}.
-                      </Text>
-                      <Text
-                        variant="heading-xxs"
-                        color={open ? undefined : 'muted'}
-                      >
                         {aspect.title}
                       </Text>
                     </Box>
@@ -248,13 +242,12 @@ export const Pipeline = () => {
                   </Box>
                   {open && (
                     <Box
-                      maxWidth="28rem"
                       paddingBottom="l"
                       display="flex"
                       flexDirection="column"
                       rowGap="m"
                     >
-                      <Text color="muted" variant="heading-xxs">
+                      <Text variant="body" color="muted">
                         {aspect.desc}
                       </Text>
                       <Link href={aspect.href}>
@@ -269,9 +262,7 @@ export const Pipeline = () => {
                           }}
                           cursor="pointer"
                         >
-                          <Text variant="body" color="inherit">
-                            Learn more
-                          </Text>
+                          <Text variant="body">Learn more</Text>
                           <ArrowRight />
                         </Box>
                       </Link>

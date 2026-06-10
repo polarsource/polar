@@ -1,5 +1,8 @@
 'use client'
 
+import GetStartedButton from '@/components/Auth/GetStartedButton'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'framer-motion'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -19,51 +22,33 @@ const itemVariants = {
   visible: { opacity: 1, transition: { duration: 1 } },
 }
 
-export type HeroProps = PropsWithChildren<{
-  className?: string
-  title: string
-  description: string
-  size?: 'default' | 'large'
-}>
-
-export const Hero = ({
-  className,
-  title,
-  description,
-  children,
-  size = 'default',
-}: HeroProps) => {
+export const Hero = () => {
   return (
     <motion.div
-      className={twMerge(
-        'relative flex flex-col items-center justify-center gap-8 px-4 pt-8 text-center md:pt-12 max-w-7xl mx-auto',
-        className,
-      )}
+      className="relative mx-auto flex max-w-7xl flex-col items-center justify-center gap-8 px-4 pt-8 text-center md:pt-12"
       variants={containerVariants}
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true }}
     >
-      <motion.h1
-        className={twMerge(
-          'leading-tighter! tracking-tight text-balance md:px-0',
-          size === 'default' ? 'text-3xl md:text-7xl' : 'text-5xl md:text-9xl',
-        )}
-        variants={itemVariants}
-      >
-        {title}
-      </motion.h1>
+      <Box display="flex">
+        <Text variant="heading-2xl">
+          Turn Usage
+          <br />
+          Into Revenue
+        </Text>
+      </Box>
       <motion.p
         className="dark:text-polar-500 max-w-2xl text-center text-2xl leading-relaxed! text-balance text-gray-500"
         variants={itemVariants}
       >
-        {description}
+        A billing platform for the intelligence era
       </motion.p>
       <motion.div
         className="mt-6 flex flex-col items-center gap-4 md:flex-row md:gap-6"
         variants={itemVariants}
       >
-        {children}
+        <GetStartedButton size="lg" text="Get Started" />
       </motion.div>
     </motion.div>
   )

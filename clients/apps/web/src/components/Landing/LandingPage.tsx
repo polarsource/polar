@@ -30,22 +30,7 @@ const PageContent = () => {
   return (
     <>
       <Section className="flex flex-col pt-0 md:pt-0">
-        <Hero
-          title="Turn Usage Into Revenue"
-          description="A billing platform for the intelligence era"
-          size="large"
-        >
-          <GetStartedButton size="lg" text="Get Started" />
-          <Link
-            href="/resources/why"
-            prefetch
-            className="dark:text-polar-400 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-200"
-          >
-            <Button variant="secondary" size="lg">
-              Why Polar
-            </Button>
-          </Link>
-        </Hero>
+        <Hero />
         <Logotypes />
         <Usage />
         <Dashboard />

@@ -657,10 +657,39 @@ class OrganizationDetailView:
                             ):
                                 text("Deny")
 
-                    elif self.org.status in (
-                        OrganizationStatus.CREATED,
-                        OrganizationStatus.OFFBOARDING,
-                    ):
+                    elif self.org.status == OrganizationStatus.OFFBOARDING:
+                        # Offboarding can be reverted to review or denied
+                        with tag.div(classes="w-full"):
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:under_review_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Set Under Review")
+
+                        with tag.div(classes="w-full"):
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:deny_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Deny")
+
+                    elif self.org.status == OrganizationStatus.CREATED:
                         with tag.div(classes="w-full"):
                             with button(
                                 variant="secondary",

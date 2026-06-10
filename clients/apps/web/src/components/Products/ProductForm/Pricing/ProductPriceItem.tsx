@@ -105,18 +105,24 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                         <SelectValue placeholder="Select a price type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="fixed">Fixed price</SelectItem>
-                        <SelectItem value="custom">
-                          Pay what you want
+                        <SelectItem value="fixed">
+                          {AMOUNT_TYPE_LABELS.fixed}
                         </SelectItem>
-                        <SelectItem value="free">Free</SelectItem>
+                        <SelectItem value="custom">
+                          {AMOUNT_TYPE_LABELS.custom}
+                        </SelectItem>
+                        <SelectItem value="free">
+                          {AMOUNT_TYPE_LABELS.free}
+                        </SelectItem>
                         {organization.feature_settings
                           ?.seat_based_pricing_enabled && (
-                          <SelectItem value="seat_based">Seats</SelectItem>
+                          <SelectItem value="seat_based">
+                            {AMOUNT_TYPE_LABELS.seat_based}
+                          </SelectItem>
                         )}
                         {recurringInterval !== null && (
                           <SelectItem value="metered_unit">
-                            Metered price
+                            {AMOUNT_TYPE_LABELS.metered_unit}
                           </SelectItem>
                         )}
                       </SelectContent>

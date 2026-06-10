@@ -108,7 +108,7 @@ export default {
         },
       },
       inclTax: 'Moms (ingår)',
-      basePrice: 'Grundpris',
+      basePrice: 'Grundavgift',
     },
     trial: {
       ends: 'Testperioden slutar {endDate}',

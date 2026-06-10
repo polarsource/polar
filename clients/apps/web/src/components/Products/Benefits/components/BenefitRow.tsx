@@ -5,7 +5,7 @@ import {
   isBenefitVisibilityConfigurable,
   resolveBenefitIcon,
 } from '@/components/Benefit/utils'
-import { useDeleteBenefit, useUpdateBenefit } from '@/hooks/queries'
+import { useDeleteBenefit } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
@@ -17,18 +17,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/ui/components/ui/tooltip'
-import { Eye, EyeOff, MoreVertical } from 'lucide-react'
+import { MoreVertical } from 'lucide-react'
 import { useCallback, useRef } from 'react'
 import UpdateBenefitModalContent from '../../../Benefit/UpdateBenefitModalContent'
 import { ConfirmModal } from '../../../Modal/ConfirmModal'
 import { InlineModal } from '../../../Modal/InlineModal'
 import { useModal } from '../../../Modal/useModal'
 import { toast } from '../../../Toast/use-toast'
+import { BenefitVisibilityControl } from './BenefitVisibilityControl'
 
 interface BenefitRowProps {
   organization: schemas['Organization']
@@ -79,31 +75,6 @@ export const BenefitRow = ({
   }, [])
 
   const deleteBenefit = useDeleteBenefit(organization.id)
-  const updateBenefit = useUpdateBenefit(organization.id)
-
-  const visibilityConfigurable = isBenefitVisibilityConfigurable(benefit.type)
-  const isPublic = benefit.visibility === 'public'
-  const showVisibilityControl = selected || visibilityConfigurable
-  const canToggleVisibility = selected && visibilityConfigurable
-
-  const handleVisibilityToggle = useCallback(() => {
-    updateBenefit
-      .mutateAsync({
-        id: benefit.id,
-        body: {
-          type: benefit.type,
-          visibility: isPublic ? 'private' : 'public',
-        },
-      })
-      .then(({ error }) => {
-        if (error) {
-          toast({
-            title: 'Benefit Update Failed',
-            description: `Error updating benefit visibility: ${extractApiErrorMessage(error)}`,
-          })
-        }
-      })
-  }, [updateBenefit, benefit, isPublic])
 
   const handleDeleteBenefit = useCallback(() => {
     deleteBenefit.mutateAsync({ id: benefit.id }).then(({ error }) => {
@@ -121,7 +92,8 @@ export const BenefitRow = ({
     })
   }, [deleteBenefit, benefit])
 
-  const VisibilityIcon = isPublic ? Eye : EyeOff
+  const visibilityConfigurable = isBenefitVisibilityConfigurable(benefit.type)
+  const isPublic = benefit.visibility === 'public'
 
   return (
     <>
@@ -155,47 +127,33 @@ export const BenefitRow = ({
             <Text variant="default" color={selected ? 'default' : 'default'}>
               {benefit.description}
             </Text>
-            <Text variant="caption" color="muted">
-              {benefitsDisplayNames[benefit.type]}
-            </Text>
+            <Box display="flex" alignItems="center" columnGap="s">
+              <Text variant="caption" color="muted">
+                {benefitsDisplayNames[benefit.type]}
+              </Text>
+              {visibilityConfigurable && !isPublic ? (
+                <Box
+                  as="span"
+                  display="inline-flex"
+                  alignItems="center"
+                  borderRadius="full"
+                  backgroundColor="background-secondary"
+                  paddingHorizontal="s"
+                >
+                  <Text variant="caption" color="muted">
+                    Hidden from customers
+                  </Text>
+                </Box>
+              ) : null}
+            </Box>
           </Box>
         </Box>
         <Box display="flex" alignItems="center" columnGap="s">
-          {showVisibilityControl ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="secondary"
-                  onClick={handleVisibilityToggle}
-                  disabled={!canToggleVisibility || updateBenefit.isPending}
-                  aria-label={
-                    visibilityConfigurable
-                      ? isPublic
-                        ? 'Hide from customer portal'
-                        : 'Show in customer portal'
-                      : 'Always visible in customer portal'
-                  }
-                  aria-pressed={isPublic}
-                  className={
-                    isPublic
-                      ? 'border-none bg-transparent text-black transition-opacity dark:bg-transparent dark:text-white'
-                      : 'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
-                  }
-                >
-                  <VisibilityIcon className="h-4 w-4" aria-hidden="true" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {visibilityConfigurable
-                  ? isPublic
-                    ? 'Visible in customer portal'
-                    : 'Hidden from customer portal'
-                  : 'Always visible in customer portal'}
-              </TooltipContent>
-            </Tooltip>
-          ) : null}
+          <BenefitVisibilityControl
+            organizationId={organization.id}
+            benefit={benefit}
+            selected={selected}
+          />
           <Switch
             checked={selected}
             onCheckedChange={(checked) => onToggle(benefit, checked)}

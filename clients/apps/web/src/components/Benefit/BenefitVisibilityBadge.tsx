@@ -22,7 +22,9 @@ export function BenefitVisibilityBadge({
       )}
     >
       <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-      {visibilityOption === 'public' ? 'Visible' : 'Hidden'}
+      {visibilityOption === 'public'
+        ? 'Visible to customers'
+        : 'Hidden from customers'}
     </div>
   )
 }

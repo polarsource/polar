@@ -64,7 +64,8 @@ export const BenefitVisibilityField = ({
                   Visible
                 </div>
                 <p className="dark:text-polar-500 text-sm text-gray-500">
-                  Shown in the customer portal
+                  Customers can see this benefit in customer-facing product and
+                  benefit lists.
                 </p>
               </Label>
               <Label
@@ -79,7 +80,8 @@ export const BenefitVisibilityField = ({
                   Hidden
                 </div>
                 <p className="dark:text-polar-500 text-sm text-gray-500">
-                  Granted but not shown in the customer portal
+                  Still granted after purchase, but not visible in
+                  customer-facing product or benefit lists.
                 </p>
               </Label>
             </RadioGroup>

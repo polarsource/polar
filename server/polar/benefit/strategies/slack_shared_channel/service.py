@@ -9,7 +9,6 @@ from polar.auth.models import AuthSubject
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.integrations.slack.client import SlackClient
 from polar.integrations.slack.repository import SlackAppRepository
-from polar.kit.db.postgres import AsyncSession
 from polar.locker import Locker, TimeoutLockError
 from polar.logging import Logger
 from polar.models import (
@@ -20,7 +19,6 @@ from polar.models import (
     SlackApp,
     User,
 )
-from polar.redis import Redis
 
 from ..base.service import (
     BenefitActionRequiredError,
@@ -58,9 +56,7 @@ class BenefitSlackSharedChannelService(
         BenefitGrantSlackSharedChannelProperties,
     ]
 ):
-    def __init__(self, session: AsyncSession, redis: Redis) -> None:
-        super().__init__(session, redis)
-        self._client = SlackClient()
+    _client = SlackClient()
 
     async def grant(
         self,

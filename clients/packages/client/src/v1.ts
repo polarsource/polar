@@ -15810,6 +15810,12 @@ export interface components {
        * @default false
        */
       member_model_enabled: boolean
+      /**
+       * Checkout Localization Enabled
+       * @description Whether localization is enabled for this organization.
+       * @default false
+       */
+      checkout_localization_enabled: boolean
     }
     CustomerPaymentMethod:
       | components['schemas']['PaymentMethodCard']
@@ -15962,6 +15968,8 @@ export interface components {
       /** Default Payment Method Id */
       default_payment_method_id?: string | null
       type?: components['schemas']['CustomerType'] | null
+      /** Locale */
+      locale?: string | null
     }
     /** CustomerPortalCustomerSettings */
     CustomerPortalCustomerSettings: {

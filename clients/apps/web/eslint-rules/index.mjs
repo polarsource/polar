@@ -7,6 +7,7 @@ import noRawHtmlLayout from './no-raw-html-layout.mjs'
 import noStyleBox from './no-style-box.mjs'
 import noStyleText from './no-style-text.mjs'
 import noToastErrorDetail from './no-toast-error-detail.mjs'
+import requireCustomerPortalPage from './require-customer-portal-page.mjs'
 
 /** @type {import('eslint').ESLint.Plugin} */
 const polarPlugin = {
@@ -24,6 +25,7 @@ const polarPlugin = {
     'no-style-box': noStyleBox,
     'no-style-text': noStyleText,
     'no-toast-error-detail': noToastErrorDetail,
+    'require-customer-portal-page': requireCustomerPortalPage,
   },
 }
 

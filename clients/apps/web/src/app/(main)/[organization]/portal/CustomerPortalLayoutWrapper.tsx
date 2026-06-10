@@ -51,7 +51,9 @@ export function CustomerPortalLayoutWrapper({
             </Link>
           )}
         </div>
-        {children}
+        <div className="w-full px-4 py-8 md:mx-auto md:max-w-5xl lg:px-0">
+          {children}
+        </div>
       </TooltipProvider>
     </CustomerPortalProvider>
   )

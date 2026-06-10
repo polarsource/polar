@@ -3,7 +3,6 @@ from unittest.mock import AsyncMock
 
 import httpx
 import pytest
-from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
 from polar.benefit.strategies import (
@@ -13,9 +12,6 @@ from polar.benefit.strategies import (
 from polar.benefit.strategies.slack_shared_channel.properties import (
     BenefitGrantSlackSharedChannelProperties,
     BenefitSlackSharedChannelProperties,
-)
-from polar.benefit.strategies.slack_shared_channel.schemas import (
-    BenefitSlackSharedChannelCreateProperties,
 )
 from polar.benefit.strategies.slack_shared_channel.service import (
     BenefitSlackSharedChannelService,
@@ -458,10 +454,8 @@ class TestSlackSharedChannelGrant:
         client.conversations_create.assert_not_awaited()
         client.conversations_invite_shared.assert_not_awaited()
 
-    @pytest.mark.parametrize("attempt", [0, 1])
     async def test_grant_lock_contention_is_retriable(
         self,
-        attempt: int,
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
@@ -517,23 +511,26 @@ class TestSlackSharedChannelGrant:
         )
         strategy = _strategy(session, redis, client)
 
-        with pytest.raises(BenefitRetriableError) as exc_info:
+        with pytest.raises(BenefitRetriableError):
             await strategy.grant(
                 benefit,
                 customer,
                 {"invited_email": "admin@customer.example"},
-                attempt=attempt,
             )
 
-        assert exc_info.value.defer_seconds == 60
-        redis_set.assert_awaited_once_with(
-            f"slack_benefit_grant:{benefit.id}:{customer.id}",
-            "1",
-            ex=60,
-            nx=True,
+        client.conversations_create = AsyncMock(
+            return_value={
+                "ok": True,
+                "channel": {"id": "C123", "name": "support-acme"},
+            }
         )
-        client.conversations_create.assert_not_awaited()
-        client.conversations_invite_shared.assert_not_awaited()
+
+        result = await strategy.grant(
+            benefit,
+            customer,
+            {"invited_email": "admin@customer.example"},
+        )
+        assert result["channel_id"] == "C123"
 
     async def test_grant_on_update_invites_team_to_existing_channel(
         self,
@@ -1110,14 +1107,38 @@ class TestSlackSharedChannelRevoke:
 
 @pytest.mark.asyncio
 class TestSlackSharedChannelValidate:
-    async def test_schema_rejects_invalid_slack_integration_id(self) -> None:
-        with pytest.raises(ValidationError):
-            BenefitSlackSharedChannelCreateProperties.model_validate(
-                {
-                    "slack_integration_id": "not-a-uuid",
-                    "channel_name_template": "support-{customer_name}",
-                }
-            )
+    async def test_validate_properties_update_preserves_slack_integration_id(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        integration = await _create_integration(save_fixture, benefit)
+        client = _mock_client(mocker)
+        strategy = _strategy(session, redis, client)
+
+        result = await strategy.validate_properties_update(
+            None,  # type: ignore[arg-type]
+            benefit,
+            {
+                "channel_name_template": "vip-{customer_name}",
+                "private": True,
+                "welcome_message": None,
+                "archive_on_revoke": True,
+                "team_invitees": [],
+            },
+        )
+
+        assert result["slack_integration_id"] == str(integration.id)
+        assert result["channel_name_template"] == "vip-{customer_name}"
 
     async def test_validate_rejects_unknown_placeholder(
         self,

@@ -264,6 +264,20 @@ class BenefitSlackSharedChannelService(
 
         return cast(BenefitSlackSharedChannelProperties, properties)
 
+    async def validate_properties_update(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        benefit: Benefit,
+        properties: dict[str, Any],
+    ) -> BenefitSlackSharedChannelProperties:
+        validated: dict[str, Any] = dict(
+            await self.validate_properties(auth_subject, properties)
+        )
+        integration_id = benefit.properties.get("slack_integration_id")
+        if integration_id is not None:
+            validated["slack_integration_id"] = integration_id
+        return cast(BenefitSlackSharedChannelProperties, validated)
+
     async def _get_installed_integration(self, benefit: Benefit) -> SlackApp:
         integration = await self._get_integration(benefit)
         if integration is None or integration.bot_token is None:

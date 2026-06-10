@@ -234,8 +234,11 @@ class BenefitService:
         )
         if properties_update is not None:
             benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
-            update_dict["properties"] = await benefit_strategy.validate_properties(
+            update_dict[
+                "properties"
+            ] = await benefit_strategy.validate_properties_update(
                 auth_subject,
+                benefit,
                 properties_update.model_dump(mode="json", by_alias=True),
             )
 

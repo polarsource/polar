@@ -51,7 +51,6 @@ class BenefitSlackSharedChannelProperties(Schema):
 
 
 class BenefitSlackSharedChannelCreateProperties(Schema):
-    slack_integration_id: UUID4 | None = None
     channel_name_template: ChannelNameTemplate
     private: bool = True
     welcome_message: WelcomeMessage = None

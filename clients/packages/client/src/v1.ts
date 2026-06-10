@@ -10536,8 +10536,6 @@ export interface components {
     }
     /** BenefitSlackSharedChannelCreateProperties */
     BenefitSlackSharedChannelCreateProperties: {
-      /** Slack Integration Id */
-      slack_integration_id?: string | null
       /** Channel Name Template */
       channel_name_template: string
       /**

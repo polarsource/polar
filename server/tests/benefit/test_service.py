@@ -24,6 +24,7 @@ from polar.benefit.strategies.feature_flag.schemas import BenefitFeatureFlagUpda
 from polar.benefit.strategies.slack_shared_channel.schemas import (
     BenefitSlackSharedChannelCreate,
     BenefitSlackSharedChannelCreateProperties,
+    BenefitSlackSharedChannelUpdate,
 )
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
@@ -526,6 +527,56 @@ class TestUpdate:
         assert updated_benefit.description == "Description update"
 
         enqueue_benefit_grant_updates_mock.assert_awaited_once()
+
+    @pytest.mark.auth
+    async def test_slack_shared_channel_preserves_integration_link(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch.object(
+            benefit_grant_service,
+            "enqueue_benefit_grant_updates",
+            spec=BenefitGrantService.enqueue_benefit_grant_updates,
+        )
+        integration_id = str(uuid.uuid4())
+        benefit = await create_benefit(
+            save_fixture,
+            type=BenefitType.slack_shared_channel,
+            organization=organization,
+            properties={
+                "channel_name_template": "support-{customer_name}",
+                "private": True,
+                "welcome_message": None,
+                "archive_on_revoke": True,
+                "team_invitees": [],
+                "slack_integration_id": integration_id,
+            },
+        )
+
+        update_schema = BenefitSlackSharedChannelUpdate(
+            type=BenefitType.slack_shared_channel,
+            properties=BenefitSlackSharedChannelCreateProperties(
+                channel_name_template="vip-{customer_name}",
+                private=True,
+                welcome_message=None,
+                archive_on_revoke=True,
+                team_invitees=[],
+            ),
+        )
+
+        updated_benefit = await benefit_service.update(
+            session, redis, benefit, update_schema, auth_subject
+        )
+
+        properties = dict(updated_benefit.properties)
+        assert properties["slack_integration_id"] == integration_id
+        assert properties["channel_name_template"] == "vip-{customer_name}"
 
     @pytest.mark.auth
     @pytest.mark.parametrize("visibility", [Visibility.private, None])

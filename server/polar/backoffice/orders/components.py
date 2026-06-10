@@ -96,6 +96,8 @@ def orders_datatable(
     request: Request,
     items: Sequence[Order],
     sorting: list[Sorting[OrderSortProperty]] | None = None,
+    *,
+    extra: Sequence[datatable.DatatableColumn[Order]] | None = None,
 ) -> Generator[None]:
     d = datatable.Datatable[Order, OrderSortProperty](
         datatable.DatatableAttrColumn(
@@ -117,6 +119,7 @@ def orders_datatable(
             "net_amount", "Net Amount", sorting=OrderSortProperty.net_amount
         ),
         datatable.DatatableAttrColumn("billing_reason", "Billing Reason"),
+        *(extra or []),
     )
 
     with d.render(request, items, sorting=sorting):

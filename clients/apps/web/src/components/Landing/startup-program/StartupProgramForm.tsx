@@ -192,12 +192,12 @@ export const StartupProgramForm = () => {
       <Field label="Total Funding Raised" htmlFor="funding">
         <Select value={form.funding} onValueChange={set('funding')}>
           <SelectTrigger id="funding">
-            <SelectValue placeholder="Select..." translate="no" />
+            <SelectValue placeholder="Select..." />
           </SelectTrigger>
-          <SelectContent translate="no">
+          <SelectContent>
             {FUNDING_OPTIONS.map((opt) => (
               <SelectItem key={opt} value={opt}>
-                <div>{opt}</div>
+                {opt}
               </SelectItem>
             ))}
           </SelectContent>
@@ -207,12 +207,12 @@ export const StartupProgramForm = () => {
       <Field label="Partner / Investor" htmlFor="partner">
         <Select value={form.partner} onValueChange={set('partner')}>
           <SelectTrigger id="partner">
-            <SelectValue placeholder="Select..." translate="no" />
+            <SelectValue placeholder="Select..." />
           </SelectTrigger>
-          <SelectContent translate="no">
+          <SelectContent>
             {PARTNER_OPTIONS.map((opt) => (
               <SelectItem key={opt} value={opt}>
-                <div>{opt}</div>
+                {opt}
               </SelectItem>
             ))}
           </SelectContent>
@@ -241,12 +241,12 @@ export const StartupProgramForm = () => {
           onValueChange={set('currentBillingPlatform')}
         >
           <SelectTrigger id="currentBillingPlatform">
-            <SelectValue placeholder="Select..." translate="no" />
+            <SelectValue placeholder="Select..." />
           </SelectTrigger>
-          <SelectContent translate="no">
+          <SelectContent>
             {BILLING_PLATFORM_OPTIONS.map((opt) => (
               <SelectItem key={opt} value={opt}>
-                <div>{opt}</div>
+                {opt}
               </SelectItem>
             ))}
           </SelectContent>
@@ -274,12 +274,12 @@ export const StartupProgramForm = () => {
       <Field label="Team Size" htmlFor="teamSize">
         <Select value={form.teamSize} onValueChange={set('teamSize')}>
           <SelectTrigger id="teamSize">
-            <SelectValue placeholder="Select..." translate="no" />
+            <SelectValue placeholder="Select..." />
           </SelectTrigger>
-          <SelectContent translate="no">
+          <SelectContent>
             {TEAM_SIZE_OPTIONS.map((opt) => (
               <SelectItem key={opt} value={opt}>
-                <div>{opt}</div>
+                {opt}
               </SelectItem>
             ))}
           </SelectContent>

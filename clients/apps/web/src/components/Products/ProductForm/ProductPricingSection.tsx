@@ -454,32 +454,24 @@ export const ProductPricingSection = ({
                             disabled={update}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Select a billing cycle" translate="no" />
+                              <SelectValue placeholder="Select a billing cycle" />
                             </SelectTrigger>
-                            <SelectContent translate="no">
+                            <SelectContent>
                               <SelectItem value="day">
-                                <div>
-                                  day
-                                  {recurringIntervalCount !== 1 ? 's' : ''}
-                                </div>
+                                day
+                                {recurringIntervalCount !== 1 ? 's' : ''}
                               </SelectItem>
                               <SelectItem value="week">
-                                <div>
-                                  week
-                                  {recurringIntervalCount !== 1 ? 's' : ''}
-                                </div>
+                                week
+                                {recurringIntervalCount !== 1 ? 's' : ''}
                               </SelectItem>
                               <SelectItem value="month">
-                                <div>
-                                  month
-                                  {recurringIntervalCount !== 1 ? 's' : ''}
-                                </div>
+                                month
+                                {recurringIntervalCount !== 1 ? 's' : ''}
                               </SelectItem>
                               <SelectItem value="year">
-                                <div>
-                                  year
-                                  {recurringIntervalCount !== 1 ? 's' : ''}
-                                </div>
+                                year
+                                {recurringIntervalCount !== 1 ? 's' : ''}
                               </SelectItem>
                             </SelectContent>
                           </Select>

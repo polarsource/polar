@@ -56,14 +56,14 @@ const MetadataValueInput = ({
         onValueChange={(v) => onChange(v === 'true')}
       >
         <SelectTrigger className="flex-1 font-mono">
-          <SelectValue translate="no" />
+          <SelectValue />
         </SelectTrigger>
-        <SelectContent translate="no">
+        <SelectContent>
           <SelectItem className="font-mono" value="true">
-            <div>true</div>
+            true
           </SelectItem>
           <SelectItem className="font-mono" value="false">
-            <div>false</div>
+            false
           </SelectItem>
         </SelectContent>
       </Select>
@@ -182,12 +182,12 @@ export const ProductMetadataForm = () => {
                           }
                         >
                           <SelectTrigger className="w-32 shrink-0">
-                            <SelectValue translate="no" />
+                            <SelectValue />
                           </SelectTrigger>
-                          <SelectContent translate="no">
-                            <SelectItem value="string"><div>String</div></SelectItem>
-                            <SelectItem value="number"><div>Number</div></SelectItem>
-                            <SelectItem value="boolean"><div>Boolean</div></SelectItem>
+                          <SelectContent>
+                            <SelectItem value="string">String</SelectItem>
+                            <SelectItem value="number">Number</SelectItem>
+                            <SelectItem value="boolean">Boolean</SelectItem>
                           </SelectContent>
                         </Select>
                         <MetadataValueInput

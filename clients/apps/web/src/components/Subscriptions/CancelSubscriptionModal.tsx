@@ -154,12 +154,10 @@ const CancelSubscriptionModal = ({
                         }}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select Cancellation Time" translate="no" />
+                          <SelectValue placeholder="Select Cancellation Time" />
                         </SelectTrigger>
-                        <SelectContent translate="no">
-                          <SelectItem value="revoke">
-                            <div>Immediately</div>
-                          </SelectItem>
+                        <SelectContent>
+                          <SelectItem value="revoke">Immediately</SelectItem>
                           <SelectItem value="cancel_at_period_end">
                             End of current period
                             {periodEndOutput && (
@@ -199,12 +197,12 @@ const CancelSubscriptionModal = ({
                               : 'dark:text-polar-500 text-gray-400'
                           }
                         >
-                          <SelectValue placeholder="Select customer cancellation reason" translate="no" />
+                          <SelectValue placeholder="Select customer cancellation reason" />
                         </SelectTrigger>
-                        <SelectContent translate="no">
+                        <SelectContent>
                           {Object.values(reasons).map((reason) => (
                             <SelectItem key={reason} value={reason}>
-                              <div>{getHumanCancellationReason(reason)}</div>
+                              {getHumanCancellationReason(reason)}
                             </SelectItem>
                           ))}
                         </SelectContent>

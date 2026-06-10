@@ -68,14 +68,14 @@ export const FieldClientType = () => {
           <Select onValueChange={field.onChange} defaultValue={field.value}>
             <FormControl>
               <SelectTrigger>
-                <SelectValue placeholder="Select a client type" translate="no" />
+                <SelectValue placeholder="Select a client type" />
               </SelectTrigger>
             </FormControl>
-            <SelectContent translate="no">
+            <SelectContent>
               <SelectItem value="client_secret_post">
-                <div>Confidential Client</div>
+                Confidential Client
               </SelectItem>
-              <SelectItem value="none"><div>Public Client</div></SelectItem>
+              <SelectItem value="none">Public Client</SelectItem>
             </SelectContent>
           </Select>
           <FormMessage />

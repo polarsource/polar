@@ -122,12 +122,12 @@ const NavigationContent = ({
         }}
       >
         <SelectTrigger className="md:hidden">
-          <SelectValue placeholder="Select page" translate="no" />
+          <SelectValue placeholder="Select page" />
         </SelectTrigger>
-        <SelectContent translate="no">
+        <SelectContent>
           {filteredLinks.map((link) => (
             <SelectItem key={link.href} value={link.label}>
-              <div>{link.label}</div>
+              {link.label}
             </SelectItem>
           ))}
         </SelectContent>

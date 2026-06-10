@@ -149,42 +149,26 @@ export default function ClientPage({
             />
             <Select value={show} onValueChange={setShow}>
               <SelectTrigger className="w-full md:max-w-fit">
-                <SelectValue placeholder="Show archived products" translate="no" />
+                <SelectValue placeholder="Show archived products" />
               </SelectTrigger>
-              <SelectContent translate="no">
-                <SelectItem value="all">
-                  <div>All</div>
-                </SelectItem>
-                <SelectItem value="active">
-                  <div>Active</div>
-                </SelectItem>
-                <SelectItem value="archived">
-                  <div>Archived</div>
-                </SelectItem>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
               </SelectContent>
             </Select>
             <Select value={currentSortingValue} onValueChange={onSortingChange}>
               <SelectTrigger className="w-full md:max-w-fit">
-                <SelectValue translate="no" />
+                <SelectValue />
               </SelectTrigger>
-              <SelectContent translate="no">
-                <SelectItem value="name">
-                  <div>Name A-Z</div>
-                </SelectItem>
-                <SelectItem value="-name">
-                  <div>Name Z-A</div>
-                </SelectItem>
-                <SelectItem value="-created_at">
-                  <div>Newest</div>
-                </SelectItem>
-                <SelectItem value="created_at">
-                  <div>Oldest</div>
-                </SelectItem>
-                <SelectItem value="price_amount">
-                  <div>Price: Low to High</div>
-                </SelectItem>
+              <SelectContent>
+                <SelectItem value="name">Name A-Z</SelectItem>
+                <SelectItem value="-name">Name Z-A</SelectItem>
+                <SelectItem value="-created_at">Newest</SelectItem>
+                <SelectItem value="created_at">Oldest</SelectItem>
+                <SelectItem value="price_amount">Price: Low to High</SelectItem>
                 <SelectItem value="-price_amount">
-                  <div>Price: High to Low</div>
+                  Price: High to Low
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -194,18 +178,12 @@ export default function ClientPage({
                 onValueChange={onLimitChange}
               >
                 <SelectTrigger className="w-full md:max-w-fit">
-                  <SelectValue translate="no" />
+                  <SelectValue />
                 </SelectTrigger>
-                <SelectContent translate="no">
-                  <SelectItem value="20">
-                    <div>Show 20</div>
-                  </SelectItem>
-                  <SelectItem value="50">
-                    <div>Show 50</div>
-                  </SelectItem>
-                  <SelectItem value="100">
-                    <div>Show 100</div>
-                  </SelectItem>
+                <SelectContent>
+                  <SelectItem value="20">Show 20</SelectItem>
+                  <SelectItem value="50">Show 50</SelectItem>
+                  <SelectItem value="100">Show 100</SelectItem>
                 </SelectContent>
               </Select>
             )}

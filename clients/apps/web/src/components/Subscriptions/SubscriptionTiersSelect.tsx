@@ -23,16 +23,16 @@ const SubscriptionTiersSelect: React.FC<SubscriptionTiersSelectProps> = ({
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger>
-        <SelectValue placeholder="Select a product" translate="no" />
+        <SelectValue placeholder="Select a product" />
       </SelectTrigger>
-      <SelectContent translate="no">
+      <SelectContent>
         <SelectItem value="all">
           <span className="whitespace-nowrap">All products</span>
         </SelectItem>
         <SelectSeparator />
         {products.map((product) => (
           <SelectItem key={product.id} value={product.id}>
-            <div>{product.name}</div>
+            {product.name}
           </SelectItem>
         ))}
       </SelectContent>

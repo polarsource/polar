@@ -32,9 +32,9 @@ const LicenseKeyStatusSelect: React.FC<LicenseKeyStatusSelectProps> = ({
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger>
-        <SelectValue placeholder="Select a status" translate="no" />
+        <SelectValue placeholder="Select a status" />
       </SelectTrigger>
-      <SelectContent translate="no">
+      <SelectContent>
         <SelectItem value="any">
           <span className="whitespace-nowrap">Any status</span>
         </SelectItem>
@@ -43,7 +43,7 @@ const LicenseKeyStatusSelect: React.FC<LicenseKeyStatusSelectProps> = ({
           <React.Fragment key={status}>
             <SelectGroup>
               <SelectItem value={status}>
-                <div>{licenseKeyStatusDisplayNames[status]}</div>
+                {licenseKeyStatusDisplayNames[status]}
               </SelectItem>
             </SelectGroup>
           </React.Fragment>

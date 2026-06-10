@@ -89,12 +89,12 @@ const MeterFilterInputProperty = ({ field }: MeterFilterInputPropertyProps) => {
       <div className="flex flex-col gap-2">
         <Select value={propertyType} onValueChange={handleTypeChange}>
           <SelectTrigger className="flex-1">
-            <SelectValue translate="no" />
+            <SelectValue />
           </SelectTrigger>
-          <SelectContent translate="no">
+          <SelectContent>
             {Object.entries(PROPERTY_DISPLAY_NAMES).map(([value, label]) => (
               <SelectItem key={value} value={value}>
-                <div>{label}</div>
+                {label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -113,12 +113,12 @@ const MeterFilterInputProperty = ({ field }: MeterFilterInputPropertyProps) => {
   return (
     <Select value={propertyType} onValueChange={handleTypeChange}>
       <SelectTrigger>
-        <SelectValue translate="no" />
+        <SelectValue />
       </SelectTrigger>
-      <SelectContent translate="no">
+      <SelectContent>
         {Object.entries(PROPERTY_DISPLAY_NAMES).map(([value, label]) => (
           <SelectItem key={value} value={value}>
-            <div>{label}</div>
+            {label}
           </SelectItem>
         ))}
       </SelectContent>

@@ -62,12 +62,12 @@ const MeterFormAggregation = () => {
             <FormControl>
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a function" translate="no" />
+                  <SelectValue placeholder="Select a function" />
                 </SelectTrigger>
-                <SelectContent translate="no">
+                <SelectContent>
                   {ALL_AGGREGATION_FUNCTIONS.map((fn) => (
                     <SelectItem key={fn} value={fn}>
-                      <div>{AGGREGATION_LABELS[fn]}</div>
+                      {AGGREGATION_LABELS[fn]}
                     </SelectItem>
                   ))}
                 </SelectContent>

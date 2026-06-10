@@ -248,12 +248,12 @@ export const CustomerPortalTeamSection = ({
                       disabled={isCurrentUser || isLoading}
                     >
                       <SelectTrigger className="w-[160px]">
-                        <SelectValue translate="no" />
+                        <SelectValue />
                       </SelectTrigger>
-                      <SelectContent translate="no">
+                      <SelectContent>
                         {availableRoles.map((role) => (
                           <SelectItem key={role.value} value={role.value}>
-                            <div>{role.label}</div>
+                            {role.label}
                           </SelectItem>
                         ))}
                       </SelectContent>

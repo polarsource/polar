@@ -18,9 +18,9 @@ const SubscriptionCancellationSelect: React.FC<
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger>
-        <SelectValue placeholder="Select cancellation status" translate="no" />
+        <SelectValue placeholder="Select cancellation status" />
       </SelectTrigger>
-      <SelectContent translate="no">
+      <SelectContent>
         <SelectItem value="all">
           <span className="whitespace-nowrap">All active subscriptions</span>
         </SelectItem>

@@ -182,12 +182,12 @@ export const ProductPriceSeatBasedItem: React.FC<
           onValueChange={(v) => handleTieringModelChange(v as TieringModel)}
         >
           <SelectTrigger>
-            <SelectValue translate="no" />
+            <SelectValue />
           </SelectTrigger>
-          <SelectContent translate="no">
-            <SelectItem value="fixed"><div>Fixed price per seat</div></SelectItem>
-            <SelectItem value="graduated"><div>Graduated</div></SelectItem>
-            <SelectItem value="volume"><div>Volume discounts</div></SelectItem>
+          <SelectContent>
+            <SelectItem value="fixed">Fixed price per seat</SelectItem>
+            <SelectItem value="graduated">Graduated</SelectItem>
+            <SelectItem value="volume">Volume discounts</SelectItem>
           </SelectContent>
         </Select>
       </FormItem>

@@ -130,12 +130,12 @@ const OrganizationPaymentSettings: React.FC<
                       defaultValue={field.value || undefined}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a benefit type" translate="no" />
+                        <SelectValue placeholder="Select a benefit type" />
                       </SelectTrigger>
-                      <SelectContent translate="no">
+                      <SelectContent>
                         {enums.taxBehaviorOptionValues.map((value) => (
                           <SelectItem key={value} value={value}>
-                            <div>{taxBehaviorOptionDisplayNames[value]}</div>
+                            {taxBehaviorOptionDisplayNames[value]}
                           </SelectItem>
                         ))}
                       </SelectContent>

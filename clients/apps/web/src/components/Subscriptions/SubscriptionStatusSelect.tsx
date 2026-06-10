@@ -24,9 +24,9 @@ const SubscriptionStatusSelect: React.FC<SubscriptionStatusSelectProps> = ({
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger>
-        <SelectValue placeholder="Select a status" translate="no" />
+        <SelectValue placeholder="Select a status" />
       </SelectTrigger>
-      <SelectContent translate="no">
+      <SelectContent>
         <SelectItem value="any">
           <span className="whitespace-nowrap">Any status</span>
         </SelectItem>
@@ -35,7 +35,7 @@ const SubscriptionStatusSelect: React.FC<SubscriptionStatusSelectProps> = ({
           <React.Fragment key={status}>
             <SelectGroup>
               <SelectItem value={status}>
-                <div>{subscriptionStatusDisplayNames[status]}</div>
+                {subscriptionStatusDisplayNames[status]}
               </SelectItem>
             </SelectGroup>
           </React.Fragment>

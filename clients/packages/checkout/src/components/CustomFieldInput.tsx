@@ -214,15 +214,12 @@ const CustomFieldSelectInput: React.FC<CustomFieldSelectInputProps> = ({
       required={required}
     >
       <SelectTrigger>
-        <SelectValue
-          placeholder={customField.properties.form_placeholder}
-          translate="no"
-        />
+        <SelectValue placeholder={customField.properties.form_placeholder} />
       </SelectTrigger>
-      <SelectContent translate="no">
+      <SelectContent>
         {customField.properties.options.map(({ label, value }) => (
           <SelectItem key={value} value={value} textValue={label}>
-            <div>{label}</div>
+            {label}
           </SelectItem>
         ))}
       </SelectContent>

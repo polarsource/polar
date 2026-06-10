@@ -119,18 +119,12 @@ export const LicenseKeysBenefitForm = () => {
                       defaultValue={field.value}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select timeframe" translate="no" />
+                        <SelectValue placeholder="Select timeframe" />
                       </SelectTrigger>
-                      <SelectContent translate="no">
-                        <SelectItem value="day">
-                          <div>Day</div>
-                        </SelectItem>
-                        <SelectItem value="month">
-                          <div>Month</div>
-                        </SelectItem>
-                        <SelectItem value="year">
-                          <div>Year</div>
-                        </SelectItem>
+                      <SelectContent>
+                        <SelectItem value="day">Day</SelectItem>
+                        <SelectItem value="month">Month</SelectItem>
+                        <SelectItem value="year">Year</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormControl>

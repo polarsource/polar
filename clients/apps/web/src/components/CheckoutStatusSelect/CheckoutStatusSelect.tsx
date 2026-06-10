@@ -22,9 +22,9 @@ const CheckoutStatusSelect: React.FC<CheckoutStatusSelectProps> = ({
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger>
-        <SelectValue placeholder="Select a status" translate="no" />
+        <SelectValue placeholder="Select a status" />
       </SelectTrigger>
-      <SelectContent translate="no">
+      <SelectContent>
         {enums.checkoutStatusValues.map((status) => (
           <React.Fragment key={status}>
             <SelectGroup>

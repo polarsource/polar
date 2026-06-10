@@ -114,16 +114,16 @@ const IntervalPicker = ({
   return (
     <Select value={interval} onValueChange={onChange}>
       <SelectTrigger className="text-sm">
-        <SelectValue placeholder="Select an interval" translate="no" />
+        <SelectValue placeholder="Select an interval" />
       </SelectTrigger>
-      <SelectContent translate="no">
+      <SelectContent>
         {Object.values(enums.timeIntervalValues).map((interval) => (
           <SelectItem
             value={interval}
             key={interval}
             disabled={disabledIntervals.has(interval)}
           >
-            <div>{getIntervalLabel(interval)}</div>
+            {getIntervalLabel(interval)}
           </SelectItem>
         ))}
       </SelectContent>

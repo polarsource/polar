@@ -269,15 +269,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Sort by" translate="no" />
+                    <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
-                  <SelectContent translate="no">
-                    <SelectItem value="-timestamp">
-                      <div>Newest</div>
-                    </SelectItem>
-                    <SelectItem value="timestamp">
-                      <div>Oldest</div>
-                    </SelectItem>
+                  <SelectContent>
+                    <SelectItem value="-timestamp">Newest</SelectItem>
+                    <SelectItem value="timestamp">Oldest</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

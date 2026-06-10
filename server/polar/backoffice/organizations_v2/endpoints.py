@@ -257,6 +257,36 @@ async def count_test_sales(
 REVIEW_TAB_MAX_COHORT = 2000
 
 
+def _open_case_org_ids() -> Select[tuple[uuid.UUID]]:
+    """Select of organization ids that have at least one open support case."""
+    return (
+        select(OrganizationReview.organization_id)
+        .join(
+            ReviewAppealSupportCase,
+            ReviewAppealSupportCase.organization_review_id == OrganizationReview.id,
+        )
+        .where(
+            ReviewAppealSupportCase.deleted_at.is_(None),
+            SupportCaseMessageRepository.is_open_expression(),
+        )
+        .distinct()
+    )
+
+
+async def _orgs_with_open_cases(
+    session: AsyncSession, organizations: Sequence[Organization]
+) -> set[uuid.UUID]:
+    """Org ids (among the given page) with at least one open support case."""
+    org_ids = [org.id for org in organizations]
+    if not org_ids:
+        return set()
+    statement = _open_case_org_ids().where(
+        OrganizationReview.organization_id.in_(org_ids)
+    )
+    result = await session.execute(statement)
+    return set(result.scalars().all())
+
+
 async def _build_review_signals(
     session: AsyncSession, orgs: Sequence[Organization]
 ) -> dict[uuid.UUID, Signals]:
@@ -415,6 +445,9 @@ async def list_organizations(
     elif status == "blocked":
         status_filter = OrganizationStatus.BLOCKED
 
+    # "Open cases" is a separate dimension (not an org status).
+    selected_open_cases = status == "open_cases"
+
     # Build query
     stmt = (
         select(Organization)
@@ -429,6 +462,10 @@ async def list_organizations(
     # Apply filters
     if status_filter:
         stmt = stmt.where(Organization.status == status_filter)
+    elif selected_open_cases:
+        # Don't apply the default denied/blocked exclusion: open cases
+        # typically live on denied organizations.
+        stmt = stmt.where(Organization.id.in_(_open_case_org_ids()))
     elif not q:
         # By default, exclude denied and blocked organizations (but not when searching)
         stmt = stmt.where(
@@ -559,6 +596,8 @@ async def list_organizations(
         if is_review_tab:
             signals_by_org = await _build_review_signals(session, organizations)
 
+    open_case_org_ids = await _orgs_with_open_cases(session, organizations)
+
     is_htmx_table_request = request.headers.get("HX-Target") == "org-list"
 
     if is_htmx_table_request:
@@ -571,11 +610,19 @@ async def list_organizations(
             sort,
             direction,
             signals_by_org=signals_by_org,
+            open_case_org_ids=open_case_org_ids,
+            selected_open_cases=selected_open_cases,
         ):
             pass
     else:
         status_counts = await list_view.get_status_counts(deleted_filter)
         countries = await list_view.get_distinct_countries()
+        open_cases_count = (
+            await session.scalar(
+                select(func.count()).select_from(_open_case_org_ids().subquery())
+            )
+            or 0
+        )
         with layout(
             request,
             [("Organizations", str(request.url))],
@@ -599,6 +646,9 @@ async def list_organizations(
                 selected_has_appeal=has_appeal,
                 selected_deleted=deleted_filter,
                 signals_by_org=signals_by_org,
+                open_case_org_ids=open_case_org_ids,
+                selected_open_cases=selected_open_cases,
+                open_cases_count=open_cases_count,
             ):
                 pass
 

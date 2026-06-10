@@ -150,9 +150,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
                   ]
                 }
               />
-              {product.is_archived && (
-                <Status status="Archived" color="red" />
-              )}
+              {product.is_archived && <Status status="Archived" color="red" />}
             </div>
           </div>
         }

@@ -20,6 +20,7 @@ from polar.benefit.strategies.slack_shared_channel.schemas import (
 from polar.benefit.strategies.slack_shared_channel.service import (
     BenefitSlackSharedChannelService,
 )
+from polar.locker import Locker
 from polar.models import (
     Benefit,
     Customer,
@@ -445,7 +446,6 @@ class TestSlackSharedChannelGrant:
         await _create_integration(save_fixture, benefit)
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
-        mocker.patch.object(redis, "set", AsyncMock(return_value=True))
 
         with pytest.raises(BenefitActionRequiredError, match="empty channel name"):
             await strategy.grant(
@@ -477,7 +477,45 @@ class TestSlackSharedChannelGrant:
         )
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
-        redis_set = mocker.patch.object(redis, "set", AsyncMock(return_value=False))
+        locker = Locker(redis)
+
+        async with locker.lock(
+            f"slack_benefit_grant:{benefit.id}:{customer.id}",
+            timeout=60,
+            blocking_timeout=0,
+        ):
+            with pytest.raises(BenefitRetriableError) as exc_info:
+                await strategy.grant(
+                    benefit,
+                    customer,
+                    {"invited_email": "admin@customer.example"},
+                )
+
+        assert exc_info.value.defer_seconds == 60
+        client.conversations_create.assert_not_awaited()
+        client.conversations_invite_shared.assert_not_awaited()
+
+    async def test_grant_lock_released_after_retriable_failure(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        client = _mock_client(
+            mocker,
+            conversations_create=AsyncMock(side_effect=httpx.ConnectError("boom")),
+        )
+        strategy = _strategy(session, redis, client)
 
         with pytest.raises(BenefitRetriableError) as exc_info:
             await strategy.grant(

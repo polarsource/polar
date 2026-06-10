@@ -9,6 +9,7 @@ from polar.auth.models import AuthSubject
 from polar.integrations.slack.client import SlackClient
 from polar.integrations.slack.repository import SlackAppRepository
 from polar.kit.db.postgres import AsyncSession
+from polar.locker import Locker, TimeoutLockError
 from polar.logging import Logger
 from polar.models import (
     Benefit,
@@ -87,20 +88,39 @@ class BenefitSlackSharedChannelService(
                 )
             return grant_properties
 
-        if not existing_channel_id:
-            lock_key = f"slack_benefit_grant:{benefit.id}:{customer.id}"
-            acquired = await self.redis.set(
-                lock_key, "1", ex=_PROVISIONING_LOCK_TTL_SECONDS, nx=True
+        if existing_channel_id:
+            return await self._provision(
+                benefit, customer, grant_properties, invited_email, bound_logger
             )
-            if not acquired:
-                raise BenefitRetriableError(_PROVISIONING_LOCK_TTL_SECONDS)
 
+        locker = Locker(self.redis)
+        try:
+            async with locker.lock(
+                f"slack_benefit_grant:{benefit.id}:{customer.id}",
+                timeout=_PROVISIONING_LOCK_TTL_SECONDS,
+                blocking_timeout=0,
+            ):
+                return await self._provision(
+                    benefit, customer, grant_properties, invited_email, bound_logger
+                )
+        except TimeoutLockError as e:
+            raise BenefitRetriableError(_PROVISIONING_LOCK_TTL_SECONDS) from e
+
+    async def _provision(
+        self,
+        benefit: Benefit,
+        customer: Customer,
+        grant_properties: BenefitGrantSlackSharedChannelProperties,
+        invited_email: str,
+        bound_logger: Any,
+    ) -> BenefitGrantSlackSharedChannelProperties:
         properties = self._get_properties(benefit)
         integration = await self._get_installed_integration(benefit)
 
         context = self._build_context(customer)
         bot_token = cast(str, integration.bot_token)
 
+        existing_channel_id = grant_properties.get("channel_id")
         if existing_channel_id:
             channel_id = existing_channel_id
             channel_name = grant_properties.get("channel_name", "")

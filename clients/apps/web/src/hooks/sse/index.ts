@@ -2,10 +2,12 @@ import { getServerURL } from '@/utils/api'
 import { EventSourcePlus } from 'event-source-plus'
 import EventEmitter from 'eventemitter3'
 import { useEffect } from 'react'
+import { onEventIngested } from './events'
 import { onOrganizationUpdated } from './organizations'
 
 const ACTIONS = {
   'organization.updated': onOrganizationUpdated,
+  'event.ingested': onEventIngested,
 } as const
 
 const isSupportedKey = (key: unknown): key is keyof typeof ACTIONS => {

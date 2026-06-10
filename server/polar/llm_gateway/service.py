@@ -6,6 +6,8 @@ from typing import Any
 
 import structlog
 
+from dataclasses import dataclass
+
 from polar.auth.models import AuthSubject, Organization, User, is_organization
 from polar.authz.service import get_accessible_org_ids
 from polar.exceptions import PolarError
@@ -21,6 +23,46 @@ from .schemas import LLMProviderConfigCreate, LLMProviderConfigUpdate
 from .sorting import LLMProviderConfigSortProperty
 
 log = structlog.get_logger()
+
+@dataclass(frozen=True, slots=True)
+class PolarContext:
+    """Polar-specific attributes extracted from X-Polar-* request headers.
+
+    Usage with the OpenAI SDK::
+
+        client.chat.completions.create(
+            model="gpt-4o",
+            messages=[...],
+            extra_headers={
+                "X-Polar-Customer-Id": "<polar-customer-uuid>",
+                "X-Polar-External-Customer-Id": "cust_123",
+                "X-Polar-Parent-Id": "<event-id-or-external-id>",
+            },
+        )
+    """
+
+    customer_id: uuid.UUID | None = None
+    external_customer_id: str | None = None
+    external_id: str | None = None
+    parent_id: str | None = None
+
+
+def extract_polar_context(headers: Any) -> PolarContext:
+    """Build a PolarContext from X-Polar-* request headers."""
+    raw_customer_id = headers.get("x-polar-customer-id")
+    customer_id: uuid.UUID | None = None
+    if raw_customer_id is not None:
+        try:
+            customer_id = uuid.UUID(str(raw_customer_id))
+        except ValueError:
+            raise PolarError("'X-Polar-Customer-Id' must be a valid UUID.", 400)
+
+    return PolarContext(
+        customer_id=customer_id,
+        external_customer_id=headers.get("x-polar-external-customer-id"),
+        external_id=headers.get("x-polar-external-id"),
+        parent_id=headers.get("x-polar-parent-id"),
+    )
 
 
 class LLMGatewayError(PolarError): ...
@@ -155,6 +197,7 @@ class LLMGatewayService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         request_body: dict[str, Any],
+        polar_ctx: PolarContext | None = None,
     ) -> dict[str, Any]:
         import litellm
 
@@ -169,6 +212,8 @@ class LLMGatewayService:
 
         litellm_model = f"{config.provider}/{config.model_name}"
 
+        prompt = self._extract_prompt(request_body)
+
         response = await litellm.acompletion(
             model=litellm_model,
             api_key=api_key,
@@ -176,9 +221,10 @@ class LLMGatewayService:
             stream=False,
         )
 
-        # Emit usage event
         await self._emit_usage_event(
-            session, auth_subject, organization_id, config, response
+            session, auth_subject, organization_id, config, response,
+            prompt=prompt,
+            polar_ctx=polar_ctx or PolarContext(),
         )
 
         return response.model_dump()
@@ -188,6 +234,7 @@ class LLMGatewayService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         request_body: dict[str, Any],
+        polar_ctx: PolarContext | None = None,
     ) -> AsyncIterator[str]:
         import litellm
 
@@ -201,6 +248,7 @@ class LLMGatewayService:
         api_key = self.get_decrypted_key(config)
 
         litellm_model = f"{config.provider}/{config.model_name}"
+        prompt = self._extract_prompt(request_body)
 
         response = await litellm.acompletion(
             model=litellm_model,
@@ -227,6 +275,8 @@ class LLMGatewayService:
             await self._emit_usage_event_from_usage(
                 session, auth_subject, organization_id, config, usage_data,
                 cost_cents=cost_cents,
+                prompt=prompt,
+                polar_ctx=polar_ctx or PolarContext(),
             )
 
     async def list_models(
@@ -308,6 +358,28 @@ class LLMGatewayService:
             )
         return None
 
+    @staticmethod
+    def _extract_prompt(request_body: dict[str, Any]) -> str | None:
+        messages = request_body.get("messages")
+        if not messages or not isinstance(messages, list):
+            return None
+        # Find the last user message
+        for msg in reversed(messages):
+            if isinstance(msg, dict) and msg.get("role") == "user":
+                content = msg.get("content")
+                if isinstance(content, str):
+                    return content
+                # Handle content arrays (e.g. vision messages)
+                if isinstance(content, list):
+                    text_parts = [
+                        p.get("text", "")
+                        for p in content
+                        if isinstance(p, dict) and p.get("type") == "text"
+                    ]
+                    if text_parts:
+                        return "\n".join(text_parts)
+        return None
+
     async def _emit_usage_event(
         self,
         session: AsyncSession,
@@ -315,6 +387,9 @@ class LLMGatewayService:
         organization_id: uuid.UUID,
         config: LLMProviderConfig,
         response: Any,
+        *,
+        prompt: str | None = None,
+        polar_ctx: PolarContext = PolarContext(),
     ) -> None:
         usage = getattr(response, "usage", None)
         if usage is None:
@@ -329,6 +404,8 @@ class LLMGatewayService:
         await self._emit_usage_event_from_usage(
             session, auth_subject, organization_id, config, usage_dict,
             cost_cents=cost_cents,
+            prompt=prompt,
+            polar_ctx=polar_ctx,
         )
 
     async def _emit_usage_event_from_usage(
@@ -340,8 +417,15 @@ class LLMGatewayService:
         usage: dict[str, int],
         *,
         cost_cents: Decimal | None = None,
+        prompt: str | None = None,
+        polar_ctx: PolarContext = PolarContext(),
     ) -> None:
-        from polar.event.schemas import EventCreateExternalCustomer, EventsIngest
+        from polar.event.schemas import (
+            EventCreate,
+            EventCreateCustomer,
+            EventCreateExternalCustomer,
+            EventsIngest,
+        )
         from polar.event.service import event as event_service
 
         prompt_tokens = usage.get("prompt_tokens", 0) or 0
@@ -352,7 +436,7 @@ class LLMGatewayService:
             "_llm": {
                 "vendor": config.provider,
                 "model": config.model_name,
-                "prompt": None,
+                "prompt": prompt,
                 "response": None,
                 "input_tokens": prompt_tokens,
                 "output_tokens": completion_tokens,
@@ -365,17 +449,37 @@ class LLMGatewayService:
                 "currency": "usd",
             }
 
-        event = EventCreateExternalCustomer(
-            name="llm.completion",
-            organization_id=organization_id if not is_organization(auth_subject) else None,
-            external_customer_id=f"llm_gateway_{organization_id}",
-            metadata=metadata,
-        )
+        org_id_field = organization_id if not is_organization(auth_subject) else None
+
+        event: EventCreate
+        if polar_ctx.customer_id is not None:
+            event = EventCreateCustomer(
+                name="llm.completion",
+                organization_id=org_id_field,
+                customer_id=polar_ctx.customer_id,
+                external_id=polar_ctx.external_id,
+                parent_id=polar_ctx.parent_id,
+                metadata=metadata,
+            )
+        else:
+            external_customer_id = (
+                polar_ctx.external_customer_id
+                or f"llm_gateway_{organization_id}"
+            )
+            event = EventCreateExternalCustomer(
+                name="llm.completion",
+                organization_id=org_id_field,
+                external_customer_id=external_customer_id,
+                external_id=polar_ctx.external_id,
+                parent_id=polar_ctx.parent_id,
+                metadata=metadata,
+            )
 
         try:
             await event_service.ingest(
                 session, auth_subject, EventsIngest(events=[event])
             )
+            await self._notify_event_ingested(organization_id, config)
         except Exception:
             log.warning(
                 "llm_gateway.usage_event_failed",
@@ -384,6 +488,23 @@ class LLMGatewayService:
                 model=config.model_name,
                 exc_info=True,
             )
+
+
+    async def _notify_event_ingested(
+        self,
+        organization_id: uuid.UUID,
+        config: LLMProviderConfig,
+    ) -> None:
+        from polar.eventstream.service import publish
+
+        await publish(
+            key="event.ingested",
+            payload={
+                "provider": config.provider,
+                "model": config.model_name,
+            },
+            organization_id=organization_id,
+        )
 
 
 llm_gateway = LLMGatewayService()

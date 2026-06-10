@@ -25,7 +25,7 @@ from .schemas import (
     LLMProviderConfigNotFound,
     LLMProviderConfigUpdate,
 )
-from .service import llm_gateway as llm_gateway_service
+from .service import extract_polar_context, llm_gateway as llm_gateway_service
 
 # --- Config CRUD Router ---
 
@@ -160,10 +160,13 @@ async def chat_completions(
     Supports both streaming and non-streaming responses.
     """
     body = await request.json()
+    polar_ctx = extract_polar_context(request.headers)
 
     if body.get("stream", False):
         return StreamingResponse(
-            llm_gateway_service.chat_completion_stream(session, auth_subject, body),
+            llm_gateway_service.chat_completion_stream(
+                session, auth_subject, body, polar_ctx=polar_ctx,
+            ),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
@@ -172,7 +175,9 @@ async def chat_completions(
             },
         )
 
-    result = await llm_gateway_service.chat_completion(session, auth_subject, body)
+    result = await llm_gateway_service.chat_completion(
+        session, auth_subject, body, polar_ctx=polar_ctx,
+    )
     return result
 
 

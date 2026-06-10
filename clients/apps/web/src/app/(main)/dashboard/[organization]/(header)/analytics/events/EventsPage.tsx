@@ -10,6 +10,7 @@ import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import Pagination from '@/components/Pagination/Pagination'
 import { useEventNames, useEvents } from '@/hooks/queries/events'
+import { useOrganizationSSE } from '@/hooks/sse'
 import useDebounce from '@/utils/useDebounce'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import RefreshOutlined from '@mui/icons-material/RefreshOutlined'
@@ -52,6 +53,8 @@ interface ClientPageProps {
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
+  useOrganizationSSE(organization.id)
+
   const [sorting, setSorting] = useQueryState(
     'sorting',
     parseAsStringLiteral(['-timestamp', 'timestamp'] as const).withDefault(

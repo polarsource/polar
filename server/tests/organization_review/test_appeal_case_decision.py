@@ -63,7 +63,11 @@ async def denied_review_with_case(
     await save_fixture(review)
 
     case = await appeal_case_service.request_human_review(
-        session, review, reason=REASON, requested_by_user_id=user.id
+        session,
+        review,
+        reason=REASON,
+        requested_by_user=user,
+        organization=organization,
     )
     return organization, review, case
 
@@ -88,7 +92,7 @@ class TestApproveDecision:
             session,
             case,
             approved=True,
-            staff_user_id=user.id,
+            staff_user=user,
             reason="Looks legitimate after human review.",
         )
 
@@ -137,7 +141,7 @@ class TestDenyDecision:
             session,
             case,
             approved=False,
-            staff_user_id=user.id,
+            staff_user=user,
             reason="Still doesn't meet policy.",
         )
 
@@ -164,12 +168,12 @@ class TestDenyDecision:
         _organization, _review, case = denied_review_with_case
 
         await appeal_case_service.record_decision(
-            session, case, approved=False, staff_user_id=user.id, reason="final"
+            session, case, approved=False, staff_user=user, reason="final"
         )
 
         # A second decision must fail once the case is locked. (Reply-after-lock
         # is covered by test_appeal_case.py::TestReplyAndLock.)
         with pytest.raises(CaseLockedError):
             await appeal_case_service.record_decision(
-                session, case, approved=True, staff_user_id=user.id, reason="oops"
+                session, case, approved=True, staff_user=user, reason="oops"
             )

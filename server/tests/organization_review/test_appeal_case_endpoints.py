@@ -87,7 +87,11 @@ class TestRequestHumanReview:
         user_organization: UserOrganization,
     ) -> None:
         await appeal_case_service.request_human_review(
-            session, denied_review, reason=REASON, requested_by_user_id=user.id
+            session,
+            denied_review,
+            reason=REASON,
+            requested_by_user=user,
+            organization=organization,
         )
         await session.flush()
         response = await client.post(
@@ -121,7 +125,11 @@ class TestGetAppealCase:
         user_organization: UserOrganization,
     ) -> None:
         await appeal_case_service.request_human_review(
-            session, denied_review, reason=REASON, requested_by_user_id=user.id
+            session,
+            denied_review,
+            reason=REASON,
+            requested_by_user=user,
+            organization=organization,
         )
         await session.flush()
         response = await client.get(f"/v1/organizations/{organization.id}/appeal/case")
@@ -141,13 +149,17 @@ class TestGetAppealCase:
         user_organization: UserOrganization,
     ) -> None:
         case = await appeal_case_service.request_human_review(
-            session, denied_review, reason=REASON, requested_by_user_id=user.id
+            session,
+            denied_review,
+            reason=REASON,
+            requested_by_user=user,
+            organization=organization,
         )
         await appeal_case_service.add_reply(
             session,
             case,
             author_kind=SupportCaseMessageAuthorKind.platform,
-            author_user_id=user.id,
+            author_user=user,
             body="internal staff note",
             internal=True,
         )
@@ -172,7 +184,11 @@ class TestReplyToAppealCase:
         user_organization: UserOrganization,
     ) -> None:
         await appeal_case_service.request_human_review(
-            session, denied_review, reason=REASON, requested_by_user_id=user.id
+            session,
+            denied_review,
+            reason=REASON,
+            requested_by_user=user,
+            organization=organization,
         )
         await session.flush()
         response = await client.post(
@@ -193,10 +209,14 @@ class TestReplyToAppealCase:
         user_organization: UserOrganization,
     ) -> None:
         case = await appeal_case_service.request_human_review(
-            session, denied_review, reason=REASON, requested_by_user_id=user.id
+            session,
+            denied_review,
+            reason=REASON,
+            requested_by_user=user,
+            organization=organization,
         )
         await appeal_case_service.record_decision(
-            session, case, approved=False, staff_user_id=user.id, reason="final"
+            session, case, approved=False, staff_user=user, reason="final"
         )
         await session.flush()
         response = await client.post(

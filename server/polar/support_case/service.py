@@ -1,6 +1,6 @@
 from collections.abc import Sequence
-from uuid import UUID
 
+from polar.models import Customer, Organization, User
 from polar.models.support_case import (
     SupportCase,
     SupportCaseAudience,
@@ -26,7 +26,7 @@ class SupportCaseService:
         case: CaseT,
         *,
         author_kind: SupportCaseMessageAuthorKind,
-        author_user_id: UUID | None = None,
+        author_user: User | None = None,
         audience: Sequence[SupportCaseAudience] = (),
     ) -> CaseT:
         """Persist a (typed) case and emit its ``opened`` event atomically."""
@@ -37,7 +37,7 @@ class SupportCaseService:
             case,
             type=SupportCaseMessageType.opened,
             author_kind=author_kind,
-            author_user_id=author_user_id,
+            author_user=author_user,
             audience=audience,
         )
         return case
@@ -48,18 +48,18 @@ class SupportCaseService:
         case: SupportCase,
         kind: SupportCaseParticipantKind,
         *,
-        organization_id: UUID | None = None,
-        platform_user_id: UUID | None = None,
-        customer_id: UUID | None = None,
+        organization: Organization | None = None,
+        platform_user: User | None = None,
+        customer: Customer | None = None,
     ) -> SupportCaseParticipant:
         repository = SupportCaseParticipantRepository.from_session(session)
         return await repository.create(
             SupportCaseParticipant(
                 case_id=case.id,
                 kind=kind,
-                organization_id=organization_id,
-                platform_user_id=platform_user_id,
-                customer_id=customer_id,
+                organization_id=organization.id if organization else None,
+                platform_user_id=platform_user.id if platform_user else None,
+                customer_id=customer.id if customer else None,
             ),
             flush=True,
         )
@@ -71,7 +71,7 @@ class SupportCaseService:
         *,
         author_kind: SupportCaseMessageAuthorKind,
         type: SupportCaseMessageType = SupportCaseMessageType.chat,
-        author_user_id: UUID | None = None,
+        author_user: User | None = None,
         body: str | None = None,
         audience: Sequence[SupportCaseAudience] = (),
     ) -> SupportCaseMessage:
@@ -81,7 +81,7 @@ class SupportCaseService:
                 case_id=case.id,
                 type=type,
                 author_kind=author_kind,
-                author_user_id=author_user_id,
+                author_user_id=author_user.id if author_user else None,
                 body=body,
                 audience=list(audience),
             ),
@@ -94,7 +94,7 @@ class SupportCaseService:
         case: SupportCase,
         *,
         author_kind: SupportCaseMessageAuthorKind,
-        author_user_id: UUID | None = None,
+        author_user: User | None = None,
         body: str | None = None,
         audience: Sequence[SupportCaseAudience] = (),
     ) -> SupportCaseMessage:
@@ -103,7 +103,7 @@ class SupportCaseService:
             case,
             type=SupportCaseMessageType.closed,
             author_kind=author_kind,
-            author_user_id=author_user_id,
+            author_user=author_user,
             body=body,
             audience=audience,
         )

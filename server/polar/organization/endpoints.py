@@ -728,8 +728,9 @@ async def request_human_review(
         case = await appeal_case_service.request_human_review(
             session,
             review,
+            organization=authz.organization,
             reason=request.reason,
-            requested_by_user_id=authz.auth_subject.subject.id,
+            requested_by_user=authz.auth_subject.subject,
         )
     except AppealCaseError as e:
         raise PolarRequestValidationError(
@@ -823,7 +824,7 @@ async def reply_to_appeal_case(
             session,
             case,
             author_kind=SupportCaseMessageAuthorKind.merchant,
-            author_user_id=authz.auth_subject.subject.id,
+            author_user=authz.auth_subject.subject,
             body=message.body,
         )
     except AppealCaseError as e:

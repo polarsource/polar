@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from polar.exceptions import PolarError
+from polar.models import Organization, User
 from polar.models.organization_review import OrganizationReview
 from polar.models.support_case import (
     ReviewAppealSupportCase,
@@ -46,8 +47,9 @@ class AppealCaseService:
         session: AsyncSession,
         review: OrganizationReview,
         *,
+        organization: Organization,
         reason: str,
-        requested_by_user_id: UUID,
+        requested_by_user: User,
     ) -> ReviewAppealSupportCase:
         if await self.get_case(session, review) is not None:
             raise CaseAlreadyExistsError(review.id)
@@ -56,20 +58,20 @@ class AppealCaseService:
             session,
             ReviewAppealSupportCase(organization_review_id=review.id),
             author_kind=SupportCaseMessageAuthorKind.merchant,
-            author_user_id=requested_by_user_id,
+            author_user=requested_by_user,
             audience=[SupportCaseAudience.merchant],
         )
         await support_case_service.add_participant(
             session,
             case,
             SupportCaseParticipantKind.merchant,
-            organization_id=review.organization_id,
+            organization=organization,
         )
         await support_case_service.post_message(
             session,
             case,
             author_kind=SupportCaseMessageAuthorKind.merchant,
-            author_user_id=requested_by_user_id,
+            author_user=requested_by_user,
             body=reason,
             audience=[SupportCaseAudience.merchant],
         )
@@ -81,7 +83,7 @@ class AppealCaseService:
         case: ReviewAppealSupportCase,
         *,
         author_kind: SupportCaseMessageAuthorKind,
-        author_user_id: UUID | None = None,
+        author_user: User | None = None,
         body: str,
         internal: bool = False,
     ) -> SupportCaseMessage:
@@ -90,7 +92,7 @@ class AppealCaseService:
             session,
             case,
             author_kind=author_kind,
-            author_user_id=author_user_id,
+            author_user=author_user,
             body=body,
             audience=[] if internal else [SupportCaseAudience.merchant],
         )
@@ -101,7 +103,7 @@ class AppealCaseService:
         case: ReviewAppealSupportCase,
         *,
         approved: bool,
-        staff_user_id: UUID,
+        staff_user: User,
         reason: str | None = None,
     ) -> SupportCaseMessage:
         await self._assert_not_locked(session, case)
@@ -114,7 +116,7 @@ class AppealCaseService:
                 else SupportCaseMessageType.appeal_denied
             ),
             author_kind=SupportCaseMessageAuthorKind.platform,
-            author_user_id=staff_user_id,
+            author_user=staff_user,
             body=reason,
             audience=[SupportCaseAudience.merchant],
         )
@@ -122,7 +124,7 @@ class AppealCaseService:
             session,
             case,
             author_kind=SupportCaseMessageAuthorKind.platform,
-            author_user_id=staff_user_id,
+            author_user=staff_user,
             audience=[SupportCaseAudience.merchant],
         )
         # This records the decision on the case only. The caller drives org

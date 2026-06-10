@@ -60,13 +60,15 @@ class TestRequestHumanReview:
         self,
         session: AsyncSession,
         denied_review: OrganizationReview,
+        organization: Organization,
         user: User,
     ) -> None:
         case = await appeal_case_service.request_human_review(
             session,
             denied_review,
             reason="Please reconsider — here is the missing context.",
-            requested_by_user_id=user.id,
+            requested_by_user=user,
+            organization=organization,
         )
 
         assert case.type == SupportCaseType.review_appeal
@@ -93,14 +95,23 @@ class TestRequestHumanReview:
         self,
         session: AsyncSession,
         denied_review: OrganizationReview,
+        organization: Organization,
         user: User,
     ) -> None:
         await appeal_case_service.request_human_review(
-            session, denied_review, reason="first", requested_by_user_id=user.id
+            session,
+            denied_review,
+            reason="first",
+            requested_by_user=user,
+            organization=organization,
         )
         with pytest.raises(CaseAlreadyExistsError):
             await appeal_case_service.request_human_review(
-                session, denied_review, reason="second", requested_by_user_id=user.id
+                session,
+                denied_review,
+                reason="second",
+                requested_by_user=user,
+                organization=organization,
             )
 
 
@@ -110,22 +121,27 @@ class TestReplyAndLock:
         self,
         session: AsyncSession,
         denied_review: OrganizationReview,
+        organization: Organization,
         user: User,
     ) -> None:
         case = await appeal_case_service.request_human_review(
-            session, denied_review, reason="reason", requested_by_user_id=user.id
+            session,
+            denied_review,
+            reason="reason",
+            requested_by_user=user,
+            organization=organization,
         )
 
         await appeal_case_service.add_reply(
             session,
             case,
             author_kind=SupportCaseMessageAuthorKind.merchant,
-            author_user_id=user.id,
+            author_user=user,
             body="some more info",
         )
 
         await appeal_case_service.record_decision(
-            session, case, approved=False, staff_user_id=user.id, reason="denied again"
+            session, case, approved=False, staff_user=user, reason="denied again"
         )
 
         message_repository = SupportCaseMessageRepository.from_session(session)
@@ -136,7 +152,7 @@ class TestReplyAndLock:
                 session,
                 case,
                 author_kind=SupportCaseMessageAuthorKind.merchant,
-                author_user_id=user.id,
+                author_user=user,
                 body="please reconsider again",
             )
 
@@ -147,16 +163,21 @@ class TestThreadAudience:
         self,
         session: AsyncSession,
         denied_review: OrganizationReview,
+        organization: Organization,
         user: User,
     ) -> None:
         case = await appeal_case_service.request_human_review(
-            session, denied_review, reason="reason", requested_by_user_id=user.id
+            session,
+            denied_review,
+            reason="reason",
+            requested_by_user=user,
+            organization=organization,
         )
         await appeal_case_service.add_reply(
             session,
             case,
             author_kind=SupportCaseMessageAuthorKind.platform,
-            author_user_id=user.id,
+            author_user=user,
             body="internal staff note",
             internal=True,
         )

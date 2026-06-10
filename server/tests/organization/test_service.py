@@ -865,9 +865,10 @@ class TestCheckReviewThreshold:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        # Given: offboarding org with threshold 0 and a positive balance
-        # (check_review_threshold only auto-transitions ACTIVE orgs, so an
-        # offboarding org must be skipped regardless of its threshold)
+        # Given: offboarding org with threshold 0 and a positive balance.
+        # Crossing the review threshold must NEVER pull an offboarding org
+        # back into review — only a manual "Set under review" action may do
+        # that. check_review_threshold only auto-transitions ACTIVE orgs.
         organization.status = OrganizationStatus.OFFBOARDING
         organization.next_review_threshold = 0
 

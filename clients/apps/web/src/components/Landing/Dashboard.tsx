@@ -1,6 +1,6 @@
 import { StaticImage } from '@/components/Image/StaticImage'
-import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { SectionHeader } from './SectionHeader'
 
 export const Dashboard = () => {
   return (
@@ -12,35 +12,10 @@ export const Dashboard = () => {
       paddingTop={{ base: 'l', md: '3xl' }}
       paddingBottom={{ base: '2xl', md: '4xl' }}
     >
-      <Box
-        display="flex"
-        flexDirection={{ base: 'column', xl: 'row' }}
-        rowGap="2xl"
-      >
-        <Box display="flex" flex={1}>
-          <Text variant="heading-xl" as="h2" wrap="balance">
-            Know your unit economics
-          </Text>
-        </Box>
-        <Box
-          display="flex"
-          flex={1}
-          flexDirection="column"
-          rowGap="xl"
-          justifyContent="between"
-        >
-          <Box
-            borderTopWidth={4}
-            borderColor="border-primary"
-            width="3rem"
-            display={{ base: 'none', xl: 'flex' }}
-          />
-          <Text variant="heading-xs" wrap="pretty">
-            Revenue, costs & margins in one overview. The unit economics every
-            AI startup needs to scale with confidence.
-          </Text>
-        </Box>
-      </Box>
+      <SectionHeader
+        title="Know your unit economics"
+        description="Revenue, costs & margins in one overview. The unit economics every AI startup needs to scale with confidence."
+      />
       <Box
         width="100%"
         overflow="hidden"

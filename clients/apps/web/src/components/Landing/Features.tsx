@@ -5,7 +5,7 @@ import { LinkedRings } from './graphics/LinkedRings'
 import { VectorField } from './graphics/VectorField'
 import { VennCluster } from './graphics/VennCluster'
 import { WaveBars } from './graphics/WaveBars'
-import { Text } from '@polar-sh/orbit'
+import { SectionHeader } from './SectionHeader'
 
 const TILES = [
   {
@@ -48,12 +48,11 @@ const TILES = [
 
 export const Features = () => {
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-y-12 md:gap-y-16">
-      <Text variant="heading-xl">
-        Any pricing model.
-        <br />
-        Ships in an afternoon.
-      </Text>
+    <div className="flex w-full flex-col gap-y-12 md:gap-y-16">
+      <SectionHeader
+        title="Ship any pricing model in an afternoon"
+        description="Subscriptions, usage, seats, credits, trials, and discounts. Compose them however your product charges."
+      />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {TILES.map((tile) => {

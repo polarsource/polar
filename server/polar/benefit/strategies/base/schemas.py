@@ -1,11 +1,12 @@
 from datetime import datetime
 
-from pydantic import UUID4, Field, computed_field
+from pydantic import UUID4, Field, computed_field, field_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
-from polar.models.benefit import BenefitType
+from polar.kit.visibility import Visibility
+from polar.models.benefit import BenefitType, BenefitVisibility
 from polar.models.benefit_grant import BenefitGrantError
 from polar.organization.schemas import OrganizationID, OrganizationPublicBase
 
@@ -34,6 +35,10 @@ class BenefitCreateBase(MetadataInputMixin, Schema):
             "**Required unless you use an organization token.**"
         ),
     )
+    visibility: BenefitVisibility | None = Field(
+        None,
+        description="The visibility of the benefit in the customer portal.",
+    )
 
 
 class BenefitUpdateBase(MetadataInputMixin, Schema):
@@ -45,6 +50,10 @@ class BenefitUpdateBase(MetadataInputMixin, Schema):
             "The description of the benefit. "
             "Will be displayed on products having this benefit."
         ),
+    )
+    visibility: BenefitVisibility | None = Field(
+        None,
+        description="The visibility of the benefit in the customer portal.",
     )
 
 
@@ -60,6 +69,16 @@ class BenefitPublicBase(TimestampedSchema, IDSchema):
     organization_id: UUID4 = Field(
         ..., description="The ID of the organization owning the benefit."
     )
+    visibility: BenefitVisibility = Field(
+        description="The visibility of the benefit in the customer portal."
+    )
+
+    @field_validator("visibility", mode="before")
+    @classmethod
+    def default_null_visibility(cls, value: Visibility | None) -> Visibility:
+        if value is None:
+            return Visibility.public
+        return value
 
 
 class BenefitBase(MetadataOutputMixin, BenefitPublicBase): ...

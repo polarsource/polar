@@ -146,12 +146,14 @@ class BenefitService:
             organization=organization,
             is_tax_applicable=is_tax_applicable,
             properties=properties,
+            visibility=create_schema.type.resolve_visibility(create_schema.visibility),
             **create_schema.model_dump(
                 by_alias=True,
                 exclude={
                     "organization_id",
                     "is_tax_applicable",
                     "properties",
+                    "visibility",
                 },
             ),
         )
@@ -184,6 +186,21 @@ class BenefitService:
                         "loc": ("body", "type"),
                         "msg": "Benefit type cannot be changed.",
                         "input": benefit.type,
+                    }
+                ]
+            )
+
+        if (
+            benefit_update.visibility is not None
+            and not benefit.type.is_visibility_configurable()
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "visibility"),
+                        "msg": "Visibility cannot be changed for this benefit type.",
+                        "input": benefit_update.visibility,
                     }
                 ]
             )

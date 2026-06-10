@@ -179,13 +179,13 @@ auto-resolves light vs dark.
 
 **Motion** — durations (`DurationToken`) and easings (`EasingToken`) for transitions:
 
-| Duration  | Value  | Easing       | Curve                            |
-| --------- | ------ | ------------ | -------------------------------- |
-| `instant` | 0ms    | `standard`   | general-purpose, symmetric       |
-| `fast`    | 120ms  | `decelerate` | enter (fast → settle)            |
-| `base`    | 200ms  | `accelerate` | exit (settle → fast)             |
-| `slow`    | 320ms  | `spring`     | slight overshoot                 |
-| `slower`  | 480ms  |              |                                  |
+| Duration  | Value | Easing       | Curve                      |
+| --------- | ----- | ------------ | -------------------------- |
+| `instant` | 0ms   | `standard`   | general-purpose, symmetric |
+| `fast`    | 120ms | `decelerate` | enter (fast → settle)      |
+| `base`    | 200ms | `accelerate` | exit (settle → fast)       |
+| `slow`    | 320ms | `spring`     | slight overshoot           |
+| `slower`  | 480ms |              |                            |
 
 Durations are CSS variables, so motion can be globally tuned (or zeroed for reduced
 motion). Easings are compile-time constants.

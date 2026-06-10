@@ -5,6 +5,7 @@ from typing import Annotated, Literal
 
 from pydantic import AfterValidator, BaseModel, Discriminator, TypeAdapter
 
+from polar.benefit.schemas import Benefit
 from polar.kit.visibility import Visibility
 from polar.notifications.notification import (
     MaintainerAccountCreditsGrantedNotificationPayload,
@@ -56,13 +57,15 @@ class EmailTemplate(StrEnum):
 class SubscriptionEmail(SubscriptionBase): ...
 
 
+def _filter_email_benefit_list(benefits: list[Benefit]) -> list[Benefit]:
+    return [
+        benefit for benefit in benefits if benefit.visibility == Visibility.public
+    ]
+
+
 EmailBenefitList = Annotated[
     BenefitList,
-    AfterValidator(
-        lambda benefits: [
-            benefit for benefit in benefits if benefit.visibility == Visibility.public
-        ]
-    ),
+    AfterValidator(_filter_email_benefit_list),
 ]
 
 

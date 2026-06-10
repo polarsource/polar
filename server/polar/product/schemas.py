@@ -4,6 +4,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import (
     UUID4,
+    AfterValidator,
     Discriminator,
     Field,
     Tag,
@@ -860,8 +861,17 @@ class Product(MetadataOutputMixin, ProductBase):
     )
 
 
+def _filter_benefit_public_list(
+    benefits: list[BenefitPublic],
+) -> list[BenefitPublic]:
+    return [
+        benefit for benefit in benefits if benefit.visibility == Visibility.public
+    ]
+
+
 BenefitPublicList = Annotated[
     list[BenefitPublic],
+    AfterValidator(_filter_benefit_public_list),
     Field(
         title="BenefitPublic",
         description="List of benefits granted by the product.",

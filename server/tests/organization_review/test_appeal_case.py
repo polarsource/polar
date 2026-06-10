@@ -15,7 +15,9 @@ from polar.models.user import User
 from polar.organization_review.appeal_case import (
     CaseAlreadyExistsError,
     CaseLockedError,
-    appeal_case,
+)
+from polar.organization_review.appeal_case import (
+    appeal_case as appeal_case_service,
 )
 from polar.postgres import AsyncSession
 from polar.support_case.repository import (
@@ -60,7 +62,7 @@ class TestRequestHumanReview:
         denied_review: OrganizationReview,
         user: User,
     ) -> None:
-        case = await appeal_case.request_human_review(
+        case = await appeal_case_service.request_human_review(
             session,
             denied_review,
             reason="Please reconsider — here is the missing context.",
@@ -93,11 +95,11 @@ class TestRequestHumanReview:
         denied_review: OrganizationReview,
         user: User,
     ) -> None:
-        await appeal_case.request_human_review(
+        await appeal_case_service.request_human_review(
             session, denied_review, reason="first", requested_by_user_id=user.id
         )
         with pytest.raises(CaseAlreadyExistsError):
-            await appeal_case.request_human_review(
+            await appeal_case_service.request_human_review(
                 session, denied_review, reason="second", requested_by_user_id=user.id
             )
 
@@ -110,11 +112,11 @@ class TestReplyAndLock:
         denied_review: OrganizationReview,
         user: User,
     ) -> None:
-        case = await appeal_case.request_human_review(
+        case = await appeal_case_service.request_human_review(
             session, denied_review, reason="reason", requested_by_user_id=user.id
         )
 
-        await appeal_case.add_reply(
+        await appeal_case_service.add_reply(
             session,
             case,
             author_kind=SupportCaseMessageAuthorKind.merchant,
@@ -122,7 +124,7 @@ class TestReplyAndLock:
             body="some more info",
         )
 
-        await appeal_case.record_decision(
+        await appeal_case_service.record_decision(
             session, case, approved=False, staff_user_id=user.id, reason="denied again"
         )
 
@@ -130,7 +132,7 @@ class TestReplyAndLock:
         assert await message_repository.is_open(case.id) is False
 
         with pytest.raises(CaseLockedError):
-            await appeal_case.add_reply(
+            await appeal_case_service.add_reply(
                 session,
                 case,
                 author_kind=SupportCaseMessageAuthorKind.merchant,
@@ -147,10 +149,10 @@ class TestThreadAudience:
         denied_review: OrganizationReview,
         user: User,
     ) -> None:
-        case = await appeal_case.request_human_review(
+        case = await appeal_case_service.request_human_review(
             session, denied_review, reason="reason", requested_by_user_id=user.id
         )
-        await appeal_case.add_reply(
+        await appeal_case_service.add_reply(
             session,
             case,
             author_kind=SupportCaseMessageAuthorKind.platform,
@@ -159,14 +161,14 @@ class TestThreadAudience:
             internal=True,
         )
 
-        merchant_thread = await appeal_case.get_thread(
+        merchant_thread = await appeal_case_service.get_thread(
             session, denied_review, visible_to=SupportCaseAudience.merchant
         )
         assert merchant_thread is not None
         _case, _is_open, merchant_messages = merchant_thread
         assert "internal staff note" not in [m.body for m in merchant_messages]
 
-        full_thread = await appeal_case.get_thread(
+        full_thread = await appeal_case_service.get_thread(
             session, denied_review, visible_to=None
         )
         assert full_thread is not None

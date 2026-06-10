@@ -20,7 +20,12 @@ from polar.models.support_case import (
 )
 from polar.models.user import User
 from polar.organization.service import organization as organization_service
-from polar.organization_review.appeal_case import CaseLockedError, appeal_case
+from polar.organization_review.appeal_case import (
+    CaseLockedError,
+)
+from polar.organization_review.appeal_case import (
+    appeal_case as appeal_case_service,
+)
 from polar.postgres import AsyncSession
 from polar.support_case.repository import SupportCaseMessageRepository
 from tests.fixtures.database import SaveFixture
@@ -57,7 +62,7 @@ async def denied_review_with_case(
     )
     await save_fixture(review)
 
-    case = await appeal_case.request_human_review(
+    case = await appeal_case_service.request_human_review(
         session, review, reason=REASON, requested_by_user_id=user.id
     )
     return organization, review, case
@@ -79,7 +84,7 @@ class TestApproveDecision:
         await organization_service.backoffice_approve(
             session, organization, reason="Looks legitimate after human review."
         )
-        await appeal_case.record_decision(
+        await appeal_case_service.record_decision(
             session,
             case,
             approved=True,
@@ -128,7 +133,7 @@ class TestDenyDecision:
         organization, review, case = denied_review_with_case
 
         # What appeal_case_deny_dialog does on POST (org needs no status change).
-        await appeal_case.record_decision(
+        await appeal_case_service.record_decision(
             session,
             case,
             approved=False,
@@ -158,13 +163,13 @@ class TestDenyDecision:
     ) -> None:
         _organization, _review, case = denied_review_with_case
 
-        await appeal_case.record_decision(
+        await appeal_case_service.record_decision(
             session, case, approved=False, staff_user_id=user.id, reason="final"
         )
 
         # A second decision must fail once the case is locked. (Reply-after-lock
         # is covered by test_appeal_case.py::TestReplyAndLock.)
         with pytest.raises(CaseLockedError):
-            await appeal_case.record_decision(
+            await appeal_case_service.record_decision(
                 session, case, approved=True, staff_user_id=user.id, reason="oops"
             )

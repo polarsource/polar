@@ -55,7 +55,12 @@ from polar.openapi import APITag
 from polar.organization.repository import (
     OrganizationReviewRepository,
 )
-from polar.organization_review.appeal_case import AppealCaseError, appeal_case
+from polar.organization_review.appeal_case import (
+    AppealCaseError,
+)
+from polar.organization_review.appeal_case import (
+    appeal_case as appeal_case_service,
+)
 from polar.payout_account.repository import PayoutAccountRepository
 from polar.postgres import (
     AsyncReadSession,
@@ -720,7 +725,7 @@ async def request_human_review(
         raise ResourceNotFound()
 
     try:
-        case = await appeal_case.request_human_review(
+        case = await appeal_case_service.request_human_review(
             session,
             review,
             reason=request.reason,
@@ -767,7 +772,7 @@ async def get_appeal_case(
     if review is None:
         raise ResourceNotFound()
 
-    thread = await appeal_case.get_thread(
+    thread = await appeal_case_service.get_thread(
         session, review, visible_to=SupportCaseAudience.merchant
     )
     if thread is None:
@@ -809,12 +814,12 @@ async def reply_to_appeal_case(
     if review is None:
         raise ResourceNotFound()
 
-    case = await appeal_case.get_case(session, review)
+    case = await appeal_case_service.get_case(session, review)
     if case is None:
         raise ResourceNotFound()
 
     try:
-        posted = await appeal_case.add_reply(
+        posted = await appeal_case_service.add_reply(
             session,
             case,
             author_kind=SupportCaseMessageAuthorKind.merchant,

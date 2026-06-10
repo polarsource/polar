@@ -7,7 +7,7 @@ from polar.models.organization import Organization
 from polar.models.support_case import SupportCaseMessageAuthorKind
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
-from polar.organization_review.appeal_case import appeal_case
+from polar.organization_review.appeal_case import appeal_case as appeal_case_service
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 
@@ -86,7 +86,7 @@ class TestRequestHumanReview:
         user: User,
         user_organization: UserOrganization,
     ) -> None:
-        await appeal_case.request_human_review(
+        await appeal_case_service.request_human_review(
             session, denied_review, reason=REASON, requested_by_user_id=user.id
         )
         await session.flush()
@@ -120,7 +120,7 @@ class TestGetAppealCase:
         user: User,
         user_organization: UserOrganization,
     ) -> None:
-        await appeal_case.request_human_review(
+        await appeal_case_service.request_human_review(
             session, denied_review, reason=REASON, requested_by_user_id=user.id
         )
         await session.flush()
@@ -140,10 +140,10 @@ class TestGetAppealCase:
         user: User,
         user_organization: UserOrganization,
     ) -> None:
-        case = await appeal_case.request_human_review(
+        case = await appeal_case_service.request_human_review(
             session, denied_review, reason=REASON, requested_by_user_id=user.id
         )
-        await appeal_case.add_reply(
+        await appeal_case_service.add_reply(
             session,
             case,
             author_kind=SupportCaseMessageAuthorKind.platform,
@@ -171,7 +171,7 @@ class TestReplyToAppealCase:
         user: User,
         user_organization: UserOrganization,
     ) -> None:
-        await appeal_case.request_human_review(
+        await appeal_case_service.request_human_review(
             session, denied_review, reason=REASON, requested_by_user_id=user.id
         )
         await session.flush()
@@ -192,10 +192,10 @@ class TestReplyToAppealCase:
         user: User,
         user_organization: UserOrganization,
     ) -> None:
-        case = await appeal_case.request_human_review(
+        case = await appeal_case_service.request_human_review(
             session, denied_review, reason=REASON, requested_by_user_id=user.id
         )
-        await appeal_case.record_decision(
+        await appeal_case_service.record_decision(
             session, case, approved=False, staff_user_id=user.id, reason="final"
         )
         await session.flush()

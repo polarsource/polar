@@ -7808,6 +7808,8 @@ export interface components {
       visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitCustomProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitCustomCreate
@@ -7921,6 +7923,8 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitCustomSubscriberProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitCustomSubscriberProperties
@@ -8097,6 +8101,8 @@ export interface components {
       visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitDiscordProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /** BenefitDiscordCreate */
     BenefitDiscordCreate: {
@@ -8232,6 +8238,8 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitDiscordSubscriberProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitDiscordSubscriberProperties
@@ -8333,6 +8341,8 @@ export interface components {
       visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitDownloadablesProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /** BenefitDownloadablesCreate */
     BenefitDownloadablesCreate: {
@@ -8448,6 +8458,8 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitDownloadablesSubscriberProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /** BenefitDownloadablesSubscriberProperties */
     BenefitDownloadablesSubscriberProperties: {
@@ -8549,6 +8561,8 @@ export interface components {
       visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitFeatureFlagProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitFeatureFlagCreate
@@ -8656,6 +8670,8 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitFeatureFlagSubscriberProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitFeatureFlagSubscriberProperties
@@ -8754,6 +8770,8 @@ export interface components {
       visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitGitHubRepositoryProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /** BenefitGitHubRepositoryCreate */
     BenefitGitHubRepositoryCreate: {
@@ -8896,6 +8914,8 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitGitHubRepositorySubscriberProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitGitHubRepositorySubscriberProperties
@@ -9808,6 +9828,8 @@ export interface components {
       visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitLicenseKeysProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /** BenefitLicenseKeysCreate */
     BenefitLicenseKeysCreate: {
@@ -9928,6 +9950,8 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitLicenseKeysSubscriberProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /** BenefitLicenseKeysSubscriberProperties */
     BenefitLicenseKeysSubscriberProperties: {
@@ -10036,6 +10060,8 @@ export interface components {
       visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitMeterCreditProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitMeterCreditCreate
@@ -10163,6 +10189,8 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitMeterCreditSubscriberProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitMeterCreditSubscriberProperties
@@ -10263,6 +10291,8 @@ export interface components {
       organization_id: string
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitRevokedEvent

@@ -23,6 +23,7 @@ from polar.benefit.strategies.discord.schemas import BenefitDiscordUpdate
 from polar.benefit.strategies.feature_flag.schemas import (
     BenefitFeatureFlagCreate,
     BenefitFeatureFlagCreateProperties,
+    BenefitFeatureFlagUpdate,
 )
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
@@ -546,6 +547,43 @@ class TestUpdate:
         )
 
         assert updated_benefit.visibility == Visibility.private
+
+    @pytest.mark.auth
+    async def test_allows_visibility_update_for_feature_flag(
+        self,
+        mocker: MockerFixture,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch.object(
+            benefit_grant_service,
+            "enqueue_benefit_grant_updates",
+            spec=BenefitGrantService.enqueue_benefit_grant_updates,
+        )
+
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.feature_flag,
+            properties={},
+        )
+        benefit.visibility = Visibility.private
+        await save_fixture(benefit)
+
+        update_schema = BenefitFeatureFlagUpdate(
+            type=BenefitType.feature_flag,
+            visibility=Visibility.public,
+        )
+
+        updated_benefit = await benefit_service.update(
+            session, redis, benefit, update_schema, auth_subject
+        )
+
+        assert updated_benefit.visibility == Visibility.public
 
 
 @pytest.mark.asyncio

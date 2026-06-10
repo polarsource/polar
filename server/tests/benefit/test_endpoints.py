@@ -15,6 +15,7 @@ from polar.models import (
     Subscription,
     UserOrganization,
 )
+from polar.kit.visibility import Visibility
 from polar.models.benefit import BenefitType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -332,6 +333,29 @@ class TestCreateBenefit:
         assert "properties" in json
 
     @pytest.mark.auth
+    async def test_feature_flag_defaults_to_private(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/benefits/",
+            json={
+                "type": "feature_flag",
+                "description": "Feature flag",
+                "properties": {},
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["visibility"] == Visibility.private
+        assert json["visibility_configurable"] is True
+
+    @pytest.mark.auth
     async def test_custom_respects_private_visibility(
         self,
         client: AsyncClient,
@@ -353,6 +377,7 @@ class TestCreateBenefit:
 
         json = response.json()
         assert json["visibility"] == Visibility.private
+        assert json["visibility_configurable"] is True
 
 
 @pytest.mark.asyncio
@@ -503,6 +528,26 @@ class TestUpdateBenefit:
         )
 
         assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_allows_visibility_update_for_custom_benefit(
+        self,
+        client: AsyncClient,
+        benefit_organization: Benefit,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/benefits/{benefit_organization.id}",
+            json={
+                "type": benefit_organization.type,
+                "visibility": Visibility.private,
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["visibility"] == Visibility.private
 
 
 @pytest.mark.asyncio

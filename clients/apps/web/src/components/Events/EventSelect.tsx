@@ -23,14 +23,14 @@ const EventSelect: React.FC<
       <SelectTrigger className={className}>
         <div className="flex flex-row items-center gap-x-2">
           <ShortTextOutlined fontSize="inherit" />
-          <SelectValue placeholder="Select an event" />
+          <SelectValue placeholder="Select an event" translate="no" />
         </div>
       </SelectTrigger>
-      <SelectContent>
-        {allOption && <SelectItem value="all">All Events</SelectItem>}
+      <SelectContent translate="no">
+        {allOption && <SelectItem value="all"><div>All Events</div></SelectItem>}
         {eventNames.map((eventName) => (
           <SelectItem key={eventName.name} value={eventName.name}>
-            {eventName.name}
+            <div>{eventName.name}</div>
           </SelectItem>
         ))}
       </SelectContent>

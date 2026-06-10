@@ -454,24 +454,32 @@ export const ProductPricingSection = ({
                             disabled={update}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Select a billing cycle" />
+                              <SelectValue placeholder="Select a billing cycle" translate="no" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent translate="no">
                               <SelectItem value="day">
-                                day
-                                {recurringIntervalCount !== 1 ? 's' : ''}
+                                <div>
+                                  day
+                                  {recurringIntervalCount !== 1 ? 's' : ''}
+                                </div>
                               </SelectItem>
                               <SelectItem value="week">
-                                week
-                                {recurringIntervalCount !== 1 ? 's' : ''}
+                                <div>
+                                  week
+                                  {recurringIntervalCount !== 1 ? 's' : ''}
+                                </div>
                               </SelectItem>
                               <SelectItem value="month">
-                                month
-                                {recurringIntervalCount !== 1 ? 's' : ''}
+                                <div>
+                                  month
+                                  {recurringIntervalCount !== 1 ? 's' : ''}
+                                </div>
                               </SelectItem>
                               <SelectItem value="year">
-                                year
-                                {recurringIntervalCount !== 1 ? 's' : ''}
+                                <div>
+                                  year
+                                  {recurringIntervalCount !== 1 ? 's' : ''}
+                                </div>
                               </SelectItem>
                             </SelectContent>
                           </Select>

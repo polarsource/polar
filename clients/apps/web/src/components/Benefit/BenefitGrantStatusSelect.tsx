@@ -35,9 +35,9 @@ const BenefitGrantStatusSelect: React.FC<BenefitGrantStatusSelectProps> = ({
       onValueChange={(v) => onChange(v as BenefitGrantStatusFilter)}
     >
       <SelectTrigger>
-        <SelectValue placeholder="Select a status" />
+        <SelectValue placeholder="Select a status" translate="no" />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent translate="no">
         <SelectItem value="any">
           <span className="whitespace-nowrap">Any status</span>
         </SelectItem>
@@ -46,7 +46,7 @@ const BenefitGrantStatusSelect: React.FC<BenefitGrantStatusSelectProps> = ({
           <React.Fragment key={status}>
             <SelectGroup>
               <SelectItem value={status}>
-                {benefitGrantStatusDisplayNames[status]}
+                <div>{benefitGrantStatusDisplayNames[status]}</div>
               </SelectItem>
             </SelectGroup>
           </React.Fragment>

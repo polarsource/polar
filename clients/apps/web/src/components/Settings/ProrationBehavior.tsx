@@ -34,7 +34,7 @@ export const ProrationBehavior: React.FC<ProrationBehaviorProps> = ({
   return (
     <Select {...props} value={value} onValueChange={onValueChange}>
       <SelectTrigger>{PRORATION_BEHAVIOR_LABELS[value]}</SelectTrigger>
-      <SelectContent>
+      <SelectContent translate="no">
         {Object.entries(PRORATION_BEHAVIOR_LABELS)
           .filter(
             ([key]) =>
@@ -43,7 +43,7 @@ export const ProrationBehavior: React.FC<ProrationBehaviorProps> = ({
           )
           .map(([key, label]) => (
             <SelectItem value={key} key={key}>
-              {label}
+              <div>{label}</div>
             </SelectItem>
           ))}
       </SelectContent>

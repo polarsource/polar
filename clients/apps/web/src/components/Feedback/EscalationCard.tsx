@@ -72,12 +72,12 @@ export const EscalationCard = ({
           disabled={isSubmitting}
         >
           <SelectTrigger className="w-auto">
-            <SelectValue />
+            <SelectValue translate="no" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent translate="no">
             {TYPE_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
-                {option.label}
+                <div>{option.label}</div>
               </SelectItem>
             ))}
           </SelectContent>

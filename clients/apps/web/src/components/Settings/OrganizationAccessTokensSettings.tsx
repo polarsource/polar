@@ -82,12 +82,14 @@ export const AccessTokenForm = ({ update }: { update?: boolean }) => {
                   defaultValue={field.value || ''}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select lifetime of token" />
+                    <SelectValue placeholder="Select lifetime of token" translate="no" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent translate="no">
                     {[1, 7, 30, 90, 180, 365].map((days) => (
                       <SelectItem key={days} value={`P${days}D`}>
-                        {days} day{days > 1 ? 's' : ''}
+                        <div>
+                          {days} day{days > 1 ? 's' : ''}
+                        </div>
                       </SelectItem>
                     ))}
                     <SelectItem value="no-expiration">

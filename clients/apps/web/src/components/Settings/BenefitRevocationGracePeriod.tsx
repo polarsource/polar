@@ -29,11 +29,11 @@ export const BenefitRevocationGracePeriod: React.FC<
       <SelectTrigger>
         {BENEFIT_REVOCATION_GRACE_PERIOD_LABELS[value]}
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent translate="no">
         {Object.entries(BENEFIT_REVOCATION_GRACE_PERIOD_LABELS).map(
           ([key, label]) => (
             <SelectItem value={String(key)} key={key}>
-              {label}
+              <div>{label}</div>
             </SelectItem>
           ),
         )}

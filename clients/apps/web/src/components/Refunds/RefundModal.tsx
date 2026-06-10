@@ -175,13 +175,13 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
                       onValueChange={field.onChange}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select Reason" />
+                        <SelectValue placeholder="Select Reason" translate="no" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent translate="no">
                         {Object.values(enums.refundReasonValues).map(
                           (reason) => (
                             <SelectItem key={reason} value={reason}>
-                              {RefundReasonDisplay[reason]}
+                              <div>{RefundReasonDisplay[reason]}</div>
                             </SelectItem>
                           ),
                         )}

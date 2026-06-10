@@ -145,16 +145,18 @@ const MeterFilterInput = ({
                             defaultValue={field.value || undefined}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Select operator" />
+                              <SelectValue placeholder="Select operator" translate="no" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent translate="no">
                               {allowedOperators.map((operator) => (
                                 <SelectItem key={operator} value={operator}>
-                                  {
-                                    OPERATOR_DISPLAY_NAMES[
-                                      operator as schemas['FilterOperator']
-                                    ]
-                                  }
+                                  <div>
+                                    {
+                                      OPERATOR_DISPLAY_NAMES[
+                                        operator as schemas['FilterOperator']
+                                      ]
+                                    }
+                                  </div>
                                 </SelectItem>
                               ))}
                             </SelectContent>

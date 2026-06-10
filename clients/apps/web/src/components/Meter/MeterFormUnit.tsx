@@ -62,12 +62,12 @@ const MeterFormUnit = () => {
                 onValueChange={field.onChange}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a unit" />
+                  <SelectValue placeholder="Select a unit" translate="no" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent translate="no">
                   {enums.meterUnitValues.map((u) => (
                     <SelectItem key={u} value={u}>
-                      {METER_UNIT_DISPLAY_NAMES[u]}
+                      <div>{METER_UNIT_DISPLAY_NAMES[u]}</div>
                     </SelectItem>
                   ))}
                 </SelectContent>

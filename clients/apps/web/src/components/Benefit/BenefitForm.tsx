@@ -306,9 +306,9 @@ const DiscordBenefitForm = () => {
                       defaultValue={field.value}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Role to grant to your subscribers" />
+                        <SelectValue placeholder="Role to grant to your subscribers" translate="no" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent translate="no">
                         <SelectGroup>
                           {polarBotRolePosition &&
                             discordGuild.roles.map((role, index) =>
@@ -410,12 +410,12 @@ const BenefitTypeSelect = () => {
             <FormControl>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a benefit type" />
+                  <SelectValue placeholder="Select a benefit type" translate="no" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent translate="no">
                   {enums.benefitTypeValues.map((value) => (
                     <SelectItem key={value} value={value}>
-                      {benefitsDisplayNames[value]}
+                      <div>{benefitsDisplayNames[value]}</div>
                     </SelectItem>
                   ))}
                 </SelectContent>

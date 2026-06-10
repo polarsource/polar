@@ -298,13 +298,13 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
                       disabled={update}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select duration" />
+                        <SelectValue placeholder="Select duration" translate="no" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="once">Once</SelectItem>
-                        <SelectItem value="forever">Forever</SelectItem>
+                      <SelectContent translate="no">
+                        <SelectItem value="once"><div>Once</div></SelectItem>
+                        <SelectItem value="forever"><div>Forever</div></SelectItem>
                         <SelectItem value="repeating">
-                          For several months
+                          <div>For several months</div>
                         </SelectItem>
                       </SelectContent>
                     </Select>

@@ -268,9 +268,9 @@ export const GitHubRepositoryBenefitForm = ({
                   <FormControl>
                     <Select disabled={true}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Loading repositories" />
+                        <SelectValue placeholder="Loading repositories" translate="no" />
                       </SelectTrigger>
-                      <SelectContent />
+                      <SelectContent translate="no" />
                     </Select>
                   </FormControl>
                 ) : (
@@ -408,22 +408,24 @@ export const GitHubRepositoryBenefitForm = ({
                   defaultValue={field.value}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="The role to grant the user" />
+                    <SelectValue placeholder="The role to grant the user" translate="no" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent translate="no">
                     {Object.values(
                       enums.benefitGitHubRepositoryPropertiesPermissionValues,
                     ).map((permission) => (
                       <SelectItem key={permission} value={permission}>
-                        {
+                        <div>
                           {
-                            pull: 'Read',
-                            triage: 'Triage',
-                            push: 'Write',
-                            maintain: 'Maintain',
-                            admin: 'Admin',
-                          }[permission]
-                        }
+                            {
+                              pull: 'Read',
+                              triage: 'Triage',
+                              push: 'Write',
+                              maintain: 'Maintain',
+                              admin: 'Admin',
+                            }[permission]
+                          }
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>

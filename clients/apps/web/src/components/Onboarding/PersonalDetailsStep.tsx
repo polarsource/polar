@@ -326,12 +326,12 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
                         <SelectTrigger
                           onKeyDown={(e) => handleMonthDigit(e, field.onChange)}
                         >
-                          <SelectValue placeholder="Month" />
+                          <SelectValue placeholder="Month" translate="no" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent translate="no">
                           {months.map((m) => (
                             <SelectItem key={m.value} value={m.value}>
-                              {m.label}
+                              <div>{m.label}</div>
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -353,12 +353,12 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
                         onValueChange={field.onChange}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Day" />
+                          <SelectValue placeholder="Day" translate="no" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent translate="no">
                           {days.map((d) => (
                             <SelectItem key={d} value={d}>
-                              {d}
+                              <div>{d}</div>
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -380,12 +380,12 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
                         onValueChange={field.onChange}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Year" />
+                          <SelectValue placeholder="Year" translate="no" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent translate="no">
                           {years.map((y) => (
                             <SelectItem key={y} value={y}>
-                              {y}
+                              <div>{y}</div>
                             </SelectItem>
                           ))}
                         </SelectContent>

@@ -239,19 +239,19 @@ const BenefitGrantOAuth = ({
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={selectPlaceholder} />
+                  <SelectValue placeholder={selectPlaceholder} translate="no" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent translate="no">
                   {accounts.map((account) => (
                     <SelectItem
                       key={account.account_id}
                       value={account.account_id}
                     >
-                      {account.account_username}
+                      <div>{account.account_username}</div>
                     </SelectItem>
                   ))}
                   <SelectItem value="add">
-                    {t('checkout.benefits.connectNewAccount')}
+                    <div>{t('checkout.benefits.connectNewAccount')}</div>
                   </SelectItem>
                 </SelectContent>
               </Select>

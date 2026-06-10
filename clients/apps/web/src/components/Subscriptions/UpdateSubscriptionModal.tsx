@@ -165,9 +165,9 @@ const UpdateProduct = ({
                       defaultValue={field.value || undefined}
                     >
                       <SelectTrigger className="h-14">
-                        <SelectValue placeholder="Select a new product" />
+                        <SelectValue placeholder="Select a new product" translate="no" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent translate="no">
                         {products.map((product) => (
                           <SelectItem key={product.id} value={product.id}>
                             <div className="flex flex-row items-center justify-between gap-1">

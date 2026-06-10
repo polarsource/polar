@@ -102,11 +102,15 @@ export function ChangeRoleModal({
         onValueChange={(value) => setRole(value as AssignableRole)}
       >
         <SelectTrigger>
-          <SelectValue />
+          <SelectValue translate="no" />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="admin">Admin</SelectItem>
-          <SelectItem value="member">Member</SelectItem>
+        <SelectContent translate="no">
+          <SelectItem value="admin">
+            <div>Admin</div>
+          </SelectItem>
+          <SelectItem value="member">
+            <div>Member</div>
+          </SelectItem>
         </SelectContent>
       </Select>
       {orderedRoles.length > 0 && (

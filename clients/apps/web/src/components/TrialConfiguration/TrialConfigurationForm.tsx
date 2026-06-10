@@ -126,12 +126,12 @@ export const TrialConfigurationForm = ({
                         value={field.value || ''}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select an interval" />
+                          <SelectValue placeholder="Select an interval" translate="no" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent translate="no">
                           {enums.trialIntervalValues.map((value) => (
                             <SelectItem key={value} value={value}>
-                              {intervalDisplayNames[value]}
+                              <div>{intervalDisplayNames[value]}</div>
                             </SelectItem>
                           ))}
                         </SelectContent>

@@ -50,12 +50,18 @@ export const WebhookFilter: React.FC<WebhookFilterProps> = ({
         }}
       >
         <SelectTrigger className="w-auto min-w-32">
-          <SelectValue placeholder="Status" />
+          <SelectValue placeholder="Status" translate="no" />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Statuses</SelectItem>
-          <SelectItem value="true">Succeeded</SelectItem>
-          <SelectItem value="false">Failed</SelectItem>
+        <SelectContent translate="no">
+          <SelectItem value="all">
+            <div>All Statuses</div>
+          </SelectItem>
+          <SelectItem value="true">
+            <div>Succeeded</div>
+          </SelectItem>
+          <SelectItem value="false">
+            <div>Failed</div>
+          </SelectItem>
         </SelectContent>
       </Select>
 
@@ -66,14 +72,24 @@ export const WebhookFilter: React.FC<WebhookFilterProps> = ({
         }}
       >
         <SelectTrigger className="w-auto min-w-32">
-          <SelectValue placeholder="HTTP Status" />
+          <SelectValue placeholder="HTTP Status" translate="no" />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All HTTP Responses</SelectItem>
-          <SelectItem value="2xx">2xx Success</SelectItem>
-          <SelectItem value="3xx">3xx Redirect</SelectItem>
-          <SelectItem value="4xx">4xx Client Error</SelectItem>
-          <SelectItem value="5xx">5xx Server Error</SelectItem>
+        <SelectContent translate="no">
+          <SelectItem value="all">
+            <div>All HTTP Responses</div>
+          </SelectItem>
+          <SelectItem value="2xx">
+            <div>2xx Success</div>
+          </SelectItem>
+          <SelectItem value="3xx">
+            <div>3xx Redirect</div>
+          </SelectItem>
+          <SelectItem value="4xx">
+            <div>4xx Client Error</div>
+          </SelectItem>
+          <SelectItem value="5xx">
+            <div>5xx Server Error</div>
+          </SelectItem>
         </SelectContent>
       </Select>
 

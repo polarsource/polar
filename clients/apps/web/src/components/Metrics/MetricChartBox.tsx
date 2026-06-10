@@ -221,13 +221,13 @@ const MetricChartBox = ({
             <div className="flex flex-row items-center gap-x-2">
               <Select value={metric} onValueChange={onMetricChange}>
                 <SelectTrigger className="dark:hover:bg-polar-700 -mt-2 -ml-3 h-fit w-fit rounded-lg border-0 border-none bg-transparent px-3 py-2 shadow-none ring-0 transition-colors hover:bg-gray-200 focus-visible:ring-0 focus-visible:ring-offset-0">
-                  <SelectValue placeholder="Select a metric" />
+                  <SelectValue placeholder="Select a metric" translate="no" />
                 </SelectTrigger>
-                <SelectContent className="dark:bg-polar-800 dark:ring-polar-700 ring-1 ring-gray-200">
+                <SelectContent className="dark:bg-polar-800 dark:ring-polar-700 ring-1 ring-gray-200" translate="no">
                   {availableMetrics
                     ? availableMetrics.map((m) => (
                         <SelectItem key={m.slug} value={m.slug}>
-                          {m.display_name}
+                          <div>{m.display_name}</div>
                         </SelectItem>
                       ))
                     : data &&
@@ -238,7 +238,7 @@ const MetricChartBox = ({
                         )
                         .map((m) => (
                           <SelectItem key={m.slug} value={m.slug}>
-                            {m.display_name}
+                            <div>{m.display_name}</div>
                           </SelectItem>
                         ))}
                 </SelectContent>

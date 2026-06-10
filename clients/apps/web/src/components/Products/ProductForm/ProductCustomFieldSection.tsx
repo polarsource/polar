@@ -145,9 +145,9 @@ export const ProductCustomFieldSection = ({
             onValueChange={onSelectField}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select a field" />
+              <SelectValue placeholder="Select a field" translate="no" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent translate="no">
               {customFields?.items
                 .filter(({ id }) => !attachedCustomFieldsMap[id])
                 .map((customField) => (

@@ -289,9 +289,9 @@ const CustomFieldForm: React.FC<CustomFieldFormBaseProps> = ({ update }) => {
               <FormLabel>Type</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a type" />
+                  <SelectValue placeholder="Select a type" translate="no" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent translate="no">
                   {Object.values(enums.customFieldTypeValues).map((type) => (
                     <SelectItem key={type} value={type} textValue={type}>
                       <CustomFieldTypeLabel type={type} />

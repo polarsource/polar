@@ -154,12 +154,18 @@ export const FieldFormat = () => {
               onValueChange={field.onChange}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select a payload format" />
+                <SelectValue placeholder="Select a payload format" translate="no" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="raw">Raw</SelectItem>
-                <SelectItem value="discord">Discord</SelectItem>
-                <SelectItem value="slack">Slack</SelectItem>
+              <SelectContent translate="no">
+                <SelectItem value="raw">
+                  <div>Raw</div>
+                </SelectItem>
+                <SelectItem value="discord">
+                  <div>Discord</div>
+                </SelectItem>
+                <SelectItem value="slack">
+                  <div>Slack</div>
+                </SelectItem>
               </SelectContent>
             </Select>
           </FormControl>

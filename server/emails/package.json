@@ -27,12 +27,12 @@
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
     "@yao-pkg/pkg": "^6.20.0",
-    "eslint": "^10.4.0",
+    "eslint": "^10.4.1",
     "openapi-typescript": "^7.13.0",
-    "oxfmt": "^0.52.0",
+    "oxfmt": "^0.53.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.60.0"
+    "typescript-eslint": "^8.60.1"
   },
   "pkg": {
     "targets": [

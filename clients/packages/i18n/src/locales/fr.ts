@@ -108,6 +108,7 @@ export default {
         },
       },
       inclTax: 'TVA (incluse)',
+      basePrice: 'Prix de base',
     },
     trial: {
       ends: "L'essai se termine le {endDate}",

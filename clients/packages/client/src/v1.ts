@@ -10568,6 +10568,28 @@ export interface components {
        */
       last4: string
     }
+    /** CaseAlreadyExistsError */
+    CaseAlreadyExistsError: {
+      /**
+       * Error
+       * @example CaseAlreadyExistsError
+       * @constant
+       */
+      error: 'CaseAlreadyExistsError'
+      /** Detail */
+      detail: string
+    }
+    /** CaseClosedError */
+    CaseClosedError: {
+      /**
+       * Error
+       * @example CaseClosedError
+       * @constant
+       */
+      error: 'CaseClosedError'
+      /** Detail */
+      detail: string
+    }
     /**
      * Checkout
      * @description Checkout session data retrieved using an access token.
@@ -35098,6 +35120,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description A human-review case already exists for this review. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CaseAlreadyExistsError']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -35180,6 +35211,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The case is closed. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CaseClosedError']
         }
       }
       /** @description Validation Error */

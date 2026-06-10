@@ -19,12 +19,6 @@ from polar.support_case.repository import (
 )
 from polar.support_case.service import support_case as support_case_service
 
-# A final decision locks the case: no more replies, no reopen.
-_FINAL_ACTION_TYPES = (
-    SupportCaseMessageType.appeal_approved,
-    SupportCaseMessageType.appeal_denied,
-)
-
 
 class AppealCaseError(PolarError): ...
 
@@ -32,13 +26,14 @@ class AppealCaseError(PolarError): ...
 class CaseAlreadyExistsError(AppealCaseError):
     def __init__(self, organization_review_id: UUID) -> None:
         super().__init__(
-            f"Review {organization_review_id} already has a human-review case."
+            f"Review {organization_review_id} already has a human-review case.",
+            409,
         )
 
 
-class CaseLockedError(AppealCaseError):
+class CaseClosedError(AppealCaseError):
     def __init__(self, case_id: UUID) -> None:
-        super().__init__(f"Case {case_id} is locked: a final decision was recorded.")
+        super().__init__(f"Case {case_id} is closed.", 409)
 
 
 class AppealCaseService:
@@ -87,7 +82,7 @@ class AppealCaseService:
         body: str,
         internal: bool = False,
     ) -> SupportCaseMessage:
-        await self._assert_not_locked(session, case)
+        await self._assert_open(session, case)
         return await support_case_service.post_message(
             session,
             case,
@@ -106,7 +101,7 @@ class AppealCaseService:
         staff_user: User,
         reason: str | None = None,
     ) -> SupportCaseMessage:
-        await self._assert_not_locked(session, case)
+        await self._assert_open(session, case)
         message = await support_case_service.post_message(
             session,
             case,
@@ -154,12 +149,12 @@ class AppealCaseService:
         messages = await message_repository.list_by_case(case.id, visible_to=visible_to)
         return case, is_open, messages
 
-    async def _assert_not_locked(
+    async def _assert_open(
         self, session: AsyncSession, case: ReviewAppealSupportCase
     ) -> None:
         repository = SupportCaseMessageRepository.from_session(session)
-        if await repository.has_message_of_type(case.id, _FINAL_ACTION_TYPES):
-            raise CaseLockedError(case.id)
+        if not await repository.is_open(case.id):
+            raise CaseClosedError(case.id)
 
 
 appeal_case = AppealCaseService()

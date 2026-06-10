@@ -56,7 +56,8 @@ from polar.organization.repository import (
     OrganizationReviewRepository,
 )
 from polar.organization_review.appeal_case import (
-    AppealCaseError,
+    CaseAlreadyExistsError,
+    CaseClosedError,
 )
 from polar.organization_review.appeal_case import (
     appeal_case as appeal_case_service,
@@ -710,6 +711,10 @@ async def submit_appeal(
     responses={
         200: {"description": "Human review case opened."},
         404: SupportCaseNotFound,
+        409: {
+            "description": "A human-review case already exists for this review.",
+            "model": CaseAlreadyExistsError.schema(),
+        },
     },
     tags=[APITag.private],
 )
@@ -724,25 +729,13 @@ async def request_human_review(
     if review is None:
         raise ResourceNotFound()
 
-    try:
-        case = await appeal_case_service.request_human_review(
-            session,
-            review,
-            organization=authz.organization,
-            reason=request.reason,
-            requested_by_user=authz.auth_subject.subject,
-        )
-    except AppealCaseError as e:
-        raise PolarRequestValidationError(
-            [
-                {
-                    "type": "value_error",
-                    "loc": ("body", "reason"),
-                    "msg": e.args[0],
-                    "input": request.reason,
-                }
-            ]
-        )
+    case = await appeal_case_service.request_human_review(
+        session,
+        review,
+        organization=authz.organization,
+        reason=request.reason,
+        requested_by_user=authz.auth_subject.subject,
+    )
 
     return SupportCaseSchema(
         id=case.id,
@@ -801,6 +794,10 @@ async def get_appeal_case(
     responses={
         200: {"description": "Reply posted."},
         404: SupportCaseNotFound,
+        409: {
+            "description": "The case is closed.",
+            "model": CaseClosedError.schema(),
+        },
     },
     tags=[APITag.private],
 )
@@ -819,25 +816,13 @@ async def reply_to_appeal_case(
     if case is None:
         raise ResourceNotFound()
 
-    try:
-        posted = await appeal_case_service.add_reply(
-            session,
-            case,
-            author_kind=SupportCaseMessageAuthorKind.merchant,
-            author_user=authz.auth_subject.subject,
-            body=message.body,
-        )
-    except AppealCaseError as e:
-        raise PolarRequestValidationError(
-            [
-                {
-                    "type": "value_error",
-                    "loc": ("body", "body"),
-                    "msg": e.args[0],
-                    "input": message.body,
-                }
-            ]
-        )
+    posted = await appeal_case_service.add_reply(
+        session,
+        case,
+        author_kind=SupportCaseMessageAuthorKind.merchant,
+        author_user=authz.auth_subject.subject,
+        body=message.body,
+    )
 
     return SupportCaseMessageSchema.model_validate(posted)
 

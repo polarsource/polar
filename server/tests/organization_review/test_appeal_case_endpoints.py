@@ -98,7 +98,7 @@ class TestRequestHumanReview:
             f"/v1/organizations/{organization.id}/appeal/human-review",
             json={"reason": REASON},
         )
-        assert response.status_code == 422
+        assert response.status_code == 409
 
 
 @pytest.mark.asyncio
@@ -223,4 +223,4 @@ class TestReplyToAppealCase:
             f"/v1/organizations/{organization.id}/appeal/case/messages",
             json={"body": "please reconsider again"},
         )
-        assert response.status_code == 422
+        assert response.status_code == 409

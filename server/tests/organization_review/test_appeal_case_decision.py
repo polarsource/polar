@@ -21,7 +21,7 @@ from polar.models.support_case import (
 from polar.models.user import User
 from polar.organization.service import organization as organization_service
 from polar.organization_review.appeal_case import (
-    CaseLockedError,
+    CaseClosedError,
 )
 from polar.organization_review.appeal_case import (
     appeal_case as appeal_case_service,
@@ -173,7 +173,7 @@ class TestDenyDecision:
 
         # A second decision must fail once the case is locked. (Reply-after-lock
         # is covered by test_appeal_case.py::TestReplyAndLock.)
-        with pytest.raises(CaseLockedError):
+        with pytest.raises(CaseClosedError):
             await appeal_case_service.record_decision(
                 session, case, approved=True, staff_user=user, reason="oops"
             )

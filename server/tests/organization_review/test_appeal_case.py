@@ -14,7 +14,7 @@ from polar.models.support_case import (
 from polar.models.user import User
 from polar.organization_review.appeal_case import (
     CaseAlreadyExistsError,
-    CaseLockedError,
+    CaseClosedError,
 )
 from polar.organization_review.appeal_case import (
     appeal_case as appeal_case_service,
@@ -147,7 +147,7 @@ class TestReplyAndLock:
         message_repository = SupportCaseMessageRepository.from_session(session)
         assert await message_repository.is_open(case.id) is False
 
-        with pytest.raises(CaseLockedError):
+        with pytest.raises(CaseClosedError):
             await appeal_case_service.add_reply(
                 session,
                 case,

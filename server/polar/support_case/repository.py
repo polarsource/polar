@@ -76,17 +76,6 @@ class SupportCaseMessageRepository(
         assert latest is not None  # always created with an `opened` event
         return latest.type != SupportCaseMessageType.closed
 
-    async def has_message_of_type(self, case_id: UUID, types: Sequence[str]) -> bool:
-        statement = (
-            self.get_base_statement()
-            .where(
-                SupportCaseMessage.case_id == case_id,
-                SupportCaseMessage.type.in_(types),
-            )
-            .limit(1)
-        )
-        return await self.get_one_or_none(statement) is not None
-
 
 class SupportCaseParticipantRepository(
     RepositorySoftDeletionIDMixin[SupportCaseParticipant, UUID],

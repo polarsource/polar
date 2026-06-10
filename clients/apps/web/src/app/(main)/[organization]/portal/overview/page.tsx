@@ -81,6 +81,7 @@ export default async function Page(props: {
       error: claimedSubscriptionsError,
       response: claimedSubscriptionsResponse,
     },
+    { data: orders, response: ordersResponse },
   ] = await Promise.all([
     api.GET('/v1/customer-portal/subscriptions/', {
       params: {
@@ -92,6 +93,15 @@ export default async function Page(props: {
     }),
 
     api.GET('/v1/customer-portal/seats/subscriptions', {
+      params: {
+        query: {
+          limit: 100,
+        },
+      },
+      ...cacheConfig,
+    }),
+
+    api.GET('/v1/customer-portal/orders/', {
       params: {
         query: {
           limit: 100,
@@ -124,6 +134,7 @@ export default async function Page(props: {
       products={products}
       subscriptions={subscriptions}
       claimedSubscriptions={claimedSubscriptions!}
+      orders={ordersResponse.ok ? (orders?.items ?? []) : []}
       customerSessionToken={token as string}
     />
   )

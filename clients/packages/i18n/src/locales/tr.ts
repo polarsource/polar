@@ -19,7 +19,7 @@ export default {
       addBusinessDetails: 'Firma bilgileri ekle',
       removeBusinessDetails: 'Firma bilgilerini kaldır',
       businessName: 'Firma adı',
-      billingDetails: 'Firma Bilgileri',
+      billingDetails: 'Fatura Bilgileri',
       billingAddress: {
         label: 'Fatura adresi',
         line1: 'Açık adres',
@@ -43,7 +43,7 @@ export default {
       taxableAmount: 'Vergiye tabi tutar',
       taxes: 'KDV',
       free: 'Ücretsiz',
-      payWhatYouWant: 'İstediğin kadar öde',
+      payWhatYouWant: 'İstediğiniz kadar ödeyin',
       total: 'Toplam',
       everyInterval: {
         day: {
@@ -159,7 +159,7 @@ export default {
           year: '/yıl',
         },
         then: 'Sonrasında',
-        startingDate: 'başlangıç: {date}',
+        startingDate: '{date} itibarıyla',
       },
       summary: {
         totalWhenTrialEnds: 'Deneme süresi bittiğinde toplam',
@@ -169,7 +169,7 @@ export default {
     },
     pwywForm: {
       label: 'Adil bir fiyat belirleyin',
-      minimum: 'Minimum {amount}',
+      minimum: 'En az {amount}',
       amountMinimum: 'Tutar en az {min} olmalıdır',
       amountFreeOrMinimum: 'Tutar {zero} veya en az {min} olmalıdır',
     },
@@ -180,7 +180,7 @@ export default {
     },
     productDescription: {
       readMore: 'Daha fazla oku',
-      readLess: 'Daha az oku',
+      readLess: 'Daha az göster',
     },
     card: {
       included: 'Dahil',
@@ -200,8 +200,8 @@ export default {
       granting: 'Avantajlar tanımlanıyor...',
       requestNewInvite: 'Yeni davet iste',
       retryIn: {
-        '=1': '# saniye içinde tekrar dene',
-        other: '# saniye içinde tekrar dene',
+        '=1': '# saniye sonra tekrar deneyin',
+        other: '# saniye sonra tekrar deneyin',
         _mode: 'plural',
       },
       connectNewAccount: 'Yeni hesap bağla',
@@ -218,23 +218,23 @@ export default {
       },
       licenseKey: {
         copy: 'Kopyala',
-        copiedToClipboard: 'Panoya Kopyalandı',
+        copiedToClipboard: 'Panoya kopyalandı',
         copiedToClipboardDescription: 'Lisans anahtarı panoya kopyalandı',
         loading: 'Yükleniyor...',
         status: 'Durum',
         statusGranted: 'Verildi',
-        statusRevoked: 'İptal Edildi',
-        statusDisabled: 'Devre Dışı',
+        statusRevoked: 'İptal edildi',
+        statusDisabled: 'Devre dışı',
         usage: 'Kullanım',
         validations: 'Doğrulamalar',
-        validatedAt: 'Doğrulanma Tarihi',
-        neverValidated: 'Hiç Doğrulanmadı',
-        expiryDate: 'Bitiş Tarihi',
+        validatedAt: 'Doğrulanma tarihi',
+        neverValidated: 'Hiç doğrulanmadı',
+        expiryDate: 'Son kullanma tarihi',
         noExpiry: 'Süresiz',
         activations: 'Aktivasyonlar',
-        activationDeleted: 'Lisans Anahtarı Aktivasyonu Silindi',
+        activationDeleted: 'Lisans anahtarı aktivasyonu silindi',
         activationDeletedDescription: 'Aktivasyon başarıyla silindi',
-        activationDeactivationFailed: 'Aktivasyon Devre Dışı Bırakılamadı',
+        activationDeactivationFailed: 'Aktivasyon devre dışı bırakılamadı',
       },
     },
     confirmation: {

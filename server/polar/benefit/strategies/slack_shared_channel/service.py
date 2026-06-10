@@ -133,17 +133,12 @@ class BenefitSlackSharedChannelService(
             channel_id = existing_channel_id
             channel_name = grant_properties.get("channel_name", "")
         else:
-            channel_id, channel_name = await self._find_channel_by_name(
+            channel_id, channel_name = await self._create_channel(
                 bot_token=bot_token,
                 template=properties["channel_name_template"],
                 context=context,
                 is_private=properties["private"],
                 bound_logger=bound_logger,
-            ) or await self._create_channel(
-                bot_token=bot_token,
-                template=properties["channel_name_template"],
-                context=context,
-                is_private=properties["private"],
             )
 
             team_invitees = properties.get("team_invitees") or []
@@ -428,15 +423,12 @@ class BenefitSlackSharedChannelService(
         template: str,
         context: TemplateContext,
         is_private: bool,
+        bound_logger: Any,
     ) -> tuple[str, str]:
         name = self._render_channel_name(template, context)
-        try:
-            result = await self._client.conversations_create(
-                bot_token=bot_token, name=name, is_private=is_private
-            )
-        except httpx.HTTPError as e:
-            raise BenefitRetriableError() from e
-
+        result = await self._create_channel_once(
+            bot_token=bot_token, name=name, is_private=is_private
+        )
         if result.get("ok"):
             channel = result.get("channel") or {}
             return channel["id"], channel.get("name", name)
@@ -445,20 +437,36 @@ class BenefitSlackSharedChannelService(
         if error != "name_taken":
             raise BenefitActionRequiredError(f"Slack error: {error}")
 
-        name = self._render_channel_name(template, context, suffix=secrets.token_hex(2))
-        try:
-            result = await self._client.conversations_create(
-                bot_token=bot_token, name=name, is_private=is_private
-            )
-        except httpx.HTTPError as e:
-            raise BenefitRetriableError() from e
+        existing = await self._find_channel_by_name(
+            bot_token=bot_token,
+            template=template,
+            context=context,
+            is_private=is_private,
+            bound_logger=bound_logger,
+        )
+        if existing:
+            return existing
 
+        name = self._render_channel_name(template, context, suffix=secrets.token_hex(2))
+        result = await self._create_channel_once(
+            bot_token=bot_token, name=name, is_private=is_private
+        )
         if result.get("ok"):
             channel = result.get("channel") or {}
             return channel["id"], channel.get("name", name)
 
         error = result.get("error", "")
         raise BenefitActionRequiredError(f"Slack error: {error}")
+
+    async def _create_channel_once(
+        self, *, bot_token: str, name: str, is_private: bool
+    ) -> dict[str, Any]:
+        try:
+            return await self._client.conversations_create(
+                bot_token=bot_token, name=name, is_private=is_private
+            )
+        except httpx.HTTPError as e:
+            raise BenefitRetriableError() from e
 
     async def _safe_invite_team(
         self,

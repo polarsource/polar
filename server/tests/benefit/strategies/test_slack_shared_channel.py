@@ -148,6 +148,7 @@ class TestSlackSharedChannelGrant:
         assert result["invite_url"].startswith("https://slack.com/share/")
 
         client.conversations_create.assert_awaited_once()
+        client.conversations_list.assert_not_awaited()
         client.conversations_invite_shared.assert_awaited_once_with(
             bot_token="xoxb-test-token",
             channel="C123",
@@ -211,6 +212,9 @@ class TestSlackSharedChannelGrant:
         await _create_integration(save_fixture, benefit)
         client = _mock_client(
             mocker,
+            conversations_create=AsyncMock(
+                return_value={"ok": False, "error": "name_taken"}
+            ),
             conversations_list=AsyncMock(
                 return_value={
                     "ok": True,
@@ -235,7 +239,7 @@ class TestSlackSharedChannelGrant:
 
         assert result["channel_id"] == "CEXIST"
         assert result["channel_name"] == "support-acme"
-        client.conversations_create.assert_not_awaited()
+        client.conversations_create.assert_awaited_once()
         client.conversations_join.assert_not_awaited()
         client.conversations_invite_shared.assert_awaited_once_with(
             bot_token="xoxb-test-token",
@@ -262,6 +266,9 @@ class TestSlackSharedChannelGrant:
         await _create_integration(save_fixture, benefit)
         client = _mock_client(
             mocker,
+            conversations_create=AsyncMock(
+                return_value={"ok": False, "error": "name_taken"}
+            ),
             conversations_list=AsyncMock(
                 return_value={
                     "ok": True,
@@ -288,7 +295,7 @@ class TestSlackSharedChannelGrant:
         client.conversations_join.assert_awaited_once_with(
             bot_token="xoxb-test-token", channel="CEXIST"
         )
-        client.conversations_create.assert_not_awaited()
+        client.conversations_create.assert_awaited_once()
         client.conversations_invite_shared.assert_awaited_once_with(
             bot_token="xoxb-test-token",
             channel="CEXIST",
@@ -314,6 +321,9 @@ class TestSlackSharedChannelGrant:
         await _create_integration(save_fixture, benefit)
         client = _mock_client(
             mocker,
+            conversations_create=AsyncMock(
+                return_value={"ok": False, "error": "name_taken"}
+            ),
             conversations_list=AsyncMock(
                 return_value={
                     "ok": True,
@@ -337,7 +347,7 @@ class TestSlackSharedChannelGrant:
         )
 
         assert result["channel_id"] == "GEXIST"
-        client.conversations_create.assert_not_awaited()
+        client.conversations_create.assert_awaited_once()
         client.conversations_invite_shared.assert_awaited_once_with(
             bot_token="xoxb-test-token",
             channel="GEXIST",
@@ -363,6 +373,12 @@ class TestSlackSharedChannelGrant:
         await _create_integration(save_fixture, benefit)
         client = _mock_client(
             mocker,
+            conversations_create=AsyncMock(
+                side_effect=[
+                    {"ok": False, "error": "name_taken"},
+                    {"ok": True, "channel": {"id": "C123", "name": "support-acme"}},
+                ]
+            ),
             conversations_list=AsyncMock(
                 return_value={
                     "ok": True,
@@ -392,7 +408,7 @@ class TestSlackSharedChannelGrant:
         client.conversations_join.assert_awaited_once_with(
             bot_token="xoxb-test-token", channel="CEXIST"
         )
-        client.conversations_create.assert_awaited_once()
+        assert client.conversations_create.await_count == 2
         client.conversations_invite_shared.assert_awaited_once_with(
             bot_token="xoxb-test-token",
             channel="C123",

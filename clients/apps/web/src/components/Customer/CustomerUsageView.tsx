@@ -10,7 +10,7 @@ import { TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
 import { useMemo } from 'react'
 import FormattedUnits from '../Meter/FormattedUnits'
 import StackedMeterChart from '../Meter/StackedMeterChart'
-import { EmptyState } from '../CustomerPortal/EmptyState'
+import { EmptyState } from '../Shared/EmptyState'
 import { GaugeCircleIcon } from 'lucide-react'
 
 const METER_COLORS = [

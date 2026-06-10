@@ -1,6 +1,6 @@
 'use client'
 
-import { EmptyState } from '@/components/CustomerPortal/EmptyState'
+import { EmptyState } from '@/components/Shared/EmptyState'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import {

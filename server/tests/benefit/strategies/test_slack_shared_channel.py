@@ -415,6 +415,63 @@ class TestSlackSharedChannelGrant:
             email="admin@customer.example",
         )
 
+    async def test_grant_adopted_channel_skips_welcome_and_team_invite(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        customer.name = "Acme"
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties={
+                **_BASE_PROPERTIES,
+                "welcome_message": "Welcome!",
+                "team_invitees": ["U01"],
+            },
+        )
+        await _create_integration(save_fixture, benefit)
+        client = _mock_client(
+            mocker,
+            conversations_create=AsyncMock(
+                return_value={"ok": False, "error": "name_taken"}
+            ),
+            conversations_list=AsyncMock(
+                return_value={
+                    "ok": True,
+                    "channels": [
+                        {
+                            "id": "CEXIST",
+                            "name": "support-acme",
+                            "is_private": False,
+                            "is_member": True,
+                        }
+                    ],
+                }
+            ),
+        )
+        strategy = _strategy(session, redis, client)
+
+        result = await strategy.grant(
+            benefit,
+            customer,
+            {"invited_email": "admin@customer.example"},
+        )
+
+        assert result["channel_id"] == "CEXIST"
+        client.chat_post_message.assert_not_awaited()
+        client.conversations_invite.assert_not_awaited()
+        client.conversations_invite_shared.assert_awaited_once_with(
+            bot_token="xoxb-test-token",
+            channel="CEXIST",
+            email="admin@customer.example",
+        )
+
     async def test_grant_adopts_channel_from_sibling_grant(
         self,
         session: AsyncSession,

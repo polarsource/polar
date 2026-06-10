@@ -136,7 +136,7 @@ class BenefitSlackSharedChannelService(
         elif sibling_channel := await self._find_sibling_channel(benefit, customer):
             channel_id, channel_name = sibling_channel
         else:
-            channel_id, channel_name = await self._create_channel(
+            channel_id, channel_name, created = await self._create_channel(
                 bot_token=bot_token,
                 template=properties["channel_name_template"],
                 context=context,
@@ -144,23 +144,24 @@ class BenefitSlackSharedChannelService(
                 bound_logger=bound_logger,
             )
 
-            team_invitees = properties.get("team_invitees") or []
-            if team_invitees:
-                await self._safe_invite_team(
-                    bot_token=bot_token,
-                    channel=channel_id,
-                    users=team_invitees,
-                    bound_logger=bound_logger,
-                )
+            if created:
+                team_invitees = properties.get("team_invitees") or []
+                if team_invitees:
+                    await self._safe_invite_team(
+                        bot_token=bot_token,
+                        channel=channel_id,
+                        users=team_invitees,
+                        bound_logger=bound_logger,
+                    )
 
-            welcome_message = properties.get("welcome_message")
-            if welcome_message:
-                await self._safe_post_welcome(
-                    bot_token=bot_token,
-                    channel=channel_id,
-                    text=welcome_message,
-                    bound_logger=bound_logger,
-                )
+                welcome_message = properties.get("welcome_message")
+                if welcome_message:
+                    await self._safe_post_welcome(
+                        bot_token=bot_token,
+                        channel=channel_id,
+                        text=welcome_message,
+                        bound_logger=bound_logger,
+                    )
 
         provisioned_properties: BenefitGrantSlackSharedChannelProperties = {
             **grant_properties,
@@ -441,14 +442,14 @@ class BenefitSlackSharedChannelService(
         context: TemplateContext,
         is_private: bool,
         bound_logger: Any,
-    ) -> tuple[str, str]:
+    ) -> tuple[str, str, bool]:
         name = self._render_channel_name(template, context)
         result = await self._create_channel_once(
             bot_token=bot_token, name=name, is_private=is_private
         )
         if result.get("ok"):
             channel = result.get("channel") or {}
-            return channel["id"], channel.get("name", name)
+            return channel["id"], channel.get("name", name), True
 
         error = result.get("error", "")
         if error != "name_taken":
@@ -462,7 +463,8 @@ class BenefitSlackSharedChannelService(
             bound_logger=bound_logger,
         )
         if existing:
-            return existing
+            channel_id, channel_name = existing
+            return channel_id, channel_name, False
 
         name = self._render_channel_name(template, context, suffix=secrets.token_hex(2))
         result = await self._create_channel_once(
@@ -470,7 +472,7 @@ class BenefitSlackSharedChannelService(
         )
         if result.get("ok"):
             channel = result.get("channel") or {}
-            return channel["id"], channel.get("name", name)
+            return channel["id"], channel.get("name", name), True
 
         error = result.get("error", "")
         raise BenefitActionRequiredError(f"Slack error: {error}")

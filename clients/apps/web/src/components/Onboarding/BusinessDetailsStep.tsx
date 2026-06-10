@@ -143,7 +143,7 @@ function CurrencyAndCountryFields() {
   }, [country])
 
   return (
-    <Box display="flex" flexDirection="column" rowGap="s">
+    <Box flexDirection="column" rowGap="s">
       <Box
         display="grid"
         gap="m"
@@ -194,7 +194,6 @@ function CurrencyAndCountryFields() {
 
       {organizationType === 'company' && isUnsupportedCountry && (
         <Box
-          display="flex"
           flexDirection="column"
           rowGap="m"
           borderRadius="m"
@@ -283,7 +282,6 @@ export function BusinessDetailsStep() {
         <Box
           as="form"
           onSubmit={handleSubmit(onSubmit)}
-          display="flex"
           flexDirection="column"
           rowGap="xl"
         >

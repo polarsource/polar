@@ -104,20 +104,15 @@ export function TreeMultiSelect<T extends string>({
   }
 
   return (
-    <Box display="flex" flexDirection="column">
-      <Box
-        display="flex"
-        alignItems="center"
-        justifyContent="between"
-        columnGap="m"
-      >
+    <Box flexDirection="column">
+      <Box alignItems="center" justifyContent="between" columnGap="m">
         {title ? <Text variant="label">{title}</Text> : <span />}
         <Button onClick={onToggleAll} variant="secondary" size="sm">
           {allSelected ? 'Unselect all' : 'Select all'}
         </Button>
       </Box>
 
-      <Box display="flex" flexDirection="column" rowGap="xs">
+      <Box flexDirection="column" rowGap="xs">
         {groups.map((group) => {
           const selectedCount = group.options.filter((o) =>
             selected.has(o),
@@ -130,7 +125,7 @@ export function TreeMultiSelect<T extends string>({
                 : 'indeterminate'
 
           return (
-            <Box key={group.key} display="flex" flexDirection="column">
+            <Box key={group.key} flexDirection="column">
               <Box
                 as="label"
                 display="flex"
@@ -146,7 +141,7 @@ export function TreeMultiSelect<T extends string>({
                 <Text variant="mono">{group.label}</Text>
               </Box>
 
-              <Box display="flex" flexDirection="column" pl="xl">
+              <Box flexDirection="column" pl="xl">
                 {group.options.map((option) => (
                   <Box
                     key={option}

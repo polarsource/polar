@@ -40,7 +40,6 @@ export function OnboardingShell({
 
   return (
     <Box
-      display="flex"
       minHeight="100vh"
       justifyContent="center"
       backgroundColor="background-primary"
@@ -51,7 +50,6 @@ export function OnboardingShell({
         position="absolute"
         bottom={24}
         left={24}
-        display="flex"
         gap="l"
         color="text-tertiary"
       >
@@ -68,10 +66,9 @@ export function OnboardingShell({
           Log out
         </a>
       </Box>
-      <Box display="flex" width="100%" maxWidth="60rem">
+      <Box width="100%" maxWidth="60rem">
         {/* Left: form */}
         <Box
-          display="flex"
           flex={1}
           flexDirection="column"
           alignItems="center"
@@ -87,14 +84,9 @@ export function OnboardingShell({
             className="flex w-full max-w-md flex-col gap-y-8"
           >
             {/* Logo + back + progress */}
-            <Box
-              position="relative"
-              display="flex"
-              flexDirection="column"
-              rowGap="xl"
-            >
-              <Box display="flex" flexDirection="column" rowGap="xl">
-                <Box display="flex" alignItems="center" justifyContent="center">
+            <Box position="relative" flexDirection="column" rowGap="xl">
+              <Box flexDirection="column" rowGap="xl">
+                <Box alignItems="center" justifyContent="center">
                   {currentIndex > 0 && (
                     <button
                       type="button"
@@ -107,10 +99,11 @@ export function OnboardingShell({
                   <LogoIcon size={36} />
                 </Box>
                 {step && (
-                  <Box display="flex" width="100%" alignItems="center" gap="s">
+                  <Box width="100%" alignItems="center" gap="s">
                     {STEPS.map((s, i) => (
-                      <Box key={s} display="flex" flex={1}>
+                      <Box key={s} flex={1}>
                         <Box
+                          display="block"
                           height={2}
                           width="100%"
                           borderRadius="full"
@@ -126,7 +119,7 @@ export function OnboardingShell({
                 )}
               </Box>
 
-              <Box display="flex" flexDirection="column" rowGap="m">
+              <Box flexDirection="column" rowGap="m">
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                   {title}
                 </h1>
@@ -161,6 +154,7 @@ export function OnboardingShell({
           paddingBottom="3xl"
         >
           <Box
+            display="block"
             position="absolute"
             top={0}
             bottom={0}
@@ -168,7 +162,7 @@ export function OnboardingShell({
             right={-10000}
             backgroundColor="background-secondary"
           />
-          <Box position="sticky" top={150} zIndex={1}>
+          <Box display="block" position="sticky" top={150} zIndex={1}>
             {(apiStep ?? step) && <APIPreview step={(apiStep ?? step)!} />}
           </Box>
         </Box>

@@ -3,6 +3,8 @@ import type {
   BorderColorToken,
   BorderRadiusToken,
   BreakpointKey,
+  DurationToken,
+  EasingToken,
   ShadowToken,
   SpacingToken,
   TextColorToken,
@@ -150,6 +152,32 @@ export interface PositionProps {
   zIndex?: ResponsiveValue<number | string>
 }
 
+/**
+ * Curated `transition-property` presets. Keyword values expand to a real
+ * property list so authors don't hand-write CSS — `colors` is the common case
+ * for token-driven hover states, `common` covers most interactive surfaces.
+ */
+export type TransitionProperty =
+  | 'none'
+  | 'all'
+  | 'common'
+  | 'colors'
+  | 'opacity'
+  | 'shadow'
+  | 'transform'
+
+export interface MotionProps {
+  transitionProperty?: ResponsiveValue<TransitionProperty>
+  transitionDuration?: ResponsiveValue<DurationToken>
+  transitionTimingFunction?: ResponsiveValue<EasingToken>
+  /** Alias for `transitionTimingFunction`. */
+  ease?: ResponsiveValue<EasingToken>
+  transitionDelay?: ResponsiveValue<DurationToken>
+  transform?: ResponsiveValue<string>
+  transformOrigin?: ResponsiveValue<string>
+  willChange?: ResponsiveValue<string>
+}
+
 export interface VisualProps {
   opacity?: ResponsiveValue<number>
   cursor?: ResponsiveValue<
@@ -176,4 +204,5 @@ export type BoxStyleProps = SpacingProps &
   FlexProps &
   GridProps &
   PositionProps &
+  MotionProps &
   VisualProps

@@ -235,7 +235,6 @@ const UpdateProduct = ({
                 padding="m"
                 borderRadius="m"
                 backgroundColor="background-warning"
-                display="flex"
                 flexDirection="column"
                 rowGap="s"
               >

@@ -85,12 +85,7 @@ const Inner = ({
   recommended,
 }: InnerProps) => (
   <>
-    <Box
-      display="flex"
-      alignItems="center"
-      justifyContent="between"
-      columnGap="s"
-    >
+    <Box alignItems="center" justifyContent="between" columnGap="s">
       <Text variant="default">{title}</Text>
       <Badge status={status} required={required} recommended={recommended} />
     </Box>
@@ -116,7 +111,7 @@ const Inner = ({
 )
 
 const Header = ({ children }: { children: ReactNode }) => (
-  <Box display="flex" flexDirection="column" rowGap="s" padding="l">
+  <Box flexDirection="column" rowGap="s" padding="l">
     {children}
   </Box>
 )
@@ -165,7 +160,6 @@ export const PathCard = ({
   return (
     <Box
       as="article"
-      display="flex"
       flexDirection="column"
       borderRadius="m"
       borderWidth={1}
@@ -186,7 +180,7 @@ export const PathCard = ({
           />
         </Header>
         {extra && (
-          <Box paddingHorizontal="l" paddingBottom="l">
+          <Box display="block" paddingHorizontal="l" paddingBottom="l">
             {extra}
           </Box>
         )}

@@ -66,7 +66,7 @@ export const StartupProgramFAQ = () => {
       <Text as="h2" variant="heading-l" wrap="balance">
         Questions and answers
       </Text>
-      <Box gridColumn={{ md: 'span 2' }}>
+      <Box display="block" gridColumn={{ md: 'span 2' }}>
         <Accordion type="multiple" className="flex flex-col">
           {FAQS.map((faq, i) => (
             <AccordionItem
@@ -78,7 +78,7 @@ export const StartupProgramFAQ = () => {
                 {faq.question}
               </AccordionTrigger>
               <AccordionContent>
-                <Box paddingBottom="m" maxWidth="42rem">
+                <Box display="block" paddingBottom="m" maxWidth="42rem">
                   <Text variant="body" color="muted">
                     {faq.answer}
                   </Text>

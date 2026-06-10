@@ -196,13 +196,8 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
   const isPython = currentFramework?.slug === 'python'
 
   return (
-    <Box
-      display="flex"
-      height="100%"
-      flexDirection={{ base: 'column', md: 'row' }}
-    >
+    <Box height="100%" flexDirection={{ base: 'column', md: 'row' }}>
       <Box
-        display="flex"
         height="100%"
         minHeight={0}
         width="100%"
@@ -213,9 +208,9 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
         maxWidth={{ md: '32rem' }}
         backgroundColor="background-card"
       >
-        <Box display="flex" flexDirection="column" rowGap="3xl">
+        <Box flexDirection="column" rowGap="3xl">
           <LogoIcon size={50} />
-          <Box display="flex" flexDirection="column" rowGap="l">
+          <Box flexDirection="column" rowGap="l">
             <h1 className="text-3xl">Integrate Checkout</h1>
             <p className="dark:text-polar-400 text-lg text-gray-600">
               Integrate checkouts with your favorite framework.
@@ -242,7 +237,7 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
               />
             ))}
           </Box>
-          <Box display="flex" flexDirection="column" rowGap="l">
+          <Box flexDirection="column" rowGap="l">
             <Link
               href={`https://polar.sh/docs/integrate/sdk/adapters/nextjs`}
               target="_blank"
@@ -272,7 +267,6 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
           padding="4xl"
         >
           <Box
-            display="flex"
             width="100%"
             maxWidth="48rem"
             flexDirection="column"
@@ -281,9 +275,8 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
             backgroundColor="background-card"
             padding="3xl"
           >
-            <Box display="flex" flexDirection="column" rowGap="xl">
+            <Box flexDirection="column" rowGap="xl">
               <Box
-                display="flex"
                 flexDirection="row"
                 alignItems="center"
                 justifyContent="between"
@@ -315,7 +308,7 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
               </CodeWrapper>
             </Box>
 
-            <Box display="flex" flexDirection="column" rowGap="xl">
+            <Box flexDirection="column" rowGap="xl">
               <h2 className="text-lg">2. Add Environment Variables</h2>
               <OrganizationAccessTokensSettings
                 organization={organization}
@@ -332,7 +325,7 @@ POLAR_SUCCESS_URL=https://example.com/success?checkout_id={CHECKOUT_ID}`}
               </CodeWrapper>
             </Box>
 
-            <Box display="flex" flexDirection="column" rowGap="xl">
+            <Box flexDirection="column" rowGap="xl">
               <h2 className="text-lg">3. Integrate the Checkout</h2>
               <CodeWrapper>
                 <SyntaxHighlighterClient
@@ -361,6 +354,7 @@ POLAR_SUCCESS_URL=https://example.com/success?checkout_id={CHECKOUT_ID}`}
 const CodeWrapper = ({ children }: { children: React.ReactNode }) => {
   return (
     <Box
+      display="block"
       width="100%"
       borderRadius="m"
       borderWidth={1}
@@ -393,7 +387,6 @@ const FrameworkCard = ({
     <button type="button" onClick={() => onClick(slug)}>
       <Box
         cursor="pointer"
-        display="flex"
         flexDirection="column"
         rowGap="l"
         borderRadius="m"
@@ -405,6 +398,7 @@ const FrameworkCard = ({
       >
         {icon ?? (
           <Box
+            display="block"
             height={32}
             width={32}
             borderRadius="full"

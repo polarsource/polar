@@ -42,7 +42,6 @@ export const StatusBlock = ({
 
   return (
     <Box
-      display="flex"
       flexDirection="column"
       alignItems="center"
       rowGap="m"
@@ -57,7 +56,6 @@ export const StatusBlock = ({
           transition={{ type: 'spring', stiffness: 400, damping: 22 }}
         >
           <Box
-            display="flex"
             alignItems="center"
             justifyContent="center"
             width={40}
@@ -70,24 +68,23 @@ export const StatusBlock = ({
           </Box>
         </motion.div>
       )}
-      <Box
-        display="flex"
-        flexDirection="column"
-        rowGap="xs"
-        alignItems="center"
-      >
+      <Box flexDirection="column" rowGap="xs" alignItems="center">
         <Text variant="body" color="default">
           {title}
         </Text>
         {description && (
-          <Box maxWidth={420}>
+          <Box display="block" maxWidth={420}>
             <Text variant="caption" color="muted" wrap="balance">
               {description}
             </Text>
           </Box>
         )}
       </Box>
-      {action && <Box marginTop="m">{action}</Box>}
+      {action && (
+        <Box display="block" marginTop="m">
+          {action}
+        </Box>
+      )}
     </Box>
   )
 }

@@ -150,12 +150,7 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
 
   if (isKYCLoading) {
     return (
-      <Box
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        paddingVertical="xl"
-      >
+      <Box alignItems="center" justifyContent="center" paddingVertical="xl">
         <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
       </Box>
     )
@@ -186,7 +181,7 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
         <SectionLayout
           description="Describe what your product is and does, who it's for, and your pricing model."
           footerEnd={
-            <Box display="flex" alignItems="center" columnGap="s">
+            <Box alignItems="center" columnGap="s">
               {showContinueAnyway && (
                 <Button
                   type="button"
@@ -211,7 +206,7 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
             </Box>
           }
         >
-          <Box display="flex" flexDirection="column" rowGap="xl">
+          <Box flexDirection="column" rowGap="xl">
             <FormField
               control={control}
               name="product_description"
@@ -227,7 +222,7 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
                 },
               }}
               render={({ field }) => (
-                <Box display="flex" flexDirection="column" rowGap="xs">
+                <Box flexDirection="column" rowGap="xs">
                   <TextArea
                     {...field}
                     rows={4}
@@ -235,7 +230,6 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
                     className="resize-none"
                   />
                   <Box
-                    display="flex"
                     alignItems="center"
                     justifyContent="between"
                     columnGap="s"
@@ -249,7 +243,7 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
               )}
             />
 
-            <Box display="flex" flexDirection="column" rowGap="m">
+            <Box flexDirection="column" rowGap="m">
               <Text variant="label" color="default">
                 What are you selling?
               </Text>
@@ -267,7 +261,7 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
               )}
             </Box>
 
-            <Box display="flex" flexDirection="column" rowGap="m">
+            <Box flexDirection="column" rowGap="m">
               <Text variant="label" color="default">
                 Pricing model
               </Text>
@@ -282,7 +276,6 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
 
             {aup.verdict && (
               <Box
-                display="flex"
                 flexDirection="column"
                 rowGap="s"
                 borderRadius="m"

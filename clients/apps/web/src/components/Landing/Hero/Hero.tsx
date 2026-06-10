@@ -29,7 +29,7 @@ export const Hero = () => {
       whileInView="visible"
       viewport={{ once: true }}
     >
-      <Box display="flex">
+      <Box>
         <Text variant="heading-2xl">
           Turn Usage
           <br />

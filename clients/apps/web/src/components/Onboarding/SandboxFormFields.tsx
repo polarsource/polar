@@ -161,12 +161,7 @@ export function SandboxFormFields({
         rules={{ required: 'You must accept the terms to continue' }}
         render={({ field }) => (
           <FormItem>
-            <Box
-              display="flex"
-              flexDirection="row"
-              alignItems="start"
-              columnGap="m"
-            >
+            <Box flexDirection="row" alignItems="start" columnGap="m">
               <Checkbox
                 id="terms"
                 checked={field.value}

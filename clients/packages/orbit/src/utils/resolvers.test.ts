@@ -458,6 +458,95 @@ describe('responsive object — undefined keys', () => {
   })
 })
 
+describe('motion — transition tokens', () => {
+  it('transitionDuration scalar pushes the matching style', () => {
+    const { stylexStyles, responsiveCSS } = resolveBoxStyles(
+      { transitionDuration: 'fast' },
+      'scope',
+    )
+    expect(stylexStyles).toHaveLength(1)
+    expect(responsiveCSS).toBeNull()
+  })
+
+  it('transitionProperty keyword expands to a property list', () => {
+    const { responsiveCSS } = resolveBoxStyles(
+      { transitionProperty: { md: 'colors' } },
+      'scope',
+    )
+    expect(responsiveCSS).toContain(
+      'transition-property: color, background-color, border-color',
+    )
+  })
+
+  it('transitionProperty "common" expands transform + shadow + opacity', () => {
+    const { responsiveCSS } = resolveBoxStyles(
+      { transitionProperty: { hover: 'common' } },
+      'scope',
+    )
+    expect(responsiveCSS).toContain('box-shadow')
+    expect(responsiveCSS).toContain('transform')
+    expect(responsiveCSS).toContain('opacity')
+  })
+
+  it('ease is an alias for transitionTimingFunction', () => {
+    const viaEase = resolveBoxStyles({ ease: 'spring' }, 'scope')
+    const viaFull = resolveBoxStyles(
+      { transitionTimingFunction: 'spring' },
+      'scope',
+    )
+    expect(viaEase.stylexStyles).toEqual(viaFull.stylexStyles)
+  })
+
+  it('transitionTimingFunction wins over ease alias when both set', () => {
+    const { stylexStyles } = resolveBoxStyles(
+      { transitionTimingFunction: 'standard', ease: 'spring' },
+      'scope',
+    )
+    const standard = resolveBoxStyles(
+      { transitionTimingFunction: 'standard' },
+      'scope',
+    )
+    expect(stylexStyles).toEqual(standard.stylexStyles)
+  })
+
+  it('responsive transitionTimingFunction emits a cubic-bezier value', () => {
+    const { responsiveCSS } = resolveBoxStyles(
+      { transitionTimingFunction: { md: 'decelerate' } },
+      'scope',
+    )
+    expect(responsiveCSS).toMatch(/transition-timing-function:\s*cubic-bezier/)
+  })
+
+  it('transform arbitrary scalar goes to inlineStyle', () => {
+    const { inlineStyle } = resolveBoxStyles(
+      { transform: 'scale(1.02)' },
+      'scope',
+    )
+    expect(inlineStyle.transform).toBe('scale(1.02)')
+  })
+
+  it('transform responsive (hover) writes a kebab-case rule', () => {
+    const { responsiveCSS } = resolveBoxStyles(
+      { transform: { hover: 'translateY(-2px)' } },
+      'scope',
+    )
+    expect(responsiveCSS).toContain(':hover')
+    expect(responsiveCSS).toContain('transform: translateY(-2px)')
+  })
+
+  it('willChange and transformOrigin convert to kebab-case in responsive CSS', () => {
+    const { responsiveCSS } = resolveBoxStyles(
+      {
+        willChange: { md: 'transform' },
+        transformOrigin: { md: 'top left' },
+      },
+      'scope',
+    )
+    expect(responsiveCSS).toContain('will-change: transform')
+    expect(responsiveCSS).toContain('transform-origin: top left')
+  })
+})
+
 describe('mixed scenarios', () => {
   it('scalar token + scalar arbitrary + responsive arbitrary all coexist', () => {
     const { stylexStyles, inlineStyle, responsiveCSS } = resolveBoxStyles(

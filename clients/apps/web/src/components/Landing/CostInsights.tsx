@@ -64,7 +64,6 @@ export const CostInsights = () => {
   return (
     <Box
       position="relative"
-      display="flex"
       flexDirection="column"
       rowGap={{ base: '2xl', md: '4xl' }}
       paddingTop={{ base: 'l', md: '3xl' }}
@@ -85,13 +84,12 @@ export const CostInsights = () => {
           minHeight={{ base: '14rem', lg: 'auto' }}
           overflow="hidden"
           backgroundColor="background-secondary"
-          display="flex"
           flexDirection="column"
           justifyContent="between"
           padding="xl"
           rowGap="l"
         >
-          <Box flex={1} minHeight={0} aspectRatio="1/1">
+          <Box display="block" flex={1} minHeight={0} aspectRatio="1/1">
             <MarginPulse />
           </Box>
         </Box>
@@ -144,8 +142,8 @@ export const CostInsights = () => {
                 borderStyle="solid"
                 borderColor="border-secondary"
               >
-                <Box display="flex" alignItems="center" columnGap="m">
-                  <Box display="flex" flexDirection="column" rowGap="xs">
+                <Box alignItems="center" columnGap="m">
+                  <Box flexDirection="column" rowGap="xs">
                     <Text>{row.name}</Text>
                     <Text color="muted">
                       {row.plan} · {row.tokens}
@@ -156,12 +154,7 @@ export const CostInsights = () => {
                 <Text align="right" color="muted">
                   {currency(row.cost)}
                 </Text>
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="end"
-                  columnGap="m"
-                >
+                <Box alignItems="center" justifyContent="end" columnGap="m">
                   <Text align="right" color={negative ? 'danger' : undefined}>
                     {margin > 0 ? '+' : ''}
                     {margin}%

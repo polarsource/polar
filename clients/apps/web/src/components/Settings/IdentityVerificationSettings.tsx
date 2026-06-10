@@ -9,6 +9,7 @@ const IdentityVerificationSettings = () => {
 
   return (
     <Box
+      display="block"
       borderRadius="l"
       borderWidth={1}
       borderStyle="solid"

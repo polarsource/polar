@@ -88,7 +88,7 @@ from polar.order.service import (
     SubscriptionNotTrialing,
 )
 from polar.order.service import order as order_service
-from polar.product.guard import is_fixed_price, is_static_price
+from polar.product.guard import is_fixed_price, is_seat_price, is_static_price
 from polar.product.price_set import PriceSet
 from polar.subscription.service import SubscriptionService
 from polar.tax.calculation import (
@@ -121,6 +121,7 @@ from tests.fixtures.random_objects import (
     create_payment,
     create_payment_method,
     create_product,
+    create_product_fixed_and_seat,
     create_subscription,
     create_trialing_subscription,
     create_wallet,
@@ -872,6 +873,55 @@ class TestCreateFromCheckoutSubscription:
         assert len(order.items) == len(
             [p for p in product_recurring_metered.prices if is_static_price(p)]
         )
+
+    async def test_fixed_and_seat(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_fixed_and_seat(
+            save_fixture,
+            organization=organization,
+            fixed_amount=99900,
+            price_per_seat=2000,
+        )
+        fixed_price = next(p for p in product.prices if is_fixed_price(p))
+        seat_price = next(p for p in product.prices if is_seat_price(p))
+
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+            seats=10,
+        )
+        assert checkout.amount == (
+            fixed_price.price_amount + seat_price.calculate_amount(10)
+        )
+
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer, seats=10
+        )
+
+        order = await order_service.create_from_checkout_subscription(
+            session,
+            checkout,
+            subscription,
+            OrderBillingReasonInternal.subscription_create,
+        )
+
+        assert order.customer == checkout.customer
+        assert order.product == product
+
+        # Two static line items (fixed + seat), summing to the combined subtotal.
+        assert len(order.items) == 2
+        by_price = {item.product_price_id: item for item in order.items}
+        assert by_price[fixed_price.id].amount == fixed_price.price_amount
+        assert by_price[seat_price.id].amount == seat_price.calculate_amount(10)
+        assert sum(item.amount for item in order.items) == order.subtotal_amount
+        assert order.subtotal_amount == checkout.amount
 
 
 class DiscountFixture(BaseModel):

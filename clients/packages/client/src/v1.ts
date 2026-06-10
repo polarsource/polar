@@ -26714,7 +26714,7 @@ export interface components {
       visibility: components['schemas']['ProductVisibility']
       /**
        * ProductPriceCreateList
-       * @description List of available prices for this product. It should contain at most one static price (fixed, custom or free), and any number of metered prices. Metered prices are not supported on one-time purchase products.
+       * @description List of available prices for this product. It may combine at most one fixed price with one seat-based price (billed as `fixed + seat_charge`), or contain a single custom or free price, plus any number of metered prices. A free price cannot be combined with other prices, and a custom price cannot be combined with a fixed or seat-based price. Metered prices are not supported on one-time purchase products.
        */
       prices: (
         | components['schemas']['ProductPriceFixedCreate']
@@ -26785,7 +26785,7 @@ export interface components {
       visibility: components['schemas']['ProductVisibility']
       /**
        * ProductPriceCreateList
-       * @description List of available prices for this product. It should contain at most one static price (fixed, custom or free), and any number of metered prices. Metered prices are not supported on one-time purchase products.
+       * @description List of available prices for this product. It may combine at most one fixed price with one seat-based price (billed as `fixed + seat_charge`), or contain a single custom or free price, plus any number of metered prices. A free price cannot be combined with other prices, and a custom price cannot be combined with a fixed or seat-based price. Metered prices are not supported on one-time purchase products.
        */
       prices: (
         | components['schemas']['ProductPriceFixedCreate']

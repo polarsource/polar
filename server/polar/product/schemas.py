@@ -404,8 +404,11 @@ ProductPriceCreateList = Annotated[
             "title": "ProductPriceCreateList",
             "description": (
                 "List of prices for the product. "
-                "At most one static price (fixed, custom or free) is allowed. "
-                "Any number of metered prices can be added."
+                "At most one fixed price and one seat-based price may be combined "
+                "(billed as `fixed + seat_charge`), or a single custom or free "
+                "price may stand alone, plus any number of metered prices. "
+                "A free price cannot be combined with other prices, and a custom "
+                "price cannot be combined with a fixed or seat-based price."
             ),
         }
     ),
@@ -422,8 +425,11 @@ class ProductCreateBase(MetadataInputMixin, Schema):
     prices: ProductPriceCreateList = Field(
         ...,
         description="List of available prices for this product. "
-        "It should contain at most one static price (fixed, custom or free), and "
-        "any number of metered prices. "
+        "It may combine at most one fixed price with one seat-based price "
+        "(billed as `fixed + seat_charge`), or contain a single custom or free "
+        "price, plus any number of metered prices. A free price cannot be "
+        "combined with other prices, and a custom price cannot be combined with "
+        "a fixed or seat-based price. "
         "Metered prices are not supported on one-time purchase products.",
     )
     medias: list[UUID4] | None = Field(

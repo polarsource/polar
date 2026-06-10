@@ -27,6 +27,7 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.product_price import SeatTierType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import (
@@ -42,10 +43,20 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_discount,
     create_product,
+    create_product_fixed_and_seat,
     create_product_price_fixed,
     create_subscription,
     create_subscription_with_seats,
 )
+
+# Graduated seat schedule: 1–50 @ $0 (included), 51–100 @ $20,
+# 101–200 @ $17.50, 201+ @ $15.
+GRADUATED_SEAT_TIERS: list[dict[str, object]] = [
+    {"min_seats": 1, "max_seats": 50, "price_per_seat": 0},
+    {"min_seats": 51, "max_seats": 100, "price_per_seat": 2000},
+    {"min_seats": 101, "max_seats": 200, "price_per_seat": 1750},
+    {"min_seats": 201, "max_seats": None, "price_per_seat": 1500},
+]
 
 # This tests Subscription updates with prorations, where the subscription is
 # not a subscription in Stripe.
@@ -1938,3 +1949,114 @@ class TestComposedStaticPriceDiscountAllocation:
         entry = seat_entries[0]
         assert entry.direction == BillingEntryDirection.debit
         assert entry.amount == 45_00
+
+
+@pytest.mark.asyncio
+class TestFixedSeatProrations:
+    """Fixed base price composed with a seat-based price bills `F + S(n)`."""
+
+    async def test_seat_change_prorates_only_seat_delta(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # Customer has no payment method; mock the order-creation call that the
+        # prorate path would otherwise drive on context exit.
+        mocker.patch.object(
+            subscription_service,
+            "_create_subscription_update_order",
+            new=AsyncMock(),
+        )
+
+        product = await create_product_fixed_and_seat(
+            save_fixture,
+            organization=organization,
+            fixed_amount=99900,
+            tiers=GRADUATED_SEAT_TIERS,
+            seat_tier_type=SeatTierType.graduated,
+        )
+        fixed_price = next(p for p in product.prices if is_fixed_price(p))
+        seat_price = next(p for p in product.prices if is_seat_price(p))
+
+        with freezegun.freeze_time(datetime(2024, 1, 1, tzinfo=UTC)) as frozen_time:
+            subscription = await create_subscription_with_seats(
+                save_fixture,
+                product=product,
+                customer=customer,
+                seats=100,
+            )
+            assert subscription.amount == (
+                fixed_price.price_amount + seat_price.calculate_amount(100)
+            )
+
+            frozen_time.move_to(datetime(2024, 1, 16, tzinfo=UTC))
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated = await subscription_service.update_seats(
+                    session,
+                    ctx,
+                    subscription,
+                    seats=143,
+                    proration_behavior=SubscriptionProrationBehavior.prorate,
+                )
+            await session.flush()
+
+        # 143-seat case: $999 + (50×$0 + 50×$20 + 43×$17.50) = $2,751.50
+        assert updated.seats == 143
+        assert updated.amount == 275150
+        assert updated.amount == (
+            fixed_price.price_amount + seat_price.calculate_amount(143)
+        )
+
+        # Only the seat delta is prorated; the fixed fee gets no billing entry.
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert all(entry.product_price_id != fixed_price.id for entry in entries)
+        seat_entries = [
+            entry for entry in entries if entry.product_price_id == seat_price.id
+        ]
+        assert len(seat_entries) == 1
+        assert seat_entries[0].direction == BillingEntryDirection.debit
+        assert seat_entries[0].type == BillingEntryType.subscription_seats_increase
+
+    @pytest.mark.parametrize("seats", [1, 50, 51])
+    async def test_included_seats_composition(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        seats: int,
+    ) -> None:
+        product = await create_product_fixed_and_seat(
+            save_fixture,
+            organization=organization,
+            fixed_amount=20000,
+            tiers=GRADUATED_SEAT_TIERS,
+            seat_tier_type=SeatTierType.graduated,
+        )
+        fixed_price = next(p for p in product.prices if is_fixed_price(p))
+        seat_price = next(p for p in product.prices if is_seat_price(p))
+
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=seats,
+        )
+
+        # Seats within the included tier contribute nothing on top of the base.
+        if seats <= 50:
+            assert seat_price.calculate_amount(seats) == 0
+
+        assert subscription.amount == (
+            fixed_price.price_amount + seat_price.calculate_amount(seats)
+        )

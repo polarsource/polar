@@ -23,6 +23,7 @@ type StaticPrice = (
     | LegacyRecurringProductPriceFree
     | ProductPriceCustom
     | LegacyRecurringProductPriceCustom
+    | ProductPriceSeatUnit
 )
 
 type FixedPrice = ProductPriceFixed | LegacyRecurringProductPriceFixed

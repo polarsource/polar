@@ -3,13 +3,11 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
-from polar.kit.metadata import get_nested_metadata_value
-
 _FIXED_PLACEHOLDERS = {"customer_name", "customer_email_local"}
 _METADATA_PREFIX = "metadata."
 _PLACEHOLDER_RE = re.compile(r"\{([^{}]*)\}")
 _PLACEHOLDER_NAME_RE = re.compile(r"^[\w.]+$")
-_METADATA_PLACEHOLDER_RE = re.compile(r"^metadata\.[\w-]+(?:\.[\w-]+)*$")
+_METADATA_PLACEHOLDER_RE = re.compile(r"^metadata\.[^{}]+$")
 _SLACK_CHANNEL_NAME_MAX_LENGTH = 80
 _NON_ALPHANUMERIC = re.compile(r"[^a-z0-9]+")
 
@@ -78,7 +76,7 @@ def _resolve(name: str, context: TemplateContext, *, tolerant: bool) -> str:
         return str(getattr(context, name))
     if _METADATA_PLACEHOLDER_RE.fullmatch(name):
         key = name[len(_METADATA_PREFIX) :]
-        value = get_nested_metadata_value(context.metadata, key)
+        value = context.metadata.get(key)
         if value is None:
             if tolerant:
                 return key

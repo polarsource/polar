@@ -78,6 +78,39 @@ class TestRenderChannelName:
             == "gold-acme"
         )
 
+    def test_metadata_lookup_with_dotted_key(self) -> None:
+        context = TemplateContext(
+            customer_name="Acme",
+            customer_email_local="admin",
+            metadata={"plan.name": "gold"},
+        )
+        validate_template("{metadata.plan.name}-{customer_name}")
+        assert (
+            render_channel_name("{metadata.plan.name}-{customer_name}", context)
+            == "gold-acme"
+        )
+
+    def test_metadata_lookup_with_space_key(self) -> None:
+        context = TemplateContext(
+            customer_name="Acme",
+            customer_email_local="admin",
+            metadata={"plan name": "gold"},
+        )
+        validate_template("{metadata.plan name}-{customer_name}")
+        assert (
+            render_channel_name("{metadata.plan name}-{customer_name}", context)
+            == "gold-acme"
+        )
+
+    def test_metadata_lookup_with_colon_key(self) -> None:
+        context = TemplateContext(
+            customer_name="Acme",
+            customer_email_local="admin",
+            metadata={"tier:level": "gold"},
+        )
+        validate_template("{metadata.tier:level}")
+        assert render_channel_name("{metadata.tier:level}", context) == "gold"
+
     def test_metadata_missing_key_raises(self) -> None:
         context = TemplateContext(
             customer_name="Acme",
@@ -86,6 +119,24 @@ class TestRenderChannelName:
         )
         with pytest.raises(InvalidTemplateError, match="metadata key 'tier'"):
             render_channel_name("{metadata.tier}", context)
+
+    def test_metadata_dotted_key_missing_raises(self) -> None:
+        context = TemplateContext(
+            customer_name="Acme",
+            customer_email_local="admin",
+            metadata={"plan": "gold"},
+        )
+        with pytest.raises(InvalidTemplateError, match="metadata key 'plan.name'"):
+            render_channel_name("{metadata.plan.name}", context)
+
+    def test_metadata_dotted_key_does_not_traverse(self) -> None:
+        context = TemplateContext(
+            customer_name="Acme",
+            customer_email_local="admin",
+            metadata={"plan": "gold", "name": "team"},
+        )
+        with pytest.raises(InvalidTemplateError, match="metadata key 'plan.name'"):
+            render_channel_name("{metadata.plan.name}", context)
 
     def test_slugify_lowercase_and_dashes(self) -> None:
         context = TemplateContext(

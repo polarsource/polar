@@ -81,6 +81,24 @@ describe('getFixedPrice', () => {
 
     expect(getFixedPrice(checkout)).toBeNull()
   })
+
+  it('returns the fixed price matching the checkout currency', () => {
+    const usdPrice = createFixedPrice({
+      id: 'price_fixed_usd',
+      price_currency: 'usd',
+    })
+    const eurPrice = createFixedPrice({
+      id: 'price_fixed_eur',
+      price_currency: 'eur',
+    })
+    const checkout = createCheckout({
+      currency: 'eur',
+      product_price: eurPrice,
+      prices: { prod_1: [usdPrice, eurPrice] },
+    })
+
+    expect(getFixedPrice(checkout)).toBe(eurPrice)
+  })
 })
 
 describe('isLegacyRecurringProductPrice', () => {

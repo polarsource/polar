@@ -60,9 +60,11 @@ export const getFixedPrice = (
   }
 
   return (
-    prices.find(
-      (price): price is schemas['ProductPriceFixed'] =>
-        price.amount_type === 'fixed',
-    ) ?? null
+    prices
+      .filter((price) => price.price_currency === checkout.currency)
+      .find(
+        (price): price is schemas['ProductPriceFixed'] =>
+          price.amount_type === 'fixed',
+      ) ?? null
   )
 }

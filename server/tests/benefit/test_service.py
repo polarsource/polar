@@ -491,8 +491,10 @@ class TestUpdate:
         enqueue_benefit_grant_updates_mock.assert_awaited_once()
 
     @pytest.mark.auth
+    @pytest.mark.parametrize("visibility", [Visibility.private, None])
     async def test_rejects_visibility_update_for_non_configurable_benefit(
         self,
+        visibility: Visibility | None,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         redis: Redis,
@@ -511,9 +513,8 @@ class TestUpdate:
             },
         )
 
-        update_schema = BenefitDiscordUpdate(
-            type=BenefitType.discord,
-            visibility=Visibility.private,
+        update_schema = BenefitDiscordUpdate.model_validate(
+            {"type": BenefitType.discord, "visibility": visibility}
         )
 
         with pytest.raises(PolarRequestValidationError):

@@ -196,7 +196,7 @@ class BenefitService:
             )
 
         if (
-            benefit_update.visibility is not None
+            "visibility" in benefit_update.model_fields_set
             and not benefit.type.is_visibility_configurable()
         ):
             raise PolarRequestValidationError(

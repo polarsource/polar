@@ -416,6 +416,96 @@ export default {
           'Pagination indicator, e.g. "Page 2 of 5". {page} is the current page, {totalPages} the total.',
       },
     },
+    auth: {
+      accessMyPurchases: 'Access my purchases',
+      request: {
+        signIn: 'Sign in',
+        description:
+          'Enter your email address to access your purchases. A verification code will be sent to you.',
+        emailPlaceholder: 'Email address',
+        fieldRequired: 'This field is required',
+        selectAccount: {
+          title: 'Select an account',
+          description:
+            'Multiple accounts are associated with this email. Please select the account you want to access.',
+        },
+        unnamedAccount: 'Unnamed account',
+        continue: 'Continue',
+      },
+      authenticate: {
+        title: 'Verification code',
+        description: 'Enter the verification code sent to your email address.',
+        invalidCode: 'Invalid verification code',
+        noCodePrefix: {
+          value: "Don't have a code?",
+          _llmContext:
+            'Start of a sentence followed by a "Request a new one" link and a period. Shown under the verification code form.',
+        },
+        requestNew: {
+          value: 'Request a new one',
+          _llmContext:
+            'Link text inside the sentence "Don\'t have a code? Request a new one."',
+        },
+      },
+      verifyEmail: {
+        invalidLink: {
+          title: 'Invalid link',
+          description: 'This verification link is invalid or has expired.',
+        },
+        updated: {
+          title: 'Email updated',
+          description:
+            'Your email has been updated. Redirecting you to the Customer Portal…',
+        },
+        verify: {
+          title: 'Verify new email',
+          descriptionPrefix: {
+            value: "You're updating your email address for",
+            _llmContext:
+              'Start of a sentence immediately followed by the organization name in bold, then descriptionSuffix.',
+          },
+          descriptionSuffix: {
+            value:
+              ". Once confirmed, you'll use this new email to access your purchases.",
+            _llmContext:
+              'End of a sentence that follows the bold organization name. Begins with the period after the name.',
+          },
+          confirmButton: 'Confirm Email Change',
+          changedMind:
+            'Changed your mind? You can safely ignore this and your current email will remain active.',
+        },
+      },
+      claim: {
+        missingToken: {
+          title: 'Missing Invitation Token',
+          description:
+            'This page requires a valid invitation token in the URL.',
+        },
+        loading: 'Loading invitation details...',
+        invalid: {
+          title: 'Invalid Invitation',
+          description:
+            'This invitation link is invalid, has expired, or has already been claimed. Contact the person who invited you to resend the invitation.',
+        },
+        success: {
+          title: 'Success!',
+          description: 'Redirecting to your portal...',
+        },
+        claiming: {
+          title: 'Claiming benefits...',
+          description: 'Please wait while we set up your access',
+        },
+        title: 'Claim your seat',
+        description: {
+          value: "You've been invited to {productName} on {organizationName}.",
+          _llmContext:
+            'Shown on the seat claim page. {productName} and {organizationName} are dynamic product and organization names.',
+        },
+        claimButton: 'Claim seat',
+        claimingButton: 'Claiming...',
+        claimError: 'Failed to claim seat',
+      },
+    },
     overview: {
       teamSeatAccess: {
         title: 'Team Seat Access',

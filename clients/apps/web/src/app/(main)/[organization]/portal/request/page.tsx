@@ -1,6 +1,9 @@
+import { PortalLocaleProvider } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
+import { resolvePortalLocale } from '../resolveLocale'
 import RequestPage from './RequestPage'
 
 export async function generateMetadata(props: {
@@ -49,6 +52,7 @@ export default async function Page(props: {
   searchParams: Promise<{
     customer_session_token?: string
     email?: string
+    locale?: string
   }>
 }) {
   const searchParams = await props.searchParams
@@ -59,5 +63,17 @@ export default async function Page(props: {
     params.organization,
   )
 
-  return <RequestPage organization={organization} email={searchParams.email} />
+  const locale = resolvePortalLocale({
+    localizationEnabled:
+      organization.organization_features?.checkout_localization_enabled ??
+      false,
+    localeParam: searchParams.locale,
+    acceptLanguage: (await headers()).get('accept-language'),
+  })
+
+  return (
+    <PortalLocaleProvider locale={locale}>
+      <RequestPage organization={organization} email={searchParams.email} />
+    </PortalLocaleProvider>
+  )
 }

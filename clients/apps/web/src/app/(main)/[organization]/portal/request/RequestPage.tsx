@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { useCustomerPortalSessionRequest } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import { Button } from '@polar-sh/orbit'
@@ -42,6 +43,7 @@ const ClientPage = ({
   email?: string
 }) => {
   const router = useRouter()
+  const t = useTranslations()
   const form = useForm<{ email: string }>({
     defaultValues: {
       email: email || '',
@@ -95,11 +97,10 @@ const ClientPage = ({
         <div className="flex w-full flex-col gap-y-6 md:max-w-sm">
           <div className="flex flex-col gap-4">
             <h2 className="text-2xl text-black dark:text-white">
-              Select an account
+              {t('portal.auth.request.selectAccount.title')}
             </h2>
             <p className="dark:text-polar-400 text-gray-500">
-              Multiple accounts are associated with this email. Please select
-              the account you want to access.
+              {t('portal.auth.request.selectAccount.description')}
             </p>
           </div>
           <RadioGroup
@@ -117,7 +118,7 @@ const ClientPage = ({
                   htmlFor={customer.id}
                   className="flex-1 cursor-pointer font-medium"
                 >
-                  {customer.name || 'Unnamed account'}
+                  {customer.name || t('portal.auth.request.unnamedAccount')}
                 </Label>
               </div>
             ))}
@@ -132,7 +133,7 @@ const ClientPage = ({
                 setCustomers([])
               }}
             >
-              Back
+              {t('portal.common.back')}
             </Button>
             <Button
               size="lg"
@@ -141,7 +142,7 @@ const ClientPage = ({
               disabled={sessionRequest.isPending || !selectedCustomerId}
               onClick={handleCustomerSelect}
             >
-              Continue
+              {t('portal.auth.request.continue')}
             </Button>
           </div>
         </div>
@@ -153,10 +154,11 @@ const ClientPage = ({
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
       <div className="flex w-full flex-col gap-y-6 md:max-w-sm">
         <div className="flex flex-col gap-4">
-          <h2 className="text-2xl text-black dark:text-white">Sign in</h2>
+          <h2 className="text-2xl text-black dark:text-white">
+            {t('portal.auth.request.signIn')}
+          </h2>
           <p className="dark:text-polar-400 text-gray-500">
-            Enter your email address to access your purchases. A verification
-            code will be sent to you.
+            {t('portal.auth.request.description')}
           </p>
         </div>
         <Form {...form}>
@@ -168,7 +170,7 @@ const ClientPage = ({
               control={control}
               name="email"
               rules={{
-                required: 'This field is required',
+                required: t('portal.auth.request.fieldRequired'),
               }}
               render={({ field }) => {
                 return (
@@ -177,7 +179,7 @@ const ClientPage = ({
                       <Input
                         type="email"
                         required
-                        placeholder="Email address"
+                        placeholder={t('portal.auth.request.emailPlaceholder')}
                         autoComplete="email"
                         className="bg-white shadow-xs"
                         {...field}
@@ -194,7 +196,7 @@ const ClientPage = ({
               loading={sessionRequest.isPending}
               disabled={sessionRequest.isPending}
             >
-              Access my purchases
+              {t('portal.auth.accessMyPurchases')}
             </Button>
           </form>
         </Form>

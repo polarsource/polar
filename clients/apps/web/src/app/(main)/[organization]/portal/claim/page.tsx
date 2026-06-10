@@ -1,6 +1,9 @@
+import { PortalLocaleProvider } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
+import { resolvePortalLocale } from '../resolveLocale'
 import ClaimPage from './ClaimPage'
 
 export async function generateMetadata(props: {
@@ -20,10 +23,11 @@ export async function generateMetadata(props: {
 
 export default async function Page(props: {
   params: Promise<{ organization: string }>
-  searchParams: Promise<{ token?: string }>
+  searchParams: Promise<{ token?: string; locale?: string }>
 }) {
   const params = await props.params
-  const { token, ...searchParams } = await props.searchParams
+  const { token, locale: localeParam, ...searchParams } =
+    await props.searchParams
 
   // Get organization without requiring authentication (like /request page)
   const api = await getServerSideAPI()
@@ -33,5 +37,17 @@ export default async function Page(props: {
     searchParams,
   )
 
-  return <ClaimPage organization={organization} invitationToken={token} />
+  const locale = resolvePortalLocale({
+    localizationEnabled:
+      organization.organization_features?.checkout_localization_enabled ??
+      false,
+    localeParam,
+    acceptLanguage: (await headers()).get('accept-language'),
+  })
+
+  return (
+    <PortalLocaleProvider locale={locale}>
+      <ClaimPage organization={organization} invitationToken={token} />
+    </PortalLocaleProvider>
+  )
 }

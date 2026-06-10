@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { useCustomerPortalSessionAuthenticate } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
@@ -29,6 +30,7 @@ const ClientPage = ({
   organization: schemas['CustomerOrganization']
 }) => {
   const router = useRouter()
+  const t = useTranslations()
   const form = useForm<{ code: string }>()
   const { control, handleSubmit, setError } = form
   const sessionRequest = useCustomerPortalSessionAuthenticate(api)
@@ -49,7 +51,7 @@ const ClientPage = ({
       }
 
       if (!data) {
-        setError('root', { message: 'Invalid verification code' })
+        setError('root', { message: t('portal.auth.authenticate.invalidCode') })
         return
       }
 
@@ -63,7 +65,7 @@ const ClientPage = ({
         `/${organization.slug}/portal/?customer_session_token=${data.token}`,
       )
     },
-    [sessionRequest, setError, router, organization],
+    [sessionRequest, setError, router, organization, t],
   )
 
   return (
@@ -71,10 +73,10 @@ const ClientPage = ({
       <div className="flex w-full flex-col gap-y-6 md:max-w-sm">
         <div className="flex flex-col gap-4">
           <h2 className="text-2xl text-black dark:text-white">
-            Verification code
+            {t('portal.auth.authenticate.title')}
           </h2>
           <p className="dark:text-polar-500 text-gray-500">
-            Enter the verification code sent to your email address.
+            {t('portal.auth.authenticate.description')}
           </p>
         </div>
         <Form {...form}>
@@ -129,13 +131,13 @@ const ClientPage = ({
               loading={sessionRequest.isPending}
               disabled={sessionRequest.isPending || code.length !== 6}
             >
-              Access my purchases
+              {t('portal.auth.accessMyPurchases')}
             </Button>
 
             <p className="dark:text-polar-400 text-sm text-gray-500">
-              Don&apos;t have a code?{' '}
+              {t('portal.auth.authenticate.noCodePrefix')}{' '}
               <Link href="request" className="underline hover:no-underline">
-                Request a new one
+                {t('portal.auth.authenticate.requestNew')}
               </Link>
               .
             </p>

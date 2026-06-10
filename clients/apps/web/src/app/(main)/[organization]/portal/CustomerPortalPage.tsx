@@ -1,14 +1,10 @@
 import { PortalLocaleProvider } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { getServerSideAPI } from '@/utils/client/serverside'
-import { getBrowserLocale } from '@/utils/i18n'
 import { schemas } from '@polar-sh/client'
-import {
-  type AcceptedLocale,
-  DEFAULT_LOCALE,
-  isAcceptedLocale,
-} from '@polar-sh/i18n'
+import { isAcceptedLocale } from '@polar-sh/i18n'
 import { headers } from 'next/headers'
 import { Navigation } from './Navigation'
+import { resolvePortalLocale } from './resolveLocale'
 
 async function getCustomerLocale(token: string): Promise<string | null> {
   const api = await getServerSideAPI(token)
@@ -35,28 +31,20 @@ export async function CustomerPortalPage({
   const localizationEnabled =
     organization.organization_features?.checkout_localization_enabled ?? false
 
-  let locale: AcceptedLocale = DEFAULT_LOCALE
+  const localeParam = searchParams.locale
+  const hasOverride = Boolean(localeParam && isAcceptedLocale(localeParam))
 
-  if (localizationEnabled) {
-    const localeParam = searchParams.locale
-    const overrideLocale =
-      localeParam && isAcceptedLocale(localeParam) ? localeParam : null
+  const customerLocale =
+    localizationEnabled && !hasOverride && token
+      ? await getCustomerLocale(token)
+      : null
 
-    const customerLocale =
-      !overrideLocale && token ? await getCustomerLocale(token) : null
-
-    const browserLocale = getBrowserLocale(
-      (await headers()).get('accept-language'),
-    )
-
-    if (overrideLocale) {
-      locale = overrideLocale
-    } else if (customerLocale && isAcceptedLocale(customerLocale)) {
-      locale = customerLocale
-    } else if (browserLocale) {
-      locale = browserLocale
-    }
-  }
+  const locale = resolvePortalLocale({
+    localizationEnabled,
+    localeParam,
+    customerLocale,
+    acceptLanguage: (await headers()).get('accept-language'),
+  })
 
   return (
     <PortalLocaleProvider locale={locale}>

@@ -1,6 +1,9 @@
+import { PortalLocaleProvider } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
+import { resolvePortalLocale } from '../resolveLocale'
 import VerifyEmailPage from './VerifyEmailPage'
 
 export async function generateMetadata(props: {
@@ -23,10 +26,15 @@ export default async function Page(props: {
   searchParams: Promise<{
     customer_session_token?: string
     token?: string
+    locale?: string
   }>
 }) {
-  const { customer_session_token, token, ...searchParams } =
-    await props.searchParams
+  const {
+    customer_session_token,
+    token,
+    locale: localeParam,
+    ...searchParams
+  } = await props.searchParams
   const params = await props.params
   const api = await getServerSideAPI(customer_session_token)
   const { organization } = await getOrganizationOrNotFound(
@@ -44,11 +52,21 @@ export default async function Page(props: {
     tokenValid = result.response.ok
   }
 
+  const locale = resolvePortalLocale({
+    localizationEnabled:
+      organization.organization_features?.checkout_localization_enabled ??
+      false,
+    localeParam,
+    acceptLanguage: (await headers()).get('accept-language'),
+  })
+
   return (
-    <VerifyEmailPage
-      organization={organization}
-      token={token}
-      tokenValid={tokenValid}
-    />
+    <PortalLocaleProvider locale={locale}>
+      <VerifyEmailPage
+        organization={organization}
+        token={token}
+        tokenValid={tokenValid}
+      />
+    </PortalLocaleProvider>
   )
 }

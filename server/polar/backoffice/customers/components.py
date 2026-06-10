@@ -49,6 +49,7 @@ def customers_datatable(
         datatable.DatatableAttrColumn("name", "Name"),
         OrganizationColumn(),
         datatable.DatatableDateTimeColumn("created_at", "Created"),
+        datatable.DatatableDateTimeColumn("deleted_at", "Deleted At"),
     )
 
     with d.render(request, items, sorting=sorting):

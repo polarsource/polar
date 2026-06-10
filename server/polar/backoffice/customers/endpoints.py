@@ -65,7 +65,7 @@ async def list(
 ) -> None:
     repository = CustomerRepository.from_session(session)
     statement = (
-        repository.get_base_statement()
+        repository.get_base_statement(include_deleted=True)
         .join(Organization, Customer.organization_id == Organization.id)
         .options(contains_eager(Customer.organization))
     )
@@ -132,6 +132,7 @@ async def get(
     customer_repository = CustomerRepository.from_session(session)
     customer = await customer_repository.get_by_id(
         id,
+        include_deleted=True,
         options=(joinedload(Customer.organization),),
     )
 
@@ -187,8 +188,12 @@ async def get(
         "customers:get",
     ):
         with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text(customer.display_name)
+            with tag.div(classes="flex items-center gap-4"):
+                with tag.h1(classes="text-4xl"):
+                    text(customer.display_name)
+                if customer.deleted_at:
+                    with tag.div(classes="badge badge-error"):
+                        text("Deleted")
 
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 # Customer Details
@@ -197,19 +202,33 @@ async def get(
                         with tag.div(classes="flex justify-between items-center"):
                             with tag.h2(classes="card-title"):
                                 text("Customer Details")
-                            with button(
-                                hx_get=str(
-                                    request.url_for(
-                                        "customers:edit_email",
-                                        id=customer.id,
-                                    )
-                                ),
-                                hx_target="#modal",
-                                variant="secondary",
-                                size="sm",
-                                ghost=True,
-                            ):
-                                text("Edit Email")
+                            with tag.div(classes="flex items-center gap-2"):
+                                if customer.deleted_at:
+                                    with button(
+                                        hx_get=str(
+                                            request.url_for(
+                                                "customers:restore",
+                                                id=customer.id,
+                                            )
+                                        ),
+                                        hx_target="#modal",
+                                        variant="primary",
+                                        size="sm",
+                                    ):
+                                        text("Restore")
+                                with button(
+                                    hx_get=str(
+                                        request.url_for(
+                                            "customers:edit_email",
+                                            id=customer.id,
+                                        )
+                                    ),
+                                    hx_target="#modal",
+                                    variant="secondary",
+                                    size="sm",
+                                    ghost=True,
+                                ):
+                                    text("Edit Email")
                         with description_list.DescriptionList[Customer](
                             description_list.DescriptionListAttrItem(
                                 "id", "ID", clipboard=True
@@ -581,6 +600,59 @@ async def generate_member_portal_link_modal(
         ),
         portal_url=portal_url,
     )
+
+
+@router.api_route("/{id}/restore", name="customers:restore", methods=["GET", "POST"])
+async def restore_customer(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    customer_repository = CustomerRepository.from_session(session)
+    customer = await customer_repository.get_by_id(id, include_deleted=True)
+
+    if customer is None:
+        raise HTTPException(status_code=404)
+
+    if not customer.deleted_at:
+        raise HTTPException(status_code=400, detail="Customer is not deleted")
+
+    if request.method == "POST":
+        await customer_repository.update(customer, update_dict={"deleted_at": None})
+
+        await add_toast(
+            request,
+            f"Customer {customer.display_name} has been restored.",
+            "success",
+        )
+
+        return HXRedirectResponse(
+            request, str(request.url_for("customers:get", id=customer.id))
+        )
+
+    with modal("Restore Customer", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text(
+                    f"Are you sure you want to restore {customer.display_name}? "
+                    "This will re-activate the customer. "
+                    "Benefits will NOT be automatically re-granted."
+                )
+
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with tag.form(method="dialog"):
+                    with button(
+                        type="button",
+                        variant="primary",
+                        hx_post=str(
+                            request.url_for("customers:restore", id=customer.id)
+                        ),
+                        hx_target="#modal",
+                    ):
+                        text("Restore")
 
 
 @router.api_route(

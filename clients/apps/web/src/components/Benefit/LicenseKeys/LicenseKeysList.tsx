@@ -13,7 +13,6 @@ import {
   RowSelectionState,
   SortingState,
 } from '@tanstack/react-table'
-import { twMerge } from 'tailwind-merge'
 
 export interface LicenseKeysListProps {
   licenseKeys: schemas['LicenseKeyRead'][]

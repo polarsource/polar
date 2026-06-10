@@ -6,7 +6,6 @@ import { formatCurrency } from '@polar-sh/currency'
 import { Card } from '@polar-sh/ui/components/atoms/Card'
 import { Status } from '@polar-sh/orbit'
 import { useContext } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { WidgetContainer } from './WidgetContainer'
 
 export interface AccountWidgetProps {

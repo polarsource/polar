@@ -10,6 +10,7 @@ import {
   setProductValidationErrors,
 } from '@/utils/api/errors'
 import {
+  formPriceToApiPrice,
   ProductEditOrCreateForm,
   productPriceToFormPrice,
 } from '@/utils/product'
@@ -117,6 +118,7 @@ export const EditProductPage = ({
             id: product.id,
             body: {
               ...productUpdateRest,
+              prices: productUpdateRest.prices.map(formPriceToApiPrice),
               medias: full_medias.map((media) => media.id),
               metadata: metadata.reduce(
                 (acc, { key, value }) => ({ ...acc, [key]: value }),

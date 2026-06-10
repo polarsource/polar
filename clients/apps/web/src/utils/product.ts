@@ -36,6 +36,16 @@ export const productPriceToFormPrice = (
   return price
 }
 
+// Inverse of `productPriceToFormPrice`: the form keeps `free` as a UI-only price type,
+// so convert it back to a fixed price of 0 before sending to the API. We no longer
+// create `free` prices (they're being dropped in favor of a fixed price of 0).
+export const formPriceToApiPrice = (
+  price: schemas['ProductCreate']['prices'][number],
+): schemas['ProductCreate']['prices'][number] =>
+  price.amount_type === 'free'
+    ? { ...price, amount_type: 'fixed', price_amount: 0 }
+    : price
+
 export const isMeteredPrice = (
   price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice'],
 ): price is schemas['ProductPriceMeteredUnit'] =>

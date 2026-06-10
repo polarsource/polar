@@ -90,9 +90,6 @@ async def list(
     status: MultipleQueryFilter[SubscriptionStatus] | None = Query(
         None, title="Status Filter", description="Filter by subscription status."
     ),
-    status: MultipleQueryFilter[SubscriptionStatus] | None = Query(
-        None, title="Status Filter", description="Filter by subscription status."
-    ),
     cancel_at_period_end: bool | None = Query(
         None,
         description="Filter by subscriptions that are set to cancel at period end.",

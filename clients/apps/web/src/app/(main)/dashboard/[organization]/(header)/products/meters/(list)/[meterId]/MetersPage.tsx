@@ -97,21 +97,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
             <h2 className="text-2xl">{meter.name}</h2>
             <div className="flex flex-row items-center gap-x-2">
               <Status
-                className="bg-indigo-50 text-indigo-500 capitalize dark:bg-indigo-950 dark:text-indigo-500"
-                status={`${meter.aggregation.func} Aggregation`}
+                color="blue"
+                status={`${meter.aggregation.func.charAt(0).toUpperCase()}${meter.aggregation.func.slice(1)} Aggregation`}
               />
               {'property' in meter.aggregation && (
-                <Status
-                  className="dark:bg-polar-700 dark:text-polar-500 bg-gray-200 text-gray-500"
-                  status={meter.aggregation.property}
-                />
+                <Status color="gray" status={meter.aggregation.property} />
               )}
-              {meter.archived_at && (
-                <Status
-                  className="bg-red-50 text-red-500 dark:bg-red-950 dark:text-red-500"
-                  status="Archived"
-                />
-              )}
+              {meter.archived_at && <Status color="red" status="Archived" />}
             </div>
           </div>
 

@@ -58,13 +58,12 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
                   })}
                 </span>
                 <Status
-                  status={payout.status.split('_').join(' ')}
-                  className={twMerge(
-                    'px-1.5 py-0.5 text-xs capitalize',
-                    payout.status === 'succeeded'
-                      ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-950'
-                      : 'bg-yellow-50 text-yellow-500 dark:bg-yellow-950',
-                  )}
+                  status={payout.status
+                    .split('_')
+                    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                    .join(' ')}
+                  color={payout.status === 'succeeded' ? 'green' : 'yellow'}
+                  size="small"
                 />
               </div>
               <div className="flex flex-row justify-between gap-x-4">

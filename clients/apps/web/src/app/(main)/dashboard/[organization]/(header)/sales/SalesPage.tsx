@@ -177,10 +177,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <div className="flex flex-row items-center gap-4">
             {product.name}
             {product.is_archived && (
-              <Status
-                status="Archived"
-                className="bg-red-100 text-xs text-red-500 dark:bg-red-950"
-              />
+              <Status status="Archived" color="red" size="small" />
             )}
           </div>
         )

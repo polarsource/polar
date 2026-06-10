@@ -2,26 +2,19 @@
 
 import { useMembers } from '@/hooks/queries/members'
 import { useOrganization } from '@/hooks/queries/org'
-import { DataTable } from '@polar-sh/orbit'
+import { DataTable, type StatusColor } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Status } from '@polar-sh/orbit'
 import { useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
 
-const roleDisplayConfig = {
-  owner: [
-    'Owner',
-    'bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400',
-  ],
-  billing_manager: [
-    'Billing Manager',
-    'bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400',
-  ],
-  member: [
-    'Member',
-    'bg-gray-100 text-gray-600 dark:bg-polar-700 dark:text-polar-400',
-  ],
-} as const
+const roleDisplayConfig: Record<
+  'owner' | 'billing_manager' | 'member',
+  [string, StatusColor]
+> = {
+  owner: ['Owner', 'blue'],
+  billing_manager: ['Billing Manager', 'purple'],
+  member: ['Member', 'gray'],
+}
 
 interface MembersSectionProps {
   customerId: string
@@ -79,13 +72,8 @@ export const MembersSection = ({
             header: 'Role',
             accessorKey: 'role',
             cell: ({ row: { original } }) => {
-              const [label, className] = roleDisplayConfig[original.role]
-              return (
-                <Status
-                  className={twMerge(className, 'w-fit text-xs')}
-                  status={label}
-                />
-              )
+              const [label, color] = roleDisplayConfig[original.role]
+              return <Status color={color} status={label} size="small" />
             },
           },
           {

@@ -17,26 +17,19 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/atoms/DropdownMenu'
 import { Input } from '@polar-sh/orbit'
-import { Status } from '@polar-sh/orbit'
+import { Status, type StatusColor } from '@polar-sh/orbit'
 import { useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { toast } from '../Toast/use-toast'
 import { CustomerSeatQuantityManager } from './CustomerSeatQuantityManager'
 
-const seatStatusToDisplayName = {
-  pending: [
-    'Pending',
-    'bg-yellow-100 text-yellow-500 dark:bg-yellow-950 dark:text-yellow-500',
-  ],
-  claimed: [
-    'Claimed',
-    'bg-emerald-100 text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500',
-  ],
-  revoked: [
-    'Revoked',
-    'bg-gray-100 text-gray-500 dark:bg-polar-700 dark:text-polar-500',
-  ],
-} as const
+const seatStatusToDisplayName: Record<
+  'pending' | 'claimed' | 'revoked',
+  [string, StatusColor]
+> = {
+  pending: ['Pending', 'yellow'],
+  claimed: ['Claimed', 'green'],
+  revoked: ['Revoked', 'gray'],
+}
 
 interface CustomerSeat {
   id: string
@@ -216,8 +209,7 @@ export const SeatManagementTable = ({
                   return order.indexOf(a.status) - order.indexOf(b.status)
                 })
                 .map((seat) => {
-                  const [label, statusClassName] =
-                    seatStatusToDisplayName[seat.status]
+                  const [label, color] = seatStatusToDisplayName[seat.status]
                   const isSeatLoading = loadingSeats.has(seat.id)
 
                   return (
@@ -228,10 +220,7 @@ export const SeatManagementTable = ({
                         </span>
                       </td>
                       <td className="p-4 align-middle">
-                        <Status
-                          className={twMerge(statusClassName, 'w-fit text-sm')}
-                          status={label}
-                        />
+                        <Status color={color} status={label} />
                       </td>
                       <td className="p-4 align-middle">
                         {seat.status !== 'revoked' && (

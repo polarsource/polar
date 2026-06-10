@@ -243,10 +243,7 @@ const MetricChartBox = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="inline-flex cursor-help">
-                      <Status
-                        status="Experimental"
-                        className="bg-blue-100 text-xs text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-                      />
+                      <Status status="Experimental" color="blue" size="small" />
                     </span>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
@@ -264,10 +261,7 @@ const MetricChartBox = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="inline-flex cursor-help">
-                      <Status
-                        status="Experimental"
-                        className="bg-blue-100 text-xs text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-                      />
+                      <Status status="Experimental" color="blue" size="small" />
                     </span>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
@@ -336,12 +330,7 @@ const MetricChartBox = ({
               status={
                 trend > 0 ? `+${trend.toFixed(0)}%` : `${trend.toFixed(0)}%`
               }
-              className={twMerge(
-                'text-sm',
-                trend > 0
-                  ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950'
-                  : 'bg-red-100 text-red-500 dark:bg-red-950',
-              )}
+              color={trend > 0 ? 'green' : 'red'}
             />
           )}
           {shareable && (

@@ -4,7 +4,6 @@ import {
 } from '@/utils/checkout'
 import { schemas } from '@polar-sh/client'
 import { Status } from '@polar-sh/orbit'
-import { twMerge } from 'tailwind-merge'
 
 const CheckoutStatus = ({
   checkout: { status },
@@ -13,7 +12,7 @@ const CheckoutStatus = ({
 }) => {
   return (
     <Status
-      className={twMerge(CheckoutStatusDisplayColor[status], 'w-fit')}
+      color={CheckoutStatusDisplayColor[status]}
       status={CheckoutStatusDisplayTitle[status]}
     />
   )

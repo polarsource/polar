@@ -1,23 +1,46 @@
 import { twMerge } from 'tailwind-merge'
 
 const sizeClasses = {
-  small: 'px-[0.4em] py-[0.1em] text-[10px]',
+  small: 'px-[0.4em] py-[0.1em] text-xs',
   medium: 'px-[0.7em] py-[0.3em] text-sm',
 }
 
+export type StatusColor =
+  | 'green'
+  | 'red'
+  | 'yellow'
+  | 'blue'
+  | 'purple'
+  | 'gray'
+
+const colorClasses: Record<StatusColor, string> = {
+  green:
+    'bg-emerald-100 text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500',
+  red: 'bg-red-100 text-red-500 dark:bg-red-950 dark:text-red-500',
+  yellow:
+    'bg-yellow-100 text-yellow-500 dark:bg-yellow-950 dark:text-yellow-500',
+  blue: 'bg-indigo-100 text-indigo-500 dark:bg-indigo-950 dark:text-indigo-500',
+  purple:
+    'bg-violet-100 text-violet-500 dark:bg-violet-950 dark:text-violet-400',
+  gray: 'bg-gray-100 text-gray-500 dark:bg-gray-900 dark:text-gray-400',
+}
+
 export interface StatusProps {
-  className?: string
   status: string
+  /** Applies a predefined color treatment. Omit for a neutral, color-less chip. */
+  color?: StatusColor
   size?: 'small' | 'medium'
 }
 
-export const Status = ({ className, status, size = 'medium' }: StatusProps) => {
+// Styling is intentionally closed: no `className` escape hatch. Use `color` and
+// `size`; the chip sizes to its content (`w-fit`), so callers never need it.
+export const Status = ({ status, color, size = 'medium' }: StatusProps) => {
   return (
     <div
       className={twMerge(
-        'flex flex-row items-center justify-center rounded-[0.5em]',
+        'flex w-fit flex-row items-center justify-center rounded-[0.5em]',
         sizeClasses[size],
-        className,
+        color ? colorClasses[color] : undefined,
       )}
     >
       {status}

@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 from uuid import UUID
 
 from alembic_utils.pg_function import PGFunction
@@ -13,6 +13,8 @@ from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
+from polar.kit.schemas import SetSchemaReference
+from polar.kit.visibility import Visibility, VisibilityMixin
 
 if TYPE_CHECKING:
     from polar.benefit.strategies import BenefitProperties
@@ -24,6 +26,9 @@ class TaxApplicationMustBeSpecified(PolarError):
         self.type = type
         message = "The tax application should be specified for this type."
         super().__init__(message)
+
+
+BenefitVisibility = Annotated[Visibility, SetSchemaReference("BenefitVisibility")]
 
 
 class BenefitType(StrEnum):
@@ -64,8 +69,35 @@ class BenefitType(StrEnum):
         except KeyError as e:
             raise TaxApplicationMustBeSpecified(self) from e
 
+    def is_visibility_configurable(self) -> bool:
+        return self in VISIBILITY_CONFIGURABLE_BENEFIT_TYPES
 
-class Benefit(MetadataMixin, RecordModel):
+    def default_visibility(self) -> Visibility:
+        match self:
+            case BenefitType.feature_flag:
+                return Visibility.private
+            case _:
+                return Visibility.public
+
+    def resolve_visibility(self, visibility: Visibility | None) -> Visibility:
+        if not self.is_visibility_configurable():
+            # Benefits requiring customer action in the portal (e.g. Discord,
+            # GitHub, downloads) must stay visible.
+            return Visibility.public
+        return visibility if visibility is not None else self.default_visibility()
+
+
+VISIBILITY_CONFIGURABLE_BENEFIT_TYPES: frozenset[BenefitType] = frozenset(
+    {
+        BenefitType.custom,
+        BenefitType.license_keys,
+        BenefitType.meter_credit,
+        BenefitType.feature_flag,
+    }
+)
+
+
+class Benefit(VisibilityMixin, MetadataMixin, RecordModel):
     __tablename__ = "benefits"
     __table_args__ = (
         Index(

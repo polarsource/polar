@@ -2,7 +2,7 @@
 
 import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined'
 import { Button } from '@polar-sh/orbit'
-import ListGroup from '@polar-sh/ui/components/atoms/ListGroup'
+import { ListGroup } from '@polar-sh/orbit'
 import {
   DropdownMenu,
   DropdownMenuContent,

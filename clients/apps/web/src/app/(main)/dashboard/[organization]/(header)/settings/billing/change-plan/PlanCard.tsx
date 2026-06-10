@@ -3,7 +3,7 @@ import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import Pill from '@polar-sh/ui/components/atoms/Pill'
+import { Pill } from '@polar-sh/orbit'
 import { twMerge } from 'tailwind-merge'
 
 const formatPrice = formatCurrency('standard', 'en-US')

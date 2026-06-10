@@ -6,7 +6,7 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
 } from '@polar-sh/orbit'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { Status } from '@polar-sh/orbit'
 import {
   OnChangeFn,
   PaginationState,

@@ -4,7 +4,7 @@ import { useMembers } from '@/hooks/queries/members'
 import { useOrganization } from '@/hooks/queries/org'
 import { DataTable } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { Status } from '@polar-sh/orbit'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 

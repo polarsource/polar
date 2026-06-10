@@ -17,7 +17,7 @@ import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
-import { List } from '@polar-sh/ui/components/atoms/List'
+import { List } from '@polar-sh/orbit'
 import {
   Select,
   SelectContent,

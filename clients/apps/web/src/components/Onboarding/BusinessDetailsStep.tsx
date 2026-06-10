@@ -9,7 +9,7 @@ import { Button } from '@polar-sh/orbit'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import { Input } from '@polar-sh/orbit'
 
-import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
+import { Tabs, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import {
   Form,
   FormControl,

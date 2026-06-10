@@ -1,10 +1,6 @@
 import { schemas } from '@polar-sh/client'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/ui/components/ui/tooltip'
+import { Status } from '@polar-sh/orbit'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { ISODuration } from '@/utils/duration'
 import { twMerge } from 'tailwind-merge'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'

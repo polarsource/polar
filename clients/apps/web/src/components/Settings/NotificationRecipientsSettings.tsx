@@ -2,7 +2,7 @@
 
 import { useListNotificationRecipients } from '@/hooks/queries/notifications'
 import { schemas } from '@polar-sh/client'
-import ListGroup from '@polar-sh/ui/components/atoms/ListGroup'
+import { ListGroup } from '@polar-sh/orbit'
 
 const NotificationRecipientItem = ({
   recipient,

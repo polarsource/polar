@@ -1,5 +1,5 @@
 import { schemas } from '@polar-sh/client'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { Status } from '@polar-sh/orbit'
 import { twMerge } from 'tailwind-merge'
 
 const OrderStatusDisplayTitle: Record<schemas['Order']['status'], string> = {

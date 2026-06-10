@@ -1,7 +1,7 @@
 import { useAccountCredits, useOrganizationAccount } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { formatCurrency } from '@polar-sh/currency'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import { List, ListItem } from '@polar-sh/orbit'
 import { useContext } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
 import { EmptyState } from '../Shared/EmptyState'

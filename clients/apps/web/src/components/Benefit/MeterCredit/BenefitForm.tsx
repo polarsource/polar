@@ -2,7 +2,7 @@
 
 import { schemas } from '@polar-sh/client'
 import { Input } from '@polar-sh/orbit'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
+import { Checkbox } from '@polar-sh/orbit'
 import {
   FormControl,
   FormDescription,
@@ -19,7 +19,7 @@ import CreateMeterModalContent from '@/components/Meter/CreateMeterModalContent'
 import MeterSelector from '@/components/Meter/MeterSelector'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
-import { SpinnerNoMargin } from '@/components/Shared/Spinner'
+import { SpinnerNoMargin } from '@polar-sh/orbit'
 import { useMeters } from '@/hooks/queries/meters'
 import { Button } from '@polar-sh/orbit'
 

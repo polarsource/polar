@@ -5,7 +5,7 @@ import {
 import { useBenefit } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { schemas } from '@polar-sh/client'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { Status } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { useContext, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'

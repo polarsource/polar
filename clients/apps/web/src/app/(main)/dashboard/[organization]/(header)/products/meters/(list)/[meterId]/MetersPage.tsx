@@ -9,7 +9,7 @@ import { apiErrorToast } from '@/utils/api/errors'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { Status } from '@polar-sh/orbit'
 import {
   DropdownMenu,
   DropdownMenuContent,

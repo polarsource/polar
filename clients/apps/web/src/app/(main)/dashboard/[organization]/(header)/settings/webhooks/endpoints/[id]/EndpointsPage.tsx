@@ -25,7 +25,7 @@ import {
 import { operations, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
-import Switch from '@polar-sh/ui/components/atoms/Switch'
+import { Switch } from '@polar-sh/orbit'
 import { useParams, useRouter } from 'next/navigation'
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
 import { useCallback, useState } from 'react'

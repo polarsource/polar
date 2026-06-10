@@ -3,7 +3,7 @@
 import { useCustomerBenefitGrants } from '@/hooks/queries/customerPortal'
 import { Client } from '@polar-sh/client'
 import { Input } from '@polar-sh/orbit'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import { List, ListItem } from '@polar-sh/orbit'
 import { Loader2, Search } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { BenefitGrant } from '../Benefit/BenefitGrant'

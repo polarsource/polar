@@ -234,11 +234,10 @@ export function ProductDetailsStep() {
         <Box
           as="form"
           onSubmit={handleSubmit(onSubmit)}
-          display="flex"
           flexDirection="column"
           rowGap="xl"
         >
-          <Box display="flex" flexDirection="column" rowGap="m">
+          <Box flexDirection="column" rowGap="m">
             <FormLabel>What are you selling?</FormLabel>
             <ChipSelect
               options={SELLING_CATEGORIES.map((c) => c.name)}
@@ -274,7 +273,6 @@ export function ProductDetailsStep() {
 
           {aup.verdict && (
             <Box
-              display="flex"
               flexDirection="column"
               rowGap="m"
               borderRadius="m"
@@ -295,7 +293,7 @@ export function ProductDetailsStep() {
             </Box>
           )}
 
-          <Box display="flex" flexDirection="column" rowGap="m">
+          <Box flexDirection="column" rowGap="m">
             <FormLabel>Pricing model</FormLabel>
             <ChipSelect
               options={PRICING_MODELS}
@@ -304,7 +302,7 @@ export function ProductDetailsStep() {
             />
           </Box>
 
-          <Box display="flex" flexDirection="column" rowGap="m">
+          <Box flexDirection="column" rowGap="m">
             <FormLabel>
               Currently selling on{' '}
               <Box as="span" color="text-tertiary">
@@ -373,7 +371,7 @@ export function ProductDetailsStep() {
             />
           </Box>
 
-          <Box display="flex" flexDirection="column" rowGap="s">
+          <Box flexDirection="column" rowGap="s">
             <Button
               type="submit"
               onClick={() => form.clearErrors()}

@@ -165,9 +165,8 @@ export function APIPreview({ step }: { step: APIPreviewStep }) {
       : 'text-amber-600 dark:text-amber-500'
 
   return (
-    <Box display="flex" flexDirection="column">
+    <Box flexDirection="column">
       <Box
-        display="flex"
         flexDirection="column"
         rowGap="xs"
         borderBottomWidth={1}
@@ -175,7 +174,7 @@ export function APIPreview({ step }: { step: APIPreviewStep }) {
         borderColor="border-primary"
         paddingBottom="m"
       >
-        <Box display="flex" alignItems="center" gap="s">
+        <Box alignItems="center" gap="s">
           <p
             className={`font-mono text-[11px] leading-relaxed font-semibold ${methodColor}`}
           >
@@ -185,7 +184,7 @@ export function APIPreview({ step }: { step: APIPreviewStep }) {
             {path}
           </p>
         </Box>
-        <Box display="flex" flexDirection="column">
+        <Box flexDirection="column">
           <p className="font-mono text-[10px] leading-relaxed text-gray-400 dark:text-gray-600">
             Host: api.polar.sh
           </p>
@@ -205,11 +204,11 @@ export function APIPreview({ step }: { step: APIPreviewStep }) {
         Request Body
       </p>
 
-      <Box display="flex" flexDirection="column">
+      <Box flexDirection="column">
         {lines.map((line, i) => {
           const isFlashed = flashedKeys.has(line.key)
           return (
-            <Box key={line.key} display="flex">
+            <Box key={line.key}>
               <p
                 className="mr-3 shrink-0 text-right font-mono text-[11px] leading-relaxed text-gray-300 select-none dark:text-gray-700"
                 style={{ minWidth: '1.5ch' }}
@@ -238,7 +237,6 @@ export function APIPreview({ step }: { step: APIPreviewStep }) {
       {apiLoading && (
         <Box
           marginTop="m"
-          display="flex"
           alignItems="center"
           gap="s"
           borderTopWidth={1}
@@ -256,7 +254,6 @@ export function APIPreview({ step }: { step: APIPreviewStep }) {
       {apiResponse && (
         <Box
           marginTop="m"
-          display="flex"
           flexDirection="column"
           rowGap="m"
           borderTopWidth={1}
@@ -264,7 +261,7 @@ export function APIPreview({ step }: { step: APIPreviewStep }) {
           borderColor="border-primary"
           paddingTop="m"
         >
-          <Box display="flex" alignItems="center" gap="s">
+          <Box alignItems="center" gap="s">
             <p
               className={`rounded-sm px-1.5 py-0.5 font-mono text-[10px] leading-relaxed font-bold ${
                 apiResponse.status >= 400

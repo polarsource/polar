@@ -54,8 +54,8 @@ const TIERS: Tier[] = [
 export const Pricing = () => (
   <>
     <span id="pricing" className="block scroll-mt-12 md:scroll-mt-28" />
-    <Box as="section" display="flex" flexDirection="column" rowGap="5xl">
-      <Box display="flex" flexDirection="column" rowGap="xl">
+    <Box as="section" flexDirection="column" rowGap="5xl">
+      <Box flexDirection="column" rowGap="xl">
         <Text variant="heading-xl" as="h2" wrap="balance">
           Built to scale with you.
         </Text>
@@ -64,7 +64,7 @@ export const Pricing = () => (
             Start free. Upgrade as you grow. Enterprise needs? Let&apos;s talk.
           </Text>
         </Box>
-        <Box display="flex" alignItems="center" columnGap="m" paddingTop="m">
+        <Box alignItems="center" columnGap="m" paddingTop="m">
           <GetStartedButton size="default" />
           <Link href="mailto:support@polar.sh">
             <Button variant="secondary">Contact Sales</Button>
@@ -98,23 +98,12 @@ const StartupProgramCard = () => (
     backgroundColor="background-secondary"
     overflow="hidden"
   >
-    <Box
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
-      padding="2xl"
-    >
-      <Box display="flex" width="100%" aspectRatio="1 / 1">
+    <Box alignItems="center" justifyContent="center" padding="2xl">
+      <Box width="100%" aspectRatio="1 / 1">
         <VolumetricSlices />
       </Box>
     </Box>
-    <Box
-      position="relative"
-      display="flex"
-      flexDirection="column"
-      rowGap="xl"
-      padding="3xl"
-    >
+    <Box position="relative" flexDirection="column" rowGap="xl" padding="3xl">
       <Box
         position="absolute"
         top="3rem"
@@ -125,8 +114,8 @@ const StartupProgramCard = () => (
         borderColor="border-primary"
         display={{ base: 'none', sm: 'block' }}
       />
-      <Box display="flex" flexDirection="column" rowGap="xl">
-        <Box display="flex" flexDirection="column" rowGap="m">
+      <Box flexDirection="column" rowGap="xl">
+        <Box flexDirection="column" rowGap="m">
           <Text variant="heading-s" as="h3">
             Startup Program
           </Text>
@@ -136,7 +125,7 @@ const StartupProgramCard = () => (
             </Text>
           </Box>
         </Box>
-        <Box display="flex" alignItems="baseline" columnGap="m">
+        <Box alignItems="baseline" columnGap="m">
           <Text variant="heading-s" as="span">
             Free
           </Text>
@@ -158,14 +147,13 @@ const StartupProgramCard = () => (
 
 const TierCard = ({ tier }: { tier: Tier }) => (
   <Box
-    display="flex"
     flexDirection="column"
     justifyContent="between"
     backgroundColor="background-secondary"
   >
-    <Box display="flex" flexDirection="column" rowGap="xl" padding="3xl">
-      <Box display="flex" flexDirection="column" rowGap="xl">
-        <Box display="flex" flexDirection="column" rowGap="m">
+    <Box flexDirection="column" rowGap="xl" padding="3xl">
+      <Box flexDirection="column" rowGap="xl">
+        <Box flexDirection="column" rowGap="m">
           <Text variant="heading-s" as="h3">
             {tier.name}
           </Text>
@@ -175,7 +163,7 @@ const TierCard = ({ tier }: { tier: Tier }) => (
             </Text>
           </Box>
         </Box>
-        <Box display="flex" alignItems="baseline" columnGap="m">
+        <Box alignItems="baseline" columnGap="m">
           <Text variant="heading-s" as="span">
             {tier.free ? 'Free' : tier.price}
           </Text>
@@ -194,7 +182,6 @@ const TierCard = ({ tier }: { tier: Tier }) => (
 
 const CardSection = ({ label, items }: { label: string; items: string[] }) => (
   <Box
-    display="flex"
     flexDirection="column"
     rowGap="s"
     paddingTop="xl"
@@ -205,7 +192,7 @@ const CardSection = ({ label, items }: { label: string; items: string[] }) => (
     <Text variant="body" color="muted">
       {label}
     </Text>
-    <Box as="ul" display="flex" flexDirection="column" rowGap="s">
+    <Box as="ul" flexDirection="column" rowGap="s">
       {items.map((item) => (
         <Box as="li" display="flex" key={item}>
           <Text variant="body">{item}</Text>

@@ -77,12 +77,7 @@ const PaymentMethodRow = ({
   }
 
   return (
-    <Box
-      display="flex"
-      alignItems="center"
-      justifyContent="between"
-      columnGap="m"
-    >
+    <Box alignItems="center" justifyContent="between" columnGap="m">
       <PaymentMethodDisplay
         type={paymentMethod.type}
         card={
@@ -91,7 +86,7 @@ const PaymentMethodRow = ({
             : null
         }
       />
-      <Box display="flex" alignItems="center" columnGap="m">
+      <Box alignItems="center" columnGap="m">
         {paymentMethod.default ? (
           <Status
             status="Default Method"
@@ -140,13 +135,8 @@ export const BillingPaymentMethods = ({
   const paymentMethods = data?.items ?? []
 
   return (
-    <Box display="flex" flexDirection="column" rowGap="l">
-      <Box
-        display="flex"
-        alignItems="start"
-        justifyContent="between"
-        columnGap="m"
-      >
+    <Box flexDirection="column" rowGap="l">
+      <Box alignItems="start" justifyContent="between" columnGap="m">
         <SectionDescription
           title="Payment methods"
           description="Cards used to pay for your Polar subscription"
@@ -156,7 +146,6 @@ export const BillingPaymentMethods = ({
         </Button>
       </Box>
       <Box
-        display="flex"
         flexDirection="column"
         rowGap="m"
         borderRadius="l"

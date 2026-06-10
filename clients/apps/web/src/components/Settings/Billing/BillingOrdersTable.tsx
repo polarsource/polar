@@ -133,7 +133,7 @@ export const BillingOrdersTable = ({
       size: 56,
       cell: ({ row: { original } }) =>
         original.is_invoice_generated ? (
-          <Box display="flex" justifyContent="end">
+          <Box justifyContent="end">
             <DownloadInvoiceButton
               organizationId={organizationId}
               order={original}
@@ -146,7 +146,6 @@ export const BillingOrdersTable = ({
   if (orders.length === 0) {
     return (
       <Box
-        display="flex"
         flexDirection="column"
         alignItems="center"
         justifyContent="center"

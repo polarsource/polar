@@ -71,14 +71,13 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
       borderColor="border-primary"
     >
       <Box
-        display="flex"
         flexDirection="column"
         rowGap="l"
         padding="xl"
         justifyContent="center"
       >
-        <Box display="flex" flexDirection="column" rowGap="m">
-          <Box display="flex" alignItems="center" columnGap="m">
+        <Box flexDirection="column" rowGap="m">
+          <Box alignItems="center" columnGap="m">
             <RocketIcon className="h-4 w-4 shrink-0" />
             <Text as="strong">Finish setting up your account</Text>
           </Box>
@@ -89,7 +88,7 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
           </Text>
         </Box>
 
-        <Box display="flex" flexDirection="column" rowGap="s">
+        <Box flexDirection="column" rowGap="s">
           <Text color="muted">
             {completed} of {total} complete
           </Text>
@@ -113,7 +112,6 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
       </Box>
 
       <Box
-        display="flex"
         flexDirection="column"
         rowGap="l"
         padding="xl"
@@ -123,7 +121,7 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
         borderStyle="solid"
         borderColor="border-primary"
       >
-        <Box display="flex" flexDirection="column" rowGap="xs">
+        <Box flexDirection="column" rowGap="xs">
           {nextLabel ? (
             <>
               <Text color="muted">Up next</Text>

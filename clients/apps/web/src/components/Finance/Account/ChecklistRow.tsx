@@ -36,7 +36,7 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
 
   if (isLoading || !step) {
     return (
-      <Box display="flex" alignItems="center" columnGap="s">
+      <Box alignItems="center" columnGap="s">
         <LoadingBox width={24} height={24} borderRadius="full" />
         <LoadingBox width={140} height={26} borderRadius="s" />
         <Box display="block" marginLeft="auto">
@@ -66,9 +66,9 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
   const showExpanded = isExpanded && !!renderSection
 
   return (
-    <Box display="flex" flexDirection="column">
-      <Box display="flex" flexDirection="column" rowGap="m">
-        <Box display="flex" alignItems="center" columnGap="s">
+    <Box flexDirection="column">
+      <Box flexDirection="column" rowGap="m">
+        <Box alignItems="center" columnGap="s">
           <StatusIcon status={step.status} />
           <Text variant="label">{label}</Text>
           {reasonText && (

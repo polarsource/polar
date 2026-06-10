@@ -6,7 +6,6 @@ export const Dashboard = () => {
   return (
     <Box
       position="relative"
-      display="flex"
       flexDirection="column"
       rowGap={{ base: '2xl', md: '3xl' }}
       paddingTop={{ base: 'l', md: '3xl' }}

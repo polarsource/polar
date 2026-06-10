@@ -20,7 +20,7 @@ export const SectionLayout = ({
   const hasFooter = !!footerStart || !!footerEnd
 
   return (
-    <Box display="flex" flexDirection="column" rowGap="m">
+    <Box flexDirection="column" rowGap="m">
       {description && (
         <Text variant="default" color="muted">
           {description}
@@ -28,12 +28,7 @@ export const SectionLayout = ({
       )}
       {children}
       {hasFooter && (
-        <Box
-          display="flex"
-          alignItems="center"
-          justifyContent="between"
-          columnGap="s"
-        >
+        <Box alignItems="center" justifyContent="between" columnGap="s">
           <Box display="block">{footerStart}</Box>
           {footerEnd}
         </Box>

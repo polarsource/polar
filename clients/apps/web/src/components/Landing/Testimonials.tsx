@@ -97,7 +97,7 @@ const userTestimonials = [
 ]
 
 export const Testimonials = () => (
-  <Box display="flex" flexDirection="column" rowGap="3xl">
+  <Box flexDirection="column" rowGap="3xl">
     <SectionHeader
       title="What industry leaders think about Polar"
       description="From AI startups to infrastructure veterans, the teams building the future ship production billing on Polar in days, not weeks."
@@ -115,7 +115,6 @@ export const Testimonials = () => (
           className="dark:bg-polar-900 dark:hover:bg-polar-900 bg-gray-50 transition-colors hover:bg-gray-100"
         >
           <Box
-            display="flex"
             flexDirection="column"
             justifyContent="between"
             rowGap="2xl"
@@ -131,7 +130,7 @@ export const Testimonials = () => (
                 className="size-10"
               />
             )}
-            <Box display="flex" flexDirection="column" rowGap="m" flexGrow={1}>
+            <Box flexDirection="column" rowGap="m" flexGrow={1}>
               {t.text}
             </Box>
             <Box
@@ -141,7 +140,7 @@ export const Testimonials = () => (
               borderColor="border-primary"
               width="1.5rem"
             />
-            <Box display="flex" flexDirection="column">
+            <Box flexDirection="column">
               <Text variant="body" as="span">
                 {t.name}
               </Text>

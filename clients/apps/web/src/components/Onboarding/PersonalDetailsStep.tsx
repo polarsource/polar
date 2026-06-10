@@ -227,7 +227,6 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
         <Box
           as="form"
           onSubmit={handleSubmit(onSubmit)}
-          display="flex"
           flexDirection="column"
           rowGap="xl"
         >
@@ -267,7 +266,7 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
             />
           </Box>
 
-          <Box display="flex" flexDirection="column" rowGap="s">
+          <Box flexDirection="column" rowGap="s">
             <FormField
               control={control}
               name="country"
@@ -290,7 +289,6 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
 
             {isUnsupportedCountry && (
               <Box
-                display="flex"
                 flexDirection="column"
                 rowGap="m"
                 borderRadius="m"
@@ -309,9 +307,9 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
             )}
           </Box>
 
-          <Box display="flex" flexDirection="column" rowGap="s">
+          <Box flexDirection="column" rowGap="s">
             <FormLabel>Date of Birth</FormLabel>
-            <Box display="flex" gap="m">
+            <Box gap="m">
               <FormField
                 control={control}
                 name="dobMonth"
@@ -406,7 +404,7 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
             />
           )}
 
-          <Box display="flex" flexDirection="column" rowGap="s">
+          <Box flexDirection="column" rowGap="s">
             <SubmitButton loading={submitting} />
             {submitError && (
               <p className="text-sm text-red-500 dark:text-red-500">

@@ -84,7 +84,6 @@ export const UseCases = () => {
   return (
     <SyntaxHighlighterProvider>
       <Box
-        display="flex"
         flexDirection="column"
         rowGap={{ base: '2xl', md: '3xl' }}
         width="100%"
@@ -95,7 +94,6 @@ export const UseCases = () => {
         />
 
         <Box
-          display="flex"
           flexDirection="column"
           overflow="hidden"
           borderWidth={1}
@@ -124,9 +122,8 @@ export const UseCases = () => {
             })}
           </div>
 
-          <Box display="flex" flexDirection={{ base: 'column', md: 'row' }}>
+          <Box flexDirection={{ base: 'column', md: 'row' }}>
             <Box
-              display="flex"
               flexDirection="column"
               rowGap="l"
               padding="2xl"

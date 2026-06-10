@@ -252,8 +252,8 @@ export default function ChangePlanPage({
 
   return (
     <DashboardBody title={null} wide>
-      <Box display="flex" flexDirection="column" rowGap="2xl">
-        <Box display="flex" flexDirection="column" rowGap="l">
+      <Box flexDirection="column" rowGap="2xl">
+        <Box flexDirection="column" rowGap="l">
           <Link
             href={billingHref}
             className="dark:text-polar-400 dark:hover:text-polar-200 inline-flex w-fit items-center gap-x-1 text-sm text-gray-500 hover:text-gray-700"
@@ -261,7 +261,7 @@ export default function ChangePlanPage({
             <ArrowBackOutlined fontSize="inherit" />
             <span>Back to Billing</span>
           </Link>
-          <Box display="flex" flexDirection="column" rowGap="s">
+          <Box flexDirection="column" rowGap="s">
             <Text variant="heading-s" as="h1">
               Change plan
             </Text>
@@ -336,7 +336,7 @@ export default function ChangePlanPage({
         )}
 
         {selectedPlan && (
-          <Box display="flex" flexDirection="row-reverse" columnGap="s">
+          <Box flexDirection="row-reverse" columnGap="s">
             <Button
               onClick={showConfirm}
               disabled={isSubmitting || blockChanges}

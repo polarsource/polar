@@ -56,7 +56,6 @@ export function InviteMemberModal({
     <Box
       as="form"
       onSubmit={handleSubmit}
-      display="flex"
       flexDirection="column"
       rowGap="xl"
       padding="2xl"
@@ -71,7 +70,7 @@ export function InviteMemberModal({
         onChange={(e) => setEmail(e.target.value)}
         autoFocus
       />
-      <Box display="flex" columnGap="s">
+      <Box columnGap="s">
         <Button
           type="submit"
           disabled={!email || inviteMember.isPending}

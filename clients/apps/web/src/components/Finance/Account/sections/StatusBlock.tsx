@@ -42,7 +42,6 @@ export const StatusBlock = ({
 
   return (
     <Box
-      display="flex"
       flexDirection="column"
       alignItems="center"
       rowGap="m"
@@ -57,7 +56,6 @@ export const StatusBlock = ({
           transition={{ type: 'spring', stiffness: 400, damping: 22 }}
         >
           <Box
-            display="flex"
             alignItems="center"
             justifyContent="center"
             width={40}
@@ -70,12 +68,7 @@ export const StatusBlock = ({
           </Box>
         </motion.div>
       )}
-      <Box
-        display="flex"
-        flexDirection="column"
-        rowGap="xs"
-        alignItems="center"
-      >
+      <Box flexDirection="column" rowGap="xs" alignItems="center">
         <Text variant="body" color="default">
           {title}
         </Text>

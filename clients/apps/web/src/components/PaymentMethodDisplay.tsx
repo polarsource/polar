@@ -32,13 +32,13 @@ export const PaymentMethodDisplay = ({
 }: PaymentMethodDisplayProps) => {
   if (card) {
     return (
-      <Box display="flex" alignItems="center" columnGap="m" flexGrow={1}>
+      <Box alignItems="center" columnGap="m" flexGrow={1}>
         <CreditCardBrandIcon
           width="3.5em"
           brand={card.brand}
           className="dark:border-polar-700 rounded-lg border border-gray-200"
         />
-        <Box display="flex" flexDirection="column">
+        <Box flexDirection="column">
           <Text>{`${capitalize(card.brand)} •••• ${card.last4}`}</Text>
           <Text color="muted" variant="caption">
             Expires {card.exp_month}/{card.exp_year}
@@ -49,9 +49,8 @@ export const PaymentMethodDisplay = ({
   }
 
   return (
-    <Box display="flex" alignItems="center" columnGap="m" flexGrow={1}>
+    <Box alignItems="center" columnGap="m" flexGrow={1}>
       <Box
-        display="flex"
         alignItems="center"
         justifyContent="center"
         width="3.5em"

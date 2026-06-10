@@ -16,13 +16,12 @@ interface SectionHeaderProps {
  */
 export const SectionHeader = ({ title, description }: SectionHeaderProps) => (
   <Box
-    display="flex"
     flexDirection={{ base: 'column', xl: 'row' }}
     alignItems={{ base: 'start', xl: 'center' }}
     rowGap="l"
     columnGap="4xl"
   >
-    <Box flex={1} display="flex">
+    <Box flex={1}>
       <Box display="block" maxWidth={{ base: '100%', xl: '32rem' }}>
         <Text variant="heading-l" as="h2" wrap="balance">
           {title}

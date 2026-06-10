@@ -36,7 +36,7 @@ const columns: DataTableColumnDef<schemas['TaxJurisdiction']>[] = [
       <DataTableColumnHeader column={column} title="Jurisdiction" />
     ),
     cell: ({ row: { original } }) => (
-      <Box display="flex" flexDirection="column" rowGap="xs">
+      <Box flexDirection="column" rowGap="xs">
         <Text>{original.state_name ?? original.country_name}</Text>
         <Text color="muted">
           {original.state_name
@@ -108,7 +108,6 @@ const SummaryCard = ({
     borderStyle="solid"
     borderColor="border-primary"
     padding="xl"
-    display="flex"
     flexDirection="column"
     rowGap="l"
   >
@@ -187,11 +186,10 @@ export default function TaxesPage({
 
   return (
     <DashboardBody wrapperClassName="max-w-(--breakpoint-lg)!">
-      <Box display="flex" flexDirection="column" rowGap="2xl">
+      <Box flexDirection="column" rowGap="2xl">
         {!isMoRDismissed && (
           <Box
             position="relative"
-            display="flex"
             flexDirection="column"
             alignItems="start"
             columnGap="l"
@@ -202,7 +200,7 @@ export default function TaxesPage({
             borderColor="border-primary"
             padding="xl"
           >
-            <Box display="flex" flexDirection="column" rowGap="xs">
+            <Box flexDirection="column" rowGap="xs">
               <Text variant="body" as="h2">
                 Merchant of Record
               </Text>
@@ -233,7 +231,6 @@ export default function TaxesPage({
           </Box>
         )}
         <Box
-          display="flex"
           flexDirection={{ base: 'column', md: 'row' }}
           gap="xl"
           flexWrap="wrap"
@@ -253,9 +250,9 @@ export default function TaxesPage({
           />
         </Box>
 
-        <Box display="flex" flexDirection="column" rowGap="xl">
-          <Box display="flex" flexDirection="column" rowGap="l">
-            <Box display="flex" justifyContent="between" alignItems="center">
+        <Box flexDirection="column" rowGap="xl">
+          <Box flexDirection="column" rowGap="l">
+            <Box justifyContent="between" alignItems="center">
               <Text variant="heading-xs" as="h2">
                 Breakdown
               </Text>

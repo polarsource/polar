@@ -35,7 +35,6 @@ export const ReviewChecklist = ({
 
   return (
     <Box
-      display="flex"
       flexDirection="column"
       rowGap="s"
       // eslint-disable-next-line polar/no-style-box

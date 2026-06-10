@@ -70,7 +70,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
     : null
 
   return (
-    <Box display="flex" flexDirection={{ base: 'column', md: 'row' }} gap="2xl">
+    <Box flexDirection={{ base: 'column', md: 'row' }} gap="2xl">
       <Well className="flex-1 justify-start rounded-2xl bg-gray-50 p-6">
         <WellHeader className="flex flex-row items-center justify-between gap-x-6">
           <Text variant="heading-xxs" as="h2">
@@ -156,7 +156,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
         </WellContent>
         <WellFooter className="mt-auto">
           {payoutAccount ? (
-            <Box display="flex" alignItems="center" columnGap="m">
+            <Box alignItems="center" columnGap="m">
               <Text color="muted">
                 {payoutAccount.country.toUpperCase()} ·{' '}
                 {payoutAccount.currency.toUpperCase()}

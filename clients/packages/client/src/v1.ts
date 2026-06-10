@@ -7804,6 +7804,8 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitCustomProperties']
     }
@@ -7844,6 +7846,8 @@ export interface components {
        * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       properties: components['schemas']['BenefitCustomCreateProperties']
     }
     /**
@@ -7912,6 +7916,8 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitCustomSubscriberProperties']
@@ -7948,6 +7954,8 @@ export interface components {
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
       description?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       /**
        * Type
        * @constant
@@ -8085,6 +8093,8 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitDiscordProperties']
     }
@@ -8122,6 +8132,8 @@ export interface components {
        * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       properties: components['schemas']['BenefitDiscordCreateProperties']
     }
     /**
@@ -8215,6 +8227,8 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitDiscordSubscriberProperties']
@@ -8254,6 +8268,8 @@ export interface components {
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
       description?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       /**
        * Type
        * @constant
@@ -8313,6 +8329,8 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitDownloadablesProperties']
     }
@@ -8350,6 +8368,8 @@ export interface components {
        * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       properties: components['schemas']['BenefitDownloadablesCreateProperties']
     }
     /** BenefitDownloadablesCreateProperties */
@@ -8423,6 +8443,8 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitDownloadablesSubscriberProperties']
@@ -8456,6 +8478,8 @@ export interface components {
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
       description?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       /**
        * Type
        * @constant
@@ -8521,6 +8545,8 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitFeatureFlagProperties']
     }
@@ -8561,6 +8587,8 @@ export interface components {
        * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       properties: components['schemas']['BenefitFeatureFlagCreateProperties']
     }
     /**
@@ -8623,6 +8651,8 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitFeatureFlagSubscriberProperties']
@@ -8656,6 +8686,8 @@ export interface components {
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
       description?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       /**
        * Type
        * @constant
@@ -8718,6 +8750,8 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitGitHubRepositoryProperties']
     }
@@ -8755,6 +8789,8 @@ export interface components {
        * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       properties: components['schemas']['BenefitGitHubRepositoryCreateProperties']
     }
     /**
@@ -8855,6 +8891,8 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitGitHubRepositorySubscriberProperties']
@@ -8901,6 +8939,8 @@ export interface components {
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
       description?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       /**
        * Type
        * @constant
@@ -9764,6 +9804,8 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitLicenseKeysProperties']
     }
@@ -9801,6 +9843,8 @@ export interface components {
        * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       properties: components['schemas']['BenefitLicenseKeysCreateProperties']
     }
     /** BenefitLicenseKeysCreateProperties */
@@ -9879,6 +9923,8 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitLicenseKeysSubscriberProperties']
@@ -9920,6 +9966,8 @@ export interface components {
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
       description?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       /**
        * Type
        * @constant
@@ -9984,6 +10032,8 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitMeterCreditProperties']
     }
@@ -10024,6 +10074,8 @@ export interface components {
        * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       properties: components['schemas']['BenefitMeterCreditCreateProperties']
     }
     /**
@@ -10106,6 +10158,8 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitMeterCreditSubscriberProperties']
@@ -10149,6 +10203,8 @@ export interface components {
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
       description?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       /**
        * Type
        * @constant
@@ -10205,6 +10261,8 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
     }
     /**
      * BenefitRevokedEvent
@@ -10424,6 +10482,11 @@ export interface components {
       name: 'benefit.updated'
       metadata: components['schemas']['BenefitGrantMetadata']
     }
+    /**
+     * Visibility
+     * @enum {string}
+     */
+    BenefitVisibility: 'draft' | 'private' | 'public'
     /**
      * BillingAddressFieldMode
      * @enum {string}
@@ -55993,6 +56056,9 @@ export const benefitTypeValues: ReadonlyArray<
 export const benefitUpdatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitUpdatedEvent']['name']
 > = ['benefit.updated']
+export const benefitVisibilityValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitVisibility']
+> = ['draft', 'private', 'public']
 export const billingAddressFieldModeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BillingAddressFieldMode']
 > = ['required', 'optional', 'disabled']

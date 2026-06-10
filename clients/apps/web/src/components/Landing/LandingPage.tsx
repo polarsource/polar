@@ -9,7 +9,6 @@ import { Logotypes } from './Logotypes'
 import { Pipeline } from './Pipeline'
 import { Pricing } from './Pricing'
 import { Section } from './Section'
-import { StartupProgramCallout } from './StartupProgramCallout'
 import { Upsell } from './Upsell'
 import { Usage } from './Usage'
 import { UseCases } from './UseCases'
@@ -60,7 +59,6 @@ const PageContent = () => {
       <Section>
         <Upsell />
         <Pricing />
-        <StartupProgramCallout />
       </Section>
     </>
   )

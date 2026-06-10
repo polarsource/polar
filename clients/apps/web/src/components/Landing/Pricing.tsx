@@ -5,6 +5,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
+import { VolumetricSlices } from './graphics/VolumetricSlices'
 
 type Tier = {
   name: string
@@ -76,16 +77,83 @@ export const Pricing = () => (
         gridTemplateColumns={{
           base: '1fr',
           sm: 'repeat(2, 1fr)',
-          xl: 'repeat(4, 1fr)',
+          xl: 'repeat(3, 1fr)',
         }}
         gap="l"
       >
         {TIERS.map((tier) => (
           <TierCard key={tier.name} tier={tier} />
         ))}
+        <StartupProgramCard />
       </Box>
     </Box>
   </>
+)
+
+const StartupProgramCard = () => (
+  <Box
+    gridColumn={{ base: 'auto', sm: 'span 2' }}
+    display="grid"
+    gridTemplateColumns={{ base: '1fr', sm: 'subgrid' }}
+    backgroundColor="background-secondary"
+    overflow="hidden"
+  >
+    <Box
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      padding="2xl"
+    >
+      <Box display="flex" width="100%" aspectRatio="1 / 1">
+        <VolumetricSlices />
+      </Box>
+    </Box>
+    <Box
+      position="relative"
+      display="flex"
+      flexDirection="column"
+      rowGap="xl"
+      padding="3xl"
+    >
+      <Box
+        position="absolute"
+        top="3rem"
+        bottom="3rem"
+        left={-8}
+        borderLeftWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+        display={{ base: 'none', sm: 'block' }}
+      />
+      <Box display="flex" flexDirection="column" rowGap="xl">
+        <Box display="flex" flexDirection="column" rowGap="m">
+          <Text variant="heading-s" as="h3">
+            Startup Program
+          </Text>
+          <Box>
+            <Text variant="body" color="muted">
+              A year on our most generous plan.
+            </Text>
+          </Box>
+        </Box>
+        <Box display="flex" alignItems="baseline" columnGap="m">
+          <Text variant="heading-s" as="span">
+            Free
+          </Text>
+          <Text as="span" variant="body" color="muted">
+            for 12 months
+          </Text>
+        </Box>
+      </Box>
+      <CardSection label="Fees" items={['3.40% + 30¢ per transaction']} />
+      <CardSection label="Features" items={['Everything on Scale']} />
+      <Box paddingTop="m">
+        <Link href="/startup-program" prefetch>
+          <Button>Apply now</Button>
+        </Link>
+      </Box>
+    </Box>
+  </Box>
 )
 
 const TierCard = ({ tier }: { tier: Tier }) => (
@@ -95,7 +163,7 @@ const TierCard = ({ tier }: { tier: Tier }) => (
     justifyContent="between"
     backgroundColor="background-secondary"
   >
-    <Box display="flex" flexDirection="column" rowGap="xl" padding="2xl">
+    <Box display="flex" flexDirection="column" rowGap="xl" padding="3xl">
       <Box display="flex" flexDirection="column" rowGap="xl">
         <Box display="flex" flexDirection="column" rowGap="m">
           <Text variant="heading-s" as="h3">

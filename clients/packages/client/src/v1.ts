@@ -30728,8 +30728,6 @@ export interface components {
        */
       id: string
       type: components['schemas']['SupportCaseType']
-      /** Is Open */
-      is_open: boolean
     }
     /** SupportCaseMessage */
     SupportCaseMessage: {
@@ -30788,6 +30786,8 @@ export interface components {
       case: components['schemas']['SupportCase']
       /** Messages */
       messages: components['schemas']['SupportCaseMessage'][]
+      /** Is Open */
+      is_open: boolean
     }
     /**
      * SupportCaseType

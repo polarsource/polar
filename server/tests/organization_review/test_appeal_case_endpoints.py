@@ -60,7 +60,6 @@ class TestRequestHumanReview:
         assert response.status_code == 200
         data = response.json()
         assert data["type"] == "review_appeal"
-        assert data["is_open"] is True
 
     @pytest.mark.auth
     async def test_reason_too_short(
@@ -135,7 +134,7 @@ class TestGetAppealCase:
         response = await client.get(f"/v1/organizations/{organization.id}/appeal/case")
         assert response.status_code == 200
         data = response.json()
-        assert data["case"]["is_open"] is True
+        assert data["is_open"] is True
         assert REASON in [m["body"] for m in data["messages"]]
 
     @pytest.mark.auth

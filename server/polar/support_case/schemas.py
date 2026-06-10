@@ -22,12 +22,12 @@ class SupportCaseMessage(IDSchema, TimestampedSchema):
 
 class SupportCase(IDSchema, TimestampedSchema):
     type: SupportCaseType
-    is_open: bool
 
 
 class SupportCaseThread(Schema):
     case: SupportCase
     messages: list[SupportCaseMessage]
+    is_open: bool
 
 
 class SupportCaseMessageCreate(Schema):

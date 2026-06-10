@@ -49,7 +49,12 @@ from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.http import check_url_reachable
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization, UserOrganization
-from polar.models.support_case import SupportCaseAudience, SupportCaseMessageAuthorKind
+from polar.models.support_case import (
+    SupportCase,
+    SupportCaseAudience,
+    SupportCaseMessage,
+    SupportCaseMessageAuthorKind,
+)
 from polar.models.user_organization import OrganizationRole
 from polar.openapi import APITag
 from polar.organization.repository import (
@@ -722,27 +727,19 @@ async def request_human_review(
     authz: AuthorizeOrgManageUser,
     request: HumanReviewRequest,
     session: AsyncSession = Depends(get_db_session),
-) -> SupportCaseSchema:
+) -> SupportCase:
     """Open a human-review case after the AI appeal was denied."""
     review_repository = OrganizationReviewRepository.from_session(session)
     review = await review_repository.get_by_organization(authz.organization.id)
     if review is None:
         raise ResourceNotFound()
 
-    case = await appeal_case_service.request_human_review(
+    return await appeal_case_service.request_human_review(
         session,
         review,
         organization=authz.organization,
         reason=request.reason,
         requested_by_user=authz.auth_subject.subject,
-    )
-
-    return SupportCaseSchema(
-        id=case.id,
-        type=case.type,
-        is_open=True,
-        created_at=case.created_at,
-        modified_at=case.modified_at,
     )
 
 
@@ -773,17 +770,8 @@ async def get_appeal_case(
         raise ResourceNotFound()
 
     case, is_open, messages = thread
-    return SupportCaseThread(
-        case=SupportCaseSchema(
-            id=case.id,
-            type=case.type,
-            is_open=is_open,
-            created_at=case.created_at,
-            modified_at=case.modified_at,
-        ),
-        messages=[
-            SupportCaseMessageSchema.model_validate(message) for message in messages
-        ],
+    return SupportCaseThread.model_validate(
+        {"case": case, "is_open": is_open, "messages": messages}
     )
 
 
@@ -805,7 +793,7 @@ async def reply_to_appeal_case(
     authz: AuthorizeOrgManageUser,
     message: SupportCaseMessageCreate,
     session: AsyncSession = Depends(get_db_session),
-) -> SupportCaseMessageSchema:
+) -> SupportCaseMessage:
     """Post a merchant reply to the human-review case."""
     review_repository = OrganizationReviewRepository.from_session(session)
     review = await review_repository.get_by_organization(authz.organization.id)
@@ -816,15 +804,13 @@ async def reply_to_appeal_case(
     if case is None:
         raise ResourceNotFound()
 
-    posted = await appeal_case_service.add_reply(
+    return await appeal_case_service.add_reply(
         session,
         case,
         author_kind=SupportCaseMessageAuthorKind.merchant,
         author_user=authz.auth_subject.subject,
         body=message.body,
     )
-
-    return SupportCaseMessageSchema.model_validate(posted)
 
 
 @router.post(

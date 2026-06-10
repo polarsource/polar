@@ -35676,6 +35676,11 @@ export interface operations {
         discount_id?: string | string[] | null
         /** @description Filter by active or inactive subscription. */
         active?: boolean | null
+        /** @description Filter by subscription status. */
+        status?:
+          | components['schemas']['SubscriptionStatus']
+          | components['schemas']['SubscriptionStatus'][]
+          | null
         /** @description Filter by subscriptions that are set to cancel at period end. */
         cancel_at_period_end?: boolean | null
         /** @description Filter by customer cancellation reason. */

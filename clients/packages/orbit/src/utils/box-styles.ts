@@ -3,10 +3,25 @@ import {
   backgroundColors,
   borderColors,
   borderRadii,
+  durations,
+  easings,
   shadows,
   spacing,
   textColors,
 } from '../tokens/tokens.stylex'
+
+// Property lists for the curated `transitionProperty` presets. Kept in one
+// place so the scalar (StyleX) path and the responsive path stay in sync.
+export const TRANSITION_PROPERTY_VALUES = {
+  none: 'none',
+  all: 'all',
+  common:
+    'color, background-color, border-color, box-shadow, opacity, transform',
+  colors: 'color, background-color, border-color',
+  opacity: 'opacity',
+  shadow: 'box-shadow',
+  transform: 'transform',
+} as const
 
 /*
   This is where we connect each prop to the corresponding CSS property from our design tokens.
@@ -497,4 +512,39 @@ export const textAlignStyles = stylex.create({
   center: { textAlign: 'center' },
   right: { textAlign: 'right' },
   justify: { textAlign: 'justify' },
+})
+
+// ── Motion ───────────────────────────────────────────────────────────────────
+
+export const transitionPropertyStyles = stylex.create({
+  none: { transitionProperty: TRANSITION_PROPERTY_VALUES.none },
+  all: { transitionProperty: TRANSITION_PROPERTY_VALUES.all },
+  common: { transitionProperty: TRANSITION_PROPERTY_VALUES.common },
+  colors: { transitionProperty: TRANSITION_PROPERTY_VALUES.colors },
+  opacity: { transitionProperty: TRANSITION_PROPERTY_VALUES.opacity },
+  shadow: { transitionProperty: TRANSITION_PROPERTY_VALUES.shadow },
+  transform: { transitionProperty: TRANSITION_PROPERTY_VALUES.transform },
+})
+
+export const transitionDurationStyles = stylex.create({
+  instant: { transitionDuration: durations.instant },
+  fast: { transitionDuration: durations.fast },
+  base: { transitionDuration: durations.base },
+  slow: { transitionDuration: durations.slow },
+  slower: { transitionDuration: durations.slower },
+})
+
+export const transitionTimingFunctionStyles = stylex.create({
+  standard: { transitionTimingFunction: easings.standard },
+  decelerate: { transitionTimingFunction: easings.decelerate },
+  accelerate: { transitionTimingFunction: easings.accelerate },
+  spring: { transitionTimingFunction: easings.spring },
+})
+
+export const transitionDelayStyles = stylex.create({
+  instant: { transitionDelay: durations.instant },
+  fast: { transitionDelay: durations.fast },
+  base: { transitionDelay: durations.base },
+  slow: { transitionDelay: durations.slow },
+  slower: { transitionDelay: durations.slower },
 })

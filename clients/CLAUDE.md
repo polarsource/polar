@@ -164,6 +164,19 @@ auto-resolves light vs dark.
 
 **Shadow** (`ShadowToken`): `none`, `s`, `m`, `l`, `xl`.
 
+**Motion** — durations (`DurationToken`) and easings (`EasingToken`) for transitions:
+
+| Duration  | Value  | Easing       | Curve                            |
+| --------- | ------ | ------------ | -------------------------------- |
+| `instant` | 0ms    | `standard`   | general-purpose, symmetric       |
+| `fast`    | 120ms  | `decelerate` | enter (fast → settle)            |
+| `base`    | 200ms  | `accelerate` | exit (settle → fast)             |
+| `slow`    | 320ms  | `spring`     | slight overshoot                 |
+| `slower`  | 480ms  |              |                                  |
+
+Durations are CSS variables, so motion can be globally tuned (or zeroed for reduced
+motion). Easings are compile-time constants.
+
 **Breakpoints** (`BreakpointKey`): `sm` (640), `md` (768), `lg` (1024), `xl` (1280). Used
 as keys in responsive prop objects (see below).
 
@@ -231,6 +244,22 @@ position: 'relative'|'absolute'|'fixed'|'sticky'|'static'
 top, right, bottom, left, inset: string | number
 zIndex: number | string
 ```
+
+**Motion** (transitions; pair with pseudo-state props to animate hover/focus/active):
+
+```
+transitionProperty: 'none'|'all'|'common'|'colors'|'opacity'|'shadow'|'transform'
+transitionDuration: DurationToken                     // 'instant'|'fast'|'base'|'slow'|'slower'
+transitionTimingFunction (alias: ease): EasingToken   // 'standard'|'decelerate'|'accelerate'|'spring'
+transitionDelay: DurationToken
+transform: string                                      // e.g. 'translateY(-2px)', 'scale(1.02)'
+transformOrigin: string
+willChange: string
+```
+
+`transitionProperty` keywords expand to real property lists — `colors` → color +
+background-color + border-color, `common` → colors + box-shadow + opacity + transform.
+Without `transitionProperty`, `transitionDuration` applies to `all`.
 
 **Visual**:
 
@@ -303,6 +332,25 @@ queries, pseudo-state keys generate scoped pseudo-class rules.
     Title
   </Text>
   <Text color="muted">Description</Text>
+</Box>
+```
+
+**Interactive card (smooth hover)** — pseudo-state props animate instead of snapping when
+you add a transition:
+
+```tsx
+<Box
+  borderRadius="l"
+  backgroundColor={{ base: 'background-card', hover: 'background-secondary' }}
+  boxShadow={{ base: 's', hover: 'm' }}
+  transform={{ hover: 'translateY(-2px)' }}
+  transitionProperty="common"
+  transitionDuration="fast"
+  ease="decelerate"
+  cursor={{ hover: 'pointer' }}
+  padding="xl"
+>
+  …
 </Box>
 ```
 

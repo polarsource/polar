@@ -12,9 +12,9 @@ import {
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import { ListItem } from '@polar-sh/ui/components/atoms/List'
-import Pill from '@polar-sh/ui/components/atoms/Pill'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { ListItem } from '@polar-sh/orbit'
+import { Pill } from '@polar-sh/orbit'
+import { Status } from '@polar-sh/orbit'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,11 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/ui/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'

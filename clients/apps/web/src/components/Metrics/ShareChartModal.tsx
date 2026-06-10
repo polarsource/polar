@@ -1,11 +1,7 @@
 import { ParsedMetricsResponse } from '@/hooks/queries/metrics'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/ui/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import domtoimage from 'dom-to-image'
 import { useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'

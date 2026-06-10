@@ -4,7 +4,7 @@ import * as SwitchPrimitives from '@radix-ui/react-switch'
 import * as React from 'react'
 import { twMerge } from 'tailwind-merge'
 
-const Switch = ({
+export const Switch = ({
   ref,
   className,
   ...props
@@ -25,5 +25,3 @@ const Switch = ({
   </SwitchPrimitives.Root>
 )
 Switch.displayName = SwitchPrimitives.Root.displayName
-
-export default Switch

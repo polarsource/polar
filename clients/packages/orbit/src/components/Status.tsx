@@ -5,15 +5,13 @@ const sizeClasses = {
   medium: 'px-[0.7em] py-[0.3em] text-sm',
 }
 
-export const Status = ({
-  className,
-  status,
-  size = 'medium',
-}: {
+export interface StatusProps {
   className?: string
   status: string
   size?: 'small' | 'medium'
-}) => {
+}
+
+export const Status = ({ className, status, size = 'medium' }: StatusProps) => {
   return (
     <div
       className={twMerge(

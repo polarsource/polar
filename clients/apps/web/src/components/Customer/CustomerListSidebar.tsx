@@ -3,7 +3,7 @@
 import { CreateCustomerModal } from '@/components/Customer/CreateCustomerModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
-import Spinner from '@/components/Shared/Spinner'
+import { Spinner } from '@polar-sh/orbit'
 import { useCustomers } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
 import { getServerURL } from '@/utils/api'

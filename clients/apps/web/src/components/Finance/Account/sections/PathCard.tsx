@@ -3,7 +3,7 @@
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import Pill from '@polar-sh/ui/components/atoms/Pill'
+import { Pill } from '@polar-sh/orbit'
 import { ExternalLinkIcon } from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'

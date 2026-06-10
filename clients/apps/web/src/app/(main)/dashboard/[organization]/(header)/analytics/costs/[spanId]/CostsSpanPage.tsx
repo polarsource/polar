@@ -4,7 +4,7 @@ import { Chart } from '@/components/Costs/Chart'
 import { CostsBandedChart } from '@/components/Costs/CostsBandedChart'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
-import Spinner from '@/components/Shared/Spinner'
+import { Spinner } from '@polar-sh/orbit'
 import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { useEventTypes } from '@/hooks/queries/event_types'
 import {
@@ -15,17 +15,8 @@ import { fromISODate, getTimestampFormatter } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@polar-sh/ui/components/atoms/Tabs'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/ui/components/ui/tooltip'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { endOfDay, format, subDays, subMonths } from 'date-fns'
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
 import {

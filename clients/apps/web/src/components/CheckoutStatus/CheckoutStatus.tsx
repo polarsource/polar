@@ -3,7 +3,7 @@ import {
   CheckoutStatusDisplayTitle,
 } from '@/utils/checkout'
 import { schemas } from '@polar-sh/client'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { Status } from '@polar-sh/orbit'
 import { twMerge } from 'tailwind-merge'
 
 const CheckoutStatus = ({

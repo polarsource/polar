@@ -1,7 +1,7 @@
 'use client'
 
 import { DataTable } from '@polar-sh/orbit'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { Status } from '@polar-sh/orbit'
 import { twMerge } from 'tailwind-merge'
 
 const seatStatusToDisplayName = {

@@ -1,6 +1,6 @@
 'use client'
 
-import { Modal } from '@/components/Modal'
+import { Modal } from '@polar-sh/orbit'
 import { useTOTPEnroll, useTOTPEnable } from '@/hooks/auth'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'

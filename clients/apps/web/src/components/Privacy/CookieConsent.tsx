@@ -4,7 +4,7 @@ import { EU_COUNTRY_CODES } from '@/components/Privacy/countries'
 import { usePostHog } from '@/hooks/posthog'
 import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
-import { InlineModal } from '../Modal/InlineModal'
+import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
 import { CookiePreferencesModal } from './CookiePreferencesModal'
 

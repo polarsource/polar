@@ -1,7 +1,7 @@
 'use client'
 
 import { useSubscriptions } from '@/hooks/queries'
-import { Modal } from '@/components/Modal'
+import { Modal } from '@polar-sh/orbit'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'

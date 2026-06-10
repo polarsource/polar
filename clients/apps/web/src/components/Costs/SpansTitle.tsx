@@ -7,7 +7,7 @@ import {
   getDefaultStartDate,
 } from '@/app/(main)/dashboard/[organization]/(header)/analytics/costs/utils'
 import { EventCostCreationGuideModal } from '@/components/Events/EventCostCreationGuideModal'
-import { Modal } from '@/components/Modal'
+import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { useNavigationHistory } from '@/providers/navigationHistory'
 import { schemas } from '@polar-sh/client'

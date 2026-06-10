@@ -1,6 +1,6 @@
 'use client'
 
-import { Modal } from '@/components/Modal'
+import { Modal } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
 import { useEffect, useRef, useState } from 'react'
 

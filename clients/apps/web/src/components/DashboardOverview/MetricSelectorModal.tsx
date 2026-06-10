@@ -1,6 +1,6 @@
 'use client'
 
-import { InlineModalHeader } from '@/components/Modal/InlineModal'
+import { InlineModalHeader } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { useDraggable } from '@/hooks/draggable'
 import { useUpdateOrganization } from '@/hooks/queries/org'

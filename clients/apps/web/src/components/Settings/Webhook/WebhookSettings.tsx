@@ -7,7 +7,7 @@ import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { ListGroup } from '@polar-sh/orbit'
 import { ArrowUpRightIcon } from 'lucide-react'
 import Link from 'next/link'
-import { InlineModal } from '../../Modal/InlineModal'
+import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../../Modal/useModal'
 import NewWebhookModal from './NewWebhookModal'
 

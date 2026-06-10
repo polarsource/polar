@@ -27,7 +27,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import React, { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Modal } from '../Modal'
+import { Modal } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
 import MetricChart from './MetricChart'
 import { ShareChartModal } from './ShareChartModal'

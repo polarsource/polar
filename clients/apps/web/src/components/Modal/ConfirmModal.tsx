@@ -9,7 +9,7 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { MouseEvent, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
-import { Modal, ModalProps } from '.'
+import { Modal, type ModalProps } from '@polar-sh/orbit'
 
 export interface ConfirmModalProps extends Omit<
   ModalProps,

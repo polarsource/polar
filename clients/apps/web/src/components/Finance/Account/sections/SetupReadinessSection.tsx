@@ -1,8 +1,8 @@
 'use client'
 
 import { CheckoutLinkManagementModal } from '@/components/CheckoutLinks/CheckoutLinkManagementModal'
-import { InlineModal } from '@/components/Modal/InlineModal'
-import { Modal } from '@/components/Modal'
+import { InlineModal } from '@polar-sh/orbit'
+import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { CreateAccessTokenModal } from '@/components/Settings/CreateAccessTokenModal'
 import NewWebhookModal from '@/components/Settings/Webhook/NewWebhookModal'

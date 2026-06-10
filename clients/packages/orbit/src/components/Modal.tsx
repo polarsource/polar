@@ -1,6 +1,7 @@
-import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import { Button } from '@polar-sh/orbit'
+'use client'
+
 import { motion } from 'framer-motion'
+import { X } from 'lucide-react'
 import React, {
   FunctionComponent,
   MouseEvent,
@@ -11,6 +12,7 @@ import React, {
 import ReactDOM from 'react-dom'
 import FocusLock from 'react-focus-lock'
 import { twMerge } from 'tailwind-merge'
+import { Button } from './Button'
 
 export interface ModalProps {
   title: string | JSX.Element
@@ -89,7 +91,7 @@ export const Modal: FunctionComponent<ModalProps> = ({
                 className="dark:text-polar-500 dark:hover:text-polar-400 size-8 rounded-full text-gray-500 hover:text-gray-600"
                 onClick={hide}
               >
-                <CloseOutlined fontSize="inherit" />
+                <X className="h-4 w-4" />
               </Button>
             </div>
             <div className="dark:bg-polar-900 flex flex-col overflow-y-auto rounded-[20px] bg-white">

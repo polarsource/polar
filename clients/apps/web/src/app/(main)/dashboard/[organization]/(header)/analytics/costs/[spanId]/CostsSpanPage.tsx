@@ -2,7 +2,7 @@
 
 import { Chart } from '@/components/Costs/Chart'
 import { CostsBandedChart } from '@/components/Costs/CostsBandedChart'
-import { InlineModal } from '@/components/Modal/InlineModal'
+import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { Spinner } from '@polar-sh/orbit'
 import { StatisticCard } from '@/components/Shared/StatisticCard'

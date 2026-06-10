@@ -1,4 +1,4 @@
-import { InlineModal, InlineModalHeader } from '@/components/Modal/InlineModal'
+import { InlineModal, InlineModalHeader } from '@polar-sh/orbit'
 import { schemas } from '@polar-sh/client'
 import { useState } from 'react'
 import { collectClientContext } from './clientContext'

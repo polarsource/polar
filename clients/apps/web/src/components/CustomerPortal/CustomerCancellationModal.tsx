@@ -1,7 +1,7 @@
 'use client'
 
 import revalidate from '@/app/actions'
-import { Modal, ModalProps } from '@/components/Modal'
+import { Modal, ModalProps } from '@polar-sh/orbit'
 import { useCustomerCancelSubscription } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'

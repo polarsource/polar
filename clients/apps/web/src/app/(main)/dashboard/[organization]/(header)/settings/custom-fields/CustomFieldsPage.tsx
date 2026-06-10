@@ -4,7 +4,7 @@ import CreateCustomFieldModalContent from '@/components/CustomFields/CreateCusto
 import CustomFieldTypeLabel from '@/components/CustomFields/CustomFieldTypeLabel'
 import UpdateCustomFieldModalContent from '@/components/CustomFields/UpdateCustomFieldModalContent'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { InlineModal } from '@/components/Modal/InlineModal'
+import { InlineModal } from '@polar-sh/orbit'
 import { toast } from '@/components/Toast/use-toast'
 import { useCustomFields, useDeleteCustomField } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'

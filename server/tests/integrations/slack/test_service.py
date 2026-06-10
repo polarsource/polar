@@ -3,6 +3,7 @@ from uuid import uuid4
 
 import pytest
 from pytest_mock import MockerFixture
+from sqlalchemy import update
 
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
@@ -621,3 +622,43 @@ class TestLink:
 
         with pytest.raises(SlackIntegrationBenefitAlreadyLinked):
             await service.link(session, benefit, other_integration)
+
+    async def test_rejects_concurrent_link_to_same_benefit(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+    ) -> None:
+        benefit = await _create_benefit(save_fixture, organization)
+        first_integration = await _create_integration(
+            save_fixture, organization, slack_app_id="A0FIRSTAPPX"
+        )
+        second_integration = await _create_integration(
+            save_fixture, organization, slack_app_id="A0SECONDAPP"
+        )
+
+        await session.execute(
+            update(Benefit)
+            .where(Benefit.id == benefit.id)
+            .values(
+                properties={
+                    **benefit.properties,
+                    "slack_integration_id": str(first_integration.id),
+                }
+            )
+            .execution_options(synchronize_session=False)
+        )
+        assert "slack_integration_id" not in dict(benefit.properties)
+
+        service, _client = _service_with_mock(mocker)
+
+        with pytest.raises(SlackIntegrationBenefitAlreadyLinked):
+            await service.link(session, benefit, second_integration)
+
+        repo = BenefitRepository.from_session(session)
+        refreshed = await repo.get_by_id(benefit.id)
+        assert refreshed is not None
+        assert dict(refreshed.properties)["slack_integration_id"] == str(
+            first_integration.id
+        )

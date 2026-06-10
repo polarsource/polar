@@ -181,6 +181,7 @@ class SlackAppService:
         if integration.bot_token is None:
             raise SlackIntegrationNotInstalled()
 
+        await session.refresh(benefit, with_for_update=True)
         properties = dict(benefit.properties or {})
         existing_integration_id = properties.get("slack_integration_id")
         if isinstance(existing_integration_id, str) and existing_integration_id != str(

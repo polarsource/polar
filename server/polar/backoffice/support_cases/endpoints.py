@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from tagflow import tag, text
 
 from polar.kit.pagination import PaginationParamsQuery
-from polar.models import Organization
+from polar.models import Organization, User
 from polar.models.organization_review import OrganizationReview
 from polar.models.support_case import ReviewAppealSupportCase
 from polar.models.user_session import UserSession
@@ -26,16 +26,34 @@ from ..responses import HXRedirectResponse
 
 router = APIRouter()
 
-# (case, organization, is_open)
-Row = tuple[ReviewAppealSupportCase, Organization, bool]
+# (case, organization, is_open, assignee_email)
+Row = tuple[ReviewAppealSupportCase, Organization, bool, str | None]
 
 
-def _list_tabs(request: Request, active: str) -> list[Tab]:
+def _list_tabs(request: Request, status: str, assigned: str) -> list[Tab]:
     base = str(request.url_for("support_cases:list"))
+
+    def url(status: str, assigned: str) -> str:
+        return f"{base}?status={status}&assigned={assigned}"
+
+    # Status (left) filters preserve the current assignment. The assignment
+    # filters (right, pushed via ml-auto) toggle: clicking the active one
+    # clears back to everyone, so no redundant "all assignees" tab is needed.
     return [
-        Tab("Open", url=f"{base}?status=open", active=active == "open"),
-        Tab("Closed", url=f"{base}?status=closed", active=active == "closed"),
-        Tab("All", url=f"{base}?status=all", active=active == "all"),
+        Tab("Open", url=url("open", assigned), active=status == "open"),
+        Tab("Closed", url=url("closed", assigned), active=status == "closed"),
+        Tab("All", url=url("all", assigned), active=status == "all"),
+        Tab(
+            "Assigned to me",
+            url=url(status, "all" if assigned == "me" else "me"),
+            active=assigned == "me",
+            extra_classes="ml-auto",
+        ),
+        Tab(
+            "Unassigned",
+            url=url(status, "all" if assigned == "unassigned" else "unassigned"),
+            active=assigned == "unassigned",
+        ),
     ]
 
 
@@ -50,11 +68,17 @@ def _render_table(rows: Sequence[Row]) -> None:
         with tag.table(classes="table table-zebra"):
             with tag.thead():
                 with tag.tr():
-                    for header in ("Organization", "Type", "Status", "Opened"):
+                    for header in (
+                        "Organization",
+                        "Type",
+                        "Status",
+                        "Assignee",
+                        "Opened",
+                    ):
                         with tag.th():
                             text(header)
             with tag.tbody():
-                for case, organization, is_open in rows:
+                for case, organization, is_open, assignee_email in rows:
                     # Not linked yet: the org's support-case section these rows
                     # point to ships in a follow-up PR.
                     with tag.tr():
@@ -65,6 +89,12 @@ def _render_table(rows: Sequence[Row]) -> None:
                                 text("Review appeal")
                         with tag.td():
                             _status_badge(is_open)
+                        with tag.td():
+                            if assignee_email:
+                                text(assignee_email)
+                            else:
+                                with tag.span(classes="text-base-content/40"):
+                                    text("Unassigned")
                         with tag.td(classes="text-base-content/60"):
                             text(case.created_at.strftime("%b %-d, %Y %H:%M UTC"))
 
@@ -113,16 +143,24 @@ async def list_cases(
     request: Request,
     pagination: PaginationParamsQuery,
     status: Annotated[str, Query()] = "open",
+    assigned: Annotated[str, Query()] = "all",
     session: AsyncSession = Depends(get_db_read_session),
+    user_session: UserSession = Depends(get_admin),
 ) -> None:
     is_open = SupportCaseMessageRepository.is_open_expression()
     statement = (
-        select(ReviewAppealSupportCase, Organization, is_open.label("is_open"))
+        select(
+            ReviewAppealSupportCase,
+            Organization,
+            is_open.label("is_open"),
+            User.email.label("assignee_email"),
+        )
         .join(
             OrganizationReview,
             ReviewAppealSupportCase.organization_review_id == OrganizationReview.id,
         )
         .join(Organization, OrganizationReview.organization_id == Organization.id)
+        .outerjoin(User, ReviewAppealSupportCase.assigned_user_id == User.id)
         .where(ReviewAppealSupportCase.deleted_at.is_(None))
     )
     count_statement = (
@@ -136,6 +174,15 @@ async def list_cases(
     elif status == "closed":
         statement = statement.where(~is_open)
         count_statement = count_statement.where(~is_open)
+
+    if assigned == "me":
+        mine = ReviewAppealSupportCase.assigned_user_id == user_session.user_id
+        statement = statement.where(mine)
+        count_statement = count_statement.where(mine)
+    elif assigned == "unassigned":
+        unassigned = ReviewAppealSupportCase.assigned_user_id.is_(None)
+        statement = statement.where(unassigned)
+        count_statement = count_statement.where(unassigned)
 
     count = await session.scalar(count_statement) or 0
     result = await session.execute(
@@ -153,7 +200,7 @@ async def list_cases(
         with tag.div(classes="flex flex-col gap-4"):
             with tag.h1(classes="text-4xl"):
                 text("Cases")
-            with tab_nav(_list_tabs(request, status)):
+            with tab_nav(_list_tabs(request, status, assigned)):
                 pass
             if rows:
                 _render_table(rows)

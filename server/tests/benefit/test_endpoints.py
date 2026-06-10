@@ -6,6 +6,7 @@ import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
+from polar.kit.visibility import Visibility
 from polar.models import (
     Benefit,
     Customer,
@@ -330,6 +331,29 @@ class TestCreateBenefit:
         json = response.json()
         assert "properties" in json
 
+    @pytest.mark.auth
+    async def test_custom_respects_private_visibility(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/benefits/",
+            json={
+                "type": "custom",
+                "description": "Custom benefit",
+                "properties": {"note": None},
+                "organization_id": str(organization.id),
+                "visibility": Visibility.private,
+            },
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["visibility"] == Visibility.private
+
 
 @pytest.mark.asyncio
 class TestUpdateBenefit:
@@ -450,6 +474,35 @@ class TestUpdateBenefit:
         assert json["description"] == "Updated Description"
         assert "properties" in json
         assert json["properties"]["note"] == "UPDATED NOTE"
+
+    @pytest.mark.auth
+    async def test_rejects_visibility_update_for_non_configurable_benefit(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.discord,
+            properties={
+                "guild_id": "123",
+                "role_id": "456",
+                "kick_member": False,
+            },
+        )
+
+        response = await client.patch(
+            f"/v1/benefits/{benefit.id}",
+            json={
+                "type": benefit.type,
+                "visibility": Visibility.private,
+            },
+        )
+
+        assert response.status_code == 422
 
 
 @pytest.mark.asyncio

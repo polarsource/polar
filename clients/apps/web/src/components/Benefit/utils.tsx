@@ -1,4 +1,4 @@
-import { schemas } from '@polar-sh/client'
+import { enums, schemas } from '@polar-sh/client'
 import { Download, Flag, Gauge, Key, Loader } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 import GitHubIcon from '../Icons/GitHubIcon'
@@ -73,3 +73,12 @@ export const benefitsDisplayNames: {
   feature_flag: 'Feature Flag',
   slack_shared_channel: 'Slack Shared Channel',
 }
+
+export const getCreatableBenefitTypes = (
+  organization: schemas['Organization'],
+): schemas['BenefitType'][] =>
+  enums.benefitTypeValues.filter(
+    (type) =>
+      type !== 'slack_shared_channel' ||
+      !!organization.feature_settings?.slack_benefit_enabled,
+  )

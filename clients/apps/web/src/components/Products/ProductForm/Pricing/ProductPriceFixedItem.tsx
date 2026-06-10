@@ -3,6 +3,7 @@
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormMessage,
@@ -28,7 +29,7 @@ export const ProductPriceFixedItem: React.FC<ProductPriceFixedItemProps> = ({
       name={`prices.${index}.price_amount`}
       rules={{
         required: 'This field is required',
-        min: { value: 1, message: 'Price must be greater than 0' },
+        min: { value: 0, message: 'Price must be 0 or greater' },
       }}
       render={({ field }) => {
         return (
@@ -49,6 +50,9 @@ export const ProductPriceFixedItem: React.FC<ProductPriceFixedItemProps> = ({
                 </div>
               </FormControl>
             </div>
+            <FormDescription className="text-muted-foreground text-xs">
+              Set to 0 to create a free product
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )

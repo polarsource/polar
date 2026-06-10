@@ -8,11 +8,7 @@ import {
   findFirstErrorMessage,
   setProductValidationErrors,
 } from '@/utils/api/errors'
-import {
-  formPriceToApiPrice,
-  ProductEditOrCreateForm,
-  productToCreateForm,
-} from '@/utils/product'
+import { ProductEditOrCreateForm, productToCreateForm } from '@/utils/product'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -128,7 +124,6 @@ export const CreateProductPage = ({
 
         const { data: product, error } = await createProduct.mutateAsync({
           ...productCreateRest,
-          prices: productCreateRest.prices.map(formPriceToApiPrice),
           medias: mediaIds,
           metadata: metadata.reduce(
             (acc, { key, value }) => ({ ...acc, [key]: value }),

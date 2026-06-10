@@ -28,7 +28,6 @@ import { ProductPriceCreate } from './utils'
 const AMOUNT_TYPE_LABELS: Record<string, string> = {
   fixed: 'Fixed price',
   custom: 'Pay what you want',
-  free: 'Free',
   seat_based: 'Seats',
   metered_unit: 'Metered price',
 }
@@ -111,9 +110,6 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                         <SelectItem value="custom">
                           {AMOUNT_TYPE_LABELS.custom}
                         </SelectItem>
-                        <SelectItem value="free">
-                          {AMOUNT_TYPE_LABELS.free}
-                        </SelectItem>
                         {organization.feature_settings
                           ?.seat_based_pricing_enabled && (
                           <SelectItem value="seat_based">
@@ -147,7 +143,7 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
           }}
         />
       )}
-      {amountType && amountType !== 'free' && (
+      {amountType && (
         <div className="flex flex-col gap-4">
           {amountType === 'fixed' && (
             <ProductPriceFixedItem index={index} currency={currency} />

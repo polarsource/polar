@@ -167,8 +167,6 @@ export const ProductPricingSection = ({
           return { ...base, amount_type: 'fixed', price_amount: 0 }
         } else if (newAmountType === 'custom') {
           return { ...base, amount_type: 'custom', minimum_amount: 0 }
-        } else if (newAmountType === 'free') {
-          return { ...base, amount_type: 'free' }
         } else if (newAmountType === 'seat_based') {
           return {
             ...base,
@@ -186,7 +184,7 @@ export const ProductPricingSection = ({
             meter_id: '',
           }
         }
-        return { ...base, amount_type: 'free' }
+        return { ...base, amount_type: 'fixed', price_amount: 0 }
       }
 
       setValue(
@@ -234,8 +232,6 @@ export const ProductPricingSection = ({
             amount_type: 'custom',
             minimum_amount: 0,
           }
-        } else if (price.amount_type === 'free') {
-          newPrice = { ...baseCurrency, amount_type: 'free' }
         } else if (price.amount_type === 'seat_based') {
           const sourceTiers =
             'seat_tiers' in price && price.seat_tiers?.tiers
@@ -263,7 +259,7 @@ export const ProductPricingSection = ({
             meter_id: meterId,
           }
         } else {
-          newPrice = { ...baseCurrency, amount_type: 'free' }
+          newPrice = { ...baseCurrency, amount_type: 'fixed', price_amount: 0 }
         }
 
         append(newPrice)

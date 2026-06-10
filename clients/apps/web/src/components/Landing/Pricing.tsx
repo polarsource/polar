@@ -59,7 +59,7 @@ export const Pricing = () => (
         <Text variant="heading-xl" as="h2" wrap="balance">
           Built to scale with you.
         </Text>
-        <Box maxWidth="56rem">
+        <Box display="block" maxWidth="56rem">
           <Text variant="heading-xs" wrap="balance" color="muted">
             Start free. Upgrade as you grow. Enterprise needs? Let&apos;s talk.
           </Text>
@@ -130,7 +130,7 @@ const StartupProgramCard = () => (
           <Text variant="heading-s" as="h3">
             Startup Program
           </Text>
-          <Box>
+          <Box display="block">
             <Text variant="body" color="muted">
               A year on our most generous plan.
             </Text>
@@ -147,7 +147,7 @@ const StartupProgramCard = () => (
       </Box>
       <CardSection label="Fees" items={['3.40% + 30¢ per transaction']} />
       <CardSection label="Features" items={['Everything on Scale']} />
-      <Box paddingTop="m">
+      <Box display="block" paddingTop="m">
         <Link href="/startup-program" prefetch>
           <Button>Apply now</Button>
         </Link>
@@ -169,7 +169,7 @@ const TierCard = ({ tier }: { tier: Tier }) => (
           <Text variant="heading-s" as="h3">
             {tier.name}
           </Text>
-          <Box>
+          <Box display="block">
             <Text variant="body" color="muted">
               {tier.desc}
             </Text>

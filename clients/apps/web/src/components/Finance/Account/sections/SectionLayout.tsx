@@ -34,7 +34,7 @@ export const SectionLayout = ({
           justifyContent="between"
           columnGap="s"
         >
-          <Box>{footerStart}</Box>
+          <Box display="block">{footerStart}</Box>
           {footerEnd}
         </Box>
       )}

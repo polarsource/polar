@@ -136,6 +136,7 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
 
         <Box display="flex" alignItems="center" columnGap="m">
           <Box
+            display="block"
             flexGrow={1}
             borderTopWidth={1}
             borderStyle="solid"
@@ -150,6 +151,7 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
             or
           </Text>
           <Box
+            display="block"
             flexGrow={1}
             borderTopWidth={1}
             borderStyle="solid"

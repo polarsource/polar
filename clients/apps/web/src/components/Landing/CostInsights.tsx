@@ -91,7 +91,7 @@ export const CostInsights = () => {
           padding="xl"
           rowGap="l"
         >
-          <Box flex={1} minHeight={0} aspectRatio="1/1">
+          <Box display="block" flex={1} minHeight={0} aspectRatio="1/1">
             <MarginPulse />
           </Box>
         </Box>

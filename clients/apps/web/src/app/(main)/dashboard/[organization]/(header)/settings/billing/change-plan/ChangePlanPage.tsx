@@ -317,6 +317,7 @@ export default function ChangePlanPage({
 
         {blockChanges && (
           <Box
+            display="block"
             borderRadius="m"
             backgroundColor="background-warning"
             padding="l"

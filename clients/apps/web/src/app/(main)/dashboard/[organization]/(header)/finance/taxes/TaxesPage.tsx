@@ -80,7 +80,7 @@ const columns: DataTableColumnDef<schemas['TaxJurisdiction']>[] = [
       />
     ),
     cell: ({ row: { original } }) => (
-      <Box textAlign="right">
+      <Box display="block" textAlign="right">
         <Text>
           {formatCurrency('accounting')(original.tax_amount, original.currency)}
         </Text>

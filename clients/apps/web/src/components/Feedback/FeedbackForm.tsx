@@ -230,6 +230,7 @@ export const FeedbackForm = ({
 
         {validationOutcome?.kind === 'rejection' && (
           <Box
+            display="block"
             borderRadius="l"
             backgroundColor="background-warning"
             color="text-warning"
@@ -241,6 +242,7 @@ export const FeedbackForm = ({
 
         {validationOutcome?.kind === 'info' && (
           <Box
+            display="block"
             borderRadius="l"
             backgroundColor="background-pending"
             color="text-pending"
@@ -254,6 +256,7 @@ export const FeedbackForm = ({
 
         {apiError && (
           <Box
+            display="block"
             borderRadius="l"
             backgroundColor="background-danger"
             color="text-danger"

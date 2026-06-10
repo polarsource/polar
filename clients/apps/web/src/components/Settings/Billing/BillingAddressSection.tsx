@@ -78,7 +78,7 @@ export const BillingAddressSection = ({
             {taxId && <Text color="muted">Tax ID: {taxId}</Text>}
           </Box>
         ) : (
-          <Box paddingVertical="l" textAlign="center">
+          <Box display="block" paddingVertical="l" textAlign="center">
             <Text color="muted">No billing address on file</Text>
           </Box>
         )}

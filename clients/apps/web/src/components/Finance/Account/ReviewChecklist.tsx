@@ -43,7 +43,7 @@ export const ReviewChecklist = ({
     >
       {isLoading ? (
         Array.from({ length: 8 }, (_, i) => (
-          <Box key={`placeholder-${i}`} {...cardStyles}>
+          <Box display="block" key={`placeholder-${i}`} {...cardStyles}>
             <ChecklistRow isLoading={true} />
           </Box>
         ))
@@ -67,7 +67,7 @@ export const ReviewChecklist = ({
                     ease: [0.4, 0, 0.2, 1],
                   }}
                 >
-                  <Box {...cardStyles}>
+                  <Box display="block" {...cardStyles}>
                     <ChecklistRow isLoading={false} step={step} />
                   </Box>
                 </motion.div>

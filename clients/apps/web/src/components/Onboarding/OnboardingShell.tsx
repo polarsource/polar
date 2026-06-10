@@ -111,6 +111,7 @@ export function OnboardingShell({
                     {STEPS.map((s, i) => (
                       <Box key={s} display="flex" flex={1}>
                         <Box
+                          display="block"
                           height={2}
                           width="100%"
                           borderRadius="full"
@@ -161,6 +162,7 @@ export function OnboardingShell({
           paddingBottom="3xl"
         >
           <Box
+            display="block"
             position="absolute"
             top={0}
             bottom={0}
@@ -168,7 +170,7 @@ export function OnboardingShell({
             right={-10000}
             backgroundColor="background-secondary"
           />
-          <Box position="sticky" top={150} zIndex={1}>
+          <Box display="block" position="sticky" top={150} zIndex={1}>
             {(apiStep ?? step) && <APIPreview step={(apiStep ?? step)!} />}
           </Box>
         </Box>

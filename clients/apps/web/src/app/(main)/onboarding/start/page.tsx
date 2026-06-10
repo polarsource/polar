@@ -124,7 +124,7 @@ export default function Page() {
                 payments. No real money, no setup required.
               </p>
             </Box>
-            <Box marginTop="xl">
+            <Box display="block" marginTop="xl">
               <Button fullWidth onClick={handleSandbox}>
                 Launch sandbox
               </Button>
@@ -151,7 +151,7 @@ export default function Page() {
                 Set up your organization and start accepting payments.
               </p>
             </Box>
-            <Box marginTop="xl">
+            <Box display="block" marginTop="xl">
               <Button fullWidth onClick={handleGetStarted}>
                 Get started
               </Button>

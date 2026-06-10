@@ -74,6 +74,19 @@ styles + scoped CSS at build time. Tokens use the CSS `light-dark()` function to
 auto-swap between light and dark mode, so you author one styling pass and dark mode
 is free.
 
+### `display` defaults to `flex`
+
+Box defaults to `display: flex` for block-level elements (~90% of usage is flex), so a
+bare `<Box>` is a flex row. Set `flexDirection`, `gap`, etc. directly without repeating
+`display="flex"`. Inline elements (`as="span"`, `as="label"`) and `as="li"` keep their
+native display so semantics aren't broken. Pass an explicit `display` (e.g.
+`display="block"`, `display="grid"`) to override.
+
+```tsx
+<Box flexDirection="column" gap="m">…</Box>   // already flex
+<Box display="block">…</Box>                    // opt out of flex
+```
+
 ### Importing
 
 ```tsx
@@ -213,6 +226,7 @@ borderStyle: 'solid' | 'dashed' | 'dotted' | 'none'
 
 ```
 display: 'flex' | 'grid' | 'block' | 'inline' | 'inline-flex' | 'inline-block' | 'none' | 'contents'
+         // defaults to 'flex' for block-level elements (see "display defaults to flex" above)
 overflow / overflowX / overflowY: 'hidden' | 'auto' | 'scroll' | 'visible'
 width, height, minWidth, maxWidth, minHeight, maxHeight: string | number   // numbers → px
 aspectRatio: string                                                         // '16 / 9'

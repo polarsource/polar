@@ -186,7 +186,7 @@ export const PathCard = ({
           />
         </Header>
         {extra && (
-          <Box paddingHorizontal="l" paddingBottom="l">
+          <Box display="block" paddingHorizontal="l" paddingBottom="l">
             {extra}
           </Box>
         )}

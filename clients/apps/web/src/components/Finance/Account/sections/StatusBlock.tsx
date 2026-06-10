@@ -80,14 +80,18 @@ export const StatusBlock = ({
           {title}
         </Text>
         {description && (
-          <Box maxWidth={420}>
+          <Box display="block" maxWidth={420}>
             <Text variant="caption" color="muted" wrap="balance">
               {description}
             </Text>
           </Box>
         )}
       </Box>
-      {action && <Box marginTop="m">{action}</Box>}
+      {action && (
+        <Box display="block" marginTop="m">
+          {action}
+        </Box>
+      )}
     </Box>
   )
 }

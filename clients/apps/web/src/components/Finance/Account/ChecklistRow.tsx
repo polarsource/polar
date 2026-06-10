@@ -39,7 +39,7 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
       <Box display="flex" alignItems="center" columnGap="s">
         <LoadingBox width={24} height={24} borderRadius="full" />
         <LoadingBox width={140} height={26} borderRadius="s" />
-        <Box marginLeft="auto">
+        <Box display="block" marginLeft="auto">
           <LoadingBox width={46} height={32} borderRadius="m" />
         </Box>
       </Box>
@@ -77,7 +77,7 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
             </Text>
           )}
           {isActionable && (
-            <Box marginLeft="auto">
+            <Box display="block" marginLeft="auto">
               <Button
                 variant="ghost"
                 size="sm"
@@ -112,6 +112,7 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
               style={{ overflow: 'hidden' }}
             >
               <Box
+                display="block"
                 borderTopWidth={1}
                 borderStyle="solid"
                 borderColor="border-primary"
@@ -127,7 +128,7 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
               transition={{ duration: 0.25, ease: [0.04, 0.62, 0.23, 0.98] }}
               className="overflow-hidden focus-within:overflow-visible"
             >
-              <Box paddingTop="m">
+              <Box display="block" paddingTop="m">
                 {renderSection({ organization, step, reasonItems })}
               </Box>
             </motion.div>

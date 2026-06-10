@@ -168,7 +168,7 @@ export const BillingPaymentMethods = ({
         {isLoading ? (
           <LoadingBox height={64} borderRadius="m" />
         ) : paymentMethods.length === 0 ? (
-          <Box paddingVertical="l" textAlign="center">
+          <Box display="block" paddingVertical="l" textAlign="center">
             <Text color="muted">No payment methods on file</Text>
           </Box>
         ) : (
@@ -184,7 +184,12 @@ export const BillingPaymentMethods = ({
         )}
       </Box>
       {error && (
-        <Box borderRadius="m" backgroundColor="background-danger" padding="l">
+        <Box
+          display="block"
+          borderRadius="m"
+          backgroundColor="background-danger"
+          padding="l"
+        >
           <Text color="danger">{error}</Text>
         </Box>
       )}

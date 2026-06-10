@@ -94,6 +94,7 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
             {completed} of {total} complete
           </Text>
           <Box
+            display="block"
             width="100%"
             height={6}
             borderRadius="full"
@@ -101,6 +102,7 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
             overflow="hidden"
           >
             <Box
+              display="block"
               height={6}
               borderRadius="full"
               backgroundColor="background-inverse"

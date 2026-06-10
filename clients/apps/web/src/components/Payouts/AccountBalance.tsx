@@ -163,6 +163,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
               </Text>
               <Box display="inline-flex" alignItems="center" columnGap="xs">
                 <Box
+                  display="block"
                   width={6}
                   height={6}
                   borderRadius="full"

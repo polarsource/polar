@@ -361,6 +361,7 @@ POLAR_SUCCESS_URL=https://example.com/success?checkout_id={CHECKOUT_ID}`}
 const CodeWrapper = ({ children }: { children: React.ReactNode }) => {
   return (
     <Box
+      display="block"
       width="100%"
       borderRadius="m"
       borderWidth={1}
@@ -405,6 +406,7 @@ const FrameworkCard = ({
       >
         {icon ?? (
           <Box
+            display="block"
             height={32}
             width={32}
             borderRadius="full"

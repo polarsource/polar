@@ -139,12 +139,12 @@ export const UseCases = () => {
                 {active.title}
               </Text>
 
-              <Box maxWidth="28rem">
+              <Box display="block" maxWidth="28rem">
                 <Text variant="heading-xxs" color="muted">
                   {active.desc}
                 </Text>
               </Box>
-              <Box paddingTop="xs">
+              <Box display="block" paddingTop="xs">
                 <Link href={active.docsHref}>
                   <Button className="dark:hover:bg-polar-50 rounded-full border-none bg-black hover:bg-gray-900 dark:bg-white dark:text-black">
                     Read the docs

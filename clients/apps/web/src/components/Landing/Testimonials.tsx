@@ -135,6 +135,7 @@ export const Testimonials = () => (
               {t.text}
             </Box>
             <Box
+              display="block"
               borderTopWidth={2}
               borderStyle="solid"
               borderColor="border-primary"

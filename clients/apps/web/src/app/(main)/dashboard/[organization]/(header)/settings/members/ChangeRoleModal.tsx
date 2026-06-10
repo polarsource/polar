@@ -111,6 +111,7 @@ export function ChangeRoleModal({
       </Select>
       {orderedRoles.length > 0 && (
         <Box
+          display="block"
           maxHeight="30vh"
           overflowY="auto"
           borderRadius="m"

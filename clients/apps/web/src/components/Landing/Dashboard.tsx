@@ -17,6 +17,7 @@ export const Dashboard = () => {
         description="Revenue, costs & margins in one overview. The unit economics every AI startup needs to scale with confidence."
       />
       <Box
+        display="block"
         width="100%"
         overflow="hidden"
         position="relative"

@@ -23,13 +23,13 @@ export const SectionHeader = ({ title, description }: SectionHeaderProps) => (
     columnGap="4xl"
   >
     <Box flex={1} display="flex">
-      <Box maxWidth={{ base: '100%', xl: '32rem' }}>
+      <Box display="block" maxWidth={{ base: '100%', xl: '32rem' }}>
         <Text variant="heading-l" as="h2" wrap="balance">
           {title}
         </Text>
       </Box>
     </Box>
-    <Box flex={1}>
+    <Box display="block" flex={1}>
       <Text variant="heading-xs" color="muted" wrap="pretty">
         {description}
       </Text>

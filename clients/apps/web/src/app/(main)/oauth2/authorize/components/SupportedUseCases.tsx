@@ -46,6 +46,7 @@ export default function SupportedUseCases() {
       </Box>
 
       <Box
+        display="block"
         borderTopWidth={1}
         borderStyle="solid"
         borderColor="border-primary"

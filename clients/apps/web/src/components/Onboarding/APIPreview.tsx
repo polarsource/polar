@@ -246,7 +246,7 @@ export function APIPreview({ step }: { step: APIPreviewStep }) {
           borderColor="border-primary"
           paddingTop="m"
         >
-          <Box height={6} width={6} borderRadius="full" />
+          <Box display="block" height={6} width={6} borderRadius="full" />
           <p className="font-mono text-[10px] leading-relaxed text-gray-400 dark:text-gray-500">
             Sending request...
           </p>

@@ -198,6 +198,7 @@ export const QuestionFlow = ({
         )}
         {error && (
           <Box
+            display="block"
             borderRadius="l"
             backgroundColor="background-warning"
             borderWidth={1}

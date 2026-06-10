@@ -43,6 +43,4 @@ class TestBenefitTypeVisibility:
         )
 
     def test_resolve_visibility_uses_default_for_feature_flag(self) -> None:
-        assert (
-            BenefitType.feature_flag.resolve_visibility(None) == Visibility.private
-        )
+        assert BenefitType.feature_flag.resolve_visibility(None) == Visibility.private

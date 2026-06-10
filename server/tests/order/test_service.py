@@ -110,8 +110,8 @@ from polar.wallet.service import wallet as wallet_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    create_benefit,
     create_active_subscription,
+    create_benefit,
     create_billing_entry,
     create_canceled_subscription,
     create_checkout,
@@ -123,12 +123,12 @@ from tests.fixtures.random_objects import (
     create_payment,
     create_payment_method,
     create_product,
-    set_product_benefits,
     create_subscription,
     create_trialing_subscription,
     create_wallet,
     create_wallet_billing,
     create_wallet_transaction,
+    set_product_benefits,
 )
 from tests.transaction.conftest import create_transaction
 

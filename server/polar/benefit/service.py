@@ -151,9 +151,7 @@ class BenefitService:
             organization=organization,
             is_tax_applicable=is_tax_applicable,
             properties=properties,
-            visibility=create_schema.type.resolve_visibility(
-                create_schema.visibility
-            ),
+            visibility=create_schema.type.resolve_visibility(create_schema.visibility),
             **create_schema.model_dump(
                 by_alias=True,
                 exclude={

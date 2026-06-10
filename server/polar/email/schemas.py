@@ -60,9 +60,7 @@ EmailBenefitList = Annotated[
     BenefitList,
     AfterValidator(
         lambda benefits: [
-            benefit
-            for benefit in benefits
-            if benefit.visibility == Visibility.public
+            benefit for benefit in benefits if benefit.visibility == Visibility.public
         ]
     ),
 ]

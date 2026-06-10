@@ -108,6 +108,7 @@ export default {
         maximum: 'En fazla {max} koltuk',
         updateFailed: 'Koltuklar güncellenemedi',
       },
+      basePrice: 'Temel fiyat',
     },
     trial: {
       ends: 'Deneme süresi {endDate} tarihinde bitiyor',

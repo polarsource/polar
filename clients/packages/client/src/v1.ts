@@ -35674,7 +35674,10 @@ export interface operations {
         external_customer_id?: string | string[] | null
         /** @description Filter by discount ID. */
         discount_id?: string | string[] | null
-        /** @description Filter by active or inactive subscription. */
+        /**
+         * @deprecated
+         * @description Filter by active or inactive subscription.
+         */
         active?: boolean | null
         /** @description Filter by subscription status. */
         status?:

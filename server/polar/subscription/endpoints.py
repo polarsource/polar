@@ -83,7 +83,9 @@ async def list(
         None, title="DiscountID Filter", description="Filter by discount ID."
     ),
     active: bool | None = Query(
-        None, description="Filter by active or inactive subscription."
+        None,
+        description="Filter by active or inactive subscription.",
+        deprecated=True,
     ),
     status: MultipleQueryFilter[SubscriptionStatus] | None = Query(
         None, title="Status Filter", description="Filter by subscription status."

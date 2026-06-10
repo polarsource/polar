@@ -120,10 +120,10 @@ accessibility. Allowed values:
 
 ```tsx
 <Box as="section" padding="xl">…</Box>
-<Box as="ul" display="flex" flexDirection="column" rowGap="s">
+<Box as="ul" flexDirection="column" rowGap="s">
   <Box as="li">Item</Box>
 </Box>
-<Box as="nav" display="flex" alignItems="center" columnGap="m">…</Box>
+<Box as="nav" alignItems="center" columnGap="m">…</Box>
 ```
 
 DOM props for the chosen element are typed and forwarded (e.g. `onClick`, `htmlFor` on
@@ -294,7 +294,6 @@ keys (`sm`/`md`/`lg`/`xl`), and the pseudo-state keys (`hover`, `focus`, `active
 
 ```tsx
 <Box
-  display="flex"
   flexDirection={{ base: 'column', md: 'row' }}
   padding={{ base: 'l', lg: '2xl' }}
   gridTemplateColumns={{
@@ -315,7 +314,7 @@ queries, pseudo-state keys generate scoped pseudo-class rules.
 **Vertical stack**:
 
 ```tsx
-<Box display="flex" flexDirection="column" rowGap="l">
+<Box flexDirection="column" rowGap="l">
   …
 </Box>
 ```
@@ -323,7 +322,7 @@ queries, pseudo-state keys generate scoped pseudo-class rules.
 **Horizontal row, centered, with gap**:
 
 ```tsx
-<Box display="flex" alignItems="center" columnGap="m">
+<Box alignItems="center" columnGap="m">
   …
 </Box>
 ```
@@ -338,7 +337,6 @@ queries, pseudo-state keys generate scoped pseudo-class rules.
   borderStyle="solid"
   borderColor="border-primary"
   padding="xl"
-  display="flex"
   flexDirection="column"
   rowGap="m"
 >
@@ -399,7 +397,6 @@ you add a transition:
   borderColor="border-primary"
   paddingHorizontal="xl"
   paddingVertical="m"
-  display="flex"
   alignItems="center"
   justifyContent="between"
 >
@@ -422,7 +419,6 @@ you add a transition:
 
 ```tsx
 <Box
-  display="flex"
   flexDirection="column"
   alignItems="center"
   justifyContent="center"
@@ -607,7 +603,6 @@ if (isLoading) {
 if (!data?.length) {
   return (
     <Box
-      display="flex"
       flexDirection="column"
       alignItems="center"
       justifyContent="center"

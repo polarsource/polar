@@ -2907,6 +2907,117 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/llm-provider-configs/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List LLM Provider Configs
+     * @description List LLM provider configurations.
+     *
+     *     **Scopes**: `llm_gateway:read` `llm_gateway:write`
+     */
+    get: operations['llm-provider-configs:list_configs']
+    put?: never
+    /**
+     * Create LLM Provider Config
+     * @description Create an LLM provider configuration.
+     *
+     *     **Scopes**: `llm_gateway:write`
+     */
+    post: operations['llm-provider-configs:create_config']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/llm-provider-configs/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get LLM Provider Config
+     * @description Get an LLM provider configuration by ID.
+     *
+     *     **Scopes**: `llm_gateway:read` `llm_gateway:write`
+     */
+    get: operations['llm-provider-configs:get_config']
+    put?: never
+    post?: never
+    /**
+     * Delete LLM Provider Config
+     * @description Delete an LLM provider configuration.
+     *
+     *     **Scopes**: `llm_gateway:write`
+     */
+    delete: operations['llm-provider-configs:delete_config']
+    options?: never
+    head?: never
+    /**
+     * Update LLM Provider Config
+     * @description Update an LLM provider configuration.
+     *
+     *     **Scopes**: `llm_gateway:write`
+     */
+    patch: operations['llm-provider-configs:update_config']
+    trace?: never
+  }
+  '/v1/llm/v1/chat/completions': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Chat Completions
+     * @description OpenAI-compatible chat completions endpoint.
+     *
+     *     Proxies requests to the configured LLM provider via LiteLLM.
+     *     Supports both streaming and non-streaming responses.
+     *
+     *     **Scopes**: `llm_gateway:read` `llm_gateway:write`
+     */
+    post: operations['llm-gateway:chat_completions']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/llm/v1/models': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Models
+     * @description OpenAI-compatible models list endpoint.
+     *
+     *     Returns the list of models configured and enabled for the authenticated organization.
+     *
+     *     **Scopes**: `llm_gateway:read` `llm_gateway:write`
+     */
+    get: operations['llm-gateway:list_models']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/checkout-links/': {
     parameters: {
       query?: never
@@ -6898,6 +7009,8 @@ export interface components {
        *       "webhooks:write": "Create or modify webhooks",
        *       "license_keys:read": "Read license keys",
        *       "license_keys:write": "Modify license keys",
+       *       "llm_gateway:read": "Read LLM gateway configs and proxy requests",
+       *       "llm_gateway:write": "Create or modify LLM gateway configs",
        *       "customer_portal:read": "Read your orders, subscriptions and benefits",
        *       "customer_portal:write": "Create or modify your orders, subscriptions and benefits",
        *       "notifications:read": "Read notifications",
@@ -6982,6 +7095,8 @@ export interface components {
        *       "webhooks:write": "Create or modify webhooks",
        *       "license_keys:read": "Read license keys",
        *       "license_keys:write": "Modify license keys",
+       *       "llm_gateway:read": "Read LLM gateway configs and proxy requests",
+       *       "llm_gateway:write": "Create or modify LLM gateway configs",
        *       "customer_portal:read": "Read your orders, subscriptions and benefits",
        *       "customer_portal:write": "Create or modify your orders, subscriptions and benefits",
        *       "notifications:read": "Read notifications",
@@ -7070,6 +7185,8 @@ export interface components {
       | 'webhooks:write'
       | 'license_keys:read'
       | 'license_keys:write'
+      | 'llm_gateway:read'
+      | 'llm_gateway:write'
       | 'customer_portal:read'
       | 'customer_portal:write'
       | 'notifications:read'
@@ -19720,6 +19837,112 @@ export interface components {
       total_tokens: number
     }
     /**
+     * LLMProviderConfig
+     * @description An LLM provider configuration for proxying requests.
+     */
+    LLMProviderConfig: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization.
+       */
+      organization_id: string
+      /**
+       * Provider
+       * @description LLM provider identifier.
+       */
+      provider: string
+      /**
+       * Model Name
+       * @description Model identifier.
+       */
+      model_name: string
+      /**
+       * Display Name
+       * @description Optional display name.
+       */
+      display_name: string | null
+      /**
+       * Is Enabled
+       * @description Whether this config is active.
+       */
+      is_enabled: boolean
+    }
+    /**
+     * LLMProviderConfigCreate
+     * @description Schema for creating an LLM provider configuration.
+     */
+    LLMProviderConfigCreate: {
+      /**
+       * Organization Id
+       * @description The ID of the organization. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+      /**
+       * Provider
+       * @description LLM provider identifier, e.g. openai, anthropic, google.
+       */
+      provider: string
+      /**
+       * Model Name
+       * @description Model identifier, e.g. gpt-4o, claude-sonnet-4-20250514.
+       */
+      model_name: string
+      /**
+       * Display Name
+       * @description Optional display name shown to customers.
+       */
+      display_name?: string | null
+      /**
+       * Api Key
+       * @description The provider API key. Will be encrypted before storage.
+       */
+      api_key: string
+    }
+    /**
+     * LLMProviderConfigSortProperty
+     * @enum {string}
+     */
+    LLMProviderConfigSortProperty:
+      | 'created_at'
+      | '-created_at'
+      | 'provider'
+      | '-provider'
+      | 'model_name'
+      | '-model_name'
+    /**
+     * LLMProviderConfigUpdate
+     * @description Schema for updating an LLM provider configuration.
+     */
+    LLMProviderConfigUpdate: {
+      /** Display Name */
+      display_name?: string | null
+      /**
+       * Api Key
+       * @description New provider API key. Will be encrypted before storage.
+       */
+      api_key?: string | null
+      /** Is Enabled */
+      is_enabled?: boolean | null
+    }
+    /**
      * LegacyOrganizationStatus
      * @description Legacy organization status values kept for backward compatibility in schemas
      *     using OrganizationPublicBase.
@@ -20472,6 +20695,12 @@ export interface components {
         | components['schemas']['ProductMediaFileRead']
         | components['schemas']['OrganizationAvatarFileRead']
       )[]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[LLMProviderConfig] */
+    ListResource_LLMProviderConfig_: {
+      /** Items */
+      items: components['schemas']['LLMProviderConfig'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[LicenseKeyRead] */
@@ -21934,7 +22163,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write llm_gateway:read llm_gateway:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
        */
       scope: string
       /** Client Name */
@@ -21999,7 +22228,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write llm_gateway:read llm_gateway:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
        */
       scope: string
       /** Client Name */
@@ -22045,7 +22274,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write llm_gateway:read llm_gateway:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
        */
       scope: string
       /** Client Name */
@@ -28316,6 +28545,8 @@ export interface components {
       | 'webhooks:write'
       | 'license_keys:read'
       | 'license_keys:write'
+      | 'llm_gateway:read'
+      | 'llm_gateway:write'
       | 'customer_portal:read'
       | 'customer_portal:write'
       | 'notifications:read'
@@ -40752,6 +40983,246 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'llm-provider-configs:list_configs': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?:
+          | components['schemas']['LLMProviderConfigSortProperty'][]
+          | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_LLMProviderConfig_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'llm-provider-configs:create_config': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LLMProviderConfigCreate']
+      }
+    }
+    responses: {
+      /** @description LLM provider config created. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LLMProviderConfig']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'llm-provider-configs:get_config': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The LLM provider config ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LLMProviderConfig']
+        }
+      }
+      /** @description LLM provider config not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'llm-provider-configs:delete_config': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The LLM provider config ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description LLM provider config deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description LLM provider config not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'llm-provider-configs:update_config': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The LLM provider config ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LLMProviderConfigUpdate']
+      }
+    }
+    responses: {
+      /** @description LLM provider config updated. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LLMProviderConfig']
+        }
+      }
+      /** @description LLM provider config not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'llm-gateway:chat_completions': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+    }
+  }
+  'llm-gateway:list_models': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            [key: string]: unknown
+          }
         }
       }
     }
@@ -55533,6 +56004,8 @@ export const availableScopeValues: ReadonlyArray<
   'webhooks:write',
   'license_keys:read',
   'license_keys:write',
+  'llm_gateway:read',
+  'llm_gateway:write',
   'customer_portal:read',
   'customer_portal:write',
   'notifications:read',
@@ -56530,6 +57003,16 @@ export const identityVerificationStatusValues: ReadonlyArray<
 export const introspectTokenResponseToken_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['IntrospectTokenResponse']['token_type']
 > = ['access_token', 'refresh_token']
+export const lLMProviderConfigSortPropertyValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['LLMProviderConfigSortProperty']
+> = [
+  'created_at',
+  '-created_at',
+  'provider',
+  '-provider',
+  'model_name',
+  '-model_name',
+]
 export const legacyOrganizationStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['LegacyOrganizationStatus']
 > = ['created', 'under_review', 'denied', 'active']
@@ -58386,6 +58869,8 @@ export const scopeValues: ReadonlyArray<
   'webhooks:write',
   'license_keys:read',
   'license_keys:write',
+  'llm_gateway:read',
+  'llm_gateway:write',
   'customer_portal:read',
   'customer_portal:write',
   'notifications:read',

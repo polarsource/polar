@@ -86,6 +86,9 @@ class Scope(StrEnum):
     license_keys_read = "license_keys:read"
     license_keys_write = "license_keys:write"
 
+    llm_gateway_read = "llm_gateway:read"
+    llm_gateway_write = "llm_gateway:write"
+
     customer_portal_read = "customer_portal:read"
     customer_portal_write = "customer_portal:write"
 
@@ -138,6 +141,7 @@ READ_ONLY_SCOPES: set[Scope] = {
     Scope.metrics_read,
     Scope.webhooks_read,
     Scope.license_keys_read,
+    Scope.llm_gateway_read,
     Scope.customer_portal_read,
     Scope.notifications_read,
     Scope.notification_recipients_read,
@@ -202,6 +206,8 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.webhooks_write: "Create or modify webhooks",
     Scope.license_keys_read: "Read license keys",
     Scope.license_keys_write: "Modify license keys",
+    Scope.llm_gateway_read: "Read LLM gateway configs and proxy requests",
+    Scope.llm_gateway_write: "Create or modify LLM gateway configs",
     Scope.customer_portal_read: "Read your orders, subscriptions and benefits",
     Scope.customer_portal_write: "Create or modify your orders, subscriptions and benefits",
     Scope.notifications_read: "Read notifications",

@@ -34,6 +34,7 @@ from .feedback import Feedback, FeedbackStatus, FeedbackType
 from .file import File
 from .issue_reward import IssueReward
 from .license_key import LicenseKey
+from .llm_provider_config import LLMProviderConfig
 from .license_key_activation import LicenseKeyActivation
 from .member import Member, MemberRole
 from .member_session import MemberSession
@@ -146,6 +147,7 @@ __all__ = [
     "LegacyRecurringProductPriceFree",
     "LicenseKey",
     "LicenseKeyActivation",
+    "LLMProviderConfig",
     "LoginCode",
     "Member",
     "MemberRole",

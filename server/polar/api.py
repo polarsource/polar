@@ -35,6 +35,8 @@ from polar.integrations.resend.endpoints import router as resend_router
 from polar.integrations.slack.endpoints import router as slack_router
 from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.license_key.endpoints import router as license_key_router
+from polar.llm_gateway.endpoints import proxy_router as llm_proxy_router
+from polar.llm_gateway.endpoints import router as llm_gateway_router
 from polar.member.endpoints import router as member_router
 from polar.meter.endpoints import router as meter_router
 from polar.metrics.endpoints import router as metrics_router
@@ -116,6 +118,10 @@ router.include_router(files_router)
 router.include_router(metrics_router)
 # /license-keys
 router.include_router(license_key_router)
+# /llm-provider-configs
+router.include_router(llm_gateway_router)
+# /llm/v1 (OpenAI-compatible proxy)
+router.include_router(llm_proxy_router)
 # /checkout-links
 router.include_router(checkout_link_router)
 # /custom-fields

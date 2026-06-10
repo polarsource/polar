@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /Users/birk/dev/polar -name *.ts -o -name *.tsx)",
+      "Bash(find /Users/birk/dev/polar/server/polar/external_event -type f -name *.py)",
+      "Bash(grep -rn \"handleNextAction\\\\|requires_action\" --include=*.tsx --include=*.ts /Users/birk/dev/polar/clients/apps/web)",
+      "Bash(grep -rn \"confirmRetryPayment\\\\|confirm_retry\\\\|retry_payment\" --include=*.tsx --include=*.ts /Users/birk/dev/polar/clients/apps/web/src/components)"
+    ]
+  }
+}

@@ -96,10 +96,9 @@ dev = [
   "debugpy>=1.8.19",
   "pydantic-evals>=1.103.0",
   "gepa>=0.1.0",
-  # Quarantined due to supply chain attack:
-  # * https://futuresearch.ai/blog/litellm-pypi-supply-chain-attack/
-  # * https://pypi.org/project/litellm/
-  # "litellm==1.82.3",
+  # Previously quarantined due to supply chain attack (resolved).
+  # https://futuresearch.ai/blog/litellm-pypi-supply-chain-attack/
+  "litellm>=1.82.3",
 ]
 
 [tool.taskipy.tasks]

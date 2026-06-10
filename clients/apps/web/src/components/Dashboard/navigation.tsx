@@ -373,6 +373,10 @@ const organizationRoutesList = (
         title: 'Custom Fields',
         link: `/dashboard/${org?.slug}/settings/custom-fields`,
       },
+      {
+        title: 'Models',
+        link: `/dashboard/${org?.slug}/settings/models`,
+      },
     ],
   },
 ]

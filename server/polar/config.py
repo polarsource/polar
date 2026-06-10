@@ -237,6 +237,10 @@ class Settings(BaseSettings):
     PYDANTIC_AI_GATEWAY_API_KEY: str = "DummyKey"
     PYDANTIC_AI_GATEWAY_MODEL: str = "openai:gpt-5.5"
 
+    # LLM Gateway
+    LLM_GATEWAY_ENABLED: bool = False
+    LLM_GATEWAY_ENCRYPTION_KEY: str = ""  # Fernet key for encrypting provider API keys
+
     # Organization review website scraping
     FIRECRAWL_API_KEY: str | None = None
     # Which scraper backs the JS-render path of the organization-review website

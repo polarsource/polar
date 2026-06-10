@@ -738,5 +738,10 @@ export default {
         title: 'Det gick inte att skicka inbjudan igen',
       },
     },
+    wallet: {
+      availableBalance: 'Tillgängligt saldo',
+      organization: 'Organisation',
+      currency: 'Valuta',
+    },
   },
 } as const

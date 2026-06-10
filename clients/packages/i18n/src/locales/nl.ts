@@ -740,5 +740,10 @@ export default {
         title: 'Kan uitnodiging niet opnieuw verzenden',
       },
     },
+    wallet: {
+      availableBalance: 'Beschikbaar saldo',
+      organization: 'Organisatie',
+      currency: 'Valuta',
+    },
   },
 } as const

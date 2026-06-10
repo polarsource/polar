@@ -726,5 +726,10 @@ export default {
         title: '초대를 다시 보내지 못했습니다',
       },
     },
+    wallet: {
+      availableBalance: '사용 가능 잔액',
+      organization: '조직',
+      currency: '통화',
+    },
   },
 } as const

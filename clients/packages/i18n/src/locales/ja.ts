@@ -733,5 +733,10 @@ export default {
         title: '招待を再送できませんでした',
       },
     },
+    wallet: {
+      availableBalance: '利用可能残高',
+      organization: '組織',
+      currency: '通貨',
+    },
   },
 } as const

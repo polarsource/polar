@@ -737,5 +737,10 @@ export default {
         title: 'Nem sikerült újraküldeni a meghívót',
       },
     },
+    wallet: {
+      availableBalance: 'Elérhető egyenleg',
+      organization: 'Szervezet',
+      currency: 'Pénznem',
+    },
   },
 } as const

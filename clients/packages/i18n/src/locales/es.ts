@@ -743,5 +743,10 @@ export default {
         title: 'No se ha podido reenviar la invitación',
       },
     },
+    wallet: {
+      availableBalance: 'Saldo disponible',
+      organization: 'Organización',
+      currency: 'Moneda',
+    },
   },
 } as const

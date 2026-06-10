@@ -740,5 +740,10 @@ export default {
         title: 'Falha ao reenviar convite',
       },
     },
+    wallet: {
+      availableBalance: 'Saldo disponível',
+      organization: 'Organização',
+      currency: 'Moeda',
+    },
   },
 } as const

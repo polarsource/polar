@@ -747,5 +747,10 @@ export default {
         title: 'Einladung konnte nicht erneut gesendet werden',
       },
     },
+    wallet: {
+      availableBalance: 'Verfügbares Guthaben',
+      organization: 'Organisation',
+      currency: 'Währung',
+    },
   },
 } as const

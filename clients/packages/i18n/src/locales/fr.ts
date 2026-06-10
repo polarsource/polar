@@ -747,5 +747,10 @@ export default {
         title: 'Impossible de renvoyer l’invitation',
       },
     },
+    wallet: {
+      availableBalance: 'Solde disponible',
+      organization: 'Organisation',
+      currency: 'Devise',
+    },
   },
 } as const

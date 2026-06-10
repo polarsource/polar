@@ -480,7 +480,10 @@
     "portal.seats.revokeError.title": "Failed to revoke seat",
     "portal.seats.resendSuccess.title": "Invitation resent",
     "portal.seats.resendSuccess.description": "The invitation email has been sent again.",
-    "portal.seats.resendError.title": "Failed to resend invitation"
+    "portal.seats.resendError.title": "Failed to resend invitation",
+    "portal.wallet.availableBalance": "Available Balance",
+    "portal.wallet.organization": "Organization",
+    "portal.wallet.currency": "Currency"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -963,7 +966,10 @@
     "portal.seats.revokeError.title": "Failed to revoke seat",
     "portal.seats.resendSuccess.title": "Invitation resent",
     "portal.seats.resendSuccess.description": "The invitation email has been sent again.",
-    "portal.seats.resendError.title": "Failed to resend invitation"
+    "portal.seats.resendError.title": "Failed to resend invitation",
+    "portal.wallet.availableBalance": "Available Balance",
+    "portal.wallet.organization": "Organization",
+    "portal.wallet.currency": "Currency"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1446,7 +1452,10 @@
     "portal.seats.revokeError.title": "Failed to revoke seat",
     "portal.seats.resendSuccess.title": "Invitation resent",
     "portal.seats.resendSuccess.description": "The invitation email has been sent again.",
-    "portal.seats.resendError.title": "Failed to resend invitation"
+    "portal.seats.resendError.title": "Failed to resend invitation",
+    "portal.wallet.availableBalance": "Available Balance",
+    "portal.wallet.organization": "Organization",
+    "portal.wallet.currency": "Currency"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1929,7 +1938,10 @@
     "portal.seats.revokeError.title": "Failed to revoke seat",
     "portal.seats.resendSuccess.title": "Invitation resent",
     "portal.seats.resendSuccess.description": "The invitation email has been sent again.",
-    "portal.seats.resendError.title": "Failed to resend invitation"
+    "portal.seats.resendError.title": "Failed to resend invitation",
+    "portal.wallet.availableBalance": "Available Balance",
+    "portal.wallet.organization": "Organization",
+    "portal.wallet.currency": "Currency"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2412,7 +2424,10 @@
     "portal.seats.revokeError.title": "Failed to revoke seat",
     "portal.seats.resendSuccess.title": "Invitation resent",
     "portal.seats.resendSuccess.description": "The invitation email has been sent again.",
-    "portal.seats.resendError.title": "Failed to resend invitation"
+    "portal.seats.resendError.title": "Failed to resend invitation",
+    "portal.wallet.availableBalance": "Available Balance",
+    "portal.wallet.organization": "Organization",
+    "portal.wallet.currency": "Currency"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2887,7 +2902,10 @@
     "portal.seats.revokeError.title": "Failed to revoke seat",
     "portal.seats.resendSuccess.title": "Invitation resent",
     "portal.seats.resendSuccess.description": "The invitation email has been sent again.",
-    "portal.seats.resendError.title": "Failed to resend invitation"
+    "portal.seats.resendError.title": "Failed to resend invitation",
+    "portal.wallet.availableBalance": "Available Balance",
+    "portal.wallet.organization": "Organization",
+    "portal.wallet.currency": "Currency"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -3362,7 +3380,10 @@
     "portal.seats.revokeError.title": "Failed to revoke seat",
     "portal.seats.resendSuccess.title": "Invitation resent",
     "portal.seats.resendSuccess.description": "The invitation email has been sent again.",
-    "portal.seats.resendError.title": "Failed to resend invitation"
+    "portal.seats.resendError.title": "Failed to resend invitation",
+    "portal.wallet.availableBalance": "Available Balance",
+    "portal.wallet.organization": "Organization",
+    "portal.wallet.currency": "Currency"
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -3837,7 +3858,10 @@
     "portal.seats.revokeError.title": "Failed to revoke seat",
     "portal.seats.resendSuccess.title": "Invitation resent",
     "portal.seats.resendSuccess.description": "The invitation email has been sent again.",
-    "portal.seats.resendError.title": "Failed to resend invitation"
+    "portal.seats.resendError.title": "Failed to resend invitation",
+    "portal.wallet.availableBalance": "Available Balance",
+    "portal.wallet.organization": "Organization",
+    "portal.wallet.currency": "Currency"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -4312,7 +4336,10 @@
     "portal.seats.revokeError.title": "Failed to revoke seat",
     "portal.seats.resendSuccess.title": "Invitation resent",
     "portal.seats.resendSuccess.description": "The invitation email has been sent again.",
-    "portal.seats.resendError.title": "Failed to resend invitation"
+    "portal.seats.resendError.title": "Failed to resend invitation",
+    "portal.wallet.availableBalance": "Available Balance",
+    "portal.wallet.organization": "Organization",
+    "portal.wallet.currency": "Currency"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -4787,7 +4814,10 @@
     "portal.seats.revokeError.title": "Failed to revoke seat",
     "portal.seats.resendSuccess.title": "Invitation resent",
     "portal.seats.resendSuccess.description": "The invitation email has been sent again.",
-    "portal.seats.resendError.title": "Failed to resend invitation"
+    "portal.seats.resendError.title": "Failed to resend invitation",
+    "portal.wallet.availableBalance": "Available Balance",
+    "portal.wallet.organization": "Organization",
+    "portal.wallet.currency": "Currency"
   },
   "ja": {
     "checkout.footer.poweredBy": "Powered by",
@@ -5262,6 +5292,9 @@
     "portal.seats.revokeError.title": "Failed to revoke seat",
     "portal.seats.resendSuccess.title": "Invitation resent",
     "portal.seats.resendSuccess.description": "The invitation email has been sent again.",
-    "portal.seats.resendError.title": "Failed to resend invitation"
+    "portal.seats.resendError.title": "Failed to resend invitation",
+    "portal.wallet.availableBalance": "Available Balance",
+    "portal.wallet.organization": "Organization",
+    "portal.wallet.currency": "Currency"
   }
 }

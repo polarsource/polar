@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
+import { useTranslations } from './PortalLocaleProvider'
 import { toast } from '../Toast/use-toast'
 
 const ProductPriceListItem = ({
@@ -59,6 +60,7 @@ const CustomerChangePlanModal = ({
   ) => void
 }) => {
   const router = useRouter()
+  const t = useTranslations()
   const products = useMemo(
     () =>
       _products.filter((p) => p.is_recurring && !hasLegacyRecurringPrices(p)),
@@ -142,31 +144,39 @@ const CustomerChangePlanModal = ({
     if (!selectedProduct) return null
 
     if (trialOutcome?.kind === 'continues') {
-      return `Your trial will continue until ${formatTrialEnd(trialOutcome.trialEnd)}. You won't be charged before then.`
+      return t('portal.subscription.changePlan.invoicing.trialContinues', {
+        date: formatTrialEnd(trialOutcome.trialEnd),
+      })
     }
 
     if (trialOutcome?.kind === 'ends') {
-      return `This will end my trial and charge me immediately for ${selectedProduct.name}.`
+      return t('portal.subscription.changePlan.invoicing.trialEnds', {
+        product: selectedProduct.name,
+      })
     }
 
     if (willTriggerImmediateCycle) {
       const newPeriod =
-        selectedProduct.recurring_interval === 'month' ? 'monthly' : 'yearly'
+        selectedProduct.recurring_interval === 'month'
+          ? t('portal.subscription.changePlan.invoicing.periodMonthly')
+          : t('portal.subscription.changePlan.invoicing.periodYearly')
 
       if (nextInvoiceType === 'charge') {
-        return `I'll be charged immediately for the new ${newPeriod} plan.`
+        return t('portal.subscription.changePlan.invoicing.immediateCharge', {
+          period: newPeriod,
+        })
       } else {
-        return `My previous payment will appear as a credit on my next invoice.`
+        return t('portal.subscription.changePlan.invoicing.immediateCredit')
       }
     }
 
     switch (prorationBehavior) {
       case 'invoice':
-        return "I'll be charged immediately with a proration for the current month."
+        return t('portal.subscription.changePlan.invoicing.prorationInvoice')
       case 'prorate':
-        return 'Your next invoice will include the new plan plus the proration for the current month.'
+        return t('portal.subscription.changePlan.invoicing.prorationProrate')
       case 'next_period':
-        return 'The new plan will be applied on your next billing cycle.'
+        return t('portal.subscription.changePlan.invoicing.prorationNextPeriod')
     }
   }, [
     selectedProduct,
@@ -174,6 +184,7 @@ const CustomerChangePlanModal = ({
     willTriggerImmediateCycle,
     nextInvoiceType,
     trialOutcome,
+    t,
   ])
 
   const willIssueInvoice =
@@ -217,17 +228,19 @@ const CustomerChangePlanModal = ({
       const errorMessage =
         typeof error.detail === 'string'
           ? error.detail
-          : 'Failed to update subscription'
+          : t('portal.subscription.changePlan.update.failed')
       toast({
-        title: 'Error updating subscription',
+        title: t('portal.subscription.changePlan.update.errorTitle'),
         description: errorMessage,
         variant: 'error',
       })
     }
     if (data) {
       toast({
-        title: 'Subscription Updated',
-        description: `Subscription was updated successfully`,
+        title: t('portal.subscription.changePlan.update.successTitle'),
+        description: t(
+          'portal.subscription.changePlan.update.successDescription',
+        ),
       })
       onUserSubscriptionUpdate(data)
       router.refresh()
@@ -240,6 +253,7 @@ const CustomerChangePlanModal = ({
     onUserSubscriptionUpdate,
     hide,
     router,
+    t,
   ])
 
   const availableProducts = useMemo(
@@ -256,11 +270,15 @@ const CustomerChangePlanModal = ({
     <div className="flex flex-col overflow-y-auto">
       <InlineModalHeader hide={hide}>
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-xl">Change Plan</h2>
+          <h2 className="text-xl">
+            {t('portal.subscription.changePlan.title')}
+          </h2>
         </div>
       </InlineModalHeader>
       <div className="flex flex-col gap-y-8 p-8">
-        <h3 className="font-medium">Current Plan</h3>
+        <h3 className="font-medium">
+          {t('portal.subscription.changePlan.currentPlan')}
+        </h3>
         <List size="small">
           <ProductPriceListItem
             product={subscription.product}
@@ -268,10 +286,12 @@ const CustomerChangePlanModal = ({
             selected
           />
         </List>
-        <h3 className="font-medium">Available Plans</h3>
+        <h3 className="font-medium">
+          {t('portal.subscription.changePlan.availablePlans')}
+        </h3>
         {availableProducts.length === 0 ? (
           <p className="dark:text-polar-500 dark:bg-polar-800 rounded-2xl bg-gray-50 p-3 text-center text-sm text-gray-500">
-            No other plans available
+            {t('portal.subscription.changePlan.noOtherPlans')}
           </p>
         ) : (
           <List size="small">
@@ -290,7 +310,7 @@ const CustomerChangePlanModal = ({
           {addedBenefits.length > 0 && (
             <div className="flex flex-col gap-y-4">
               <h3 className="text-sm font-medium text-green-400">
-                You&apos;ll get access to the following benefits
+                {t('portal.subscription.changePlan.benefitsAdded')}
               </h3>
               <div className="flex flex-col gap-y-2">
                 {addedBenefits.map((benefit) => (
@@ -307,7 +327,7 @@ const CustomerChangePlanModal = ({
           {removedBenefits.length > 0 && (
             <div className="flex flex-col gap-y-4">
               <h3 className="text-sm font-medium text-red-400">
-                You&apos;ll lose access to the following benefits
+                {t('portal.subscription.changePlan.benefitsRemoved')}
               </h3>
               <div className="flex flex-col gap-y-2">
                 {removedBenefits.map((benefit) => (
@@ -342,8 +362,7 @@ const CustomerChangePlanModal = ({
         </div>
         {needToAddPaymentMethod && (
           <p className="dark:text-polar-500 text-sm text-gray-500">
-            You need to add a payment method before updating your plan. Head to
-            the Customer Portal Settings to add a payment method.
+            {t('portal.subscription.changePlan.needPaymentMethod')}
           </p>
         )}
         <Button
@@ -353,8 +372,8 @@ const CustomerChangePlanModal = ({
           size="lg"
         >
           {trialOutcome?.kind === 'ends'
-            ? 'Change Plan & End Trial'
-            : 'Change Plan'}
+            ? t('portal.subscription.changePlan.confirmEndTrial')
+            : t('portal.subscription.changePlan.title')}
         </Button>
       </div>
     </div>

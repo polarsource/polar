@@ -6,6 +6,7 @@ import {
   useResendSeatInvitation,
   useRevokeSeat,
 } from '@/hooks/queries/customerPortal'
+import { useTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { validateEmail } from '@/utils/validation'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { Client, schemas } from '@polar-sh/client'
@@ -23,19 +24,12 @@ import { twMerge } from 'tailwind-merge'
 import { toast } from '../Toast/use-toast'
 import { CustomerSeatQuantityManager } from './CustomerSeatQuantityManager'
 
-const seatStatusToDisplayName = {
-  pending: [
-    'Pending',
+const seatStatusToClassName = {
+  pending:
     'bg-yellow-100 text-yellow-500 dark:bg-yellow-950 dark:text-yellow-500',
-  ],
-  claimed: [
-    'Claimed',
+  claimed:
     'bg-emerald-100 text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500',
-  ],
-  revoked: [
-    'Revoked',
-    'bg-gray-100 text-gray-500 dark:bg-polar-700 dark:text-polar-500',
-  ],
+  revoked: 'bg-gray-100 text-gray-500 dark:bg-polar-700 dark:text-polar-500',
 } as const
 
 interface CustomerSeat {
@@ -71,6 +65,7 @@ export const SeatManagementTable = ({
   identifier,
   prorationBehavior,
 }: SeatManagementTableProps) => {
+  const t = useTranslations()
   const { data: seatsData, isLoading: isLoadingSeats } = useCustomerSeats(
     api,
     isSeatBasedSubscription(identifier)
@@ -93,11 +88,11 @@ export const SeatManagementTable = ({
 
   const handleAssignSeat = async () => {
     if (!email.trim()) {
-      setError('Email is required')
+      setError(t('portal.seats.emailRequired'))
       return
     }
     if (!validateEmail(email)) {
-      setError('Invalid email format')
+      setError(t('portal.seats.emailInvalid'))
       return
     }
 
@@ -116,14 +111,14 @@ export const SeatManagementTable = ({
         setError(
           typeof result.error.detail === 'string'
             ? result.error.detail
-            : 'Failed to assign seat',
+            : t('portal.seats.assignError'),
         )
       } else {
         setEmail('')
         setIsInviting(false)
       }
     } catch {
-      setError('Failed to send invitation')
+      setError(t('portal.seats.invitationSendError'))
     } finally {
       setIsSending(false)
     }
@@ -134,14 +129,16 @@ export const SeatManagementTable = ({
     try {
       await revokeSeat.mutateAsync(seatId)
       toast({
-        title: 'Seat revoked successfully',
-        description: 'The seat has been revoked and is now available.',
+        title: t('portal.seats.revokeSuccess.title'),
+        description: t('portal.seats.revokeSuccess.description'),
       })
     } catch (error) {
       toast({
-        title: 'Failed to revoke seat',
+        title: t('portal.seats.revokeError.title'),
         description:
-          error instanceof Error ? error.message : 'An error occurred.',
+          error instanceof Error
+            ? error.message
+            : t('portal.seats.genericError'),
         variant: 'error',
       })
     } finally {
@@ -158,14 +155,16 @@ export const SeatManagementTable = ({
     try {
       await resendInvitation.mutateAsync(seatId)
       toast({
-        title: 'Invitation resent',
-        description: 'The invitation email has been sent again.',
+        title: t('portal.seats.resendSuccess.title'),
+        description: t('portal.seats.resendSuccess.description'),
       })
     } catch (error) {
       toast({
-        title: 'Failed to resend invitation',
+        title: t('portal.seats.resendError.title'),
         description:
-          error instanceof Error ? error.message : 'An error occurred.',
+          error instanceof Error
+            ? error.message
+            : t('portal.seats.genericError'),
         variant: 'error',
       })
     } finally {
@@ -182,7 +181,7 @@ export const SeatManagementTable = ({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-y-2">
-        <h3 className="text-lg">Seat Management</h3>
+        <h3 className="text-lg">{t('portal.seats.title')}</h3>
       </div>
 
       {isSubscription && !isLoadingSeats && (
@@ -201,10 +200,10 @@ export const SeatManagementTable = ({
             <thead className="[&_tr]:border-b">
               <tr className="dark:bg-polar-800 border-b bg-gray-50">
                 <th className="text-muted-foreground h-12 px-4 text-left align-middle font-medium">
-                  Email
+                  {t('portal.seats.columnEmail')}
                 </th>
                 <th className="text-muted-foreground h-12 px-4 text-left align-middle font-medium">
-                  Status
+                  {t('portal.common.status')}
                 </th>
                 <th className="text-muted-foreground h-12 px-4 text-left align-middle font-medium" />
               </tr>
@@ -216,8 +215,8 @@ export const SeatManagementTable = ({
                   return order.indexOf(a.status) - order.indexOf(b.status)
                 })
                 .map((seat) => {
-                  const [label, statusClassName] =
-                    seatStatusToDisplayName[seat.status]
+                  const label = t(`portal.seats.statusLabel.${seat.status}`)
+                  const statusClassName = seatStatusToClassName[seat.status]
                   const isSeatLoading = loadingSeats.has(seat.id)
 
                   return (
@@ -253,14 +252,14 @@ export const SeatManagementTable = ({
                                     }
                                     disabled={isSeatLoading}
                                   >
-                                    Resend Invitation
+                                    {t('portal.seats.resendInvitation')}
                                   </DropdownMenuItem>
                                 )}
                                 <DropdownMenuItem
                                   onClick={() => handleRevokeSeat(seat.id)}
                                   disabled={isSeatLoading}
                                 >
-                                  Revoke Seat
+                                  {t('portal.seats.revokeSeat')}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -308,7 +307,7 @@ export const SeatManagementTable = ({
                           disabled={!email.trim() || isSending}
                           loading={isSending}
                         >
-                          Invite
+                          {t('portal.seats.invite')}
                         </Button>
                         <Button
                           variant="ghost"
@@ -318,7 +317,7 @@ export const SeatManagementTable = ({
                             setError(undefined)
                           }}
                         >
-                          Cancel
+                          {t('portal.common.cancel')}
                         </Button>
                       </div>
                     ) : (
@@ -328,12 +327,12 @@ export const SeatManagementTable = ({
                         onClick={() => setIsInviting(true)}
                       >
                         <span className="dark:text-polar-400 text-gray-500">
-                          {availableSeats === 1
-                            ? 'One more seat available'
-                            : `${availableSeats} more seats available`}
+                          {t('portal.seats.availableSeats', {
+                            count: availableSeats,
+                          })}
                         </span>
                         <span className="dark:bg-polar-700 dark:hover:bg-polar-600 flex h-10 cursor-pointer items-center rounded-xl border border-black/4 bg-gray-100 px-3 text-sm font-medium text-black hover:bg-gray-200 dark:border-white/5 dark:text-white">
-                          Invite member
+                          {t('portal.seats.inviteMember')}
                         </span>
                       </button>
                     )}

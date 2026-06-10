@@ -301,4 +301,446 @@ export default {
       unknown: 'Valami hiba történt.',
     },
   },
+  portal: {
+    navigation: {
+      overview: 'Áttekintés',
+      orders: 'Rendelések',
+      usage: 'Használat',
+      billing: 'Számlázás',
+      selectPage: 'Oldal kiválasztása',
+    },
+    common: {
+      cancel: 'Mégse',
+      close: 'Bezárás',
+      save: 'Mentés',
+      saveChanges: 'Változások mentése',
+      edit: 'Szerkesztés',
+      delete: 'Törlés',
+      confirm: 'Megerősítés',
+      back: 'Vissza',
+      loading: 'Betöltés…',
+      saving: 'Mentés…',
+      download: 'Letöltés',
+      viewAll: 'Összes megtekintése',
+      somethingWentWrong: 'Hiba történt. Kérjük, próbálja újra.',
+      date: 'Dátum',
+      amount: 'Összeg',
+      status: 'Állapot',
+      product: 'Termék',
+      actions: 'Műveletek',
+      pageOf: '{page}. oldal / {totalPages}',
+    },
+    overview: {
+      teamSeatAccess: {
+        title: 'Csoportos hozzáférés',
+        description: 'Hozzáférés csoportos előfizetésen keresztül',
+      },
+      emptyState: {
+        noActiveSubscriptions: {
+          title: 'Nincsenek aktív előfizetések',
+          description: 'Jelenleg nincs aktív előfizetése.',
+        },
+        noTeamAccess: {
+          title: 'Nincs csoportos hozzáférés',
+          description: 'Jelenleg nincs csoportos hozzáférése.',
+        },
+      },
+      currentPeriod: {
+        nextCharge: 'Következő terhelés',
+        nextInvoice: 'Következő számla',
+        firstChargeAfterTrial: 'Első terhelés az ingyenes próba után',
+        trialEnds: 'Próba vége',
+        finalCharge: 'Végső terhelés',
+        subscriptionEnds: 'Előfizetés vége',
+        notAvailable: 'N/A',
+        dateLabel: '{label} — {date}',
+        canceled: 'Törölve',
+        meteredCharges: 'Használat alapú díjak',
+        subtotal: 'Részösszeg',
+        discount: 'Kedvezmény',
+        taxes: 'Adók',
+        estimatedTotal: 'Becsült összeg',
+        total: 'Végösszeg',
+        finalChargeNotice:
+          'Ez lesz az utolsó terhelés az előfizetés lejárta előtt.',
+        finalChargeMeteredNotice:
+          'A végső összeg a számlázási időszak végéig a használat alapján változhat.',
+        meteredNoticeActive:
+          'A végső díjak a számlázási időszak végéig a használat alapján változhatnak.',
+        meteredNoticeTrialing:
+          'A végső díjak a próbaidőszak végéig a használat alapján változhatnak.',
+        meteredNoticeDefault: 'A végső díjak változhatnak.',
+      },
+      latestPurchase: {
+        title: 'Utolsó vásárlás',
+        purchasedOn: 'Vásárlás dátuma — {date}',
+        total: 'Végösszeg',
+      },
+      subscriptions: {
+        title: 'Előfizetések',
+        noSubscriptionsFound: 'Nincsenek előfizetések',
+        inactiveTitle: 'Inaktív előfizetések',
+        endedAt: 'Lejárat dátuma',
+        retryPayment: 'Fizetés újrapróbálása',
+        manageSubscription: 'Előfizetés kezelése',
+      },
+    },
+    orders: {
+      orderHistory: 'Rendelési előzmények',
+      description: 'Leírás',
+      viewOrder: 'Rendelés megtekintése',
+      retryPayment: 'Fizetés újrapróbálása',
+      invoiceNumber: 'Számlaszám',
+      orderItems: 'Rendelés tételei',
+      subtotal: 'Részösszeg',
+      discount: 'Kedvezmény',
+      netAmount: 'Nettó összeg',
+      tax: 'Adó',
+      total: 'Végösszeg',
+      appliedBalance: 'Felhasznált egyenleg',
+      toBePaid: 'Fizetendő',
+      refundedAmount: 'Visszatérített összeg',
+      statusTitle: {
+        draft: 'Piszkozat',
+        paid: 'Fizetve',
+        pending: 'Függőben',
+        refunded: 'Visszatérítve',
+        partiallyRefunded: 'Részben visszatérítve',
+        void: 'Érvénytelen',
+      },
+      payment: {
+        orderSummary: 'Rendelés összesítő',
+        descriptionLabel: 'Leírás:',
+        amountLabel: 'Összeg:',
+        paymentMethod: 'Fizetési mód',
+        payNow: 'Fizetés most',
+        processing: 'Feldolgozás...',
+        confirming: 'Megerősítés...',
+        loading: 'Betöltés...',
+        processingPayment: 'A fizetés feldolgozása...',
+        processingHint:
+          'Ez eltarthat néhány pillanatig. Kérjük, ne zárja be ezt az ablakot.',
+        processingPaymentShort: 'Fizetés feldolgozása...',
+        usingSavedMethod: 'Mentett fizetési mód használata',
+        tryAgain: 'Újrapróbálás',
+        paymentSuccessfulTitle: 'Sikeres fizetés!',
+        paymentFailedTitle: 'Sikertelen fizetés',
+        paymentSuccessfulDescription:
+          'Köszönjük a fizetést. Most már bezárhatja ezt az ablakot.',
+        paymentFailedDescription:
+          'Próbálja újra, vagy vegye fel a kapcsolatot az ügyfélszolgálattal, ha a probléma továbbra is fennáll.',
+        updatePaymentMethod: 'Fizetési mód frissítése',
+        toastSuccessTitle: 'Sikeres fizetés',
+        toastSuccessDescription: 'A fizetés sikeresen feldolgozva!',
+        toastFailedTitle: 'Sikertelen fizetés',
+        paymentFailed: 'A fizetés sikertelen',
+        paymentFailedRetry: 'A fizetés sikertelen. Kérjük, próbálja újra.',
+        paymentFailedTryAgain: 'A fizetés sikertelen, kérjük, próbálja újra.',
+        confirmationTimeout:
+          'A fizetés megerősítése a vártnál tovább tart. Előfordulhat, hogy a fizetés még feldolgozás alatt áll. Kérjük, ellenőrizze a rendelés állapotát, vagy szükség esetén vegye fel a kapcsolatot az ügyfélszolgálattal.',
+        networkConfirmationError:
+          'Hálózati probléma miatt nem sikerült megerősíteni a fizetés állapotát. Kérjük, ellenőrizze a rendelés állapotát, vagy vegye fel a kapcsolatot az ügyfélszolgálattal.',
+        stripeRequired: 'A fizetési műveletekhez Stripe példány szükséges',
+        additionalAuthenticationRequired:
+          'A fizetéshez további hitelesítés szükséges',
+        authenticationFailed: 'A fizetés hitelesítése sikertelen',
+        processDetailsFailed:
+          'Nem sikerült feldolgozni a fizetési adatokat. Kérjük, ellenőrizze az adatait, és próbálja újra.',
+        createTokenFailed:
+          'Nem sikerült létrehozni a fizetési tokent. Kérjük, próbálja újra.',
+        processPaymentFailed:
+          'Nem sikerült feldolgozni a fizetést. Kérjük, ellenőrizze a fizetési adatait, és próbálja újra.',
+        networkError:
+          'Hálózati hiba történt. Kérjük, ellenőrizze a kapcsolatát, és próbálja újra.',
+      },
+    },
+    subscription: {
+      free: 'Ingyenes',
+      details: {
+        startDate: 'Kezdés dátuma',
+        trialEnds: 'Próba vége',
+        expiryDate: 'Lejárat dátuma',
+        renewalDate: 'Megújítás dátuma',
+        expired: 'Lejárt',
+        meteredUsage: 'Használat alapú fogyasztás',
+        uncancel: 'Törlés visszavonása',
+        manageSubscription: 'Előfizetés kezelése',
+        changePlan: 'Csomag módosítása',
+      },
+      pendingUpdate: {
+        title: 'Függőben lévő módosítás',
+        cancelScheduledChange: 'Ütemezett módosítás törlése',
+        newProduct: 'Új termék',
+        seats: 'Helyek',
+        effectiveFrom: 'Módosítás hatályba lép',
+        clearConfirmDescription:
+          'Az előfizetése a következő számlázási ciklusban változatlan marad. Biztosan törli ezt a függőben lévő módosítást?',
+      },
+      invoices: {
+        title: 'Számlák',
+      },
+      cancel: {
+        title: 'Előfizetés lemondása',
+        ariaLabel: 'Előfizetés lemondása',
+        heading: 'Sajnáljuk, hogy távozik!',
+        description:
+          'Várjuk vissza! Kérjük, írja meg, miért távozik, hogy jobbá tehessük a termékünket.',
+        changedMind: 'Meggondoltam magam',
+        commentPlaceholder:
+          'Van még valami, amit meg szeretne osztani? (Opcionális)',
+        reason: {
+          unused: 'Nem használom eleget',
+          tooExpensive: 'Túl drága',
+          missingFeatures: 'Hiányzó funkciók',
+          switchedService: 'Másik szolgáltatásra váltottam',
+          customerService: 'Ügyfélszolgálat',
+          lowQuality: 'Nem vagyok elégedett a minőséggel',
+          tooComplex: 'Túl bonyolult',
+          other: 'Egyéb (kérjük, írja le lent)',
+        },
+        toast: {
+          title: 'Előfizetés lemondva',
+          description: 'Az előfizetés sikeresen lemondva',
+        },
+      },
+      changePlan: {
+        title: 'Csomag módosítása',
+        currentPlan: 'Jelenlegi csomag',
+        availablePlans: 'Elérhető csomagok',
+        noOtherPlans: 'Nincs elérhető másik csomag',
+        benefitsAdded: 'A következő előnyökhöz kap hozzáférést',
+        benefitsRemoved: 'A következő előnyökhöz elveszíti a hozzáférést',
+        needPaymentMethod:
+          'A csomag frissítése előtt hozzá kell adnia egy fizetési módot. Fizetési mód hozzáadásához nyissa meg az Ügyfélportál beállításait.',
+        confirmEndTrial: 'Csomag módosítása és próba befejezése',
+        invoicing: {
+          trialContinues:
+            'A próbaidőszak {date}-ig tart. Addig nem kerül felszámításra díj.',
+          trialEnds:
+            'Ez megszünteti a próbaidőszakot, és azonnal felszámítja a(z) {product} díját.',
+          periodMonthly: 'havi',
+          periodYearly: 'éves',
+          immediateCharge:
+            'Az új {period} csomag díja azonnal felszámításra kerül.',
+          immediateCredit:
+            'A korábbi befizetésem jóváírásként fog megjelenni a következő számlámon.',
+          prorationInvoice:
+            'A jelenlegi hónapra arányosítva azonnal felszámításra kerül.',
+          prorationProrate:
+            'A következő számláján az új csomag és a jelenlegi hónapra vonatkozó arányos díj is szerepelni fog.',
+          prorationNextPeriod:
+            'Az új csomag a következő számlázási ciklusban lép életbe.',
+        },
+        update: {
+          failed: 'Nem sikerült frissíteni az előfizetést',
+          errorTitle: 'Hiba az előfizetés frissítésekor',
+          successTitle: 'Előfizetés frissítve',
+          successDescription: 'Az előfizetés sikeresen frissítve',
+        },
+      },
+    },
+    settings: {
+      title: 'Számlázási beállítások',
+      paymentMethods: {
+        title: 'Fizetési módok',
+        description:
+          'Az előfizetésekhez és egyszeri vásárlásokhoz használt módok',
+        add: 'Fizetési mód hozzáadása',
+        addedTitle: 'Fizetési mód hozzáadva',
+        addFailedTitle: 'Nem sikerült hozzáadni a fizetési módot',
+        addFailedDescription: 'Kérjük, próbálja újra.',
+      },
+      paymentMethod: {
+        defaultMethod: 'Alapértelmezett',
+        makeDefault: 'Alapértelmezetté tesz',
+        deleteAriaLabel: 'Fizetési mód törlése',
+        deletedTitle: 'Fizetési mód törölve',
+        deletedDescription: 'A fizetési módot sikeresen eltávolítottuk.',
+        deleteFailedTitle: 'Nem sikerült törölni a fizetési módot',
+        deleteFailedDescription: 'Hiba történt a fizetési mód törlése közben.',
+        defaultUpdatedTitle: 'Alapértelmezett fizetési mód frissítve',
+        defaultUpdatedDescription: 'Ez a fizetési mód most az alapértelmezett.',
+        defaultUpdateFailedTitle:
+          'Nem sikerült frissíteni az alapértelmezett fizetési módot',
+        defaultUpdateFailedDescription:
+          'Hiba történt az alapértelmezett fizetési mód frissítése közben.',
+      },
+      savedCards: {
+        title: 'Mentett fizetési módok',
+        empty: 'Nem található mentett fizetési mód.',
+        addNewCard: 'Új kártya hozzáadása',
+        useDifferentCard: 'Másik kártya használata',
+        expires: 'Lejár: {date}',
+      },
+      billingDetailsSection: {
+        title: 'Számlázási adatok',
+        description: 'Számlázási adatok frissítése',
+      },
+      billingDetails: {
+        email: 'E-mail',
+        billingName: 'Számlázási név',
+        billingNamePlaceholder: 'Cég- vagy cégnév a számlákhoz (nem kötelező)',
+        billingAddress: 'Számlázási cím',
+        line1: '1. sor',
+        line2: '2. sor',
+        postalCode: 'Irányítószám',
+        city: 'Város',
+        state: 'Állam',
+        province: 'Tartomány',
+        taxId: 'Adószám',
+        fieldRequired: 'Ez a mező kötelező',
+        submit: 'Számlázási adatok frissítése',
+      },
+      emailSection: {
+        title: 'E-mail cím',
+        description: 'Az fiókjához társított e-mail cím módosítása',
+      },
+      changeEmail: {
+        currentEmail: 'Jelenlegi e-mail cím',
+        newEmail: 'Új e-mail cím',
+        newEmailPlaceholder: 'Adja meg az új e-mail címet',
+        emailRequired: 'Az e-mail cím megadása kötelező',
+        requestChange: 'E-mail cím módosításának kérése',
+        sendVerification: 'Ellenőrzés küldése',
+        nevermind: 'Mégse',
+        verificationSentPrefix: 'Küldtünk egy ellenőrző linket ide:',
+        verificationSentSuffix:
+          '. Kövesse az utasításokat az új e-mail cím megerősítéséhez.',
+        verificationSentHint:
+          'Meggondolta magát? Egyszerűen hagyja figyelmen kívül az e-mailt, és a jelenlegi címe aktív marad.',
+      },
+      billingManagers: {
+        title: 'Számlázási adminisztrátorok',
+        description:
+          'A számlázási adminisztrátorok kezelhetik a számlázási adatokat, a fizetési módokat és az előfizetéseket.',
+      },
+      privacy: {
+        title: 'Adatvédelem',
+        description: 'Másolat letöltése az összes személyes adatáról',
+        exportData: 'Adatok exportálása',
+      },
+      team: {
+        roles: {
+          owner: 'Tulajdonos',
+          billingManager: 'Számlázási adminisztrátor',
+          member: 'Tag',
+        },
+        emailPlaceholder: 'email@pelda.hu',
+        emailRequired: 'Az e-mail cím megadása kötelező',
+        invalidEmail: 'Érvénytelen e-mail formátum',
+        invite: 'Számlázási adminisztrátor meghívása',
+        columnMember: 'Tag',
+        columnRole: 'Szerepkör',
+        you: '(Ön)',
+        removeFromTeam: 'Eltávolítás a csapatból',
+        memberFallback: 'Tag',
+        thisMemberFallback: 'ez a tag',
+        genericError: 'Hiba történt.',
+        addedTitle: 'Számlázási adminisztrátor hozzáadva',
+        addedDescription: '{email} hozzáadva számlázási adminisztrátorként.',
+        addFailedTitle: 'Nem sikerült hozzáadni a számlázási adminisztrátort',
+        roleUpdatedTitle: 'Szerepkör frissítve',
+        roleUpdatedDescription: '{name} most már {role}.',
+        roleUpdateFailedTitle: 'Nem sikerült frissíteni a szerepkört',
+        removedTitle: 'Tag eltávolítva',
+        removedDescription: '{name} eltávolítva a csapatból.',
+        removeFailedTitle: 'Nem sikerült eltávolítani a tagot',
+        removeModalTitle: 'Csapattag eltávolítása',
+        removeModalDescription:
+          'Biztosan eltávolítja {name} személyt a csapatból? Ezzel elveszíti a hozzáférést az összes csapateszközhöz.',
+        removeConfirm: 'Eltávolítás',
+      },
+    },
+    usage: {
+      title: 'Használat',
+      searchPlaceholder: 'Használati mérő keresése',
+      overview: 'Áttekintés',
+      columnName: 'Név',
+      columnConsumed: 'Elhasznált',
+      columnCredited: 'Jóváírt',
+      columnBalance: 'Egyenleg',
+    },
+    benefits: {
+      title: 'Juttatás-jóváírások',
+      searchPlaceholder: 'Juttatás-jóváírások keresése...',
+      empty: 'Nem található juttatás-jóváírás',
+    },
+    seats: {
+      title: 'Helyek kezelése',
+      totalSeats: 'Összes hely',
+      updateSeats: 'Helyek frissítése',
+      columnEmail: 'E-mail',
+      statusLabel: {
+        pending: 'Függőben',
+        claimed: 'Igényelve',
+        revoked: 'Visszavonva',
+      },
+      resendInvitation: 'Meghívó újraküldése',
+      revokeSeat: 'Hely visszavonása',
+      invite: 'Meghívás',
+      inviteMember: 'Tag meghívása',
+      emailRequired: 'Az e-mail cím megadása kötelező',
+      emailInvalid: 'Érvénytelen e-mail formátum',
+      assignError: 'Nem sikerült hozzárendelni a helyet',
+      invitationSendError: 'Nem sikerült elküldeni a meghívót',
+      genericError: 'Hiba történt.',
+      seatCount: {
+        '=1': '# hely',
+        other: '# hely',
+        _mode: 'plural',
+      },
+      availableSeats: {
+        '=1': 'Még egy hely elérhető',
+        other: 'Még # hely elérhető',
+        _mode: 'plural',
+      },
+      cannotDecrease: {
+        '=1': '# hozzárendelt helynél nem csökkenthető tovább. Először vonjon vissza helyeket.',
+        other:
+          '# hozzárendelt helynél nem csökkenthető tovább. Először vonjon vissza helyeket.',
+        _mode: 'plural',
+      },
+      invoicingMessage: {
+        invoice: 'A jelenlegi hónapra arányosítva azonnal felszámításra kerül.',
+        prorate:
+          'A következő számláján a frissített helyek és a jelenlegi hónapra vonatkozó arányos díj is szerepelni fog.',
+        nextPeriod:
+          'A helyek frissítése a következő számlázási ciklusban lép életbe.',
+      },
+      updateSuccess: {
+        title: 'Helyek frissítve',
+        invoice:
+          'Az előfizetés most {seats} hellyel rendelkezik. A jelenlegi hónapra arányosítva azonnal felszámításra kerül.',
+        prorate:
+          'Az előfizetés most {seats} hellyel rendelkezik. A következő számláján a frissített helyek és a jelenlegi hónapra vonatkozó arányos díj is szerepelni fog.',
+        nextPeriod:
+          'Az előfizetés a következő számlázási ciklustól {seats} hellyel rendelkezik majd.',
+        default: 'Az előfizetés most {seats} hellyel rendelkezik.',
+      },
+      updateError: {
+        title: 'Hiba a helyek frissítésekor',
+        description: 'Nem sikerült frissíteni a helyeket',
+        unexpected: 'Váratlan hiba történt',
+      },
+      revokeSuccess: {
+        title: 'A hely sikeresen visszavonva',
+        description: 'A hely visszavonásra került, és most már elérhető.',
+      },
+      revokeError: {
+        title: 'Nem sikerült visszavonni a helyet',
+      },
+      resendSuccess: {
+        title: 'Meghívó újraküldve',
+        description: 'A meghívó e-mailt ismét elküldtük.',
+      },
+      resendError: {
+        title: 'Nem sikerült újraküldeni a meghívót',
+      },
+    },
+    wallet: {
+      availableBalance: 'Elérhető egyenleg',
+      organization: 'Szervezet',
+      currency: 'Pénznem',
+    },
+  },
 } as const

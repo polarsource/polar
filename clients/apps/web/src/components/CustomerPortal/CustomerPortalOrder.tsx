@@ -2,6 +2,7 @@
 
 import { canRetryOrderPayment } from '@/utils/order'
 import { Client, schemas } from '@polar-sh/client'
+import { type TranslateFn } from '@polar-sh/i18n'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
@@ -12,16 +13,19 @@ import { OrderDownloadActions } from '../Orders/OrderDownloadActions'
 import { DetailRow } from '../Shared/DetailRow'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
 import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
+import { useTranslations } from './PortalLocaleProvider'
 import { SeatManagementTable } from './SeatManagementTable'
 
-const OrderStatusDisplayTitle: Record<schemas['Order']['status'], string> = {
-  draft: 'Draft',
-  paid: 'Paid',
-  pending: 'Pending',
-  refunded: 'Refunded',
-  partially_refunded: 'Partially Refunded',
-  void: 'Void',
-}
+const getOrderStatusDisplayTitle = (
+  t: TranslateFn,
+): Record<schemas['Order']['status'], string> => ({
+  draft: t('portal.orders.statusTitle.draft'),
+  paid: t('portal.orders.statusTitle.paid'),
+  pending: t('portal.orders.statusTitle.pending'),
+  refunded: t('portal.orders.statusTitle.refunded'),
+  partially_refunded: t('portal.orders.statusTitle.partiallyRefunded'),
+  void: t('portal.orders.statusTitle.void'),
+})
 
 const OrderStatusDisplayColor: Record<schemas['Order']['status'], string> = {
   draft: 'bg-gray-100 text-gray-500 dark:bg-gray-900 dark:text-gray-400',
@@ -46,6 +50,8 @@ const CustomerPortalOrder = ({
   customerSessionToken: string
   themingPreset: ThemingPresetProps
 }) => {
+  const t = useTranslations()
+  const orderStatusDisplayTitle = getOrderStatusDisplayTitle(t)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
 
   const isPartiallyOrFullyRefunded = useMemo(() => {
@@ -65,7 +71,7 @@ const CustomerPortalOrder = ({
         <div className="flex flex-row flex-wrap gap-x-4">
           <h3 className="text-2xl">{order.description}</h3>
           <Status
-            status={OrderStatusDisplayTitle[order.status]}
+            status={orderStatusDisplayTitle[order.status]}
             className={twMerge(OrderStatusDisplayColor[order.status])}
           />
 
@@ -76,7 +82,7 @@ const CustomerPortalOrder = ({
               size="sm"
               onClick={() => setIsPaymentModalOpen(true)}
             >
-              Retry payment
+              {t('portal.orders.retryPayment')}
             </Button>
           )}
         </div>
@@ -85,13 +91,16 @@ const CustomerPortalOrder = ({
           <div className="flex flex-col">
             {order.product && (
               <DetailRow
-                label="Product"
+                label={t('portal.common.product')}
                 value={<span>{order.product.name}</span>}
               />
             )}
-            <DetailRow label="Invoice number" value={order.invoice_number} />
             <DetailRow
-              label="Date"
+              label={t('portal.orders.invoiceNumber')}
+              value={order.invoice_number}
+            />
+            <DetailRow
+              label={t('portal.common.date')}
               value={
                 <span>{new Date(order.created_at).toLocaleDateString()}</span>
               }
@@ -100,7 +109,7 @@ const CustomerPortalOrder = ({
 
           {order.items.length > 0 && (
             <div className="flex flex-col gap-4">
-              <h3 className="text-lg">Order Items</h3>
+              <h3 className="text-lg">{t('portal.orders.orderItems')}</h3>
               <div className="flex flex-col gap-4">
                 {order.items.map((item) => (
                   <DetailRow
@@ -123,7 +132,7 @@ const CustomerPortalOrder = ({
 
           <div className="flex flex-col">
             <DetailRow
-              label="Subtotal"
+              label={t('portal.orders.subtotal')}
               value={
                 <span>
                   {formatCurrency('accounting')(
@@ -135,7 +144,7 @@ const CustomerPortalOrder = ({
               valueClassName="justify-end"
             />
             <DetailRow
-              label="Discount"
+              label={t('portal.orders.discount')}
               value={
                 <span>
                   {order.discount_amount
@@ -149,7 +158,7 @@ const CustomerPortalOrder = ({
               valueClassName="justify-end"
             />
             <DetailRow
-              label="Net amount"
+              label={t('portal.orders.netAmount')}
               value={
                 <span>
                   {formatCurrency('accounting')(
@@ -161,7 +170,7 @@ const CustomerPortalOrder = ({
               valueClassName="justify-end"
             />
             <DetailRow
-              label="Tax"
+              label={t('portal.orders.tax')}
               value={
                 <span>
                   {formatCurrency('accounting')(
@@ -173,7 +182,7 @@ const CustomerPortalOrder = ({
               valueClassName="justify-end"
             />
             <DetailRow
-              label="Total"
+              label={t('portal.orders.total')}
               value={
                 <span>
                   {formatCurrency('accounting')(
@@ -187,7 +196,7 @@ const CustomerPortalOrder = ({
             {order.applied_balance_amount !== 0 && (
               <>
                 <DetailRow
-                  label="Applied balance"
+                  label={t('portal.orders.appliedBalance')}
                   value={
                     <span>
                       {formatCurrency('accounting')(
@@ -199,7 +208,7 @@ const CustomerPortalOrder = ({
                   valueClassName="justify-end"
                 />
                 <DetailRow
-                  label="To be paid"
+                  label={t('portal.orders.toBePaid')}
                   value={
                     <span>
                       {formatCurrency('accounting')(
@@ -215,7 +224,7 @@ const CustomerPortalOrder = ({
 
             {isPartiallyOrFullyRefunded && (
               <DetailRow
-                label="Refunded amount"
+                label={t('portal.orders.refundedAmount')}
                 value={
                   <span>
                     {formatCurrency('accounting')(

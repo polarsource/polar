@@ -8,11 +8,13 @@ import { Input } from '@polar-sh/orbit'
 import { Tabs, TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
 import { useMemo, useState } from 'react'
 import FormattedUnits from '../Meter/FormattedUnits'
+import { useTranslations } from './PortalLocaleProvider'
 export interface CustomerUsageProps {
   api: Client
 }
 
 export const CustomerUsage = ({ api }: CustomerUsageProps) => {
+  const t = useTranslations()
   const [query, setQuery] = useState<string | null>(null)
   const { data, isLoading } = useCustomerCustomerMeters(api, { query })
   const customerMeters = useMemo(() => data?.items ?? [], [data])
@@ -21,7 +23,7 @@ export const CustomerUsage = ({ api }: CustomerUsageProps) => {
     <div className="flex flex-col">
       <Tabs defaultValue="meters">
         <div className="flex flex-row items-center justify-between gap-x-12">
-          <h3 className="text-2xl">Usage</h3>
+          <h3 className="text-2xl">{t('portal.usage.title')}</h3>
         </div>
         <TabsContent className="flex flex-col gap-y-12 pt-4" value="meters">
           <div className="flex flex-col gap-4">
@@ -30,7 +32,7 @@ export const CustomerUsage = ({ api }: CustomerUsageProps) => {
                 <Input
                   className="w-full bg-white shadow-xs"
                   preSlot={<Search fontSize="inherit" />}
-                  placeholder="Search Usage Meter"
+                  placeholder={t('portal.usage.searchPlaceholder')}
                   value={query || ''}
                   onChange={(e) => setQuery(e.target.value)}
                 />
@@ -39,12 +41,12 @@ export const CustomerUsage = ({ api }: CustomerUsageProps) => {
           </div>
 
           <div className="flex flex-col gap-6">
-            <h3 className="text-xl">Overview</h3>
+            <h3 className="text-xl">{t('portal.usage.overview')}</h3>
             <DataTable
               isLoading={isLoading}
               columns={[
                 {
-                  header: 'Name',
+                  header: t('portal.usage.columnName'),
                   accessorKey: 'meter_name',
                   cell: ({
                     row: {
@@ -71,7 +73,7 @@ export const CustomerUsage = ({ api }: CustomerUsageProps) => {
                   },
                 },
                 {
-                  header: 'Consumed',
+                  header: t('portal.usage.columnConsumed'),
                   accessorKey: 'consumed_units',
                   cell: ({
                     row: {
@@ -82,7 +84,7 @@ export const CustomerUsage = ({ api }: CustomerUsageProps) => {
                   },
                 },
                 {
-                  header: 'Credited',
+                  header: t('portal.usage.columnCredited'),
                   accessorKey: 'credited_units',
                   cell: ({
                     row: {
@@ -93,7 +95,7 @@ export const CustomerUsage = ({ api }: CustomerUsageProps) => {
                   },
                 },
                 {
-                  header: 'Balance',
+                  header: t('portal.usage.columnBalance'),
                   accessorKey: 'balance',
                   cell: ({
                     row: {

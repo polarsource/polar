@@ -23,6 +23,7 @@ import { DetailRow } from '../Shared/DetailRow'
 import CustomerCancellationModal from './CustomerCancellationModal'
 import CustomerChangePlanModal from './CustomerChangePlanModal'
 import { CustomerSubscriptionHeader } from './CustomerSubscriptionHeader'
+import { useTranslations } from './PortalLocaleProvider'
 
 const CustomerSubscriptionDetails = ({
   subscription,
@@ -39,6 +40,7 @@ const CustomerSubscriptionDetails = ({
   ) => void
   customerSessionToken: string
 }) => {
+  const t = useTranslations()
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [showClearPendingUpdateModal, setShowClearPendingUpdateModal] =
@@ -81,12 +83,12 @@ const CustomerSubscriptionDetails = ({
       <CustomerSubscriptionHeader subscription={subscription} />
       <div className="flex flex-col text-sm">
         <DetailRow
-          label="Status"
+          label={t('portal.common.status')}
           value={<SubscriptionStatusLabel subscription={subscription} />}
         />
         {subscription.started_at && (
           <DetailRow
-            label="Start Date"
+            label={t('portal.subscription.details.startDate')}
             value={
               <FormattedDateTime
                 datetime={subscription.started_at}
@@ -97,7 +99,7 @@ const CustomerSubscriptionDetails = ({
         )}
         {subscription.trial_end && subscription.status === 'trialing' ? (
           <DetailRow
-            label="Trial Ends"
+            label={t('portal.subscription.details.trialEnds')}
             value={
               <FormattedDateTime
                 datetime={subscription.trial_end}
@@ -111,8 +113,8 @@ const CustomerSubscriptionDetails = ({
             <DetailRow
               label={
                 subscription.cancel_at_period_end
-                  ? 'Expiry Date'
-                  : 'Renewal Date'
+                  ? t('portal.subscription.details.expiryDate')
+                  : t('portal.subscription.details.renewalDate')
               }
               value={
                 <FormattedDateTime
@@ -125,7 +127,9 @@ const CustomerSubscriptionDetails = ({
         )}
         {subscription.meters.length > 0 && (
           <div className="flex flex-col gap-y-4 py-2">
-            <span className="text-lg">Metered Usage</span>
+            <span className="text-lg">
+              {t('portal.subscription.details.meteredUsage')}
+            </span>
             <div className="flex flex-col gap-y-2">
               {subscription.meters.map((subscriptionMeter) => (
                 <DetailRow
@@ -142,7 +146,7 @@ const CustomerSubscriptionDetails = ({
         )}
         {subscription.ended_at && (
           <DetailRow
-            label="Expired"
+            label={t('portal.subscription.details.expired')}
             value={
               <FormattedDateTime
                 datetime={subscription.ended_at}
@@ -155,31 +159,31 @@ const CustomerSubscriptionDetails = ({
         {pendingUpdate && (
           <div className="mt-4 flex flex-col gap-y-2">
             <div className="flex flex-row items-center justify-between">
-              <h3>Pending Update</h3>
+              <h3>{t('portal.subscription.pendingUpdate.title')}</h3>
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={() => setShowClearPendingUpdateModal(true)}
                 loading={clearPendingUpdate.isPending}
               >
-                Cancel scheduled change
+                {t('portal.subscription.pendingUpdate.cancelScheduledChange')}
               </Button>
             </div>
             <div className="flex flex-col">
               {pendingProduct && (
                 <DetailRow
-                  label="New Product"
+                  label={t('portal.subscription.pendingUpdate.newProduct')}
                   value={`${subscription.product.name} -> ${pendingProduct?.name}`}
                 />
               )}
               {pendingUpdate.seats !== null && (
                 <DetailRow
-                  label="Seats"
+                  label={t('portal.subscription.pendingUpdate.seats')}
                   value={`${subscription.seats} -> ${pendingUpdate.seats}`}
                 />
               )}
               <DetailRow
-                label="Update in effect from"
+                label={t('portal.subscription.pendingUpdate.effectiveFrom')}
                 value={
                   <FormattedDateTime
                     datetime={pendingUpdate.applies_at}
@@ -205,18 +209,18 @@ const CustomerSubscriptionDetails = ({
               }}
               loading={uncancelSubscription.isPending}
             >
-              Uncancel
+              {t('portal.subscription.details.uncancel')}
             </Button>
           )}
 
         <Button className="hidden md:flex" onClick={showBenefitGrantsModal}>
-          Manage subscription
+          {t('portal.subscription.details.manageSubscription')}
         </Button>
         <Link
           className="md:hidden"
           href={`/${organization.slug}/portal/subscriptions/${subscription.id}?customer_session_token=${customerSessionToken}`}
         >
-          <Button>Manage subscription</Button>
+          <Button>{t('portal.subscription.details.manageSubscription')}</Button>
         </Link>
 
         {showSubscriptionUpdates && !isCanceled && (
@@ -224,7 +228,7 @@ const CustomerSubscriptionDetails = ({
             onClick={() => setShowChangePlanModal(true)}
             variant="secondary"
           >
-            Change plan
+            {t('portal.subscription.details.changePlan')}
           </Button>
         )}
 
@@ -269,8 +273,10 @@ const CustomerSubscriptionDetails = ({
       <ConfirmModal
         isShown={showClearPendingUpdateModal}
         hide={() => setShowClearPendingUpdateModal(false)}
-        title="Cancel scheduled change"
-        description="Your subscription will remain unchanged on the next billing cycle. Are you sure you want to cancel this pending update?"
+        title={t('portal.subscription.pendingUpdate.cancelScheduledChange')}
+        description={t(
+          'portal.subscription.pendingUpdate.clearConfirmDescription',
+        )}
         onConfirm={async () => {
           await clearPendingUpdate.mutateAsync(subscription.id)
           await revalidate(`customer_portal`)

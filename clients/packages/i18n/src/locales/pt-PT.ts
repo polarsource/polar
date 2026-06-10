@@ -301,4 +301,450 @@ export default {
       unknown: 'Algo correu mal.',
     },
   },
+  portal: {
+    navigation: {
+      overview: 'Visão geral',
+      orders: 'Encomendas',
+      usage: 'Utilização',
+      billing: 'Faturação',
+      selectPage: 'Selecionar página',
+    },
+    common: {
+      cancel: 'Cancelar',
+      close: 'Fechar',
+      save: 'Guardar',
+      saveChanges: 'Guardar alterações',
+      edit: 'Editar',
+      delete: 'Eliminar',
+      confirm: 'Confirmar',
+      back: 'Anterior',
+      loading: 'A carregar…',
+      saving: 'A guardar…',
+      download: 'Transferir',
+      viewAll: 'Ver tudo',
+      somethingWentWrong: 'Ocorreu um erro. Tente novamente.',
+      date: 'Data',
+      amount: 'Valor',
+      status: 'Estado',
+      product: 'Produto',
+      actions: 'Ações',
+      pageOf: 'Página {page} de {totalPages}',
+    },
+    overview: {
+      teamSeatAccess: {
+        title: 'Acesso a lugares da equipa',
+        description: 'Acesso fornecido através da subscrição de equipa',
+      },
+      emptyState: {
+        noActiveSubscriptions: {
+          title: 'Sem subscrições ativas',
+          description: 'Não tem subscrições ativas neste momento.',
+        },
+        noTeamAccess: {
+          title: 'Sem acesso de equipa',
+          description: 'Não tem acesso a lugares da equipa neste momento.',
+        },
+      },
+      currentPeriod: {
+        nextCharge: 'Próximo pagamento',
+        nextInvoice: 'Próxima fatura',
+        firstChargeAfterTrial: 'Primeiro pagamento após o período experimental',
+        trialEnds: 'Fim do período experimental',
+        finalCharge: 'Último pagamento',
+        subscriptionEnds: 'Fim da subscrição',
+        notAvailable: 'N/D',
+        dateLabel: '{label} — {date}',
+        canceled: 'Cancelada',
+        meteredCharges: 'Cobranças por utilização',
+        subtotal: 'Subtotal',
+        discount: 'Desconto',
+        taxes: 'Impostos',
+        estimatedTotal: 'Total estimado',
+        total: 'Total',
+        finalChargeNotice:
+          'Esta será a última cobrança antes de a subscrição terminar.',
+        finalChargeMeteredNotice:
+          'O valor final pode variar consoante a utilização até ao fim do período de faturação.',
+        meteredNoticeActive:
+          'As cobranças finais podem variar consoante a utilização até ao fim do período de faturação.',
+        meteredNoticeTrialing:
+          'As cobranças finais podem variar consoante a utilização durante o período experimental.',
+        meteredNoticeDefault: 'As cobranças finais podem variar.',
+      },
+      latestPurchase: {
+        title: 'Compra mais recente',
+        purchasedOn: 'Comprado — {date}',
+        total: 'Total',
+      },
+      subscriptions: {
+        title: 'Subscrições',
+        noSubscriptionsFound: 'Sem subscrições',
+        inactiveTitle: 'Subscrições inativas',
+        endedAt: 'Terminado em',
+        retryPayment: 'Tentar novamente o pagamento',
+        manageSubscription: 'Gerir subscrição',
+      },
+    },
+    orders: {
+      orderHistory: 'Histórico de encomendas',
+      description: 'Descrição',
+      viewOrder: 'Ver encomenda',
+      retryPayment: 'Tentar novamente o pagamento',
+      invoiceNumber: 'Número da fatura',
+      orderItems: 'Itens da encomenda',
+      subtotal: 'Subtotal',
+      discount: 'Desconto',
+      netAmount: 'Valor líquido',
+      tax: 'Imposto',
+      total: 'Total',
+      appliedBalance: 'Saldo aplicado',
+      toBePaid: 'A pagar',
+      refundedAmount: 'Valor reembolsado',
+      statusTitle: {
+        draft: 'Rascunho',
+        paid: 'Pago',
+        pending: 'Pendente',
+        refunded: 'Reembolsado',
+        partiallyRefunded: 'Parcialmente reembolsado',
+        void: 'Anulado',
+      },
+      payment: {
+        orderSummary: 'Resumo da encomenda',
+        descriptionLabel: 'Descrição:',
+        amountLabel: 'Valor:',
+        paymentMethod: 'Método de pagamento',
+        payNow: 'Pagar agora',
+        processing: 'A processar...',
+        confirming: 'A confirmar...',
+        loading: 'A carregar...',
+        processingPayment: 'A processar o seu pagamento...',
+        processingHint:
+          'Isto pode demorar alguns momentos. Não feche esta janela.',
+        processingPaymentShort: 'A processar pagamento...',
+        usingSavedMethod: 'A usar o seu método de pagamento guardado',
+        tryAgain: 'Tentar novamente',
+        paymentSuccessfulTitle: 'Pagamento realizado com sucesso!',
+        paymentFailedTitle: 'Falha no pagamento',
+        paymentSuccessfulDescription:
+          'Obrigado pelo seu pagamento. Pode fechar esta janela agora.',
+        paymentFailedDescription:
+          'Pode tentar novamente ou contactar o apoio se o problema persistir.',
+        updatePaymentMethod: 'Atualizar método de pagamento',
+        toastSuccessTitle: 'Pagamento realizado com sucesso',
+        toastSuccessDescription: 'O seu pagamento foi processado com sucesso!',
+        toastFailedTitle: 'Falha no pagamento',
+        paymentFailed: 'O pagamento falhou',
+        paymentFailedRetry: 'O pagamento falhou. Tente novamente.',
+        paymentFailedTryAgain: 'O pagamento falhou, tente novamente.',
+        confirmationTimeout:
+          'A confirmação do pagamento está a demorar mais do que o esperado. O seu pagamento pode ainda estar a ser processado. Verifique o estado da sua encomenda ou contacte o apoio, se necessário.',
+        networkConfirmationError:
+          'Não foi possível confirmar o estado do pagamento devido a problemas de rede. Verifique o estado da sua encomenda ou contacte o apoio.',
+        stripeRequired:
+          'É necessária uma instância Stripe para ações de pagamento',
+        additionalAuthenticationRequired:
+          'O pagamento requer autenticação adicional',
+        authenticationFailed: 'Falha na autenticação do pagamento',
+        processDetailsFailed:
+          'Não foi possível processar os detalhes do pagamento. Verifique as suas informações e tente novamente.',
+        createTokenFailed:
+          'Não foi possível criar o token de pagamento. Tente novamente.',
+        processPaymentFailed:
+          'Não foi possível processar o pagamento. Verifique as suas informações de pagamento e tente novamente.',
+        networkError:
+          'Ocorreu um erro de rede. Verifique a sua ligação e tente novamente.',
+      },
+    },
+    subscription: {
+      free: 'Grátis',
+      details: {
+        startDate: 'Data de início',
+        trialEnds: 'Fim do período experimental',
+        expiryDate: 'Data de expiração',
+        renewalDate: 'Data de renovação',
+        expired: 'Expirada',
+        meteredUsage: 'Utilização medida',
+        uncancel: 'Cancelar cancelamento',
+        manageSubscription: 'Gerir subscrição',
+        changePlan: 'Alterar plano',
+      },
+      pendingUpdate: {
+        title: 'Atualização pendente',
+        cancelScheduledChange: 'Cancelar alteração agendada',
+        newProduct: 'Novo produto',
+        seats: 'Lugares',
+        effectiveFrom: 'A atualização entra em vigor a partir de',
+        clearConfirmDescription:
+          'A sua subscrição permanecerá inalterada no próximo ciclo de faturação. Tem a certeza de que quer cancelar esta atualização pendente?',
+      },
+      invoices: {
+        title: 'Faturas',
+      },
+      cancel: {
+        title: 'Cancelar subscrição',
+        ariaLabel: 'Cancelar subscrição',
+        heading: 'Lamentamos vê-lo partir!',
+        description:
+          'Será sempre bem-vindo de volta! Diga-nos porque está a sair para nos ajudar a melhorar o nosso produto.',
+        changedMind: 'Mudei de ideias',
+        commentPlaceholder: 'Quer partilhar mais alguma coisa? (Opcional)',
+        reason: {
+          unused: 'Não o uso o suficiente',
+          tooExpensive: 'Demasiado caro',
+          missingFeatures: 'Faltam funcionalidades',
+          switchedService: 'Mudei para outro serviço',
+          customerService: 'Apoio ao cliente',
+          lowQuality: 'Não estou satisfeito com a qualidade',
+          tooComplex: 'Demasiado complicado',
+          other: 'Outro (partilhe abaixo)',
+        },
+        toast: {
+          title: 'Subscrição cancelada',
+          description: 'A subscrição foi cancelada com sucesso',
+        },
+      },
+      changePlan: {
+        title: 'Alterar plano',
+        currentPlan: 'Plano atual',
+        availablePlans: 'Planos disponíveis',
+        noOtherPlans: 'Não há outros planos disponíveis',
+        benefitsAdded: 'Terá acesso aos seguintes benefícios',
+        benefitsRemoved: 'Perderá acesso aos seguintes benefícios',
+        needPaymentMethod:
+          'Tem de adicionar um método de pagamento antes de atualizar o seu plano. Aceda às Definições do Portal do Cliente para adicionar um método de pagamento.',
+        confirmEndTrial: 'Alterar plano e terminar período experimental',
+        invoicing: {
+          trialContinues:
+            'O seu período experimental continuará até {date}. Não será cobrado antes disso.',
+          trialEnds:
+            'Isto terminará o meu período experimental e cobrará imediatamente {product}.',
+          periodMonthly: 'mensal',
+          periodYearly: 'anual',
+          immediateCharge:
+            'Serei cobrado imediatamente pelo novo plano {period}.',
+          immediateCredit:
+            'O meu pagamento anterior aparecerá como crédito na minha próxima fatura.',
+          prorationInvoice:
+            'Serei cobrado imediatamente com um acerto proporcional para o mês em curso.',
+          prorationProrate:
+            'A sua próxima fatura incluirá o novo plano mais o acerto proporcional para o mês em curso.',
+          prorationNextPeriod:
+            'O novo plano será aplicado no seu próximo ciclo de faturação.',
+        },
+        update: {
+          failed: 'Não foi possível atualizar a subscrição',
+          errorTitle: 'Erro ao atualizar a subscrição',
+          successTitle: 'Subscrição atualizada',
+          successDescription: 'A subscrição foi atualizada com sucesso',
+        },
+      },
+    },
+    settings: {
+      title: 'Definições de faturação',
+      paymentMethods: {
+        title: 'Métodos de pagamento',
+        description: 'Métodos usados para subscrições e compras únicas',
+        add: 'Adicionar método de pagamento',
+        addedTitle: 'Método de pagamento adicionado',
+        addFailedTitle: 'Não foi possível adicionar o método de pagamento',
+        addFailedDescription: 'Tente novamente.',
+      },
+      paymentMethod: {
+        defaultMethod: 'Método predefinido',
+        makeDefault: 'Tornar predefinido',
+        deleteAriaLabel: 'Eliminar método de pagamento',
+        deletedTitle: 'Método de pagamento eliminado',
+        deletedDescription:
+          'O seu método de pagamento foi removido com sucesso.',
+        deleteFailedTitle: 'Falha ao eliminar o método de pagamento',
+        deleteFailedDescription:
+          'Ocorreu um erro ao eliminar o método de pagamento.',
+        defaultUpdatedTitle: 'Método de pagamento predefinido atualizado',
+        defaultUpdatedDescription:
+          'Este método de pagamento é agora o seu predefinido.',
+        defaultUpdateFailedTitle:
+          'Falha ao atualizar o método de pagamento predefinido',
+        defaultUpdateFailedDescription:
+          'Ocorreu um erro ao atualizar o método de pagamento predefinido.',
+      },
+      savedCards: {
+        title: 'Métodos de pagamento guardados',
+        empty: 'Não foram encontrados métodos de pagamento guardados.',
+        addNewCard: 'Adicionar novo cartão',
+        useDifferentCard: 'Usar outro cartão',
+        expires: 'Expira {date}',
+      },
+      billingDetailsSection: {
+        title: 'Dados de faturação',
+        description: 'Atualize os seus dados de faturação',
+      },
+      billingDetails: {
+        email: 'Email',
+        billingName: 'Nome de faturação',
+        billingNamePlaceholder:
+          'Nome da empresa ou nome legal para faturas (opcional)',
+        billingAddress: 'Morada de faturação',
+        line1: 'Linha 1',
+        line2: 'Linha 2',
+        postalCode: 'Código postal',
+        city: 'Cidade',
+        state: 'Estado',
+        province: 'Província',
+        taxId: 'NIF',
+        fieldRequired: 'Este campo é obrigatório',
+        submit: 'Atualizar dados de faturação',
+      },
+      emailSection: {
+        title: 'Endereço de email',
+        description: 'Altere o email associado à sua conta',
+      },
+      changeEmail: {
+        currentEmail: 'Email atual',
+        newEmail: 'Novo email',
+        newEmailPlaceholder: 'Introduza o novo endereço de email',
+        emailRequired: 'O email é obrigatório',
+        requestChange: 'Pedir alteração de email',
+        sendVerification: 'Enviar verificação',
+        nevermind: 'Não importa',
+        verificationSentPrefix: 'Enviámos um link de verificação para',
+        verificationSentSuffix:
+          '. Siga as instruções para confirmar o seu novo email.',
+        verificationSentHint:
+          'Mudou de ideias? Basta ignorar o email e o seu endereço atual continuará ativo.',
+      },
+      billingManagers: {
+        title: 'Gestores de faturação',
+        description:
+          'Os gestores de faturação podem gerir dados de faturação, métodos de pagamento e subscrições.',
+      },
+      privacy: {
+        title: 'Privacidade',
+        description: 'Descarregue uma cópia de todos os seus dados pessoais',
+        exportData: 'Exportar dados',
+      },
+      team: {
+        roles: {
+          owner: 'Proprietário',
+          billingManager: 'Gestor de faturação',
+          member: 'Membro',
+        },
+        emailPlaceholder: 'email@example.com',
+        emailRequired: 'O email é obrigatório',
+        invalidEmail: 'Formato de email inválido',
+        invite: 'Convidar gestor de faturação',
+        columnMember: 'Membro',
+        columnRole: 'Função',
+        you: '(você)',
+        removeFromTeam: 'Remover da equipa',
+        memberFallback: 'Membro',
+        thisMemberFallback: 'este membro',
+        genericError: 'Ocorreu um erro.',
+        addedTitle: 'Gestor de faturação adicionado',
+        addedDescription: '{email} foi adicionado como gestor de faturação.',
+        addFailedTitle: 'Falha ao adicionar gestor de faturação',
+        roleUpdatedTitle: 'Função atualizada',
+        roleUpdatedDescription: '{name} é agora um(a) {role}.',
+        roleUpdateFailedTitle: 'Falha ao atualizar a função',
+        removedTitle: 'Membro removido',
+        removedDescription: '{name} foi removido(a) da equipa.',
+        removeFailedTitle: 'Falha ao remover membro',
+        removeModalTitle: 'Remover membro da equipa',
+        removeModalDescription:
+          'Tem a certeza de que quer remover {name} da equipa? Essa pessoa perderá acesso a todos os recursos da equipa.',
+        removeConfirm: 'Remover',
+      },
+    },
+    usage: {
+      title: 'Utilização',
+      searchPlaceholder: 'Pesquisar contador de utilização',
+      overview: 'Visão geral',
+      columnName: 'Nome',
+      columnConsumed: 'Consumido',
+      columnCredited: 'Creditado',
+      columnBalance: 'Saldo',
+    },
+    benefits: {
+      title: 'Concessões de benefícios',
+      searchPlaceholder: 'Pesquisar concessões de benefícios...',
+      empty: 'Não foram encontradas concessões de benefícios',
+    },
+    seats: {
+      title: 'Gestão de lugares',
+      totalSeats: 'Total de lugares',
+      updateSeats: 'Atualizar lugares',
+      columnEmail: 'Email',
+      statusLabel: {
+        pending: 'Pendente',
+        claimed: 'Reivindicado',
+        revoked: 'Revogado',
+      },
+      resendInvitation: 'Reenviar convite',
+      revokeSeat: 'Revogar lugar',
+      invite: 'Convidar',
+      inviteMember: 'Convidar membro',
+      emailRequired: 'O email é obrigatório',
+      emailInvalid: 'Formato de email inválido',
+      assignError: 'Falha ao atribuir lugar',
+      invitationSendError: 'Falha ao enviar convite',
+      genericError: 'Ocorreu um erro.',
+      seatCount: {
+        '=1': '# lugar',
+        other: '# lugares',
+        _mode: 'plural',
+      },
+      availableSeats: {
+        '=1': 'Disponível mais 1 lugar',
+        other: 'Disponíveis mais # lugares',
+        _mode: 'plural',
+      },
+      cannotDecrease: {
+        '=1': 'Não é possível reduzir abaixo de # lugar atribuído. Revogue primeiro os lugares.',
+        other:
+          'Não é possível reduzir abaixo de # lugares atribuídos. Revogue primeiro os lugares.',
+        _mode: 'plural',
+      },
+      invoicingMessage: {
+        invoice:
+          'Serei cobrado imediatamente com um acerto proporcional para o mês em curso.',
+        prorate:
+          'A sua próxima fatura incluirá os lugares atualizados mais o acerto proporcional para o mês em curso.',
+        nextPeriod:
+          'A atualização dos lugares será aplicada no seu próximo ciclo de faturação.',
+      },
+      updateSuccess: {
+        title: 'Lugares atualizados',
+        invoice:
+          'A subscrição passa a ter {seats}. Serei cobrado imediatamente com um acerto proporcional para o mês em curso.',
+        prorate:
+          'A subscrição passa a ter {seats}. A sua próxima fatura incluirá os lugares atualizados mais o acerto proporcional para o mês em curso.',
+        nextPeriod:
+          'A subscrição terá {seats} a partir do seu próximo ciclo de faturação.',
+        default: 'A subscrição passa a ter {seats}.',
+      },
+      updateError: {
+        title: 'Erro ao atualizar lugares',
+        description: 'Falha ao atualizar lugares',
+        unexpected: 'Ocorreu um erro inesperado',
+      },
+      revokeSuccess: {
+        title: 'Lugar revogado com sucesso',
+        description: 'O lugar foi revogado e está agora disponível.',
+      },
+      revokeError: {
+        title: 'Falha ao revogar lugar',
+      },
+      resendSuccess: {
+        title: 'Convite reenviado',
+        description: 'O email de convite foi enviado novamente.',
+      },
+      resendError: {
+        title: 'Falha ao reenviar convite',
+      },
+    },
+    wallet: {
+      availableBalance: 'Saldo disponível',
+      organization: 'Organização',
+      currency: 'Moeda',
+    },
+  },
 } as const

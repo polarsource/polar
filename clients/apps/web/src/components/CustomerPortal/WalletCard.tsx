@@ -1,3 +1,6 @@
+'use client'
+
+import { useTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { UploadImage } from '@/components/Image/Image'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -8,6 +11,8 @@ interface WalletCardProps {
 }
 
 const WalletCard = ({ organization, wallet }: WalletCardProps) => {
+  const t = useTranslations()
+
   return (
     <div className="dark:bg-polar-800 relative w-full max-w-md overflow-hidden rounded-3xl border border-gray-200 bg-gray-100 p-8 shadow-lg dark:border-transparent">
       {/* Content */}
@@ -31,7 +36,7 @@ const WalletCard = ({ organization, wallet }: WalletCardProps) => {
         {/* Balance */}
         <div className="mb-2">
           <div className="dark:text-polar-400 mb-1 text-sm font-medium tracking-wider text-gray-500 uppercase">
-            Available Balance
+            {t('portal.wallet.availableBalance')}
           </div>
           <div className="text-4xl font-bold tracking-tight text-gray-950 dark:text-white">
             {formatCurrency('compact')(wallet.balance, wallet.currency)}
@@ -42,7 +47,7 @@ const WalletCard = ({ organization, wallet }: WalletCardProps) => {
         <div className="mt-8 flex items-end justify-between">
           <div>
             <div className="dark:text-polar-400 text-xs font-medium tracking-wider text-gray-500 uppercase">
-              Organization
+              {t('portal.wallet.organization')}
             </div>
             <div className="text-sm font-semibold text-gray-950 dark:text-white">
               {organization.name}
@@ -50,7 +55,7 @@ const WalletCard = ({ organization, wallet }: WalletCardProps) => {
           </div>
           <div className="text-right">
             <div className="dark:text-polar-400 text-xs font-medium tracking-wider text-gray-500 uppercase">
-              Currency
+              {t('portal.wallet.currency')}
             </div>
             <div className="text-sm font-semibold text-gray-950 uppercase dark:text-white">
               {wallet.currency}

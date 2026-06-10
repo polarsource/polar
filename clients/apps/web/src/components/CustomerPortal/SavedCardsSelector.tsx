@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import type { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { useState } from 'react'
@@ -20,6 +21,7 @@ export const SavedCardsSelector = ({
   onAddNewCard,
   disabled = false,
 }: SavedCardsSelectorProps) => {
+  const t = useTranslations()
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null)
 
   const handleCardSelect = (paymentMethodId: string) => {
@@ -35,13 +37,15 @@ export const SavedCardsSelector = ({
   if (paymentMethods.length === 0) {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-gray-500">No saved payment methods found.</p>
+        <p className="text-sm text-gray-500">
+          {t('portal.settings.savedCards.empty')}
+        </p>
         <Button
           onClick={handleAddNewCard}
           disabled={disabled}
           className="w-full"
         >
-          Add New Card
+          {t('portal.settings.savedCards.addNewCard')}
         </Button>
       </div>
     )
@@ -50,7 +54,7 @@ export const SavedCardsSelector = ({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <h4 className="font-medium">Saved Payment Methods</h4>
+        <h4 className="font-medium">{t('portal.settings.savedCards.title')}</h4>
         <div className="space-y-2">
           {paymentMethods.map((paymentMethod) => {
             const { brand, last4, exp_year, exp_month } =
@@ -79,7 +83,9 @@ export const SavedCardsSelector = ({
                       {brand} •••• {last4}
                     </div>
                     <div className="dark:text-polar-500 text-sm text-gray-500">
-                      Expires {exp_month.toString().padStart(2, '0')}/{exp_year}
+                      {t('portal.settings.savedCards.expires', {
+                        date: `${exp_month.toString().padStart(2, '0')}/${exp_year}`,
+                      })}
                     </div>
                   </div>
                   {isSelected && (
@@ -103,7 +109,7 @@ export const SavedCardsSelector = ({
           variant="outline"
           className="w-full"
         >
-          Use a Different Card
+          {t('portal.settings.savedCards.useDifferentCard')}
         </Button>
       </div>
     </div>

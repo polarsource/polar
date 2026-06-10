@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { loadPolarStripe } from '@/utils/stripe'
 import { Modal } from '../Modal'
 import { OrderPaymentRetry } from './OrderPaymentRetry'
+import { useTranslations } from './PortalLocaleProvider'
 import { SavedCardsSelector } from './SavedCardsSelector'
 
 interface OrderPaymentRetryModalProps {
@@ -30,6 +31,7 @@ export const OrderPaymentRetryModal = ({
   onSuccess,
   themingPreset,
 }: OrderPaymentRetryModalProps) => {
+  const t = useTranslations()
   const [error, setError] = useState<string>('')
   const [useNewCard, setUseNewCard] = useState<boolean>(false)
   const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<
@@ -58,8 +60,8 @@ export const OrderPaymentRetryModal = ({
 
   const handlePaymentSuccess = () => {
     toast({
-      title: 'Payment Successful',
-      description: 'Your payment has been processed successfully!',
+      title: t('portal.orders.payment.toastSuccessTitle'),
+      description: t('portal.orders.payment.toastSuccessDescription'),
     })
     onSuccess?.(order)
   }
@@ -70,7 +72,7 @@ export const OrderPaymentRetryModal = ({
     setUseNewCard(false)
     setSelectedPaymentMethodId(null)
     toast({
-      title: 'Payment Failed',
+      title: t('portal.orders.payment.toastFailedTitle'),
       description: error,
       variant: 'error',
     })
@@ -80,7 +82,7 @@ export const OrderPaymentRetryModal = ({
 
   return (
     <Modal
-      title="Update Payment Method"
+      title={t('portal.orders.payment.updatePaymentMethod')}
       isShown={isOpen}
       hide={handleClose}
       modalContent={
@@ -94,7 +96,7 @@ export const OrderPaymentRetryModal = ({
                   setError('')
                 }}
               >
-                Try Again
+                {t('portal.orders.payment.tryAgain')}
               </Button>
             </div>
           )}

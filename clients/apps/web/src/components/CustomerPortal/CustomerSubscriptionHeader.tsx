@@ -2,6 +2,7 @@ import AmountLabel from '@/components/Shared/AmountLabel'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { useMemo } from 'react'
+import { useTranslations } from './PortalLocaleProvider'
 import { getCustomerSubscriptionBasePrice } from './pricing'
 
 export const CustomerSubscriptionHeader = ({
@@ -9,6 +10,7 @@ export const CustomerSubscriptionHeader = ({
 }: {
   subscription: schemas['CustomerSubscription']
 }) => {
+  const t = useTranslations()
   const pendingUpdate = subscription.pending_update
   const hasPendingProduct = pendingUpdate?.product_id != null
 
@@ -31,7 +33,7 @@ export const CustomerSubscriptionHeader = ({
                 intervalCount={subscription.recurring_interval_count}
               />
             ) : (
-              <span>Free</span>
+              <span>{t('portal.subscription.free')}</span>
             )}
           </div>
         </div>
@@ -62,7 +64,7 @@ export const CustomerSubscriptionHeader = ({
             />
           </span>
         ) : (
-          <span>Free</span>
+          <span>{t('portal.subscription.free')}</span>
         )}
       </div>
     </div>

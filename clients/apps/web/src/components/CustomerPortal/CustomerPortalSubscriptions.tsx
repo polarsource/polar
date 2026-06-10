@@ -13,6 +13,7 @@ import { useModal } from '../Modal/useModal'
 import CustomerSubscriptionDetails from './CustomerSubscriptionDetails'
 import CustomerPortalSubscription from './CustomerPortalSubscription'
 import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
+import { useTranslations } from './PortalLocaleProvider'
 
 interface SubscriptionsOverviewProps {
   organization: schemas['CustomerOrganization']
@@ -28,13 +29,14 @@ export const ActiveSubscriptionsOverview = ({
   api,
   customerSessionToken,
 }: SubscriptionsOverviewProps) => {
+  const t = useTranslations()
   const onSubscriptionUpdate = useCallback(async () => {
     await revalidate(`customer_portal`)
   }, [])
 
   return (
     <div className="flex flex-col gap-y-4">
-      <h3 className="text-xl">Subscriptions</h3>
+      <h3 className="text-xl">{t('portal.overview.subscriptions.title')}</h3>
       <div className="flex flex-col gap-y-4">
         {subscriptions.length > 0 ? (
           subscriptions.map((s) => (
@@ -49,7 +51,7 @@ export const ActiveSubscriptionsOverview = ({
           ))
         ) : (
           <div className="dark:border-polar-700 flex flex-col items-center justify-center rounded-2xl border border-gray-200 p-12 text-gray-500">
-            <p>No Subscriptions Found</p>
+            <p>{t('portal.overview.subscriptions.noSubscriptionsFound')}</p>
           </div>
         )}
       </div>
@@ -69,6 +71,7 @@ export const InactiveSubscriptionsOverview = ({
   api,
   customerSessionToken,
 }: SubscriptionsOverviewProps) => {
+  const t = useTranslations()
   const router = useRouter()
   const theme = useTheme()
   const themingPreset = getThemePreset(theme.resolvedTheme as 'light' | 'dark')
@@ -139,7 +142,9 @@ export const InactiveSubscriptionsOverview = ({
   return (
     <div className="flex flex-col gap-y-4">
       <div className="flex flex-row items-center justify-between">
-        <h3 className="text-xl">Inactive Subscriptions</h3>
+        <h3 className="text-xl">
+          {t('portal.overview.subscriptions.inactiveTitle')}
+        </h3>
       </div>
       <DataTable
         data={subscriptions ?? []}
@@ -147,12 +152,12 @@ export const InactiveSubscriptionsOverview = ({
         columns={[
           {
             accessorKey: 'product.name',
-            header: 'Product',
+            header: t('portal.common.product'),
             cell: ({ row }) => row.original.product.name,
           },
           {
             accessorKey: 'status',
-            header: 'Status',
+            header: t('portal.common.status'),
             cell: ({ row }) => (
               <span className="capitalize">
                 {row.original.status.split('_').join(' ')}
@@ -161,7 +166,7 @@ export const InactiveSubscriptionsOverview = ({
           },
           {
             accessorKey: 'ended_at',
-            header: 'Ended At',
+            header: t('portal.overview.subscriptions.endedAt'),
             cell: ({ row }) =>
               row.original.ended_at ? (
                 <FormattedDateTime
@@ -184,7 +189,7 @@ export const InactiveSubscriptionsOverview = ({
                     size="sm"
                     onClick={() => openRetryPaymentModal(row.original)}
                   >
-                    Retry payment
+                    {t('portal.overview.subscriptions.retryPayment')}
                   </Button>
                 )}
                 <Button
@@ -192,7 +197,7 @@ export const InactiveSubscriptionsOverview = ({
                   size="sm"
                   onClick={() => openSubscriptionModal(row.original)}
                 >
-                  Manage subscription
+                  {t('portal.overview.subscriptions.manageSubscription')}
                 </Button>
               </span>
             ),

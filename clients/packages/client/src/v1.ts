@@ -30778,6 +30778,8 @@ export interface components {
       | 'chat'
       | 'opened'
       | 'closed'
+      | 'assigned'
+      | 'released'
       | 'appeal_approved'
       | 'appeal_denied'
       | 'info_requested'
@@ -58964,6 +58966,8 @@ export const supportCaseMessageTypeValues: ReadonlyArray<
   'chat',
   'opened',
   'closed',
+  'assigned',
+  'released',
   'appeal_approved',
   'appeal_denied',
   'info_requested',

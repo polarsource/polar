@@ -5,6 +5,7 @@ import { createClientSideAPI } from '@/utils/client'
 import { hasBillingPermission } from '@/utils/customerPortal'
 import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
 import { schemas } from '@polar-sh/client'
+import { usePortalTranslations } from './PortalLocaleProvider'
 import { CurrentPeriodOverview } from './CurrentPeriodOverview'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
 import { CustomerPortalOrders } from './CustomerPortalOrders'
@@ -31,6 +32,7 @@ export const CustomerPortalOverview = ({
   orders,
   customerSessionToken,
 }: CustomerPortalProps) => {
+  const t = usePortalTranslations()
   const api = createClientSideAPI(customerSessionToken)
 
   // Check if the user has billing permissions
@@ -82,9 +84,9 @@ export const CustomerPortalOverview = ({
       {activeClaimedSubscriptions.length > 0 && (
         <div className="flex flex-col gap-y-4">
           <div className="flex flex-col gap-y-2">
-            <h3 className="text-xl">Team Seat Access</h3>
+            <h3 className="text-xl">{t('portal.overview.teamSeatAccess.title')}</h3>
             <p className="dark:text-polar-500 text-gray-500">
-              Access provided through team subscription
+              {t('portal.overview.teamSeatAccess.description')}
             </p>
           </div>
           {activeClaimedSubscriptions.map((s) => (
@@ -120,12 +122,16 @@ export const CustomerPortalOverview = ({
           <EmptyState
             icon={<AllInclusiveOutlined />}
             title={
-              canManageBilling ? 'No Active Subscriptions' : 'No Team Access'
+              canManageBilling
+                ? t('portal.overview.emptyState.noActiveSubscriptions.title')
+                : t('portal.overview.emptyState.noTeamAccess.title')
             }
             description={
               canManageBilling
-                ? "You don't have any active subscriptions at the moment."
-                : "You don't have any team seat access at the moment."
+                ? t(
+                    'portal.overview.emptyState.noActiveSubscriptions.description',
+                  )
+                : t('portal.overview.emptyState.noTeamAccess.description')
             }
           />
         )}

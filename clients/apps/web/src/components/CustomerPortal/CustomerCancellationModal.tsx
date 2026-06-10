@@ -22,6 +22,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
+import { usePortalTranslations } from './PortalLocaleProvider'
 import { toast } from '../Toast/use-toast'
 
 const CancellationReasonRadio = ({
@@ -57,6 +58,7 @@ const CustomerCancellationModal = ({
   ...props
 }: CustomerCancellationModalProps) => {
   const router = useRouter()
+  const t = usePortalTranslations()
 
   const handleCancel = useCallback(() => {
     onAbort?.()
@@ -90,13 +92,13 @@ const CustomerCancellationModal = ({
         return
       }
       toast({
-        title: 'Subscription Cancelled',
-        description: `Subscription was cancelled successfully`,
+        title: t('portal.subscription.cancel.toast.title'),
+        description: t('portal.subscription.cancel.toast.description'),
       })
       router.refresh()
       props.hide()
     },
-    [subscription.id, cancelSubscription, setError, props, router],
+    [subscription.id, cancelSubscription, setError, props, router, t],
   )
 
   const onReasonSelect = (value: schemas['CustomerCancellationReason']) => {
@@ -106,15 +108,14 @@ const CustomerCancellationModal = ({
   return (
     <Modal
       {...props}
-      title="Cancel Subscription"
+      title={t('portal.subscription.cancel.title')}
       className="md:min-w-[600px]"
       modalContent={
         <div className="flex flex-col gap-y-6 p-6 sm:p-12">
           <div className="flex flex-col gap-y-2">
-            <h3 className="text-2xl">We&apos;re sorry to see you go!</h3>
+            <h3 className="text-2xl">{t('portal.subscription.cancel.heading')}</h3>
             <p className="dark:text-polar-500 leading-relaxed text-balance text-gray-500">
-              You&apos;re always welcome back! Let us know why you&apos;re
-              leaving to help us improve our product.
+              {t('portal.subscription.cancel.description')}
             </p>
           </div>
           <Form {...form}>
@@ -131,35 +132,47 @@ const CustomerCancellationModal = ({
                       >
                         <CancellationReasonRadio
                           value="unused"
-                          label="Not using it enough"
+                          label={t('portal.subscription.cancel.reason.unused')}
                         />
                         <CancellationReasonRadio
                           value="too_expensive"
-                          label="Too expensive"
+                          label={t(
+                            'portal.subscription.cancel.reason.tooExpensive',
+                          )}
                         />
                         <CancellationReasonRadio
                           value="missing_features"
-                          label="Missing features"
+                          label={t(
+                            'portal.subscription.cancel.reason.missingFeatures',
+                          )}
                         />
                         <CancellationReasonRadio
                           value="switched_service"
-                          label="Switched to another service"
+                          label={t(
+                            'portal.subscription.cancel.reason.switchedService',
+                          )}
                         />
                         <CancellationReasonRadio
                           value="customer_service"
-                          label="Customer service"
+                          label={t(
+                            'portal.subscription.cancel.reason.customerService',
+                          )}
                         />
                         <CancellationReasonRadio
                           value="low_quality"
-                          label="Not satisfied with the quality"
+                          label={t(
+                            'portal.subscription.cancel.reason.lowQuality',
+                          )}
                         />
                         <CancellationReasonRadio
                           value="too_complex"
-                          label="Too complicated"
+                          label={t(
+                            'portal.subscription.cancel.reason.tooComplex',
+                          )}
                         />
                         <CancellationReasonRadio
                           value="other"
-                          label="Other (please share below)"
+                          label={t('portal.subscription.cancel.reason.other')}
                         />
                       </RadioGroup>
                     </FormControl>
@@ -176,7 +189,9 @@ const CustomerCancellationModal = ({
                       <TextArea
                         {...field}
                         value={field.value || ''}
-                        placeholder="Anything else you want to share? (Optional)"
+                        placeholder={t(
+                          'portal.subscription.cancel.commentPlaceholder',
+                        )}
                       />
                     </FormControl>
                     <FormMessage />
@@ -190,10 +205,10 @@ const CustomerCancellationModal = ({
                   loading={cancelSubscription.isPending}
                   disabled={cancelSubscription.isPending}
                 >
-                  Cancel Subscription
+                  {t('portal.subscription.cancel.title')}
                 </Button>
                 <Button variant="ghost" onClick={handleCancel}>
-                  I&apos;ve changed my mind
+                  {t('portal.subscription.cancel.changedMind')}
                 </Button>
               </div>
             </form>

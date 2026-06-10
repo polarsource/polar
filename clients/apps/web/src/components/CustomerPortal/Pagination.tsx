@@ -1,5 +1,6 @@
 'use client'
 
+import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface PaginationProps {
@@ -12,11 +13,14 @@ export const Pagination = ({
   page,
   totalPages,
   onPageChange,
-}: PaginationProps) => (
-  <div className="flex items-center gap-2">
-    <span className="dark:text-polar-500 text-xs text-gray-500">
-      Page {page} of {totalPages}
-    </span>
+}: PaginationProps) => {
+  const t = usePortalTranslations()
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="dark:text-polar-500 text-xs text-gray-500">
+        {t('portal.common.pageOf', { page, totalPages })}
+      </span>
     <div className="flex items-center">
       <button
         type="button"
@@ -35,5 +39,6 @@ export const Pagination = ({
         <ChevronRight className="h-3 w-3" />
       </button>
     </div>
-  </div>
-)
+    </div>
+  )
+}

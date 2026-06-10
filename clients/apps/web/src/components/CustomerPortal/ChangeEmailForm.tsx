@@ -1,5 +1,6 @@
 'use client'
 
+import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { useCustomerEmailUpdateRequest } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import type { schemas } from '@polar-sh/client'
@@ -13,6 +14,7 @@ interface ChangeEmailFormProps {
 }
 
 const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
+  const t = usePortalTranslations()
   const [isEditing, setIsEditing] = useState(false)
   const [successEmail, setSuccessEmail] = useState<string | null>(null)
   const emailUpdateRequest = useCustomerEmailUpdateRequest()
@@ -56,13 +58,12 @@ const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
       <div className="flex flex-col gap-y-4">
         <div className="dark:bg-polar-700 space-y-3 rounded-xl bg-gray-200 p-4 text-sm text-balance text-gray-700 dark:text-gray-300">
           <p>
-            We sent a verification link to{' '}
-            <strong className="font-medium">{successEmail}</strong>. Follow the
-            instructions to confirm your new email.
+            {t('portal.settings.changeEmail.verificationSentPrefix')}{' '}
+            <strong className="font-medium">{successEmail}</strong>
+            {t('portal.settings.changeEmail.verificationSentSuffix')}
           </p>
           <p className="dark:text-polar-500 text-xs text-gray-500">
-            Changed your mind? Simply ignore the email and your current address
-            will remain active.
+            {t('portal.settings.changeEmail.verificationSentHint')}
           </p>
         </div>
       </div>
@@ -74,7 +75,7 @@ const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-4">
         <div className="flex flex-col gap-y-1">
           <p className="dark:text-polar-500 text-sm text-gray-500">
-            Current email
+            {t('portal.settings.changeEmail.currentEmail')}
           </p>
           <p className="text-sm">{customer.email}</p>
         </div>
@@ -83,14 +84,14 @@ const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
             htmlFor="new-email"
             className="dark:text-polar-500 text-sm text-gray-500"
           >
-            New email
+            {t('portal.settings.changeEmail.newEmail')}
           </label>
           <Input
             id="new-email"
             type="email"
-            placeholder="Enter new email address"
+            placeholder={t('portal.settings.changeEmail.newEmailPlaceholder')}
             {...register('email', {
-              required: 'Email is required',
+              required: t('portal.settings.changeEmail.emailRequired'),
             })}
           />
           {errors.email && (
@@ -105,7 +106,7 @@ const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
             loading={emailUpdateRequest.isPending}
             disabled={emailUpdateRequest.isPending}
           >
-            Send Verification
+            {t('portal.settings.changeEmail.sendVerification')}
           </Button>
           <Button
             type="button"
@@ -115,7 +116,7 @@ const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
               reset()
             }}
           >
-            Nevermind
+            {t('portal.settings.changeEmail.nevermind')}
           </Button>
         </div>
       </form>
@@ -126,7 +127,7 @@ const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
     <div className="flex w-full flex-row justify-between gap-x-4">
       <div className="flex flex-col gap-y-1">
         <p className="dark:text-polar-500 text-sm text-gray-500">
-          Current email
+          {t('portal.settings.changeEmail.currentEmail')}
         </p>
         <p className="text-sm">{customer.email}</p>
       </div>
@@ -136,7 +137,7 @@ const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
           variant="secondary"
           onClick={() => setIsEditing(true)}
         >
-          Request Email Change
+          {t('portal.settings.changeEmail.requestChange')}
         </Button>
       </div>
     </div>

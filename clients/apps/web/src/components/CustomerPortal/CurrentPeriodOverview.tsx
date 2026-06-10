@@ -4,6 +4,7 @@ import { formatCurrency } from '@polar-sh/currency'
 import { useMemo } from 'react'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import { OverviewSummaryCard } from './OverviewSummaryCard'
+import { usePortalTranslations } from './PortalLocaleProvider'
 
 interface CurrentPeriodOverviewProps {
   subscription: schemas['CustomerSubscription']
@@ -16,6 +17,7 @@ export const CurrentPeriodOverview = ({
   products,
   api,
 }: CurrentPeriodOverviewProps) => {
+  const t = usePortalTranslations()
   const { data: subscriptionPreview } = useCustomerSubscriptionChargePreview(
     api,
     subscription.id,
@@ -63,24 +65,27 @@ export const CurrentPeriodOverview = ({
     : subscription.current_period_end
 
   // Determine header and label based on subscription state
-  let headerTitle = 'Next Charge'
-  let dateLabel = 'Next Invoice'
+  let headerTitle = t('portal.overview.currentPeriod.nextCharge')
+  let dateLabel = t('portal.overview.currentPeriod.nextInvoice')
 
   if (isTrialing) {
-    headerTitle = 'First Charge After Trial'
-    dateLabel = 'Trial Ends'
+    headerTitle = t('portal.overview.currentPeriod.firstChargeAfterTrial')
+    dateLabel = t('portal.overview.currentPeriod.trialEnds')
   } else if (isCancelingAtPeriodEnd) {
-    headerTitle = 'Final Charge'
-    dateLabel = 'Subscription Ends'
+    headerTitle = t('portal.overview.currentPeriod.finalCharge')
+    dateLabel = t('portal.overview.currentPeriod.subscriptionEnds')
   }
 
-  const chargeDateLabel = `${dateLabel} — ${
-    chargeDate
-      ? new Date(chargeDate).toLocaleDateString('en-US', {
-          dateStyle: 'medium',
-        })
-      : 'N/A'
-  }`
+  const formattedChargeDate = chargeDate
+    ? new Date(chargeDate).toLocaleDateString('en-US', {
+        dateStyle: 'medium',
+      })
+    : t('portal.overview.currentPeriod.notAvailable')
+
+  const chargeDateLabel = t('portal.overview.currentPeriod.dateLabel', {
+    label: dateLabel,
+    date: formattedChargeDate,
+  })
 
   return (
     <OverviewSummaryCard title={headerTitle} meta={chargeDateLabel}>
@@ -93,7 +98,7 @@ export const CurrentPeriodOverview = ({
             className={isCancelingAtPeriodEnd ? 'text-gray-500' : 'font-medium'}
           >
             {isCancelingAtPeriodEnd ? (
-              'Canceled'
+              t('portal.overview.currentPeriod.canceled')
             ) : (
               <ProductPriceLabel
                 product={product}
@@ -106,7 +111,9 @@ export const CurrentPeriodOverview = ({
 
       {hasMeters && (
         <>
-          <span className="font-medium">Metered Charges</span>
+          <span className="font-medium">
+            {t('portal.overview.currentPeriod.meteredCharges')}
+          </span>
 
           {subscription.meters.map((meter) => (
             <div key={meter.id} className="flex items-center justify-between">
@@ -124,7 +131,7 @@ export const CurrentPeriodOverview = ({
       <div className="dark:border-polar-700 mt-2 border-t border-gray-200 pt-2">
         {(hasTaxes || hasDiscount) && (
           <div className="dark:text-polar-500 mb-1.5 flex items-center justify-between text-gray-500">
-            <span>Subtotal</span>
+            <span>{t('portal.overview.currentPeriod.subtotal')}</span>
             <span>
               {formatCurrency('compact')(
                 subscriptionPreview.subtotal_amount,
@@ -136,7 +143,7 @@ export const CurrentPeriodOverview = ({
 
         {hasDiscount && (
           <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
-            <span>Discount</span>
+            <span>{t('portal.overview.currentPeriod.discount')}</span>
             <span>
               {formatCurrency('compact')(
                 -1 * subscriptionPreview.discount_amount,
@@ -148,7 +155,7 @@ export const CurrentPeriodOverview = ({
 
         {hasTaxes && (
           <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
-            <span>Taxes</span>
+            <span>{t('portal.overview.currentPeriod.taxes')}</span>
             <span>
               {formatCurrency('compact')(
                 subscriptionPreview.tax_amount,
@@ -160,7 +167,9 @@ export const CurrentPeriodOverview = ({
 
         <div className="flex items-center justify-between">
           <span className="font-medium">
-            {hasMeters ? 'Estimated Total' : 'Total'}
+            {hasMeters
+              ? t('portal.overview.currentPeriod.estimatedTotal')
+              : t('portal.overview.currentPeriod.total')}
           </span>
           <span className="text-lg font-medium">
             {subscriptionPreview ? (
@@ -170,7 +179,7 @@ export const CurrentPeriodOverview = ({
               )
             ) : (
               <span className="dark:text-polar-500 animate-pulse text-gray-500">
-                Loading…
+                {t('portal.common.loading')}
               </span>
             )}
           </span>
@@ -178,19 +187,19 @@ export const CurrentPeriodOverview = ({
 
         {isCancelingAtPeriodEnd && (
           <p className="max-w-sm text-xs text-gray-500">
-            This will be the final charge before the subscription ends.
+            {t('portal.overview.currentPeriod.finalChargeNotice')}
             {hasMeters &&
-              ' Final amount may vary based on usage until the end of the billing period.'}
+              ` ${t('portal.overview.currentPeriod.finalChargeMeteredNotice')}`}
           </p>
         )}
 
         {!isCancelingAtPeriodEnd && hasMeters && (
           <p className="max-w-sm text-xs text-gray-500">
             {isActive
-              ? 'Final charges may vary based on usage until the end of the billing period.'
+              ? t('portal.overview.currentPeriod.meteredNoticeActive')
               : isTrialing
-                ? 'Final charges may vary based on usage during the trial period.'
-                : 'Final charges may vary.'}
+                ? t('portal.overview.currentPeriod.meteredNoticeTrialing')
+                : t('portal.overview.currentPeriod.meteredNoticeDefault')}
           </p>
         )}
       </div>

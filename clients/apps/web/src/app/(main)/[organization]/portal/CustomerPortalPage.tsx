@@ -1,3 +1,4 @@
+import { PortalLocaleProvider } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getBrowserLocale } from '@/utils/i18n'
 import { schemas } from '@polar-sh/client'
@@ -58,13 +59,11 @@ export async function CustomerPortalPage({
   }
 
   return (
-    <div className="flex w-full flex-col items-stretch gap-6 md:flex-row md:gap-12">
-      <Navigation
-        organization={organization}
-        locale={locale}
-        localizationEnabled={localizationEnabled}
-      />
-      <div className="flex w-full flex-col md:py-12">{children}</div>
-    </div>
+    <PortalLocaleProvider locale={locale}>
+      <div className="flex w-full flex-col items-stretch gap-6 md:flex-row md:gap-12">
+        <Navigation organization={organization} />
+        <div className="flex w-full flex-col md:py-12">{children}</div>
+      </div>
+    </PortalLocaleProvider>
   )
 }

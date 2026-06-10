@@ -1,3 +1,4 @@
+import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { toast } from '@/components/Toast/use-toast'
 import {
   useCustomerPortalCustomer,
@@ -28,6 +29,7 @@ const PaymentMethod = ({
   paymentMethod: PaymentMethodType
   deletable: boolean
 }) => {
+  const t = usePortalTranslations()
   const deletePaymentMethod = useDeleteCustomerPaymentMethod(api)
   const { update: updateCustomer } = useCustomerPortalCustomer()
   const isDefault = paymentMethod.id === customer.default_payment_method_id
@@ -36,16 +38,16 @@ const PaymentMethod = ({
     try {
       await deletePaymentMethod.mutateAsync(paymentMethod.id)
       toast({
-        title: 'Payment method deleted',
-        description: 'Your payment method has been successfully removed.',
+        title: t('portal.settings.paymentMethod.deletedTitle'),
+        description: t('portal.settings.paymentMethod.deletedDescription'),
       })
     } catch (error) {
       toast({
-        title: 'Failed to delete payment method',
+        title: t('portal.settings.paymentMethod.deleteFailedTitle'),
         description:
           error instanceof Error
             ? error.message
-            : 'An error occurred while deleting the payment method.',
+            : t('portal.settings.paymentMethod.deleteFailedDescription'),
         variant: 'error',
       })
     }
@@ -57,16 +59,18 @@ const PaymentMethod = ({
         default_payment_method_id: paymentMethod.id,
       })
       toast({
-        title: 'Default payment method updated',
-        description: 'This payment method is now your default.',
+        title: t('portal.settings.paymentMethod.defaultUpdatedTitle'),
+        description: t('portal.settings.paymentMethod.defaultUpdatedDescription'),
       })
     } catch (error) {
       toast({
-        title: 'Failed to update default payment method',
+        title: t('portal.settings.paymentMethod.defaultUpdateFailedTitle'),
         description:
           error instanceof Error
             ? error.message
-            : 'An error occurred while updating the default payment method.',
+            : t(
+                'portal.settings.paymentMethod.defaultUpdateFailedDescription',
+              ),
         variant: 'error',
       })
     }
@@ -85,7 +89,7 @@ const PaymentMethod = ({
       <div className="flex flex-row items-center gap-x-4">
         {isDefault ? (
           <Status
-            status="Default Method"
+            status={t('portal.settings.paymentMethod.defaultMethod')}
             className="bg-emerald-50 text-emerald-500 dark:bg-emerald-950"
           />
         ) : (
@@ -96,7 +100,7 @@ const PaymentMethod = ({
             loading={updateCustomer.isPending}
             disabled={updateCustomer.isPending}
           >
-            Make default
+            {t('portal.settings.paymentMethod.makeDefault')}
           </Button>
         )}
         {deletable && (
@@ -107,6 +111,7 @@ const PaymentMethod = ({
             onClick={onDeletePaymentMethod}
             loading={deletePaymentMethod.isPending}
             disabled={deletePaymentMethod.isPending}
+            aria-label={t('portal.settings.paymentMethod.deleteAriaLabel')}
           >
             <X className="size-4" />
           </Button>

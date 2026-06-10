@@ -1,10 +1,11 @@
 'use client'
 
+import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { usePortalAuthenticatedUser } from '@/hooks/queries/customerPortal'
 import { createClientSideAPI } from '@/utils/client'
 import { hasBillingPermission } from '@/utils/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
-import { type AcceptedLocale } from '@polar-sh/i18n'
+import { type TranslateFn } from '@polar-sh/i18n'
 import {
   Select,
   SelectContent,
@@ -19,6 +20,7 @@ import { twMerge } from 'tailwind-merge'
 const links = (
   organization: schemas['CustomerOrganization'],
   authenticatedUser: schemas['PortalAuthenticatedUser'] | undefined,
+  t: TranslateFn,
 ) => {
   const portalSettings = organization.customer_portal_settings
   const canAccessBilling = hasBillingPermission(authenticatedUser)
@@ -26,14 +28,14 @@ const links = (
   return [
     {
       href: `/${organization.slug}/portal/overview`,
-      label: 'Overview',
+      label: t('portal.navigation.overview'),
       isActive: (path: string) => path.includes('/overview'),
     },
     ...(canAccessBilling
       ? [
           {
             href: `/${organization.slug}/portal/orders`,
-            label: 'Orders',
+            label: t('portal.navigation.orders'),
             isActive: (path: string) => path.includes('/orders'),
           },
         ]
@@ -42,7 +44,7 @@ const links = (
       ? [
           {
             href: `/${organization.slug}/portal/usage`,
-            label: 'Usage',
+            label: t('portal.navigation.usage'),
             isActive: (path: string) => path.includes('/usage'),
           },
         ]
@@ -51,7 +53,7 @@ const links = (
       ? [
           {
             href: `/${organization.slug}/portal/settings`,
-            label: 'Billing',
+            label: t('portal.navigation.billing'),
             isActive: (path: string) => path.includes('/settings'),
           },
         ]
@@ -71,13 +73,14 @@ const NavigationContent = ({
   searchParams: URLSearchParams
 }) => {
   const router = useRouter()
+  const t = usePortalTranslations()
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
 
   const buildPath = (path: string) => {
     return `${path}?${searchParams.toString()}`
   }
 
-  const filteredLinks = links(organization, authenticatedUser)
+  const filteredLinks = links(organization, authenticatedUser, t)
 
   return (
     <>
@@ -122,7 +125,7 @@ const NavigationContent = ({
         }}
       >
         <SelectTrigger className="md:hidden">
-          <SelectValue placeholder="Select page" />
+          <SelectValue placeholder={t('portal.navigation.selectPage')} />
         </SelectTrigger>
         <SelectContent>
           {filteredLinks.map((link) => (
@@ -140,8 +143,6 @@ export const Navigation = ({
   organization,
 }: {
   organization: schemas['CustomerOrganization']
-  locale?: AcceptedLocale
-  localizationEnabled?: boolean
 }) => {
   const currentPath = usePathname()
   const searchParams = useSearchParams()

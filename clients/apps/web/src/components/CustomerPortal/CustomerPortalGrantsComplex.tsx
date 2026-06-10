@@ -2,6 +2,7 @@
 
 import { useCustomerBenefitGrants } from '@/hooks/queries/customerPortal'
 import { Client } from '@polar-sh/client'
+import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { Input } from '@polar-sh/orbit'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { Loader2, Search } from 'lucide-react'
@@ -20,6 +21,7 @@ export const CustomerPortalGrantsComplex = ({
   subscriptionId,
   orderId,
 }: CustomerPortalGrantsComplexProps) => {
+  const t = usePortalTranslations()
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 10
@@ -55,12 +57,12 @@ export const CustomerPortalGrantsComplex = ({
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <h3 className="text-xl">Benefit Grants</h3>
+      <h3 className="text-xl">{t('portal.benefits.title')}</h3>
 
       {/* Search box */}
       <Input
         preSlot={<Search className="h-4 w-4" />}
-        placeholder="Search benefit grants..."
+        placeholder={t('portal.benefits.searchPlaceholder')}
         value={searchQuery}
         onChange={onSearchChange}
       />
@@ -69,7 +71,7 @@ export const CustomerPortalGrantsComplex = ({
       <div className="relative">
         {grants.length === 0 && !isLoading ? (
           <div className="dark:border-polar-700 dark:text-polar-500 rounded-xl border border-gray-200 py-8 text-center text-sm text-gray-500">
-            No benefit grants found
+            {t('portal.benefits.empty')}
           </div>
         ) : (
           <div className="flex flex-col gap-4">

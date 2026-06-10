@@ -1,6 +1,7 @@
 'use client'
 
 import revalidate from '@/app/actions'
+import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { toast } from '@/components/Toast/use-toast'
 import {
   useCustomerPaymentMethods,
@@ -31,6 +32,7 @@ export const CustomerPortalSettings = ({
   customerSessionToken,
   organization,
 }: CustomerPortalSettingsProps) => {
+  const t = usePortalTranslations()
   const api = createClientSideAPI(customerSessionToken)
   const router = useRouter()
   const theme = useTheme()
@@ -49,13 +51,13 @@ export const CustomerPortalSettings = ({
 
   usePaymentMethodRedirectResult({
     onSuccess: () => {
-      toast({ title: 'Payment method added' })
+      toast({ title: t('portal.settings.paymentMethods.addedTitle') })
       onPaymentMethodAdded()
     },
     onError: () =>
       toast({
-        title: 'Could not add payment method',
-        description: 'Please try again.',
+        title: t('portal.settings.paymentMethods.addFailedTitle'),
+        description: t('portal.settings.paymentMethods.addFailedDescription'),
         variant: 'error',
       }),
   })
@@ -103,16 +105,20 @@ export const CustomerPortalSettings = ({
 
   return (
     <div className="flex flex-col gap-y-8">
-      <h3 className="text-2xl">Billing Settings</h3>
+      <h3 className="text-2xl">{t('portal.settings.title')}</h3>
       <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
         <WellHeader className="flex-row items-start justify-between">
           <div className="flex flex-col gap-y-2">
-            <h3 className="text-xl">Payment Methods</h3>
+            <h3 className="text-xl">
+              {t('portal.settings.paymentMethods.title')}
+            </h3>
             <p className="dark:text-polar-500 text-gray-500">
-              Methods used for subscriptions & one-time purchases
+              {t('portal.settings.paymentMethods.description')}
             </p>
           </div>
-          <Button onClick={onAddPaymentMethod}>Add Payment Method</Button>
+          <Button onClick={onAddPaymentMethod}>
+            {t('portal.settings.paymentMethods.add')}
+          </Button>
         </WellHeader>
         <WellContent className="gap-y-4">
           {paymentMethods?.items.map((pm) => (
@@ -129,9 +135,11 @@ export const CustomerPortalSettings = ({
       <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
         <WellHeader className="flex-row items-center justify-between">
           <div className="flex flex-col gap-y-2">
-            <h3 className="text-xl">Billing Details</h3>
+            <h3 className="text-xl">
+              {t('portal.settings.billingDetailsSection.title')}
+            </h3>
             <p className="dark:text-polar-500 text-gray-500">
-              Update your billing details
+              {t('portal.settings.billingDetailsSection.description')}
             </p>
           </div>
         </WellHeader>
@@ -153,9 +161,11 @@ export const CustomerPortalSettings = ({
           <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
             <WellHeader className="flex-row items-center justify-between">
               <div className="flex flex-col gap-y-2">
-                <h3 className="text-xl">Email Address</h3>
+                <h3 className="text-xl">
+                  {t('portal.settings.emailSection.title')}
+                </h3>
                 <p className="dark:text-polar-500 text-gray-500">
-                  Change the email associated with your account
+                  {t('portal.settings.emailSection.description')}
                 </p>
               </div>
             </WellHeader>
@@ -171,10 +181,11 @@ export const CustomerPortalSettings = ({
           <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
             <WellHeader className="flex-row items-start justify-between">
               <div className="flex flex-col gap-y-2">
-                <h3 className="text-xl">Billing Managers</h3>
+                <h3 className="text-xl">
+                  {t('portal.settings.billingManagers.title')}
+                </h3>
                 <p className="dark:text-polar-500 text-gray-500">
-                  Billing Managers can manage billing details, payment methods,
-                  and subscriptions.
+                  {t('portal.settings.billingManagers.description')}
                 </p>
               </div>
             </WellHeader>
@@ -188,9 +199,9 @@ export const CustomerPortalSettings = ({
       <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
         <WellHeader className="flex-row items-start justify-between">
           <div className="flex flex-col gap-y-2">
-            <h3 className="text-xl">Privacy</h3>
+            <h3 className="text-xl">{t('portal.settings.privacy.title')}</h3>
             <p className="dark:text-polar-500 text-gray-500">
-              Download a copy of all your personal data
+              {t('portal.settings.privacy.description')}
             </p>
           </div>
           <Button
@@ -198,7 +209,7 @@ export const CustomerPortalSettings = ({
             loading={isExporting}
             variant="secondary"
           >
-            Export Data
+            {t('portal.settings.privacy.exportData')}
           </Button>
         </WellHeader>
       </Well>

@@ -11,6 +11,7 @@ import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 import { OrderStatus } from '../Orders/OrderStatus'
 import CustomerPortalOrder from './CustomerPortalOrder'
+import { usePortalTranslations } from './PortalLocaleProvider'
 
 export interface CustomerPortalOrdersProps {
   organization: schemas['CustomerOrganization']
@@ -23,6 +24,7 @@ export const CustomerPortalOrders = ({
   orders,
   customerSessionToken,
 }: CustomerPortalOrdersProps) => {
+  const t = usePortalTranslations()
   const api = createClientSideAPI(customerSessionToken)
 
   const [selectedOrder, setSelectedOrder] = useState<
@@ -41,7 +43,7 @@ export const CustomerPortalOrders = ({
   return (
     <div className="flex flex-col gap-y-4">
       <div className="flex flex-row items-center justify-between">
-        <h3 className="text-xl">Order History</h3>
+        <h3 className="text-xl">{t('portal.orders.orderHistory')}</h3>
       </div>
       <DataTable
         data={orders ?? []}
@@ -49,11 +51,11 @@ export const CustomerPortalOrders = ({
         columns={[
           {
             accessorKey: 'description',
-            header: 'Description',
+            header: t('portal.orders.description'),
           },
           {
             accessorKey: 'status',
-            header: 'Status',
+            header: t('portal.common.status'),
             cell: ({ row }) => (
               <span className="flex shrink">
                 <OrderStatus status={row.original.status} />
@@ -62,7 +64,7 @@ export const CustomerPortalOrders = ({
           },
           {
             accessorKey: 'created_at',
-            header: 'Date',
+            header: t('portal.common.date'),
             cell: ({ row }) => (
               <FormattedDateTime
                 datetime={row.original.created_at}
@@ -88,14 +90,14 @@ export const CustomerPortalOrders = ({
                     className="hidden md:flex"
                     size="sm"
                   >
-                    View Order
+                    {t('portal.orders.viewOrder')}
                   </Button>
                   <Link
                     className="md:hidden"
                     href={`/${organization.slug}/portal/orders/${order.id}?customer_session_token=${customerSessionToken}`}
                   >
                     <Button variant="secondary" size="sm">
-                      View Order
+                      {t('portal.orders.viewOrder')}
                     </Button>
                   </Link>
                 </span>

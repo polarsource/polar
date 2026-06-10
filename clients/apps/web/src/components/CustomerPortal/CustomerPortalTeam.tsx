@@ -1,5 +1,6 @@
 'use client'
 
+import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import {
   useAddCustomerPortalMember,
   useCustomerPortalMembers,
@@ -10,6 +11,7 @@ import {
 import { validateEmail } from '@/utils/validation'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { Client, schemas } from '@polar-sh/client'
+import { type TranslateFn } from '@polar-sh/i18n'
 import { Button } from '@polar-sh/orbit'
 import {
   DropdownMenu,
@@ -33,25 +35,31 @@ interface CustomerPortalTeamSectionProps {
   api: Client
 }
 
-const roleDisplayNames: Record<string, string> = {
-  owner: 'Owner',
-  billing_manager: 'Billing Manager',
-  member: 'Member',
-}
+const roleDisplayNames = (t: TranslateFn): Record<string, string> => ({
+  owner: t('portal.settings.team.roles.owner'),
+  billing_manager: t('portal.settings.team.roles.billingManager'),
+  member: t('portal.settings.team.roles.member'),
+})
 
-const availableRoles = [
-  { value: 'owner', label: 'Owner' },
-  { value: 'billing_manager', label: 'Billing Manager' },
-  { value: 'member', label: 'Member' },
-] as const
+const getAvailableRoles = (t: TranslateFn) =>
+  [
+    { value: 'owner', label: t('portal.settings.team.roles.owner') },
+    {
+      value: 'billing_manager',
+      label: t('portal.settings.team.roles.billingManager'),
+    },
+    { value: 'member', label: t('portal.settings.team.roles.member') },
+  ] as const
 
-const roleToDisplayName = (role: string): string => {
-  return roleDisplayNames[role] || role
+const roleToDisplayName = (role: string, t: TranslateFn): string => {
+  return roleDisplayNames(t)[role] || role
 }
 
 export const CustomerPortalTeamSection = ({
   api,
 }: CustomerPortalTeamSectionProps) => {
+  const t = usePortalTranslations()
+  const availableRoles = getAvailableRoles(t)
   const { data: members } = useCustomerPortalMembers(api)
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
   const updateMember = useUpdateCustomerPortalMember(api)
@@ -71,11 +79,11 @@ export const CustomerPortalTeamSection = ({
 
   const handleAddMember = async () => {
     if (!newMemberEmail.trim()) {
-      setAddMemberError('Email is required')
+      setAddMemberError(t('portal.settings.team.emailRequired'))
       return
     }
     if (!validateEmail(newMemberEmail)) {
-      setAddMemberError('Invalid email format')
+      setAddMemberError(t('portal.settings.team.invalidEmail'))
       return
     }
 
@@ -88,16 +96,20 @@ export const CustomerPortalTeamSection = ({
         role: 'billing_manager',
       })
       toast({
-        title: 'Billing manager added',
-        description: `${newMemberEmail} has been added as a billing manager.`,
+        title: t('portal.settings.team.addedTitle'),
+        description: t('portal.settings.team.addedDescription', {
+          email: newMemberEmail,
+        }),
       })
       setNewMemberEmail('')
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Failed to add billing manager'
+        error instanceof Error
+          ? error.message
+          : t('portal.settings.team.addFailedTitle')
       setAddMemberError(errorMessage)
       toast({
-        title: 'Failed to add billing manager',
+        title: t('portal.settings.team.addFailedTitle'),
         description: errorMessage,
         variant: 'error',
       })
@@ -118,14 +130,19 @@ export const CustomerPortalTeamSection = ({
         body: { role: newRole as schemas['MemberRole'] },
       })
       toast({
-        title: 'Role updated',
-        description: `${memberName || 'Member'} is now a ${roleToDisplayName(newRole)}.`,
+        title: t('portal.settings.team.roleUpdatedTitle'),
+        description: t('portal.settings.team.roleUpdatedDescription', {
+          name: memberName || t('portal.settings.team.memberFallback'),
+          role: roleToDisplayName(newRole, t),
+        }),
       })
     } catch (error) {
       toast({
-        title: 'Failed to update role',
+        title: t('portal.settings.team.roleUpdateFailedTitle'),
         description:
-          error instanceof Error ? error.message : 'An error occurred.',
+          error instanceof Error
+            ? error.message
+            : t('portal.settings.team.genericError'),
         variant: 'error',
       })
     } finally {
@@ -143,14 +160,21 @@ export const CustomerPortalTeamSection = ({
     try {
       await removeMember.mutateAsync(memberId)
       toast({
-        title: 'Member removed',
-        description: `${memberData?.name || memberData?.email || 'Member'} has been removed from the team.`,
+        title: t('portal.settings.team.removedTitle'),
+        description: t('portal.settings.team.removedDescription', {
+          name:
+            memberData?.name ||
+            memberData?.email ||
+            t('portal.settings.team.memberFallback'),
+        }),
       })
     } catch (error) {
       toast({
-        title: 'Failed to remove member',
+        title: t('portal.settings.team.removeFailedTitle'),
         description:
-          error instanceof Error ? error.message : 'An error occurred.',
+          error instanceof Error
+            ? error.message
+            : t('portal.settings.team.genericError'),
         variant: 'error',
       })
     } finally {
@@ -173,7 +197,7 @@ export const CustomerPortalTeamSection = ({
           <div className="flex-1">
             <Input
               type="email"
-              placeholder="email@example.com"
+              placeholder={t('portal.settings.team.emailPlaceholder')}
               value={newMemberEmail}
               onChange={(e) => {
                 setNewMemberEmail(e.target.value)
@@ -195,7 +219,7 @@ export const CustomerPortalTeamSection = ({
             disabled={!newMemberEmail.trim() || isAddingMember}
             loading={isAddingMember}
           >
-            Invite billing manager
+            {t('portal.settings.team.invite')}
           </Button>
         </div>
       </div>
@@ -205,10 +229,10 @@ export const CustomerPortalTeamSection = ({
           <thead className="[&_tr]:border-b">
             <tr className="dark:bg-polar-800 border-b bg-gray-50 transition-colors">
               <th className="text-muted-foreground h-12 px-4 text-left align-middle font-medium">
-                Member
+                {t('portal.settings.team.columnMember')}
               </th>
               <th className="text-muted-foreground h-12 w-[180px] px-4 text-left align-middle font-medium">
-                Role
+                {t('portal.settings.team.columnRole')}
               </th>
               <th className="text-muted-foreground h-12 w-[60px] px-4 text-left align-middle font-medium" />
             </tr>
@@ -228,7 +252,7 @@ export const CustomerPortalTeamSection = ({
                         </span>
                         {isCurrentUser && (
                           <span className="dark:text-polar-500 text-xs text-gray-500">
-                            (you)
+                            {t('portal.settings.team.you')}
                           </span>
                         )}
                       </div>
@@ -278,7 +302,7 @@ export const CustomerPortalTeamSection = ({
                               disabled={isLoading}
                               className="text-red-500 focus:text-red-500"
                             >
-                              Remove from Team
+                              {t('portal.settings.team.removeFromTeam')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -295,11 +319,16 @@ export const CustomerPortalTeamSection = ({
       <ConfirmModal
         isShown={memberToRemove !== null}
         hide={() => setMemberToRemove(null)}
-        title="Remove Team Member"
-        description={`Are you sure you want to remove ${memberToRemoveData?.name || memberToRemoveData?.email || 'this member'} from the team? They will lose access to all team resources.`}
+        title={t('portal.settings.team.removeModalTitle')}
+        description={t('portal.settings.team.removeModalDescription', {
+          name:
+            memberToRemoveData?.name ||
+            memberToRemoveData?.email ||
+            t('portal.settings.team.thisMemberFallback'),
+        })}
         onConfirm={() => memberToRemove && handleRemoveMember(memberToRemove)}
         destructive
-        destructiveText="Remove"
+        destructiveText={t('portal.settings.team.removeConfirm')}
       />
     </div>
   )

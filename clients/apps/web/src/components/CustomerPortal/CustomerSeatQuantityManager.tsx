@@ -1,5 +1,6 @@
 'use client'
 
+import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { useCustomerUpdateSubscription } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import { Client, isValidationError, schemas } from '@polar-sh/client'
@@ -26,6 +27,7 @@ export const CustomerSeatQuantityManager = ({
   prorationBehavior,
   onUpdate,
 }: CustomerSeatQuantityManagerProps) => {
+  const t = usePortalTranslations()
   const updateSubscription = useCustomerUpdateSubscription(api)
 
   const assignedSeats = totalSeats - availableSeats
@@ -47,13 +49,13 @@ export const CustomerSeatQuantityManager = ({
     if (!prorationBehavior) return null
     switch (prorationBehavior) {
       case 'invoice':
-        return "I'll be charged immediately with a proration for the current month."
+        return t('portal.seats.invoicingMessage.invoice')
       case 'prorate':
-        return 'Your next invoice will include the updated seats plus the proration for the current month.'
+        return t('portal.seats.invoicingMessage.prorate')
       case 'next_period':
-        return 'The seat update will be applied on your next billing cycle.'
+        return t('portal.seats.invoicingMessage.nextPeriod')
     }
-  }, [prorationBehavior])
+  }, [prorationBehavior, t])
 
   const onSubmit = useCallback(
     async (data: { seats: number }) => {
@@ -69,28 +71,36 @@ export const CustomerSeatQuantityManager = ({
           const errorMessage =
             typeof result.error.detail === 'string'
               ? result.error.detail
-              : 'Failed to update seats'
+              : t('portal.seats.updateError.description')
           toast({
-            title: 'Error updating seats',
+            title: t('portal.seats.updateError.title'),
             description: errorMessage,
             variant: 'error',
           })
         } else {
           const descriptionMessage = (() => {
-            const seatText = `${data.seats} ${data.seats === 1 ? 'seat' : 'seats'}`
+            const seatText = t('portal.seats.seatCount', { count: data.seats })
             switch (prorationBehavior) {
               case 'invoice':
-                return `Subscription now has ${seatText}. You'll be charged immediately with a proration for the current month.`
+                return t('portal.seats.updateSuccess.invoice', {
+                  seats: seatText,
+                })
               case 'prorate':
-                return `Subscription now has ${seatText}. Your next invoice will include the updated seats plus the proration for the current month.`
+                return t('portal.seats.updateSuccess.prorate', {
+                  seats: seatText,
+                })
               case 'next_period':
-                return `Subscription will have ${seatText} starting on your next billing cycle.`
+                return t('portal.seats.updateSuccess.nextPeriod', {
+                  seats: seatText,
+                })
               default:
-                return `Subscription now has ${seatText}.`
+                return t('portal.seats.updateSuccess.default', {
+                  seats: seatText,
+                })
             }
           })()
           toast({
-            title: 'Seats updated',
+            title: t('portal.seats.updateSuccess.title'),
             description: descriptionMessage,
           })
           onUpdate?.()
@@ -100,17 +110,17 @@ export const CustomerSeatQuantityManager = ({
           setValidationErrors(error, setError)
         } else {
           toast({
-            title: 'Error updating seats',
+            title: t('portal.seats.updateError.title'),
             description:
               error instanceof Error
                 ? error.message
-                : 'An unexpected error occurred',
+                : t('portal.seats.updateError.unexpected'),
             variant: 'error',
           })
         }
       }
     },
-    [updateSubscription, subscriptionId, prorationBehavior, onUpdate, setError],
+    [updateSubscription, subscriptionId, prorationBehavior, onUpdate, setError, t],
   )
 
   const handleIncrement = () => {
@@ -130,7 +140,7 @@ export const CustomerSeatQuantityManager = ({
       <div className="flex flex-col gap-2 text-sm">
         <div className="flex items-center justify-between">
           <div>
-            <span className="font-medium">Total seats</span>
+            <span className="font-medium">{t('portal.seats.totalSeats')}</span>
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -173,7 +183,7 @@ export const CustomerSeatQuantityManager = ({
               onClick={handleSubmit(onSubmit)}
               className="w-full"
             >
-              Update seats
+              {t('portal.seats.updateSeats')}
             </Button>
           </div>
         </div>
@@ -181,8 +191,7 @@ export const CustomerSeatQuantityManager = ({
 
       {!canDecrease && seats !== undefined && seats < assignedSeats && (
         <p className="text-xs text-red-500 dark:text-red-400">
-          Cannot decrease below {assignedSeats} assigned seats. Revoke seats
-          first.
+          {t('portal.seats.cannotDecrease', { count: assignedSeats })}
         </p>
       )}
     </form>

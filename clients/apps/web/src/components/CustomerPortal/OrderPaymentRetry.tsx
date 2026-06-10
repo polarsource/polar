@@ -15,6 +15,7 @@ import {
 } from '@stripe/stripe-js'
 import { WalletCards } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { usePortalTranslations } from './PortalLocaleProvider'
 
 interface OrderPaymentRetryProps {
   order: schemas['CustomerOrder']
@@ -39,6 +40,7 @@ export const OrderPaymentRetry = ({
   onClose,
   onBack,
 }: OrderPaymentRetryProps) => {
+  const t = usePortalTranslations()
   const confirmOrderPayment = useCustomerOrderConfirmPayment(api)
   const checkPaymentStatus = useCustomerOrderPaymentStatus(api)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -108,7 +110,10 @@ export const OrderPaymentRetry = ({
             return
           } else if (status.status === 'failed') {
             cleanupPolling()
-            handlePaymentCompletion(false, status.error || 'Payment failed')
+            handlePaymentCompletion(
+              false,
+              status.error || t('portal.orders.payment.paymentFailed'),
+            )
             return
           }
         } else if (statusError) {
@@ -122,8 +127,7 @@ export const OrderPaymentRetry = ({
           cleanupPolling()
           handlePaymentCompletion(
             false,
-            'Payment confirmation is taking longer than expected. ' +
-              'Your payment may still be processing. Please check your order status or contact support if needed.',
+            t('portal.orders.payment.confirmationTimeout'),
           )
         }
       } catch (err) {
@@ -137,20 +141,19 @@ export const OrderPaymentRetry = ({
           cleanupPolling()
           handlePaymentCompletion(
             false,
-            'Unable to confirm payment status due to network issues. ' +
-              'Please check your order status or contact support.',
+            t('portal.orders.payment.networkConfirmationError'),
           )
         }
       }
     }, 2000) // Check every 2 seconds
-  }, [checkPaymentStatus, order.id, handlePaymentCompletion])
+  }, [checkPaymentStatus, order.id, handlePaymentCompletion, t])
 
   const handlePaymentAction = useCallback(
     async (result: schemas['CustomerOrderPaymentConfirmation']) => {
       if (!stripe) {
         handlePaymentCompletion(
           false,
-          'Stripe instance is required for payment actions',
+          t('portal.orders.payment.stripeRequired'),
         )
         return
       }
@@ -158,7 +161,7 @@ export const OrderPaymentRetry = ({
       if (!result.client_secret) {
         handlePaymentCompletion(
           false,
-          'Payment requires additional authentication',
+          t('portal.orders.payment.additionalAuthenticationRequired'),
         )
         return
       }
@@ -170,13 +173,13 @@ export const OrderPaymentRetry = ({
       if (error) {
         handlePaymentCompletion(
           false,
-          error.message || 'Payment authentication failed',
+          error.message || t('portal.orders.payment.authenticationFailed'),
         )
       } else {
         pollForWebhookResult()
       }
     },
-    [stripe, handlePaymentCompletion, pollForWebhookResult],
+    [stripe, handlePaymentCompletion, pollForWebhookResult, t],
   )
 
   const handlePaymentStatus = useCallback(
@@ -193,11 +196,11 @@ export const OrderPaymentRetry = ({
         default:
           handlePaymentCompletion(
             false,
-            result.error || 'Payment failed, please try again.',
+            result.error || t('portal.orders.payment.paymentFailedTryAgain'),
           )
       }
     },
-    [handlePaymentCompletion, handlePaymentAction],
+    [handlePaymentCompletion, handlePaymentAction, t],
   )
 
   const handleSubmit = useCallback(
@@ -220,7 +223,7 @@ export const OrderPaymentRetry = ({
       if (submitError) {
         const errorMessage =
           submitError.message ||
-          'Failed to process payment details. Please check your information and try again.'
+          t('portal.orders.payment.processDetailsFailed')
         handlePaymentCompletion(false, errorMessage)
         return
       }
@@ -258,7 +261,7 @@ export const OrderPaymentRetry = ({
         })
         handlePaymentCompletion(
           false,
-          'Failed to create payment token. Please try again.',
+          t('portal.orders.payment.createTokenFailed'),
         )
         return
       }
@@ -266,7 +269,7 @@ export const OrderPaymentRetry = ({
       if (!confirmationToken || error) {
         const errorMessage =
           error?.message ||
-          'Failed to process payment. Please check your payment information and try again.'
+          t('portal.orders.payment.processPaymentFailed')
         handlePaymentCompletion(false, errorMessage)
         return
       }
@@ -280,7 +283,8 @@ export const OrderPaymentRetry = ({
 
         if (confirmPaymentError) {
           const errorMessage =
-            confirmPaymentError.detail || 'Payment failed. Please try again.'
+            confirmPaymentError.detail ||
+            t('portal.orders.payment.paymentFailedRetry')
           handlePaymentCompletion(false, errorMessage)
           return
         }
@@ -291,7 +295,7 @@ export const OrderPaymentRetry = ({
       } catch {
         handlePaymentCompletion(
           false,
-          'Network error occurred. Please check your connection and try again.',
+          t('portal.orders.payment.networkError'),
         )
       }
     },
@@ -305,6 +309,7 @@ export const OrderPaymentRetry = ({
       confirmOrderPayment,
       handlePaymentCompletion,
       handlePaymentStatus,
+      t,
     ],
   )
 
@@ -324,7 +329,8 @@ export const OrderPaymentRetry = ({
 
       if (confirmPaymentError) {
         const errorMessage =
-          confirmPaymentError.detail || 'Payment failed. Please try again.'
+          confirmPaymentError.detail ||
+          t('portal.orders.payment.paymentFailedRetry')
         handlePaymentCompletion(false, errorMessage)
         return
       }
@@ -335,7 +341,7 @@ export const OrderPaymentRetry = ({
     } catch {
       handlePaymentCompletion(
         false,
-        'Network error occurred. Please check your connection and try again.',
+        t('portal.orders.payment.networkError'),
       )
     }
   }, [
@@ -346,6 +352,7 @@ export const OrderPaymentRetry = ({
     order.id,
     handlePaymentCompletion,
     handlePaymentStatus,
+    t,
   ])
 
   // Cleanup on unmount
@@ -374,14 +381,16 @@ export const OrderPaymentRetry = ({
     <div className="space-y-4">
       {/* Order Summary */}
       <div className="dark:bg-polar-800 rounded-lg bg-gray-50 p-4">
-        <h3 className="mb-2 font-medium">Order Summary</h3>
+        <h3 className="mb-2 font-medium">
+          {t('portal.orders.payment.orderSummary')}
+        </h3>
         <div className="space-y-1 text-sm">
           <div className="flex justify-between">
-            <span>Description:</span>
+            <span>{t('portal.orders.payment.descriptionLabel')}</span>
             <span>{order.description}</span>
           </div>
           <div className="flex justify-between">
-            <span>Amount:</span>
+            <span>{t('portal.orders.payment.amountLabel')}</span>
             <span>
               ${(order.total_amount / 100).toFixed(2)}{' '}
               {order.currency.toUpperCase()}
@@ -410,12 +419,14 @@ export const OrderPaymentRetry = ({
               </svg>
             </div>
             <p className="text-lg font-medium">
-              {showRetryButton ? 'Payment Failed' : 'Payment Successful!'}
+              {showRetryButton
+                ? t('portal.orders.payment.paymentFailedTitle')
+                : t('portal.orders.payment.paymentSuccessfulTitle')}
             </p>
             <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
               {showRetryButton
-                ? 'You can try again or contact support if the issue persists.'
-                : 'Thank you for your payment. You can now close this window.'}
+                ? t('portal.orders.payment.paymentFailedDescription')
+                : t('portal.orders.payment.paymentSuccessfulDescription')}
             </p>
           </div>
           {showRetryButton && (
@@ -424,11 +435,11 @@ export const OrderPaymentRetry = ({
               variant="default"
               className="mr-2"
             >
-              Try Again
+              {t('portal.orders.payment.tryAgain')}
             </Button>
           )}
           <Button onClick={onClose} variant="outline">
-            Close
+            {t('portal.common.close')}
           </Button>
         </div>
       ) : isPolling ? (
@@ -438,12 +449,14 @@ export const OrderPaymentRetry = ({
             role="status"
           >
             <span className="!absolute -m-px! h-px! w-px! overflow-hidden! border-0! p-0! whitespace-nowrap! [clip:rect(0,0,0,0)]!">
-              Loading...
+              {t('portal.orders.payment.loading')}
             </span>
           </div>
-          <p className="text-lg font-medium">Processing your payment...</p>
+          <p className="text-lg font-medium">
+            {t('portal.orders.payment.processingPayment')}
+          </p>
           <p className="mt-2 text-sm text-gray-500">
-            This may take a few moments. Please don&apos;t close this window.
+            {t('portal.orders.payment.processingHint')}
           </p>
         </div>
       ) : paymentMethodId ? (
@@ -453,14 +466,16 @@ export const OrderPaymentRetry = ({
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
               <WalletCards className="h-8 w-8 text-blue-600" />
             </div>
-            <p className="text-lg font-medium">Processing payment...</p>
+            <p className="text-lg font-medium">
+              {t('portal.orders.payment.processingPaymentShort')}
+            </p>
             <p className="mt-2 text-sm text-gray-500">
-              Using your saved payment method
+              {t('portal.orders.payment.usingSavedMethod')}
             </p>
           </div>
           {onBack && (
             <Button onClick={onBack} variant="outline">
-              Back
+              {t('portal.common.back')}
             </Button>
           )}
         </div>
@@ -470,7 +485,7 @@ export const OrderPaymentRetry = ({
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Payment Method
+                {t('portal.orders.payment.paymentMethod')}
               </label>
               <div className="rounded-lg border p-3">
                 <PaymentElement
@@ -502,15 +517,15 @@ export const OrderPaymentRetry = ({
               className="w-full"
             >
               {isProcessing
-                ? 'Processing...'
+                ? t('portal.orders.payment.processing')
                 : isPolling
-                  ? 'Confirming...'
-                  : 'Pay Now'}
+                  ? t('portal.orders.payment.confirming')
+                  : t('portal.orders.payment.payNow')}
             </Button>
           </form>
           {onBack && (
             <Button onClick={onBack} variant="outline" className="w-full">
-              Back
+              {t('portal.common.back')}
             </Button>
           )}
         </div>

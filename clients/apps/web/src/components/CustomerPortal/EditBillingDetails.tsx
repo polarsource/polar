@@ -1,3 +1,4 @@
+import { usePortalTranslations } from '@/components/CustomerPortal/PortalLocaleProvider'
 import { useCustomerPortalCustomer } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import { enums, type schemas } from '@polar-sh/client'
@@ -19,6 +20,7 @@ import { useForm } from 'react-hook-form'
 type CustomerPortalCustomerUpdate = schemas['CustomerPortalCustomerUpdate']
 
 const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
+  const t = usePortalTranslations()
   const { data: customer, update } = useCustomerPortalCustomer()
 
   const form = useForm<CustomerPortalCustomerUpdate>({
@@ -87,7 +89,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-6">
         <FormItem>
-          <FormLabel>Email</FormLabel>
+          <FormLabel>{t('portal.settings.billingDetails.email')}</FormLabel>
           <FormControl>
             <Input
               type="email"
@@ -103,12 +105,16 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
           name="billing_name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Billing Name</FormLabel>
+              <FormLabel>
+                {t('portal.settings.billingDetails.billingName')}
+              </FormLabel>
               <FormControl>
                 <Input
                   type="text"
                   autoComplete="organization"
-                  placeholder="Company or legal name for invoices (optional)"
+                  placeholder={t(
+                    'portal.settings.billingDetails.billingNamePlaceholder',
+                  )}
                   {...field}
                   value={field.value || ''}
                   className="bg-white shadow-xs"
@@ -119,20 +125,22 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
           )}
         />
         <FormItem className="flex flex-col gap-y-3">
-          <FormLabel>Billing address</FormLabel>
+          <FormLabel>
+            {t('portal.settings.billingDetails.billingAddress')}
+          </FormLabel>
           <FormControl>
             <FormField
               control={control}
               name="billing_address.line1"
               rules={{
-                required: 'This field is required',
+                required: t('portal.settings.billingDetails.fieldRequired'),
               }}
               render={({ field }) => (
                 <div className="flex flex-col gap-y-2">
                   <Input
                     type="text"
                     autoComplete="billing address-line1"
-                    placeholder="Line 1"
+                    placeholder={t('portal.settings.billingDetails.line1')}
                     className="bg-white shadow-xs"
                     {...field}
                     value={field.value || ''}
@@ -151,7 +159,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
                   <Input
                     type="text"
                     autoComplete="billing address-line2"
-                    placeholder="Line 2"
+                    placeholder={t('portal.settings.billingDetails.line2')}
                     className="bg-white shadow-xs"
                     {...field}
                     value={field.value || ''}
@@ -168,14 +176,16 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
                 control={control}
                 name="billing_address.postal_code"
                 rules={{
-                  required: 'This field is required',
+                  required: t('portal.settings.billingDetails.fieldRequired'),
                 }}
                 render={({ field }) => (
                   <div className="flex flex-col gap-y-2">
                     <Input
                       type="text"
                       autoComplete="billing postal-code"
-                      placeholder="Postal code"
+                      placeholder={t(
+                        'portal.settings.billingDetails.postalCode',
+                      )}
                       className="bg-white shadow-xs"
                       {...field}
                       value={field.value || ''}
@@ -190,14 +200,14 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
                 control={control}
                 name="billing_address.city"
                 rules={{
-                  required: 'This field is required',
+                  required: t('portal.settings.billingDetails.fieldRequired'),
                 }}
                 render={({ field }) => (
                   <div className="flex flex-col gap-y-2">
                     <Input
                       type="text"
                       autoComplete="billing address-level2"
-                      placeholder="City"
+                      placeholder={t('portal.settings.billingDetails.city')}
                       className="bg-white shadow-xs"
                       {...field}
                       value={field.value || ''}
@@ -213,7 +223,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
               control={control}
               name="billing_address.country"
               rules={{
-                required: 'This field is required',
+                required: t('portal.settings.billingDetails.fieldRequired'),
               }}
               render={({ field }) => (
                 <div className="flex flex-col gap-y-2">
@@ -234,7 +244,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
                 control={control}
                 name="billing_address.state"
                 rules={{
-                  required: 'This field is required',
+                  required: t('portal.settings.billingDetails.fieldRequired'),
                 }}
                 render={({ field }) => (
                   <div className="flex flex-col gap-y-2">
@@ -243,7 +253,11 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
                       country={country}
                       value={field.value || undefined}
                       onChange={field.onChange}
-                      placeholder={country === 'US' ? 'State' : 'Province'}
+                      placeholder={
+                      country === 'US'
+                        ? t('portal.settings.billingDetails.state')
+                        : t('portal.settings.billingDetails.province')
+                    }
                     />
                     <FormMessage />
                   </div>
@@ -263,7 +277,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
           name="tax_id"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Tax ID</FormLabel>
+              <FormLabel>{t('portal.settings.billingDetails.taxId')}</FormLabel>
               <FormControl>
                 <Input
                   type="text"
@@ -283,7 +297,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
           disabled={update.isPending || !isDirty}
           className="self-start"
         >
-          Update Billing Details
+          {t('portal.settings.billingDetails.submit')}
         </Button>
       </form>
     </Form>

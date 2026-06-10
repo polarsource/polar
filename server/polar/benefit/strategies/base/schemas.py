@@ -4,8 +4,8 @@ from pydantic import UUID4, Field, computed_field, field_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
-from polar.kit.visibility import Visibility
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.visibility import Visibility
 from polar.models.benefit import BenefitType, BenefitVisibility
 from polar.models.benefit_grant import BenefitGrantError
 from polar.organization.schemas import OrganizationID, OrganizationPublicBase

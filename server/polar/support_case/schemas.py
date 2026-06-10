@@ -1,8 +1,12 @@
-from pydantic import UUID4, Field
+from pydantic import Field
 
 from polar.exceptions import ResourceNotFound
-from polar.kit.schemas import Schema, TimestampedSchema
-from polar.models.support_case import SupportCaseMessageAuthorKind, SupportCaseType
+from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.models.support_case import (
+    SupportCaseMessageAuthorKind,
+    SupportCaseMessageType,
+    SupportCaseType,
+)
 
 SupportCaseNotFound = {
     "description": "Support case not found.",
@@ -10,15 +14,13 @@ SupportCaseNotFound = {
 }
 
 
-class SupportCaseMessage(TimestampedSchema):
-    id: UUID4
-    type: str
+class SupportCaseMessage(IDSchema, TimestampedSchema):
+    type: SupportCaseMessageType
     author_kind: SupportCaseMessageAuthorKind
     body: str | None
 
 
-class SupportCase(TimestampedSchema):
-    id: UUID4
+class SupportCase(IDSchema, TimestampedSchema):
     type: SupportCaseType
     is_open: bool
 

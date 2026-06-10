@@ -30702,6 +30702,7 @@ export interface components {
       /**
        * Id
        * Format: uuid4
+       * @description The ID of the object.
        */
       id: string
       type: components['schemas']['SupportCaseType']
@@ -30724,10 +30725,10 @@ export interface components {
       /**
        * Id
        * Format: uuid4
+       * @description The ID of the object.
        */
       id: string
-      /** Type */
-      type: string
+      type: components['schemas']['SupportCaseMessageType']
       author_kind: components['schemas']['SupportCaseMessageAuthorKind']
       /** Body */
       body: string | null
@@ -30746,6 +30747,20 @@ export interface components {
       /** Body */
       body: string
     }
+    /**
+     * SupportCaseMessageType
+     * @description Known message types. Stored as a plain string column (not a DB enum):
+     *     ``chat`` and lifecycle values are generic, while action values are
+     *     domain-specific and grow per case type. Validated at the app boundary.
+     * @enum {string}
+     */
+    SupportCaseMessageType:
+      | 'chat'
+      | 'opened'
+      | 'closed'
+      | 'appeal_approved'
+      | 'appeal_denied'
+      | 'info_requested'
     /** SupportCaseThread */
     SupportCaseThread: {
       case: components['schemas']['SupportCase']
@@ -58895,6 +58910,16 @@ export const subscriptionUpdatedEventNameValues: ReadonlyArray<
 export const supportCaseMessageAuthorKindValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SupportCaseMessageAuthorKind']
 > = ['platform', 'merchant', 'customer', 'system']
+export const supportCaseMessageTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SupportCaseMessageType']
+> = [
+  'chat',
+  'opened',
+  'closed',
+  'appeal_approved',
+  'appeal_denied',
+  'info_requested',
+]
 export const supportCaseTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SupportCaseType']
 > = ['review_appeal']

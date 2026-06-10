@@ -108,6 +108,7 @@ export default {
         },
       },
       inclTax: 'Btw (inbegrepen)',
+      basePrice: 'Basisprijs',
     },
     trial: {
       ends: 'Proefperiode eindigt op {endDate}',

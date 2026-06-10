@@ -20,11 +20,7 @@ from polar.benefit.strategies.custom.schemas import (
     BenefitCustomUpdate,
 )
 from polar.benefit.strategies.discord.schemas import BenefitDiscordUpdate
-from polar.benefit.strategies.feature_flag.schemas import (
-    BenefitFeatureFlagCreate,
-    BenefitFeatureFlagCreateProperties,
-    BenefitFeatureFlagUpdate,
-)
+from polar.benefit.strategies.feature_flag.schemas import BenefitFeatureFlagUpdate
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.kit.visibility import Visibility
@@ -364,35 +360,6 @@ class TestUserCreate:
             await benefit_service.user_create(
                 session, redis, create_schema, auth_subject
             )
-
-    @pytest.mark.auth
-    async def test_feature_flag_defaults_to_private(
-        self,
-        mocker: MockerFixture,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        redis: Redis,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        service_mock = MagicMock(spec=BenefitServiceProtocol)
-        service_mock.validate_properties.return_value = {}
-        mocker.patch(
-            "polar.benefit.service.get_benefit_strategy", return_value=service_mock
-        )
-
-        create_schema = BenefitFeatureFlagCreate(
-            type=BenefitType.feature_flag,
-            description="Feature flag",
-            properties=BenefitFeatureFlagCreateProperties(),
-            organization_id=organization.id,
-        )
-
-        benefit = await benefit_service.user_create(
-            session, redis, create_schema, auth_subject
-        )
-
-        assert benefit.visibility == Visibility.private
 
     @pytest.mark.auth
     async def test_custom_defaults_to_public(

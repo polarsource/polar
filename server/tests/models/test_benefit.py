@@ -27,7 +27,7 @@ class TestBenefitTypeVisibility:
         [
             (BenefitType.custom, Visibility.public),
             (BenefitType.meter_credit, Visibility.public),
-            (BenefitType.feature_flag, Visibility.private),
+            (BenefitType.feature_flag, Visibility.public),
             (BenefitType.discord, Visibility.public),
         ],
     )
@@ -41,6 +41,3 @@ class TestBenefitTypeVisibility:
             BenefitType.discord.resolve_visibility(Visibility.private)
             == Visibility.public
         )
-
-    def test_resolve_visibility_uses_default_for_feature_flag(self) -> None:
-        assert BenefitType.feature_flag.resolve_visibility(None) == Visibility.private

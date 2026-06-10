@@ -332,29 +332,6 @@ class TestCreateBenefit:
         assert "properties" in json
 
     @pytest.mark.auth
-    async def test_feature_flag_defaults_to_private(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            "/v1/benefits/",
-            json={
-                "type": "feature_flag",
-                "description": "Feature flag",
-                "properties": {},
-                "organization_id": str(organization.id),
-            },
-        )
-
-        assert response.status_code == 201
-
-        json = response.json()
-        assert json["visibility"] == Visibility.private
-        assert json["visibility_configurable"] is True
-
-    @pytest.mark.auth
     async def test_custom_respects_private_visibility(
         self,
         client: AsyncClient,

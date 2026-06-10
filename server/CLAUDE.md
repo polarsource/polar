@@ -198,15 +198,16 @@ ResourcesWrite = Annotated[
 
 ```python
 # polar/{module}/schemas.py
-from polar.kit.schemas import Schema, TimestampedSchema
+from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 
 class ResourceBase(Schema):
     name: str = Field(description="Resource name")
     slug: str = Field(description="URL-friendly identifier")
 
-class Resource(TimestampedSchema, ResourceBase):
+class Resource(IDSchema, TimestampedSchema, ResourceBase):
     """Read schema - includes all fields."""
-    id: UUID4
+    # `id` comes from IDSchema — don't redeclare `id: UUID4`.
+    # Type fields with their enum (e.g. `status: ResourceStatus`), not `str`.
 
 class ResourceCreate(ResourceBase):
     """Create schema - required fields only."""
@@ -283,6 +284,53 @@ class TestListResources:
         assert response.status_code == 200
         json = response.json()
         assert json["pagination"]["total_count"] == 1
+```
+
+## Conventions (enforced in review)
+
+Cross-cutting patterns the team enforces in code review. New backend code is expected to follow them.
+
+### Service singletons & imports
+Name the singleton the bare domain noun in its module; importers alias it with a `_service` suffix:
+```python
+# service.py
+appeal_case = AppealCaseService()
+# caller
+from polar.organization_review.appeal_case import appeal_case as appeal_case_service
+```
+
+### Creating ORM objects — pass objects, not ids
+Set the related ORM object, not its foreign-key id: it's type-safe and populates the relationship in-session.
+```python
+SupportCaseMessage(case=case, author_user=user)   # ✅
+SupportCaseMessage(case_id=case.id, author_user_id=user.id)   # ❌
+```
+Add the `relationship()` to the model if it doesn't exist yet.
+
+### Relationships are `lazy="raise"`
+All relationships use `lazy="raise"`: accessing an unloaded one raises instead of silently emitting a query (no async lazy-load `MissingGreenlet`, no N+1). Eager-load what the request needs:
+```python
+select(X).options(joinedload(X.rel))   # or selectinload / contains_eager
+```
+(Populating a backref into an unloaded collection — e.g. `case=case` — is passive and does **not** trigger the raise.)
+
+### Errors → status-coded `PolarError`, not validation errors
+Logical/conflict errors are `PolarError` subclasses carrying their own `status_code`; the global exception handler renders them. Don't catch and re-raise as `PolarRequestValidationError` — that's only for request-*payload* validation (→ 422). Declare them on the endpoint's `responses=` so the OpenAPI client gets the schema:
+```python
+class CaseClosedError(PolarError):
+    def __init__(self) -> None:
+        super().__init__("This case is closed.", 409)
+
+@router.post(..., responses={409: {"model": CaseClosedError.schema()}})
+```
+(Don't add a content-less `422: {"description": ...}` override — it clobbers FastAPI's default `HTTPValidationError` and breaks the generated client.)
+
+### Endpoints return ORM models
+Set `response_model` and return the ORM object; FastAPI serializes it via `from_attributes`. Don't hand-build the read schema — except when a field is *derived* and not on the model (then `Schema.model_validate({...})`).
+```python
+@router.post(..., response_model=ResourceSchema)
+async def create(...) -> Resource:   # ORM model, not the schema
+    return await resource_service.create(...)
 ```
 
 ## Key Files Reference

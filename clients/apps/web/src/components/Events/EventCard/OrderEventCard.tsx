@@ -2,10 +2,9 @@ import { useOrder } from '@/hooks/queries/orders'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Status } from '@polar-sh/orbit'
+import { Status, type StatusColor } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { useContext, useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { EventCardBase } from './EventCardBase'
 
 const BillingReasonDisplayName: Record<schemas['OrderBillingReason'], string> =
@@ -26,21 +25,18 @@ export const OrderEventCard = ({ event }: OrderEventCardProps) => {
     event.metadata.order_id,
   )
 
-  const status = useMemo(() => {
+  const status = useMemo((): [string, StatusColor] | null => {
     if (!order) return null
 
     switch (event.name) {
       case 'order.paid':
-        return [
-          'Paid',
-          'bg-emerald-100 text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500',
-        ]
+        return ['Paid', 'green']
       case 'order.refunded':
         return [
           order.status === 'partially_refunded'
             ? 'Partially Refunded'
             : 'Refunded',
-          'bg-violet-100 text-violet-500 dark:bg-violet-950 dark:text-violet-400',
+          'purple',
         ]
       default:
         return null
@@ -91,10 +87,7 @@ export const OrderEventCard = ({ event }: OrderEventCardProps) => {
               {contextValue}
             </span>
             {status ? (
-              <Status
-                status={status[0]}
-                className={twMerge(status[1], 'text-xs')}
-              />
+              <Status status={status[0]} color={status[1]} size="small" />
             ) : null}
           </div>
         </Link>

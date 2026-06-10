@@ -1,4 +1,5 @@
 import { Client, schemas, unwrap } from '@polar-sh/client'
+import type { StatusColor } from '@polar-sh/orbit'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 
@@ -36,11 +37,11 @@ export const CheckoutStatusDisplayTitle: Record<
 
 export const CheckoutStatusDisplayColor: Record<
   schemas['CheckoutStatus'],
-  string
+  StatusColor
 > = {
-  open: 'bg-blue-100 text-blue-500 dark:bg-blue-950',
-  confirmed: 'bg-yellow-100 text-yellow-500 dark:bg-yellow-950',
-  succeeded: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950',
-  expired: 'bg-gray-100 text-gray-500 dark:bg-polar-800 dark:text-polar-500',
-  failed: 'bg-red-100 text-red-500 dark:bg-red-950',
+  open: 'blue',
+  confirmed: 'yellow',
+  succeeded: 'green',
+  expired: 'gray',
+  failed: 'red',
 }

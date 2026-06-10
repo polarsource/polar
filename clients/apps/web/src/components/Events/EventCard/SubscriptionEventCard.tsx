@@ -3,10 +3,9 @@ import { useSubscription } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
 import { schemas } from '@polar-sh/client'
-import { Status } from '@polar-sh/orbit'
+import { Status, type StatusColor } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { useContext, useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { EventCardBase } from './EventCardBase'
 
 export interface SubscriptionEventCardProps {
@@ -23,23 +22,14 @@ export const SubscriptionEventCard = ({
   const { data: subscription, isLoading: isLoadingSubscription } =
     useSubscription(event.metadata.subscription_id)
 
-  const status = useMemo(() => {
+  const status = useMemo((): [string, StatusColor] | null => {
     switch (event.name) {
       case 'subscription.cycled':
-        return [
-          'Cycled',
-          'bg-emerald-100 text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500',
-        ]
+        return ['Cycled', 'green']
       case 'subscription.revoked':
-        return [
-          'Revoked',
-          'bg-red-100 text-red-500 dark:bg-red-950 dark:text-red-500',
-        ]
+        return ['Revoked', 'red']
       case 'subscription.product_updated':
-        return [
-          'Product Updated',
-          'bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-500',
-        ]
+        return ['Product Updated', 'blue']
       default:
         return null
     }
@@ -65,10 +55,7 @@ export const SubscriptionEventCard = ({
             </span>
           </div>
           {status ? (
-            <Status
-              status={status[0]}
-              className={twMerge(status[1], 'text-xs')}
-            />
+            <Status status={status[0]} color={status[1]} size="small" />
           ) : null}
         </Link>
       ) : null}

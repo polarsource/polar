@@ -88,10 +88,7 @@ const PaymentMethodRow = ({
       />
       <Box alignItems="center" columnGap="m">
         {paymentMethod.default ? (
-          <Status
-            status="Default Method"
-            className="bg-emerald-50 text-emerald-500 dark:bg-emerald-950"
-          />
+          <Status status="Default Method" color="green" />
         ) : (
           canSetDefault && (
             <Button

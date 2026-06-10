@@ -1,18 +1,17 @@
 import { schemas } from '@polar-sh/client'
-import { Status } from '@polar-sh/orbit'
+import { Status, type StatusColor } from '@polar-sh/orbit'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { ISODuration } from '@/utils/duration'
-import { twMerge } from 'tailwind-merge'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { useState } from 'react'
 
 const TransactionAvailabilityStatusColor: Record<
   'on_hold' | 'available' | 'paid_out',
-  string
+  StatusColor
 > = {
-  on_hold: 'bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400',
-  available: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950',
-  paid_out: 'bg-gray-100 text-gray-600 dark:bg-polar-700 dark:text-polar-400',
+  on_hold: 'blue',
+  available: 'green',
+  paid_out: 'gray',
 }
 
 const TransactionAvailabilityStatusTitle: Record<
@@ -79,10 +78,7 @@ export const TransactionAvailabilityStatus = ({
         <TooltipTrigger>
           <Status
             status={TransactionAvailabilityStatusTitle[status]}
-            className={twMerge(
-              'w-fit',
-              TransactionAvailabilityStatusColor[status],
-            )}
+            color={TransactionAvailabilityStatusColor[status]}
           />
         </TooltipTrigger>
         <TooltipContent>
@@ -102,7 +98,7 @@ export const TransactionAvailabilityStatus = ({
   return (
     <Status
       status={TransactionAvailabilityStatusTitle[status]}
-      className={twMerge('w-fit', TransactionAvailabilityStatusColor[status])}
+      color={TransactionAvailabilityStatusColor[status]}
     />
   )
 }

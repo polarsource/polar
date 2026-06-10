@@ -62,12 +62,7 @@ const columns: DataTableColumnDef<schemas['TaxJurisdiction']>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Status" />
     ),
-    cell: () => (
-      <Status
-        status="Handled"
-        className="w-fit bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
-      />
-    ),
+    cell: () => <Status status="Handled" color="green" />,
     size: 140,
   },
   {

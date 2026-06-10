@@ -84,10 +84,7 @@ const PaymentMethod = ({
       />
       <div className="flex flex-row items-center gap-x-4">
         {isDefault ? (
-          <Status
-            status="Default Method"
-            className="bg-emerald-50 text-emerald-500 dark:bg-emerald-950"
-          />
+          <Status status="Default Method" color="green" />
         ) : (
           <Button
             variant="secondary"

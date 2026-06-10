@@ -33,7 +33,7 @@ export {
 } from './components/Select'
 export { Spinner, SpinnerNoMargin } from './components/Spinner'
 export { Status } from './components/Status'
-export type { StatusProps } from './components/Status'
+export type { StatusColor, StatusProps } from './components/Status'
 export { Switch } from './components/Switch'
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './components/Tabs'
 export { Text } from './components/Text'

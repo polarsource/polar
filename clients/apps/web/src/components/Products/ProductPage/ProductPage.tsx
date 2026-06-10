@@ -7,7 +7,7 @@ import { getChartRangeParams } from '@/utils/metrics'
 import MoreVert from '@mui/icons-material/MoreVert'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import { Status } from '@polar-sh/orbit'
+import { Status, type StatusColor } from '@polar-sh/orbit'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import {
   DropdownMenu,
@@ -22,10 +22,9 @@ import { DashboardBody } from '../../Layout/DashboardLayout'
 import { ProductMetricsView } from './ProductMetricsView'
 import { ProductOverview } from './ProductOverview'
 
-const ProductTypeDisplayColor: Record<string, string> = {
-  subscription: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950',
-  one_time:
-    'bg-indigo-100 text-indigo-500 dark:bg-indigo-950 dark:text-indigo-400',
+const ProductTypeDisplayColor: Record<string, StatusColor> = {
+  subscription: 'green',
+  one_time: 'blue',
 }
 
 export interface ProductPageProps {
@@ -145,18 +144,13 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
                 status={
                   product.is_recurring ? 'Subscription' : 'One-time Product'
                 }
-                className={
+                color={
                   ProductTypeDisplayColor[
                     product.is_recurring ? 'subscription' : 'one_time'
                   ]
                 }
               />
-              {product.is_archived && (
-                <Status
-                  status="Archived"
-                  className="bg-red-100 text-red-500 dark:bg-red-950"
-                />
-              )}
+              {product.is_archived && <Status status="Archived" color="red" />}
             </div>
           </div>
         }

@@ -5,10 +5,9 @@ import {
 import { useBenefit } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { schemas } from '@polar-sh/client'
-import { Status } from '@polar-sh/orbit'
+import { Status, type StatusColor } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { useContext, useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { EventCardBase } from './EventCardBase'
 import { UserEventCard } from './UserEventCard'
 
@@ -26,28 +25,16 @@ export const BenefitEventCard = ({ event }: BenefitGrantEventCardProps) => {
     event.metadata.benefit_id,
   )
 
-  const status = useMemo(() => {
+  const status = useMemo((): [string, StatusColor] | null => {
     switch (event.name) {
       case 'benefit.granted':
-        return [
-          'Granted',
-          'bg-emerald-100 text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500',
-        ]
+        return ['Granted', 'green']
       case 'benefit.cycled':
-        return [
-          'Cycled',
-          'bg-yellow-100 text-yellow-500 dark:bg-yellow-950 dark:text-yellow-500',
-        ]
+        return ['Cycled', 'yellow']
       case 'benefit.updated':
-        return [
-          'Updated',
-          'bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-500',
-        ]
+        return ['Updated', 'blue']
       case 'benefit.revoked':
-        return [
-          'Revoked',
-          'bg-red-100 text-red-500 dark:bg-red-950 dark:text-red-500',
-        ]
+        return ['Revoked', 'red']
       default:
         return null
     }
@@ -70,10 +57,7 @@ export const BenefitEventCard = ({ event }: BenefitGrantEventCardProps) => {
             </span>
           </div>
           {status ? (
-            <Status
-              status={status[0]}
-              className={twMerge(status[1], 'text-xs')}
-            />
+            <Status status={status[0]} color={status[1]} size="small" />
           ) : null}
         </Link>
       ) : (

@@ -13,7 +13,6 @@ import {
   RowSelectionState,
   SortingState,
 } from '@tanstack/react-table'
-import { twMerge } from 'tailwind-merge'
 
 export interface LicenseKeysListProps {
   licenseKeys: schemas['LicenseKeyRead'][]
@@ -90,12 +89,7 @@ export const LicenseKeysList = ({
       cell: ({ row: { original: licenseKey } }) => {
         return (
           <Status
-            className={twMerge(
-              'w-fit',
-              licenseKey.status === 'granted'
-                ? 'bg-emerald-200 text-emerald-500 dark:bg-emerald-950'
-                : 'bg-red-100 text-red-500 dark:bg-red-950',
-            )}
+            color={licenseKey.status === 'granted' ? 'green' : 'red'}
             status={licenseKey.status === 'granted' ? 'Granted' : 'Revoked'}
           />
         )

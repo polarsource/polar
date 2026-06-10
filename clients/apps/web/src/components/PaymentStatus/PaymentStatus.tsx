@@ -5,7 +5,6 @@ import {
 import { schemas } from '@polar-sh/client'
 import { Status } from '@polar-sh/orbit'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
-import { twMerge } from 'tailwind-merge'
 
 const PaymentStatus = ({
   payment: { status, decline_message },
@@ -17,11 +16,7 @@ const PaymentStatus = ({
       <Tooltip>
         <TooltipTrigger className="cursor-help">
           <Status
-            className={twMerge(
-              PaymentStatusDisplayColor[status],
-              'w-fit',
-              'text-red-500',
-            )}
+            color={PaymentStatusDisplayColor[status]}
             status={PaymentStatusDisplayTitle[status]}
           />
         </TooltipTrigger>
@@ -33,7 +28,7 @@ const PaymentStatus = ({
   }
   return (
     <Status
-      className={twMerge(PaymentStatusDisplayColor[status], 'w-fit')}
+      color={PaymentStatusDisplayColor[status]}
       status={PaymentStatusDisplayTitle[status]}
     />
   )

@@ -779,6 +779,13 @@ async def get_organization_detail(
 
         p50_risk, p90_risk = payment_analytics.calculate_risk_percentiles(risk_scores)
 
+        (
+            held_payout_count,
+            held_payout_amount,
+        ) = await PayoutRepository.from_session(session).get_held_stats_by_account(
+            organization.account_id
+        )
+
         payment_stats = {
             "payment_count": payment_count,
             "total_amount": total_amount,
@@ -799,6 +806,8 @@ async def get_organization_detail(
             "p90_risk": p90_risk,
             "risk_scores_count": len(risk_scores),
             "next_review_threshold": organization.next_review_threshold,
+            "held_payout_count": held_payout_count,
+            "held_payout_amount": held_payout_amount,
         }
 
         orders_count, unrefunded_orders_count = await count_test_sales(

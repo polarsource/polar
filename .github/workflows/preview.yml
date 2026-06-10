@@ -39,7 +39,7 @@ jobs:
       BRANCH: ${{ (startsWith(github.event_name, 'pull_request') && github.event.pull_request.head.ref) || github.ref_name }}
       SHA: ${{ (startsWith(github.event_name, 'pull_request') && github.event.pull_request.head.sha) || github.sha }}
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
 
       - name: Determine action
         id: action
@@ -54,7 +54,7 @@ jobs:
 
       # --- Python/uv setup (needed for both deploy and destroy) ---
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: true
 

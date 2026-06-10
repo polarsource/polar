@@ -77,7 +77,7 @@ jobs:
     outputs:
       deployment-url: ${{ steps.deploy.outputs.deployment-url }}
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
@@ -104,7 +104,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
 
       - name: Deploy Backend to Render
         run: |
@@ -139,8 +139,8 @@ jobs:
     # noise, not a deploy regression. Don't fail the workflow.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v6.0.2
-      - uses: getsentry/action-release@v3.6.1
+      - uses: actions/checkout@v6.0.3
+      - uses: getsentry/action-release@v3.7.0
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
@@ -161,7 +161,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
@@ -204,7 +204,7 @@ jobs:
     # would turn this into a hard production-deploy outage.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
         with:
           # Depth 1 is sufficient: we only ever tag github.sha (HEAD), which
           # checkout fetches by default.
@@ -247,7 +247,7 @@ jobs:
     # must not fail the workflow_call.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
         with:
           fetch-depth: 1
 

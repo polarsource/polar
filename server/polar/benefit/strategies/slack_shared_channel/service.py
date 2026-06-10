@@ -42,6 +42,14 @@ log: Logger = structlog.get_logger()
 
 _PROVISIONING_LOCK_TTL_SECONDS = 60
 
+_ARCHIVE_NOOP_ERRORS = {"already_archived", "channel_not_found"}
+_ARCHIVE_TRANSIENT_ERRORS = {
+    "ratelimited",
+    "internal_error",
+    "fatal_error",
+    "service_unavailable",
+}
+
 
 class BenefitSlackSharedChannelService(
     BenefitServiceProtocol[
@@ -208,14 +216,17 @@ class BenefitSlackSharedChannelService(
 
         properties = self._get_properties(benefit)
         channel_id = grant_properties.get("channel_id")
+        revoked_properties: BenefitGrantSlackSharedChannelProperties = {
+            "invited_email": grant_properties.get("invited_email", "")
+        }
 
         if not properties.get("archive_on_revoke") or not channel_id:
-            return {"invited_email": grant_properties.get("invited_email", "")}
+            return revoked_properties
 
         integration = await self._get_integration(benefit)
         if integration is None or integration.bot_token is None:
             bound_logger.info("Slack integration uninstalled; skipping archive")
-            return {"invited_email": grant_properties.get("invited_email", "")}
+            return revoked_properties
 
         try:
             result = await self._client.conversations_archive(
@@ -227,10 +238,15 @@ class BenefitSlackSharedChannelService(
 
         if not result.get("ok"):
             error = result.get("error", "")
+            if error in _ARCHIVE_NOOP_ERRORS:
+                bound_logger.info("Slack channel already archived or gone", error=error)
+                return revoked_properties
             bound_logger.warning("Slack archive returned error", error=error)
-            raise BenefitRetriableError()
+            if error in _ARCHIVE_TRANSIENT_ERRORS:
+                raise BenefitRetriableError()
+            raise BenefitActionRequiredError(f"Slack archive error: {error}")
 
-        return {"invited_email": grant_properties.get("invited_email", "")}
+        return revoked_properties
 
     async def requires_update(
         self,

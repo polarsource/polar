@@ -1104,6 +1104,69 @@ class TestSlackSharedChannelRevoke:
                 {"invited_email": "admin@customer.example", "channel_id": "C123"},
             )
 
+    @pytest.mark.parametrize("error", ["already_archived", "channel_not_found"])
+    async def test_revoke_archive_noop_error_succeeds(
+        self,
+        error: str,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        client = _mock_client(
+            mocker,
+            conversations_archive=AsyncMock(return_value={"ok": False, "error": error}),
+        )
+        strategy = _strategy(session, redis, client)
+
+        result = await strategy.revoke(
+            benefit,
+            customer,
+            {"invited_email": "admin@customer.example", "channel_id": "C123"},
+        )
+
+        assert result == {"invited_email": "admin@customer.example"}
+
+    async def test_revoke_archive_permanent_error_raises_action_required(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        client = _mock_client(
+            mocker,
+            conversations_archive=AsyncMock(
+                return_value={"ok": False, "error": "restricted_action"}
+            ),
+        )
+        strategy = _strategy(session, redis, client)
+
+        with pytest.raises(BenefitActionRequiredError, match="restricted_action"):
+            await strategy.revoke(
+                benefit,
+                customer,
+                {"invited_email": "admin@customer.example", "channel_id": "C123"},
+            )
+
 
 @pytest.mark.asyncio
 class TestSlackSharedChannelValidate:

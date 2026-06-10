@@ -55,11 +55,11 @@ class SupportCaseService:
         repository = SupportCaseParticipantRepository.from_session(session)
         return await repository.create(
             SupportCaseParticipant(
-                case_id=case.id,
+                case=case,
                 kind=kind,
-                organization_id=organization.id if organization else None,
-                platform_user_id=platform_user.id if platform_user else None,
-                customer_id=customer.id if customer else None,
+                organization=organization,
+                platform_user=platform_user,
+                customer=customer,
             ),
             flush=True,
         )
@@ -78,10 +78,10 @@ class SupportCaseService:
         repository = SupportCaseMessageRepository.from_session(session)
         return await repository.create(
             SupportCaseMessage(
-                case_id=case.id,
+                case=case,
                 type=type,
                 author_kind=author_kind,
-                author_user_id=author_user.id if author_user else None,
+                author_user=author_user,
                 body=body,
                 audience=list(audience),
             ),

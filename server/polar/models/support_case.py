@@ -22,7 +22,10 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
+    from polar.models.customer import Customer
+    from polar.models.organization import Organization
     from polar.models.organization_review import OrganizationReview
+    from polar.models.user import User
 
 
 class SupportCaseType(StrEnum):
@@ -213,6 +216,18 @@ class SupportCaseParticipant(RecordModel):
     def case(cls) -> Mapped["SupportCase"]:
         return relationship("SupportCase", lazy="raise", back_populates="participants")
 
+    @declared_attr
+    def organization(cls) -> Mapped["Organization | None"]:
+        return relationship("Organization", lazy="raise")
+
+    @declared_attr
+    def platform_user(cls) -> Mapped["User | None"]:
+        return relationship("User", lazy="raise")
+
+    @declared_attr
+    def customer(cls) -> Mapped["Customer | None"]:
+        return relationship("Customer", lazy="raise")
+
 
 class SupportCaseMessage(RecordModel):
     """An entry in the case timeline.
@@ -255,6 +270,10 @@ class SupportCaseMessage(RecordModel):
     @declared_attr
     def case(cls) -> Mapped["SupportCase"]:
         return relationship("SupportCase", lazy="raise", back_populates="messages")
+
+    @declared_attr
+    def author_user(cls) -> Mapped["User | None"]:
+        return relationship("User", lazy="raise")
 
 
 class SupportCaseAttachment(RecordModel):

@@ -19,7 +19,7 @@ jobs:
     outputs:
       relevant: ${{ steps.filter.outputs.relevant }}
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -45,7 +45,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6.0.3
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 100
@@ -64,7 +64,7 @@ jobs:
           fi
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: true
 

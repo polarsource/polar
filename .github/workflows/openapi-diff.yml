@@ -24,18 +24,18 @@ jobs:
 
     steps:
       - name: Checkout PR (head)
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6.0.3
         with:
           path: head
 
       - name: Checkout base branch
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6.0.3
         with:
           ref: ${{ github.base_ref }}
           path: base
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: true
 

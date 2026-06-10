@@ -36,7 +36,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6.0.3
 
       - name: Determine run ID
         id: run-id
@@ -168,7 +168,7 @@ jobs:
 
       - name: Configure AWS credentials
         if: always()
-        uses: aws-actions/configure-aws-credentials@v6.1.3
+        uses: aws-actions/configure-aws-credentials@v6.2.0
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           role-session-name: e2e-healing

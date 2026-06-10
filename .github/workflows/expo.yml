@@ -16,7 +16,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6.0.3
 
       - name: Check for EXPO_TOKEN
         run: |
@@ -37,7 +37,7 @@ jobs:
           cache-dependency-path: "clients/pnpm-lock.yaml"
 
       - name: Setup EAS
-        uses: expo/expo-github-action@v8
+        uses: expo/expo-github-action@v9
         with:
           working-directory: ${{ github.workspace }}/clients/apps/app
           eas-version: latest
@@ -50,7 +50,7 @@ jobs:
         run: pnpm build
 
       - name: Create preview
-        uses: expo/expo-github-action/preview@v8
+        uses: expo/expo-github-action/preview@v9
         with:
           working-directory: ${{ github.workspace }}/clients/apps/app
           command: eas update --auto

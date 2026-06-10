@@ -367,6 +367,7 @@ export const displayStyles = stylex.create({
   block: { display: 'block' },
   inline: { display: 'inline' },
   'inline-flex': { display: 'inline-flex' },
+  'inline-grid': { display: 'inline-grid' },
   'inline-block': { display: 'inline-block' },
   none: { display: 'none' },
   contents: { display: 'contents' },

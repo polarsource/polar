@@ -11,6 +11,11 @@ export type {
   DataTableSortingState,
   ReactQueryLoading,
 } from './components/datatable'
+export { Grid } from './components/Grid'
+export type { GridProps } from './components/Grid'
+export { GridItem } from './components/GridItem'
+export type { GridItemProps } from './components/GridItem'
+export type { GridLine, GridPlacement } from './utils/grid'
 export { Input } from './components/Input'
 export type { InputProps } from './components/Input'
 export { List, ListItem } from './components/List'

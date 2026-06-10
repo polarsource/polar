@@ -366,22 +366,18 @@ you add a transition:
 </Box>
 ```
 
-**Responsive grid**:
+**Responsive grid** — prefer the `Grid` primitive (see below); it defaults to
+`display: grid` and uses short prop names:
 
 ```tsx
-<Box
-  display="grid"
-  gridTemplateColumns={{
-    base: '1fr',
-    md: 'repeat(2, 1fr)',
-    xl: 'repeat(4, 1fr)',
-  }}
+<Grid
+  templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', xl: 'repeat(4, 1fr)' }}
   gap="l"
 >
   {items.map((item) => (
     <Card key={item.id} {...item} />
   ))}
-</Box>
+</Grid>
 ```
 
 **Sticky toolbar**:
@@ -459,18 +455,58 @@ Open `clients/packages/orbit/src/utils/types.ts` to confirm — most needs are c
 genuinely missing CSS property comes up, prefer extending `BoxStyleProps` (with token
 support where applicable) over a tailwind escape hatch. Flag this on the PR.
 
+### `Grid`
+
+`Grid` is a `Box` preset for CSS grid. It defaults to `display: grid` and re-exposes the
+grid properties under short, Chakra-style prop names; every other Box prop (`gap`,
+`padding`, color, responsive objects, …) is inherited.
+
+```tsx
+import { Grid } from '@polar-sh/orbit'
+
+<Grid templateColumns="repeat(3, 1fr)" gap="m">
+  …
+</Grid>
+
+// areas + responsive
+<Grid
+  templateAreas={{ base: '"head" "main"', md: '"head head" "nav main"' }}
+  templateColumns={{ base: '1fr', md: '200px 1fr' }}
+  gap="l"
+/>
+```
+
+Prop names: `templateColumns`, `templateRows`, `templateAreas`, `autoFlow`, `autoRows`,
+`autoColumns`, `column`, `row`, and `inline` (renders `inline-grid`).
+
+Use `GridItem` for children that need to span or be placed explicitly:
+
+```tsx
+import { Grid, GridItem } from '@polar-sh/orbit'
+;<Grid templateColumns="repeat(4, 1fr)" gap="m">
+  <GridItem colSpan={2}>Spans two columns</GridItem>
+  <GridItem colStart={3} colEnd={5} rowSpan={2}>
+    Placed explicitly
+  </GridItem>
+  <GridItem area="sidebar">By template area</GridItem>
+</Grid>
+```
+
+`GridItem` props: `colSpan`/`rowSpan` (number or `"auto"`), `colStart`/`colEnd`/`rowStart`/
+`rowEnd`, and `area` — all responsive. Plus every Box prop.
+
 ### Other Orbit primitives
 
 Use these instead of hand-rolled tailwind components:
 
 ```tsx
 import { Text } from '@polar-sh/orbit' // typography (variant-driven)
-import { Button } from '@polar-sh/orbit'
+import { Button, Grid } from '@polar-sh/orbit'
 import { Avatar, SegmentedControl } from '@polar-sh/orbit'
 ```
 
 Prefer `Box` when you need full control; prefer the named primitive when one exists for
-your use case (Text for any text node, Button for actions).
+your use case (Text for any text node, Button for actions, Grid for grid layouts).
 
 ## Legacy Tailwind (deprecated)
 

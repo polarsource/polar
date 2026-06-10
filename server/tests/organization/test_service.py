@@ -866,8 +866,8 @@ class TestCheckReviewThreshold:
         organization: Organization,
     ) -> None:
         # Given: offboarding org with threshold 0 and a positive balance
-        # (OFFBOARDING -> REVIEW is not a legal transition, so the check
-        # must skip without raising InvalidStatusTransitionError)
+        # (check_review_threshold only auto-transitions ACTIVE orgs, so an
+        # offboarding org must be skipped regardless of its threshold)
         organization.status = OrganizationStatus.OFFBOARDING
         organization.next_review_threshold = 0
 
@@ -1542,6 +1542,25 @@ class TestSetOrganizationUnderReview:
         enqueue_job_mock.assert_called_once_with(
             "organization.under_review", organization_id=organization.id
         )
+
+    async def test_set_organization_under_review_from_offboarding(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given an offboarding organization
+        organization.status = OrganizationStatus.OFFBOARDING
+
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        # When reverting it to review
+        result = await organization_service.set_organization_under_review(
+            session, organization
+        )
+
+        # Then it transitions back into the review flow
+        assert result.status == OrganizationStatus.REVIEW
 
 
 class TestGetPaymentStatus:
@@ -3915,6 +3934,14 @@ class TestStatusTransitions:
         organization.status = OrganizationStatus.OFFBOARDING
         organization.set_status(OrganizationStatus.DENIED)
         assert organization.status == OrganizationStatus.DENIED
+
+    async def test_offboarding_can_go_to_review(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.OFFBOARDING
+        organization.set_status(OrganizationStatus.REVIEW)
+        assert organization.status == OrganizationStatus.REVIEW
 
     @pytest.mark.parametrize(
         "current",

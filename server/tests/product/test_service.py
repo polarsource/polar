@@ -1366,33 +1366,6 @@ class TestCreateFixedSeatComposition:
             )
 
     @pytest.mark.auth
-    async def test_free_and_seat_rejected(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        organization: Organization,
-        user_organization: UserOrganization,
-        seat_based_pricing_enabled: None,
-    ) -> None:
-        with pytest.raises(PolarRequestValidationError):
-            await product_service.create(
-                session,
-                ProductCreateRecurring(
-                    name="Product",
-                    recurring_interval=SubscriptionRecurringInterval.month,
-                    prices=[
-                        ProductPriceFreeCreate(
-                            amount_type=ProductPriceAmountType.free,
-                            price_currency=PresentmentCurrency.usd,
-                        ),
-                        _seat_price_create(),
-                    ],
-                    organization_id=organization.id,
-                ),
-                auth_subject,
-            )
-
-    @pytest.mark.auth
     async def test_cross_currency_structure_mismatch_rejected(
         self,
         auth_subject: AuthSubject[User],

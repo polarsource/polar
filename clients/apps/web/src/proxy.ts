@@ -274,9 +274,6 @@ export async function proxy(request: NextRequest) {
       'base64',
     )
   }
-  if (/^\/[^/]+\/portal(\/|$)/.test(request.nextUrl.pathname)) {
-    headers['x-portal-search'] = request.nextUrl.search
-  }
 
   const response = NextResponse.next({ headers })
 

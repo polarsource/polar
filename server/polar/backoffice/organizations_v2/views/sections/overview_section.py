@@ -399,6 +399,14 @@ class OverviewSection(ChecklistMixin):
                         "Current Balance",
                         f"${payment_stats.get('account_balance', 0) / 100:,.2f}",
                     )
+                    self._payment_line(
+                        "Held Payouts",
+                        str(payment_stats.get("held_payout_count", 0)),
+                    )
+                    self._payment_line(
+                        "Held Payouts Amount",
+                        f"${payment_stats.get('held_payout_amount', 0) / 100:,.2f}",
+                    )
                     next_review_threshold = payment_stats.get("next_review_threshold")
                     if next_review_threshold:
                         self._payment_line(

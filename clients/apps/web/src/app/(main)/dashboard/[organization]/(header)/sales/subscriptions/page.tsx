@@ -1,6 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
+import { schemas } from '@polar-sh/client'
 import { Metadata } from 'next'
 import SubscriptionsPage from './SubscriptionsPage'
 
@@ -15,7 +16,7 @@ export default async function Page(props: {
   searchParams: Promise<
     DataTableSearchParams & {
       product_id?: string
-      status?: 'active' | 'canceled' | 'any'
+      status?: schemas['SubscriptionStatus'] | 'any'
       cancel_at_period_end?: 'all' | 'true' | 'false'
       metadata?: string[]
     }

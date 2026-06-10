@@ -1,3 +1,4 @@
+import { schemas } from '@polar-sh/client'
 import {
   Select,
   SelectContent,
@@ -11,7 +12,7 @@ import React from 'react'
 import { subscriptionStatusDisplayNames } from './utils'
 
 interface SubscriptionStatusSelectProps {
-  statuses: ('active' | 'canceled')[]
+  statuses: schemas['SubscriptionStatus'][]
   value: string
   onChange: (value: string) => void
 }

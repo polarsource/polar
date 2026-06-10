@@ -69,6 +69,9 @@ class BenefitPublicBase(TimestampedSchema, IDSchema):
     organization_id: UUID4 = Field(
         ..., description="The ID of the organization owning the benefit."
     )
+
+
+class BenefitBase(MetadataOutputMixin, BenefitPublicBase):
     visibility: BenefitVisibility = Field(
         description="The visibility of the benefit in the customer portal."
     )
@@ -84,9 +87,6 @@ class BenefitPublicBase(TimestampedSchema, IDSchema):
     @property
     def visibility_configurable(self) -> bool:
         return self.type.is_visibility_configurable()
-
-
-class BenefitBase(MetadataOutputMixin, BenefitPublicBase): ...
 
 
 class BenefitGrantBase(IDSchema, TimestampedSchema):

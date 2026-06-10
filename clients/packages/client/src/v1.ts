@@ -7804,9 +7804,9 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
-      metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitCustomProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -7918,9 +7918,9 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
-      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitCustomSubscriberProperties']
       /** Visibility Configurable */
@@ -8097,9 +8097,9 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
-      metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitDiscordProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -8233,9 +8233,9 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
-      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitDiscordSubscriberProperties']
       /** Visibility Configurable */
@@ -8337,9 +8337,9 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
-      metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitDownloadablesProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -8453,9 +8453,9 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
-      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitDownloadablesSubscriberProperties']
       /** Visibility Configurable */
@@ -8557,9 +8557,9 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
-      metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitFeatureFlagProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -8665,9 +8665,9 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
-      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitFeatureFlagSubscriberProperties']
       /** Visibility Configurable */
@@ -8766,9 +8766,9 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
-      metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitGitHubRepositoryProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -8909,9 +8909,9 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
-      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitGitHubRepositorySubscriberProperties']
       /** Visibility Configurable */
@@ -9824,9 +9824,9 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
-      metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitLicenseKeysProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -9945,9 +9945,9 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
-      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitLicenseKeysSubscriberProperties']
       /** Visibility Configurable */
@@ -10056,9 +10056,9 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
-      metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitMeterCreditProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -10184,9 +10184,9 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
-      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitMeterCreditSubscriberProperties']
       /** Visibility Configurable */
@@ -10289,10 +10289,6 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      /** @description The visibility of the benefit in the customer portal. */
-      visibility: components['schemas']['BenefitVisibility']
-      /** Visibility Configurable */
-      readonly visibility_configurable: boolean
     }
     /**
      * BenefitRevokedEvent

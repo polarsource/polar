@@ -26,8 +26,10 @@ const PayoutStatusTooltip: Partial<Record<schemas['PayoutStatus'], string>> = {
 
 export const PayoutStatus = ({
   payout: { status, attempts },
+  size = 'medium',
 }: {
   payout: schemas['Payout']
+  size?: 'small' | 'medium'
 }) => {
   const tooltipMessage =
     status === 'failed'
@@ -38,6 +40,7 @@ export const PayoutStatus = ({
     <Status
       color={PayoutStatusDisplayColor[status]}
       status={PayoutStatusDisplayTitle[status]}
+      size={size}
     />
   )
 

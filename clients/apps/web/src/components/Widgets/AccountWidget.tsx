@@ -1,10 +1,10 @@
 import { useOrganizationAccount, useTransactionsSummary } from '@/hooks/queries'
 import { usePayouts } from '@/hooks/queries/payouts'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { PayoutStatus } from '@/components/Payouts/PayoutStatus'
 import { ClientResponseError } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Card } from '@polar-sh/ui/components/atoms/Card'
-import { Status } from '@polar-sh/orbit'
 import { useContext } from 'react'
 import { WidgetContainer } from './WidgetContainer'
 
@@ -56,14 +56,7 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
                     year: 'numeric',
                   })}
                 </span>
-                <Status
-                  status={payout.status
-                    .split('_')
-                    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                    .join(' ')}
-                  color={payout.status === 'succeeded' ? 'green' : 'yellow'}
-                  size="small"
-                />
+                <PayoutStatus payout={payout} size="small" />
               </div>
               <div className="flex flex-row justify-between gap-x-4">
                 <h3>Payout</h3>

@@ -2,7 +2,7 @@
 
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Button } from '@polar-sh/orbit'
+import { Button, Grid } from '@polar-sh/orbit'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
 import { VolumetricSlices } from './graphics/VolumetricSlices'
@@ -72,9 +72,8 @@ export const Pricing = () => (
         </Box>
       </Box>
 
-      <Box
-        display="grid"
-        gridTemplateColumns={{
+      <Grid
+        templateColumns={{
           base: '1fr',
           sm: 'repeat(2, 1fr)',
           xl: 'repeat(3, 1fr)',
@@ -85,16 +84,15 @@ export const Pricing = () => (
           <TierCard key={tier.name} tier={tier} />
         ))}
         <StartupProgramCard />
-      </Box>
+      </Grid>
     </Box>
   </>
 )
 
 const StartupProgramCard = () => (
-  <Box
-    gridColumn={{ base: 'auto', sm: 'span 2' }}
-    display="grid"
-    gridTemplateColumns={{ base: '1fr', sm: 'subgrid' }}
+  <Grid
+    column={{ base: 'auto', sm: 'span 2' }}
+    templateColumns={{ base: '1fr', sm: 'subgrid' }}
     backgroundColor="background-secondary"
     overflow="hidden"
   >
@@ -142,7 +140,7 @@ const StartupProgramCard = () => (
         </Link>
       </Box>
     </Box>
-  </Box>
+  </Grid>
 )
 
 const TierCard = ({ tier }: { tier: Tier }) => (

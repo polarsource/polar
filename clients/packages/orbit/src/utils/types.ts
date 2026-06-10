@@ -89,6 +89,7 @@ export interface LayoutProps {
     | 'block'
     | 'inline'
     | 'inline-flex'
+    | 'inline-grid'
     | 'inline-block'
     | 'none'
     | 'contents'
@@ -131,8 +132,14 @@ export interface FlexProps {
 export interface GridProps {
   gridTemplateColumns?: ResponsiveValue<string>
   gridTemplateRows?: ResponsiveValue<string>
-  gridColumn?: ResponsiveValue<string>
-  gridRow?: ResponsiveValue<string>
+  gridTemplateAreas?: ResponsiveValue<string>
+  gridColumn?: ResponsiveValue<string | number>
+  gridRow?: ResponsiveValue<string | number>
+  gridArea?: ResponsiveValue<string>
+  gridColumnStart?: ResponsiveValue<number | string>
+  gridColumnEnd?: ResponsiveValue<number | string>
+  gridRowStart?: ResponsiveValue<number | string>
+  gridRowEnd?: ResponsiveValue<number | string>
   gridAutoFlow?: ResponsiveValue<
     'row' | 'column' | 'dense' | 'row-dense' | 'column-dense'
   >

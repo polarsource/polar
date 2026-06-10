@@ -384,6 +384,39 @@ describe('addArbitraryProp — { base: X } goes to scoped <style>, not inline', 
     )
     expect(responsiveCSS).toContain('grid-template-columns: repeat(3, 1fr)')
   })
+
+  it('grid-template-areas arbitrary value (scalar → inlineStyle)', () => {
+    const { inlineStyle } = resolveBoxStyles(
+      { gridTemplateAreas: '"a b" "c d"' },
+      'scope',
+    )
+    expect(inlineStyle.gridTemplateAreas).toBe('"a b" "c d"')
+  })
+
+  it('grid placement longhands (gridArea, gridColumnStart) pass through', () => {
+    const { inlineStyle } = resolveBoxStyles(
+      { gridArea: 'header', gridColumnStart: 2 },
+      'scope',
+    )
+    expect(inlineStyle.gridArea).toBe('header')
+    expect(inlineStyle.gridColumnStart).toBe(2)
+  })
+
+  it('gridColumn span string (as GridItem builds it) is emitted verbatim', () => {
+    const { inlineStyle } = resolveBoxStyles(
+      { gridColumn: 'span 2 / span 2' },
+      'scope',
+    )
+    expect(inlineStyle.gridColumn).toBe('span 2 / span 2')
+  })
+
+  it('inline-grid display maps through as a token style', () => {
+    const { stylexStyles } = resolveBoxStyles(
+      { display: 'inline-grid' },
+      'scope',
+    )
+    expect(stylexStyles).toEqual([{ display: 'inline-grid' }])
+  })
 })
 
 describe('CSS string builder', () => {

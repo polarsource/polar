@@ -294,8 +294,14 @@ const BOX_STYLE_PROP_MAP: Record<keyof BoxStyleProps, true> = {
   alignContent: true,
   gridTemplateColumns: true,
   gridTemplateRows: true,
+  gridTemplateAreas: true,
   gridColumn: true,
   gridRow: true,
+  gridArea: true,
+  gridColumnStart: true,
+  gridColumnEnd: true,
+  gridRowStart: true,
+  gridRowEnd: true,
   gridAutoFlow: true,
   gridAutoColumns: true,
   gridAutoRows: true,
@@ -600,8 +606,14 @@ export function resolveBoxStyles(
   // --- Grid ---
   addArbitraryProp('gridTemplateColumns', props.gridTemplateColumns, (v) => v)
   addArbitraryProp('gridTemplateRows', props.gridTemplateRows, (v) => v)
+  addArbitraryProp('gridTemplateAreas', props.gridTemplateAreas, (v) => v)
   addArbitraryProp('gridColumn', props.gridColumn, (v) => v)
   addArbitraryProp('gridRow', props.gridRow, (v) => v)
+  addArbitraryProp('gridArea', props.gridArea, (v) => v)
+  addArbitraryProp('gridColumnStart', props.gridColumnStart, (v) => v)
+  addArbitraryProp('gridColumnEnd', props.gridColumnEnd, (v) => v)
+  addArbitraryProp('gridRowStart', props.gridRowStart, (v) => v)
+  addArbitraryProp('gridRowEnd', props.gridRowEnd, (v) => v)
   addTokenProp(
     gridAutoFlowStyles,
     'grid-auto-flow',

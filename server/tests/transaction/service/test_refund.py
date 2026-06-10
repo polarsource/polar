@@ -4,7 +4,6 @@ import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
-from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.integrations.stripe.service import StripeService
 from polar.models import (
@@ -37,6 +36,7 @@ from polar.transaction.service.refund import (
     refund_transaction as refund_transaction_service,
 )
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import create_order, create_payment, create_refund
 from tests.fixtures.stripe import (
     build_stripe_balance_transaction,
@@ -293,8 +293,7 @@ class TestCreate:
 
         assert refund_transaction.order_id == order.id
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(SystemEvent.balance_refund)
+        events = await get_all_by_name(session, SystemEvent.balance_refund)
         balance_refund_event = next(
             event
             for event in events
@@ -579,10 +578,7 @@ class TestRevert:
         assert refund_reversal_transaction.processor == Processor.stripe
         assert refund_reversal_transaction.amount == refund.amount
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.balance_refund_reversal
-        )
+        events = await get_all_by_name(session, SystemEvent.balance_refund_reversal)
         assert len(events) == 1
         assert events[0].user_metadata["transaction_id"] == str(
             refund_reversal_transaction.id

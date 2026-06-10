@@ -6,7 +6,7 @@ import { createClientSideAPI } from '@/utils/client'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
-import { TooltipProvider } from '@polar-sh/ui/components/ui/tooltip'
+import { TooltipProvider } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 
@@ -51,7 +51,9 @@ export function CustomerPortalLayoutWrapper({
             </Link>
           )}
         </div>
-        {children}
+        <div className="w-full px-4 py-8 md:mx-auto md:max-w-5xl lg:px-0">
+          {children}
+        </div>
       </TooltipProvider>
     </CustomerPortalProvider>
   )

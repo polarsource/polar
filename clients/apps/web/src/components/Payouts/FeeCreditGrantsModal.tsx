@@ -1,9 +1,11 @@
 import { useAccountCredits, useOrganizationAccount } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { formatCurrency } from '@polar-sh/currency'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import { List, ListItem } from '@polar-sh/orbit'
 import { useContext } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
+import { EmptyState } from '../Shared/EmptyState'
+import TollOutlined from '@mui/icons-material/TollOutlined'
 
 export const FeeCreditGrantsModal = ({
   isShown,
@@ -68,9 +70,11 @@ export const FeeCreditGrantsModal = ({
                 ))}
             </List>
           ) : (
-            <div className="flex flex-col items-center justify-center gap-4 p-8">
-              <p className="text-lg">No credits granted</p>
-            </div>
+            <EmptyState
+              title="No credits granted"
+              icon={<TollOutlined />}
+              description="You have not been awarded any fee credits yet"
+            />
           )}
         </div>
       }

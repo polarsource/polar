@@ -112,7 +112,7 @@ export const ProductUrlSection = ({
               },
             }}
             render={({ field }) => (
-              <Box>
+              <Box display="block">
                 <Input
                   type="url"
                   {...field}

@@ -22,6 +22,30 @@ export const isStaticPrice = (
   | schemas['ProductPriceSeatBased'] =>
   ['fixed', 'custom', 'free', 'seat_based'].includes(price.amount_type)
 
+// A fixed price of 0 is the free-pricing representation (we're dropping the dedicated
+// `free` price type). When loading a product into the form, surface such prices as the
+// form's `free` price type so they display and edit as "Free".
+export const productPriceToFormPrice = (
+  price: schemas['ProductPrice'],
+): schemas['ProductPrice'] => {
+  if (price.amount_type === 'fixed' && price.price_amount === 0) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { price_amount, ...rest } = price
+    return { ...rest, amount_type: 'free' } as schemas['ProductPrice']
+  }
+  return price
+}
+
+// Inverse of `productPriceToFormPrice`: the form keeps `free` as a UI-only price type,
+// so convert it back to a fixed price of 0 before sending to the API. We no longer
+// create `free` prices (they're being dropped in favor of a fixed price of 0).
+export const formPriceToApiPrice = (
+  price: schemas['ProductCreate']['prices'][number],
+): schemas['ProductCreate']['prices'][number] =>
+  price.amount_type === 'free'
+    ? { ...price, amount_type: 'fixed', price_amount: 0 }
+    : price
+
 export const isMeteredPrice = (
   price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice'],
 ): price is schemas['ProductPriceMeteredUnit'] =>
@@ -98,7 +122,7 @@ export const productToCreateForm = (
         is_archived,
         source,
         ...priceRest
-      } = price
+      } = productPriceToFormPrice(price)
       return {
         ...priceRest,
         price_currency: price.price_currency as schemas['PresentmentCurrency'],

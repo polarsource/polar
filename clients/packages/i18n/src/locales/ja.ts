@@ -108,6 +108,7 @@ export default {
         },
         until: '{date}まで',
       },
+      basePrice: '基本料金',
     },
     trial: {
       ends: 'トライアル終了日 {endDate}',

@@ -11,7 +11,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'
 import DateTimePicker from '@polar-sh/ui/components/atoms/DateTimePicker'
-import Pill from '@polar-sh/ui/components/atoms/Pill'
+import { Pill } from '@polar-sh/orbit'
 import {
   Select,
   SelectContent,
@@ -19,12 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/orbit'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@polar-sh/ui/components/atoms/Tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import {
   Form,
   FormControl,
@@ -235,7 +230,6 @@ const UpdateProduct = ({
                 padding="m"
                 borderRadius="m"
                 backgroundColor="background-warning"
-                display="flex"
                 flexDirection="column"
                 rowGap="s"
               >

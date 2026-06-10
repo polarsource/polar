@@ -41,13 +41,8 @@ export const BillingAddressSection = ({
   const taxId = details?.tax_id
 
   return (
-    <Box display="flex" flexDirection="column" rowGap="l">
-      <Box
-        display="flex"
-        alignItems="start"
-        justifyContent="between"
-        columnGap="m"
-      >
+    <Box flexDirection="column" rowGap="l">
+      <Box alignItems="start" justifyContent="between" columnGap="m">
         <SectionDescription
           title="Billing address"
           description="Used on invoices for your Polar subscription"
@@ -57,7 +52,6 @@ export const BillingAddressSection = ({
         </Button>
       </Box>
       <Box
-        display="flex"
         flexDirection="column"
         rowGap="m"
         borderRadius="l"
@@ -69,7 +63,7 @@ export const BillingAddressSection = ({
         {isLoading ? (
           <LoadingBox height={64} borderRadius="m" />
         ) : hasAddress ? (
-          <Box display="flex" flexDirection="column" rowGap="xs">
+          <Box flexDirection="column" rowGap="xs">
             {lines.map((line, idx) => (
               <Text key={idx} color={idx === 0 ? 'default' : 'muted'}>
                 {line}
@@ -78,7 +72,7 @@ export const BillingAddressSection = ({
             {taxId && <Text color="muted">Tax ID: {taxId}</Text>}
           </Box>
         ) : (
-          <Box paddingVertical="l" textAlign="center">
+          <Box display="block" paddingVertical="l" textAlign="center">
             <Text color="muted">No billing address on file</Text>
           </Box>
         )}

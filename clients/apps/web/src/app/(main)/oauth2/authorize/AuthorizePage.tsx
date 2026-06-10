@@ -2,7 +2,7 @@ import { getServerURL } from '@/utils/api'
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import { List, ListItem } from '@polar-sh/orbit'
 import SharedLayout from './components/SharedLayout'
 
 const isSubTypeOrganization = (

@@ -9,8 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/orbit'
-import Switch from '@polar-sh/ui/components/atoms/Switch'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
+import { Switch } from '@polar-sh/orbit'
+import { Checkbox } from '@polar-sh/orbit'
 import {
   FormControl,
   FormDescription,

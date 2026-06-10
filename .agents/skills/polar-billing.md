@@ -49,6 +49,22 @@ Shopping cart/payment session before order confirmation.
 
 ---
 
+### CheckoutLink
+**File:** `server/polar/models/checkout_link.py`
+
+Persistent URL that creates Checkout Sessions on visit.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `client_secret` | str | Unique identifier for the URL |
+| `seats` | int \| None | Preconfigured seat count for seat-based pricing |
+| `discount_id` | UUID \| None | Preset discount to apply |
+| `trial_interval`, `trial_interval_count` | Trial config | Override product trial settings |
+
+**Relationships:** organization, products, discount
+
+---
+
 ### Order
 **File:** `server/polar/models/order.py`
 

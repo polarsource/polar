@@ -7,16 +7,19 @@ import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
 import { schemas } from '@polar-sh/client'
 import { CurrentPeriodOverview } from './CurrentPeriodOverview'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
+import { CustomerPortalOrders } from './CustomerPortalOrders'
 import {
   ActiveSubscriptionsOverview,
   InactiveSubscriptionsOverview,
 } from './CustomerPortalSubscriptions'
-import { EmptyState } from './EmptyState'
+import { EmptyState } from '../Shared/EmptyState'
+import { LatestPurchaseOverview } from './LatestPurchaseOverview'
 export interface CustomerPortalProps {
   organization: schemas['CustomerOrganization']
   products: schemas['CustomerProduct'][]
   subscriptions: schemas['CustomerSubscription'][]
   claimedSubscriptions: schemas['CustomerSubscription'][]
+  orders: schemas['CustomerOrder'][]
   customerSessionToken: string
 }
 
@@ -25,6 +28,7 @@ export const CustomerPortalOverview = ({
   products,
   subscriptions,
   claimedSubscriptions,
+  orders,
   customerSessionToken,
 }: CustomerPortalProps) => {
   const api = createClientSideAPI(customerSessionToken)
@@ -44,6 +48,8 @@ export const CustomerPortalOverview = ({
     (s) => s.status === 'active' || s.status === 'trialing',
   )
 
+  const latestOrder = orders.at(0) ?? null
+
   const hasAnyActiveSubscriptions =
     activeOwnedSubscriptions.length > 0 || activeClaimedSubscriptions.length > 0
 
@@ -51,10 +57,7 @@ export const CustomerPortalOverview = ({
     <div className="flex flex-col gap-y-12">
       {/* Billing sections - only visible to users with billing permissions */}
       {canManageBilling && activeOwnedSubscriptions.length > 0 && (
-        <div className="flex flex-col gap-y-6">
-          {activeClaimedSubscriptions.length > 0 && (
-            <h3 className="text-xl">Your Subscriptions</h3>
-          )}
+        <div className="flex flex-col gap-y-12">
           <div className="flex flex-col gap-y-4">
             {activeOwnedSubscriptions.map((s) => (
               <CurrentPeriodOverview
@@ -100,20 +103,32 @@ export const CustomerPortalOverview = ({
         </div>
       )}
 
-      {/* Empty state - adjusted based on permissions */}
-      {!hasAnyActiveSubscriptions && (
-        <EmptyState
-          icon={<AllInclusiveOutlined />}
-          title={
-            canManageBilling ? 'No Active Subscriptions' : 'No Team Access'
-          }
-          description={
-            canManageBilling
-              ? "You don't have any active subscriptions at the moment."
-              : "You don't have any team seat access at the moment."
-          }
+      {hasAnyActiveSubscriptions && canManageBilling && orders.length > 0 && (
+        <CustomerPortalOrders
+          organization={organization}
+          orders={orders}
+          customerSessionToken={customerSessionToken}
         />
       )}
+
+      {!hasAnyActiveSubscriptions && canManageBilling && latestOrder && (
+        <LatestPurchaseOverview order={latestOrder} />
+      )}
+
+      {!hasAnyActiveSubscriptions &&
+        !(canManageBilling && orders.length > 0) && (
+          <EmptyState
+            icon={<AllInclusiveOutlined />}
+            title={
+              canManageBilling ? 'No Active Subscriptions' : 'No Team Access'
+            }
+            description={
+              canManageBilling
+                ? "You don't have any active subscriptions at the moment."
+                : "You don't have any team seat access at the moment."
+            }
+          />
+        )}
 
       {/* Benefit Grants - visible to all users */}
       <CustomerPortalGrants organization={organization} api={api} />

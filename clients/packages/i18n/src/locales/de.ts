@@ -108,6 +108,7 @@ export default {
         },
       },
       inclTax: 'MwSt. (inklusive)',
+      basePrice: 'Grundpreis',
     },
     trial: {
       ends: 'Testphase endet am {endDate}',

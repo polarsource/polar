@@ -7,6 +7,7 @@ import { ProductDescriptionSection } from './ProductDescriptionSection'
 import { ProductUrlSection } from './ProductUrlSection'
 import { SetupReadinessSection } from './SetupReadinessSection'
 import { SocialLinksSection } from './SocialLinksSection'
+import { STEP_LABELS } from './stepLabels'
 
 interface SectionProps {
   organization: schemas['Organization']
@@ -33,7 +34,7 @@ export const STEP_CONFIG: Partial<
   Record<schemas['OrganizationReviewCheckKey'], StepConfig>
 > = {
   'identity.email': {
-    label: 'Support email',
+    label: STEP_LABELS['identity.email'],
     reasonLabels: {
       'identity.personal_email': 'Business email is preferred',
       'identity.domain_mismatch':
@@ -48,13 +49,13 @@ export const STEP_CONFIG: Partial<
     ),
   },
   'identity.social_links': {
-    label: 'Social links',
+    label: STEP_LABELS['identity.social_links'],
     render: ({ organization }) => (
       <SocialLinksSection organization={organization} />
     ),
   },
   'identity.stripe_identity_verification': {
-    label: 'Identity verification',
+    label: STEP_LABELS['identity.stripe_identity_verification'],
     reasonLabels: {
       'identity.rejected': 'Identity verification was rejected',
     },
@@ -67,13 +68,13 @@ export const STEP_CONFIG: Partial<
     ),
   },
   product_description: {
-    label: 'Product description',
+    label: STEP_LABELS.product_description,
     render: ({ organization }) => (
       <ProductDescriptionSection organization={organization} />
     ),
   },
   product_url: {
-    label: 'Product website',
+    label: STEP_LABELS.product_url,
     reasonLabels: {
       'product_url.unreachable': 'We could not reach this URL',
     },
@@ -86,7 +87,7 @@ export const STEP_CONFIG: Partial<
     ),
   },
   payout_account: {
-    label: 'Payout account',
+    label: STEP_LABELS.payout_account,
     reasonLabels: {
       'payout_account.requirements_due': 'Additional information required',
       'payout_account.payouts_disabled': 'Payouts are currently disabled',
@@ -100,13 +101,13 @@ export const STEP_CONFIG: Partial<
     ),
   },
   product_configuration: {
-    label: 'Product configuration',
+    label: STEP_LABELS.product_configuration,
     render: ({ organization }) => (
       <ProductConfigurationSection organization={organization} />
     ),
   },
   setup_readiness: {
-    label: 'Checkout integration',
+    label: STEP_LABELS.setup_readiness,
     reasonLabels: {
       'setup_readiness.webhook_missing': 'Creating a webhook is recommended',
       'setup_readiness.checkout_link_not_fulfillable': 'Invalid checkout link',

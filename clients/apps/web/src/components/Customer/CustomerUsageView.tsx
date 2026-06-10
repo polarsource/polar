@@ -6,11 +6,11 @@ import { useRouter } from 'next/navigation'
 import { formatCurrency } from '@polar-sh/currency'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { DataTable, DataTableColumnHeader } from '@polar-sh/orbit'
-import { TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
+import { TabsContent } from '@polar-sh/orbit'
 import { useMemo } from 'react'
 import FormattedUnits from '../Meter/FormattedUnits'
 import StackedMeterChart from '../Meter/StackedMeterChart'
-import { EmptyState } from '../CustomerPortal/EmptyState'
+import { EmptyState } from '../Shared/EmptyState'
 import { GaugeCircleIcon } from 'lucide-react'
 
 const METER_COLORS = [

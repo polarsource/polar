@@ -56,7 +56,7 @@ jobs:
       migrations-production: ${{ steps.filter-backend-production.outputs.migrations }}
       frontend-production: ${{ steps.filter-frontend-production.outputs.frontend }}
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
         with:
           # fetch-depth: 0 already fetches all tags, so no separate
           # fetch-tags is needed here.
@@ -186,7 +186,7 @@ jobs:
       digest: ${{ steps.push.outputs.digest }}
       digest-playwright: ${{ steps.push-playwright.outputs.digest }}
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
 
       - name: Set up Docker Buildx
         uses: useblacksmith/setup-docker-builder@v1.8.0

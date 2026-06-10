@@ -1,6 +1,6 @@
 'use client'
 
-import { EmptyState } from '@/components/CustomerPortal/EmptyState'
+import { EmptyState } from '@/components/Shared/EmptyState'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import {
@@ -15,17 +15,8 @@ import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Avatar } from '@polar-sh/orbit'
 import { RankedList, RankedListItem } from './RankedListItem'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@polar-sh/ui/components/atoms/Tabs'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/ui/components/ui/tooltip'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { endOfDay, subDays } from 'date-fns'
 import {
   AlertTriangle,

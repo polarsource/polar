@@ -41,7 +41,6 @@ export default function Page() {
   return (
     <Box
       backgroundColor="background-primary"
-      display="flex"
       minHeight="100vh"
       alignItems="center"
       justifyContent="center"
@@ -52,7 +51,6 @@ export default function Page() {
         position="absolute"
         bottom={24}
         left={24}
-        display="flex"
         gap="l"
         color="text-tertiary"
       >
@@ -70,7 +68,6 @@ export default function Page() {
         </a>
       </Box>
       <Box
-        display="flex"
         width="100%"
         maxWidth="48rem"
         flexDirection="column"
@@ -80,7 +77,6 @@ export default function Page() {
         <LogoIcon size={48} />
 
         <Box
-          display="flex"
           flexDirection="column"
           alignItems="center"
           rowGap="s"
@@ -110,12 +106,11 @@ export default function Page() {
             borderWidth={1}
             borderStyle="solid"
             borderRadius="l"
-            display="flex"
             flexDirection="column"
             justifyContent="between"
             padding="xl"
           >
-            <Box display="flex" flexDirection="column" rowGap="s">
+            <Box flexDirection="column" rowGap="s">
               <h2 className="text-lg font-medium text-gray-900 dark:text-white">
                 I&apos;m just exploring
               </h2>
@@ -124,7 +119,7 @@ export default function Page() {
                 payments. No real money, no setup required.
               </p>
             </Box>
-            <Box marginTop="xl">
+            <Box display="block" marginTop="xl">
               <Button fullWidth onClick={handleSandbox}>
                 Launch sandbox
               </Button>
@@ -138,12 +133,11 @@ export default function Page() {
             borderWidth={1}
             borderStyle="solid"
             borderRadius="l"
-            display="flex"
             flexDirection="column"
             justifyContent="between"
             padding="xl"
           >
-            <Box display="flex" flexDirection="column" rowGap="s">
+            <Box flexDirection="column" rowGap="s">
               <h2 className="text-lg font-medium text-gray-900 dark:text-white">
                 I&apos;m setting up my business
               </h2>
@@ -151,7 +145,7 @@ export default function Page() {
                 Set up your organization and start accepting payments.
               </p>
             </Box>
-            <Box marginTop="xl">
+            <Box display="block" marginTop="xl">
               <Button fullWidth onClick={handleGetStarted}>
                 Get started
               </Button>

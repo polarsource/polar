@@ -4,6 +4,7 @@ import { usePortalAuthenticatedUser } from '@/hooks/queries/customerPortal'
 import { createClientSideAPI } from '@/utils/client'
 import { hasBillingPermission } from '@/utils/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
+import { type AcceptedLocale } from '@polar-sh/i18n'
 import {
   Select,
   SelectContent,
@@ -58,7 +59,6 @@ const links = (
   ]
 }
 
-// Inner component that uses hooks - only rendered when token is available
 const NavigationContent = ({
   organization,
   api,
@@ -140,24 +140,16 @@ export const Navigation = ({
   organization,
 }: {
   organization: schemas['CustomerOrganization']
+  locale?: AcceptedLocale
+  localizationEnabled?: boolean
 }) => {
   const currentPath = usePathname()
   const searchParams = useSearchParams()
-
-  // Hide navigation on routes where portal access is being requested, authenticated, or verified
-  if (
-    currentPath.endsWith('/portal/request') ||
-    currentPath.endsWith('/portal/authenticate') ||
-    currentPath.endsWith('/portal/verify-email')
-  ) {
-    return null
-  }
 
   const token =
     searchParams.get('customer_session_token') ??
     searchParams.get('member_session_token')
 
-  // Don't render until token is available (handles SSR/hydration)
   if (!token) {
     return null
   }

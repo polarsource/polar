@@ -57,6 +57,25 @@ class PayoutRepository(
         result = await self.session.execute(statement)
         return {account_id: count for account_id, count in result.all()}
 
+    async def get_held_stats_by_account(self, account: UUID) -> tuple[int, int]:
+        """Count and sum the amount of held payouts for a single account.
+        Returns `(count, total_amount)` with the amount in USD cents.
+        """
+        statement = (
+            self.get_base_statement()
+            .with_only_columns(
+                func.count(Payout.id),
+                func.coalesce(func.sum(Payout.amount), 0),
+            )
+            .where(
+                Payout.account_id == account,
+                Payout.status == PayoutStatus.held,
+            )
+        )
+        result = await self.session.execute(statement)
+        count, total_amount = result.one()
+        return count, total_amount
+
     async def get_latest_by_account(self, account: UUID) -> Payout | None:
         statement = (
             self.get_base_statement()

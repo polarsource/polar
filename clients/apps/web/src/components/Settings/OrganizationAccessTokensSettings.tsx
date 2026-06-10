@@ -12,7 +12,7 @@ import { Button } from '@polar-sh/orbit'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Input } from '@polar-sh/orbit'
-import ListGroup from '@polar-sh/ui/components/atoms/ListGroup'
+import { ListGroup } from '@polar-sh/orbit'
 import {
   Select,
   SelectContent,
@@ -21,7 +21,6 @@ import {
   SelectValue,
 } from '@polar-sh/orbit'
 import Banner from '@polar-sh/ui/components/molecules/Banner'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   Form,
   FormControl,
@@ -30,11 +29,12 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useMemo, useState, type MouseEvent } from 'react'
+import { useCallback, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { toast, useToast } from '../Toast/use-toast'
 import { CreateAccessTokenModal } from './CreateAccessTokenModal'
+import { TreeMultiSelect } from './TreeMultiSelect'
 
 export interface AccessTokenCreate {
   comment: string
@@ -48,33 +48,7 @@ interface AccessTokenUpdate {
 }
 
 export const AccessTokenForm = ({ update }: { update?: boolean }) => {
-  const { control, setValue, watch } = useFormContext<
-    AccessTokenCreate | AccessTokenUpdate
-  >()
-
-  const sortedScopes = Array.from(enums.availableScopeValues).sort((a, b) =>
-    a.localeCompare(b),
-  )
-
-  const currentScopes = watch('scopes')
-
-  const allSelected = useMemo(
-    () => sortedScopes.every((scope) => currentScopes.includes(scope)),
-    [currentScopes, sortedScopes],
-  )
-
-  const onToggleAll = useCallback(
-    (e: MouseEvent<HTMLButtonElement>) => {
-      e.preventDefault()
-
-      let values: Array<schemas['AvailableScope']> = []
-      if (!allSelected) {
-        values = sortedScopes
-      }
-      setValue('scopes', values)
-    },
-    [setValue, allSelected, sortedScopes],
-  )
+  const { control } = useFormContext<AccessTokenCreate | AccessTokenUpdate>()
 
   return (
     <>
@@ -129,53 +103,23 @@ export const AccessTokenForm = ({ update }: { update?: boolean }) => {
           )}
         />
       )}
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-row items-center">
-          <h2 className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-            Scopes
-          </h2>
-
-          <div className="-my-2 flex-auto text-right">
-            <Button onClick={onToggleAll} variant="secondary" size="sm">
-              {!allSelected ? 'Select all' : 'Unselect all'}
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          {sortedScopes.map((scope) => (
-            <FormField
-              key={scope}
-              control={control}
-              name="scopes"
-              render={({ field }) => {
-                return (
-                  <FormItem className="flex flex-row items-center space-y-0 space-x-2">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value?.includes(scope)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            field.onChange([...(field.value || []), scope])
-                          } else {
-                            field.onChange(
-                              (field.value || []).filter((v) => v !== scope),
-                            )
-                          }
-                        }}
-                      />
-                    </FormControl>
-                    <FormLabel className="font-mono text-xs leading-none font-medium">
-                      {scope}
-                    </FormLabel>
-                    <FormMessage />
-                  </FormItem>
-                )
-              }}
-            />
-          ))}
-        </div>
-      </div>
+      <FormField
+        control={control}
+        name="scopes"
+        render={({ field }) => (
+          <FormItem>
+            <FormControl>
+              <TreeMultiSelect
+                title="Scopes"
+                options={enums.availableScopeValues}
+                value={field.value ?? []}
+                onChange={field.onChange}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </>
   )
 }

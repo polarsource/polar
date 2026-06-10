@@ -1,12 +1,12 @@
 import { useInfiniteEvents } from '@/hooks/queries/events'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import { TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
+import { TabsContent } from '@polar-sh/orbit'
 import { parseAsString, useQueryState } from 'nuqs'
 import { Events } from '../Events/Events'
 import EventSelect from '../Events/EventSelect'
 import MeterSelector from '../Meter/MeterSelector'
-import { EmptyState } from '../CustomerPortal/EmptyState'
+import { EmptyState } from '../Shared/EmptyState'
 import ShortTextOutlined from '@mui/icons-material/ShortTextOutlined'
 
 export const CustomerEventsView = ({

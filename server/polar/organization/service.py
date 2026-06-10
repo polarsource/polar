@@ -994,6 +994,10 @@ class OrganizationService:
             await self._exit_snooze_to_review(session, organization)
             return organization
 
+        # Only ACTIVE orgs are auto-pulled into review when they cross the
+        # threshold. Other statuses — notably OFFBOARDING — must never flip
+        # to review automatically; they can only return via a manual
+        # "Set under review" action (set_organization_under_review).
         if organization.status != OrganizationStatus.ACTIVE:
             return organization
 

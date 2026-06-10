@@ -144,12 +144,21 @@ export default function ClientPage({
       ),
       cell: ({ row: { original: member } }) => {
         return (
-          <Box display="flex" flexDirection="row" alignItems="center" gap="s">
+          <Box flexDirection="row" alignItems="center" gap="s">
             <Avatar avatar_url={member.avatar_url} name={member.email} />
             <Text>{member.email}</Text>
-            <RowBadge>{ROLE_LABELS[member.role]}</RowBadge>
           </Box>
         )
+      },
+    },
+    {
+      accessorKey: 'role',
+      enableSorting: true,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Role" />
+      ),
+      cell: ({ row: { original: member } }) => {
+        return <Text>{ROLE_LABELS[member.role]}</Text>
       },
     },
     {
@@ -178,7 +187,7 @@ export default function ClientPage({
         }
 
         return (
-          <Box display="flex" justifyContent="end">
+          <Box justifyContent="end">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="secondary" size="icon">
@@ -216,7 +225,7 @@ export default function ClientPage({
 
   return (
     <DashboardBody
-      wrapperClassName="max-w-(--breakpoint-sm)!"
+      wrapperClassName="max-w-(--breakpoint-md)!"
       className="flex flex-col gap-y-8"
       header={
         canManageMembers ? (
@@ -288,21 +297,5 @@ export default function ClientPage({
         />
       )}
     </DashboardBody>
-  )
-}
-
-function RowBadge({ children }: { children: React.ReactNode }) {
-  return (
-    <Box
-      as="span"
-      paddingHorizontal="s"
-      paddingVertical="xs"
-      borderRadius="full"
-      backgroundColor="background-pending"
-    >
-      <Text variant="caption" color="muted">
-        {children}
-      </Text>
-    </Box>
   )
 }

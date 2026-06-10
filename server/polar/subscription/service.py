@@ -317,6 +317,7 @@ class SubscriptionService:
         external_customer_id: Sequence[str] | None = None,
         discount_id: Sequence[uuid.UUID] | None = None,
         active: bool | None = None,
+        status: Sequence[SubscriptionStatus] | None = None,
         cancel_at_period_end: bool | None = None,
         customer_cancellation_reason: Sequence[CustomerCancellationReason]
         | None = None,
@@ -359,6 +360,9 @@ class SubscriptionService:
                 statement = statement.where(Subscription.active.is_(True))
             else:
                 statement = statement.where(Subscription.revoked.is_(True))
+
+        if status is not None:
+            statement = statement.where(Subscription.status.in_(status))
 
         if cancel_at_period_end is not None:
             statement = statement.where(

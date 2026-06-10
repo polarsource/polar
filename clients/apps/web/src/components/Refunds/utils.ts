@@ -1,4 +1,5 @@
 import { schemas } from '@polar-sh/client'
+import type { StatusColor } from '@polar-sh/orbit'
 
 export const RefundStatusDisplayTitle: Record<schemas['RefundStatus'], string> =
   {
@@ -8,13 +9,15 @@ export const RefundStatusDisplayTitle: Record<schemas['RefundStatus'], string> =
     canceled: 'Canceled',
   }
 
-export const RefundStatusDisplayColor: Record<schemas['RefundStatus'], string> =
-  {
-    succeeded: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950',
-    pending: 'bg-yellow-100 text-yellow-500 dark:bg-yellow-950',
-    failed: 'bg-red-100 text-red-500 dark:bg-red-950',
-    canceled: 'bg-gray-500 text-black dark:text-white dark:bg-polar-500',
-  }
+export const RefundStatusDisplayColor: Record<
+  schemas['RefundStatus'],
+  StatusColor
+> = {
+  succeeded: 'green',
+  pending: 'yellow',
+  failed: 'red',
+  canceled: 'gray',
+}
 
 export const RefundReasonDisplay: Record<schemas['RefundReason'], string> = {
   duplicate: 'Duplicate',

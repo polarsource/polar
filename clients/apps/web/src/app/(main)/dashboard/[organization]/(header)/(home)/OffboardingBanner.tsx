@@ -12,7 +12,6 @@ interface OffboardingBannerProps {
 export const OffboardingBanner = ({ organization }: OffboardingBannerProps) => {
   return (
     <Box
-      display="flex"
       flexDirection={{ base: 'column', md: 'row' }}
       justifyContent="between"
       gap="l"
@@ -20,8 +19,8 @@ export const OffboardingBanner = ({ organization }: OffboardingBannerProps) => {
       backgroundColor="background-card"
       padding={{ base: 'l', md: 'xl' }}
     >
-      <Box display="flex" flexDirection="column" rowGap="s">
-        <Box display="flex" alignItems="center" columnGap="s">
+      <Box flexDirection="column" rowGap="s">
+        <Box alignItems="center" columnGap="s">
           <AlertTriangleIcon className="h-4 w-4 shrink-0" />
           <Text as="strong">Your organization is being offboarded</Text>
         </Box>

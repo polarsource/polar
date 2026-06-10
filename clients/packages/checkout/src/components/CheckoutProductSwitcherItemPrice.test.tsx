@@ -2,6 +2,7 @@ import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import {
   createCheckout,
+  createFixedPrice,
   createFreePrice,
   createSeatBasedPrice,
 } from '../test-utils/makeCheckout'
@@ -136,6 +137,126 @@ describe('CheckoutProductSwitcherItemPrice', () => {
       )
 
       expect(getRenderedText(container)).toBe('From\u00a0$50')
+    })
+  })
+
+  describe('fixed + seat price', () => {
+    const fixedPrice = createFixedPrice({
+      id: 'price_fixed',
+      price_amount: 2900,
+    })
+    const seatPrice = createSeatBasedPrice({
+      id: 'price_seat',
+      seat_tiers: {
+        seat_tier_type: 'volume',
+        tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 2000 }],
+        minimum_seats: 1,
+        maximum_seats: null,
+      },
+    })
+
+    const fixedSeatCheckout = () =>
+      createCheckout({
+        net_amount: 12900,
+        total_amount: 12900,
+        seats: 5,
+        product_price: seatPrice,
+        prices: { prod_1: [fixedPrice, seatPrice] },
+      })
+
+    it('shows the decomposed base + per-seat label when selected', () => {
+      const checkout = fixedSeatCheckout()
+      const { container } = render(
+        <CheckoutProductSwitcherItemPrice
+          isSelected={true}
+          product={checkout.product}
+          price={seatPrice}
+          checkout={checkout}
+          locale="en"
+        />,
+      )
+
+      const text = getRenderedText(container)
+      expect(text).toContain('$29')
+      expect(text).toContain('$20')
+      expect(text).toContain('per seat')
+    })
+
+    it('shows the same decomposed label when not selected', () => {
+      const checkout = fixedSeatCheckout()
+      const { container } = render(
+        <CheckoutProductSwitcherItemPrice
+          isSelected={false}
+          product={checkout.product}
+          price={seatPrice}
+          checkout={checkout}
+          locale="en"
+        />,
+      )
+
+      const text = getRenderedText(container)
+      expect(text).toContain('$29')
+      expect(text).toContain('$20')
+      expect(text).toContain('per seat')
+      expect(text).not.toContain('From')
+    })
+
+    it('uses the prices matching the checkout currency in multi-currency checkouts', () => {
+      const usdFixed = createFixedPrice({
+        id: 'price_fixed_usd',
+        price_currency: 'usd',
+        price_amount: 2900,
+      })
+      const usdSeat = createSeatBasedPrice({
+        id: 'price_seat_usd',
+        price_currency: 'usd',
+        seat_tiers: {
+          seat_tier_type: 'volume',
+          tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 2000 }],
+          minimum_seats: 1,
+          maximum_seats: null,
+        },
+      })
+      const eurFixed = createFixedPrice({
+        id: 'price_fixed_eur',
+        price_currency: 'eur',
+        price_amount: 2700,
+      })
+      const eurSeat = createSeatBasedPrice({
+        id: 'price_seat_eur',
+        price_currency: 'eur',
+        seat_tiers: {
+          seat_tier_type: 'volume',
+          tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1800 }],
+          minimum_seats: 1,
+          maximum_seats: null,
+        },
+      })
+      const checkout = createCheckout({
+        currency: 'eur',
+        net_amount: 11700,
+        total_amount: 11700,
+        seats: 5,
+        product_price: eurSeat,
+        // USD prices listed first so a currency-blind `find` would pick them.
+        prices: { prod_1: [usdFixed, usdSeat, eurFixed, eurSeat] },
+      })
+
+      const { container } = render(
+        <CheckoutProductSwitcherItemPrice
+          isSelected={true}
+          product={checkout.product}
+          price={eurSeat}
+          checkout={checkout}
+          locale="en"
+        />,
+      )
+
+      const text = getRenderedText(container)
+      expect(text).toContain('€27')
+      expect(text).toContain('€18')
+      expect(text).toContain('per seat')
+      expect(text).not.toContain('$')
     })
   })
 

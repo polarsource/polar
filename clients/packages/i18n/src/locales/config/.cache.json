@@ -183,7 +183,8 @@
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
-    "checkout.pricing.seats.included.other": "# seats included"
+    "checkout.pricing.seats.included.other": "# seats included",
+    "checkout.pricing.basePrice": "Base price"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -369,7 +370,8 @@
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
-    "checkout.pricing.seats.included.other": "# seats included"
+    "checkout.pricing.seats.included.other": "# seats included",
+    "checkout.pricing.basePrice": "Base price"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -555,7 +557,8 @@
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
-    "checkout.pricing.seats.included.other": "# seats included"
+    "checkout.pricing.seats.included.other": "# seats included",
+    "checkout.pricing.basePrice": "Base price"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -741,7 +744,8 @@
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
-    "checkout.pricing.seats.included.other": "# seats included"
+    "checkout.pricing.seats.included.other": "# seats included",
+    "checkout.pricing.basePrice": "Base price"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -927,7 +931,8 @@
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
-    "checkout.pricing.seats.included.other": "# seats included"
+    "checkout.pricing.seats.included.other": "# seats included",
+    "checkout.pricing.basePrice": "Base price"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1105,7 +1110,8 @@
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
-    "checkout.pricing.seats.included.other": "# seats included"
+    "checkout.pricing.seats.included.other": "# seats included",
+    "checkout.pricing.basePrice": "Base price"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1283,7 +1289,8 @@
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
-    "checkout.pricing.seats.included.other": "# seats included"
+    "checkout.pricing.seats.included.other": "# seats included",
+    "checkout.pricing.basePrice": "Base price"
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1461,7 +1468,8 @@
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
-    "checkout.pricing.seats.included.other": "# seats included"
+    "checkout.pricing.seats.included.other": "# seats included",
+    "checkout.pricing.basePrice": "Base price"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1639,7 +1647,8 @@
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
-    "checkout.pricing.seats.included.other": "# seats included"
+    "checkout.pricing.seats.included.other": "# seats included",
+    "checkout.pricing.basePrice": "Base price"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1817,7 +1826,8 @@
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
-    "checkout.pricing.seats.included.other": "# seats included"
+    "checkout.pricing.seats.included.other": "# seats included",
+    "checkout.pricing.basePrice": "Base price"
   },
   "ja": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1995,7 +2005,8 @@
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
-    "checkout.pricing.seats.included.other": "# seats included"
+    "checkout.pricing.seats.included.other": "# seats included",
+    "checkout.pricing.basePrice": "Base price"
   },
   "tr": {
     "checkout.footer.poweredBy": "Powered by",

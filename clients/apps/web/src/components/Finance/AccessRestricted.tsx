@@ -11,7 +11,6 @@ export default function AccessRestricted({ message }: AccessRestrictedProps) {
       backgroundColor="background-card"
       borderRadius="l"
       padding="3xl"
-      display="flex"
       flexDirection="column"
       alignItems="center"
       rowGap="m"

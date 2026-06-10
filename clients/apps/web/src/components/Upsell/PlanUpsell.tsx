@@ -196,18 +196,12 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
       borderStyle="solid"
       borderColor="border-primary"
     >
-      <Box
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        padding="2xl"
-      >
-        <Box height="100%" width={240} display="flex" aspectRatio="1 / 1">
+      <Box alignItems="center" justifyContent="center" padding="2xl">
+        <Box height="100%" width={240} aspectRatio="1 / 1">
           <CycleArrow />
         </Box>
       </Box>
       <Box
-        display="flex"
         flexDirection="column"
         rowGap="xl"
         padding="2xl"
@@ -216,7 +210,7 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
         borderStyle="solid"
         borderColor="border-primary"
       >
-        <Box display="flex" flexDirection="column" rowGap="l">
+        <Box flexDirection="column" rowGap="l">
           <Text color="accent" variant="body">
             Lower your transaction fees
           </Text>
@@ -230,7 +224,6 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
           </Text>
         </Box>
         <Box
-          display="flex"
           flexDirection="row"
           alignItems="center"
           columnGap="m"
@@ -253,7 +246,6 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
         </Box>
       </Box>
       <Box
-        display="flex"
         flexDirection="column"
         rowGap="l"
         padding="2xl"
@@ -263,14 +255,14 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
         borderColor="border-primary"
         justifyContent="between"
       >
-        <Box display="flex" flexDirection="column" rowGap="xs">
+        <Box flexDirection="column" rowGap="xs">
           <Text variant="heading-xs" as="h4">
             {plan.name}
           </Text>
           {plan.description && <Text color="muted">{plan.description}</Text>}
         </Box>
-        <Box display="flex" flexDirection="column" rowGap="s">
-          <Box display="flex" alignItems="baseline" columnGap="m">
+        <Box flexDirection="column" rowGap="s">
+          <Box alignItems="baseline" columnGap="m">
             <Text variant="heading-s" as="span">
               {formatStandard(planPrice, planCurrency)}
             </Text>
@@ -289,7 +281,6 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
         {(plan.features?.length ?? 0) > 0 && (
           <Box
             as="ul"
-            display="flex"
             flexDirection="column"
             rowGap="s"
             borderTopWidth={1}

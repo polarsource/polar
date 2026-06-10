@@ -27,8 +27,8 @@ export const PathCardBanner = ({
   const iconColor = tone === 'danger' ? 'text-danger' : 'text-warning'
 
   return (
-    <Box display="flex" flexDirection="column" rowGap="xs">
-      <Box display="flex" alignItems="center" columnGap="xs">
+    <Box flexDirection="column" rowGap="xs">
+      <Box alignItems="center" columnGap="xs">
         <Box color={iconColor} display="inline-flex">
           <Icon className="h-3.5 w-3.5" />
         </Box>

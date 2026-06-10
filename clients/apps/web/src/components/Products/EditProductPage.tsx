@@ -9,7 +9,11 @@ import {
   findFirstErrorMessage,
   setProductValidationErrors,
 } from '@/utils/api/errors'
-import { ProductEditOrCreateForm } from '@/utils/product'
+import {
+  formPriceToApiPrice,
+  ProductEditOrCreateForm,
+  productPriceToFormPrice,
+} from '@/utils/product'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -58,10 +62,14 @@ export const EditProductPage = ({
       ...product,
       medias: product.medias.map((media) => media.id),
       full_medias: product.medias,
-      prices: product.prices.map((price) => ({
-        ...price,
-        price_currency: price.price_currency as schemas['PresentmentCurrency'],
-      })),
+      prices: product.prices.map((price) => {
+        const formPrice = productPriceToFormPrice(price)
+        return {
+          ...formPrice,
+          price_currency:
+            formPrice.price_currency as schemas['PresentmentCurrency'],
+        }
+      }),
       metadata: Object.entries(product.metadata).map(([key, value]) => ({
         key,
         value,
@@ -110,6 +118,7 @@ export const EditProductPage = ({
             id: product.id,
             body: {
               ...productUpdateRest,
+              prices: productUpdateRest.prices.map(formPriceToApiPrice),
               medias: full_medias.map((media) => media.id),
               metadata: metadata.reduce(
                 (acc, { key, value }) => ({ ...acc, [key]: value }),

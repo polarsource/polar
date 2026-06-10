@@ -14,7 +14,7 @@ from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Subscription
-from polar.models.subscription import CustomerCancellationReason
+from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.openapi import APITag
 from polar.order.service import PaymentFailed
 from polar.organization.schemas import OrganizationID
@@ -83,7 +83,12 @@ async def list(
         None, title="DiscountID Filter", description="Filter by discount ID."
     ),
     active: bool | None = Query(
-        None, description="Filter by active or inactive subscription."
+        None,
+        description="Filter by active or inactive subscription.",
+        deprecated=True,
+    ),
+    status: MultipleQueryFilter[SubscriptionStatus] | None = Query(
+        None, title="Status Filter", description="Filter by subscription status."
     ),
     cancel_at_period_end: bool | None = Query(
         None,
@@ -115,6 +120,7 @@ async def list(
         external_customer_id=external_customer_id,
         discount_id=discount_id,
         active=active,
+        status=status,
         cancel_at_period_end=cancel_at_period_end,
         customer_cancellation_reason=customer_cancellation_reason,
         canceled_at_after=canceled_at_after,

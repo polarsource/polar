@@ -70,6 +70,8 @@ from polar.product.guard import (
     is_fixed_price,
     is_free_price,
     is_metered_price,
+    is_seat_price,
+    is_static_price,
 )
 from polar.product.price_set import PriceSet
 from polar.subscription.repository import SubscriptionUpdateRepository
@@ -95,6 +97,7 @@ from polar.subscription.service import subscription as subscription_service
 from polar.subscription.update import generate_subscription_update
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_canceled_subscription,
@@ -107,6 +110,7 @@ from tests.fixtures.random_objects import (
     create_meter,
     create_payment_method,
     create_product,
+    create_product_fixed_and_seat,
     create_subscription,
     create_subscription_with_seats,
     create_trialing_subscription,
@@ -984,8 +988,7 @@ class TestCycle:
         assert updated_subscription.current_period_end > previous_current_period_end
         assert updated_subscription.scheduler_locked_at is None
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(SystemEvent.subscription_cycled)
+        events = await get_all_by_name(session, SystemEvent.subscription_cycled)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -1280,10 +1283,7 @@ class TestCycle:
         assert updated_subscription.current_period_end == previous_current_period_end
         assert updated_subscription.scheduler_locked_at is None
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_revoked
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_revoked)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -3601,10 +3601,7 @@ class TestUpdateProduct:
         price = updated_subscription.prices[0]
         assert price.price_currency == "usd"
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -3739,10 +3736,7 @@ class TestUpdateProduct:
 
         assert updated_subscription.product == product_recurring_multiple_currencies
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -3803,10 +3797,7 @@ class TestUpdateProduct:
 
         assert updated_subscription.product == product_recurring_multiple_currencies
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -3913,10 +3904,7 @@ class TestUpdateProduct:
 
         assert updated_subscription.product == product_recurring_multiple_currencies
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -4280,10 +4268,7 @@ class TestUpdateDiscount:
 
         assert subscription.discount is None
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -4312,10 +4297,7 @@ class TestUpdateDiscount:
 
         assert subscription.discount == discount_percentage_50
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -4348,10 +4330,7 @@ class TestUpdateDiscount:
 
         assert subscription.discount == discount_percentage_100
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -4424,10 +4403,7 @@ class TestUpdateTrial:
         # Verify that the webhook was triggered
         assert_hooks_called_once(subscription_hooks, {"updated"})
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -4491,10 +4467,7 @@ class TestUpdateTrial:
         assert updated_subscription.current_period_end == trial_end
         assert updated_subscription.trialing
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -5202,10 +5175,7 @@ class TestUpdateSeats:
         )
         assert subscription_update is None
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 0
 
     @pytest.mark.parametrize(
@@ -5525,10 +5495,7 @@ class TestUpdateSeats:
         for call_args in enqueue_job_mock.call_args_list:
             assert call_args[0][0] != "order.create_subscription_order"
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -5581,10 +5548,7 @@ class TestUpdateSeats:
         await session.flush()
 
         # Then: subscription.updated event emitted with invoice proration behavior
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -6779,10 +6743,7 @@ class TestUpdateBillingPeriod:
         assert updated_subscription.current_period_end == new_period_end
         assert updated_subscription.anchor_day == new_period_end.day
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -6974,3 +6935,89 @@ class TestClearPendingUpdate:
 
         # Then: Pending update is cleared
         assert updated_subscription.pending_update is None
+
+
+@pytest.mark.asyncio
+class TestFixedSeatComposition:
+    """A product composing a fixed price with a seat-based price bills F + S(n)."""
+
+    async def test_subscription_has_two_static_prices_and_combined_amount(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_fixed_and_seat(
+            save_fixture,
+            organization=organization,
+            fixed_amount=99900,
+            price_per_seat=2000,
+        )
+        fixed_price = next(p for p in product.prices if is_fixed_price(p))
+        seat_price = next(p for p in product.prices if is_seat_price(p))
+
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=10,
+        )
+
+        static_prices = [
+            spp
+            for spp in subscription.subscription_product_prices
+            if is_static_price(spp.product_price)
+        ]
+        assert len(static_prices) == 2
+        assert subscription.amount == (
+            fixed_price.price_amount + seat_price.calculate_amount(10)
+        )
+
+    async def test_cycle_emits_two_static_billing_entries(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product_fixed_and_seat(
+            save_fixture,
+            organization=organization,
+            fixed_amount=99900,
+            price_per_seat=2000,
+        )
+        fixed_price = next(p for p in product.prices if is_fixed_price(p))
+        seat_price = next(p for p in product.prices if is_seat_price(p))
+
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=10,
+            scheduler_locked_at=utc_now(),
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.cycle(session, ctx, subscription)
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert len(billing_entries) == 2
+        assert all(
+            entry.direction == BillingEntryDirection.debit for entry in billing_entries
+        )
+
+        by_price = {entry.product_price_id: entry for entry in billing_entries}
+        assert by_price[fixed_price.id].amount == fixed_price.price_amount
+        assert by_price[seat_price.id].amount == seat_price.calculate_amount(10)
+        # The two static entries together reconstruct the combined amount F + S(n).
+        assert subscription.amount == (
+            fixed_price.price_amount + seat_price.calculate_amount(10)
+        )

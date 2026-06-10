@@ -1,6 +1,6 @@
 import { twMerge } from 'tailwind-merge'
 
-const Spinner = () => {
+export const Spinner = () => {
   return (
     <svg
       className="mr-3 -ml-1 h-5 w-5 animate-spin"
@@ -25,9 +25,11 @@ const Spinner = () => {
   )
 }
 
-export default Spinner
-
-export const SpinnerNoMargin = ({ className = 'h-5 w-5' }) => {
+export const SpinnerNoMargin = ({
+  className = 'h-5 w-5',
+}: {
+  className?: string
+}) => {
   return (
     <svg
       className={twMerge('animate-spin', className)}

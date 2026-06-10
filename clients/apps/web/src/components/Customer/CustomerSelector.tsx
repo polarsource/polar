@@ -1,6 +1,6 @@
 'use client'
 
-import Spinner from '@/components/Shared/Spinner'
+import { Spinner } from '@polar-sh/orbit'
 import { useCustomers } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
 import Close from '@mui/icons-material/Close'
@@ -8,7 +8,7 @@ import Search from '@mui/icons-material/Search'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import { List, ListItem } from '@polar-sh/orbit'
 import {
   Popover,
   PopoverContent,

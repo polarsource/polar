@@ -7,7 +7,7 @@ import {
 } from '@/components/Benefit/utils'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
-import Spinner from '@/components/Shared/Spinner'
+import { Spinner } from '@polar-sh/orbit'
 import { useInfiniteBenefits } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
 import { usePushRouteWithoutCache } from '@/utils/router'

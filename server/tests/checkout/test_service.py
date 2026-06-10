@@ -43,7 +43,6 @@ from polar.enums import (
     TaxBehavior,
     TaxProcessor,
 )
-from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.exceptions import NotPermitted, PaymentNotReady, PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
@@ -101,6 +100,7 @@ from polar.tax.tax_id import TaxIDFormat
 from polar.trial_redemption.repository import TrialRedemptionRepository
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_checkout,
@@ -111,6 +111,7 @@ from tests.fixtures.random_objects import (
     create_discount,
     create_order,
     create_product,
+    create_product_fixed_and_seat,
     create_product_price_fixed,
     create_product_price_seat_unit,
     create_subscription,
@@ -382,6 +383,19 @@ async def checkout_seat_based(
     save_fixture: SaveFixture, product_seat_based: Product
 ) -> Checkout:
     return await create_checkout(save_fixture, products=[product_seat_based], seats=5)
+
+
+@pytest_asyncio.fixture
+async def product_fixed_seat(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    """$999 base + $20/seat, billed `fixed + seat_charge`."""
+    return await create_product_fixed_and_seat(
+        save_fixture,
+        organization=organization,
+        fixed_amount=99900,
+        price_per_seat=2000,
+    )
 
 
 @pytest_asyncio.fixture
@@ -1894,6 +1908,115 @@ class TestCreate:
         assert checkout.seats == 10
         assert checkout.amount == price.calculate_amount(10)
         assert checkout.currency == price.price_currency
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_fixed_and_seat_price_combined_amount(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_fixed_seat: Product,
+    ) -> None:
+        fixed_price = next(p for p in product_fixed_seat.prices if is_fixed_price(p))
+        seat_price = next(p for p in product_fixed_seat.prices if is_seat_price(p))
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductCreate(
+                product_id=product_fixed_seat.id,
+                seats=10,
+            ),
+            auth_subject,
+        )
+
+        # FK points at the fixed price (the default), but the amount rebuilds
+        # from the full static set: F + S(seats).
+        assert checkout.product_price == fixed_price
+        assert checkout.product == product_fixed_seat
+        assert checkout.seats == 10
+        assert (
+            checkout.amount
+            == fixed_price.price_amount + seat_price.calculate_amount(10)
+        )
+        assert checkout.currency == fixed_price.price_currency
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_fixed_and_seat_price_seat_update_recomputes_amount(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_fixed_seat: Product,
+    ) -> None:
+        fixed_price = next(p for p in product_fixed_seat.prices if is_fixed_price(p))
+        seat_price = next(p for p in product_fixed_seat.prices if is_seat_price(p))
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductCreate(product_id=product_fixed_seat.id, seats=5),
+            auth_subject,
+        )
+        assert (
+            checkout.amount == fixed_price.price_amount + seat_price.calculate_amount(5)
+        )
+
+        updated = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdate(seats=12),
+        )
+
+        assert updated.seats == 12
+        assert updated.amount == fixed_price.price_amount + seat_price.calculate_amount(
+            12
+        )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_fixed_and_seat_price_discount_on_combined_amount(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+        product_fixed_seat: Product,
+    ) -> None:
+        fixed_price = next(p for p in product_fixed_seat.prices if is_fixed_price(p))
+        seat_price = next(p for p in product_fixed_seat.prices if is_seat_price(p))
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=2500,
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductCreate(
+                product_id=product_fixed_seat.id,
+                seats=10,
+                discount_id=discount.id,
+            ),
+            auth_subject,
+        )
+
+        combined = fixed_price.price_amount + seat_price.calculate_amount(10)
+        assert checkout.discount == discount
+        assert checkout.amount == combined
+        # The discount is computed against the combined F + S(seats) amount.
+        assert checkout.net_amount == combined - discount.get_discount_amount(
+            combined, checkout.currency
+        )
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -6292,8 +6415,7 @@ class TestCheckoutCreatedEvent:
             auth_subject,
         )
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(SystemEvent.checkout_created)
+        events = await get_all_by_name(session, SystemEvent.checkout_created)
 
         assert len(events) == 1
         event = events[0]

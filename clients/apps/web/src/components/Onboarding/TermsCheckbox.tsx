@@ -1,7 +1,7 @@
 'use client'
 
 import { Box } from '@polar-sh/orbit/Box'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
+import { Checkbox } from '@polar-sh/orbit'
 import {
   FormControl,
   FormField,
@@ -29,12 +29,7 @@ export function TermsCheckbox<T extends FieldValues>({
       render={({ field }) => (
         <FormItem>
           <FormControl>
-            <Box
-              display="flex"
-              flexDirection="row"
-              alignItems="start"
-              columnGap="m"
-            >
+            <Box flexDirection="row" alignItems="start" columnGap="m">
               <Checkbox
                 id="terms"
                 checked={field.value}
@@ -46,7 +41,7 @@ export function TermsCheckbox<T extends FieldValues>({
                 }}
                 className="mt-0.5"
               />
-              <Box display="flex" flexDirection="column" rowGap="xs">
+              <Box flexDirection="column" rowGap="xs">
                 <Box as="label" htmlFor="terms">
                   <p className="cursor-pointer text-sm leading-snug font-medium">
                     I agree to Polar&apos;s{' '}

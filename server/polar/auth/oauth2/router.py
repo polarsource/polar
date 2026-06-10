@@ -9,6 +9,7 @@ from reauth.factors import FactorBase
 from reauth.factors.oauth2.base import (
     OAuth2CallbackException,
     OAuth2Factor,
+    OAuth2GetProfileException,
     OAuth2IdentityMismatchException,
     OAuth2TokenException,
 )
@@ -140,6 +141,8 @@ def get_oauth_login_router(
         except OAuth2CallbackException as e:
             raise PolarAuthRedirectionError(e.message or "OAuth2 callback error") from e
         except OAuth2TokenException as e:
+            raise PolarAuthRedirectionError("OAuth2 error") from e
+        except OAuth2GetProfileException as e:
             raise PolarAuthRedirectionError("OAuth2 error") from e
         except OIDCException as e:
             raise PolarAuthRedirectionError(OIDC_ERROR_MESSAGE) from e

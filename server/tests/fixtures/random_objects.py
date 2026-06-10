@@ -118,6 +118,7 @@ from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceType,
+    SeatTierType,
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import Processor, TransactionType
@@ -611,24 +612,35 @@ async def create_product_price_seat_unit(
     price_per_seat: int = 1000,
     minimum_seats: int = 1,
     maximum_seats: int | None = None,
+    tiers: list[dict[str, typing.Any]] | None = None,
+    seat_tier_type: SeatTierType = SeatTierType.volume,
     currency: str = "usd",
     tax_behavior: TaxBehavior | None = TaxBehavior.exclusive,
 ) -> ProductPriceSeatUnit:
-    """Create a seat-based price with a single tier.
+    """Create a seat-based price.
+
+    By default a single tier is built from ``price_per_seat`` /
+    ``minimum_seats`` / ``maximum_seats``. Pass ``tiers`` to define a
+    multi-tier price explicitly (e.g. a graduated schedule).
 
     Args:
-        price_per_seat: Price per seat in cents.
+        price_per_seat: Price per seat in cents (single-tier shorthand).
         minimum_seats: Minimum seats allowed (first tier's min_seats).
         maximum_seats: Maximum seats allowed (last tier's max_seats). None for unlimited.
+        tiers: Explicit list of tier dicts (min_seats/max_seats/price_per_seat).
+        seat_tier_type: How tiers are applied (volume or graduated).
     """
-    seat_tiers: dict[str, typing.Any] = {
-        "tiers": [
+    if tiers is None:
+        tiers = [
             {
                 "min_seats": minimum_seats,
                 "max_seats": maximum_seats,
                 "price_per_seat": price_per_seat,
             }
         ]
+    seat_tiers: dict[str, typing.Any] = {
+        "seat_tier_type": seat_tier_type,
+        "tiers": tiers,
     }
 
     price = ProductPriceSeatUnit(
@@ -640,6 +652,43 @@ async def create_product_price_seat_unit(
     assert price.amount_type == ProductPriceAmountType.seat_based
     await save_fixture(price)
     return price
+
+
+async def create_product_fixed_and_seat(
+    save_fixture: SaveFixture,
+    *,
+    organization: Organization,
+    fixed_amount: int = 99900,
+    price_per_seat: int = 1000,
+    tiers: list[dict[str, typing.Any]] | None = None,
+    seat_tier_type: SeatTierType = SeatTierType.volume,
+    currency: str = "usd",
+    recurring_interval: SubscriptionRecurringInterval = (
+        SubscriptionRecurringInterval.month
+    ),
+) -> Product:
+    """Create a recurring product composing one fixed price with one seat price.
+
+    Bills ``fixed_amount + seat_price.calculate_amount(seats)``. Pass ``tiers``
+    (with ``seat_tier_type=graduated``) for a graduated seat schedule.
+    """
+    product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=recurring_interval,
+        prices=[(fixed_amount, currency)],
+    )
+    seat_price = await create_product_price_seat_unit(
+        save_fixture,
+        product=product,
+        price_per_seat=price_per_seat,
+        tiers=tiers,
+        seat_tier_type=seat_tier_type,
+        currency=currency,
+    )
+    product.prices.append(seat_price)
+    product.all_prices.append(seat_price)
+    return product
 
 
 @typing.overload
@@ -1538,7 +1587,21 @@ async def create_checkout(
     if price.price_currency != currency:
         raise ValueError("Price currency does not match checkout currency")
 
-    if isinstance(price, ProductPriceFixed):
+    static_prices = currency_prices.get_static_prices()
+    if len(static_prices) > 1:
+        # Composed static prices (e.g. fixed + seat): sum each component,
+        # mirroring `calculate_upfront_amount`.
+        seat_count = seats if seats is not None else 1
+        composed = 0
+        for static_price in static_prices:
+            if isinstance(static_price, ProductPriceFixed):
+                composed += static_price.price_amount
+            elif isinstance(static_price, ProductPriceCustom):
+                composed += amount if amount is not None else 10_00
+            elif isinstance(static_price, ProductPriceSeatUnit):
+                composed += static_price.calculate_amount(seat_count)
+        amount = composed
+    elif isinstance(price, ProductPriceFixed):
         amount = price.price_amount
     elif isinstance(price, ProductPriceCustom):
         amount = amount or 10_00

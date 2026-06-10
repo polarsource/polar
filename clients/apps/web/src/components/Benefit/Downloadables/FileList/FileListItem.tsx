@@ -8,7 +8,7 @@ import ImageOutlined from '@mui/icons-material/ImageOutlined'
 import InsertDriveFileOutlined from '@mui/icons-material/InsertDriveFileOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import VideoFileOutlined from '@mui/icons-material/VideoFileOutlined'
-import Switch from '@polar-sh/ui/components/atoms/Switch'
+import { Switch } from '@polar-sh/orbit'
 import {
   FocusEvent,
   FormEventHandler,

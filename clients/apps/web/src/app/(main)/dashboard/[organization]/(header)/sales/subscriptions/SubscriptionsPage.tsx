@@ -23,7 +23,7 @@ import {
   DataTableColumnHeader,
 } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { Status } from '@polar-sh/orbit'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
@@ -33,9 +33,7 @@ interface ClientPageProps {
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
   productId?: string
-  subscriptionStatus?:
-    | Extract<schemas['SubscriptionStatus'], 'active' | 'canceled'>
-    | 'any'
+  subscriptionStatus?: schemas['SubscriptionStatus'] | 'any'
   cancelAtPeriodEnd?: 'all' | 'true' | 'false'
   metadata?: string[]
 }
@@ -185,7 +183,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const subscriptionsHook = useSubscriptions(organization.id, {
     ...getAPIParams(pagination, sorting),
     ...(productId ? { product_id: productId } : {}),
-    ...(status !== 'any' ? { active: status === 'active' } : {}),
+    ...(status !== 'any' ? { status: [status] } : {}),
     ...(cancelAtPeriodEndFilter === 'false'
       ? { cancel_at_period_end: false }
       : cancelAtPeriodEndFilter === 'true'
@@ -288,10 +286,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <div className="flex flex-row items-center gap-2">
             {tier.name}
             {tier.is_archived && (
-              <Status
-                status="Archived"
-                className="bg-red-100 text-xs text-red-500 dark:bg-red-950"
-              />
+              <Status status="Archived" color="red" size="small" />
             )}
           </div>
         )
@@ -326,7 +321,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <div className="flex items-center gap-4">
             <div className="w-auto">
               <SubscriptionStatusSelect
-                statuses={['active', 'canceled']}
+                statuses={[
+                  'active',
+                  'trialing',
+                  'past_due',
+                  'canceled',
+                  'unpaid',
+                ]}
                 value={subscriptionStatus || 'any'}
                 onChange={setStatus}
               />

@@ -1,6 +1,5 @@
 'use client'
 
-import { isStaticPrice } from '@/utils/product'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
@@ -24,7 +23,15 @@ import { ProductPriceCustomItem } from './ProductPriceCustomItem'
 import { ProductPriceFixedItem } from './ProductPriceFixedItem'
 import { ProductPriceMeteredUnitItem } from './ProductPriceMeteredUnitItem'
 import { ProductPriceSeatBasedItem } from './ProductPriceSeatBasedItem'
-import { hasPriceCurrency, ProductPrice, ProductPriceCreate } from './utils'
+import { ProductPriceCreate } from './utils'
+
+const AMOUNT_TYPE_LABELS: Record<string, string> = {
+  fixed: 'Fixed price',
+  custom: 'Pay what you want',
+  free: 'Free',
+  seat_based: 'Seats',
+  metered_unit: 'Metered price',
+}
 
 interface ProductPriceItemProps {
   organization: schemas['Organization']
@@ -36,6 +43,7 @@ interface ProductPriceItemProps {
     amountType: ProductPriceCreate['amount_type'],
   ) => void
   canRemove: boolean
+  canChangeType?: boolean
 }
 
 export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
@@ -45,29 +53,20 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   onRemove,
   onAmountTypeChange,
   canRemove,
+  canChangeType = true,
 }) => {
   const { register, control, watch } = useFormContext<ProductFormType>()
   const amountType = watch(`prices.${index}.amount_type`)
   const recurringInterval = watch('recurring_interval')
 
-  const prices = watch('prices')
-  const pricesForCurrency = (prices || []).filter(
-    (p) => hasPriceCurrency(p) && p.price_currency === currency,
-  )
-  const staticPriceForCurrency = pricesForCurrency.find((p) =>
-    isStaticPrice(p as ProductPrice),
-  )
-  const currentPrice = prices?.[index]
-  const isCurrentPriceStatic =
-    currentPrice && isStaticPrice(currentPrice as ProductPrice)
-  const hasOtherStaticPrice = staticPriceForCurrency && !isCurrentPriceStatic
-
   return (
     <div className="flex flex-col gap-y-6">
       <input type="hidden" {...register(`prices.${index}.id`)} />
-      {hasOtherStaticPrice ? (
+      {!canChangeType ? (
         <div className="flex flex-row items-center justify-between">
-          <h4 className="text-sm font-medium">Metered price</h4>
+          <h4 className="text-sm font-medium">
+            {amountType ? AMOUNT_TYPE_LABELS[amountType] : 'Price'}
+          </h4>
           {canRemove && (
             <Button
               variant="secondary"
@@ -106,18 +105,24 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                         <SelectValue placeholder="Select a price type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="fixed">Fixed price</SelectItem>
-                        <SelectItem value="custom">
-                          Pay what you want
+                        <SelectItem value="fixed">
+                          {AMOUNT_TYPE_LABELS.fixed}
                         </SelectItem>
-                        <SelectItem value="free">Free</SelectItem>
+                        <SelectItem value="custom">
+                          {AMOUNT_TYPE_LABELS.custom}
+                        </SelectItem>
+                        <SelectItem value="free">
+                          {AMOUNT_TYPE_LABELS.free}
+                        </SelectItem>
                         {organization.feature_settings
                           ?.seat_based_pricing_enabled && (
-                          <SelectItem value="seat_based">Seats</SelectItem>
+                          <SelectItem value="seat_based">
+                            {AMOUNT_TYPE_LABELS.seat_based}
+                          </SelectItem>
                         )}
                         {recurringInterval !== null && (
                           <SelectItem value="metered_unit">
-                            Metered price
+                            {AMOUNT_TYPE_LABELS.metered_unit}
                           </SelectItem>
                         )}
                       </SelectContent>

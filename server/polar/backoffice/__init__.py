@@ -21,6 +21,7 @@ from .payouts.endpoints import router as payouts_router
 from .products.endpoints import router as products_router
 from .responses import TagResponse
 from .subscriptions.endpoints import router as subscriptions_router
+from .support_cases.endpoints import router as support_cases_router
 from .tasks.endpoints import router as tasks_router
 from .users.endpoints import router as users_router
 from .versioned_static import VersionedStaticFiles
@@ -60,6 +61,7 @@ app.include_router(payouts_router, prefix="/payouts")
 app.include_router(impersonation_router, prefix="/impersonation")
 app.include_router(webhooks_router, prefix="/webhooks")
 app.include_router(feedbacks_router, prefix="/feedbacks")
+app.include_router(support_cases_router, prefix="/support-cases")
 
 
 @app.get("/", name="index")

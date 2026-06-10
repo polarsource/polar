@@ -49,10 +49,23 @@ from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.http import check_url_reachable
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization, UserOrganization
+from polar.models.support_case import (
+    SupportCase,
+    SupportCaseAudience,
+    SupportCaseMessage,
+    SupportCaseMessageAuthorKind,
+)
 from polar.models.user_organization import OrganizationRole
 from polar.openapi import APITag
 from polar.organization.repository import (
     OrganizationReviewRepository,
+)
+from polar.organization_review.appeal_case import (
+    CaseAlreadyExistsError,
+    CaseClosedError,
+)
+from polar.organization_review.appeal_case import (
+    appeal_case as appeal_case_service,
 )
 from polar.payout_account.repository import PayoutAccountRepository
 from polar.postgres import (
@@ -67,6 +80,18 @@ from polar.startup_program.service import (
 )
 from polar.startup_program.service import (
     startup_program as startup_program_service,
+)
+from polar.support_case.schemas import (
+    HumanReviewRequest,
+    SupportCaseMessageCreate,
+    SupportCaseNotFound,
+    SupportCaseThread,
+)
+from polar.support_case.schemas import (
+    SupportCase as SupportCaseSchema,
+)
+from polar.support_case.schemas import (
+    SupportCaseMessage as SupportCaseMessageSchema,
 )
 from polar.user.service import user as user_service
 from polar.user_organization.schemas import (
@@ -682,6 +707,110 @@ async def submit_appeal(
                 }
             ]
         )
+
+
+@router.post(
+    "/{id}/appeal/human-review",
+    response_model=SupportCaseSchema,
+    summary="Request Human Review",
+    responses={
+        200: {"description": "Human review case opened."},
+        404: SupportCaseNotFound,
+        409: {
+            "description": "A human-review case already exists for this review.",
+            "model": CaseAlreadyExistsError.schema(),
+        },
+    },
+    tags=[APITag.private],
+)
+async def request_human_review(
+    authz: AuthorizeOrgManageUser,
+    request: HumanReviewRequest,
+    session: AsyncSession = Depends(get_db_session),
+) -> SupportCase:
+    """Open a human-review case after the AI appeal was denied."""
+    review_repository = OrganizationReviewRepository.from_session(session)
+    review = await review_repository.get_by_organization(authz.organization.id)
+    if review is None:
+        raise ResourceNotFound()
+
+    return await appeal_case_service.request_human_review(
+        session,
+        review,
+        organization=authz.organization,
+        reason=request.reason,
+        requested_by_user=authz.auth_subject.subject,
+    )
+
+
+@router.get(
+    "/{id}/appeal/case",
+    response_model=SupportCaseThread,
+    summary="Get Appeal Case",
+    responses={
+        200: {"description": "Appeal case thread returned."},
+        404: SupportCaseNotFound,
+    },
+    tags=[APITag.private],
+)
+async def get_appeal_case(
+    authz: AuthorizeOrgManageRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> SupportCaseThread:
+    """Get the merchant's human-review case and its visible timeline."""
+    review_repository = OrganizationReviewRepository.from_session(session)
+    review = await review_repository.get_by_organization(authz.organization.id)
+    if review is None:
+        raise ResourceNotFound()
+
+    thread = await appeal_case_service.get_thread(
+        session, review, visible_to=SupportCaseAudience.merchant
+    )
+    if thread is None:
+        raise ResourceNotFound()
+
+    case, is_open, messages = thread
+    return SupportCaseThread.model_validate(
+        {"case": case, "is_open": is_open, "messages": messages}
+    )
+
+
+@router.post(
+    "/{id}/appeal/case/messages",
+    response_model=SupportCaseMessageSchema,
+    summary="Reply to Appeal Case",
+    responses={
+        200: {"description": "Reply posted."},
+        404: SupportCaseNotFound,
+        409: {
+            "description": "The case is closed.",
+            "model": CaseClosedError.schema(),
+        },
+    },
+    tags=[APITag.private],
+)
+async def reply_to_appeal_case(
+    authz: AuthorizeOrgManageUser,
+    message: SupportCaseMessageCreate,
+    session: AsyncSession = Depends(get_db_session),
+) -> SupportCaseMessage:
+    """Post a merchant reply to the human-review case."""
+    review_repository = OrganizationReviewRepository.from_session(session)
+    review = await review_repository.get_by_organization(authz.organization.id)
+    if review is None:
+        raise ResourceNotFound()
+
+    case = await appeal_case_service.get_case(session, review)
+    if case is None:
+        raise ResourceNotFound()
+
+    return await appeal_case_service.add_reply(
+        session,
+        case,
+        author_kind=SupportCaseMessageAuthorKind.merchant,
+        author_user=authz.auth_subject.subject,
+        body=message.body,
+    )
 
 
 @router.post(

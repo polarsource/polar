@@ -4,8 +4,6 @@ import GetStartedButton from '@/components/Auth/GetStartedButton'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'framer-motion'
-import { PropsWithChildren } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 const containerVariants = {
   hidden: { opacity: 0 },

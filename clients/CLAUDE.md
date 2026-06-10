@@ -484,9 +484,11 @@ Use `GridItem` for children that need to span or be placed explicitly:
 ```tsx
 import { Grid, GridItem } from '@polar-sh/orbit'
 
-<Grid templateColumns="repeat(4, 1fr)" gap="m">
+;<Grid templateColumns="repeat(4, 1fr)" gap="m">
   <GridItem colSpan={2}>Spans two columns</GridItem>
-  <GridItem colStart={3} colEnd={5} rowSpan={2}>Placed explicitly</GridItem>
+  <GridItem colStart={3} colEnd={5} rowSpan={2}>
+    Placed explicitly
+  </GridItem>
   <GridItem area="sidebar">By template area</GridItem>
 </Grid>
 ```

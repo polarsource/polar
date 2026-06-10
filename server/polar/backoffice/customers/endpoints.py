@@ -10,6 +10,7 @@ from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import document, tag, text
 
 from polar.backoffice import forms
+from polar.backoffice.orders.components import orders_datatable
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
@@ -39,7 +40,6 @@ from polar.worker import enqueue_job
 from ..components import button, datatable, description_list, modal
 from ..formatters import currency
 from ..layout import layout
-from ..orders.components import orders_datatable
 from ..responses import HXRedirectResponse
 from ..toast import add_toast
 from .components import customers_datatable, email_verified_badge
@@ -414,6 +414,20 @@ async def get(
                         datatable.DatatableDateTimeColumn(
                             "current_period_end", "Current Period End"
                         ),
+                        datatable.DatatableActionsColumn[Subscription](
+                            "",
+                            datatable.DatatableActionHTMX[Subscription](
+                                "Grant benefits",
+                                lambda r, i: str(
+                                    r.url_for(
+                                        "customers:grant_benefits_subscription",
+                                        id=customer.id,
+                                        subscription_id=i.id,
+                                    )
+                                ),
+                                target="#modal",
+                            ),
+                        ),
                     ).render(request, subscriptions):
                         pass
                 else:
@@ -427,7 +441,27 @@ async def get(
                         text(f"Orders ({len(orders)})")
 
                 if orders:
-                    with orders_datatable(request, orders):
+                    with orders_datatable(
+                        request,
+                        orders,
+                        extra=[
+                            datatable.DatatableActionsColumn[Order](
+                                "",
+                                datatable.DatatableActionHTMX[Order](
+                                    "Grant benefits",
+                                    lambda r, i: str(
+                                        r.url_for(
+                                            "customers:grant_benefits_order",
+                                            id=customer.id,
+                                            order_id=i.id,
+                                        )
+                                    ),
+                                    target="#modal",
+                                    hidden=lambda r, i: i.subscription_id is not None,
+                                ),
+                            ),
+                        ],
+                    ):
                         pass
                 else:
                     with tag.div(classes="text-center py-8 text-gray-500"):
@@ -771,3 +805,151 @@ async def edit_email(
                             text("Update Email")
 
     return HTMLResponse(str(doc))
+
+
+@router.api_route(
+    "/{id}/subscriptions/{subscription_id}/grant_benefits",
+    name="customers:grant_benefits_subscription",
+    methods=["GET", "POST"],
+)
+async def grant_benefits_subscription(
+    request: Request,
+    id: UUID4,
+    subscription_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    customer_repository = CustomerRepository.from_session(session)
+    customer = await customer_repository.get_by_id(id)
+    if customer is None:
+        raise HTTPException(status_code=404)
+
+    subscription_repository = SubscriptionRepository.from_session(session)
+    subscription_statement = subscription_repository.get_base_statement().where(
+        Subscription.id == subscription_id,
+        Subscription.customer_id == customer.id,
+    )
+    subscription = await subscription_repository.get_one_or_none(subscription_statement)
+    if subscription is None:
+        raise HTTPException(status_code=404)
+
+    if request.method == "POST":
+        enqueue_job(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=subscription.product_id,
+            subscription_id=subscription.id,
+        )
+        await add_toast(
+            request,
+            f"Benefits grant task enqueued for {customer.display_name}.",
+            "success",
+        )
+        with tag.div(hx_redirect=str(request.url_for("customers:get", id=customer.id))):
+            pass
+        return
+
+    with modal("Grant Benefits", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text(
+                    f"Grant benefits for {customer.display_name} "
+                    f"on subscription {subscription_id}? "
+                    "This will enqueue benefit grants for this subscription."
+                )
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with tag.form(method="dialog"):
+                    with button(
+                        type="button",
+                        variant="primary",
+                        hx_post=str(
+                            request.url_for(
+                                "customers:grant_benefits_subscription",
+                                id=customer.id,
+                                subscription_id=subscription_id,
+                            )
+                        ),
+                        hx_target="#modal",
+                    ):
+                        text("Grant")
+
+
+@router.api_route(
+    "/{id}/orders/{order_id}/grant_benefits",
+    name="customers:grant_benefits_order",
+    methods=["GET", "POST"],
+)
+async def grant_benefits_order(
+    request: Request,
+    id: UUID4,
+    order_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    customer_repository = CustomerRepository.from_session(session)
+    customer = await customer_repository.get_by_id(id)
+    if customer is None:
+        raise HTTPException(status_code=404)
+
+    order_repository = OrderRepository.from_session(session)
+    order_statement = order_repository.get_base_statement().where(
+        Order.id == order_id, Order.customer_id == customer.id
+    )
+    order = await order_repository.get_one_or_none(order_statement)
+    if order is None:
+        raise HTTPException(status_code=404)
+
+    if order.subscription_id is not None:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot grant benefits for subscription-linked orders directly",
+        )
+
+    if order.product_id is None:
+        raise HTTPException(status_code=400, detail="Order has no associated product")
+
+    if request.method == "POST":
+        enqueue_job(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=order.product_id,
+            order_id=order.id,
+        )
+        await add_toast(
+            request,
+            f"Benefits grant task enqueued for {customer.display_name}.",
+            "success",
+        )
+        with tag.div(hx_redirect=str(request.url_for("customers:get", id=customer.id))):
+            pass
+        return
+
+    with modal("Grant Benefits", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text(
+                    f"Grant benefits for {customer.display_name} "
+                    f"on order {order_id}? "
+                    "This will enqueue benefit grants for this order."
+                )
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with tag.form(method="dialog"):
+                    with button(
+                        type="button",
+                        variant="primary",
+                        hx_post=str(
+                            request.url_for(
+                                "customers:grant_benefits_order",
+                                id=customer.id,
+                                order_id=order_id,
+                            )
+                        ),
+                        hx_target="#modal",
+                    ):
+                        text("Grant")

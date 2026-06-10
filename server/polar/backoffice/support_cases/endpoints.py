@@ -63,7 +63,7 @@ def _status_badge(is_open: bool) -> None:
         text("Open" if is_open else "Closed")
 
 
-def _render_table(rows: Sequence[Row]) -> None:
+def _render_table(request: Request, rows: Sequence[Row]) -> None:
     with tag.div(classes="overflow-x-auto"):
         with tag.table(classes="table table-zebra"):
             with tag.thead():
@@ -79,11 +79,22 @@ def _render_table(rows: Sequence[Row]) -> None:
                             text(header)
             with tag.tbody():
                 for case, organization, is_open, assignee_email in rows:
-                    # Not linked yet: the org's support-case section these rows
-                    # point to ships in a follow-up PR.
-                    with tag.tr():
+                    case_url = (
+                        str(
+                            request.url_for(
+                                "organizations:detail",
+                                organization_id=organization.id,
+                            )
+                        )
+                        + "?section=support_case"
+                    )
+                    with tag.tr(
+                        classes="hover cursor-pointer",
+                        _=f"on click set window.location to '{case_url}'",
+                    ):
                         with tag.td():
-                            text(organization.name)
+                            with tag.a(href=case_url, classes="link"):
+                                text(organization.name)
                         with tag.td():
                             with tag.div(classes="badge badge-outline badge-sm"):
                                 text("Review appeal")
@@ -203,7 +214,7 @@ async def list_cases(
             with tab_nav(_list_tabs(request, status, assigned)):
                 pass
             if rows:
-                _render_table(rows)
+                _render_table(request, rows)
             else:
                 with tag.div(classes="text-center py-12 text-base-content/50"):
                     text("No cases in this view.")

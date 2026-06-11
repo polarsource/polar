@@ -219,6 +219,27 @@ class BenefitSlackSharedChannelService(
         if not properties.get("archive_on_revoke") or not channel_id:
             return revoked_properties
 
+        grant_repository = BenefitGrantRepository.from_session(self.session)
+        total_grants = (
+            await grant_repository.count_granted_by_property_and_organization(
+                benefit.organization_id, "channel_id", channel_id
+            )
+        )
+        own_grants = await grant_repository.list_granted_by_benefit_and_customer(
+            benefit, customer
+        )
+        own_count = sum(
+            1
+            for grant in own_grants
+            if grant.properties.get("channel_id") == channel_id
+        )
+        if total_grants - own_count > 0:
+            bound_logger.info(
+                "Slack channel still used by other grants; skipping archive",
+                channel_id=channel_id,
+            )
+            return revoked_properties
+
         integration = await self._get_integration(benefit)
         if integration is None or integration.bot_token is None:
             bound_logger.info("Slack integration uninstalled; skipping archive")

@@ -561,6 +561,8 @@ BillingEntry(
 | `discord` | Server role | Assign Discord role |
 | `license_keys` | License distribution | Generate key |
 | `downloadables` | File access | Grant download permission |
+| `feature_flag` | Feature access | Set flag with metadata |
+| `slack_shared_channel` | Slack Connect channel | Create channel and send invite |
 | `custom` | Webhook-based | Call external URL |
 
 ### Benefit Grant Flow

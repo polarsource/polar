@@ -157,14 +157,14 @@ const link = (gl: WebGLRenderingContext, vs: string, fs: string) => {
 
 export const VolumetricSlices = () => {
   const { ref: wrapperRef, inView } = useInView()
-  const { resolvedTheme } = useTheme()
+  const { resolvedTheme, forcedTheme } = useTheme()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animRef = useRef<number>(0)
-  const darkRef = useRef(resolvedTheme === 'dark')
+  const darkRef = useRef((forcedTheme ?? resolvedTheme) === 'dark')
 
   useEffect(() => {
-    darkRef.current = resolvedTheme === 'dark'
-  }, [resolvedTheme])
+    darkRef.current = (forcedTheme ?? resolvedTheme) === 'dark'
+  }, [resolvedTheme, forcedTheme])
 
   useEffect(() => {
     const canvas = canvasRef.current

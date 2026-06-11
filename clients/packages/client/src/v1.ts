@@ -287,7 +287,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/integrations/slack/integration': {
+  '/v1/integrations/slack': {
     parameters: {
       query?: never
       header?: never
@@ -295,17 +295,13 @@ export interface paths {
       cookie?: never
     }
     /**
-     * Get Integration
+     * List Integrations
      * @description **Scopes**: `organizations:read` `organizations:write`
      */
-    get: operations['integrations_slack:get_integration']
+    get: operations['integrations_slack:list_integrations']
     put?: never
     post?: never
-    /**
-     * Delete Integration
-     * @description **Scopes**: `organizations:write`
-     */
-    delete: operations['integrations_slack:delete_integration']
+    delete?: never
     options?: never
     head?: never
     patch?: never
@@ -406,6 +402,30 @@ export interface paths {
     put?: never
     post?: never
     delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/integrations/slack/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Integration
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['integrations_slack:get_integration']
+    put?: never
+    post?: never
+    /**
+     * Delete Integration
+     * @description **Scopes**: `organizations:write`
+     */
+    delete: operations['integrations_slack:delete_integration']
     options?: never
     head?: never
     patch?: never
@@ -29313,15 +29333,13 @@ export interface components {
        */
       display_name: string
     }
-    /** SlackIntegrationQueryBadRequestResponse */
-    SlackIntegrationQueryBadRequestResponse: {
+    /** SlackIntegrationsResponse */
+    SlackIntegrationsResponse: {
       /**
-       * Error
-       * @constant
+       * Integrations
+       * @description Slack apps configured for the organization.
        */
-      error: 'BadRequest'
-      /** Detail */
-      detail: string
+      integrations: components['schemas']['SlackIntegration'][]
     }
     /** SlackWorkspaceUser */
     SlackWorkspaceUser: {
@@ -34156,11 +34174,10 @@ export interface operations {
       }
     }
   }
-  'integrations_slack:get_integration': {
+  'integrations_slack:list_integrations': {
     parameters: {
-      query?: {
-        integration_id?: string | null
-        benefit_id?: string | null
+      query: {
+        organization_id: string
       }
       header?: never
       path?: never
@@ -34174,60 +34191,8 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['SlackIntegration']
+          'application/json': components['schemas']['SlackIntegrationsResponse']
         }
-      }
-      /** @description Provide exactly one of integration_id or benefit_id. */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['SlackIntegrationQueryBadRequestResponse']
-        }
-      }
-      /** @description No Slack integration configured. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'integrations_slack:delete_integration': {
-    parameters: {
-      query: {
-        integration_id: string
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description No Slack integration configured. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -34411,6 +34376,80 @@ export interface operations {
         content: {
           'application/json': unknown
         }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'integrations_slack:get_integration': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SlackIntegration']
+        }
+      }
+      /** @description No Slack integration configured. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'integrations_slack:delete_integration': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description No Slack integration configured. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
       }
       /** @description Validation Error */
       422: {

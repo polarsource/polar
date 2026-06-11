@@ -5,16 +5,12 @@ import { EventCardBase } from './EventCardBase'
 export const useMetadata = (event: schemas['Event']) => {
   return useMemo(() => {
     const metadata = { ...event.metadata }
-    const metadataWithoutPrivateFields = Object.entries(metadata).reduce(
-      (acc, [key, value]) => {
-        return key.startsWith('_') ? acc : { ...acc, [key]: value }
-      },
-      {},
-    )
 
-    return Object.keys(metadataWithoutPrivateFields).length > 0
-      ? metadataWithoutPrivateFields
-      : undefined
+    // Filter out structured keys that are rendered by specialized cards
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { _llm, _cost, ...rest } = metadata as Record<string, unknown>
+
+    return Object.keys(rest).length > 0 ? rest : undefined
   }, [event])
 }
 

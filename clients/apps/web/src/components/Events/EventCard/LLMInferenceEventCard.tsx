@@ -1,4 +1,5 @@
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import { EventCardBase } from './EventCardBase'
 import { UserEventCard } from './UserEventCard'
 
@@ -27,12 +28,12 @@ export const LLMInferenceEventCard = ({
   event,
 }: LLMInferenceEventCardProps) => {
   const llmMetadata = '_llm' in event.metadata && event.metadata._llm
+  const costMetadata = '_cost' in event.metadata && event.metadata._cost
 
   if (!llmMetadata) return <UserEventCard event={event} />
 
   return (
     <div>
-      <UserEventCard event={event} />
       <EventCardBase className="flex flex-col gap-y-2 p-4">
         <DataRow label="Vendor" value={llmMetadata.vendor} />
         <DataRow label="Model" value={llmMetadata.model} />
@@ -47,7 +48,37 @@ export const LLMInferenceEventCard = ({
         />
         <DataRow label="Output Tokens" value={llmMetadata.output_tokens} />
         <DataRow label="Total Tokens" value={llmMetadata.total_tokens} />
+        {costMetadata && (
+          <DataRow
+            label="Cost"
+            value={formatCurrency('subcent')(
+              Number(costMetadata.amount ?? 0),
+              costMetadata.currency ?? 'usd',
+            )}
+          />
+        )}
       </EventCardBase>
+      {llmMetadata.prompt && (
+        <EventCardBase className="flex flex-col gap-y-1 p-4">
+          <span className="dark:text-polar-400 text-xs text-gray-500">
+            Prompt
+          </span>
+          <pre className="whitespace-pre-wrap select-text">
+            {llmMetadata.prompt}
+          </pre>
+        </EventCardBase>
+      )}
+      {llmMetadata.response && (
+        <EventCardBase className="flex flex-col gap-y-1 p-4">
+          <span className="dark:text-polar-400 text-xs text-gray-500">
+            Response
+          </span>
+          <pre className="whitespace-pre-wrap select-text">
+            {llmMetadata.response}
+          </pre>
+        </EventCardBase>
+      )}
+      <UserEventCard event={event} />
     </div>
   )
 }

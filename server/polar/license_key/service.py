@@ -252,6 +252,11 @@ class LicenseKeyService:
                 "Use the /validate endpoint instead to check license validity."
             )
 
+        repository = LicenseKeyRepository.from_session(session)
+        locked = await repository.get_by_id_for_update(license_key.id)
+        if locked is None:
+            raise ResourceNotFound()
+
         current_activation_count = await self.get_activation_count(
             session,
             license_key=license_key,

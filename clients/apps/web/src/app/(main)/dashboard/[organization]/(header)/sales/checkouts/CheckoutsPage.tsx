@@ -13,7 +13,6 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
-import { Avatar } from '@polar-sh/orbit'
 import {
   DataTable,
   DataTableColumnDef,
@@ -199,15 +198,24 @@ const ClientPage: React.FC<ClientPageProps> = ({
       ),
       cell: ({ row: { original: checkout } }) => {
         const customerEmail = checkout.customer_email
+        const customerName = checkout.customer_name
+        const customerBillingName = checkout.customer_billing_name
+        const showBillingName =
+          !!customerName &&
+          !!customerBillingName &&
+          customerName.toLocaleLowerCase() !==
+            customerBillingName.toLocaleLowerCase()
         return (
-          <div className="flex flex-row items-center gap-2">
+          <div className="flex flex-row items-center gap-2 overflow-hidden">
             {customerEmail ? (
-              <>
-                <Avatar avatar_url={null} name={customerEmail} />
-                <div className="fw-medium overflow-hidden text-ellipsis">
-                  {customerEmail}
-                </div>
-              </>
+              <div className="overflow-hidden text-ellipsis">
+                {customerName || customerEmail}
+                {showBillingName && (
+                  <span className="dark:text-polar-500 ml-2 text-gray-500">
+                    {customerBillingName}
+                  </span>
+                )}
+              </div>
             ) : (
               <>—</>
             )}

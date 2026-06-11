@@ -126,7 +126,7 @@ export const ProductOverview = ({
                         avatar_url={customer.avatar_url}
                         name={customer.email ?? customer.name ?? '—'}
                       />
-                      <div className="fw-medium overflow-hidden text-ellipsis">
+                      <div className="overflow-hidden text-ellipsis">
                         {customer.email ?? '—'}
                       </div>
                     </div>
@@ -241,9 +241,7 @@ export const ProductOverview = ({
                       avatar_url={customer.avatar_url}
                       name={customer.email ?? customer.name ?? '—'}
                     />
-                    <div className="fw-medium truncate">
-                      {customer.email ?? '—'}
-                    </div>
+                    <div className="truncate">{customer.email ?? '—'}</div>
                   </div>
                 )
               },

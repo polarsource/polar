@@ -1,25 +1,63 @@
+import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Loader2, Send } from 'lucide-react'
-import React, { useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { Loader2, Paperclip, Send } from 'lucide-react'
+import React, { useEffect, useImperativeHandle, useRef, useState } from 'react'
+import { AttachmentChips } from './AttachmentChips'
+import { ACCEPTED_FILE_TYPES } from './fileTypes'
+import { useAttachmentUploads } from './useAttachmentUploads'
+
+const REQUEST_MIN_LENGTH = 50
+const MAX_LENGTH = 5000
+
+export interface ReplyBoxHandle {
+  addFiles: (files: File[]) => void
+}
 
 interface Props {
-  onSend: (text: string) => Promise<{ error?: unknown }>
+  organization: schemas['Organization']
+  onSend: (text: string, fileIds: string[]) => Promise<{ error?: unknown }>
   isPending: boolean
-  minLength?: number
+  mode?: 'reply' | 'request'
   placeholder?: string
+  ref?: React.Ref<ReplyBoxHandle>
 }
 
 export const ReplyBox = ({
+  organization,
   onSend,
   isPending,
-  minLength = 1,
+  mode = 'reply',
   placeholder = 'Write a reply…',
+  ref,
 }: Props) => {
   const [body, setBody] = useState('')
+  const [flying, setFlying] = useState(false)
+  const [sendFailed, setSendFailed] = useState(false)
+  const [sending, setSending] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const {
+    attachments,
+    attachmentError,
+    addFiles,
+    removeAttachment,
+    clearAttachments,
+    uploadsPending,
+    uploadsFailed,
+    uploadedFileIds,
+  } = useAttachmentUploads(organization)
+
+  const allowAttachments = mode === 'reply'
+  const minLength = mode === 'request' ? REQUEST_MIN_LENGTH : 1
   const length = body.length
-  const canSend = body.trim().length >= minLength && length <= 5000
+  const hasValidText = body.trim().length >= minLength && length <= MAX_LENGTH
+  const hasContent =
+    hasValidText || (allowAttachments && uploadedFileIds.length > 0)
+  const canSend = hasContent && !uploadsPending && !uploadsFailed
+  const busy = isPending || sending
 
   useEffect(() => {
     const el = textareaRef.current
@@ -28,57 +66,144 @@ export const ReplyBox = ({
     el.style.height = `${el.scrollHeight}px`
   }, [body])
 
+  const onFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    addFiles(Array.from(e.target.files ?? []))
+    e.target.value = ''
+  }
+
+  useImperativeHandle(ref, () => ({ addFiles }), [addFiles])
+
   const submit = async () => {
-    if (!canSend) return
-    const result = await onSend(body)
-    if (!result.error) setBody('')
+    if (!canSend || busy) return
+    setSending(true)
+    setFlying(true)
+    setSendFailed(false)
+
+    try {
+      const result = await onSend(body, uploadedFileIds)
+      if (result.error) {
+        setFlying(false)
+        setSendFailed(true)
+        return
+      }
+      setBody('')
+      clearAttachments()
+    } catch {
+      setFlying(false)
+      setSendFailed(true)
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
     <Box display="flex" flexDirection="column" rowGap="s">
-      <div className="dark:border-polar-700 dark:bg-polar-800 relative rounded-2xl border border-gray-200 bg-white">
-        <textarea
-          ref={textareaRef}
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          onKeyDown={(e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-              e.preventDefault()
-              submit()
-            }
-          }}
-          rows={1}
-          placeholder={placeholder}
-          maxLength={5000}
-          className="dark:text-polar-50 block max-h-[72px] w-full resize-none overflow-y-auto border-0 bg-transparent py-3 pr-12 pl-4 text-sm leading-5 text-gray-900 shadow-none ring-0 outline-none placeholder:text-gray-400 focus:border-0 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
-        />
-        <Box transform="translate(2px, 2px)">
+      <div className="flex items-end gap-2">
+        {allowAttachments && (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={ACCEPTED_FILE_TYPES}
+              multiple
+              onChange={onFilesSelected}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={busy}
+              aria-label="Attach files"
+              className="dark:text-polar-400 dark:hover:text-polar-200 mb-2 ml-[-10px] flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center text-gray-500 transition-colors hover:text-gray-900 disabled:cursor-default disabled:opacity-30"
+            >
+              <Paperclip className="h-4 w-4" />
+            </button>
+          </>
+        )}
+        <div className="dark:border-polar-700 dark:bg-polar-800 relative flex-1 rounded-2xl border border-gray-200 bg-white">
+          <AnimatePresence initial={false}>
+            {attachments.length > 0 && (
+              <motion.div
+                key="attachment-chips"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="overflow-hidden"
+              >
+                <AttachmentChips
+                  attachments={attachments}
+                  onRemove={removeAttachment}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <textarea
+            ref={textareaRef}
+            value={body}
+            onChange={(e) => {
+              setBody(e.target.value)
+              if (sendFailed) setSendFailed(false)
+            }}
+            onKeyDown={(e) => {
+              if (
+                e.key === 'Enter' &&
+                !e.shiftKey &&
+                !e.nativeEvent.isComposing
+              ) {
+                e.preventDefault()
+                submit()
+              }
+            }}
+            rows={1}
+            placeholder={placeholder}
+            maxLength={MAX_LENGTH}
+            className="dark:text-polar-50 block max-h-[72px] w-full resize-none overflow-y-auto border-0 bg-transparent py-3 pr-12 pl-4 text-sm leading-5 text-gray-900 shadow-none ring-0 outline-none placeholder:text-gray-400 focus:border-0 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
+          />
           <button
             type="button"
             onClick={submit}
-            disabled={!canSend || isPending}
+            disabled={!canSend || busy}
             aria-label="Send"
-            className="dark:bg-polar-50 dark:text-polar-900 absolute right-2 bottom-2 flex h-8 w-8 items-center justify-center rounded-full bg-gray-900 text-white transition-opacity disabled:opacity-30"
+            className="dark:bg-polar-50 dark:text-polar-900 dark:hover:bg-polar-200 dark:disabled:hover:bg-polar-50 absolute right-2 bottom-2 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-gray-900 text-white transition-colors hover:bg-gray-700 disabled:cursor-default disabled:opacity-30 disabled:hover:bg-gray-900"
           >
-            {isPending ? (
+            {busy && !flying ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Box position="relative" top={0.5} right={1}>
-                <Send className="h-4 w-4" />
+                <Send
+                  className={`h-4 w-4 ${flying ? 'animate-send-off' : ''}`}
+                  onAnimationEnd={() => setFlying(false)}
+                />
               </Box>
             )}
           </button>
-        </Box>
+        </div>
       </div>
-      {minLength > 1 && (
-        <Box display="flex" justifyContent="between" paddingHorizontal="s">
-          <Text variant="caption" color="muted">
-            Minimum {minLength} characters
-          </Text>
-          <Text variant="caption" color="muted">
-            {length}/5000
-          </Text>
-        </Box>
+      {attachmentError && (
+        <Text variant="caption" color="danger" align="center">
+          {attachmentError}
+        </Text>
+      )}
+      {sendFailed && (
+        <Text variant="caption" color="danger" align="center">
+          Couldn&rsquo;t send your message — please try again.
+        </Text>
+      )}
+      {mode === 'request' && (
+        <div className="flex gap-2">
+          {/* Mirrors the attach-button column above so the captions align
+              with the input. */}
+          <div className="ml-[-10px] w-8 shrink-0" />
+          <Box display="flex" flexGrow={1} justifyContent="between">
+            <Text variant="caption" color="muted">
+              Minimum {REQUEST_MIN_LENGTH} characters
+            </Text>
+            <Text variant="caption" color="muted">
+              {length}/{MAX_LENGTH}
+            </Text>
+          </Box>
+        </div>
       )}
     </Box>
   )

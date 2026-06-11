@@ -212,6 +212,27 @@
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes send-off {
+    0% {
+      transform: translate(0, 0);
+      opacity: 1;
+    }
+    55% {
+      transform: translate(10px, -10px);
+      opacity: 0;
+    }
+    56% {
+      transform: translate(-9px, 9px);
+      opacity: 0;
+    }
+    100% {
+      transform: translate(0, 0);
+      opacity: 1;
+    }
+  }
+
+  --animate-send-off: send-off 0.5s ease-out;
 }
 
 @layer base {

@@ -14,7 +14,7 @@ import HumanReviewCase from './HumanReviewCase'
 
 // Gates the merchant-facing human-review case flow shown after a denied
 // appeal. Hardcoded off until the dedicated flow is finished.
-const NEW_CASE_FLOW_ENABLED = false
+const NEW_CASE_FLOW_ENABLED = true
 
 interface AppealFormProps {
   organization: schemas['Organization']

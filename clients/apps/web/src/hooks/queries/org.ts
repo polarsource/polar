@@ -383,7 +383,11 @@ export const useRequestHumanReview = (id: string) =>
     },
   })
 
-export const useAppealCase = (id: string, enabled: boolean = true) =>
+export const useAppealCase = (
+  id: string,
+  enabled: boolean = true,
+  pollInterval: number = 10_000,
+) =>
   useQuery({
     queryKey: ['appealCase', id],
     queryFn: () =>
@@ -394,14 +398,20 @@ export const useAppealCase = (id: string, enabled: boolean = true) =>
       ),
     retry: defaultRetry,
     enabled: enabled && !!id,
+    refetchInterval: (query) => {
+      if (!query.state.data?.is_open) return false
+      const hidden = typeof document !== 'undefined' && document.hidden
+      return hidden ? Math.max(pollInterval, 30_000) : pollInterval
+    },
+    refetchIntervalInBackground: true,
   })
 
 export const useReplyToAppealCase = (id: string) =>
   useMutation({
-    mutationFn: ({ body }: { body: string }) =>
+    mutationFn: ({ body, file_ids }: { body?: string; file_ids?: string[] }) =>
       api.POST('/v1/organizations/{id}/appeal/case/messages', {
         params: { path: { id } },
-        body: { body },
+        body: { body: body || null, file_ids },
       }),
     onSuccess: async (result) => {
       if (result.error) return

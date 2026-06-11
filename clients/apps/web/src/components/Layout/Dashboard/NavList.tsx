@@ -104,7 +104,14 @@ export const NavList = ({
                   {route.icon}
                 </span>
               ) : undefined}
-              <span className="ml-2 text-sm font-medium">{route.title}</span>
+              <span className="relative ml-2 overflow-visible! text-sm font-medium">
+                {route.title}
+                {route.extra && !isCollapsed && (
+                  <span className="absolute -top-0.5 -right-2 flex">
+                    {route.extra}
+                  </span>
+                )}
+              </span>
             </Link>
           </SidebarMenuButton>
           {(isMobile ? expandedRoute === route.link : route.isActive) &&
@@ -121,8 +128,14 @@ export const NavList = ({
                       )}
                       onClick={closeOnMobile}
                     >
-                      {subRoute.title}
-                      {subRoute.extra}
+                      <span className="relative">
+                        {subRoute.title}
+                        {subRoute.extra && (
+                          <span className="absolute -top-0.5 -right-2 flex">
+                            {subRoute.extra}
+                          </span>
+                        )}
+                      </span>
                     </Link>
                   </SidebarMenuSubItem>
                 ))}

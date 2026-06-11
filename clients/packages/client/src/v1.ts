@@ -7922,8 +7922,6 @@ export interface components {
       organization_id: string
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitCustomSubscriberProperties']
-      /** Visibility Configurable */
-      readonly visibility_configurable: boolean
     }
     /**
      * BenefitCustomSubscriberProperties
@@ -8234,8 +8232,6 @@ export interface components {
       organization_id: string
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitDiscordSubscriberProperties']
-      /** Visibility Configurable */
-      readonly visibility_configurable: boolean
     }
     /**
      * BenefitDiscordSubscriberProperties
@@ -8451,8 +8447,6 @@ export interface components {
       organization_id: string
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitDownloadablesSubscriberProperties']
-      /** Visibility Configurable */
-      readonly visibility_configurable: boolean
     }
     /** BenefitDownloadablesSubscriberProperties */
     BenefitDownloadablesSubscriberProperties: {
@@ -8660,8 +8654,6 @@ export interface components {
       organization_id: string
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitFeatureFlagSubscriberProperties']
-      /** Visibility Configurable */
-      readonly visibility_configurable: boolean
     }
     /**
      * BenefitFeatureFlagSubscriberProperties
@@ -8901,8 +8893,6 @@ export interface components {
       organization_id: string
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitGitHubRepositorySubscriberProperties']
-      /** Visibility Configurable */
-      readonly visibility_configurable: boolean
     }
     /**
      * BenefitGitHubRepositorySubscriberProperties
@@ -10027,8 +10017,6 @@ export interface components {
       organization_id: string
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitLicenseKeysSubscriberProperties']
-      /** Visibility Configurable */
-      readonly visibility_configurable: boolean
     }
     /** BenefitLicenseKeysSubscriberProperties */
     BenefitLicenseKeysSubscriberProperties: {
@@ -10263,8 +10251,6 @@ export interface components {
       organization_id: string
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitMeterCreditSubscriberProperties']
-      /** Visibility Configurable */
-      readonly visibility_configurable: boolean
     }
     /**
      * BenefitMeterCreditSubscriberProperties

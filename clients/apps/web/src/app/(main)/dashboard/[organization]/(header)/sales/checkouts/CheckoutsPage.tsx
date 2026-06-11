@@ -199,24 +199,24 @@ const ClientPage: React.FC<ClientPageProps> = ({
       ),
       cell: ({ row: { original: checkout } }) => {
         const customerEmail = checkout.customer_email
+        const customerName = checkout.customer_name
+        const customerBillingName = checkout.customer_billing_name
         const showBillingName =
-          !!checkout.customer_billing_name &&
-          checkout.customer_name?.toLocaleLowerCase() !==
-            checkout.customer_billing_name.toLocaleLowerCase()
+          !!customerName &&
+          !!customerBillingName &&
+          customerName.toLocaleLowerCase() !==
+            customerBillingName.toLocaleLowerCase()
         return (
           <div className="flex flex-row items-center gap-2 overflow-hidden">
             {customerEmail ? (
-              <>
-                <Avatar avatar_url={null} name={customerEmail} />
-                <div className="overflow-hidden text-ellipsis">
-                  {customerEmail}
-                  {showBillingName && (
-                    <span className="dark:text-polar-500 ml-2 text-gray-500">
-                      {checkout.customer_billing_name}
-                    </span>
-                  )}
-                </div>
-              </>
+              <div className="overflow-hidden text-ellipsis">
+                {customerName || customerEmail}
+                {showBillingName && (
+                  <span className="dark:text-polar-500 ml-2 text-gray-500">
+                    {customerBillingName}
+                  </span>
+                )}
+              </div>
             ) : (
               <>—</>
             )}

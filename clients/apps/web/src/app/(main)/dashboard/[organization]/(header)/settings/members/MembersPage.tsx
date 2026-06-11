@@ -144,7 +144,7 @@ export default function ClientPage({
       ),
       cell: ({ row: { original: member } }) => {
         return (
-          <Box display="flex" flexDirection="row" alignItems="center" gap="s">
+          <Box flexDirection="row" alignItems="center" gap="s">
             <Avatar avatar_url={member.avatar_url} name={member.email} />
             <Text>{member.email}</Text>
           </Box>
@@ -187,7 +187,7 @@ export default function ClientPage({
         }
 
         return (
-          <Box display="flex" justifyContent="end">
+          <Box justifyContent="end">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="secondary" size="icon">

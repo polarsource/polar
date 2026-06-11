@@ -20,6 +20,7 @@ vi.mock('next/headers', () => ({
 
 import {
   findMatchingLocaleInAcceptLanguageHeader,
+  getBrowserLocale,
   parseAcceptLanguageHeader,
   resolveLocale,
 } from './index'
@@ -43,6 +44,24 @@ describe('parseAcceptLanguageHeader', () => {
       { code: 'en-CA', q: 0.7 },
       { code: 'fr', q: 0.3 },
     ])
+  })
+})
+
+describe('getBrowserLocale', () => {
+  it('returns the highest-priority accepted locale from the header', () => {
+    expect(getBrowserLocale('fr;q=0.3,nl;q=0.9')).toBe('nl')
+  })
+
+  it('skips unaccepted codes and returns the first accepted one', () => {
+    expect(getBrowserLocale('xx;q=0.9,fr;q=0.5')).toBe('fr')
+  })
+
+  it('returns null when no code is an accepted locale', () => {
+    expect(getBrowserLocale('xx,zz;q=0.8')).toBeNull()
+  })
+
+  it('returns null when the header is absent', () => {
+    expect(getBrowserLocale(null)).toBeNull()
   })
 })
 

@@ -11,7 +11,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Modal } from '../Modal'
 import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'
-import SpinnerNoMargin from '../Shared/Spinner'
+import { Spinner as SpinnerNoMargin } from '@polar-sh/orbit'
 
 interface WithdrawModalProps {
   organization: schemas['Organization']

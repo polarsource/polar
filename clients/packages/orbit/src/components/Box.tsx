@@ -22,6 +22,12 @@ type BoxElement =
   | 'ol'
   | 'li'
 
+// Box defaults to `display: flex` for block-level elements — the overwhelmingly
+// common case. Elements whose native display is inline (span, label) or
+// list-item (li) keep their natural display so semantics aren't broken; pass an
+// explicit `display` to override either way.
+const NON_FLEX_DEFAULT_ELEMENTS = new Set<BoxElement>(['span', 'label', 'li'])
+
 type BoxOwnProps<E extends BoxElement = 'div'> = BoxStyleProps & {
   as?: E
   className?: string
@@ -54,6 +60,14 @@ function BoxInner<E extends BoxElement = 'div'>(
     } else {
       domProps[key] = value
     }
+  }
+
+  // Apply the flex-by-default rule when the caller hasn't set `display`.
+  if (
+    styleProps.display === undefined &&
+    !NON_FLEX_DEFAULT_ELEMENTS.has((as ?? 'div') as BoxElement)
+  ) {
+    styleProps.display = 'flex'
   }
 
   const { stylexStyles, inlineStyle, responsiveCSS } = resolveBoxStyles(

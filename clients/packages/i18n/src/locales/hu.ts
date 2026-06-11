@@ -108,6 +108,7 @@ export default {
         },
       },
       inclTax: 'ÁFA (tartalmazza)',
+      basePrice: 'Alapár',
     },
     trial: {
       ends: 'A próbaidőszak ekkor jár le: {endDate}',

@@ -14,11 +14,7 @@ import {
   ReactQueryLoading,
 } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/ui/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import TransactionMeta from './TransactionMeta'
 import { TransactionAvailabilityStatus } from './TransactionAvailabilityStatus'
 

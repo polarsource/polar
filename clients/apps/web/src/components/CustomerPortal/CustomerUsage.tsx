@@ -5,7 +5,7 @@ import Search from '@mui/icons-material/Search'
 import { Client } from '@polar-sh/client'
 import { DataTable } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
-import { Tabs, TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
+import { Tabs, TabsContent } from '@polar-sh/orbit'
 import { useMemo, useState } from 'react'
 import FormattedUnits from '../Meter/FormattedUnits'
 export interface CustomerUsageProps {

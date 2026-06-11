@@ -38,6 +38,7 @@ export const ChatMessageBubble = ({ message }: { message: UIMessage }) => {
   if (message.role === 'user') {
     return (
       <Box
+        display="block"
         alignSelf="end"
         backgroundColor="background-card"
         borderRadius="l"

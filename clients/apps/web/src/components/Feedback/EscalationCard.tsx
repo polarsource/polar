@@ -37,7 +37,6 @@ export const EscalationCard = ({
 
   return (
     <Box
-      display="flex"
       flexDirection="column"
       rowGap="m"
       padding="l"
@@ -46,7 +45,7 @@ export const EscalationCard = ({
       borderStyle="solid"
       borderColor="border-primary"
     >
-      <Box display="flex" flexDirection="column" rowGap="xs">
+      <Box flexDirection="column" rowGap="xs">
         <h3 className="text-sm font-medium">Send to the Polar team</h3>
         <p className="dark:text-polar-500 text-sm text-gray-500">
           The full transcript is included automatically. Add anything else
@@ -60,12 +59,7 @@ export const EscalationCard = ({
         rows={4}
         disabled={isSubmitting}
       />
-      <Box
-        display="flex"
-        alignItems="center"
-        justifyContent="between"
-        columnGap="s"
-      >
+      <Box alignItems="center" justifyContent="between" columnGap="s">
         <Select
           value={type}
           onValueChange={(value) => setType(value as schemas['FeedbackType'])}
@@ -82,7 +76,7 @@ export const EscalationCard = ({
             ))}
           </SelectContent>
         </Select>
-        <Box display="flex" columnGap="s">
+        <Box columnGap="s">
           <Button
             type="button"
             variant="ghost"

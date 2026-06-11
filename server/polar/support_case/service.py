@@ -108,5 +108,42 @@ class SupportCaseService:
             audience=audience,
         )
 
+    async def assign(
+        self,
+        session: AsyncSession,
+        case: SupportCase,
+        *,
+        assignee: User,
+    ) -> SupportCaseMessage:
+        """Set the case's current owner and record an internal event.
+
+        Advisory: overwrites any existing assignee without checking for one.
+        """
+        case.assigned_user = assignee
+        return await self.post_message(
+            session,
+            case,
+            type=SupportCaseMessageType.assigned,
+            author_kind=SupportCaseMessageAuthorKind.platform,
+            author_user=assignee,
+        )
+
+    async def unassign(
+        self,
+        session: AsyncSession,
+        case: SupportCase,
+        *,
+        actor: User,
+    ) -> SupportCaseMessage:
+        """Clear the case's owner and record an internal event."""
+        case.assigned_user = None
+        return await self.post_message(
+            session,
+            case,
+            type=SupportCaseMessageType.released,
+            author_kind=SupportCaseMessageAuthorKind.platform,
+            author_user=actor,
+        )
+
 
 support_case = SupportCaseService()

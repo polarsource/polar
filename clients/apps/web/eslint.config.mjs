@@ -48,11 +48,24 @@ export default [
   {
     files: [
       'src/components/CustomerPortal/**/*.{ts,tsx}',
-      'src/app/(main)/[organization]/portal/**/*.{ts,tsx}',
+      'src/app/**/portal/**/*.{ts,tsx}',
     ],
     rules: {
       'polar/no-merchant-queries-in-customer-portal': 'error',
       'polar/no-merchant-api-calls-in-customer-portal': 'error',
+    },
+  },
+  {
+    files: ['src/app/**/portal/**/page.tsx'],
+    ignores: [
+      'src/app/**/portal/page.tsx',
+      'src/app/**/portal/request/page.tsx',
+      'src/app/**/portal/authenticate/page.tsx',
+      'src/app/**/portal/verify-email/page.tsx',
+      'src/app/**/portal/claim/page.tsx',
+    ],
+    rules: {
+      'polar/require-customer-portal-page': 'error',
     },
   },
   {

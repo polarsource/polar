@@ -25,7 +25,6 @@ from polar.enums import (
     TaxBehaviorOption,
     TaxProcessor,
 )
-from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
@@ -108,6 +107,7 @@ from polar.transaction.service.platform_fee import PlatformFeeTransactionService
 from polar.wallet.service import wallet as wallet_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_billing_entry,
@@ -5001,8 +5001,7 @@ class TestVoidOrder:
         assert result_order.status == OrderStatus.void
         assert result_order.id == order.id
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(SystemEvent.order_voided)
+        events = await get_all_by_name(session, SystemEvent.order_voided)
         assert len(events) == 1
         assert events[0].user_metadata["order_id"] == str(order.id)
 

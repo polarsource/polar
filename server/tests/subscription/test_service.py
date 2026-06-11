@@ -97,6 +97,7 @@ from polar.subscription.service import subscription as subscription_service
 from polar.subscription.update import generate_subscription_update
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_canceled_subscription,
@@ -987,8 +988,7 @@ class TestCycle:
         assert updated_subscription.current_period_end > previous_current_period_end
         assert updated_subscription.scheduler_locked_at is None
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(SystemEvent.subscription_cycled)
+        events = await get_all_by_name(session, SystemEvent.subscription_cycled)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -1283,10 +1283,7 @@ class TestCycle:
         assert updated_subscription.current_period_end == previous_current_period_end
         assert updated_subscription.scheduler_locked_at is None
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_revoked
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_revoked)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -3604,10 +3601,7 @@ class TestUpdateProduct:
         price = updated_subscription.prices[0]
         assert price.price_currency == "usd"
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -3742,10 +3736,7 @@ class TestUpdateProduct:
 
         assert updated_subscription.product == product_recurring_multiple_currencies
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -3806,10 +3797,7 @@ class TestUpdateProduct:
 
         assert updated_subscription.product == product_recurring_multiple_currencies
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -3916,10 +3904,7 @@ class TestUpdateProduct:
 
         assert updated_subscription.product == product_recurring_multiple_currencies
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -4283,10 +4268,7 @@ class TestUpdateDiscount:
 
         assert subscription.discount is None
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -4315,10 +4297,7 @@ class TestUpdateDiscount:
 
         assert subscription.discount == discount_percentage_50
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -4351,10 +4330,7 @@ class TestUpdateDiscount:
 
         assert subscription.discount == discount_percentage_100
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -4427,10 +4403,7 @@ class TestUpdateTrial:
         # Verify that the webhook was triggered
         assert_hooks_called_once(subscription_hooks, {"updated"})
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -4494,10 +4467,7 @@ class TestUpdateTrial:
         assert updated_subscription.current_period_end == trial_end
         assert updated_subscription.trialing
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -5205,10 +5175,7 @@ class TestUpdateSeats:
         )
         assert subscription_update is None
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 0
 
     @pytest.mark.parametrize(
@@ -5528,10 +5495,7 @@ class TestUpdateSeats:
         for call_args in enqueue_job_mock.call_args_list:
             assert call_args[0][0] != "order.create_subscription_order"
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -5584,10 +5548,7 @@ class TestUpdateSeats:
         await session.flush()
 
         # Then: subscription.updated event emitted with invoice proration behavior
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
@@ -6782,10 +6743,7 @@ class TestUpdateBillingPeriod:
         assert updated_subscription.current_period_end == new_period_end
         assert updated_subscription.anchor_day == new_period_end.day
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_updated
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)

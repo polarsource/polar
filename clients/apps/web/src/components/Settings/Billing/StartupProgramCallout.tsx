@@ -95,7 +95,6 @@ export const StartupProgramCallout = ({
 
   return (
     <Box
-      display="flex"
       flexDirection="column"
       justifyContent={{ md: 'between' }}
       alignItems="start"
@@ -105,7 +104,7 @@ export const StartupProgramCallout = ({
       backgroundColor="background-card"
       padding="xl"
     >
-      <Box display="flex" flexDirection="column" rowGap="xs">
+      <Box flexDirection="column" rowGap="xs">
         <Text variant="body" as="h3">
           You&apos;re in the Polar Startup Program
         </Text>

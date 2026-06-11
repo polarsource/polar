@@ -1,4 +1,5 @@
 import { schemas } from '@polar-sh/client'
+import type { StatusColor } from '@polar-sh/orbit'
 
 export const PaymentStatusDisplayTitle: Record<
   schemas['PaymentStatus'],
@@ -11,11 +12,11 @@ export const PaymentStatusDisplayTitle: Record<
 
 export const PaymentStatusDisplayColor: Record<
   schemas['PaymentStatus'],
-  string
+  StatusColor
 > = {
-  succeeded: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950',
-  pending: 'bg-yellow-100 text-yellow-500 dark:bg-yellow-950',
-  failed: 'bg-red-100 text-red-500 dark:bg-red-950',
+  succeeded: 'green',
+  pending: 'yellow',
+  failed: 'red',
 }
 
 export const isCardPayment = (

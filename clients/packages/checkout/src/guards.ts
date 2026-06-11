@@ -45,3 +45,26 @@ export const getSeatPrice = (
       ) ?? null
   )
 }
+
+export const getFixedPrice = (
+  checkout: schemas['CheckoutPublic'],
+): schemas['ProductPriceFixed'] | null => {
+  if (!checkout.product || !checkout.prices) {
+    return null
+  }
+
+  const prices = checkout.prices[checkout.product.id]
+
+  if (!prices) {
+    return null
+  }
+
+  return (
+    prices
+      .filter((price) => price.price_currency === checkout.currency)
+      .find(
+        (price): price is schemas['ProductPriceFixed'] =>
+          price.amount_type === 'fixed',
+      ) ?? null
+  )
+}

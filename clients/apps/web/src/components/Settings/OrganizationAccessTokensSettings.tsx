@@ -12,7 +12,7 @@ import { Button } from '@polar-sh/orbit'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Input } from '@polar-sh/orbit'
-import ListGroup from '@polar-sh/ui/components/atoms/ListGroup'
+import { ListGroup } from '@polar-sh/orbit'
 import {
   Select,
   SelectContent,

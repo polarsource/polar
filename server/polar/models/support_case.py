@@ -67,6 +67,8 @@ class SupportCaseMessageType(StrEnum):
     # lifecycle (generic)
     opened = "opened"
     closed = "closed"
+    assigned = "assigned"
+    released = "released"
     # actions (review_appeal)
     appeal_approved = "appeal_approved"
     appeal_denied = "appeal_denied"
@@ -94,6 +96,14 @@ class SupportCase(RecordModel):
     type: Mapped[SupportCaseType] = mapped_column(
         StringEnum(SupportCaseType, length=32), nullable=False, index=True
     )
+    # Staff member currently handling the case (advisory; no exclusivity).
+    assigned_user_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("users.id", ondelete="set null"),
+        nullable=True,
+        default=None,
+        index=True,
+    )
 
     __mapper_args__ = {"polymorphic_on": "type"}
 
@@ -112,6 +122,10 @@ class SupportCase(RecordModel):
         return relationship(
             "SupportCaseAttachment", lazy="raise", back_populates="case"
         )
+
+    @declared_attr
+    def assigned_user(cls) -> Mapped["User | None"]:
+        return relationship("User", lazy="raise")
 
 
 class ReviewAppealSupportCase(SupportCase):

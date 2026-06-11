@@ -16,8 +16,8 @@ const SCALE_FEATURES = ['Slack Channel', 'Prioritized Ticket support']
 
 export const StartupProgramHero = () => {
   return (
-    <Box display="flex" flexDirection="column" rowGap="3xl">
-      <Box display="flex" flexDirection="column" rowGap="2xl">
+    <Box flexDirection="column" rowGap="3xl">
+      <Box flexDirection="column" rowGap="2xl">
         <Text as="h3" variant="heading-l" wrap="pretty">
           Polar for Startups
         </Text>
@@ -28,11 +28,10 @@ export const StartupProgramHero = () => {
         </Text>
       </Box>
 
-      <Box display="flex" flexDirection="row">
+      <Box flexDirection="row">
         {STATS.map((s, i) => (
           <Box
             key={s.label}
-            display="flex"
             flexDirection="column"
             rowGap="xs"
             paddingHorizontal="xl"
@@ -50,7 +49,6 @@ export const StartupProgramHero = () => {
       </Box>
 
       <Box
-        display="flex"
         flexDirection="column"
         rowGap="xl"
         padding={{
@@ -59,20 +57,15 @@ export const StartupProgramHero = () => {
         }}
         backgroundColor="background-secondary"
       >
-        <Box display="flex" flexDirection="column" rowGap="m">
+        <Box flexDirection="column" rowGap="m">
           <Text variant="heading-s">Scale</Text>
           <Text variant="body" color="muted">
             For fast growing businesses
           </Text>
         </Box>
 
-        <Box display="flex" flexDirection="column" rowGap="s">
-          <Box
-            display="flex"
-            flexDirection="row"
-            alignItems="baseline"
-            columnGap="m"
-          >
+        <Box flexDirection="column" rowGap="s">
+          <Box flexDirection="row" alignItems="baseline" columnGap="m">
             <Text variant="heading-s">Free</Text>
             <Text variant="body" color="muted">
               for 1 year
@@ -80,25 +73,19 @@ export const StartupProgramHero = () => {
           </Box>
         </Box>
 
-        <Box display="flex" flexDirection="column" rowGap="xs">
+        <Box flexDirection="column" rowGap="xs">
           <Text variant="body" color="muted">
             Transaction Fee
           </Text>
           <Text variant="body">3.40% + $0.30</Text>
         </Box>
 
-        <Box display="flex" flexDirection="column" rowGap="s">
+        <Box flexDirection="column" rowGap="s">
           <Text variant="body" color="muted">
             Features
           </Text>
           {SCALE_FEATURES.map((f) => (
-            <Box
-              key={f}
-              display="flex"
-              flexDirection="row"
-              alignItems="center"
-              columnGap="s"
-            >
+            <Box key={f} flexDirection="row" alignItems="center" columnGap="s">
               <CheckOutlined fontSize="inherit" />
               <Text variant="body">{f}</Text>
             </Box>

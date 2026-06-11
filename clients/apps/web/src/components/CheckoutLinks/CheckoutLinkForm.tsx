@@ -15,7 +15,7 @@ import { isValidationError, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'
 import { Input } from '@polar-sh/orbit'
-import Switch from '@polar-sh/ui/components/atoms/Switch'
+import { Switch } from '@polar-sh/orbit'
 import {
   Form,
   FormControl,

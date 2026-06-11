@@ -1,6 +1,5 @@
 import { schemas } from '@polar-sh/client'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
-import { twMerge } from 'tailwind-merge'
+import { Status, type StatusColor } from '@polar-sh/orbit'
 
 const OrderStatusDisplayTitle: Record<schemas['Order']['status'], string> = {
   draft: 'Draft',
@@ -11,17 +10,15 @@ const OrderStatusDisplayTitle: Record<schemas['Order']['status'], string> = {
   void: 'Void',
 }
 
-const OrderStatusDisplayColor: Record<schemas['Order']['status'], string> = {
-  draft: 'bg-gray-100 text-gray-500 dark:bg-gray-900 dark:text-gray-400',
-  paid: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500',
-  pending:
-    'bg-yellow-100 text-yellow-500 dark:bg-yellow-950 dark:text-yellow-500',
-  refunded:
-    'bg-violet-100 text-violet-500 dark:bg-violet-950 dark:text-violet-400',
-  partially_refunded:
-    'bg-violet-100 text-violet-500 dark:bg-violet-950 dark:text-violet-400',
-  void: 'bg-red-100 text-red-500 dark:bg-red-950 dark:text-red-400',
-}
+const OrderStatusDisplayColor: Record<schemas['Order']['status'], StatusColor> =
+  {
+    draft: 'gray',
+    paid: 'green',
+    pending: 'yellow',
+    refunded: 'purple',
+    partially_refunded: 'purple',
+    void: 'red',
+  }
 
 export const OrderStatus = ({
   status,
@@ -32,7 +29,7 @@ export const OrderStatus = ({
 }) => {
   return (
     <Status
-      className={twMerge(OrderStatusDisplayColor[status], 'w-fit')}
+      color={OrderStatusDisplayColor[status]}
       status={OrderStatusDisplayTitle[status]}
       size={size}
     />

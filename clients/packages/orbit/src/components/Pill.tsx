@@ -1,14 +1,15 @@
+import type { ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-const Pill = ({
-  children,
-  color,
-  className,
-}: {
-  children: React.ReactNode
-  color: 'gray' | 'blue' | 'purple' | 'yellow' | 'red' | 'green'
+export type PillColor = 'gray' | 'blue' | 'purple' | 'yellow' | 'red' | 'green'
+
+export interface PillProps {
+  children: ReactNode
+  color: PillColor
   className?: string
-}) => {
+}
+
+export const Pill = ({ children, color, className }: PillProps) => {
   return (
     <span
       className={twMerge(
@@ -39,5 +40,3 @@ const Pill = ({
     </span>
   )
 }
-
-export default Pill

@@ -1,7 +1,7 @@
 import { useOptimisticSave } from '@/hooks/useOptimisticSave'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
-import Switch from '@polar-sh/ui/components/atoms/Switch'
+import { Switch } from '@polar-sh/orbit'
 import React from 'react'
 import { toast } from '../Toast/use-toast'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'

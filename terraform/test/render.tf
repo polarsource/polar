@@ -202,7 +202,7 @@ module "test" {
     region                        = "us-east-2"
     signature_version             = "v4"
     files_presign_ttl             = "600"
-    files_public_bucket_name      = "polar-public-files"
+    files_public_bucket_name      = "polar-test-public-files"
     customer_invoices_bucket_name = "polar-test-customer-invoices"
     customer_receipts_bucket_name = "polar-test-customer-receipts"
     payout_invoices_bucket_name   = "polar-test-payout-invoices"

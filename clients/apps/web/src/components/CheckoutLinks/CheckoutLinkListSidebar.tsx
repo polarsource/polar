@@ -4,7 +4,7 @@ import { CheckoutLinkManagementModal } from '@/components/CheckoutLinks/Checkout
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import ProductSelect from '@/components/Products/ProductSelect'
-import Spinner from '@/components/Shared/Spinner'
+import { Spinner } from '@polar-sh/orbit'
 import { toast } from '@/components/Toast/use-toast'
 import { useCheckoutLinks } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'

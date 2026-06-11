@@ -184,7 +184,7 @@ export const ToolCallGroup = ({
 
   if (expanded) {
     return (
-      <Box display="flex" flexDirection="column" gap="s">
+      <Box flexDirection="column" gap="s">
         <button
           onClick={() => setExpanded(false)}
           className="dark:text-polar-500 flex items-center gap-1 text-left text-gray-500 hover:text-gray-700 dark:hover:text-gray-400"
@@ -197,7 +197,6 @@ export const ToolCallGroup = ({
         </button>
         <Box
           marginLeft="xl"
-          display="flex"
           flexDirection="column"
           gap="xs"
           borderLeftWidth={2}

@@ -28,16 +28,10 @@ import { Button } from '@polar-sh/orbit'
 import { DataTable } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@polar-sh/ui/components/atoms/Tabs'
+import { Status } from '@polar-sh/orbit'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import Link from 'next/link'
 import React, { useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { benefitsDisplayNames } from '../Benefit/utils'
 import MetricChartBox from '../Metrics/MetricChartBox'
 import { DetailRow } from '../Shared/DetailRow'
@@ -564,12 +558,8 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 label="Type"
                 value={
                   <Status
-                    className={twMerge(
-                      customer.type === 'team'
-                        ? 'bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400'
-                        : 'dark:bg-polar-700 dark:text-polar-400 bg-gray-100 text-gray-600',
-                      'w-fit text-xs',
-                    )}
+                    color={customer.type === 'team' ? 'purple' : 'gray'}
+                    size="small"
                     status={customer.type === 'team' ? 'Team' : 'Individual'}
                   />
                 }

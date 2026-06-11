@@ -96,12 +96,7 @@ export const AccountPageDetailsRequired = ({ organization }: Props) => {
         </Button>
       }
     >
-      <Box
-        display="flex"
-        flexDirection="column"
-        rowGap="xl"
-        paddingBottom="3xl"
-      >
+      <Box flexDirection="column" rowGap="xl" paddingBottom="3xl">
         <Text variant="body" color="muted">
           Verify your business so customers can buy from you. After you submit,
           our team will review your details and get back to you shortly.

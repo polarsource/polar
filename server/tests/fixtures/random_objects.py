@@ -724,9 +724,7 @@ async def create_legacy_recurring_product_price(
     maximum_amount: int | None = None,
     preset_amount: int | None = None,
 ) -> LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom:
-    product_price: (
-        LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom
-    )
+    product_price: LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom
     if amount_type == ProductPriceAmountType.fixed:
         product_price = LegacyRecurringProductPriceFixed(
             price_amount=amount,

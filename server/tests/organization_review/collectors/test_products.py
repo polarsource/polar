@@ -79,9 +79,7 @@ class TestCollectProductsData:
                     ],
                 ),
                 _build_product(
-                    prices=[
-                        _build_price(ProductPriceAmountType.fixed, price_amount=0)
-                    ]
+                    prices=[_build_price(ProductPriceAmountType.fixed, price_amount=0)]
                 ),
             ]
         )

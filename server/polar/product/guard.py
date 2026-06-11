@@ -30,9 +30,7 @@ type MeteredPrice = ProductPriceMeteredUnit
 
 type SeatPrice = ProductPriceSeatUnit
 
-type LegacyPrice = (
-    LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom
-)
+type LegacyPrice = LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom
 
 
 def is_legacy_price(price: ProductPrice) -> TypeIs[LegacyPrice]:

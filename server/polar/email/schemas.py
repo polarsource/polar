@@ -28,6 +28,7 @@ class EmailTemplate(StrEnum):
     organization_access_token_leaked = "organization_access_token_leaked"
     organization_invite = "organization_invite"
     organization_account_unlink = "organization_account_unlink"
+    support_case_organization_new_message = "support_case_organization_new_message"
     personal_access_token_leaked = "personal_access_token_leaked"
     seat_invitation = "seat_invitation"
     subscription_cancellation = "subscription_cancellation"
@@ -192,6 +193,22 @@ class OrganizationInviteEmail(BaseModel):
         EmailTemplate.organization_invite
     )
     props: OrganizationInviteProps
+
+
+class SupportCaseOrganizationNewMessageProps(EmailProps):
+    organization_name: str
+    # Recipient-facing label for the case type (e.g. "appeal"), so the copy
+    # stays generic across support-case types.
+    case_label: str
+    message_excerpt: str
+    url: str
+
+
+class SupportCaseOrganizationNewMessageEmail(BaseModel):
+    template: Literal[EmailTemplate.support_case_organization_new_message] = (
+        EmailTemplate.support_case_organization_new_message
+    )
+    props: SupportCaseOrganizationNewMessageProps
 
 
 class PersonalAccessTokenLeakedProps(EmailProps):
@@ -436,6 +453,7 @@ Email = Annotated[
     | OrganizationAccessTokenLeakedEmail
     | OrganizationInviteEmail
     | OrganizationAccountUnlinkEmail
+    | SupportCaseOrganizationNewMessageEmail
     | PersonalAccessTokenLeakedEmail
     | SeatInvitationEmail
     | SubscriptionCancellationEmail

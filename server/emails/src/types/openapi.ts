@@ -2553,6 +2553,29 @@ export interface components {
       url: string
       order: components['schemas']['OrderEmail'] | null
     }
+    /** SupportCaseOrganizationNewMessageEmail */
+    SupportCaseOrganizationNewMessageEmail: {
+      /**
+       * Template
+       * @default support_case_organization_new_message
+       * @constant
+       */
+      template: 'support_case_organization_new_message'
+      props: components['schemas']['SupportCaseOrganizationNewMessageProps']
+    }
+    /** SupportCaseOrganizationNewMessageProps */
+    SupportCaseOrganizationNewMessageProps: {
+      /** Email */
+      email: string
+      /** Organization Name */
+      organization_name: string
+      /** Case Label */
+      case_label: string
+      /** Message Excerpt */
+      message_excerpt: string
+      /** Url */
+      url: string
+    }
     /**
      * TaxBehaviorOption
      * @enum {string}

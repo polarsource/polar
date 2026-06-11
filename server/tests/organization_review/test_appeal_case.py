@@ -1,5 +1,6 @@
 import pytest
 import pytest_asyncio
+from pytest_mock import MockerFixture
 
 from polar.models import OrganizationReview
 from polar.models.organization import Organization
@@ -195,3 +196,88 @@ class TestThreadAudience:
         assert full_thread is not None
         _c, _o, all_messages = full_thread
         assert "internal staff note" in [m.body for m in all_messages]
+
+
+@pytest.mark.asyncio
+class TestReplyNotifiesMerchant:
+    async def test_merchant_visible_reply_enqueues_email(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        denied_review: OrganizationReview,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        enqueue = mocker.patch(
+            "polar.organization_review.appeal_case.enqueue_job"
+        )
+        case = await appeal_case_service.request_human_review(
+            session,
+            denied_review,
+            reason="reason",
+            requested_by_user=user,
+            organization=organization,
+        )
+        message = await appeal_case_service.add_reply(
+            session,
+            case,
+            author_kind=SupportCaseMessageAuthorKind.platform,
+            author_user=user,
+            body="staff reply",
+        )
+        enqueue.assert_called_once_with(
+            "support_case.notify_organization_of_new_message", message_id=message.id
+        )
+
+    async def test_internal_note_does_not_enqueue(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        denied_review: OrganizationReview,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        enqueue = mocker.patch(
+            "polar.organization_review.appeal_case.enqueue_job"
+        )
+        case = await appeal_case_service.request_human_review(
+            session,
+            denied_review,
+            reason="reason",
+            requested_by_user=user,
+            organization=organization,
+        )
+        await appeal_case_service.add_reply(
+            session,
+            case,
+            author_kind=SupportCaseMessageAuthorKind.platform,
+            author_user=user,
+            body="internal staff note",
+            internal=True,
+        )
+        enqueue.assert_not_called()
+
+    async def test_decision_enqueues_email(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        denied_review: OrganizationReview,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        enqueue = mocker.patch(
+            "polar.organization_review.appeal_case.enqueue_job"
+        )
+        case = await appeal_case_service.request_human_review(
+            session,
+            denied_review,
+            reason="reason",
+            requested_by_user=user,
+            organization=organization,
+        )
+        message = await appeal_case_service.record_decision(
+            session, case, approved=False, staff_user=user, reason="denied again"
+        )
+        enqueue.assert_called_once_with(
+            "support_case.notify_organization_of_new_message", message_id=message.id
+        )

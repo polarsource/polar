@@ -10476,7 +10476,11 @@ export interface components {
        */
       organization_id: string
       metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitSlackSharedChannelProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /** BenefitSlackSharedChannelCreate */
     BenefitSlackSharedChannelCreate: {
@@ -10512,6 +10516,8 @@ export interface components {
        * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       properties: components['schemas']['BenefitSlackSharedChannelCreateProperties']
     }
     /** BenefitSlackSharedChannelCreateProperties */
@@ -10624,7 +10630,6 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitSlackSharedChannelSubscriberProperties']
     }
@@ -10654,6 +10659,8 @@ export interface components {
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
       description?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       /**
        * Type
        * @constant

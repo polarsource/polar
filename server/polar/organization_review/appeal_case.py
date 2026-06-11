@@ -95,7 +95,9 @@ class AppealCaseService:
         # Visible replies notify the case recipients by email (direct send,
         # bypassing the legacy notification system.
         if not internal:
-            enqueue_job("support_case.notify_organization_of_new_message", message_id=message.id)
+            enqueue_job(
+                "support_case.notify_organization_of_new_message", message_id=message.id
+            )
         return message
 
     async def record_decision(
@@ -127,6 +129,10 @@ class AppealCaseService:
             author_kind=SupportCaseMessageAuthorKind.platform,
             author_user=staff_user,
             audience=[SupportCaseAudience.merchant],
+        )
+        # Notify the case recipients of the decision (same email path as replies).
+        enqueue_job(
+            "support_case.notify_organization_of_new_message", message_id=message.id
         )
         # This records the decision on the case only. The caller drives org
         # state: approve via organization.backoffice_approve (built to override

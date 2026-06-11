@@ -89,10 +89,7 @@ class TestNotifyOrganization:
         await _notify(message.id)
 
         enqueue.assert_called_once()
-        assert (
-            enqueue.call_args.kwargs["to_email_addr"]
-            == user_organization.user.email
-        )
+        assert enqueue.call_args.kwargs["to_email_addr"] == user_organization.user.email
 
     async def test_skips_non_staff_message(
         self,

@@ -208,9 +208,7 @@ class TestReplyNotifiesMerchant:
         organization: Organization,
         user: User,
     ) -> None:
-        enqueue = mocker.patch(
-            "polar.organization_review.appeal_case.enqueue_job"
-        )
+        enqueue = mocker.patch("polar.organization_review.appeal_case.enqueue_job")
         case = await appeal_case_service.request_human_review(
             session,
             denied_review,
@@ -237,9 +235,7 @@ class TestReplyNotifiesMerchant:
         organization: Organization,
         user: User,
     ) -> None:
-        enqueue = mocker.patch(
-            "polar.organization_review.appeal_case.enqueue_job"
-        )
+        enqueue = mocker.patch("polar.organization_review.appeal_case.enqueue_job")
         case = await appeal_case_service.request_human_review(
             session,
             denied_review,
@@ -265,9 +261,7 @@ class TestReplyNotifiesMerchant:
         organization: Organization,
         user: User,
     ) -> None:
-        enqueue = mocker.patch(
-            "polar.organization_review.appeal_case.enqueue_job"
-        )
+        enqueue = mocker.patch("polar.organization_review.appeal_case.enqueue_job")
         case = await appeal_case_service.request_human_review(
             session,
             denied_review,

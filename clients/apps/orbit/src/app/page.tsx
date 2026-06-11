@@ -14,7 +14,7 @@ const PRINCIPLES = [
   {
     title: 'Derived, not decorated',
     lead: 'Every element should feel like it emerged from an underlying rule, not a preference. Beauty is an outcome of correctness, not ornament.',
-    body: 'Color resolves from light-dark(), spacing from a single scale, motion from physical curves. You author one styling pass and dark mode is free, because the values are computed rather than hand-picked.',
+    body: 'Color resolves from light-dark(), spacing from a single scale, motion from physical curves. You author one styling pass and dark mode is free, because the values are computed rather than handpicked.',
   },
   {
     title: 'Precision as respect',

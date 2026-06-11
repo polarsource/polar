@@ -10549,9 +10549,10 @@ export interface components {
     BenefitSlackSharedChannelProperties: {
       /**
        * Slack Integration Id
-       * @description Polar Slack integration ID linked to this benefit, if any.
+       * Format: uuid4
+       * @description Polar Slack integration linked to this benefit.
        */
-      slack_integration_id?: string | null
+      slack_integration_id: string
       /**
        * Channel Name Template
        * @description Template for the channel name. Supports placeholders: {customer_name}, {customer_email_local}, and {metadata.<key>} for any value stored in customer user metadata.

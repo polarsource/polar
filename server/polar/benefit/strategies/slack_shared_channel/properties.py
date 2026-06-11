@@ -1,10 +1,8 @@
-from typing import NotRequired
-
 from ..base.properties import BenefitGrantProperties, BenefitProperties
 
 
 class BenefitSlackSharedChannelProperties(BenefitProperties):
-    slack_integration_id: NotRequired[str | None]
+    slack_integration_id: str
     channel_name_template: str
     private: bool
     welcome_message: str | None

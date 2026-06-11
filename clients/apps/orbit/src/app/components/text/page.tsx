@@ -14,14 +14,14 @@ const variantCode = `<Text variant="heading-l" as="h1">Page title</Text>
 <Text variant="label">Field label</Text>
 <Text variant="mono">npm install</Text>`
 
-const colorCode = `<Text color="muted">De-emphasised copy</Text>
+const colorCode = `<Text color="default">De-emphasised copy</Text>
 <Text color="accent">Accent</Text>
 <Text color="success">Saved</Text>
 <Text color="danger">Something went wrong</Text>`
 
 const stateCode = `<Text loading placeholderText="Loading a single line of text" />
 <Text loading placeholderNumberOfLines={3} />
-<Text lineThrough color="muted">Previous price</Text>`
+<Text lineThrough color="default">Previous price</Text>`
 
 const textProps: PropRow[] = [
   {
@@ -98,7 +98,7 @@ export default function TextPage() {
         description="Use Text for any text node rather than tailwind text classes. The variant sets size, weight and font family; color and alignment layer on top."
       >
         <Prose>
-          <Text color="muted">
+          <Text variant="body" color="default">
             Headings use the display scale and respond to viewport width. Body,
             label, caption and mono cover supporting copy. Built-in loading and
             lineThrough states cover common UI affordances without extra markup.
@@ -134,7 +134,7 @@ export default function TextPage() {
       </Section>
 
       <Section title="Props">
-        <PropsTable rows={textProps} />
+        <PropsTable rows={textProps} slug="text" />
       </Section>
     </>
   )

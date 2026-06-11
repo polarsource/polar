@@ -44,11 +44,11 @@ const selectableCode = `const [selected, setSelected] = useState('overview')
 const groupCode = `<ListGroup>
   <ListGroup.Item>
     <Text variant="label">Profile</Text>
-    <Text color="muted">Name, avatar and contact details.</Text>
+    <Text color="default">Name, avatar and contact details.</Text>
   </ListGroup.Item>
   <ListGroup.Item>
     <Text variant="label">Billing</Text>
-    <Text color="muted">Payment methods and invoices.</Text>
+    <Text color="default">Payment methods and invoices.</Text>
   </ListGroup.Item>
 </ListGroup>`
 
@@ -136,7 +136,7 @@ export default function ListPage() {
         description="List wraps a column of ListItem rows with a border and dividers. Each ListItem lays its children out as a space-between row, so a label and a trailing control align to each edge."
       >
         <Prose>
-          <Text color="muted">
+          <Text variant="body" color="default">
             Build row content with Box and Text. Make rows interactive by
             passing onSelect and toggling selected. ListGroup is a separate
             primitive for stacking titled sections such as a settings page.
@@ -199,13 +199,13 @@ export default function ListPage() {
               <ListGroup.Item>
                 <Box flexDirection="column" rowGap="xs">
                   <Text variant="label">Profile</Text>
-                  <Text color="muted">Name, avatar and contact details.</Text>
+                  <Text color="default">Name, avatar and contact details.</Text>
                 </Box>
               </ListGroup.Item>
               <ListGroup.Item>
                 <Box flexDirection="column" rowGap="xs">
                   <Text variant="label">Billing</Text>
-                  <Text color="muted">Payment methods and invoices.</Text>
+                  <Text color="default">Payment methods and invoices.</Text>
                 </Box>
               </ListGroup.Item>
             </ListGroup>
@@ -214,7 +214,7 @@ export default function ListPage() {
       </Section>
 
       <Section title="List props">
-        <PropsTable rows={listProps} />
+        <PropsTable rows={listProps} slug="list" />
       </Section>
 
       <Section title="ListItem props">

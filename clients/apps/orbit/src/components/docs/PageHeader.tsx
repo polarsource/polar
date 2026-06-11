@@ -1,6 +1,7 @@
 import { Box } from '@polar-sh/orbit/Box'
 import { Text } from '@polar-sh/orbit'
 import { type ReactNode } from 'react'
+import { SourceLink } from './SourceLink'
 
 export function PageHeader({
   eyebrow,
@@ -23,16 +24,25 @@ export function PageHeader({
       borderColor="border-primary"
     >
       {eyebrow && (
-        <Text variant="label" color="muted">
+        <Text variant="label" color="default">
           {eyebrow}
         </Text>
       )}
-      <Text variant="heading-s" as="h1">
-        {title}
-      </Text>
+      <Box
+        alignItems="center"
+        justifyContent="between"
+        columnGap="l"
+        flexWrap="wrap"
+        rowGap="m"
+      >
+        <Text variant="heading-s" as="h1">
+          {title}
+        </Text>
+        <SourceLink />
+      </Box>
       {description && (
         <Box maxWidth={620}>
-          <Text variant="body" color="muted">
+          <Text variant="body" color="default">
             {description}
           </Text>
         </Box>

@@ -85,7 +85,7 @@ export default function StatusPage() {
         title="Props"
         description="Status has no className prop. Use color and size to control its appearance."
       >
-        <PropsTable rows={statusProps} />
+        <PropsTable rows={statusProps} slug="status" />
       </Section>
     </>
   )

@@ -165,7 +165,7 @@ export default function GridPage() {
         description="Use Grid for two-dimensional layouts and GridItem for children that span tracks or are placed explicitly."
       >
         <Prose>
-          <Text color="muted">
+          <Text variant="body" color="default">
             Because Grid is a Box, spacing uses tokens through gap, rowGap and
             columnGap, and every prop accepts a responsive object. Track lists
             such as repeat(3, 1fr) stay typed as strings, while line and
@@ -216,11 +216,11 @@ export default function GridPage() {
       </Section>
 
       <Section title="Grid props">
-        <PropsTable rows={gridProps} />
+        <PropsTable rows={gridProps} slug="grid" />
       </Section>
 
       <Section title="GridItem props">
-        <PropsTable rows={gridItemProps} />
+        <PropsTable rows={gridItemProps} slug="grid-item" />
       </Section>
     </>
   )

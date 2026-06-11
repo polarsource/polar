@@ -36,7 +36,7 @@ function Wordmark() {
           <Text variant="default" color="default">
             Orbit
           </Text>
-          <Text variant="caption" color="muted">
+          <Text variant="caption" color="default">
             Polar Design System
           </Text>
         </Box>

@@ -113,7 +113,7 @@ export default function SwitchPage() {
         description="Use Switch for settings that take effect immediately, such as enabling a feature. For options confirmed on submit, prefer a Checkbox."
       >
         <Prose>
-          <Text color="muted">
+          <Text variant="body" color="default">
             Switch is controlled via checked and onCheckedChange and accepts the
             full Radix Switch API. Pair it with a label so the state is clear.
           </Text>
@@ -148,7 +148,7 @@ export default function SwitchPage() {
       </Section>
 
       <Section title="Props">
-        <PropsTable rows={switchProps} />
+        <PropsTable rows={switchProps} slug="switch" />
       </Section>
     </>
   )

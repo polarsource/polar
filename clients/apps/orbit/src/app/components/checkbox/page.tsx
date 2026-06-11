@@ -121,7 +121,7 @@ export default function CheckboxPage() {
         description="Use Checkbox for boolean choices in forms and lists. It is controlled via checked and onCheckedChange, and accepts the full Radix Checkbox API."
       >
         <Prose>
-          <Text color="muted">
+          <Text variant="body" color="default">
             The indeterminate state communicates a partial selection, such as a
             parent checkbox whose children are only partly selected. Always pair
             a checkbox with a label for accessibility.
@@ -157,7 +157,7 @@ export default function CheckboxPage() {
       </Section>
 
       <Section title="Props">
-        <PropsTable rows={checkboxProps} />
+        <PropsTable rows={checkboxProps} slug="checkbox" />
       </Section>
     </>
   )

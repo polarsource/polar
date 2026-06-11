@@ -118,7 +118,7 @@ export default function TypographyPage() {
               <Text variant={variant} as="span">
                 The quick brown fox
               </Text>
-              <Text variant="mono" color="muted">
+              <Text variant="mono" color="default">
                 {variant}
               </Text>
             </Box>
@@ -134,7 +134,7 @@ export default function TypographyPage() {
           {COLORS.map((color) => (
             <Box key={color} alignItems="baseline" columnGap="l">
               <Box minWidth={96}>
-                <Text variant="mono" color="muted">
+                <Text variant="mono" color="default">
                   {color}
                 </Text>
               </Box>
@@ -151,7 +151,7 @@ export default function TypographyPage() {
         description="Control flow with align and wrap. Use balance for short headings and pretty for long paragraphs."
       >
         <Prose>
-          <Text color="muted">
+          <Text variant="body" color="default">
             The wrap prop maps to CSS text-wrap. Use balance to even out short,
             multi-line headings and pretty to avoid orphans in body copy.
           </Text>
@@ -166,7 +166,7 @@ export default function TypographyPage() {
       </Section>
 
       <Section title="Props" description="The full Text API.">
-        <PropsTable rows={PROPS} />
+        <PropsTable rows={PROPS} slug="text" />
       </Section>
     </>
   )

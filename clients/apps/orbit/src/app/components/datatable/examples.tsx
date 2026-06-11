@@ -102,7 +102,7 @@ const columns: DataTableColumnDef<Order>[] = [
     accessorKey: 'email',
     enableSorting: false,
     header: 'Email',
-    cell: ({ row }) => <Text color="muted">{row.original.email}</Text>,
+    cell: ({ row }) => <Text color="default">{row.original.email}</Text>,
   },
   {
     accessorKey: 'amount',

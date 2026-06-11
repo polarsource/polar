@@ -114,7 +114,7 @@ export default function TruncatedPage() {
       </Section>
 
       <Section title="Props">
-        <PropsTable rows={truncatedProps} />
+        <PropsTable rows={truncatedProps} slug="truncated" />
       </Section>
     </>
   )

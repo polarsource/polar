@@ -122,7 +122,7 @@ export default function AvatarPage() {
         <Example>
           <Box alignItems="center" columnGap="m">
             <Avatar name="Lazy User" avatar_url={imageUrl} loading="lazy" />
-            <Text variant="caption" color="muted">
+            <Text variant="caption" color="default">
               loading=&quot;lazy&quot;
             </Text>
           </Box>
@@ -130,7 +130,7 @@ export default function AvatarPage() {
       </Section>
 
       <Section title="Props">
-        <PropsTable rows={avatarProps} />
+        <PropsTable rows={avatarProps} slug="avatar" />
       </Section>
     </>
   )

@@ -16,7 +16,7 @@ function Tile({ children }: { children: ReactNode }) {
       borderColor="border-primary"
       backgroundColor="background-secondary"
     >
-      <Text variant="label" color="muted">
+      <Text variant="label" color="default">
         {children}
       </Text>
     </Box>
@@ -59,7 +59,7 @@ export function CardDemo() {
       <Text variant="heading-xxs" as="h4">
         Card surface
       </Text>
-      <Text color="muted">
+      <Text color="default">
         Radius, background, border and padding composed from tokens.
       </Text>
     </Box>
@@ -71,19 +71,19 @@ export function PolymorphismDemo() {
     <Box flexDirection="column" rowGap="m" width="100%" maxWidth={320}>
       <Box as="nav" alignItems="center" columnGap="m">
         <Text variant="label">Home</Text>
-        <Text variant="label" color="muted">
+        <Text variant="label" color="default">
           Docs
         </Text>
-        <Text variant="label" color="muted">
+        <Text variant="label" color="default">
           Pricing
         </Text>
       </Box>
       <Box as="ul" flexDirection="column" rowGap="s">
         <Box as="li">
-          <Text color="muted">List item rendered as li</Text>
+          <Text color="default">List item rendered as li</Text>
         </Box>
         <Box as="li">
-          <Text color="muted">Keeps native list-item display</Text>
+          <Text color="default">Keeps native list-item display</Text>
         </Box>
       </Box>
     </Box>
@@ -112,7 +112,7 @@ export function InteractiveDemo() {
       <Text variant="heading-xxs" as="h4">
         Hover me
       </Text>
-      <Text color="muted">
+      <Text color="default">
         Pseudo-state props animate background, shadow and transform.
       </Text>
     </Box>

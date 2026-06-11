@@ -6,6 +6,7 @@
     "dev": "next dev --turbopack -p 3333",
     "build": "next build --turbopack",
     "start": "next start -p 3333",
+    "gen:props": "node scripts/extract-props.mjs",
     "format": "oxfmt ./src",
     "format:check": "oxfmt --check ./src",
     "lint:only": "eslint --max-warnings 0 .",
@@ -38,6 +39,7 @@
     "@types/react-dom": "19.2.3",
     "eslint": "^9.39.4",
     "tailwindcss": "^4.2.2",
+    "ts-morph": "^25.0.1",
     "typescript": "5.9.3"
   }
 }

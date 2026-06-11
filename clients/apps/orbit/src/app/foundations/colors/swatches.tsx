@@ -54,7 +54,7 @@ function SwatchFrame({
         <Text variant="mono" color="inherit">
           {token}
         </Text>
-        <Text variant="caption" color="muted">
+        <Text variant="caption" color="default">
           {note}
         </Text>
       </Box>

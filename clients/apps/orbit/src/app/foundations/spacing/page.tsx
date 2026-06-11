@@ -31,7 +31,7 @@ export default function SpacingPage() {
 
       <Section>
         <Prose>
-          <Text color="muted">
+          <Text variant="body" color="default">
             The scale is intentionally small so layouts stay consistent. Prefer
             a token over an arbitrary pixel value. Spacing props accept these
             tokens directly, and margin props additionally accept the value
@@ -53,7 +53,7 @@ export default function SpacingPage() {
                 </Text>
               </Box>
               <Box width={56} flexShrink={0}>
-                <Text variant="caption" color="muted">
+                <Text variant="caption" color="default">
                   {px}px
                 </Text>
               </Box>

@@ -38,12 +38,12 @@ const cardCode = `<Box
   rowGap="m"
 >
   <Text variant="heading-xxs" as="h4">Card surface</Text>
-  <Text color="muted">Radius, background, border and padding from tokens.</Text>
+  <Text color="default">Radius, background, border and padding from tokens.</Text>
 </Box>`
 
 const polymorphismCode = `<Box as="nav" alignItems="center" columnGap="m">
   <Text variant="label">Home</Text>
-  <Text variant="label" color="muted">Docs</Text>
+  <Text variant="label" color="default">Docs</Text>
 </Box>
 
 <Box as="ul" flexDirection="column" rowGap="s">
@@ -77,13 +77,13 @@ export default function BoxPage() {
         description="Box is the canonical primitive for layout, spacing, color, borders, radius, shadow, flex, grid, position and motion."
       >
         <Prose>
-          <Text color="muted">
+          <Text variant="body" color="default">
             Every visual concern is a typed prop that accepts a design token, so
             there is no className guesswork and no dark mode boilerplate. Props
             take token names rather than raw values, and any prop also accepts a
             responsive or pseudo-state object.
           </Text>
-          <Text color="muted">
+          <Text variant="body" color="default">
             Box defaults to display flex for block-level elements, so a bare Box
             is a flex row. Set flexDirection, gap and alignment directly without
             repeating display. Inline elements and li keep their native display.
@@ -148,7 +148,7 @@ export default function BoxPage() {
         description="Box accepts className and style for things outside the design system."
       >
         <Prose>
-          <Text color="muted">
+          <Text variant="body" color="default">
             Reach for className or style only for concerns the system does not
             model, such as animation keyframes or third-party utility classes.
             Never use them to re-implement a property that already has a typed
@@ -162,7 +162,7 @@ export default function BoxPage() {
         title="Props"
         description="The most commonly used props. See the source types for the full set."
       >
-        <PropsTable rows={boxProps} />
+        <PropsTable rows={boxProps} slug="box" />
       </Section>
     </>
   )

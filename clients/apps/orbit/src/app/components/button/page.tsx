@@ -172,7 +172,7 @@ export default function ButtonPage() {
         title="Props"
         description="Button extends the native button attributes. The most relevant props are listed below."
       >
-        <PropsTable rows={buttonProps} />
+        <PropsTable rows={buttonProps} slug="button" />
       </Section>
     </>
   )

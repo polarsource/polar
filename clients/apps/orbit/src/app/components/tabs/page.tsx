@@ -112,13 +112,15 @@ function BasicTabs() {
       </TabsList>
       <Box paddingTop="l">
         <TabsContent value="overview">
-          <Text color="muted">A summary of recent revenue and customers.</Text>
+          <Text color="default">
+            A summary of recent revenue and customers.
+          </Text>
         </TabsContent>
         <TabsContent value="activity">
-          <Text color="muted">The latest events across your account.</Text>
+          <Text color="default">The latest events across your account.</Text>
         </TabsContent>
         <TabsContent value="settings">
-          <Text color="muted">Configure billing, members and webhooks.</Text>
+          <Text color="default">Configure billing, members and webhooks.</Text>
         </TabsContent>
       </Box>
     </Tabs>
@@ -136,14 +138,14 @@ function ControlledTabs() {
         </TabsList>
         <Box paddingTop="l">
           <TabsContent value="monthly">
-            <Text color="muted">Billed every month, cancel anytime.</Text>
+            <Text color="default">Billed every month, cancel anytime.</Text>
           </TabsContent>
           <TabsContent value="yearly">
-            <Text color="muted">Billed once a year at a discount.</Text>
+            <Text color="default">Billed once a year at a discount.</Text>
           </TabsContent>
         </Box>
       </Tabs>
-      <Text variant="caption" color="muted">
+      <Text variant="caption" color="default">
         Selected value: {tab}
       </Text>
     </Box>
@@ -163,7 +165,7 @@ export default function TabsPage() {
         description="Each TabsTrigger is linked to a TabsContent by a shared value. Tabs can be uncontrolled with defaultValue or controlled with value and onValueChange."
       >
         <Prose>
-          <Text color="muted">
+          <Text variant="body" color="default">
             Tabs is built on Radix primitives, so keyboard navigation, focus
             management and ARIA roles are handled for you. Wrap content in Box
             and Text to lay out each panel.

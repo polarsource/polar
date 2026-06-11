@@ -26,7 +26,7 @@ export default function ColorsPage() {
 
       <Section>
         <Prose>
-          <Text color="muted">
+          <Text variant="body" color="default">
             Every color token is defined with the CSS light-dark() function, so
             it resolves to the correct value for light or dark mode
             automatically. You never write dark: variants or duplicate values.

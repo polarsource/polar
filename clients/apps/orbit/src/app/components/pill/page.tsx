@@ -72,7 +72,7 @@ export default function PillPage() {
       </Section>
 
       <Section title="Props">
-        <PropsTable rows={pillProps} />
+        <PropsTable rows={pillProps} slug="pill" />
       </Section>
     </>
   )

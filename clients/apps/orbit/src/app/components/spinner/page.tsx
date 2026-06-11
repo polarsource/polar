@@ -84,7 +84,7 @@ export default function SpinnerPage() {
         <Example>
           <Box alignItems="center">
             <Spinner />
-            <Text color="muted">Loading</Text>
+            <Text color="default">Loading</Text>
           </Box>
         </Example>
       </Section>

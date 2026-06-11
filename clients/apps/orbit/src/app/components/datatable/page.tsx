@@ -23,7 +23,7 @@ const columnsCode = `const columns: DataTableColumnDef<Order>[] = [
     accessorKey: 'email',
     enableSorting: false,
     header: 'Email',
-    cell: ({ row }) => <Text color="muted">{row.original.email}</Text>,
+    cell: ({ row }) => <Text color="default">{row.original.email}</Text>,
   },
   {
     accessorKey: 'amount',
@@ -133,7 +133,7 @@ export default function DataTablePage() {
         description="DataTable wraps TanStack React Table. You define typed columns, pass the current page of data, and drive sorting and pagination from state. Wrap a column header in DataTableColumnHeader to get a sortable header button."
       >
         <Prose>
-          <Text color="muted">
+          <Text variant="body" color="default">
             Because pagination and sorting are manual, DataTable does not slice
             or reorder rows for you. Read the sorting and pagination state, then
             fetch or compute the matching page of data. Provide rowCount so the
@@ -156,7 +156,7 @@ export default function DataTablePage() {
         description="Columns are TanStack ColumnDef objects. Use cell to render Orbit primitives such as Text or Status, and DataTableColumnHeader for sortable headers. Set enableSorting to false to opt a column out."
       >
         <Example code={columnsCode} align="stretch">
-          <Text color="muted">See the rendered table above.</Text>
+          <Text color="default">See the rendered table above.</Text>
         </Example>
       </Section>
 
@@ -165,12 +165,12 @@ export default function DataTablePage() {
         description="Hold sorting and pagination in state and pass the setters straight to the table. The table reports changes; you apply them to your data."
       >
         <Example code={demoCode} align="stretch">
-          <Text color="muted">See the rendered table above.</Text>
+          <Text color="default">See the rendered table above.</Text>
         </Example>
       </Section>
 
       <Section title="Props">
-        <PropsTable rows={dataTableProps} />
+        <PropsTable rows={dataTableProps} slug="datatable" />
       </Section>
     </>
   )

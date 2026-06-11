@@ -111,7 +111,7 @@ export default function SelectPage() {
         description="Select is composed from several parts. Control the value with value and onValueChange on the root, render the closed state inside SelectTrigger with a SelectValue placeholder, and list options as SelectItem inside SelectContent."
       >
         <Prose>
-          <Text color="muted">
+          <Text variant="body" color="default">
             The parts are Select (root), SelectTrigger, SelectValue,
             SelectContent, SelectItem, plus SelectGroup, SelectLabel and
             SelectSeparator for organising long lists. Each SelectItem must

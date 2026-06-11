@@ -30,7 +30,7 @@ export default function ShadowsPage() {
 
       <Section>
         <Prose>
-          <Text color="muted">
+          <Text variant="body" color="default">
             Shadows are soft and low-contrast so elevation reads clearly without
             heavy edges. Raise the level as an element floats further from the
             page: resting cards take s, interactive states take m, and floating
@@ -65,7 +65,7 @@ export default function ShadowsPage() {
                 <Text variant="mono" color="inherit">
                   {token}
                 </Text>
-                <Text variant="caption" color="muted">
+                <Text variant="caption" color="default">
                   {note}
                 </Text>
               </Box>

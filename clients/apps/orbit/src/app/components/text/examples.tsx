@@ -40,7 +40,7 @@ export function VariantSamples() {
           borderStyle="solid"
           borderColor="border-secondary"
         >
-          <Text variant="mono" color="muted">
+          <Text variant="mono" color="default">
             {variant}
           </Text>
           <Text variant={variant}>The quick brown fox</Text>
@@ -56,7 +56,7 @@ export function ColorSamples() {
       {colors.map((color) => (
         <Box key={color} alignItems="baseline" columnGap="m">
           <Box width={96} flexShrink={0}>
-            <Text variant="mono" color="muted">
+            <Text variant="mono" color="default">
               {color}
             </Text>
           </Box>
@@ -82,22 +82,22 @@ export function StateSamples() {
   return (
     <Box flexDirection="column" rowGap="xl" width="100%" maxWidth={360}>
       <Box flexDirection="column" rowGap="xs">
-        <Text variant="mono" color="muted">
+        <Text variant="mono" color="default">
           loading
         </Text>
         <Text loading placeholderText="Loading a single line of text" />
       </Box>
       <Box flexDirection="column" rowGap="xs">
-        <Text variant="mono" color="muted">
+        <Text variant="mono" color="default">
           loading, placeholderNumberOfLines=3
         </Text>
         <Text loading placeholderNumberOfLines={3} />
       </Box>
       <Box flexDirection="column" rowGap="xs">
-        <Text variant="mono" color="muted">
+        <Text variant="mono" color="default">
           lineThrough
         </Text>
-        <Text lineThrough color="muted">
+        <Text lineThrough color="default">
           Previous price
         </Text>
       </Box>

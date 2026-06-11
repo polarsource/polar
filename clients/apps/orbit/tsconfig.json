@@ -3,6 +3,7 @@
   "compilerOptions": {
     "outDir": "dist",
     "baseUrl": "src/",
+    "resolveJsonModule": true,
     "paths": {
       "@/*": ["./*"]
     }

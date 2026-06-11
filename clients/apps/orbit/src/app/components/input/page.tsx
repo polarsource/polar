@@ -147,7 +147,7 @@ export default function InputPage() {
       </Section>
 
       <Section title="Props">
-        <PropsTable rows={inputProps} />
+        <PropsTable rows={inputProps} slug="input" />
       </Section>
     </>
   )

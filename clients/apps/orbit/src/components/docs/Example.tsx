@@ -27,7 +27,7 @@ export function Example({
             </Text>
           )}
           {description && (
-            <Text variant="default" color="muted">
+            <Text variant="body" color="default">
               {description}
             </Text>
           )}
@@ -39,7 +39,7 @@ export function Example({
         borderWidth={1}
         borderStyle="solid"
         borderColor="border-primary"
-        backgroundColor="background-card"
+        backgroundColor="background-secondary"
         overflow="hidden"
       >
         <Box

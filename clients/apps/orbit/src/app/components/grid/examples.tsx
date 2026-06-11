@@ -14,7 +14,7 @@ function Cell({ children }: { children: ReactNode }) {
       borderColor="border-primary"
       backgroundColor="background-secondary"
     >
-      <Text variant="label" color="muted">
+      <Text variant="label" color="default">
         {children}
       </Text>
     </Box>

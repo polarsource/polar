@@ -166,7 +166,7 @@ export default function SegmentedControlPage() {
       </Section>
 
       <Section title="Props">
-        <PropsTable rows={props} />
+        <PropsTable rows={props} slug="segmented-control" />
       </Section>
     </>
   )

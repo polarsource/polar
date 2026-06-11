@@ -26,7 +26,7 @@ export default function RadiusPage() {
 
       <Section>
         <Prose>
-          <Text color="muted">
+          <Text variant="body" color="default">
             Match the radius to the size of the surface: smaller controls take
             s, cards take m, and large surfaces take l or xl. Use full for any
             element that should read as a pill or circle.
@@ -56,10 +56,10 @@ export default function RadiusPage() {
                 <Text variant="mono" color="inherit">
                   {token}
                 </Text>
-                <Text variant="caption" color="muted">
+                <Text variant="caption" color="default">
                   {px}
                 </Text>
-                <Text variant="caption" color="muted">
+                <Text variant="caption" color="default">
                   {note}
                 </Text>
               </Box>

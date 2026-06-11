@@ -1,6 +1,13 @@
 import { Box } from '@polar-sh/orbit/Box'
-import { Text } from '@polar-sh/orbit'
+import {
+  Text,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@polar-sh/orbit'
 import { type ReactNode } from 'react'
+import { getGeneratedProps, propSourceUrl } from '@/lib/props-data'
 
 export interface PropRow {
   name: string
@@ -10,90 +17,159 @@ export interface PropRow {
   required?: boolean
 }
 
-function Cell({ children }: { children: ReactNode }) {
+// Types longer than this are truncated in the chip and revealed in full on
+// hover, so long unions don't blow out the row.
+const TYPE_MAX = 32
+
+interface ResolvedRow extends PropRow {
+  source?: { path: string; line: number }
+}
+
+function Chip({ children }: { children: ReactNode }) {
   return (
-    <Box paddingVertical="m" paddingHorizontal="l" minWidth={0}>
+    <Box
+      as="span"
+      display="inline-flex"
+      alignItems="center"
+      columnGap="xs"
+      paddingHorizontal="s"
+      paddingVertical="xs"
+      borderRadius="s"
+      backgroundColor="background-card"
+    >
       {children}
     </Box>
   )
 }
 
-export function PropsTable({ rows }: { rows: PropRow[] }) {
-  return (
+// The chip links to its definition source on GitHub when known. The <a> (or
+// the bare Box) is a single ref-forwarding element, so it works as a Radix
+// TooltipTrigger via asChild — a wrapper component would drop the ref/handlers
+// and the trigger would render empty on the client.
+function TypeChip({
+  type,
+  source,
+}: {
+  type: string
+  source?: { path: string; line: number }
+}) {
+  const isLong = type.length > TYPE_MAX
+  const label = isLong ? `${type.slice(0, TYPE_MAX - 1).trimEnd()}…` : type
+  const chip = (
     <Box
-      flexDirection="column"
-      borderRadius="l"
-      borderWidth={1}
-      borderStyle="solid"
-      borderColor="border-primary"
-      overflow="hidden"
+      as="span"
+      display="inline-flex"
+      alignItems="center"
+      paddingHorizontal="s"
+      paddingVertical="xs"
+      borderRadius="s"
+      backgroundColor="background-card"
     >
+      <Text variant="mono" color="accent" as="span">
+        {label}
+      </Text>
+    </Box>
+  )
+
+  const trigger = source ? (
+    <a
+      href={propSourceUrl(source)}
+      target="_blank"
+      rel="noreferrer"
+      title="View definition on GitHub"
+      style={{ textDecoration: 'none' }}
+    >
+      {chip}
+    </a>
+  ) : (
+    chip
+  )
+
+  if (!isLong) {
+    return trigger
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+      <TooltipContent>
+        <Box maxWidth={360}>
+          <Text variant="mono" color="inherit" wrap="pretty">
+            {type}
+          </Text>
+        </Box>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+// Merge each curated row with the AST-extracted data (type/required/default/
+// source win when present), so the displayed types stay in sync with source.
+function resolveRows(rows: PropRow[], slug?: string): ResolvedRow[] {
+  if (!slug) return rows
+  const generated = getGeneratedProps(slug)
+  return rows.map((row) => {
+    const gen = generated.get(row.name)
+    if (!gen) return row
+    return {
+      ...row,
+      type: gen.type,
+      required: row.required ?? gen.required,
+      default: row.default ?? gen.default,
+      source: gen.source,
+    }
+  })
+}
+
+export function PropsTable({ rows, slug }: { rows: PropRow[]; slug?: string }) {
+  const resolved = resolveRows(rows, slug)
+
+  return (
+    <TooltipProvider delayDuration={150}>
       <Box
-        display="grid"
-        gridTemplateColumns="minmax(120px, 1.2fr) minmax(160px, 2fr) minmax(80px, 1fr)"
-        backgroundColor="background-secondary"
+        flexDirection="column"
         borderBottomWidth={1}
         borderStyle="solid"
         borderColor="border-primary"
       >
-        <Cell>
-          <Text variant="label" color="muted">
-            Prop
-          </Text>
-        </Cell>
-        <Cell>
-          <Text variant="label" color="muted">
-            Type
-          </Text>
-        </Cell>
-        <Cell>
-          <Text variant="label" color="muted">
-            Default
-          </Text>
-        </Cell>
-      </Box>
-
-      {rows.map((row, i) => (
-        <Box key={row.name} flexDirection="column">
+        {resolved.map((row) => (
           <Box
-            display="grid"
-            gridTemplateColumns="minmax(120px, 1.2fr) minmax(160px, 2fr) minmax(80px, 1fr)"
-            borderTopWidth={i === 0 ? 0 : 1}
+            key={row.name}
+            flexDirection="column"
+            rowGap="m"
+            paddingVertical="l"
+            borderTopWidth={1}
             borderStyle="solid"
-            borderColor="border-secondary"
+            borderColor="border-primary"
           >
-            <Cell>
-              <Box alignItems="center" columnGap="xs" flexWrap="wrap">
-                <Text variant="mono" color="inherit">
-                  {row.name}
-                </Text>
-                {row.required && (
-                  <Text variant="caption" color="danger">
-                    *
+            <Box alignItems="center" columnGap="s" flexWrap="wrap">
+              <Text variant="mono" color="default">
+                {row.name}
+              </Text>
+              <TypeChip type={row.type} source={row.source} />
+              {row.default !== undefined && (
+                <Chip>
+                  <Text variant="mono" color="default" as="span">
+                    {`default: ${row.default}`}
                   </Text>
-                )}
-              </Box>
-            </Cell>
-            <Cell>
-              <Text variant="mono" color="accent">
-                {row.type}
-              </Text>
-            </Cell>
-            <Cell>
-              <Text variant="mono" color="muted">
-                {row.default ?? '—'}
-              </Text>
-            </Cell>
-          </Box>
-          {row.description && (
-            <Box paddingHorizontal="l" paddingBottom="m" maxWidth={620}>
-              <Text variant="caption" color="muted">
-                {row.description}
-              </Text>
+                </Chip>
+              )}
+              {row.required && (
+                <Text variant="mono" color="danger">
+                  required
+                </Text>
+              )}
             </Box>
-          )}
-        </Box>
-      ))}
-    </Box>
+            {row.description && (
+              <Box maxWidth={640}>
+                <Text variant="default" color="muted">
+                  {row.description}
+                </Text>
+              </Box>
+            )}
+          </Box>
+        ))}
+      </Box>
+    </TooltipProvider>
   )
 }

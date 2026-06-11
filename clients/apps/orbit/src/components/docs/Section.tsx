@@ -22,7 +22,7 @@ export function Section({
           )}
           {description && (
             <Box maxWidth={620}>
-              <Text variant="body" color="muted">
+              <Text variant="body" color="default">
                 {description}
               </Text>
             </Box>

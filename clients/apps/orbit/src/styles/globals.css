@@ -248,6 +248,18 @@
   }
 }
 
+/* ─── Landing graphic tokens (read by the OrbitingSpheres canvas) ──────────── */
+
+@layer base {
+  :root {
+    --color-graphic-stroke: #18181b;
+  }
+
+  :root.dark {
+    --color-graphic-stroke: #ededed;
+  }
+}
+
 /* ─── shadcn/ui tokens ───────────────────────────────────────────────────── */
 
 @layer base {

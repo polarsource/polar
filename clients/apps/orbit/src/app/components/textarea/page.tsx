@@ -130,7 +130,7 @@ export default function TextAreaPage() {
       </Section>
 
       <Section title="Props">
-        <PropsTable rows={textAreaProps} />
+        <PropsTable rows={textAreaProps} slug="textarea" />
       </Section>
     </>
   )

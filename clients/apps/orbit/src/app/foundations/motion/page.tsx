@@ -92,7 +92,7 @@ export default function MotionPage() {
         description="Combine a transition property, a duration, and an easing with a hover value. The transition runs from pure CSS, no JavaScript required."
       >
         <Prose>
-          <Text color="muted">
+          <Text variant="body" color="default">
             Hover the surface below to see fast plus decelerate, the recommended
             pairing for elements entering toward the pointer.
           </Text>

@@ -300,3 +300,30 @@ jobs:
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+
+  notify-failure:
+    name: "Notify Failure 🚨"
+    needs: [build, deploy-sandbox, deploy-production]
+    if: always() && (needs.build.result == 'failure' || needs.deploy-sandbox.result == 'failure' || needs.deploy-production.result == 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Announce in Slack
+        uses: slackapi/slack-github-action@v3.0.3
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
+          errors: true
+          payload: |
+            {
+              "channel": "C093CJXJXPT",
+              "text": "Deploy failed (${{ github.sha }})",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":rotating_light: *Deploy failed* — triggered by *${{ github.actor }}*\n*Failed jobs:*${{ needs.build.result == 'failure' && ' `build`' || '' }}${{ needs.deploy-sandbox.result == 'failure' && ' `deploy-sandbox`' || '' }}${{ needs.deploy-production.result == 'failure' && ' `deploy-production`' || '' }}\n*Commit:* `${{ github.sha }}`\n*<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>*"
+                  }
+                }
+              ]
+            }

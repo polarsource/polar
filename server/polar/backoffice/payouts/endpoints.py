@@ -513,6 +513,7 @@ async def retry(
                 hx_target="#modal",
                 classes="flex flex-col gap-4",
                 validation_error=validation_error,
+                data={"account_amount": remaining_amount},
             ):
                 with tag.div(classes="modal-action"):
                     with tag.form(method="dialog"):

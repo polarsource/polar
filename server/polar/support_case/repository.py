@@ -107,9 +107,7 @@ class SupportCaseAttachmentRepository(
 ):
     model = SupportCaseAttachment
 
-    async def list_by_case(
-        self, case_id: UUID
-    ) -> Sequence[SupportCaseAttachment]:
+    async def list_by_case(self, case_id: UUID) -> Sequence[SupportCaseAttachment]:
         """A case's attachments (oldest first) with their file eager-loaded."""
         statement = (
             self.get_base_statement()

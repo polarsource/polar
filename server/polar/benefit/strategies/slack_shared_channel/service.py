@@ -6,6 +6,8 @@ import httpx
 import structlog
 
 from polar.auth.models import AuthSubject
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import get_accessible_org_ids
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.integrations.slack.client import SlackClient
 from polar.integrations.slack.repository import SlackAppRepository
@@ -34,7 +36,6 @@ from .template import (
     InvalidTemplateError,
     TemplateContext,
     render_channel_name,
-    validate_template,
 )
 
 log: Logger = structlog.get_logger()
@@ -258,36 +259,37 @@ class BenefitSlackSharedChannelService(
         auth_subject: AuthSubject[User | Organization],
         properties: dict[str, Any],
     ) -> BenefitSlackSharedChannelProperties:
-        template = properties.get("channel_name_template", "")
-        try:
-            validate_template(template)
-        except InvalidTemplateError as e:
+        integration_id = properties["slack_integration_id"]
+        repository = SlackAppRepository.from_session(self.session)
+        integration = await repository.get_by_id(UUID(integration_id))
+        accessible_org_ids = await get_accessible_org_ids(
+            self.session,
+            auth_subject,
+            permission=OrganizationPermission.products_manage,
+        )
+        if integration is None or integration.organization_id not in accessible_org_ids:
             raise BenefitPropertiesValidationError(
                 [
                     {
                         "type": "value_error",
-                        "msg": str(e),
-                        "loc": ("channel_name_template",),
-                        "input": template,
+                        "msg": "Slack integration not found.",
+                        "loc": ("slack_integration_id",),
+                        "input": integration_id,
                     }
                 ]
-            ) from e
-
+            )
+        if integration.bot_token is None:
+            raise BenefitPropertiesValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "msg": "The Slack integration is not installed.",
+                        "loc": ("slack_integration_id",),
+                        "input": integration_id,
+                    }
+                ]
+            )
         return cast(BenefitSlackSharedChannelProperties, properties)
-
-    async def validate_properties_update(
-        self,
-        auth_subject: AuthSubject[User | Organization],
-        benefit: Benefit,
-        properties: dict[str, Any],
-    ) -> BenefitSlackSharedChannelProperties:
-        validated: dict[str, Any] = dict(
-            await self.validate_properties(auth_subject, properties)
-        )
-        integration_id = benefit.properties.get("slack_integration_id")
-        if integration_id is not None:
-            validated["slack_integration_id"] = integration_id
-        return cast(BenefitSlackSharedChannelProperties, validated)
 
     async def _get_installed_integration(self, benefit: Benefit) -> SlackApp:
         integration = await self._get_integration(benefit)

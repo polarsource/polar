@@ -1,17 +1,24 @@
 from typing import Any
 from unittest.mock import AsyncMock
+from uuid import uuid4
 
 import httpx
 import pytest
+from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
+from polar.auth.models import AuthSubject
 from polar.benefit.strategies import (
     BenefitActionRequiredError,
+    BenefitPropertiesValidationError,
     BenefitRetriableError,
 )
 from polar.benefit.strategies.slack_shared_channel.properties import (
     BenefitGrantSlackSharedChannelProperties,
     BenefitSlackSharedChannelProperties,
+)
+from polar.benefit.strategies.slack_shared_channel.schemas import (
+    BenefitSlackSharedChannelCreateProperties,
 )
 from polar.benefit.strategies.slack_shared_channel.service import (
     BenefitSlackSharedChannelService,
@@ -22,6 +29,8 @@ from polar.models import (
     Customer,
     Organization,
     SlackApp,
+    User,
+    UserOrganization,
 )
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
@@ -599,7 +608,7 @@ class TestSlackSharedChannelGrant:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        customer.name = "李雷"
+        customer.name = "!!!"
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
@@ -1337,13 +1346,16 @@ class TestSlackSharedChannelRevoke:
 
 @pytest.mark.asyncio
 class TestSlackSharedChannelValidate:
-    async def test_validate_properties_update_preserves_slack_integration_id(
+    @pytest.mark.auth
+    async def test_validate_properties_accepts_installed_integration(
         self,
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
         organization: Organization,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
     ) -> None:
         benefit = await create_benefit(
             save_fixture,
@@ -1352,60 +1364,94 @@ class TestSlackSharedChannelValidate:
             properties=_BASE_PROPERTIES,
         )
         integration = await _create_integration(save_fixture, benefit)
-        client = _mock_client(mocker)
-        strategy = _strategy(session, redis, client)
+        strategy = _strategy(session, redis, _mock_client(mocker))
 
-        result = await strategy.validate_properties_update(
-            None,  # type: ignore[arg-type]
-            benefit,
-            {
-                "channel_name_template": "vip-{customer_name}",
-                "private": True,
-                "welcome_message": None,
-                "archive_on_revoke": True,
-                "team_invitees": [],
-            },
+        result = await strategy.validate_properties(
+            auth_subject,
+            {**_BASE_PROPERTIES, "slack_integration_id": str(integration.id)},
         )
 
         assert result["slack_integration_id"] == str(integration.id)
-        assert result["channel_name_template"] == "vip-{customer_name}"
 
-    async def test_validate_rejects_unknown_placeholder(
+    @pytest.mark.auth
+    async def test_validate_properties_rejects_unknown_integration(
         self,
         session: AsyncSession,
         redis: Redis,
         mocker: MockerFixture,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
     ) -> None:
-        from polar.benefit.strategies import BenefitPropertiesValidationError
+        strategy = _strategy(session, redis, _mock_client(mocker))
 
-        client = _mock_client(mocker)
-        strategy = _strategy(session, redis, client)
         with pytest.raises(BenefitPropertiesValidationError):
             await strategy.validate_properties(
-                None,  # type: ignore[arg-type]
-                {
-                    "channel_name_template": "{organization_slug}-foo",
-                    "private": True,
-                    "welcome_message": None,
-                    "archive_on_revoke": True,
-                },
+                auth_subject,
+                {**_BASE_PROPERTIES, "slack_integration_id": str(uuid4())},
             )
 
-    async def test_validate_accepts_valid_template(
+    @pytest.mark.auth
+    async def test_validate_properties_rejects_uninstalled_integration(
         self,
         session: AsyncSession,
         redis: Redis,
+        save_fixture: SaveFixture,
         mocker: MockerFixture,
+        organization: Organization,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
     ) -> None:
-        client = _mock_client(mocker)
-        strategy = _strategy(session, redis, client)
-        result = await strategy.validate_properties(
-            None,  # type: ignore[arg-type]
-            {
-                "channel_name_template": "support-{customer_name}",
-                "private": True,
-                "welcome_message": None,
-                "archive_on_revoke": True,
-            },
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
         )
-        assert result["channel_name_template"] == "support-{customer_name}"
+        integration = await _create_integration(save_fixture, benefit, bot_token=None)
+        strategy = _strategy(session, redis, _mock_client(mocker))
+
+        with pytest.raises(BenefitPropertiesValidationError):
+            await strategy.validate_properties(
+                auth_subject,
+                {**_BASE_PROPERTIES, "slack_integration_id": str(integration.id)},
+            )
+
+    @pytest.mark.auth
+    async def test_validate_properties_rejects_foreign_organization_integration(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization_second: Organization,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+    ) -> None:
+        foreign_benefit = await create_benefit(
+            save_fixture,
+            organization=organization_second,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        integration = await _create_integration(save_fixture, foreign_benefit)
+        strategy = _strategy(session, redis, _mock_client(mocker))
+
+        with pytest.raises(BenefitPropertiesValidationError):
+            await strategy.validate_properties(
+                auth_subject,
+                {**_BASE_PROPERTIES, "slack_integration_id": str(integration.id)},
+            )
+
+    async def test_schema_rejects_unknown_placeholder(self) -> None:
+        with pytest.raises(ValidationError, match="Unknown placeholder"):
+            BenefitSlackSharedChannelCreateProperties(
+                slack_integration_id=uuid4(),
+                channel_name_template="{organization_slug}-foo",
+            )
+
+    async def test_schema_accepts_valid_template(self) -> None:
+        properties = BenefitSlackSharedChannelCreateProperties(
+            slack_integration_id=uuid4(),
+            channel_name_template="support-{customer_name}",
+        )
+        assert properties.channel_name_template == "support-{customer_name}"

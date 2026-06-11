@@ -10,7 +10,6 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
-from polar.benefit.repository import BenefitRepository
 from polar.config import settings
 from polar.integrations.slack.repository import SlackAppRepository
 from polar.kit import jwt
@@ -480,97 +479,6 @@ class TestPostManifest:
         )
         assert response.status_code == 200
         assert "Acme Support" in response.json()["manifest"]
-
-
-@pytest.mark.asyncio
-class TestLink:
-    async def test_anonymous(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        benefit = await _create_benefit(save_fixture, organization)
-        integration = await _create_integration(save_fixture, organization)
-        response = await client.post(
-            "/v1/integrations/slack/link",
-            json={
-                "benefit_id": str(benefit.id),
-                "integration_id": str(integration.id),
-            },
-        )
-        assert response.status_code == 401
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.organizations_write}),
-    )
-    async def test_not_member_returns_403(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        benefit = await _create_benefit(save_fixture, organization)
-        integration = await _create_integration(save_fixture, organization)
-        response = await client.post(
-            "/v1/integrations/slack/link",
-            json={
-                "benefit_id": str(benefit.id),
-                "integration_id": str(integration.id),
-            },
-        )
-        assert response.status_code == 403
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.organizations_write}),
-    )
-    async def test_links_integration(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        benefit = await _create_benefit(save_fixture, organization)
-        integration = await _create_integration(save_fixture, organization)
-        response = await client.post(
-            "/v1/integrations/slack/link",
-            json={
-                "benefit_id": str(benefit.id),
-                "integration_id": str(integration.id),
-            },
-        )
-        assert response.status_code == 200
-        assert response.json()["id"] == str(integration.id)
-
-        repo = BenefitRepository.from_session(session)
-        linked = await repo.get_by_id(benefit.id)
-        assert linked is not None
-        assert dict(linked.properties)["slack_integration_id"] == str(integration.id)
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.organizations_write}),
-    )
-    async def test_uninstalled_integration_returns_400(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        benefit = await _create_benefit(save_fixture, organization)
-        integration = await _create_integration(
-            save_fixture, organization, bot_token=None
-        )
-        response = await client.post(
-            "/v1/integrations/slack/link",
-            json={
-                "benefit_id": str(benefit.id),
-                "integration_id": str(integration.id),
-            },
-        )
-        assert response.status_code == 400
 
 
 @pytest.mark.asyncio

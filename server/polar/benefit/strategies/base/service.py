@@ -225,17 +225,6 @@ class BenefitServiceProtocol[BP: BenefitProperties, BGP: BenefitGrantProperties]
         """
         ...
 
-    async def validate_properties_update(
-        self,
-        auth_subject: AuthSubject[User | Organization],
-        benefit: Benefit,
-        properties: dict[str, Any],
-    ) -> BP:
-        """
-        Validates the benefit properties on update, with access to the existing benefit.
-        """
-        return await self.validate_properties(auth_subject, properties)
-
     def _get_properties(self, benefit: Benefit) -> BP:
         """
         Returns the Benefit properties.

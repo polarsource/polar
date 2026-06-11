@@ -116,11 +116,6 @@ class SlackWorkspaceUsersResponse(Schema):
     )
 
 
-class SlackIntegrationLink(Schema):
-    benefit_id: UUID4 = Field(description="Benefit to link the integration to.")
-    integration_id: UUID4 = Field(description="Slack integration to link.")
-
-
 class SlackIntegration(TimestampedSchema):
     id: UUID4 = Field(description="ID of the Slack integration.")
     organization_id: UUID4 = Field(

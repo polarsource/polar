@@ -42,7 +42,12 @@ export const SlackIntegrationSetupPanel = ({
   const saveCredentials = useSaveSlackCredentials()
 
   const debouncedDisplayName = useDebounce(displayName, 300)
+  const displayedManifest = debouncedDisplayName.trim() ? manifest : ''
   useEffect(() => {
+    if (!debouncedDisplayName.trim()) {
+      return
+    }
+
     generateManifest(
       { display_name: debouncedDisplayName },
       { onSuccess: (r) => r.data && setManifest(r.data.manifest) },
@@ -103,7 +108,7 @@ export const SlackIntegrationSetupPanel = ({
               Shown on the bot user inside your Slack workspace.
             </Text>
           </Box>
-          <ManifestBlock manifest={manifest} />
+          <ManifestBlock manifest={displayedManifest} />
           <Box display="flex" flexDirection="column" rowGap="s">
             <Button
               asChild

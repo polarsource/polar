@@ -1,12 +1,16 @@
 import { useUpdateBenefit } from '@/hooks/queries'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
-import { isValidationError, operations, schemas } from '@polar-sh/client'
+import { isValidationError, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { MouseEvent, useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { UpdateBenefitForm } from '../Benefit/BenefitForm'
+import {
+  BenefitUpdate,
+  prepareBenefitUpdatePayload,
+} from '../Benefit/updateBenefitPayload'
 import { toast } from '../Toast/use-toast'
 
 interface UpdateBenefitModalContentProps {
@@ -16,9 +20,6 @@ interface UpdateBenefitModalContentProps {
   requestClose: () => void
   onDirtyChange?: (dirty: boolean) => void
 }
-
-type BenefitUpdate =
-  operations['benefits:update']['requestBody']['content']['application/json']
 
 const UpdateBenefitModalContent = ({
   organization,
@@ -42,9 +43,10 @@ const UpdateBenefitModalContent = ({
   const updateSubscriptionBenefit = useUpdateBenefit(organization.id)
   const handleUpdateNewBenefit = useCallback(
     async (benefitUpdate: BenefitUpdate) => {
+      const payload = prepareBenefitUpdatePayload(benefit, benefitUpdate)
       const { error } = await updateSubscriptionBenefit.mutateAsync({
         id: benefit.id,
-        body: benefitUpdate,
+        body: payload,
       })
       if (error) {
         if (isValidationError(error.detail)) {

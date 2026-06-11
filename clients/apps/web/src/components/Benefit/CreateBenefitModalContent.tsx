@@ -89,13 +89,7 @@ const CreateBenefitModalContent = ({
       })
       hideModal()
     },
-    [
-      toast,
-      hideModal,
-      onSelectBenefit,
-      createSubscriptionBenefit,
-      setError,
-    ],
+    [toast, hideModal, onSelectBenefit, createSubscriptionBenefit, setError],
   )
 
   useEffect(() => {

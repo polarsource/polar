@@ -18,4 +18,8 @@ S3_SERVICES: dict[FileServiceTypes, S3Service] = {
     FileServiceTypes.organization_avatar: _get_s3_service(
         settings.S3_FILES_PUBLIC_BUCKET_NAME
     ),
+    # Sensitive support-case attachments — private bucket, via presigned URLs.
+    FileServiceTypes.support_case_attachment: _get_s3_service(
+        settings.S3_FILES_BUCKET_NAME
+    ),
 }

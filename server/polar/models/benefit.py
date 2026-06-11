@@ -74,8 +74,9 @@ class BenefitType(StrEnum):
 
     def default_visibility(self) -> Visibility:
         match self:
-            case BenefitType.feature_flag:
-                return Visibility.private
+            # Temporarily disabled untill benefit visibility backfill and ui rollout
+            # case BenefitType.feature_flag:
+            #     return Visibility.private
             case _:
                 return Visibility.public
 

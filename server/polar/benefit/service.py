@@ -16,6 +16,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
+from polar.kit.visibility import Visibility
 from polar.models import Benefit, Organization, ProductBenefit, User
 from polar.models.benefit import BenefitType
 from polar.models.webhook_endpoint import WebhookEventType
@@ -41,6 +42,7 @@ class BenefitService:
         organization_id: Sequence[uuid.UUID] | None = None,
         id_in: Sequence[uuid.UUID] | None = None,
         id_not_in: Sequence[uuid.UUID] | None = None,
+        visibility: Sequence[Visibility] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[BenefitSortProperty]] = [
@@ -68,6 +70,9 @@ class BenefitService:
 
         if query is not None:
             statement = statement.where(Benefit.description.ilike(f"%{query}%"))
+
+        if visibility is not None:
+            statement = statement.where(Benefit.visibility.in_(visibility))
 
         if metadata is not None:
             statement = apply_metadata_clause(Benefit, statement, metadata)
@@ -146,12 +151,14 @@ class BenefitService:
             organization=organization,
             is_tax_applicable=is_tax_applicable,
             properties=properties,
+            visibility=create_schema.type.resolve_visibility(create_schema.visibility),
             **create_schema.model_dump(
                 by_alias=True,
                 exclude={
                     "organization_id",
                     "is_tax_applicable",
                     "properties",
+                    "visibility",
                 },
             ),
         )
@@ -184,6 +191,21 @@ class BenefitService:
                         "loc": ("body", "type"),
                         "msg": "Benefit type cannot be changed.",
                         "input": benefit.type,
+                    }
+                ]
+            )
+
+        if (
+            "visibility" in benefit_update.model_fields_set
+            and not benefit.type.is_visibility_configurable()
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "visibility"),
+                        "msg": "Visibility cannot be changed for this benefit type.",
+                        "input": benefit_update.visibility,
                     }
                 ]
             )

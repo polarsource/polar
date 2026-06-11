@@ -158,9 +158,13 @@ const link = (gl: WebGLRenderingContext, vs: string, fs: string) => {
 export const VolumetricSlices = () => {
   const { ref: wrapperRef, inView } = useInView()
   const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === 'dark'
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animRef = useRef<number>(0)
+  const darkRef = useRef(resolvedTheme === 'dark')
+
+  useEffect(() => {
+    darkRef.current = resolvedTheme === 'dark'
+  }, [resolvedTheme])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -245,8 +249,6 @@ export const VolumetricSlices = () => {
     gl.uniform1f(uViewScale, 0.8)
     gl.uniform1f(uDepthScale, 0.5)
     gl.uniform2f(uHalfXY, 0.62, 0.62)
-    const lineValue = isDark ? 1.0 : 0.0
-    gl.uniform3f(uLineColor, lineValue, lineValue, lineValue)
 
     // Blending: standard alpha with premultiplied off; depth test enabled
     gl.enable(gl.BLEND)
@@ -272,6 +274,9 @@ export const VolumetricSlices = () => {
 
       gl.uniform1f(uTime, time)
 
+      const lineValue = darkRef.current ? 1.0 : 0.0
+      gl.uniform3f(uLineColor, lineValue, lineValue, lineValue)
+
       // Opaque stroke
       gl.uniform1f(uLineAlpha, 1.0)
 
@@ -294,7 +299,7 @@ export const VolumetricSlices = () => {
       gl.deleteBuffer(quadBuf)
       gl.deleteProgram(prog)
     }
-  }, [inView, isDark])
+  }, [inView])
 
   return (
     <div ref={wrapperRef}>

@@ -1,4 +1,4 @@
-import { getPublicServerURL, getServerURL } from '@/utils/api'
+import { getPublicServerURL } from '@/utils/api'
 import { Client, operations, schemas } from '@polar-sh/client'
 import { redirect } from 'next/navigation'
 
@@ -91,7 +91,7 @@ export const checkAuthenticationSession = async (
     authenticationSession.identity_id &&
     authenticationSession.available_factors.length === 0
   ) {
-    redirect(`${getServerURL()}/v1/auth/complete`)
+    redirect(`${getPublicServerURL()}/v1/auth/complete`)
   }
 
   return authenticationSession

@@ -235,18 +235,6 @@ class TestCreateProduct:
             ),
             pytest.param(
                 {
-                    "recurring_interval": None,
-                    "prices": [
-                        {
-                            "amount_type": "free",
-                            "price_currency": "usd",
-                        }
-                    ],
-                },
-                id="One-time free",
-            ),
-            pytest.param(
-                {
                     "recurring_interval": "day",
                     "prices": [
                         {
@@ -309,18 +297,6 @@ class TestCreateProduct:
                     ],
                 },
                 id="Recurring custom",
-            ),
-            pytest.param(
-                {
-                    "recurring_interval": "month",
-                    "prices": [
-                        {
-                            "amount_type": "free",
-                            "price_currency": "usd",
-                        }
-                    ],
-                },
-                id="Recurring free",
             ),
             pytest.param(
                 {

@@ -78,7 +78,11 @@ class TestCollectProductsData:
                         _build_price(ProductPriceAmountType.fixed, price_amount=1000)
                     ],
                 ),
-                _build_product(prices=[_build_price(ProductPriceAmountType.free)]),
+                _build_product(
+                    prices=[
+                        _build_price(ProductPriceAmountType.fixed, price_amount=0)
+                    ]
+                ),
             ]
         )
         assert data.custom_pricing_products_count == 0

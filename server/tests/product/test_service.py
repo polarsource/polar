@@ -42,7 +42,6 @@ from polar.product.schemas import (
     ProductCreateRecurring,
     ProductPriceCustomCreate,
     ProductPriceFixedCreate,
-    ProductPriceFreeCreate,
     ProductPriceMeteredUnitCreate,
     ProductPriceSeatBasedCreate,
     ProductPriceSeatTier,
@@ -618,23 +617,6 @@ class TestCreate:
                     ),
                 ],
             ),
-            ProductCreateOneTime(
-                name="One-time free",
-                prices=[
-                    ProductPriceFreeCreate(
-                        amount_type=ProductPriceAmountType.free,
-                    ),
-                ],
-            ),
-            ProductCreateRecurring(
-                name="Recurring free",
-                recurring_interval=SubscriptionRecurringInterval.month,
-                prices=[
-                    ProductPriceFreeCreate(
-                        amount_type=ProductPriceAmountType.free,
-                    )
-                ],
-            ),
             ProductCreateRecurring(
                 name="Recurring metered unit",
                 recurring_interval=SubscriptionRecurringInterval.month,
@@ -664,35 +646,6 @@ class TestCreate:
         assert product.organization_id == organization.id
 
         assert len(product.prices) == len(create_schema.prices)
-
-    @pytest.mark.auth
-    async def test_free_price_persisted_as_fixed_zero(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        # We no longer create `free` prices: an incoming free price is accepted for
-        # backward compatibility but persisted as a fixed price with an amount of 0.
-        product = await product_service.create(
-            session,
-            ProductCreateOneTime(
-                name="Free product",
-                prices=[
-                    ProductPriceFreeCreate(amount_type=ProductPriceAmountType.free),
-                ],
-                organization_id=organization.id,
-            ),
-            auth_subject,
-        )
-
-        assert len(product.prices) == 1
-        price = product.prices[0]
-        assert isinstance(price, ProductPriceFixed)
-        assert price.amount_type == ProductPriceAmountType.fixed
-        assert price.price_amount == 0
-        assert price.is_free is True
 
     @pytest.mark.auth
     async def test_invalid_several_static_prices(
@@ -1333,32 +1286,6 @@ class TestCreateFixedSeatComposition:
                             amount_type=ProductPriceAmountType.custom,
                             price_currency=PresentmentCurrency.usd,
                         ),
-                    ],
-                    organization_id=organization.id,
-                ),
-                auth_subject,
-            )
-
-    @pytest.mark.auth
-    async def test_free_and_fixed_rejected(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        with pytest.raises(PolarRequestValidationError):
-            await product_service.create(
-                session,
-                ProductCreateRecurring(
-                    name="Product",
-                    recurring_interval=SubscriptionRecurringInterval.month,
-                    prices=[
-                        ProductPriceFreeCreate(
-                            amount_type=ProductPriceAmountType.free,
-                            price_currency=PresentmentCurrency.usd,
-                        ),
-                        _fixed_price_create(),
                     ],
                     organization_id=organization.id,
                 ),

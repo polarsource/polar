@@ -5,7 +5,6 @@ import pytest
 from polar.models import (
     ProductPriceCustom,
     ProductPriceFixed,
-    ProductPriceFree,
     ProductPriceMeteredUnit,
     ProductPriceSeatUnit,
 )
@@ -27,8 +26,8 @@ def _custom(
     )
 
 
-def _free() -> ProductPriceFree:
-    return ProductPriceFree(price_currency="usd")
+def _free() -> ProductPriceFixed:
+    return ProductPriceFixed(price_currency="usd", price_amount=0)
 
 
 def _metered() -> ProductPriceMeteredUnit:

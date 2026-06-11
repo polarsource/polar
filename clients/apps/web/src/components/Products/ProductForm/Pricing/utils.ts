@@ -1,8 +1,11 @@
 import { schemas } from '@polar-sh/client'
-import { ProductFormType } from '../ProductForm'
+import { FreeProductPriceCreate, ProductFormType } from '../ProductForm'
 
 export type ProductPrice = schemas['ProductPrice']
-export type ProductPriceCreate = schemas['ProductCreate']['prices'][number]
+// Includes the UI-only `free` price type (converted to a fixed price of 0 on submit).
+export type ProductPriceCreate =
+  | schemas['ProductCreate']['prices'][number]
+  | FreeProductPriceCreate
 export type AnyPrice = NonNullable<ProductFormType['prices']>[number]
 export type PriceEntry = { price: AnyPrice; index: number }
 

@@ -70,11 +70,9 @@ from .product_media import ProductMedia
 from .product_price import (
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
-    LegacyRecurringProductPriceFree,
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
-    ProductPriceFree,
     ProductPriceMeteredUnit,
     ProductPriceSeatUnit,
 )
@@ -143,7 +141,6 @@ __all__ = [
     "IssueReward",
     "LegacyRecurringProductPriceCustom",
     "LegacyRecurringProductPriceFixed",
-    "LegacyRecurringProductPriceFree",
     "LicenseKey",
     "LicenseKeyActivation",
     "LoginCode",
@@ -185,7 +182,6 @@ __all__ = [
     "ProductPrice",
     "ProductPriceCustom",
     "ProductPriceFixed",
-    "ProductPriceFree",
     "ProductPriceMeteredUnit",
     "ProductPriceSeatUnit",
     "ProductVisibility",

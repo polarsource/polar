@@ -10,12 +10,28 @@ export interface ProductFullMediasMixin {
   full_medias: schemas['ProductMediaFileRead'][]
 }
 
+// UI-only "free" price type for the dashboard's "Free" pricing option. It is not part of
+// the API: the form converts it to a fixed price of 0 before submitting (see
+// `formPriceToApiPrice`). It mirrors the fixed-create shape minus the amount so the
+// conversion produces a valid `ProductPriceFixedCreate`.
+export type FreeProductPriceCreate = Omit<
+  schemas['ProductPriceFixedCreate'],
+  'amount_type' | 'price_amount'
+> & { amount_type: 'free' }
+
+type ApiProductFormPrice = NonNullable<
+  (schemas['ProductCreate'] | schemas['ProductUpdate'])['prices']
+>[number]
+
+export type ProductFormPrice = ApiProductFormPrice | FreeProductPriceCreate
+
 export type ProductFormType = Omit<
   schemas['ProductCreate'] | schemas['ProductUpdate'],
-  'metadata'
+  'metadata' | 'prices'
 > &
   ProductFullMediasMixin & {
     metadata: { key: string; value: string | number | boolean }[]
+    prices: ProductFormPrice[]
   }
 
 const ProductForm = ({

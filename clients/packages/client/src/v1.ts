@@ -12285,7 +12285,6 @@ export interface components {
         [key: string]: (
           | components['schemas']['ProductPriceFixedCreate']
           | components['schemas']['ProductPriceCustomCreate']
-          | components['schemas']['ProductPriceFreeCreate']
           | components['schemas']['ProductPriceSeatBasedCreate']
           | components['schemas']['ProductPriceMeteredUnitCreate']
         )[]
@@ -19830,7 +19829,6 @@ export interface components {
     LegacyRecurringProductPrice:
       | components['schemas']['LegacyRecurringProductPriceFixed']
       | components['schemas']['LegacyRecurringProductPriceCustom']
-      | components['schemas']['LegacyRecurringProductPriceFree']
     /**
      * LegacyRecurringProductPriceCustom
      * @description A pay-what-you-want recurring price for a product, i.e. a subscription.
@@ -19971,69 +19969,6 @@ export interface components {
        * @description The price in cents.
        */
       price_amount: number
-      /**
-       * Legacy
-       * @constant
-       */
-      readonly legacy: true
-    }
-    /**
-     * LegacyRecurringProductPriceFree
-     * @description A free recurring price for a product, i.e. a subscription.
-     *
-     *     **Deprecated**: The recurring interval should be set on the product itself.
-     */
-    LegacyRecurringProductPriceFree: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the price.
-       */
-      id: string
-      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
-      source: components['schemas']['ProductPriceSource']
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      amount_type: 'free'
-      /**
-       * Price Currency
-       * @description The currency in which the customer will be charged.
-       */
-      price_currency: string
-      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
-      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
-      /**
-       * Is Archived
-       * @description Whether the price is archived and no longer available.
-       */
-      is_archived: boolean
-      /**
-       * Product Id
-       * Format: uuid4
-       * @description The ID of the product owning the price.
-       */
-      product_id: string
-      /**
-       * Type
-       * @description The type of the price.
-       * @constant
-       */
-      type: 'recurring'
-      /** @description The recurring interval of the price. */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
        * Legacy
        * @constant
@@ -26852,7 +26787,6 @@ export interface components {
       prices: (
         | components['schemas']['ProductPriceFixedCreate']
         | components['schemas']['ProductPriceCustomCreate']
-        | components['schemas']['ProductPriceFreeCreate']
         | components['schemas']['ProductPriceSeatBasedCreate']
         | components['schemas']['ProductPriceMeteredUnitCreate']
       )[]
@@ -26923,7 +26857,6 @@ export interface components {
       prices: (
         | components['schemas']['ProductPriceFixedCreate']
         | components['schemas']['ProductPriceCustomCreate']
-        | components['schemas']['ProductPriceFreeCreate']
         | components['schemas']['ProductPriceSeatBasedCreate']
         | components['schemas']['ProductPriceMeteredUnitCreate']
       )[]
@@ -27044,7 +26977,6 @@ export interface components {
     ProductPrice:
       | components['schemas']['ProductPriceFixed']
       | components['schemas']['ProductPriceCustom']
-      | components['schemas']['ProductPriceFree']
       | components['schemas']['ProductPriceSeatBased']
       | components['schemas']['ProductPriceMeteredUnit']
     /**
@@ -27619,72 +27551,6 @@ export interface components {
       price_amount: number
     }
     /**
-     * ProductPriceFree
-     * @description A free price for a product.
-     */
-    ProductPriceFree: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the price.
-       */
-      id: string
-      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
-      source: components['schemas']['ProductPriceSource']
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      amount_type: 'free'
-      /**
-       * Price Currency
-       * @description The currency in which the customer will be charged.
-       */
-      price_currency: string
-      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
-      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
-      /**
-       * Is Archived
-       * @description Whether the price is archived and no longer available.
-       */
-      is_archived: boolean
-      /**
-       * Product Id
-       * Format: uuid4
-       * @description The ID of the product owning the price.
-       */
-      product_id: string
-    }
-    /**
-     * ProductPriceFreeCreate
-     * @description Schema to create a free price.
-     */
-    ProductPriceFreeCreate: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      amount_type: 'free'
-      /**
-       * @description The currency in which the customer will be charged.
-       * @default usd
-       */
-      price_currency: components['schemas']['PresentmentCurrency']
-      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
-      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
-    }
-    /**
      * ProductPriceMeter
      * @description A meter associated to a metered price.
      */
@@ -28039,7 +27905,6 @@ export interface components {
             | (
                 | components['schemas']['ProductPriceFixedCreate']
                 | components['schemas']['ProductPriceCustomCreate']
-                | components['schemas']['ProductPriceFreeCreate']
                 | components['schemas']['ProductPriceSeatBasedCreate']
                 | components['schemas']['ProductPriceMeteredUnitCreate']
               )
@@ -56914,9 +56779,6 @@ export const legacyRecurringProductPriceCustomAmount_typeValues: ReadonlyArray<
 export const legacyRecurringProductPriceFixedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['LegacyRecurringProductPriceFixed']['amount_type']
 > = ['fixed']
-export const legacyRecurringProductPriceFreeAmount_typeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['LegacyRecurringProductPriceFree']['amount_type']
-> = ['free']
 export const licenseKeyStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['LicenseKeyStatus']
 > = ['granted', 'revoked', 'disabled']
@@ -58645,12 +58507,6 @@ export const productPriceFixedAmount_typeValues: ReadonlyArray<
 export const productPriceFixedCreateAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductPriceFixedCreate']['amount_type']
 > = ['fixed']
-export const productPriceFreeAmount_typeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ProductPriceFree']['amount_type']
-> = ['free']
-export const productPriceFreeCreateAmount_typeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ProductPriceFreeCreate']['amount_type']
-> = ['free']
 export const productPriceMeteredUnitAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductPriceMeteredUnit']['amount_type']
 > = ['metered_unit']

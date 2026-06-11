@@ -120,7 +120,7 @@ class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordMod
                 ")"
             ),
             order_by="(case("
-            "(ProductPrice.amount_type.in_(['fixed', 'custom', 'free']), 0), "
+            "(ProductPrice.amount_type.in_(['fixed', 'custom']), 0), "
             "(ProductPrice.amount_type == 'metered_unit', 1), "
             "), ProductPrice.created_at)",
             viewonly=True,

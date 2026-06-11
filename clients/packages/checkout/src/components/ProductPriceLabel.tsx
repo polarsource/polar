@@ -44,10 +44,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
         {t('checkout.pricing.payWhatYouWant')}
       </div>
     )
-  } else if (
-    price.amount_type === 'free' ||
-    (price.amount_type === 'fixed' && price.price_amount === 0)
-  ) {
+  } else if (price.amount_type === 'fixed' && price.price_amount === 0) {
     return (
       <div className="text-[min(1em,24px)]">{t('checkout.pricing.free')}</div>
     )

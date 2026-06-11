@@ -7,11 +7,9 @@ from polar.models.product import Product
 from polar.models.product_price import (
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
-    LegacyRecurringProductPriceFree,
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
-    ProductPriceFree,
     ProductPriceMeteredUnit,
     ProductPriceSeatUnit,
 )
@@ -19,8 +17,6 @@ from polar.models.product_price import (
 type StaticPrice = (
     ProductPriceFixed
     | LegacyRecurringProductPriceFixed
-    | ProductPriceFree
-    | LegacyRecurringProductPriceFree
     | ProductPriceCustom
     | LegacyRecurringProductPriceCustom
     | ProductPriceSeatUnit
@@ -30,25 +26,19 @@ type FixedPrice = ProductPriceFixed | LegacyRecurringProductPriceFixed
 
 type CustomPrice = ProductPriceCustom | LegacyRecurringProductPriceCustom
 
-type FreePrice = ProductPriceFree | LegacyRecurringProductPriceFree
-
 type MeteredPrice = ProductPriceMeteredUnit
 
 type SeatPrice = ProductPriceSeatUnit
 
 type LegacyPrice = (
-    LegacyRecurringProductPriceFixed
-    | LegacyRecurringProductPriceFree
-    | LegacyRecurringProductPriceCustom
+    LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom
 )
 
 
 def is_legacy_price(price: ProductPrice) -> TypeIs[LegacyPrice]:
     return isinstance(
         price,
-        LegacyRecurringProductPriceFixed
-        | LegacyRecurringProductPriceFree
-        | LegacyRecurringProductPriceCustom,
+        LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom,
     )
 
 
@@ -58,10 +48,6 @@ def is_fixed_price(price: ProductPrice) -> TypeIs[FixedPrice]:
 
 def is_custom_price(price: ProductPrice) -> TypeIs[CustomPrice]:
     return isinstance(price, ProductPriceCustom | LegacyRecurringProductPriceCustom)
-
-
-def is_free_price(price: ProductPrice) -> TypeIs[FreePrice]:
-    return isinstance(price, ProductPriceFree | LegacyRecurringProductPriceFree)
 
 
 def is_static_price(price: ProductPrice) -> TypeIs[StaticPrice]:
@@ -79,6 +65,8 @@ def is_seat_price(price: ProductPrice) -> TypeIs[SeatPrice]:
 def is_discount_applicable(
     price: ProductPrice,
 ) -> TypeIs[FixedPrice | CustomPrice | MeteredPrice | SeatPrice]:
+    if price.is_free:
+        return False
     return (
         is_fixed_price(price)
         or is_custom_price(price)

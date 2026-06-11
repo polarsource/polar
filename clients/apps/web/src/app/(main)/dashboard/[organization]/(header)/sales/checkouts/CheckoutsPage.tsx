@@ -204,7 +204,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             {customerEmail ? (
               <>
                 <Avatar avatar_url={null} name={customerEmail} />
-                <div className="fw-medium overflow-hidden text-ellipsis">
+                <div className="overflow-hidden text-ellipsis">
                   {customerEmail}
                 </div>
               </>

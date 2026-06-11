@@ -24113,7 +24113,7 @@ export interface components {
           )
         | null
       feature_settings?:
-        | components['schemas']['OrganizationFeatureSettings']
+        | components['schemas']['OrganizationFeatureSettingsUpdate']
         | null
       subscription_settings?:
         | components['schemas']['OrganizationSubscriptionSettings']
@@ -24329,6 +24329,38 @@ export interface components {
        * @default false
        */
       slack_benefit_enabled: boolean
+    }
+    /**
+     * OrganizationFeatureSettingsUpdate
+     * @description Feature settings that organizations can update themselves.
+     *
+     *     Other feature settings are managed by Polar staff: they're ignored if
+     *     provided and keep their current value.
+     */
+    OrganizationFeatureSettingsUpdate: {
+      /**
+       * Seat Based Pricing Enabled
+       * @description If this organization has seat-based pricing enabled
+       * @default false
+       */
+      seat_based_pricing_enabled: boolean
+      /**
+       * Member Model Enabled
+       * @description If this organization has the Member model enabled
+       * @default false
+       */
+      member_model_enabled: boolean
+      /**
+       * Checkout Localization Enabled
+       * @description If this organization has checkout localization enabled
+       * @default false
+       */
+      checkout_localization_enabled: boolean
+      /**
+       * Overview Metrics
+       * @description Ordered list of metric slugs shown on the dashboard overview.
+       */
+      overview_metrics?: string[] | null
     }
     /** OrganizationIndividualLegalEntitySchema */
     OrganizationIndividualLegalEntitySchema: {
@@ -25579,7 +25611,7 @@ export interface components {
           )
         | null
       feature_settings?:
-        | components['schemas']['OrganizationFeatureSettings']
+        | components['schemas']['OrganizationFeatureSettingsUpdate']
         | null
       subscription_settings?:
         | components['schemas']['OrganizationSubscriptionSettings']

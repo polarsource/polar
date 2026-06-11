@@ -10,7 +10,6 @@ from pydantic import (
     BeforeValidator,
     Field,
     StringConstraints,
-    field_validator,
     model_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
@@ -123,6 +122,15 @@ class OrganizationCapabilities(Schema):
     )
 
 
+def _coerce_overview_metrics(value: Any) -> Any:
+    if isinstance(value, bool):
+        return None
+    return value
+
+
+OverviewMetrics = Annotated[list[str] | None, BeforeValidator(_coerce_overview_metrics)]
+
+
 class OrganizationFeatureSettings(Schema):
     issue_funding_enabled: bool = Field(
         False, description="If this organization has issue funding enabled"
@@ -140,7 +148,7 @@ class OrganizationFeatureSettings(Schema):
         False,
         description="If this organization has checkout localization enabled",
     )
-    overview_metrics: list[str] | None = Field(
+    overview_metrics: OverviewMetrics = Field(
         None,
         description="Ordered list of metric slugs shown on the dashboard overview.",
     )
@@ -162,12 +170,28 @@ class OrganizationFeatureSettings(Schema):
         False, description="Enables the slack shared channel benefit"
     )
 
-    @field_validator("overview_metrics", mode="before")
-    @classmethod
-    def _coerce_overview_metrics(cls, v: Any) -> list[str] | None:
-        if isinstance(v, bool):
-            return None
-        return v
+
+class OrganizationFeatureSettingsUpdate(Schema):
+    """Feature settings that organizations can update themselves.
+
+    Other feature settings are managed by Polar staff: they're ignored if
+    provided and keep their current value.
+    """
+
+    seat_based_pricing_enabled: bool = Field(
+        False, description="If this organization has seat-based pricing enabled"
+    )
+    member_model_enabled: bool = Field(
+        False, description="If this organization has the Member model enabled"
+    )
+    checkout_localization_enabled: bool = Field(
+        False,
+        description="If this organization has checkout localization enabled",
+    )
+    overview_metrics: OverviewMetrics = Field(
+        None,
+        description="Ordered list of metric slugs shown on the dashboard overview.",
+    )
 
 
 class OrganizationDetails(Schema):
@@ -485,7 +509,7 @@ class OrganizationCreate(Schema):
     country: CountryAlpha2Input | None = Field(
         None, description="Two-letter country code (ISO 3166-1 alpha-2)."
     )
-    feature_settings: OrganizationFeatureSettings | None = None
+    feature_settings: OrganizationFeatureSettingsUpdate | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
     notification_settings: OrganizationNotificationSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
@@ -519,7 +543,7 @@ class OrganizationUpdate(Schema):
         None, description="Two-letter country code (ISO 3166-1 alpha-2)."
     )
 
-    feature_settings: OrganizationFeatureSettings | None = None
+    feature_settings: OrganizationFeatureSettingsUpdate | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
     notification_settings: OrganizationNotificationSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None

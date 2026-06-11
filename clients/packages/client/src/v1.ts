@@ -35869,7 +35869,7 @@ export interface operations {
         }
       }
       /** @description Redirect to a presigned download URL. */
-      307: {
+      302: {
         headers: {
           [name: string]: unknown
         }

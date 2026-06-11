@@ -846,7 +846,7 @@ async def reply_to_appeal_case(
     "/{id}/appeal/case/attachments/{attachment_id}/download",
     summary="Download Appeal Case Attachment",
     responses={
-        307: {"description": "Redirect to a presigned download URL."},
+        302: {"description": "Redirect to a presigned download URL."},
         404: SupportCaseNotFound,
     },
     tags=[APITag.private],

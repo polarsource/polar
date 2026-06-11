@@ -4,6 +4,10 @@ Snooze organizations that have been stuck in REVIEW for too long.
 Moves organizations from REVIEW → SNOOZED when they've been in REVIEW
 for more than a configurable number of days (default: 14).
 
+Organizations with a held payout are skipped: a `held` payout means a
+merchant is already waiting on their money, so they should be actively
+reviewed rather than snoozed.
+
 This mirrors the service-layer transition in
 `OrganizationService.snooze_organization`:
   - Sets status = 'snoozed' and status_updated_at = now()
@@ -39,6 +43,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.models.organization import OrganizationStatus
+from polar.models.payout import PayoutStatus
 from polar.postgres import create_async_engine
 from scripts.helper import configure_script_console_logging, typer_async
 
@@ -53,13 +58,23 @@ async def _show_stale_reviews(session: AsyncSession, *, cutoff: datetime) -> int
     result = await session.execute(
         text("""
             SELECT id, slug, name, status_updated_at
-            FROM organizations
+            FROM organizations o
             WHERE status = :review_status
               AND status_updated_at < :cutoff
+              AND NOT EXISTS (
+                  SELECT 1 FROM payouts p
+                  WHERE p.account_id = o.account_id
+                    AND p.status = :held_status
+                    AND p.deleted_at IS NULL
+              )
             ORDER BY status_updated_at ASC
             LIMIT 1000
         """),
-        {"cutoff": cutoff, "review_status": OrganizationStatus.REVIEW.value},
+        {
+            "cutoff": cutoff,
+            "review_status": OrganizationStatus.REVIEW.value,
+            "held_status": PayoutStatus.held.value,
+        },
     )
     rows = result.all()
 
@@ -144,10 +159,16 @@ async def _run_snooze(
                 ELSE internal_notes || E'\\n\\n' || :note
             END
         WHERE id IN (
-            SELECT id FROM organizations
-            WHERE status = :review_status
-              AND status_updated_at < :cutoff
-            ORDER BY status_updated_at ASC
+            SELECT o.id FROM organizations o
+            WHERE o.status = :review_status
+              AND o.status_updated_at < :cutoff
+              AND NOT EXISTS (
+                  SELECT 1 FROM payouts p
+                  WHERE p.account_id = o.account_id
+                    AND p.status = :held_status
+                    AND p.deleted_at IS NULL
+              )
+            ORDER BY o.status_updated_at ASC
             LIMIT :limit
         )
     """)
@@ -175,6 +196,7 @@ async def _run_snooze(
                         "note": note_line,
                         "review_status": OrganizationStatus.REVIEW.value,
                         "snoozed_status": OrganizationStatus.SNOOZED.value,
+                        "held_status": PayoutStatus.held.value,
                     },
                 )
                 await session.commit()

@@ -2,17 +2,21 @@ from collections.abc import Sequence
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import RedirectResponse
 from pydantic import UUID4
 from sqlalchemy import func, select
+from sqlalchemy.orm import joinedload
 from tagflow import tag, text
 
+from polar.file.service import file as file_service
 from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Organization, User
 from polar.models.organization_review import OrganizationReview
-from polar.models.support_case import ReviewAppealSupportCase
+from polar.models.support_case import ReviewAppealSupportCase, SupportCaseAttachment
 from polar.models.user_session import UserSession
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.support_case.repository import (
+    SupportCaseAttachmentRepository,
     SupportCaseMessageRepository,
     SupportCaseRepository,
 )
@@ -147,6 +151,27 @@ async def release_case(
         raise HTTPException(status_code=404, detail="Support case not found")
     await support_case_service.unassign(session, case, actor=user_session.user)
     return HXRedirectResponse(request, _safe_return_to(request, return_to), 303)
+
+
+@router.get(
+    "/attachments/{attachment_id}/download",
+    name="support_cases:attachment_download",
+    response_model=None,
+)
+async def download_attachment(
+    attachment_id: UUID4,
+    session: AsyncSession = Depends(get_db_read_session),
+    user_session: UserSession = Depends(get_admin),
+) -> RedirectResponse:
+    """Redirect to a presigned download URL for a case attachment."""
+    del user_session  # admin gate only
+    attachment = await SupportCaseAttachmentRepository.from_session(session).get_by_id(
+        attachment_id, options=(joinedload(SupportCaseAttachment.file),)
+    )
+    if attachment is None:
+        raise HTTPException(status_code=404, detail="Attachment not found")
+    url, _ = file_service.generate_download_url(attachment.file)
+    return RedirectResponse(url)
 
 
 @router.get("/", name="support_cases:list")

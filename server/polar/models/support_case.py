@@ -23,6 +23,7 @@ from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
     from polar.models.customer import Customer
+    from polar.models.file import File
     from polar.models.organization import Organization
     from polar.models.organization_review import OrganizationReview
     from polar.models.user import User
@@ -326,3 +327,7 @@ class SupportCaseAttachment(RecordModel):
     @declared_attr
     def case(cls) -> Mapped["SupportCase"]:
         return relationship("SupportCase", lazy="raise", back_populates="attachments")
+
+    @declared_attr
+    def file(cls) -> Mapped["File"]:
+        return relationship("File", lazy="raise")

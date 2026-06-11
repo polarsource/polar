@@ -13,7 +13,6 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
-import { Avatar } from '@polar-sh/orbit'
 import {
   DataTable,
   DataTableColumnDef,

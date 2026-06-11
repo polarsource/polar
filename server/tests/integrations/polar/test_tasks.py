@@ -371,10 +371,13 @@ class TestFlushEventIngestion:
         repository.get_latest_polar_self_ingestion_timestamp = AsyncMock(
             return_value=None
         )
-        repository.count_user_events_by_organization = AsyncMock(return_value={})
         mocker.patch(
             "polar.integrations.polar.tasks.EventRepository.from_session",
             return_value=repository,
+        )
+        mocker.patch(
+            "polar.integrations.polar.tasks.count_user_events_by_organization",
+            return_value={},
         )
         client = AsyncMock(spec=PolarSelfClient)
         mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
@@ -394,18 +397,21 @@ class TestFlushEventIngestion:
         repository.get_latest_polar_self_ingestion_timestamp = AsyncMock(
             return_value=last_flush
         )
-        repository.count_user_events_by_organization = AsyncMock(return_value=counts)
         mocker.patch(
             "polar.integrations.polar.tasks.EventRepository.from_session",
             return_value=repository,
+        )
+        count_mock = mocker.patch(
+            "polar.integrations.polar.tasks.count_user_events_by_organization",
+            return_value=counts,
         )
         client = AsyncMock(spec=PolarSelfClient)
         mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
 
         await track_event_ingestion()
 
-        repository.count_user_events_by_organization.assert_called_once()
-        kwargs = repository.count_user_events_by_organization.call_args.kwargs
+        count_mock.assert_called_once()
+        kwargs = count_mock.call_args.kwargs
         assert kwargs["after"] is last_flush
         assert kwargs["exclude_organization_id"] == self.SELF_ORG_ID
         cutoff = kwargs["until"]

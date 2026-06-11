@@ -1,89 +1,91 @@
-import { Box } from '@polar-sh/orbit/Box'
-import { Text } from '@polar-sh/orbit'
-import { ArrowRight } from 'lucide-react'
-import Link from 'next/link'
-import { OrbitingSpheres } from '@/components/OrbitingSpheres'
-import { componentItems, foundationItems } from '@/lib/registry'
+import { Box } from "@polar-sh/orbit/Box";
+import { Text } from "@polar-sh/orbit";
+import { ArrowUpRight } from "lucide-react";
+import Link from "next/link";
+import { OrbitingSpheres } from "@/components/OrbitingSpheres";
+import { componentItems, foundationItems } from "@/lib/registry";
 
 const PRINCIPLES = [
   {
-    title: 'Design by subtraction',
-    body: 'Start with everything. Remove until only what is necessary remains. Then remove one more thing. What survives is the design.',
+    title: "Design by subtraction",
+    lead: "Start with everything. Remove until only what is necessary remains. Then remove one more thing. What survives is the design.",
+    body: "Orbit ships one spacing scale, a handful of radii, and a small set of semantic colors. The constraint is the feature. Fewer choices means fewer ways to drift, so every surface in Polar reads as one system.",
   },
   {
-    title: 'Derived, not decorated',
-    body: 'Every element should feel like it emerged from an underlying rule, not a preference. Beauty is an outcome of correctness, not ornament.',
+    title: "Derived, not decorated",
+    lead: "Every element should feel like it emerged from an underlying rule, not a preference. Beauty is an outcome of correctness, not ornament.",
+    body: "Color resolves from light-dark(), spacing from a single scale, motion from physical curves. You author one styling pass and dark mode is free, because the values are computed rather than hand-picked.",
   },
   {
-    title: 'Precision as respect',
-    body: 'An imprecise pixel, word, or interaction signals that we do not understand the people we build for. Precision is not a quality bar, it is a form of respect.',
+    title: "Precision as respect",
+    lead: "An imprecise pixel, word, or interaction signals that we do not understand the people we build for. Precision is not a quality bar, it is a form of respect.",
+    body: "Polar builds for a technical audience. Box makes precision the default by removing arbitrary values: typed props take tokens, never raw pixels, so the easy path and the correct path are the same.",
   },
-]
-
-function TextLink({ href, label }: { href: string; label: string }) {
-  return (
-    <Link href={href} style={{ textDecoration: 'none' }}>
-      <Box
-        alignItems="center"
-        columnGap="xs"
-        color={{ base: 'text-secondary', hover: 'text-primary' }}
-        transitionProperty="colors"
-        transitionDuration="fast"
-      >
-        <Text color="inherit">{label}</Text>
-        <ArrowRight size={15} aria-hidden />
-      </Box>
-    </Link>
-  )
-}
+];
 
 function LinkCard({
+  index,
   href,
   title,
   description,
 }: {
-  href: string
-  title: string
-  description: string
+  index: string;
+  href: string;
+  title: string;
+  description: string;
 }) {
   return (
-    <Link href={href} style={{ textDecoration: 'none' }}>
+    <Link href={href} style={{ textDecoration: "none" }}>
       <Box
         flexDirection="column"
-        rowGap="xs"
+        justifyContent="between"
+        rowGap="xl"
         height="100%"
-        padding="l"
-        borderRadius="m"
-        borderWidth={1}
-        borderStyle="solid"
-        borderColor="border-primary"
-        backgroundColor={{
-          base: 'background-card',
-          hover: 'background-secondary',
+        minHeight={148}
+        padding="xl"
+        opacity={{
+          base: 1,
+          hover: 0.8,
         }}
-        transform={{ hover: 'translateY(-2px)' }}
+        backgroundColor="background-card"
         transitionProperty="common"
         transitionDuration="fast"
         ease="decelerate"
         cursor="pointer"
       >
-        <Text variant="heading-xxs" as="h3">
-          {title}
-        </Text>
-        <Text variant="caption" color="muted">
-          {description}
-        </Text>
+        <Box alignItems="center" justifyContent="between">
+          <Text variant="mono" color="muted">
+            {index}
+          </Text>
+          <Box
+            color={{ base: "text-tertiary", hover: "text-primary" }}
+            transform={{ hover: "translate(3px, -3px)" }}
+            transitionProperty="common"
+            transitionDuration="fast"
+            ease="decelerate"
+          >
+            <ArrowUpRight size={18} aria-hidden />
+          </Box>
+        </Box>
+        <Box flexDirection="column" rowGap="s">
+          <Text variant="heading-xxs" as="h3">
+            {title}
+          </Text>
+          <Text variant="body" color="muted">
+            {description}
+          </Text>
+        </Box>
       </Box>
     </Link>
-  )
+  );
 }
 
 function Catalog({
   title,
   items,
 }: {
-  title: string
-  items: typeof foundationItems
+  title: string;
+  items: typeof foundationItems;
 }) {
   return (
     <Box as="section" flexDirection="column" rowGap="l">
@@ -93,18 +95,22 @@ function Catalog({
       <Box
         display="grid"
         gridTemplateColumns={{
-          base: '1fr',
-          sm: 'repeat(2, 1fr)',
-          lg: 'repeat(3, 1fr)',
+          base: "1fr",
+          sm: "repeat(2, 1fr)",
+          lg: "repeat(3, 1fr)",
         }}
-        gap="m"
+        gap="l"
       >
-        {items.map((item) => (
-          <LinkCard key={item.href} {...item} />
+        {items.map((item, i) => (
+          <LinkCard
+            key={item.href}
+            index={String(i + 1).padStart(2, "0")}
+            {...item}
+          />
         ))}
       </Box>
     </Box>
-  )
+  );
 }
 
 export default function HomePage() {
@@ -135,47 +141,45 @@ export default function HomePage() {
         </Box>
       </Box>
 
-      <Box as="section" flexDirection="column" rowGap="l">
-        <Box flexDirection="column" rowGap="s" maxWidth={620}>
-          <Text variant="heading-xs" as="h2">
-            Principles
-          </Text>
-          <Text variant="body" color="muted">
-            Three rules govern every decision in the system. They are why Orbit
-            looks the way it does, and the bar each component is held to.
-          </Text>
-        </Box>
-        <Box
-          display="grid"
-          gridTemplateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }}
-          gap="m"
-        >
-          {PRINCIPLES.map((principle) => (
+      <Box flexDirection="column">
+        {PRINCIPLES.map((principle, i) => (
+          <Box
+            as="section"
+            key={principle.title}
+            flexDirection="column"
+            rowGap="xl"
+            paddingVertical="4xl"
+            borderTopWidth={1}
+            borderStyle="solid"
+            borderColor="border-primary"
+          >
             <Box
-              key={principle.title}
-              flexDirection="column"
-              rowGap="m"
-              height="100%"
-              padding="xl"
-              borderRadius="l"
-              borderWidth={1}
-              borderStyle="solid"
-              borderColor="border-primary"
-              backgroundColor="background-card"
+              alignItems="baseline"
+              columnGap="l"
+              flexWrap="wrap"
+              rowGap="xs"
             >
-              <Text variant="heading-xxs" as="h3">
+              <Text variant="heading-m" color="muted" as="span">
+                {String(i + 1).padStart(2, "0")}
+              </Text>
+              <Text variant="heading-m" as="h2">
                 {principle.title}
               </Text>
-              <Text variant="default" color="muted">
+            </Box>
+            <Box maxWidth={760} flexDirection="column" rowGap="l">
+              <Text variant="heading-xs" color="default" wrap="pretty">
+                {principle.lead}
+              </Text>
+              <Text variant="body" color="muted">
                 {principle.body}
               </Text>
             </Box>
-          ))}
-        </Box>
+          </Box>
+        ))}
       </Box>
 
       <Catalog title="Foundations" items={foundationItems} />
       <Catalog title="Components" items={componentItems} />
     </Box>
-  )
+  );
 }

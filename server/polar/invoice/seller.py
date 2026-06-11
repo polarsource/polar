@@ -12,6 +12,7 @@ from polar.kit.address import Address
 # Locally-correct label for the tax registration line, by country. Any
 # country missing from this map falls back to "VAT".
 COUNTRY_VAT_LABELS: dict[str, str] = {
+    "AU": "GST",
     "CA": "GST/HST",
     "CL": "RUT",
     "KE": "PIN",

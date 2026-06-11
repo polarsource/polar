@@ -184,7 +184,8 @@
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
     "checkout.pricing.seats.included.other": "# seats included",
-    "checkout.pricing.basePrice": "Base price"
+    "checkout.pricing.basePrice": "Base price",
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -371,7 +372,8 @@
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
     "checkout.pricing.seats.included.other": "# seats included",
-    "checkout.pricing.basePrice": "Base price"
+    "checkout.pricing.basePrice": "Base price",
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -558,7 +560,8 @@
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
     "checkout.pricing.seats.included.other": "# seats included",
-    "checkout.pricing.basePrice": "Base price"
+    "checkout.pricing.basePrice": "Base price",
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -745,7 +748,8 @@
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
     "checkout.pricing.seats.included.other": "# seats included",
-    "checkout.pricing.basePrice": "Base price"
+    "checkout.pricing.basePrice": "Base price",
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -932,7 +936,8 @@
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
     "checkout.pricing.seats.included.other": "# seats included",
-    "checkout.pricing.basePrice": "Base price"
+    "checkout.pricing.basePrice": "Base price",
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1111,7 +1116,8 @@
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
     "checkout.pricing.seats.included.other": "# seats included",
-    "checkout.pricing.basePrice": "Base price"
+    "checkout.pricing.basePrice": "Base price",
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1290,7 +1296,8 @@
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
     "checkout.pricing.seats.included.other": "# seats included",
-    "checkout.pricing.basePrice": "Base price"
+    "checkout.pricing.basePrice": "Base price",
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1469,7 +1476,8 @@
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
     "checkout.pricing.seats.included.other": "# seats included",
-    "checkout.pricing.basePrice": "Base price"
+    "checkout.pricing.basePrice": "Base price",
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1648,7 +1656,8 @@
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
     "checkout.pricing.seats.included.other": "# seats included",
-    "checkout.pricing.basePrice": "Base price"
+    "checkout.pricing.basePrice": "Base price",
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1827,7 +1836,8 @@
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
     "checkout.pricing.seats.included.other": "# seats included",
-    "checkout.pricing.basePrice": "Base price"
+    "checkout.pricing.basePrice": "Base price",
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "ja": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2006,7 +2016,8 @@
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
     "checkout.pricing.seats.included.=1": "One seat included",
     "checkout.pricing.seats.included.other": "# seats included",
-    "checkout.pricing.basePrice": "Base price"
+    "checkout.pricing.basePrice": "Base price",
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   },
   "tr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2185,6 +2196,7 @@
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
     "embedPaymentMethod.errors.unknown": "Something went wrong.",
-    "checkout.pricing.basePrice": "Base price"
+    "checkout.pricing.basePrice": "Base price",
+    "benefitTypes.slack_shared_channel": "Slack shared channel"
   }
 }

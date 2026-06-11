@@ -411,26 +411,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/integrations/slack/link': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Link
-     * @description **Scopes**: `organizations:write`
-     */
-    post: operations['integrations_slack:link']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/notifications': {
     parameters: {
       query?: never
@@ -2037,6 +2017,26 @@ export interface paths {
     get: operations['benefits:grants']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/benefits/slack/preview-channel-name': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Preview Channel Name
+     * @description **Scopes**: `benefits:write`
+     */
+    post: operations['benefits:preview_channel_name']
     delete?: never
     options?: never
     head?: never
@@ -7741,6 +7741,7 @@ export interface components {
       | components['schemas']['BenefitLicenseKeys']
       | components['schemas']['BenefitMeterCredit']
       | components['schemas']['BenefitFeatureFlag']
+      | components['schemas']['BenefitSlackSharedChannel']
     BenefitCreate:
       | components['schemas']['BenefitCustomCreate']
       | components['schemas']['BenefitDiscordCreate']
@@ -7749,6 +7750,7 @@ export interface components {
       | components['schemas']['BenefitLicenseKeysCreate']
       | components['schemas']['BenefitMeterCreditCreate']
       | components['schemas']['BenefitFeatureFlagCreate']
+      | components['schemas']['BenefitSlackSharedChannelCreate']
     /**
      * BenefitCustom
      * @description A benefit of type `custom`.
@@ -9025,6 +9027,7 @@ export interface components {
         | components['schemas']['BenefitGrantLicenseKeysProperties']
         | components['schemas']['BenefitGrantCustomProperties']
         | components['schemas']['BenefitGrantFeatureFlagProperties']
+        | components['schemas']['BenefitGrantSlackSharedChannelProperties']
     }
     /** BenefitGrantCustomProperties */
     BenefitGrantCustomProperties: Record<string, never>
@@ -9631,6 +9634,97 @@ export interface components {
         | components['schemas']['BenefitGrantMeterCreditProperties']
         | null
     }
+    /** BenefitGrantSlackSharedChannelProperties */
+    BenefitGrantSlackSharedChannelProperties: {
+      /** Invited Email */
+      invited_email?: string
+      /** Channel Id */
+      channel_id?: string
+      /** Channel Name */
+      channel_name?: string
+      /** Invite Id */
+      invite_id?: string
+      /** Invite Url */
+      invite_url?: string
+      /** Connected Team Id */
+      connected_team_id?: string
+    }
+    /** BenefitGrantSlackSharedChannelWebhook */
+    BenefitGrantSlackSharedChannelWebhook: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the grant.
+       */
+      id: string
+      /**
+       * Granted At
+       * @description The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+       */
+      granted_at?: string | null
+      /**
+       * Is Granted
+       * @description Whether the benefit is granted.
+       */
+      is_granted: boolean
+      /**
+       * Revoked At
+       * @description The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+       */
+      revoked_at?: string | null
+      /**
+       * Is Revoked
+       * @description Whether the benefit is revoked.
+       */
+      is_revoked: boolean
+      /**
+       * Subscription Id
+       * @description The ID of the subscription that granted this benefit.
+       */
+      subscription_id: string | null
+      /**
+       * Order Id
+       * @description The ID of the order that granted this benefit.
+       */
+      order_id: string | null
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer concerned by this grant.
+       */
+      customer_id: string
+      /**
+       * Member Id
+       * @description The ID of the member concerned by this grant.
+       */
+      member_id?: string | null
+      /**
+       * Benefit Id
+       * Format: uuid4
+       * @description The ID of the benefit concerned by this grant.
+       */
+      benefit_id: string
+      /** @description The error information if the benefit grant failed with an unrecoverable error. */
+      error?: components['schemas']['BenefitGrantError'] | null
+      customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
+      benefit: components['schemas']['BenefitSlackSharedChannel']
+      properties: components['schemas']['BenefitGrantSlackSharedChannelProperties']
+      previous_properties?:
+        | components['schemas']['BenefitGrantSlackSharedChannelProperties']
+        | null
+    }
     /**
      * BenefitGrantSortProperty
      * @enum {string}
@@ -9650,6 +9744,7 @@ export interface components {
       | components['schemas']['BenefitGrantLicenseKeysWebhook']
       | components['schemas']['BenefitGrantMeterCreditWebhook']
       | components['schemas']['BenefitGrantFeatureFlagWebhook']
+      | components['schemas']['BenefitGrantSlackSharedChannelWebhook']
     /**
      * BenefitGrantedEvent
      * @description An event created by Polar when a benefit is granted to a customer.
@@ -10330,6 +10425,252 @@ export interface components {
       name: 'benefit.revoked'
       metadata: components['schemas']['BenefitGrantMetadata']
     }
+    /** BenefitSlackSharedChannel */
+    BenefitSlackSharedChannel: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'slack_shared_channel'
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /**
+       * Selectable
+       * @description Whether the benefit is selectable when creating a product.
+       */
+      selectable: boolean
+      /**
+       * Deletable
+       * @description Whether the benefit is deletable.
+       */
+      deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is deleted.
+       */
+      is_deleted: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the benefit.
+       */
+      organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
+      properties: components['schemas']['BenefitSlackSharedChannelProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
+    }
+    /** BenefitSlackSharedChannelCreate */
+    BenefitSlackSharedChannelCreate: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'slack_shared_channel'
+      /**
+       * Description
+       * @description The description of the benefit. Will be displayed on products having this benefit.
+       */
+      description: string
+      /**
+       * Organization Id
+       * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
+      properties: components['schemas']['BenefitSlackSharedChannelCreateProperties']
+    }
+    /** BenefitSlackSharedChannelCreateProperties */
+    BenefitSlackSharedChannelCreateProperties: {
+      /**
+       * Slack Integration Id
+       * Format: uuid4
+       * @description Polar Slack integration to use for this benefit.
+       */
+      slack_integration_id: string
+      /** Channel Name Template */
+      channel_name_template: string
+      /**
+       * Private
+       * @default true
+       */
+      private: boolean
+      /** Welcome Message */
+      welcome_message?: string | null
+      /**
+       * Archive On Revoke
+       * @default true
+       */
+      archive_on_revoke: boolean
+      /** Team Invitees */
+      team_invitees?: string[]
+    }
+    /** BenefitSlackSharedChannelProperties */
+    BenefitSlackSharedChannelProperties: {
+      /**
+       * Slack Integration Id
+       * Format: uuid4
+       * @description Polar Slack integration linked to this benefit.
+       */
+      slack_integration_id: string
+      /**
+       * Channel Name Template
+       * @description Template for the channel name. Supports placeholders: {customer_name}, {customer_email_local}, and {metadata.<key>} for any value stored in customer user metadata.
+       */
+      channel_name_template: string
+      /**
+       * Private
+       * @description Create the channel as private (recommended).
+       * @default true
+       */
+      private: boolean
+      /**
+       * Welcome Message
+       * @description Optional message posted to the channel right after creation.
+       */
+      welcome_message?: string | null
+      /**
+       * Archive On Revoke
+       * @description Archive the channel when the benefit is revoked.
+       * @default true
+       */
+      archive_on_revoke: boolean
+      /**
+       * Team Invitees
+       * @description Slack user IDs from the merchant workspace to invite to every channel created for this benefit.
+       */
+      team_invitees?: string[]
+    }
+    /** BenefitSlackSharedChannelSubscriber */
+    BenefitSlackSharedChannelSubscriber: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Type
+       * @constant
+       */
+      type: 'slack_shared_channel'
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /**
+       * Selectable
+       * @description Whether the benefit is selectable when creating a product.
+       */
+      selectable: boolean
+      /**
+       * Deletable
+       * @description Whether the benefit is deletable.
+       */
+      deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is deleted.
+       */
+      is_deleted: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the benefit.
+       */
+      organization_id: string
+      organization: components['schemas']['BenefitSubscriberOrganization']
+      properties: components['schemas']['BenefitSlackSharedChannelSubscriberProperties']
+    }
+    /** BenefitSlackSharedChannelSubscriberProperties */
+    BenefitSlackSharedChannelSubscriberProperties: Record<string, never>
+    /** BenefitSlackSharedChannelUpdate */
+    BenefitSlackSharedChannelUpdate: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Description
+       * @description The description of the benefit. Will be displayed on products having this benefit.
+       */
+      description?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
+      /**
+       * Type
+       * @constant
+       */
+      type: 'slack_shared_channel'
+      properties?:
+        | components['schemas']['BenefitSlackSharedChannelCreateProperties']
+        | null
+    }
     /**
      * BenefitSortProperty
      * @enum {string}
@@ -10643,6 +10984,41 @@ export interface components {
       error: 'CaseClosedError'
       /** Detail */
       detail: string
+    }
+    /** ChannelNamePreviewRequest */
+    ChannelNamePreviewRequest: {
+      /** Organization Id */
+      organization_id?: string | null
+      /** Template */
+      template: string
+      /**
+       * Customer Name
+       * @default Sample Customer
+       */
+      customer_name: string
+      /**
+       * Customer Email
+       * @default customer@example.com
+       */
+      customer_email: string
+      /** Customer Metadata */
+      customer_metadata?: {
+        [key: string]: string | number | boolean
+      }
+    }
+    /** ChannelNamePreviewResponse */
+    ChannelNamePreviewResponse: {
+      /** Channel Name */
+      channel_name: string
+    }
+    /** ChannelNamePreviewValidationErrorResponse */
+    ChannelNamePreviewValidationErrorResponse: {
+      /** Error */
+      error: string
+      /** Detail */
+      detail: {
+        [key: string]: unknown
+      }[]
     }
     /**
      * Checkout
@@ -14351,6 +14727,7 @@ export interface components {
       | components['schemas']['CustomerBenefitGrantCustom']
       | components['schemas']['CustomerBenefitGrantMeterCredit']
       | components['schemas']['CustomerBenefitGrantFeatureFlag']
+      | components['schemas']['CustomerBenefitGrantSlackSharedChannel']
     /** CustomerBenefitGrantCustom */
     CustomerBenefitGrantCustom: {
       /**
@@ -14755,6 +15132,71 @@ export interface components {
        */
       benefit_type: 'meter_credit'
     }
+    /** CustomerBenefitGrantSlackSharedChannel */
+    CustomerBenefitGrantSlackSharedChannel: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /** Granted At */
+      granted_at: string | null
+      /** Revoked At */
+      revoked_at: string | null
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+      /** Member Id */
+      member_id?: string | null
+      /**
+       * Benefit Id
+       * Format: uuid4
+       */
+      benefit_id: string
+      /** Subscription Id */
+      subscription_id: string | null
+      /** Order Id */
+      order_id: string | null
+      /** Is Granted */
+      is_granted: boolean
+      /** Is Revoked */
+      is_revoked: boolean
+      error?: components['schemas']['BenefitGrantError'] | null
+      customer: components['schemas']['CustomerPortalCustomer']
+      benefit: components['schemas']['BenefitSlackSharedChannelSubscriber']
+      properties: components['schemas']['BenefitGrantSlackSharedChannelProperties']
+    }
+    /** CustomerBenefitGrantSlackSharedChannelPropertiesUpdate */
+    CustomerBenefitGrantSlackSharedChannelPropertiesUpdate: {
+      /**
+       * Invited Email
+       * Format: email
+       */
+      invited_email: string
+    }
+    /** CustomerBenefitGrantSlackSharedChannelUpdate */
+    CustomerBenefitGrantSlackSharedChannelUpdate: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      benefit_type: 'slack_shared_channel'
+      properties: components['schemas']['CustomerBenefitGrantSlackSharedChannelPropertiesUpdate']
+    }
     /**
      * CustomerBenefitGrantSortProperty
      * @enum {string}
@@ -14776,6 +15218,7 @@ export interface components {
       | components['schemas']['CustomerBenefitGrantCustomUpdate']
       | components['schemas']['CustomerBenefitGrantMeterCreditUpdate']
       | components['schemas']['CustomerBenefitGrantFeatureFlagUpdate']
+      | components['schemas']['CustomerBenefitGrantSlackSharedChannelUpdate']
     /**
      * CustomerCancellationReason
      * @enum {string}
@@ -16647,6 +17090,7 @@ export interface components {
         | components['schemas']['BenefitGrantLicenseKeysProperties']
         | components['schemas']['BenefitGrantCustomProperties']
         | components['schemas']['BenefitGrantFeatureFlagProperties']
+        | components['schemas']['BenefitGrantSlackSharedChannelProperties']
     }
     /**
      * CustomerStateIndividual
@@ -28853,35 +29297,6 @@ export interface components {
        */
       signing_secret?: string | null
     }
-    /** SlackIntegrationLink */
-    SlackIntegrationLink: {
-      /**
-       * Benefit Id
-       * Format: uuid4
-       * @description Benefit to link the integration to.
-       */
-      benefit_id: string
-      /**
-       * Integration Id
-       * Format: uuid4
-       * @description Slack integration to link.
-       */
-      integration_id: string
-    }
-    /** SlackIntegrationLinkBadRequestResponse */
-    SlackIntegrationLinkBadRequestResponse: {
-      /**
-       * Error
-       * @enum {string}
-       */
-      error:
-        | 'BadRequest'
-        | 'SlackIntegrationAlreadyLinked'
-        | 'SlackIntegrationNotInstalled'
-        | 'SlackIntegrationBenefitAlreadyLinked'
-      /** Detail */
-      detail: string
-    }
     /** SlackIntegrationManifest */
     SlackIntegrationManifest: {
       /**
@@ -34008,55 +34423,6 @@ export interface operations {
       }
     }
   }
-  'integrations_slack:link': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['SlackIntegrationLink']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['SlackIntegration']
-        }
-      }
-      /** @description Slack integration is not installed, already linked, or belongs to a different organization. */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['SlackIntegrationLinkBadRequestResponse']
-        }
-      }
-      /** @description Benefit or Slack integration not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
   'notifications:get': {
     parameters: {
       query?: never
@@ -37457,6 +37823,7 @@ export interface operations {
           | components['schemas']['BenefitLicenseKeysUpdate']
           | components['schemas']['BenefitMeterCreditUpdate']
           | components['schemas']['BenefitFeatureFlagUpdate']
+          | components['schemas']['BenefitSlackSharedChannelUpdate']
       }
     }
     responses: {
@@ -37536,6 +37903,39 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'benefits:preview_channel_name': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ChannelNamePreviewRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ChannelNamePreviewResponse']
+        }
+      }
+      /** @description Invalid channel name template. */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ChannelNamePreviewValidationErrorResponse']
         }
       }
     }
@@ -56062,6 +56462,12 @@ export const benefitMeterCreditCreateTypeValues: ReadonlyArray<
 export const benefitRevokedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitRevokedEvent']['name']
 > = ['benefit.revoked']
+export const benefitSlackSharedChannelTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitSlackSharedChannel']['type']
+> = ['slack_shared_channel']
+export const benefitSlackSharedChannelCreateTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitSlackSharedChannelCreate']['type']
+> = ['slack_shared_channel']
 export const benefitSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitSortProperty']
 > = [
@@ -56711,6 +57117,9 @@ export const customerBenefitGrantLicenseKeysUpdateBenefit_typeValues: ReadonlyAr
 export const customerBenefitGrantMeterCreditUpdateBenefit_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerBenefitGrantMeterCreditUpdate']['benefit_type']
 > = ['meter_credit']
+export const customerBenefitGrantSlackSharedChannelUpdateBenefit_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['CustomerBenefitGrantSlackSharedChannelUpdate']['benefit_type']
+> = ['slack_shared_channel']
 export const customerBenefitGrantSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerBenefitGrantSortProperty']
 > = [
@@ -58845,14 +59254,6 @@ export const seatStatusValues: ReadonlyArray<
 export const seatTierTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SeatTierType']
 > = ['volume', 'graduated']
-export const slackIntegrationLinkBadRequestResponseErrorValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['SlackIntegrationLinkBadRequestResponse']['error']
-> = [
-  'BadRequest',
-  'SlackIntegrationAlreadyLinked',
-  'SlackIntegrationNotInstalled',
-  'SlackIntegrationBenefitAlreadyLinked',
-]
 export const stripeAccountCountryValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['StripeAccountCountry']
 > = [

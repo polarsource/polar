@@ -1,6 +1,13 @@
+from typing import Any, cast
+
 import pytest
+from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
+from polar.benefit.strategies import BenefitActionRequiredError
+from polar.customer_portal.schemas.benefit_grant import (
+    CustomerBenefitGrantSlackSharedChannelUpdate,
+)
 from polar.customer_portal.service.benefit_grant import CustomerBenefitGrantSortProperty
 from polar.customer_portal.service.benefit_grant import (
     customer_benefit_grant as customer_benefit_grant_service,
@@ -9,10 +16,15 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import Benefit, Customer, Member, Organization, Subscription
+from polar.models.benefit import BenefitType
 from polar.models.member import MemberRole
 from tests.fixtures.auth import MEMBER_AUTH_SUBJECT, AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_benefit_grant, create_member
+from tests.fixtures.random_objects import (
+    create_benefit,
+    create_benefit_grant,
+    create_member,
+)
 
 
 @pytest.mark.asyncio
@@ -426,3 +438,163 @@ class TestGetByIdMember:
         )
 
         assert result is None
+
+
+@pytest.mark.asyncio
+class TestUpdate:
+    async def test_slack_shared_channel_updates_invited_email(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch(
+            "polar.customer_portal.service.benefit_grant.enqueue_job"
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties={
+                "channel_name_template": "support-{customer_name}",
+                "private": True,
+                "welcome_message": None,
+                "archive_on_revoke": True,
+                "team_invitees": [],
+            },
+        )
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit,
+            properties={
+                "channel_id": "C123",
+                "invited_email": "old@example.com",
+            },
+        )
+        grant.set_grant_failed(BenefitActionRequiredError("Email required"))
+        await save_fixture(grant)
+
+        updated = await customer_benefit_grant_service.update(
+            session,
+            grant,
+            CustomerBenefitGrantSlackSharedChannelUpdate(
+                benefit_type=BenefitType.slack_shared_channel,
+                properties={"invited_email": "admin@example.com"},
+            ),
+        )
+
+        assert cast(Any, updated.properties) == {
+            "channel_id": "C123",
+            "invited_email": "admin@example.com",
+        }
+        assert updated.error is None
+        enqueue_job_mock.assert_called_once_with("benefit.update", grant.id)
+
+    async def test_slack_shared_channel_email_change_clears_invite(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch(
+            "polar.customer_portal.service.benefit_grant.enqueue_job"
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties={
+                "channel_name_template": "support-{customer_name}",
+                "private": True,
+                "welcome_message": None,
+                "archive_on_revoke": True,
+                "team_invitees": [],
+            },
+        )
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit,
+            properties={
+                "channel_id": "C123",
+                "channel_name": "support-acme",
+                "invited_email": "old@example.com",
+                "invite_id": "I123",
+                "invite_url": "https://slack.com/share/I123",
+            },
+        )
+
+        updated = await customer_benefit_grant_service.update(
+            session,
+            grant,
+            CustomerBenefitGrantSlackSharedChannelUpdate(
+                benefit_type=BenefitType.slack_shared_channel,
+                properties={"invited_email": "admin@example.com"},
+            ),
+        )
+
+        assert cast(Any, updated.properties) == {
+            "channel_id": "C123",
+            "channel_name": "support-acme",
+            "invited_email": "admin@example.com",
+        }
+        enqueue_job_mock.assert_called_once_with("benefit.update", grant.id)
+
+    async def test_slack_shared_channel_same_email_keeps_invite(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch(
+            "polar.customer_portal.service.benefit_grant.enqueue_job"
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties={
+                "channel_name_template": "support-{customer_name}",
+                "private": True,
+                "welcome_message": None,
+                "archive_on_revoke": True,
+                "team_invitees": [],
+            },
+        )
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit,
+            properties={
+                "channel_id": "C123",
+                "channel_name": "support-acme",
+                "invited_email": "admin@example.com",
+                "invite_id": "I123",
+                "invite_url": "https://slack.com/share/I123",
+            },
+        )
+
+        updated = await customer_benefit_grant_service.update(
+            session,
+            grant,
+            CustomerBenefitGrantSlackSharedChannelUpdate(
+                benefit_type=BenefitType.slack_shared_channel,
+                properties={"invited_email": "admin@example.com"},
+            ),
+        )
+
+        assert cast(Any, updated.properties) == {
+            "channel_id": "C123",
+            "channel_name": "support-acme",
+            "invited_email": "admin@example.com",
+            "invite_id": "I123",
+            "invite_url": "https://slack.com/share/I123",
+        }
+        enqueue_job_mock.assert_called_once_with("benefit.update", grant.id)

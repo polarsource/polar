@@ -33,7 +33,6 @@ from .repository import SlackAppRepository
 from .schemas import (
     SlackIntegration,
     SlackIntegrationCredentialsUpdate,
-    SlackIntegrationLink,
     SlackIntegrationManifest,
     SlackIntegrationManifestRequest,
     SlackWorkspaceUser,
@@ -52,16 +51,6 @@ router = APIRouter(
 )
 
 CALLBACK_ROUTE_NAME = "integrations.slack.callback"
-
-
-class SlackIntegrationLinkBadRequestResponse(Schema):
-    error: Literal[
-        "BadRequest",
-        "SlackIntegrationAlreadyLinked",
-        "SlackIntegrationNotInstalled",
-        "SlackIntegrationBenefitAlreadyLinked",
-    ]
-    detail: str
 
 
 class SlackIntegrationQueryBadRequestResponse(Schema):
@@ -290,37 +279,6 @@ async def callback(
     )
 
     return RedirectResponse(get_safe_return_url(return_to), 303)
-
-
-@router.post(
-    "/link",
-    response_model=SlackIntegration,
-    responses={
-        400: {
-            "description": (
-                "Slack integration is not installed, already linked, "
-                "or belongs to a different organization."
-            ),
-            "model": SlackIntegrationLinkBadRequestResponse,
-        },
-        404: {"description": "Benefit or Slack integration not found."},
-    },
-)
-async def link(
-    payload: SlackIntegrationLink,
-    auth_subject: SlackIntegrationWrite,
-    session: AsyncSession = Depends(get_db_session),
-) -> SlackIntegration:
-    benefit = await _get_writable_benefit(session, auth_subject, payload.benefit_id)
-    integration = await _get_writable_integration(
-        session, auth_subject, payload.integration_id
-    )
-    if integration.organization_id != benefit.organization_id:
-        raise BadRequest(
-            "The Slack integration and benefit must belong to the same organization."
-        )
-    linked = await slack_app_service.link(session, benefit, integration)
-    return SlackIntegration.model_validate(linked)
 
 
 @router.post(

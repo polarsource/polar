@@ -280,6 +280,7 @@ export default {
     downloadables: 'Bestandsdownloads',
     meter_credit: 'Verbruikstegoed',
     feature_flag: 'Feature flag',
+    slack_shared_channel: 'Gedeeld Slack-kanaal',
   },
   ordinal: {
     zero: 'de',

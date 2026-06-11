@@ -1,16 +1,16 @@
-import { Box } from "@polar-sh/orbit/Box";
-import { Text } from "@polar-sh/orbit";
-import { type ReactNode } from "react";
-import { SourceLink } from "./SourceLink";
+import { Box } from '@polar-sh/orbit/Box'
+import { Text } from '@polar-sh/orbit'
+import { type ReactNode } from 'react'
+import { SourceLink } from './SourceLink'
 
 export function PageHeader({
   eyebrow,
   title,
   description,
 }: {
-  eyebrow?: string;
-  title: string;
-  description?: ReactNode;
+  eyebrow?: string
+  title: string
+  description?: ReactNode
 }) {
   return (
     <Box
@@ -46,5 +46,5 @@ export function PageHeader({
         </Text>
       )}
     </Box>
-  );
+  )
 }

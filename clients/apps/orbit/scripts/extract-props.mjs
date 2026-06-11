@@ -39,11 +39,19 @@ const COMPONENTS = [
   },
   { slug: 'input', file: 'components/Input.tsx', export: 'Input' },
   { slug: 'textarea', file: 'components/TextArea.tsx', export: 'TextArea' },
-  { slug: 'segmented-control', file: 'components/SegmentedControl.tsx', export: 'SegmentedControl' },
+  {
+    slug: 'segmented-control',
+    file: 'components/SegmentedControl.tsx',
+    export: 'SegmentedControl',
+  },
   { slug: 'spinner', file: 'components/Spinner.tsx', export: 'Spinner' },
   { slug: 'truncated', file: 'components/Truncated.tsx', export: 'Truncated' },
   { slug: 'list', file: 'components/List.tsx', export: 'List' },
-  { slug: 'datatable', file: 'components/datatable/DataTable.tsx', export: 'DataTable' },
+  {
+    slug: 'datatable',
+    file: 'components/datatable/DataTable.tsx',
+    export: 'DataTable',
+  },
 ]
 
 const IGNORED = new Set(['ref', 'key'])
@@ -79,7 +87,10 @@ function jsdocOf(decl) {
   let def
   for (const d of docs) {
     for (const tag of d.getTags()) {
-      if (tag.getTagName() === 'default' || tag.getTagName() === 'defaultValue') {
+      if (
+        tag.getTagName() === 'default' ||
+        tag.getTagName() === 'defaultValue'
+      ) {
         def = (tag.getCommentText() ?? '').trim() || undefined
       }
     }

@@ -1,0 +1,356 @@
+"""Support case section: the appeal human-review thread and staff actions."""
+
+import contextlib
+from collections.abc import Generator, Sequence
+from urllib.parse import urlencode
+from uuid import UUID
+
+from fastapi import Request
+from tagflow import tag, text
+
+from polar.models import Organization
+from polar.models.support_case import (
+    ReviewAppealSupportCase,
+    SupportCaseMessage,
+    SupportCaseMessageAuthorKind,
+    SupportCaseMessageType,
+)
+
+from ....components import button, card
+
+_AUTHOR_LABELS: dict[SupportCaseMessageAuthorKind, str] = {
+    SupportCaseMessageAuthorKind.platform: "Support",
+    SupportCaseMessageAuthorKind.merchant: "Merchant",
+    SupportCaseMessageAuthorKind.customer: "Customer",
+    SupportCaseMessageAuthorKind.system: "System",
+}
+
+# Milestone events: title + (lucide icon, node circle classes). These render as
+# timeline milestones, visually distinct from conversation messages.
+_EVENT_TITLES: dict[SupportCaseMessageType, str] = {
+    SupportCaseMessageType.opened: "Human review requested",
+    SupportCaseMessageType.closed: "Case closed",
+    SupportCaseMessageType.appeal_approved: "Appeal approved",
+    SupportCaseMessageType.appeal_denied: "Appeal denied",
+    SupportCaseMessageType.info_requested: "Information requested",
+    SupportCaseMessageType.assigned: "Case assigned",
+    SupportCaseMessageType.released: "Case unassigned",
+}
+
+_DARK_NODE = "bg-neutral text-neutral-content"
+_MUTED_NODE = "bg-base-200 text-base-content/70"
+_EVENT_NODES: dict[SupportCaseMessageType, tuple[str, str]] = {
+    SupportCaseMessageType.opened: ("icon-circle-dot", _DARK_NODE),
+    SupportCaseMessageType.closed: ("icon-square", _DARK_NODE),
+    SupportCaseMessageType.appeal_approved: (
+        "icon-check",
+        "bg-success text-success-content",
+    ),
+    SupportCaseMessageType.appeal_denied: ("icon-x", "bg-error text-error-content"),
+    SupportCaseMessageType.info_requested: (
+        "icon-message-square-text",
+        "bg-info text-info-content",
+    ),
+    SupportCaseMessageType.assigned: ("icon-user-check", _MUTED_NODE),
+    SupportCaseMessageType.released: ("icon-user-x", _MUTED_NODE),
+}
+
+Thread = tuple[ReviewAppealSupportCase, bool, Sequence[SupportCaseMessage]]
+
+
+class SupportCaseSection:
+    """Render the appeal support case: status header, timeline and actions."""
+
+    def __init__(
+        self,
+        organization: Organization,
+        thread: Thread | None = None,
+        author_emails: dict[UUID, str] | None = None,
+        current_user_id: UUID | None = None,
+    ) -> None:
+        self.org = organization
+        self.thread = thread
+        self.author_emails = author_emails or {}
+        self.current_user_id = current_user_id
+
+    @contextlib.contextmanager
+    def render(self, request: Request) -> Generator[None]:
+        with tag.div(classes="space-y-6"):
+            if self.thread is None:
+                with card(bordered=True):
+                    with tag.h2(classes="text-lg font-semibold mb-1"):
+                        text("Appeal Support Case")
+                    with tag.p(classes="text-sm text-base-content/50"):
+                        text("No support case for this organization.")
+                yield
+                return
+
+            case, is_open, messages = self.thread
+            with card(bordered=True):
+                self._render_header(request, case, is_open, messages)
+                self._render_timeline(messages)
+                if is_open:
+                    self._render_composer(request)
+            yield
+
+    # -- Header -------------------------------------------------------------
+
+    def _outcome(
+        self, messages: Sequence[SupportCaseMessage]
+    ) -> SupportCaseMessageType | None:
+        for message in messages:
+            if message.type in (
+                SupportCaseMessageType.appeal_approved,
+                SupportCaseMessageType.appeal_denied,
+            ):
+                return message.type
+        return None
+
+    def _render_header(
+        self,
+        request: Request,
+        case: ReviewAppealSupportCase,
+        is_open: bool,
+        messages: Sequence[SupportCaseMessage],
+    ) -> None:
+        outcome = self._outcome(messages)
+        with tag.div(classes="flex items-start justify-between gap-4 mb-8"):
+            with tag.div(classes="flex items-start gap-4"):
+                with tag.div(
+                    classes="flex-none w-11 h-11 rounded-xl bg-base-200 "
+                    "flex items-center justify-center"
+                ):
+                    with tag.span(
+                        classes="icon-message-square text-lg text-base-content/70"
+                    ):
+                        pass
+                with tag.div(classes="flex flex-col gap-2"):
+                    with tag.h2(classes="text-xl font-semibold leading-none"):
+                        text("Appeal Support Case")
+                    with tag.div(classes="flex items-center gap-2"):
+                        status = "badge-success" if is_open else "badge-neutral"
+                        with tag.div(classes=f"badge {status} badge-sm"):
+                            text("Open" if is_open else "Closed")
+                        if outcome == SupportCaseMessageType.appeal_approved:
+                            with tag.div(classes="badge badge-success badge-sm gap-1"):
+                                with tag.span(classes="icon-check"):
+                                    pass
+                                text("Appeal approved")
+                        elif outcome == SupportCaseMessageType.appeal_denied:
+                            with tag.div(classes="badge badge-error badge-sm gap-1"):
+                                with tag.span(classes="icon-x"):
+                                    pass
+                                text("Appeal denied")
+                        elif is_open:
+                            with tag.div(classes="badge badge-ghost badge-sm"):
+                                text("Awaiting decision")
+                        if is_open:
+                            self._render_assignment_chip(case)
+            if is_open:
+                self._render_decision_actions(request, case)
+
+    def _render_assignment_chip(self, case: ReviewAppealSupportCase) -> None:
+        assignee_id = case.assigned_user_id
+        if assignee_id is None:
+            icon, label = "icon-user", "Unassigned"
+        elif assignee_id == self.current_user_id:
+            icon, label = "icon-user-check", "Assigned to you"
+        else:
+            email = self.author_emails.get(assignee_id, "another agent")
+            icon, label = "icon-user-check", f"Assigned to {email}"
+        with tag.div(classes="badge badge-ghost badge-sm gap-1"):
+            with tag.span(classes=icon):
+                pass
+            text(label)
+
+    def _assignment_urls(
+        self, request: Request, case: ReviewAppealSupportCase
+    ) -> tuple[str, str]:
+        # Assignment is advisory and generic to any case type, so it posts to
+        # the case-keyed support_cases endpoints and returns here afterwards.
+        detail = request.url_for("organizations:detail", organization_id=self.org.id)
+        return_to = f"{detail.path}?section=support_case"
+        take_url = f"{request.url_for('support_cases:take', case_id=case.id)}?{urlencode({'return_to': return_to})}"
+        release_url = f"{request.url_for('support_cases:release', case_id=case.id)}?{urlencode({'return_to': return_to})}"
+        return take_url, release_url
+
+    def _render_decision_actions(
+        self, request: Request, case: ReviewAppealSupportCase
+    ) -> None:
+        approve_url = str(
+            request.url_for(
+                "organizations:appeal_case_approve_dialog",
+                organization_id=self.org.id,
+            )
+        )
+        deny_url = str(
+            request.url_for(
+                "organizations:appeal_case_deny_dialog", organization_id=self.org.id
+            )
+        )
+        take_url, release_url = self._assignment_urls(request, case)
+        assignee_id = case.assigned_user_id
+        with tag.div(classes="flex-none flex items-center gap-2"):
+            if assignee_id == self.current_user_id:
+                with button(size="sm", outline=True, hx_post=release_url):
+                    text("Release")
+            else:
+                label = "Take over" if assignee_id is not None else "Take case"
+                with button(
+                    variant="neutral", size="sm", outline=True, hx_post=take_url
+                ):
+                    text(label)
+            with button(
+                variant="error",
+                size="sm",
+                outline=True,
+                hx_get=deny_url,
+                hx_target="#modal",
+            ):
+                text("Deny appeal")
+            with button(
+                variant="primary", size="sm", hx_get=approve_url, hx_target="#modal"
+            ):
+                text("Approve appeal")
+
+    # -- Timeline -----------------------------------------------------------
+
+    def _render_timeline(self, messages: Sequence[SupportCaseMessage]) -> None:
+        with tag.div(classes="relative"):
+            # The rail line, centered under the icon nodes (w-9 → center 18px).
+            with tag.div(
+                classes="absolute left-[18px] top-5 bottom-5 w-px bg-base-300"
+            ):
+                pass
+            with tag.div(
+                classes="grid grid-cols-[minmax(0,15rem)_minmax(0,1fr)] gap-x-6 gap-y-5"
+            ):
+                for message in messages:
+                    self._render_entry(message)
+
+    def _render_entry(self, message: SupportCaseMessage) -> None:
+        is_event = message.type != SupportCaseMessageType.chat
+        internal = not message.audience
+
+        # Left cell: icon node + title + muted metadata.
+        with tag.div(classes="flex gap-3"):
+            icon, node = self._node(message, internal)
+            # Opaque base hides the rail line behind translucent node tints.
+            with tag.div(
+                classes="relative z-10 flex-none w-9 h-9 rounded-full bg-base-100"
+            ):
+                with tag.div(
+                    classes="w-full h-full rounded-full "
+                    f"flex items-center justify-center {node}"
+                ):
+                    with tag.span(classes=f"{icon} text-base"):
+                        pass
+            with tag.div(classes="min-w-0 pt-1"):
+                with tag.div(classes="text-sm font-medium leading-tight"):
+                    text(self._title(message, internal))
+                for line in self._meta_lines(message, is_event, internal):
+                    with tag.div(classes="text-xs text-base-content/40 mt-0.5"):
+                        text(line)
+
+        # Right cell: conversation content (empty for pure milestones).
+        self._render_content(message, is_event, internal)
+
+    def _node(self, message: SupportCaseMessage, internal: bool) -> tuple[str, str]:
+        if message.type != SupportCaseMessageType.chat:
+            return _EVENT_NODES[message.type]
+        if internal:
+            return "icon-lock", "bg-warning/20 text-warning"
+        if message.author_kind == SupportCaseMessageAuthorKind.merchant:
+            return "icon-store", "bg-base-200 text-base-content/70"
+        return "icon-headset", "bg-info/15 text-info"
+
+    def _title(self, message: SupportCaseMessage, internal: bool) -> str:
+        if message.type != SupportCaseMessageType.chat:
+            return _EVENT_TITLES[message.type]
+        if internal:
+            return "Internal note"
+        return _AUTHOR_LABELS.get(message.author_kind, str(message.author_kind))
+
+    def _meta_lines(
+        self, message: SupportCaseMessage, is_event: bool, internal: bool
+    ) -> list[str]:
+        when = message.created_at.strftime("%b %-d, %H:%M UTC")
+        email = (
+            self.author_emails.get(message.author_user_id)
+            if message.author_user_id
+            else None
+        )
+        # The title carries the role for chat; events/notes name the actor. The
+        # email is the concrete identity. One piece of metadata per line.
+        if is_event or internal:
+            who = email or _AUTHOR_LABELS.get(
+                message.author_kind, str(message.author_kind)
+            )
+            return [f"by {who}", when]
+        return [email, when] if email else [when]
+
+    def _render_content(
+        self, message: SupportCaseMessage, is_event: bool, internal: bool
+    ) -> None:
+        if not message.body:
+            # Milestone with no body still occupies its grid cell.
+            with tag.div():
+                pass
+            return
+
+        merchant = message.author_kind == SupportCaseMessageAuthorKind.merchant
+        justify = "justify-end" if merchant else "justify-start"
+        with tag.div(classes=f"flex items-center {justify}"):
+            with tag.div(classes=f"max-w-md text-sm {self._bubble(message, internal)}"):
+                text(message.body)
+
+    def _bubble(self, message: SupportCaseMessage, internal: bool) -> str:
+        if internal:
+            return (
+                "bg-warning/10 border-l-2 border-warning rounded-lg px-3 py-2 "
+                "text-base-content/80"
+            )
+        if message.type == SupportCaseMessageType.appeal_approved:
+            return "bg-success/10 rounded-xl px-4 py-2.5"
+        if message.type == SupportCaseMessageType.appeal_denied:
+            return "bg-error/10 rounded-xl px-4 py-2.5"
+        if message.author_kind == SupportCaseMessageAuthorKind.merchant:
+            return "bg-info/10 rounded-2xl rounded-tr-md px-4 py-2.5"
+        return "bg-base-200 rounded-2xl rounded-tl-md px-4 py-2.5"
+
+    # -- Composer -----------------------------------------------------------
+
+    def _render_composer(self, request: Request) -> None:
+        reply_url = str(
+            request.url_for(
+                "organizations:appeal_case_reply", organization_id=self.org.id
+            )
+        )
+        with tag.div(classes="mt-8 pt-6 border-t border-base-200"):
+            with tag.form(hx_post=reply_url, classes="flex flex-col gap-3"):
+                with tag.textarea(
+                    name="body",
+                    classes="textarea textarea-bordered w-full rounded-lg",
+                    placeholder="Write a reply to the merchant…",
+                    rows="3",
+                    required=True,
+                ):
+                    pass
+                with tag.div(classes="flex items-center justify-between"):
+                    with tag.label(
+                        classes="flex items-center gap-2 cursor-pointer "
+                        "text-sm text-base-content/60"
+                    ):
+                        with tag.input(
+                            type="checkbox",
+                            name="internal",
+                            value="1",
+                            classes="checkbox checkbox-sm",
+                        ):
+                            pass
+                        text("Internal note — not visible to the merchant")
+                    with button(variant="primary", size="sm", type="submit"):
+                        text("Send")
+
+
+__all__ = ["SupportCaseSection"]

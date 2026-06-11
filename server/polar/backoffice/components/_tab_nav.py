@@ -15,6 +15,22 @@ class Tab:
     active: bool = False
     count: int | None = None
     badge_variant: str | None = None
+    # A small status dot (e.g. "needs attention"). Takes precedence over count.
+    dot: bool = False
+    # Extra classes on the tab element, e.g. "ml-auto" to push it to the right.
+    extra_classes: str = ""
+
+
+def _render_tab_indicator(tab: Tab) -> None:
+    variant = tab.badge_variant or "neutral"
+    if tab.dot:
+        with tag.span(
+            classes=f"ml-2 inline-block w-1.5 h-1.5 rounded-full bg-{variant}"
+        ):
+            pass
+    elif tab.count is not None:
+        with tag.span(classes=f"badge badge-{variant} ml-2"):
+            text(str(tab.count))
 
 
 @contextlib.contextmanager
@@ -69,6 +85,8 @@ def tab_nav(
             tab_classes = ["tab"]
             if tab.active:
                 tab_classes.append("tab-active")
+            if tab.extra_classes:
+                tab_classes.append(tab.extra_classes)
 
             if tab.url:
                 with tag.a(
@@ -80,16 +98,7 @@ def tab_nav(
                         attr("aria-selected", "true")
 
                     text(tab.label)
-
-                    # Optional count badge
-                    if tab.count is not None:
-                        variant_class = (
-                            f"badge-{tab.badge_variant}"
-                            if tab.badge_variant
-                            else "badge-neutral"
-                        )
-                        with tag.span(classes=f"badge {variant_class} ml-2"):
-                            text(str(tab.count))
+                    _render_tab_indicator(tab)
             else:
                 # No URL provided, render as button for HTMX interactions
                 with tag.button(
@@ -101,15 +110,7 @@ def tab_nav(
                         attr("aria-selected", "true")
 
                     text(tab.label)
-
-                    if tab.count is not None:
-                        variant_class = (
-                            f"badge-{tab.badge_variant}"
-                            if tab.badge_variant
-                            else "badge-neutral"
-                        )
-                        with tag.span(classes=f"badge {variant_class} ml-2"):
-                            text(str(tab.count))
+                    _render_tab_indicator(tab)
 
         yield
 

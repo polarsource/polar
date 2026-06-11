@@ -1,6 +1,8 @@
 from collections.abc import Sequence
 from uuid import UUID
 
+from sqlalchemy import ColumnElement, select
+
 from polar.kit.repository.base import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -75,6 +77,25 @@ class SupportCaseMessageRepository(
         latest = await self.get_latest_lifecycle_event(case_id)
         assert latest is not None  # always created with an `opened` event
         return latest.type != SupportCaseMessageType.closed
+
+    @staticmethod
+    def is_open_expression() -> ColumnElement[bool]:
+        """SQL form of ``is_open()``, correlated to the enclosing case row.
+        State is the type of the latest lifecycle event
+        Lets a list query derive open/closed in one pass instead of
+        an N+1 of per-case ``is_open()`` calls.
+        """
+        latest_type = (
+            select(SupportCaseMessage.type)
+            .where(
+                SupportCaseMessage.case_id == SupportCase.id,
+                SupportCaseMessage.type.in_(_LIFECYCLE_TYPES),
+            )
+            .order_by(SupportCaseMessage.created_at.desc())
+            .limit(1)
+            .scalar_subquery()
+        )
+        return latest_type != SupportCaseMessageType.closed
 
 
 class SupportCaseParticipantRepository(

@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import ColumnElement, select
+from sqlalchemy.orm import joinedload
 
 from polar.kit.repository.base import (
     RepositoryBase,
@@ -11,6 +12,7 @@ from polar.kit.repository.base import (
 from polar.models.support_case import (
     ReviewAppealSupportCase,
     SupportCase,
+    SupportCaseAttachment,
     SupportCaseAudience,
     SupportCaseMessage,
     SupportCaseMessageType,
@@ -104,6 +106,48 @@ class SupportCaseParticipantRepository(
     RepositoryBase[SupportCaseParticipant],
 ):
     model = SupportCaseParticipant
+
+
+class SupportCaseAttachmentRepository(
+    RepositorySoftDeletionIDMixin[SupportCaseAttachment, UUID],
+    RepositorySoftDeletionMixin[SupportCaseAttachment],
+    RepositoryBase[SupportCaseAttachment],
+):
+    model = SupportCaseAttachment
+
+    async def list_by_case(
+        self, case_id: UUID, *, visible_to: SupportCaseAudience | None = None
+    ) -> Sequence[SupportCaseAttachment]:
+        """A case's attachments (oldest first) with their file eager-loaded.
+
+        ``visible_to`` filters by audience for a non-platform reader; ``None``
+        is the platform, which sees everything (mirrors the message repository).
+        """
+        statement = (
+            self.get_base_statement()
+            .where(SupportCaseAttachment.case_id == case_id)
+            .options(joinedload(SupportCaseAttachment.file))
+            .order_by(SupportCaseAttachment.created_at.asc())
+        )
+        if visible_to is not None:
+            statement = statement.where(
+                SupportCaseAttachment.audience.contains([visible_to])
+            )
+        return await self.get_all(statement)
+
+    async def get_by_id_for_case(
+        self, attachment_id: UUID, case_id: UUID
+    ) -> SupportCaseAttachment | None:
+        """An attachment scoped to its case, with its file eager-loaded."""
+        statement = (
+            self.get_base_statement()
+            .where(
+                SupportCaseAttachment.id == attachment_id,
+                SupportCaseAttachment.case_id == case_id,
+            )
+            .options(joinedload(SupportCaseAttachment.file))
+        )
+        return await self.get_one_or_none(statement)
 
 
 class ReviewAppealSupportCaseRepository(

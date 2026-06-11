@@ -7,6 +7,7 @@ from polar.models.organization import Organization
 from polar.models.support_case import (
     ReviewAppealSupportCase,
     SupportCaseAttachment,
+    SupportCaseAudience,
     SupportCaseMessage,
     SupportCaseMessageAuthorKind,
     SupportCaseMessageType,
@@ -14,7 +15,23 @@ from polar.models.support_case import (
     SupportCaseParticipantKind,
 )
 from polar.postgres import AsyncSession
+from polar.support_case.service import support_case as support_case_service
 from tests.fixtures.database import SaveFixture
+
+
+async def _attachment_file(
+    save_fixture: SaveFixture, organization: Organization
+) -> File:
+    file = File(
+        organization_id=organization.id,
+        name="evidence.pdf",
+        path="evidence.pdf",
+        mime_type="application/pdf",
+        size=1,
+        service=FileServiceTypes.support_case_attachment,
+    )
+    await save_fixture(file)
+    return file
 
 
 async def _review(
@@ -69,6 +86,54 @@ class TestParticipantUniqueness:
         )
         with pytest.raises(IntegrityError):
             await session.flush()
+
+
+@pytest.mark.asyncio
+class TestAddAttachment:
+    async def test_links_to_message(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        case = ReviewAppealSupportCase(
+            organization_review_id=(await _review(save_fixture, organization)).id
+        )
+        await save_fixture(case)
+        message = await support_case_service.post_message(
+            session,
+            case,
+            author_kind=SupportCaseMessageAuthorKind.merchant,
+            audience=[SupportCaseAudience.merchant],
+        )
+        file = await _attachment_file(save_fixture, organization)
+
+        attachment = await support_case_service.add_attachment(
+            session,
+            case,
+            file=file,
+            message=message,
+            audience=[SupportCaseAudience.merchant],
+        )
+        assert attachment.message_id == message.id
+        assert attachment.file_id == file.id
+        assert attachment.audience == [SupportCaseAudience.merchant]
+
+    async def test_case_level_without_message(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        case = ReviewAppealSupportCase(
+            organization_review_id=(await _review(save_fixture, organization)).id
+        )
+        await save_fixture(case)
+        file = await _attachment_file(save_fixture, organization)
+
+        attachment = await support_case_service.add_attachment(session, case, file=file)
+        assert attachment.message_id is None
+        assert attachment.audience == []
 
 
 @pytest.mark.asyncio

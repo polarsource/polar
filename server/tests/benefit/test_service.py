@@ -605,10 +605,8 @@ class TestUpdate:
         assert properties["channel_name_template"] == "vip-{customer_name}"
 
     @pytest.mark.auth
-    @pytest.mark.parametrize("visibility", [Visibility.private, None])
-    async def test_rejects_visibility_update_for_non_configurable_benefit(
+    async def test_rejects_private_visibility_update_for_non_configurable_benefit(
         self,
-        visibility: Visibility | None,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         redis: Redis,
@@ -628,13 +626,60 @@ class TestUpdate:
         )
 
         update_schema = BenefitDiscordUpdate.model_validate(
-            {"type": BenefitType.discord, "visibility": visibility}
+            {"type": BenefitType.discord, "visibility": Visibility.private}
         )
 
         with pytest.raises(PolarRequestValidationError):
             await benefit_service.update(
                 session, redis, benefit, update_schema, auth_subject
             )
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("visibility", "expected"),
+        [
+            (Visibility.public, Visibility.public),
+            (None, None),
+        ],
+    )
+    async def test_allows_public_visibility_update_for_non_configurable_benefit(
+        self,
+        visibility: Visibility | None,
+        expected: Visibility | None,
+        mocker: MockerFixture,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch.object(
+            benefit_grant_service,
+            "enqueue_benefit_grant_updates",
+            spec=BenefitGrantService.enqueue_benefit_grant_updates,
+        )
+
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.discord,
+            properties={
+                "guild_id": "123",
+                "role_id": "456",
+                "kick_member": False,
+            },
+        )
+
+        update_schema = BenefitDiscordUpdate.model_validate(
+            {"type": BenefitType.discord, "visibility": visibility}
+        )
+
+        updated_benefit = await benefit_service.update(
+            session, redis, benefit, update_schema, auth_subject
+        )
+
+        assert updated_benefit.visibility == expected
 
     @pytest.mark.auth
     async def test_allows_visibility_update_for_custom_benefit(

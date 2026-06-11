@@ -18,6 +18,7 @@ from polar.support_case.repository import (
     SupportCaseMessageRepository,
 )
 from polar.support_case.service import support_case as support_case_service
+from polar.worker import enqueue_job
 
 
 class AppealCaseError(PolarError): ...
@@ -83,7 +84,7 @@ class AppealCaseService:
         internal: bool = False,
     ) -> SupportCaseMessage:
         await self._assert_open(session, case)
-        return await support_case_service.post_message(
+        message = await support_case_service.post_message(
             session,
             case,
             author_kind=author_kind,
@@ -91,6 +92,11 @@ class AppealCaseService:
             body=body,
             audience=[] if internal else [SupportCaseAudience.merchant],
         )
+        # Visible replies notify the case recipients by email (direct send,
+        # bypassing the legacy notification system.
+        if not internal:
+            enqueue_job("support_case.notify_organization_of_new_message", message_id=message.id)
+        return message
 
     async def record_decision(
         self,

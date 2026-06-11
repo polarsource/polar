@@ -245,6 +245,7 @@
 
   body {
     color: var(--foreground);
+    text-rendering: optimizeLegibility;
   }
 }
 

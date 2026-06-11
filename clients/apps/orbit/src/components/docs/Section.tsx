@@ -21,11 +21,9 @@ export function Section({
             </Text>
           )}
           {description && (
-            <Box maxWidth={620}>
-              <Text variant="body" color="default">
-                {description}
-              </Text>
-            </Box>
+            <Text variant="body" color="default">
+              {description}
+            </Text>
           )}
         </Box>
       )}
@@ -36,7 +34,7 @@ export function Section({
 
 export function Prose({ children }: { children: ReactNode }) {
   return (
-    <Box maxWidth={680} flexDirection="column" rowGap="m">
+    <Box flexDirection="column" rowGap="m">
       {children}
     </Box>
   )

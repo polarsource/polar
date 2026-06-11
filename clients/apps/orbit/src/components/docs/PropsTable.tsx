@@ -77,7 +77,6 @@ function TypeChip({
       target="_blank"
       rel="noreferrer"
       title="View definition on GitHub"
-      style={{ textDecoration: 'none' }}
     >
       {chip}
     </a>
@@ -161,11 +160,9 @@ export function PropsTable({ rows, slug }: { rows: PropRow[]; slug?: string }) {
               )}
             </Box>
             {row.description && (
-              <Box maxWidth={640}>
-                <Text variant="default" color="muted">
-                  {row.description}
-                </Text>
-              </Box>
+              <Text variant="default" color="muted">
+                {row.description}
+              </Text>
             )}
           </Box>
         ))}

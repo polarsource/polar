@@ -22,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning className="antialiased">
-      <body style={{ textRendering: 'optimizeLegibility' }}>
+      <body>
         <OrbitThemeProvider>
           <AppShell>{children}</AppShell>
         </OrbitThemeProvider>

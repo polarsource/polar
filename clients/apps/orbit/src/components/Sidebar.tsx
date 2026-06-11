@@ -18,25 +18,13 @@ import { navSections } from '@/lib/registry'
 
 function Wordmark() {
   return (
-    <Link href="/" style={{ textDecoration: 'none' }}>
+    <Link href="/">
       <Box alignItems="center" columnGap="s">
-        <Box
-          alignItems="center"
-          justifyContent="center"
-          width={28}
-          height={28}
-          borderRadius="m"
-          backgroundColor="background-inverse"
-        >
-          <Text variant="label" color="inverse">
-            O
-          </Text>
-        </Box>
         <Box flexDirection="column">
           <Text variant="default" color="default">
             Orbit
           </Text>
-          <Text variant="caption" color="default">
+          <Text variant="caption" color="muted">
             Polar Design System
           </Text>
         </Box>

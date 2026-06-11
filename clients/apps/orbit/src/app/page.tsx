@@ -1,27 +1,27 @@
-import { Box } from '@polar-sh/orbit/Box'
-import { Grid, GridItem, Text } from '@polar-sh/orbit'
-import { ArrowUpRight } from 'lucide-react'
-import Link from 'next/link'
-import { OrbitingSpheres } from '@/components/OrbitingSpheres'
-import { componentItems, foundationItems } from '@/lib/registry'
+import { Box } from "@polar-sh/orbit/Box";
+import { Grid, GridItem, Text } from "@polar-sh/orbit";
+import { ArrowUpRight } from "lucide-react";
+import Link from "next/link";
+import { OrbitingSpheres } from "@/components/OrbitingSpheres";
+import { componentItems, foundationItems } from "@/lib/registry";
 
 const PRINCIPLES = [
   {
-    title: 'Design by subtraction',
-    lead: 'Start with everything. Remove until only what is necessary remains. Then remove one more thing. What survives is the design.',
-    body: 'Orbit ships one spacing scale, a handful of radii, and a small set of semantic colors. The constraint is the feature. Fewer choices means fewer ways to drift, so every surface in Polar reads as one system.',
+    title: "Design by subtraction",
+    lead: "Start with everything. Remove until only what is necessary remains. Then remove one more thing. What survives is the design.",
+    body: "Orbit ships one spacing scale, a handful of radii, and a small set of semantic colors. The constraint is the feature. Fewer choices means fewer ways to drift, so every surface in Polar reads as one system.",
   },
   {
-    title: 'Derived, not decorated',
-    lead: 'Every element should feel like it emerged from an underlying rule, not a preference. Beauty is an outcome of correctness, not ornament.',
-    body: 'Color resolves from light-dark(), spacing from a single scale, motion from physical curves. You author one styling pass and dark mode is free, because the values are computed rather than hand-picked.',
+    title: "Derived, not decorated",
+    lead: "Every element should feel like it emerged from an underlying rule, not a preference. Beauty is an outcome of correctness, not ornament.",
+    body: "Color resolves from light-dark(), spacing from a single scale, motion from physical curves. You author one styling pass and dark mode is free, because the values are computed rather than hand-picked.",
   },
   {
-    title: 'Precision as respect',
-    lead: 'An imprecise pixel, word, or interaction signals that we do not understand the people we build for. Precision is not a quality bar, it is a form of respect.',
-    body: 'Polar builds for a technical audience. Box makes precision the default by removing arbitrary values: typed props take tokens, never raw pixels, so the easy path and the correct path are the same.',
+    title: "Precision as respect",
+    lead: "An imprecise pixel, word, or interaction signals that we do not understand the people we build for. Precision is not a quality bar, it is a form of respect.",
+    body: "Polar builds for a technical audience. Box makes precision the default by removing arbitrary values: typed props take tokens, never raw pixels, so the easy path and the correct path are the same.",
   },
-]
+];
 
 function LinkCard({
   index,
@@ -29,16 +29,13 @@ function LinkCard({
   title,
   description,
 }: {
-  index: string
-  href: string
-  title: string
-  description: string
+  index: string;
+  href: string;
+  title: string;
+  description: string;
 }) {
   return (
-    <Link
-      href={href}
-      style={{ textDecoration: 'none', display: 'block', height: '100%' }}
-    >
+    <Link href={href} className="block h-full w-full">
       <Box
         flexDirection="column"
         justifyContent="between"
@@ -61,8 +58,8 @@ function LinkCard({
             {index}
           </Text>
           <Box
-            color={{ base: 'text-tertiary', hover: 'text-primary' }}
-            transform={{ hover: 'translate(3px, -3px)' }}
+            color={{ base: "text-tertiary", hover: "text-primary" }}
+            transform={{ hover: "translate(3px, -3px)" }}
             transitionProperty="common"
             transitionDuration="fast"
             ease="decelerate"
@@ -80,15 +77,15 @@ function LinkCard({
         </Box>
       </Box>
     </Link>
-  )
+  );
 }
 
 function Catalog({
   title,
   items,
 }: {
-  title: string
-  items: typeof foundationItems
+  title: string;
+  items: typeof foundationItems;
 }) {
   return (
     <Box as="section" flexDirection="column" rowGap="l">
@@ -97,20 +94,20 @@ function Catalog({
       </Text>
       <Grid
         templateColumns={{
-          base: '1fr',
-          sm: 'repeat(2, 1fr)',
-          lg: 'repeat(3, 1fr)',
+          base: "1fr",
+          sm: "repeat(2, 1fr)",
+          lg: "repeat(3, 1fr)",
         }}
         gap="l"
       >
         {items.map((item, i) => (
           <GridItem key={item.href}>
-            <LinkCard index={String(i + 1).padStart(2, '0')} {...item} />
+            <LinkCard index={String(i + 1).padStart(2, "0")} {...item} />
           </GridItem>
         ))}
       </Grid>
     </Box>
-  )
+  );
 }
 
 export default function HomePage() {
@@ -128,30 +125,23 @@ export default function HomePage() {
           <OrbitingSpheres />
         </Box>
         <Box flexDirection="column" alignItems="center" rowGap="xs">
-          <Text variant="heading-xl" as="h1">
+          <Text variant="heading-l" as="h1">
             Orbit
           </Text>
         </Box>
         <Box maxWidth={560}>
-          <Text variant="body">
-            The foundation behind every Polar surface. A set of design tokens
-            and composable primitives, built so the interface is derived from
-            rules rather than assembled by hand.
+          <Text variant="heading-xxs">
+            The foundation behind every Polar surface
           </Text>
         </Box>
       </Box>
 
       <Box as="section" flexDirection="column">
-        <Box
-          flexDirection="column"
-          rowGap="s"
-          maxWidth={620}
-          paddingBottom="xl"
-        >
+        <Box flexDirection="column" rowGap="s" paddingBottom="xl">
           <Text variant="heading-xs" as="h2">
             Principles
           </Text>
-          <Text variant="body" color="muted">
+          <Text variant="heading-xxs" color="muted">
             Three rules govern every decision in the system. They are why Orbit
             looks the way it does, and the bar each component is held to.
           </Text>
@@ -160,8 +150,8 @@ export default function HomePage() {
         {PRINCIPLES.map((principle, i) => (
           <Grid
             key={principle.title}
-            templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }}
-            gap={{ base: 'l', md: '3xl' }}
+            templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }}
+            gap={{ base: "l", md: "3xl" }}
             paddingVertical="3xl"
             borderTopWidth={1}
             borderStyle="solid"
@@ -170,7 +160,7 @@ export default function HomePage() {
             <GridItem>
               <Box flexDirection="column" rowGap="m">
                 <Text variant="mono" color="muted">
-                  {String(i + 1).padStart(2, '0')}
+                  {String(i + 1).padStart(2, "0")}
                 </Text>
                 <Text variant="heading-s" as="h3">
                   {principle.title}
@@ -194,5 +184,5 @@ export default function HomePage() {
       <Catalog title="Foundations" items={foundationItems} />
       <Catalog title="Components" items={componentItems} />
     </Box>
-  )
+  );
 }

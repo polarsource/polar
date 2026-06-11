@@ -1,17 +1,17 @@
-'use client'
+"use client";
 
-import { List, ListGroup, ListItem, Status, Text } from '@polar-sh/orbit'
-import { Box } from '@polar-sh/orbit/Box'
-import type { PropRow } from '@/components/docs'
+import { List, ListGroup, ListItem, Status, Text } from "@polar-sh/orbit";
+import { Box } from "@polar-sh/orbit/Box";
+import type { PropRow } from "@/components/docs";
 import {
   Example,
   PageHeader,
   Prose,
   PropsTable,
   Section,
-} from '@/components/docs'
+} from "@/components/docs";
 
-const basicCode = `<List>
+const basicCode = `<List size="small">
   <ListItem>
     <Text>Email notifications</Text>
     <Status status="On" color="green" size="small" />
@@ -24,7 +24,7 @@ const basicCode = `<List>
     <Text>API access</Text>
     <Status status="On" color="green" size="small" />
   </ListItem>
-</List>`
+</List>`;
 
 const selectableCode = `const [selected, setSelected] = useState('overview')
 
@@ -39,7 +39,7 @@ const selectableCode = `const [selected, setSelected] = useState('overview')
       <Text>{item.label}</Text>
     </ListItem>
   ))}
-</List>`
+</List>`;
 
 const groupCode = `<ListGroup>
   <ListGroup.Item>
@@ -50,78 +50,78 @@ const groupCode = `<ListGroup>
     <Text variant="label">Billing</Text>
     <Text color="default">Payment methods and invoices.</Text>
   </ListGroup.Item>
-</ListGroup>`
+</ListGroup>`;
 
 const listProps: PropRow[] = [
   {
-    name: 'children',
-    type: 'ReactNode',
-    description: 'ListItem rows. Renders nothing when empty.',
+    name: "children",
+    type: "ReactNode",
+    description: "ListItem rows. Renders nothing when empty.",
   },
   {
-    name: 'size',
+    name: "size",
     type: "'small' | 'default'",
     default: "'default'",
-    description: 'Controls the corner radius of the list container.',
+    description: "Controls the corner radius of the list container.",
   },
   {
-    name: 'className',
-    type: 'string',
-    description: 'Classes merged onto the list container.',
+    name: "className",
+    type: "string",
+    description: "Classes merged onto the list container.",
   },
-]
+];
 
 const listItemProps: PropRow[] = [
   {
-    name: 'children',
-    type: 'ReactNode',
+    name: "children",
+    type: "ReactNode",
     required: true,
     description:
-      'Row content. Laid out as a space-between row, so a leading and trailing node sit at each edge.',
+      "Row content. Laid out as a space-between row, so a leading and trailing node sit at each edge.",
   },
   {
-    name: 'selected',
-    type: 'boolean',
-    default: 'false',
-    description: 'Applies the selected surface treatment.',
+    name: "selected",
+    type: "boolean",
+    default: "false",
+    description: "Applies the selected surface treatment.",
   },
   {
-    name: 'onSelect',
-    type: '(e: React.MouseEvent) => void',
+    name: "onSelect",
+    type: "(e: React.MouseEvent) => void",
     description:
-      'Click handler. When set, the row becomes a pointer target with hover affordance.',
+      "Click handler. When set, the row becomes a pointer target with hover affordance.",
   },
   {
-    name: 'size',
+    name: "size",
     type: "'small' | 'default'",
     default: "'default'",
-    description: 'Controls the row padding.',
+    description: "Controls the row padding.",
   },
   {
-    name: 'selectedClassName',
-    type: 'string',
-    description: 'Extra classes applied only when selected is true.',
+    name: "selectedClassName",
+    type: "string",
+    description: "Extra classes applied only when selected is true.",
   },
   {
-    name: 'inactiveClassName',
-    type: 'string',
-    description: 'Extra classes applied only when selected is false.',
+    name: "inactiveClassName",
+    type: "string",
+    description: "Extra classes applied only when selected is false.",
   },
   {
-    name: 'className',
-    type: 'string',
-    description: 'Classes merged onto the row in all states.',
+    name: "className",
+    type: "string",
+    description: "Classes merged onto the row in all states.",
   },
-]
+];
 
 const listGroupProps: PropRow[] = [
   {
-    name: 'children',
-    type: 'ReactNode',
+    name: "children",
+    type: "ReactNode",
     description:
-      'Use ListGroup.Item children. Each item is separated by a top border.',
+      "Use ListGroup.Item children. Each item is separated by a top border.",
   },
-]
+];
 
 export default function ListPage() {
   return (
@@ -150,7 +150,7 @@ export default function ListPage() {
       >
         <Example code={basicCode} align="stretch">
           <Box width="100%">
-            <List>
+            <List size="small">
               <ListItem>
                 <Text>Email notifications</Text>
                 <Status status="On" color="green" size="small" />
@@ -225,5 +225,5 @@ export default function ListPage() {
         <PropsTable rows={listGroupProps} />
       </Section>
     </>
-  )
+  );
 }

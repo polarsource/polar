@@ -1,22 +1,22 @@
-import { Box } from '@polar-sh/orbit/Box'
-import { Text } from '@polar-sh/orbit'
-import { type ReactNode } from 'react'
-import { SourceLink } from './SourceLink'
+import { Box } from "@polar-sh/orbit/Box";
+import { Text } from "@polar-sh/orbit";
+import { type ReactNode } from "react";
+import { SourceLink } from "./SourceLink";
 
 export function PageHeader({
   eyebrow,
   title,
   description,
 }: {
-  eyebrow?: string
-  title: string
-  description?: ReactNode
+  eyebrow?: string;
+  title: string;
+  description?: ReactNode;
 }) {
   return (
     <Box
       as="header"
       flexDirection="column"
-      rowGap="m"
+      rowGap="xl"
       paddingBottom="xl"
       marginBottom="2xl"
       borderBottomWidth={1}
@@ -41,12 +41,10 @@ export function PageHeader({
         <SourceLink />
       </Box>
       {description && (
-        <Box maxWidth={620}>
-          <Text variant="body" color="default">
-            {description}
-          </Text>
-        </Box>
+        <Text variant="heading-xxs" color="muted">
+          {description}
+        </Text>
       )}
     </Box>
-  )
+  );
 }

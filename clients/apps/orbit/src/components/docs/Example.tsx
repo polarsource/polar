@@ -39,7 +39,7 @@ export function Example({
         borderWidth={1}
         borderStyle="solid"
         borderColor="border-primary"
-        backgroundColor="background-secondary"
+        backgroundColor="background-primary"
         overflow="hidden"
       >
         <Box

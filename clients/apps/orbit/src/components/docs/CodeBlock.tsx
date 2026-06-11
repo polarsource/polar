@@ -37,15 +37,7 @@ export function CodeBlock({
         onClick={copy}
         aria-label="Copy code"
         title="Copy code"
-        style={{
-          position: 'absolute',
-          top: 8,
-          right: 8,
-          cursor: 'pointer',
-          background: 'transparent',
-          border: 'none',
-          padding: 0,
-        }}
+        className="absolute top-2 right-2 cursor-pointer border-0 bg-transparent p-0"
       >
         <Box
           alignItems="center"
@@ -73,7 +65,7 @@ export function CodeBlock({
           <div dangerouslySetInnerHTML={{ __html: highlighted }} />
         ) : (
           <Text as="code" variant="mono" color="inherit">
-            <pre style={{ margin: 0 }}>{code}</pre>
+            <pre className="m-0">{code}</pre>
           </Text>
         )}
       </Box>

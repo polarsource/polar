@@ -91,7 +91,7 @@ class SupportCaseSection:
             case, is_open, messages = self.thread
             with card(bordered=True):
                 self._render_header(request, case, is_open, messages)
-                self._render_timeline(messages)
+                self._render_timeline(request, messages)
                 if is_open:
                     self._render_composer(request)
             yield
@@ -218,7 +218,9 @@ class SupportCaseSection:
 
     # -- Timeline -----------------------------------------------------------
 
-    def _render_timeline(self, messages: Sequence[SupportCaseMessage]) -> None:
+    def _render_timeline(
+        self, request: Request, messages: Sequence[SupportCaseMessage]
+    ) -> None:
         with tag.div(classes="relative"):
             # The rail line, centered under the icon nodes (w-9 → center 18px).
             with tag.div(
@@ -229,9 +231,9 @@ class SupportCaseSection:
                 classes="grid grid-cols-[minmax(0,15rem)_minmax(0,1fr)] gap-x-6 gap-y-5"
             ):
                 for message in messages:
-                    self._render_entry(message)
+                    self._render_entry(request, message)
 
-    def _render_entry(self, message: SupportCaseMessage) -> None:
+    def _render_entry(self, request: Request, message: SupportCaseMessage) -> None:
         is_event = message.type != SupportCaseMessageType.chat
         internal = not message.audience
 
@@ -256,7 +258,7 @@ class SupportCaseSection:
                         text(line)
 
         # Right cell: conversation content (empty for pure milestones).
-        self._render_content(message, is_event, internal)
+        self._render_content(request, message, is_event, internal)
 
     def _node(self, message: SupportCaseMessage, internal: bool) -> tuple[str, str]:
         if message.type != SupportCaseMessageType.chat:
@@ -293,7 +295,11 @@ class SupportCaseSection:
         return [email, when] if email else [when]
 
     def _render_content(
-        self, message: SupportCaseMessage, is_event: bool, internal: bool
+        self,
+        request: Request,
+        message: SupportCaseMessage,
+        is_event: bool,
+        internal: bool,
     ) -> None:
         attachments = self.attachments_by_message.get(message.id, [])
         if not message.body and not attachments:
@@ -313,13 +319,22 @@ class SupportCaseSection:
                         text(message.body)
             for attachment in attachments:
                 with tag.div(classes=f"flex {justify}"):
-                    self._render_attachment(attachment)
+                    self._render_attachment(request, attachment)
 
-    def _render_attachment(self, attachment: SupportCaseAttachment) -> None:
+    def _render_attachment(
+        self, request: Request, attachment: SupportCaseAttachment
+    ) -> None:
         file = attachment.file
-        with tag.div(
+        url = str(
+            request.url_for(
+                "support_cases:attachment_download", attachment_id=attachment.id
+            )
+        )
+        with tag.a(
+            href=url,
+            target="_blank",
             classes="flex items-center gap-2 max-w-md rounded-lg border "
-            "border-base-200 bg-base-100 px-3 py-2"
+            "border-base-200 bg-base-100 px-3 py-2 hover:bg-base-200",
         ):
             with tag.span(classes="icon-paperclip text-base-content/40"):
                 pass

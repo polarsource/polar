@@ -213,6 +213,10 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
         </div>
         <div className="dark:divide-polar-800 flex h-full grow flex-col divide-y divide-gray-50 overflow-y-auto">
           {customers.map((customer) => {
+            const showBillingName =
+              !!customer.billing_name &&
+              customer.name?.toLocaleLowerCase() !==
+                customer.billing_name.toLocaleLowerCase()
             return (
               <Link
                 key={customer.id}
@@ -234,6 +238,11 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
                   <div className="flex min-w-0 flex-col">
                     <div className="w-full truncate text-sm">
                       {customer.name ?? customer.email ?? '—'}
+                      {showBillingName && (
+                        <span className="dark:text-polar-500 ml-1 text-gray-500">
+                          {customer.billing_name}
+                        </span>
+                      )}
                     </div>
                     {(customer.email || customer.type === 'individual') && (
                       <div className="dark:text-polar-500 w-full truncate text-xs text-gray-500">

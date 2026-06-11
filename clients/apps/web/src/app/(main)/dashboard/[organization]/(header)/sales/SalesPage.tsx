@@ -135,6 +135,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
       ),
       cell: (props) => {
         const customer = props.getValue() as schemas['OrderCustomer']
+        const showBillingName =
+          !!customer.billing_name &&
+          customer.name?.toLocaleLowerCase() !==
+            customer.billing_name.toLocaleLowerCase()
         return (
           <div className="flex flex-row items-center gap-2">
             <Avatar
@@ -142,7 +146,16 @@ const ClientPage: React.FC<ClientPageProps> = ({
               avatar_url={customer.avatar_url}
               name={customer.email ?? customer.name ?? '—'}
             />
-            <Truncated>{customer.name || customer.email || '—'}</Truncated>
+            <Truncated>
+              <span>
+                {customer.name || customer.email || '—'}
+                {showBillingName && (
+                  <span className="dark:text-polar-500 ml-2 text-gray-500">
+                    {customer.billing_name}
+                  </span>
+                )}
+              </span>
+            </Truncated>
           </div>
         )
       },

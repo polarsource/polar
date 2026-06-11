@@ -31313,7 +31313,7 @@ export interface components {
       name: string
       /**
        * Mime Type
-       * @description MIME type of the file. PDFs, images and videos are supported.
+       * @description MIME type of the file. Images, videos, PDF, CSV, Word and Excel documents are supported.
        */
       mime_type: string
       /**

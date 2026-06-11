@@ -2,7 +2,8 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
-from polar.models import OrganizationReview
+from polar.models import File, OrganizationReview
+from polar.models.file import FileServiceTypes
 from polar.models.organization import Organization
 from polar.models.support_case import SupportCaseMessageAuthorKind
 from polar.models.user import User
@@ -29,6 +30,27 @@ async def denied_review(
     )
     await save_fixture(review)
     return review
+
+
+async def _uploaded_attachment_file(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    *,
+    service: FileServiceTypes = FileServiceTypes.support_case_attachment,
+    is_uploaded: bool = True,
+) -> File:
+    file = File(
+        organization=organization,
+        name="evidence.pdf",
+        path="support_case_attachment/evidence.pdf",
+        mime_type="application/pdf",
+        size=1234,
+        service=service,
+        is_uploaded=is_uploaded,
+        is_enabled=True,
+    )
+    await save_fixture(file)
+    return file
 
 
 @pytest.mark.asyncio
@@ -223,3 +245,268 @@ class TestReplyToAppealCase:
             json={"body": "please reconsider again"},
         )
         assert response.status_code == 409
+
+
+@pytest.mark.asyncio
+class TestReplyWithAttachments:
+    @pytest.mark.auth
+    async def test_body_and_files(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        denied_review: OrganizationReview,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        await appeal_case_service.request_human_review(
+            session,
+            denied_review,
+            reason=REASON,
+            requested_by_user=user,
+            organization=organization,
+        )
+        file_a = await _uploaded_attachment_file(save_fixture, organization)
+        file_b = await _uploaded_attachment_file(save_fixture, organization)
+        await session.flush()
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/appeal/case/messages",
+            json={
+                "body": "see attached",
+                "file_ids": [str(file_a.id), str(file_b.id)],
+            },
+        )
+        assert response.status_code == 200
+        assert response.json()["body"] == "see attached"
+
+        thread = await client.get(f"/v1/organizations/{organization.id}/appeal/case")
+        attachments = thread.json()["attachments"]
+        assert len(attachments) == 2
+        assert attachments[0]["file"]["name"] == "evidence.pdf"
+        assert all(a["message_id"] is not None for a in attachments)
+
+    @pytest.mark.auth
+    async def test_files_without_body(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        denied_review: OrganizationReview,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        await appeal_case_service.request_human_review(
+            session,
+            denied_review,
+            reason=REASON,
+            requested_by_user=user,
+            organization=organization,
+        )
+        file = await _uploaded_attachment_file(save_fixture, organization)
+        await session.flush()
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/appeal/case/messages",
+            json={"file_ids": [str(file.id)]},
+        )
+        assert response.status_code == 200
+        assert response.json()["body"] is None
+
+    @pytest.mark.auth
+    async def test_empty_reply_rejected(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+        denied_review: OrganizationReview,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        await appeal_case_service.request_human_review(
+            session,
+            denied_review,
+            reason=REASON,
+            requested_by_user=user,
+            organization=organization,
+        )
+        await session.flush()
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/appeal/case/messages",
+            json={},
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_file_not_found(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+        denied_review: OrganizationReview,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        await appeal_case_service.request_human_review(
+            session,
+            denied_review,
+            reason=REASON,
+            requested_by_user=user,
+            organization=organization,
+        )
+        await session.flush()
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/appeal/case/messages",
+            json={"file_ids": ["11111111-1111-4111-8111-111111111111"]},
+        )
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_wrong_file_service(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        denied_review: OrganizationReview,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        await appeal_case_service.request_human_review(
+            session,
+            denied_review,
+            reason=REASON,
+            requested_by_user=user,
+            organization=organization,
+        )
+        file = await _uploaded_attachment_file(
+            save_fixture, organization, service=FileServiceTypes.downloadable
+        )
+        await session.flush()
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/appeal/case/messages",
+            json={"file_ids": [str(file.id)]},
+        )
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_file_not_uploaded(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        denied_review: OrganizationReview,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        await appeal_case_service.request_human_review(
+            session,
+            denied_review,
+            reason=REASON,
+            requested_by_user=user,
+            organization=organization,
+        )
+        file = await _uploaded_attachment_file(
+            save_fixture, organization, is_uploaded=False
+        )
+        await session.flush()
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/appeal/case/messages",
+            json={"file_ids": [str(file.id)]},
+        )
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_locked_after_decision(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        denied_review: OrganizationReview,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        case = await appeal_case_service.request_human_review(
+            session,
+            denied_review,
+            reason=REASON,
+            requested_by_user=user,
+            organization=organization,
+        )
+        await appeal_case_service.record_decision(
+            session, case, approved=False, staff_user=user, reason="final"
+        )
+        file = await _uploaded_attachment_file(save_fixture, organization)
+        await session.flush()
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/appeal/case/messages",
+            json={"file_ids": [str(file.id)]},
+        )
+        assert response.status_code == 409
+
+
+@pytest.mark.asyncio
+class TestDownloadAppealCaseAttachment:
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        denied_review: OrganizationReview,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        await appeal_case_service.request_human_review(
+            session,
+            denied_review,
+            reason=REASON,
+            requested_by_user=user,
+            organization=organization,
+        )
+        file = await _uploaded_attachment_file(save_fixture, organization)
+        await session.flush()
+        attach = await client.post(
+            f"/v1/organizations/{organization.id}/appeal/case/messages",
+            json={"file_ids": [str(file.id)]},
+        )
+        assert attach.status_code == 200
+
+        thread = await client.get(f"/v1/organizations/{organization.id}/appeal/case")
+        attachment_id = thread.json()["attachments"][0]["id"]
+
+        response = await client.get(
+            f"/v1/organizations/{organization.id}"
+            f"/appeal/case/attachments/{attachment_id}/download",
+        )
+        assert response.status_code == 302
+        assert response.headers["location"]
+
+    @pytest.mark.auth
+    async def test_not_found(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+        denied_review: OrganizationReview,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        await appeal_case_service.request_human_review(
+            session,
+            denied_review,
+            reason=REASON,
+            requested_by_user=user,
+            organization=organization,
+        )
+        await session.flush()
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/appeal/case/attachments/"
+            "00000000-0000-0000-0000-000000000000/download",
+        )
+        assert response.status_code == 404

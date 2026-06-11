@@ -278,6 +278,7 @@ export default {
     custom: 'Özel',
     meter_credit: 'Ölçüm kredileri',
     feature_flag: 'Özellik bayrağı',
+    slack_shared_channel: 'Slack paylaşılan kanal',
   },
   ordinal: {
     zero: '.',

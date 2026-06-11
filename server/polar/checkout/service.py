@@ -1997,9 +1997,7 @@ class CheckoutService:
                 # Currency follows the selected price (mirrors creation in
                 # `_get_validated_price`) so switching to a price in a different
                 # currency doesn't require updating `checkout.currency` first.
-                currency_prices = PriceSet.from_prices(
-                    [price], price.price_currency
-                )
+                currency_prices = PriceSet.from_prices([price], price.price_currency)
                 checkout.currency = price.price_currency
             else:
                 # Product and currency are both updated, make sure the product supports it

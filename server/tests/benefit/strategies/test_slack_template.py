@@ -192,8 +192,8 @@ class TestRenderChannelName:
 
     def test_empty_runtime_channel_name_raises(self) -> None:
         context = TemplateContext(
-            customer_name="李雷",
-            customer_email_local="李雷",
+            customer_name="!!!",
+            customer_email_local="!!!",
         )
         with pytest.raises(InvalidTemplateError, match="empty channel name"):
             render_channel_name("{customer_name}", context)

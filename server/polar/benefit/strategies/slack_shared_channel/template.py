@@ -3,13 +3,14 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
+from slugify import slugify
+
 _FIXED_PLACEHOLDERS = {"customer_name", "customer_email_local"}
 _METADATA_PREFIX = "metadata."
 _PLACEHOLDER_RE = re.compile(r"\{([^{}]*)\}")
 _PLACEHOLDER_NAME_RE = re.compile(r"^[\w.]+$")
 _METADATA_PLACEHOLDER_RE = re.compile(r"^metadata\.[^{}]+$")
 _SLACK_CHANNEL_NAME_MAX_LENGTH = 80
-_NON_ALPHANUMERIC = re.compile(r"[^a-z0-9]+")
 
 
 @dataclass(frozen=True)
@@ -54,16 +55,16 @@ def render_channel_name(
         template,
     )
     if suffix:
-        suffix_slug = _slugify(suffix)
+        suffix_slug = slugify(suffix)
         if suffix_slug:
             if len(suffix_slug) >= _SLACK_CHANNEL_NAME_MAX_LENGTH:
                 return suffix_slug[:_SLACK_CHANNEL_NAME_MAX_LENGTH]
             max_base_length = _SLACK_CHANNEL_NAME_MAX_LENGTH - len(suffix_slug) - 1
-            rendered = _slugify(rendered)[:max_base_length].strip("-")
+            rendered = slugify(rendered, max_length=max_base_length)
             if not rendered:
                 return suffix_slug[:_SLACK_CHANNEL_NAME_MAX_LENGTH]
             return f"{rendered}-{suffix_slug}"[:_SLACK_CHANNEL_NAME_MAX_LENGTH]
-    slug = _slugify(rendered)[:_SLACK_CHANNEL_NAME_MAX_LENGTH]
+    slug = slugify(rendered, max_length=_SLACK_CHANNEL_NAME_MAX_LENGTH)
     if not slug:
         raise InvalidTemplateError(
             "Template renders to an empty channel name for this customer."
@@ -101,7 +102,7 @@ def _render_permissive(template: str) -> str:
             return "sample"
         return ""
 
-    return _slugify(_PLACEHOLDER_RE.sub(lambda match: sub(match.group(1)), template))
+    return slugify(_PLACEHOLDER_RE.sub(lambda match: sub(match.group(1)), template))
 
 
 def _iter_placeholder_names(template: str) -> Iterator[str]:
@@ -135,9 +136,3 @@ def _malformed_placeholder(placeholder: str) -> InvalidTemplateError:
         f"Allowed: {{customer_name}}, {{customer_email_local}}, "
         f"or {{metadata.<key>}} for customer metadata."
     )
-
-
-def _slugify(value: str) -> str:
-    value = value.lower().strip()
-    value = _NON_ALPHANUMERIC.sub("-", value)
-    return value.strip("-")

@@ -2,9 +2,9 @@
 
 import { usePostHog } from '@/hooks/posthog'
 import { Button } from '@polar-sh/orbit'
-import Switch from '@polar-sh/ui/components/atoms/Switch'
+import { Switch } from '@polar-sh/orbit'
 import { useState } from 'react'
-import { InlineModalHeader } from '../Modal/InlineModal'
+import { InlineModalHeader } from '@polar-sh/orbit'
 import { cookieConsentGiven } from './CookieConsent'
 
 interface CookiePreferencesModalProps {

@@ -1,11 +1,6 @@
 import { schemas } from '@polar-sh/client'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/ui/components/ui/tooltip'
-import { twMerge } from 'tailwind-merge'
+import { Status, type StatusColor } from '@polar-sh/orbit'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 
 interface BenefitGrantStatusProps {
   grant: schemas['BenefitGrant']
@@ -31,20 +26,17 @@ export const BenefitGrantStatus = ({ grant }: BenefitGrantStatusProps) => {
     Error: grant.error?.message ?? 'An unknown error occurred',
   }
 
-  const statusClassNames = {
-    Revoked: 'bg-red-100 text-red-500 dark:bg-red-950',
-    Granted: 'bg-emerald-200 text-emerald-500 dark:bg-emerald-950',
-    Pending: 'bg-yellow-100 text-yellow-500 dark:bg-yellow-950',
-    Error: 'bg-red-100 text-red-500 dark:bg-red-950',
+  const statusColors: Record<typeof status, StatusColor> = {
+    Revoked: 'red',
+    Granted: 'green',
+    Pending: 'yellow',
+    Error: 'red',
   }
 
   return (
     <Tooltip>
       <TooltipTrigger>
-        <Status
-          className={twMerge('w-fit', statusClassNames[status])}
-          status={status}
-        />
+        <Status color={statusColors[status]} status={status} />
       </TooltipTrigger>
       <TooltipContent>{statusDescription[status]}</TooltipContent>
     </Tooltip>

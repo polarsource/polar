@@ -1,4 +1,4 @@
-import { InlineModalHeader } from '@/components/Modal/InlineModal'
+import { InlineModalHeader } from '@polar-sh/orbit'
 import { toast } from '@/components/Toast/use-toast'
 import { useCreateOAuth2Client } from '@/hooks/queries/oauth'
 import { extractApiErrorMessage } from '@/utils/api/errors'

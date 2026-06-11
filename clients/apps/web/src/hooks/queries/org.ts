@@ -370,6 +370,45 @@ export const useOrganizationReviewStatus = (
     initialData,
   })
 
+export const useRequestHumanReview = (id: string) =>
+  useMutation({
+    mutationFn: ({ reason }: { reason: string }) =>
+      api.POST('/v1/organizations/{id}/appeal/human-review', {
+        params: { path: { id } },
+        body: { reason },
+      }),
+    onSuccess: async (result) => {
+      if (result.error) return
+      getQueryClient().invalidateQueries({ queryKey: ['appealCase', id] })
+    },
+  })
+
+export const useAppealCase = (id: string, enabled: boolean = true) =>
+  useQuery({
+    queryKey: ['appealCase', id],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/organizations/{id}/appeal/case', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: enabled && !!id,
+  })
+
+export const useReplyToAppealCase = (id: string) =>
+  useMutation({
+    mutationFn: ({ body }: { body: string }) =>
+      api.POST('/v1/organizations/{id}/appeal/case/messages', {
+        params: { path: { id } },
+        body: { body },
+      }),
+    onSuccess: async (result) => {
+      if (result.error) return
+      getQueryClient().invalidateQueries({ queryKey: ['appealCase', id] })
+    },
+  })
+
 export const useDeleteOrganization = () =>
   useMutation({
     mutationFn: (variables: { id: string }) => {

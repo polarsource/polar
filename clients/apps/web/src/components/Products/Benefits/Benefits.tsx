@@ -3,9 +3,10 @@
 import {
   benefitsDisplayNames,
   CreatableBenefit,
+  getCreatableBenefitTypes,
   resolveBenefitIcon,
 } from '@/components/Benefit/utils'
-import { enums, schemas } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import {
   DropdownMenu,
@@ -18,7 +19,7 @@ import { parseAsBoolean, useQueryState } from 'nuqs'
 import { useEffect, useState } from 'react'
 import CreateBenefitModalContent from '../../Benefit/CreateBenefitModalContent'
 import { Section } from '../../Layout/Section'
-import { InlineModal } from '../../Modal/InlineModal'
+import { InlineModal } from '@polar-sh/orbit'
 import { BenefitSearchComplex } from './BenefitSearchComplex'
 import { BenefitSearchSimple } from './BenefitSearchSimple'
 
@@ -108,7 +109,7 @@ export const Benefits = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="min-w-[200px]">
-                {enums.benefitTypeValues.map((type) => (
+                {getCreatableBenefitTypes(organization).map((type) => (
                   <DropdownMenuItem
                     key={type}
                     onClick={() => {

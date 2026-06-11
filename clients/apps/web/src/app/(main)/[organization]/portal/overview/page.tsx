@@ -2,6 +2,7 @@ import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import { CustomerPortalPage } from '../CustomerPortalPage'
 import OverviewPage from './OverviewPage'
 
 const cacheConfig = {
@@ -57,10 +58,12 @@ export default async function Page(props: {
   searchParams: Promise<{
     customer_session_token?: string
     member_session_token?: string
+    locale?: string
   }>
 }) {
+  const resolvedSearchParams = await props.searchParams
   const { customer_session_token, member_session_token, ...searchParams } =
-    await props.searchParams
+    resolvedSearchParams
   const params = await props.params
   const token = customer_session_token ?? member_session_token
   const api = await getServerSideAPI(token)
@@ -129,13 +132,18 @@ export default async function Page(props: {
   }
 
   return (
-    <OverviewPage
+    <CustomerPortalPage
       organization={organization}
-      products={products}
-      subscriptions={subscriptions}
-      claimedSubscriptions={claimedSubscriptions!}
-      orders={ordersResponse.ok ? (orders?.items ?? []) : []}
-      customerSessionToken={token as string}
-    />
+      searchParams={resolvedSearchParams}
+    >
+      <OverviewPage
+        organization={organization}
+        products={products}
+        subscriptions={subscriptions}
+        claimedSubscriptions={claimedSubscriptions!}
+        orders={ordersResponse.ok ? (orders?.items ?? []) : []}
+        customerSessionToken={token as string}
+      />
+    </CustomerPortalPage>
   )
 }

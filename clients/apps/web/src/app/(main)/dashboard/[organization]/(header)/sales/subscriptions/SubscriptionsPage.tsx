@@ -23,7 +23,7 @@ import {
   DataTableColumnHeader,
 } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { Status } from '@polar-sh/orbit'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
@@ -217,14 +217,23 @@ const ClientPage: React.FC<ClientPageProps> = ({
       ),
       cell: ({ row: { original: subscription } }) => {
         const customer = subscription.customer
+        const showBillingName =
+          !!customer.billing_name &&
+          customer.name?.toLocaleLowerCase() !==
+            customer.billing_name.toLocaleLowerCase()
         return (
-          <div className="flex flex-row items-center gap-2">
+          <div className="flex flex-row items-center gap-2 overflow-hidden">
             <Avatar
               avatar_url={customer.avatar_url}
               name={customer.email ?? customer.name ?? '—'}
             />
-            <div className="fw-medium overflow-hidden text-ellipsis">
+            <div className="overflow-hidden text-ellipsis">
               {customer.name || customer.email || '—'}
+              {showBillingName && (
+                <span className="dark:text-polar-500 ml-2 text-gray-500">
+                  {customer.billing_name}
+                </span>
+              )}
             </div>
           </div>
         )
@@ -286,10 +295,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <div className="flex flex-row items-center gap-2">
             {tier.name}
             {tier.is_archived && (
-              <Status
-                status="Archived"
-                className="bg-red-100 text-xs text-red-500 dark:bg-red-950"
-              />
+              <Status status="Archived" color="red" size="small" />
             )}
           </div>
         )

@@ -1,6 +1,6 @@
 'use client'
 
-import Spinner from '@/components/Shared/Spinner'
+import { Spinner } from '@polar-sh/orbit'
 import { useMetersInfinite } from '@/hooks/queries/meters'
 import { useInViewport } from '@/hooks/utils'
 import AddOutlined from '@mui/icons-material/AddOutlined'
@@ -12,7 +12,7 @@ import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { Status } from '@polar-sh/orbit'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -180,10 +180,7 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
               <div className="flex min-w-0 flex-col gap-y-1 px-6 py-2">
                 <div className="flex items-center gap-x-2">
                   {meter.archived_at && archivedFilter === 'all' && (
-                    <Status
-                      className="bg-red-50 text-xs font-medium text-red-500 dark:bg-red-950 dark:text-red-500"
-                      status="Archived"
-                    />
+                    <Status color="red" status="Archived" size="small" />
                   )}
 
                   <div className="truncate text-sm">{meter.name}</div>

@@ -8,7 +8,7 @@ import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import ListGroup from '@polar-sh/ui/components/atoms/ListGroup'
+import { ListGroup } from '@polar-sh/orbit'
 import {
   AlertDialog,
   AlertDialogAction,

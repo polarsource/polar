@@ -3,7 +3,7 @@ import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import Pill from '@polar-sh/ui/components/atoms/Pill'
+import { Pill } from '@polar-sh/orbit'
 import { twMerge } from 'tailwind-merge'
 
 const formatPrice = formatCurrency('standard', 'en-US')
@@ -47,8 +47,8 @@ export const PlanCard = ({
             : 'dark:hover:border-polar-600 cursor-pointer hover:border-gray-300',
       )}
     >
-      <Box display="flex" flexDirection="column" rowGap="s">
-        <Box display="flex" alignItems="center" columnGap="m">
+      <Box flexDirection="column" rowGap="s">
+        <Box alignItems="center" columnGap="m">
           <Text variant="heading-xs" as="h3">
             {plan.name}
           </Text>
@@ -61,8 +61,8 @@ export const PlanCard = ({
         {plan.description && <Text color="muted">{plan.description}</Text>}
       </Box>
 
-      <Box display="flex" flexDirection="column" rowGap="s">
-        <Box display="flex" alignItems="baseline" columnGap="m">
+      <Box flexDirection="column" rowGap="s">
+        <Box alignItems="baseline" columnGap="m">
           {hasOffer ? (
             <>
               <Text variant="heading-s" as="span">
@@ -103,7 +103,6 @@ export const PlanCard = ({
       {(plan.features?.length ?? 0) > 0 && (
         <Box
           as="ul"
-          display="flex"
           flexDirection="column"
           rowGap="s"
           borderTopWidth={1}

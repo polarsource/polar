@@ -157,7 +157,6 @@ export const QuestionFlow = ({
 
   return (
     <Box
-      display="flex"
       flexDirection="column"
       rowGap="l"
       flex={1}
@@ -166,7 +165,6 @@ export const QuestionFlow = ({
     >
       <Box
         ref={scrollerRef}
-        display="flex"
         flexDirection="column"
         rowGap="l"
         overflowY="auto"
@@ -186,18 +184,14 @@ export const QuestionFlow = ({
           </div>
         )}
         {isStreaming && (
-          <Box
-            display="flex"
-            alignItems="center"
-            columnGap="s"
-            color="text-tertiary"
-          >
+          <Box alignItems="center" columnGap="s" color="text-tertiary">
             <span className="dark:bg-polar-400 h-2 w-2 animate-pulse rounded-full bg-gray-400" />
             <span className="text-sm">{streamingStatus}</span>
           </Box>
         )}
         {error && (
           <Box
+            display="block"
             borderRadius="l"
             backgroundColor="background-warning"
             borderWidth={1}
@@ -222,7 +216,7 @@ export const QuestionFlow = ({
           isSubmitting={isEscalating}
         />
       ) : (
-        <Box display="flex" flexDirection="column" rowGap="s">
+        <Box flexDirection="column" rowGap="s">
           <TextArea
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
@@ -242,7 +236,7 @@ export const QuestionFlow = ({
               }
             }}
           />
-          <Box display="flex" justifyContent="end" columnGap="s">
+          <Box justifyContent="end" columnGap="s">
             <Button
               type="button"
               variant="ghost"

@@ -35,6 +35,34 @@ export const CheckoutProductSwitcherItemPrice = ({
   checkout,
   locale,
 }: CheckoutProductSwitcherItemPriceProps) => {
+  // Products with presentment currencies hold the same logical price in several
+  // currencies. Filter to the checkout's currency first, otherwise `find` could
+  // return a fixed/seat price in the wrong currency and show the wrong amounts.
+  const productPrices = (checkout.prices[product.id] ?? []).filter(
+    (p) => p.price_currency === checkout.currency,
+  )
+  const fixedPrice = productPrices.find(
+    (p): p is schemas['ProductPriceFixed'] => p.amount_type === 'fixed',
+  )
+  const seatPrice = productPrices.find(
+    (p): p is schemas['ProductPriceSeatBased'] =>
+      p.amount_type === 'seat_based',
+  )
+
+  // Fixed + seat products are billed as `base + seat_charge`. Show the decomposed
+  // structure for every option, selected or not, so the pricing model stays
+  // legible across the switcher.
+  if (fixedPrice && seatPrice) {
+    return (
+      <FixedSeatPrice
+        fixedPrice={fixedPrice}
+        seatPrice={seatPrice}
+        product={product}
+        locale={locale}
+      />
+    )
+  }
+
   if (price.amount_type === 'seat_based') {
     if (isSelected) {
       return (
@@ -71,6 +99,44 @@ export const CheckoutProductSwitcherItemPrice = ({
       locale={locale}
       mode="standard"
     />
+  )
+}
+
+const FixedSeatPrice = ({
+  fixedPrice,
+  seatPrice,
+  product,
+  locale,
+}: {
+  fixedPrice: schemas['ProductPriceFixed']
+  seatPrice: schemas['ProductPriceSeatBased']
+  product: ProductCheckoutPublic['product']
+  locale?: AcceptedLocale
+}) => {
+  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  const sortedTiers = [...(seatPrice.seat_tiers?.tiers ?? [])].sort(
+    (a, b) => a.min_seats - b.min_seats,
+  )
+  const basePricePerSeat = sortedTiers[0]?.price_per_seat ?? 0
+  return (
+    <span className="flex flex-wrap items-baseline justify-end gap-x-1">
+      <AmountLabel
+        amount={fixedPrice.price_amount}
+        currency={fixedPrice.price_currency}
+        interval={product.recurring_interval}
+        intervalCount={product.recurring_interval_count}
+        mode="standard"
+        locale={locale}
+      />
+      <span>+</span>
+      <AmountLabel
+        amount={basePricePerSeat}
+        currency={seatPrice.price_currency}
+        mode="standard"
+        locale={locale}
+      />
+      <span>{t('checkout.pricing.perSeat')}</span>
+    </span>
   )
 }
 

@@ -1,7 +1,7 @@
 'use client'
 
 import LogoIcon from '@/components/Brand/logos/LogoIcon'
-import { Modal } from '@/components/Modal'
+import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { useAuth } from '@/hooks/auth'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
@@ -14,7 +14,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@polar-sh/ui/components/atoms/Sidebar'
-import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
+import { Tabs, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'

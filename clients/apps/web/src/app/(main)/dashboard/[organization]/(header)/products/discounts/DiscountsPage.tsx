@@ -4,7 +4,7 @@ import CreateDiscountModalContent from '@/components/Discounts/CreateDiscountMod
 import UpdateDiscountModalContent from '@/components/Discounts/UpdateDiscountModalContent'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
-import { InlineModal } from '@/components/Modal/InlineModal'
+import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useDeleteDiscount, useDiscounts } from '@/hooks/queries'

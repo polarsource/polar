@@ -28,6 +28,7 @@ from polar.worker import enqueue_job
 from ..schemas.benefit_grant import (
     CustomerBenefitGrantDiscordUpdate,
     CustomerBenefitGrantGitHubRepositoryUpdate,
+    CustomerBenefitGrantSlackSharedChannelUpdate,
     CustomerBenefitGrantUpdate,
 )
 
@@ -171,9 +172,11 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
             )
 
         if isinstance(
-            benefit_grant_update, CustomerBenefitGrantDiscordUpdate
-        ) or isinstance(
-            benefit_grant_update, CustomerBenefitGrantGitHubRepositoryUpdate
+            benefit_grant_update,
+            (
+                CustomerBenefitGrantDiscordUpdate,
+                CustomerBenefitGrantGitHubRepositoryUpdate,
+            ),
         ):
             account_id = benefit_grant_update.properties["account_id"]
             if account_id is not None:
@@ -210,14 +213,27 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
                         ]
                     )
 
-            benefit_grant.properties = cast(
-                Any,
-                {
-                    **benefit_grant.properties,
-                    **benefit_grant_update.properties,
-                },
-            )
-
+        if isinstance(
+            benefit_grant_update,
+            (
+                CustomerBenefitGrantDiscordUpdate,
+                CustomerBenefitGrantGitHubRepositoryUpdate,
+                CustomerBenefitGrantSlackSharedChannelUpdate,
+            ),
+        ):
+            properties = {
+                **benefit_grant.properties,
+                **benefit_grant_update.properties,
+            }
+            if isinstance(
+                benefit_grant_update, CustomerBenefitGrantSlackSharedChannelUpdate
+            ) and benefit_grant_update.properties[
+                "invited_email"
+            ] != benefit_grant.properties.get("invited_email"):
+                properties.pop("invite_id", None)
+                properties.pop("invite_url", None)
+            benefit_grant.properties = cast(Any, properties)
+            benefit_grant.error = None
             enqueue_job("benefit.update", benefit_grant.id)
 
         for attr, value in benefit_grant_update.model_dump(

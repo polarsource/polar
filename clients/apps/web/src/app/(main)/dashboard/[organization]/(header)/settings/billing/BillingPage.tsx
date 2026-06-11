@@ -2,7 +2,7 @@
 
 import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { Modal } from '@/components/Modal'
+import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { BillingAddressModal } from '@/components/Settings/Billing/BillingAddressModal'
 import { BillingAddressSection } from '@/components/Settings/Billing/BillingAddressSection'
@@ -129,12 +129,12 @@ export default function BillingPage({
 
   return (
     <DashboardBody wrapperClassName="max-w-(--breakpoint-md)!" title="Billing">
-      <Box display="flex" flexDirection="column" rowGap="3xl">
+      <Box flexDirection="column" rowGap="3xl">
         <Section id="subscription">
           {subscriptionQuery.isLoading || !subscriptionQuery.data ? (
             <LoadingBox height={240} borderRadius="l" />
           ) : (
-            <Box display="flex" flexDirection="column" rowGap="xl">
+            <Box flexDirection="column" rowGap="xl">
               <StartupProgramCallout
                 organization={organization}
                 subscription={subscriptionQuery.data}

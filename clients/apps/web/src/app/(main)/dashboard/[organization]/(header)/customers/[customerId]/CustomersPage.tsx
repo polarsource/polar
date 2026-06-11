@@ -8,7 +8,7 @@ import IntervalPicker, {
   getNextValidInterval,
 } from '@/components/Metrics/IntervalPicker'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
-import { InlineModal } from '@/components/Modal/InlineModal'
+import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useSafeCopy } from '@/hooks/clipboard'
@@ -265,6 +265,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
   const interval: schemas['TimeInterval'] =
     intervalParam ?? getNextValidInterval('day', startDate, endDate)
 
+  const hasName = (customer.name?.length ?? 0) > 0
+  const showBillingName =
+    hasName &&
+    !!customer.billing_name &&
+    customer.name?.toLocaleLowerCase() !==
+      customer.billing_name.toLocaleLowerCase()
+
   return (
     <MasterDetailLayoutContent
       header={
@@ -277,7 +284,12 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
             />
             <div className="flex flex-col">
               <p className="text-lg">
-                {(customer.name?.length ?? 0) > 0 ? customer.name : '—'}
+                {hasName ? customer.name : (customer.billing_name ?? '—')}
+                {showBillingName && (
+                  <span className="dark:text-polar-500 ml-1.5 text-gray-500">
+                    {customer.billing_name}
+                  </span>
+                )}
               </p>
               {(customer.email || customer.type === 'individual') && (
                 <div className="dark:text-polar-500 flex flex-row items-center text-base font-normal text-gray-500">

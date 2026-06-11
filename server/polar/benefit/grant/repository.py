@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from typing import Unpack
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, func, select
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
@@ -261,6 +261,25 @@ class BenefitGrantRepository(
         if for_update:
             statement = statement.with_for_update(of=BenefitGrant)
         return await self.get_one_or_none(statement)
+
+    async def count_granted_by_property_and_organization(
+        self,
+        organization_id: UUID,
+        key: str,
+        value: str,
+    ) -> int:
+        statement = (
+            select(func.count(BenefitGrant.id))
+            .join(Benefit, BenefitGrant.benefit_id == Benefit.id)
+            .where(
+                BenefitGrant.properties[key].as_string() == value,
+                Benefit.organization_id == organization_id,
+                BenefitGrant.is_granted.is_(True),
+                BenefitGrant.is_deleted.is_(False),
+            )
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one()
 
     async def list_outdated_grants(
         self, product: Product, **scope: Unpack[BenefitGrantScope]

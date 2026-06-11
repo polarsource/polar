@@ -1,7 +1,7 @@
 'use client'
 
 import { EventCostCreationGuideModal } from '@/components/Events/EventCostCreationGuideModal'
-import { Modal } from '@/components/Modal'
+import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { CircleQuestionMarkIcon } from 'lucide-react'
 import Link from 'next/link'

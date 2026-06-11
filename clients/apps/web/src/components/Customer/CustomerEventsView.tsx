@@ -1,7 +1,7 @@
 import { useInfiniteEvents } from '@/hooks/queries/events'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import { TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
+import { TabsContent } from '@polar-sh/orbit'
 import { parseAsString, useQueryState } from 'nuqs'
 import { Events } from '../Events/Events'
 import EventSelect from '../Events/EventSelect'

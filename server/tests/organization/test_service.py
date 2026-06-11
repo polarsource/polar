@@ -39,7 +39,7 @@ from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import (
     OrganizationCreate,
     OrganizationDetails,
-    OrganizationFeatureSettings,
+    OrganizationFeatureSettingsUpdate,
     OrganizationReviewCheck,
     OrganizationReviewCheckKey,
     OrganizationReviewCheckReason,
@@ -205,12 +205,16 @@ class TestCreate:
     ) -> None:
         organization = await organization_service.create(
             session,
-            OrganizationCreate(
-                name="My New Organization",
-                slug="my-new-organization",
-                feature_settings=OrganizationFeatureSettings(
-                    issue_funding_enabled=False
-                ),
+            OrganizationCreate.model_validate(
+                {
+                    "name": "My New Organization",
+                    "slug": "my-new-organization",
+                    "feature_settings": {
+                        "checkout_localization_enabled": True,
+                        "billing_enabled": True,
+                        "off_session_charges_enabled": True,
+                    },
+                }
             ),
             auth_subject,
         )
@@ -218,7 +222,7 @@ class TestCreate:
         assert organization.name == "My New Organization"
 
         assert organization.feature_settings == {
-            "issue_funding_enabled": False,
+            "checkout_localization_enabled": True,
             "member_model_enabled": True,
             "seat_based_pricing_enabled": True,
         }
@@ -3267,7 +3271,7 @@ class TestUpdateSeatBasedPricing:
             session,
             organization,
             OrganizationUpdate(
-                feature_settings=OrganizationFeatureSettings(
+                feature_settings=OrganizationFeatureSettingsUpdate(
                     seat_based_pricing_enabled=True,
                 ),
             ),
@@ -3292,7 +3296,7 @@ class TestUpdateSeatBasedPricing:
                 session,
                 organization,
                 OrganizationUpdate(
-                    feature_settings=OrganizationFeatureSettings(
+                    feature_settings=OrganizationFeatureSettingsUpdate(
                         seat_based_pricing_enabled=True,
                     ),
                 ),
@@ -3315,7 +3319,7 @@ class TestUpdateSeatBasedPricing:
                 session,
                 organization,
                 OrganizationUpdate(
-                    feature_settings=OrganizationFeatureSettings(
+                    feature_settings=OrganizationFeatureSettingsUpdate(
                         seat_based_pricing_enabled=False,
                     ),
                 ),
@@ -3337,7 +3341,7 @@ class TestUpdateSeatBasedPricing:
             session,
             organization,
             OrganizationUpdate(
-                feature_settings=OrganizationFeatureSettings(
+                feature_settings=OrganizationFeatureSettingsUpdate(
                     seat_based_pricing_enabled=True,
                 ),
             ),
@@ -3363,7 +3367,7 @@ class TestUpdateSeatBasedPricing:
             session,
             organization,
             OrganizationUpdate(
-                feature_settings=OrganizationFeatureSettings(
+                feature_settings=OrganizationFeatureSettingsUpdate(
                     checkout_localization_enabled=True,
                 ),
             ),
@@ -3390,13 +3394,104 @@ class TestUpdateSeatBasedPricing:
             session,
             organization,
             OrganizationUpdate(
-                feature_settings=OrganizationFeatureSettings(
+                feature_settings=OrganizationFeatureSettingsUpdate(
                     seat_based_pricing_enabled=True,
                 ),
             ),
         )
 
         assert result.feature_settings["seat_based_pricing_enabled"] is True
+
+
+@pytest.mark.asyncio
+class TestUpdateFeatureSettings:
+    async def test_non_updatable_flag_ignored(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {}
+        await save_fixture(organization)
+
+        result = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate.model_validate(
+                {"feature_settings": {"off_session_charges_enabled": True}}
+            ),
+        )
+
+        assert "off_session_charges_enabled" not in result.feature_settings
+
+    async def test_non_updatable_flag_preserved(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {"billing_enabled": True}
+        await save_fixture(organization)
+
+        result = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate.model_validate(
+                {
+                    "feature_settings": {
+                        "billing_enabled": False,
+                        "checkout_localization_enabled": True,
+                    }
+                }
+            ),
+        )
+
+        assert result.feature_settings["billing_enabled"] is True
+        assert result.feature_settings["checkout_localization_enabled"] is True
+
+    async def test_enable_member_model_enqueues_backfill(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        organization.feature_settings = {}
+        await save_fixture(organization)
+
+        result = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate.model_validate(
+                {"feature_settings": {"member_model_enabled": True}}
+            ),
+        )
+
+        assert result.feature_settings["member_model_enabled"] is True
+        enqueue_job_mock.assert_called_once_with(
+            "organization.backfill_members", organization_id=organization.id
+        )
+
+    async def test_overview_metrics_updated(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        result = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate.model_validate(
+                {"feature_settings": {"overview_metrics": ["revenue", "orders"]}}
+            ),
+        )
+
+        assert result.feature_settings["overview_metrics"] == ["revenue", "orders"]
+        assert result.feature_settings["member_model_enabled"] is True
 
 
 @pytest.mark.asyncio

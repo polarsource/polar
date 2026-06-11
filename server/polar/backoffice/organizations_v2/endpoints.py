@@ -72,13 +72,27 @@ from polar.models.organization import (
 )
 from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.organization_review import OrganizationReview
+from polar.models.support_case import (
+    ReviewAppealSupportCase,
+    SupportCaseMessageAuthorKind,
+)
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_session import UserSession
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationFeatureSettings
-from polar.organization.service import SNOOZE_MAX_DAYS, SNOOZE_MIN_DAYS
+from polar.organization.service import (
+    SNOOZE_MAX_DAYS,
+    SNOOZE_MIN_DAYS,
+    OrganizationError,
+)
 from polar.organization.service import organization as organization_service
+from polar.organization_review.appeal_case import (
+    AppealCaseError,
+)
+from polar.organization_review.appeal_case import (
+    appeal_case as appeal_case_service,
+)
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import (
     DecisionType,
@@ -95,6 +109,7 @@ from polar.startup_program.service import (
 from polar.startup_program.service import (
     startup_program as startup_program_service,
 )
+from polar.support_case.repository import SupportCaseMessageRepository
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.worker import enqueue_job
 
@@ -120,6 +135,7 @@ from .views.sections.overview_section import OverviewSection
 from .views.sections.payout_account_section import PayoutAccountSection
 from .views.sections.reviews_section import ReviewsSection
 from .views.sections.settings_section import SettingsSection
+from .views.sections.support_case_section import SupportCaseSection
 from .views.sections.team_section import TeamSection
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
@@ -239,6 +255,36 @@ async def count_test_sales(
 
 # Defensive cap on the Review-tab in-memory cohort when sorting by priority.
 REVIEW_TAB_MAX_COHORT = 2000
+
+
+def _open_case_org_ids() -> Select[tuple[uuid.UUID]]:
+    """Select of organization ids that have at least one open support case."""
+    return (
+        select(OrganizationReview.organization_id)
+        .join(
+            ReviewAppealSupportCase,
+            ReviewAppealSupportCase.organization_review_id == OrganizationReview.id,
+        )
+        .where(
+            ReviewAppealSupportCase.deleted_at.is_(None),
+            SupportCaseMessageRepository.is_open_expression(),
+        )
+        .distinct()
+    )
+
+
+async def _orgs_with_open_cases(
+    session: AsyncSession, organizations: Sequence[Organization]
+) -> set[uuid.UUID]:
+    """Org ids (among the given page) with at least one open support case."""
+    org_ids = [org.id for org in organizations]
+    if not org_ids:
+        return set()
+    statement = _open_case_org_ids().where(
+        OrganizationReview.organization_id.in_(org_ids)
+    )
+    result = await session.execute(statement)
+    return set(result.scalars().all())
 
 
 async def _build_review_signals(
@@ -399,6 +445,9 @@ async def list_organizations(
     elif status == "blocked":
         status_filter = OrganizationStatus.BLOCKED
 
+    # "Open cases" is a separate dimension (not an org status).
+    selected_open_cases = status == "open_cases"
+
     # Build query
     stmt = (
         select(Organization)
@@ -413,6 +462,10 @@ async def list_organizations(
     # Apply filters
     if status_filter:
         stmt = stmt.where(Organization.status == status_filter)
+    elif selected_open_cases:
+        # Don't apply the default denied/blocked exclusion: open cases
+        # typically live on denied organizations.
+        stmt = stmt.where(Organization.id.in_(_open_case_org_ids()))
     elif not q:
         # By default, exclude denied and blocked organizations (but not when searching)
         stmt = stmt.where(
@@ -543,6 +596,8 @@ async def list_organizations(
         if is_review_tab:
             signals_by_org = await _build_review_signals(session, organizations)
 
+    open_case_org_ids = await _orgs_with_open_cases(session, organizations)
+
     is_htmx_table_request = request.headers.get("HX-Target") == "org-list"
 
     if is_htmx_table_request:
@@ -555,11 +610,19 @@ async def list_organizations(
             sort,
             direction,
             signals_by_org=signals_by_org,
+            open_case_org_ids=open_case_org_ids,
+            selected_open_cases=selected_open_cases,
         ):
             pass
     else:
         status_counts = await list_view.get_status_counts(deleted_filter)
         countries = await list_view.get_distinct_countries()
+        open_cases_count = (
+            await session.scalar(
+                select(func.count()).select_from(_open_case_org_ids().subquery())
+            )
+            or 0
+        )
         with layout(
             request,
             [("Organizations", str(request.url))],
@@ -583,6 +646,9 @@ async def list_organizations(
                 selected_has_appeal=has_appeal,
                 selected_deleted=deleted_filter,
                 signals_by_org=signals_by_org,
+                open_case_org_ids=open_case_org_ids,
+                selected_open_cases=selected_open_cases,
+                open_cases_count=open_cases_count,
             ):
                 pass
 
@@ -595,6 +661,7 @@ async def get_organization_detail(
     files_page: int = Query(1, ge=1),
     files_limit: int = Query(10, ge=1, le=100),
     session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
 ) -> None:
     """
     Organization detail view with three-column layout.
@@ -663,6 +730,15 @@ async def get_organization_detail(
             organization.id
         )
 
+    # Appeal support case state (drives the nav badge and the review-card link)
+    appeal_case = None
+    appeal_case_open = False
+    if organization.review is not None:
+        appeal_case = await appeal_case_service.get_case(session, organization.review)
+        if appeal_case is not None:
+            message_repository = SupportCaseMessageRepository.from_session(session)
+            appeal_case_open = await message_repository.is_open(appeal_case.id)
+
     # Create views
     detail_view = OrganizationDetailView(
         organization,
@@ -670,6 +746,7 @@ async def get_organization_detail(
         owner_email=owner_email,
         impersonate_user=impersonate_user,
         startup_program_status=startup_program_status,
+        appeal_case_open=appeal_case_open,
     )
 
     # Fetch analytics data for overview section
@@ -835,6 +912,7 @@ async def get_organization_detail(
                     unrefunded_orders_count=unrefunded_orders_count,
                     agent_report=parsed_agent_report,
                     agent_reviewed_at=agent_reviewed_at,
+                    has_appeal_case=appeal_case is not None,
                 )
                 with overview.render(
                     request, setup_data=setup_data, payment_stats=payment_stats
@@ -888,6 +966,37 @@ async def get_organization_detail(
                     organization, agent_reviews=agent_reviews
                 )
                 with reviews_section.render(request):
+                    pass
+            elif section == "support_case":
+                thread = None
+                author_emails: dict[uuid.UUID, str] = {}
+                if organization.review is not None:
+                    thread = await appeal_case_service.get_thread(
+                        session, organization.review, visible_to=None
+                    )
+                if thread is not None:
+                    case_, _is_open, thread_messages = thread
+                    author_ids = {
+                        m.author_user_id
+                        for m in thread_messages
+                        if m.author_user_id is not None
+                    }
+                    if case_.assigned_user_id is not None:
+                        author_ids.add(case_.assigned_user_id)
+                    if author_ids:
+                        email_result = await session.execute(
+                            select(User.id, User.email).where(User.id.in_(author_ids))
+                        )
+                        author_emails = {
+                            row.id: row.email for row in email_result.all()
+                        }
+                support_case_section = SupportCaseSection(
+                    organization,
+                    thread=thread,
+                    author_emails=author_emails,
+                    current_user_id=user_session.user_id,
+                )
+                with support_case_section.render(request):
                     pass
             elif section == "history":
                 # TODO: Implement history section
@@ -1494,6 +1603,247 @@ async def deny_appeal_dialog(
                             text("Cancel")
                     with button(variant="error", type="submit"):
                         text("Deny Appeal")
+
+    return None
+
+
+async def _load_org_with_appeal_case(
+    session: AsyncSession, organization_id: UUID4
+) -> tuple[Organization, ReviewAppealSupportCase]:
+    """Load an organization and its appeal support case, or raise 404."""
+    repository = OrganizationRepository(session)
+    organization = await repository.get_by_id(
+        organization_id,
+        include_blocked=True,
+        options=(joinedload(Organization.review),),
+    )
+    if not organization or organization.review is None:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    case = await appeal_case_service.get_case(session, organization.review)
+    if case is None:
+        raise HTTPException(status_code=404, detail="Support case not found")
+    return organization, case
+
+
+def _support_case_redirect(
+    request: Request, organization_id: UUID4
+) -> HXRedirectResponse:
+    return HXRedirectResponse(
+        request,
+        str(request.url_for("organizations:detail", organization_id=organization_id))
+        + "?section=support_case",
+        303,
+    )
+
+
+@router.post(
+    "/{organization_id}/appeal-case/reply",
+    name="organizations:appeal_case_reply",
+    response_model=None,
+)
+async def appeal_case_reply(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> HXRedirectResponse:
+    """Post a staff reply (or internal note) to the appeal case."""
+    _, case = await _load_org_with_appeal_case(session, organization_id)
+
+    form_data = await request.form()
+    body = str(form_data.get("body", "")).strip()
+    internal = bool(form_data.get("internal"))
+
+    if body:
+        try:
+            await appeal_case_service.add_reply(
+                session,
+                case,
+                author_kind=SupportCaseMessageAuthorKind.platform,
+                author_user=user_session.user,
+                body=body,
+                internal=internal,
+            )
+        except AppealCaseError as e:
+            await add_toast(request, e.args[0], variant="error")
+
+    return _support_case_redirect(request, organization_id)
+
+
+@router.api_route(
+    "/{organization_id}/appeal-case/approve-dialog",
+    name="organizations:appeal_case_approve_dialog",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def appeal_case_approve_dialog(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> HXRedirectResponse | None:
+    """Approve the appeal: reactivate the organization and close the case."""
+    organization, case = await _load_org_with_appeal_case(session, organization_id)
+
+    error_message: str | None = None
+
+    if request.method == "POST":
+        form_data = await request.form()
+        reason = str(form_data.get("reason", "")).strip() or None
+        if not reason:
+            error_message = "A reason is required to approve the appeal."
+        else:
+            review_repo = OrganizationReviewRepository.from_session(session)
+            try:
+                await review_repo.record_human_decision(
+                    organization_id=organization_id,
+                    reviewer_id=user_session.user.id,
+                    decision=DecisionType.APPROVE,
+                    review_context=ReviewContext.APPEAL,
+                    reason=reason,
+                )
+                await organization_service.backoffice_approve(
+                    session, organization, reason=reason
+                )
+                await appeal_case_service.record_decision(
+                    session,
+                    case,
+                    approved=True,
+                    staff_user=user_session.user,
+                    reason=reason,
+                )
+            except (OrganizationError, AppealCaseError) as e:
+                # Discard the recorded decision so a failure can't commit
+                # half the approval (decision without org/case update).
+                await session.rollback()
+                error_message = e.args[0]
+            else:
+                return _support_case_redirect(request, organization_id)
+
+    with modal("Approve Appeal", open=True):
+        with tag.form(
+            hx_post=str(
+                request.url_for(
+                    "organizations:appeal_case_approve_dialog",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            classes="flex flex-col gap-4",
+        ):
+            if error_message:
+                with tag.div(classes="alert alert-error"):
+                    text(error_message)
+            with tag.p():
+                text(
+                    "Approving reactivates the organization and closes the "
+                    "support case. The merchant is notified of the decision."
+                )
+            with tag.div(classes="form-control"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text"):
+                        text("Reason (required, shared with the merchant)")
+                with tag.textarea(
+                    name="reason",
+                    classes="textarea textarea-bordered w-full",
+                    placeholder="Why are you approving this appeal?",
+                    rows="3",
+                    required=True,
+                ):
+                    pass
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(variant="primary", type="submit"):
+                    text("Approve Appeal")
+
+    return None
+
+
+@router.api_route(
+    "/{organization_id}/appeal-case/deny-dialog",
+    name="organizations:appeal_case_deny_dialog",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def appeal_case_deny_dialog(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> HXRedirectResponse | None:
+    """Deny the appeal: keep the organization denied and close the case.
+
+    The organization is already in its denied state (the human-review case is
+    opened after the AI appeal was rejected), so there is no org-status change
+    to make — the decision records the outcome on the case and locks it.
+    """
+    _, case = await _load_org_with_appeal_case(session, organization_id)
+
+    error_message: str | None = None
+
+    if request.method == "POST":
+        form_data = await request.form()
+        reason = str(form_data.get("reason", "")).strip() or None
+        review_repo = OrganizationReviewRepository.from_session(session)
+        try:
+            await review_repo.record_human_decision(
+                organization_id=organization_id,
+                reviewer_id=user_session.user.id,
+                decision=DecisionType.DENY,
+                review_context=ReviewContext.APPEAL,
+                reason=reason,
+            )
+            await appeal_case_service.record_decision(
+                session,
+                case,
+                approved=False,
+                staff_user=user_session.user,
+                reason=reason,
+            )
+        except AppealCaseError as e:
+            # Discard the recorded decision so a failure can't commit it
+            # without the case actually being closed.
+            await session.rollback()
+            error_message = e.args[0]
+        else:
+            return _support_case_redirect(request, organization_id)
+
+    with modal("Deny Appeal", open=True):
+        with tag.form(
+            hx_post=str(
+                request.url_for(
+                    "organizations:appeal_case_deny_dialog",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            classes="flex flex-col gap-4",
+        ):
+            if error_message:
+                with tag.div(classes="alert alert-error"):
+                    text(error_message)
+            with tag.p(classes="font-semibold text-error"):
+                text("This keeps the organization denied and closes the case.")
+            with tag.div(classes="form-control"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text"):
+                        text("Reason (optional, shared with the merchant)")
+                with tag.textarea(
+                    name="reason",
+                    classes="textarea textarea-bordered w-full",
+                    placeholder="Why are you denying this appeal?",
+                    rows="3",
+                ):
+                    pass
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(variant="error", type="submit"):
+                    text("Deny Appeal")
 
     return None
 

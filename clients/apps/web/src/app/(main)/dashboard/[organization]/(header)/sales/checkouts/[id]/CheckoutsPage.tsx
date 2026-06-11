@@ -10,7 +10,7 @@ import { usePayments } from '@/hooks/queries/payments'
 import { schemas } from '@polar-sh/client'
 import { DataTable } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { List } from '@polar-sh/ui/components/atoms/List'
+import { List } from '@polar-sh/orbit'
 import React from 'react'
 
 interface ClientPageProps {

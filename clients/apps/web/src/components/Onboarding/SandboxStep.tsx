@@ -116,7 +116,6 @@ export function SandboxStep() {
         <Box
           as="form"
           onSubmit={form.handleSubmit(onSubmit)}
-          display="flex"
           flexDirection="column"
           rowGap="xl"
         >

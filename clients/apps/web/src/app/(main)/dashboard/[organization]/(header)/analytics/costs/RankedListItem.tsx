@@ -1,6 +1,6 @@
 'use client'
 
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import { List, ListItem } from '@polar-sh/orbit'
 import { ReactNode } from 'react'
 
 interface RankedListItemProps {

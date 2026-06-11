@@ -108,6 +108,7 @@ export default {
         },
       },
       inclTax: 'ÁFA (tartalmazza)',
+      basePrice: 'Alapár',
     },
     trial: {
       ends: 'A próbaidőszak ekkor jár le: {endDate}',
@@ -277,6 +278,7 @@ export default {
     downloadables: 'Fájlletöltések',
     meter_credit: 'Használat alapú kreditek',
     feature_flag: 'Feature flag',
+    slack_shared_channel: 'Slack megosztott csatorna',
   },
   ordinal: {
     zero: '.',

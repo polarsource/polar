@@ -5,6 +5,8 @@ import type {
   BorderColorToken,
   BorderRadiusToken,
   BreakpointKey,
+  DurationToken,
+  EasingToken,
   ShadowToken,
   SpacingToken,
   TextColorToken,
@@ -14,6 +16,8 @@ import {
   borderColors,
   borderRadii,
   breakpoints,
+  durations,
+  easings,
   shadows,
   spacing,
   textColors,
@@ -61,6 +65,11 @@ import {
   positionStyles,
   rowGapStyles,
   textAlignStyles,
+  TRANSITION_PROPERTY_VALUES,
+  transitionDelayStyles,
+  transitionDurationStyles,
+  transitionPropertyStyles,
+  transitionTimingFunctionStyles,
   userSelectStyles,
   visibilityStyles,
 } from './box-styles'
@@ -187,6 +196,17 @@ function radiusCss(token: BorderRadiusToken): string {
 function shadowCss(token: ShadowToken): string {
   return shadows[token] as string
 }
+function durationCss(token: DurationToken): string {
+  return durations[token] as string
+}
+function easingCss(token: EasingToken): string {
+  return easings[token] as string
+}
+function transitionPropertyCss(
+  value: keyof typeof TRANSITION_PROPERTY_VALUES,
+): string {
+  return TRANSITION_PROPERTY_VALUES[value]
+}
 
 const FLEX_KEYWORD_MAP: Record<string, string> = {
   start: 'flex-start',
@@ -274,8 +294,14 @@ const BOX_STYLE_PROP_MAP: Record<keyof BoxStyleProps, true> = {
   alignContent: true,
   gridTemplateColumns: true,
   gridTemplateRows: true,
+  gridTemplateAreas: true,
   gridColumn: true,
   gridRow: true,
+  gridArea: true,
+  gridColumnStart: true,
+  gridColumnEnd: true,
+  gridRowStart: true,
+  gridRowEnd: true,
   gridAutoFlow: true,
   gridAutoColumns: true,
   gridAutoRows: true,
@@ -286,6 +312,14 @@ const BOX_STYLE_PROP_MAP: Record<keyof BoxStyleProps, true> = {
   left: true,
   inset: true,
   zIndex: true,
+  transitionProperty: true,
+  transitionDuration: true,
+  transitionTimingFunction: true,
+  ease: true,
+  transitionDelay: true,
+  transform: true,
+  transformOrigin: true,
+  willChange: true,
   opacity: true,
   cursor: true,
   pointerEvents: true,
@@ -572,8 +606,14 @@ export function resolveBoxStyles(
   // --- Grid ---
   addArbitraryProp('gridTemplateColumns', props.gridTemplateColumns, (v) => v)
   addArbitraryProp('gridTemplateRows', props.gridTemplateRows, (v) => v)
+  addArbitraryProp('gridTemplateAreas', props.gridTemplateAreas, (v) => v)
   addArbitraryProp('gridColumn', props.gridColumn, (v) => v)
   addArbitraryProp('gridRow', props.gridRow, (v) => v)
+  addArbitraryProp('gridArea', props.gridArea, (v) => v)
+  addArbitraryProp('gridColumnStart', props.gridColumnStart, (v) => v)
+  addArbitraryProp('gridColumnEnd', props.gridColumnEnd, (v) => v)
+  addArbitraryProp('gridRowStart', props.gridRowStart, (v) => v)
+  addArbitraryProp('gridRowEnd', props.gridRowEnd, (v) => v)
   addTokenProp(
     gridAutoFlowStyles,
     'grid-auto-flow',
@@ -591,6 +631,35 @@ export function resolveBoxStyles(
   addArbitraryProp('left', props.left, sizeValue)
   addArbitraryProp('inset', props.inset, sizeValue)
   addArbitraryProp('zIndex', props.zIndex, (v) => v)
+
+  // --- Motion ---
+  addTokenProp(
+    transitionPropertyStyles,
+    'transition-property',
+    props.transitionProperty,
+    transitionPropertyCss,
+  )
+  addTokenProp(
+    transitionDurationStyles,
+    'transition-duration',
+    props.transitionDuration,
+    durationCss,
+  )
+  addTokenProp(
+    transitionTimingFunctionStyles,
+    'transition-timing-function',
+    props.transitionTimingFunction ?? props.ease,
+    easingCss,
+  )
+  addTokenProp(
+    transitionDelayStyles,
+    'transition-delay',
+    props.transitionDelay,
+    durationCss,
+  )
+  addArbitraryProp('transform', props.transform, (v) => v)
+  addArbitraryProp('transformOrigin', props.transformOrigin, (v) => v)
+  addArbitraryProp('willChange', props.willChange, (v) => v)
 
   // --- Visual ---
   addArbitraryProp('opacity', props.opacity, (v) => v)

@@ -2,7 +2,7 @@ import {
   GenericChart,
   GenericChartSeries,
 } from '@/components/Charts/GenericChart'
-import Spinner from '@/components/Shared/Spinner'
+import { Spinner } from '@polar-sh/orbit'
 
 export interface ChartSeries {
   key: string

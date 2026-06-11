@@ -277,6 +277,7 @@ class CustomerRepository(
                     cast(Customer.id, String).ilike(f"%{query}%"),
                     Customer.external_id.ilike(f"%{query}%"),
                     Customer.name.ilike(f"%{query}%"),
+                    Customer._billing_name.ilike(f"%{query}%"),
                     Customer.email.ilike(f"%{query}%"),
                 ),
             )

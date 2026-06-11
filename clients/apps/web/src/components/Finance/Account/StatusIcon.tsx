@@ -50,7 +50,6 @@ export const StatusIcon = ({ status }: Props) => {
 
   return (
     <Box
-      display="flex"
       alignItems="center"
       justifyContent="center"
       width={24}

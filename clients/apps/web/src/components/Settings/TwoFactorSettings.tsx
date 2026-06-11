@@ -8,7 +8,7 @@ import {
 } from '@/hooks'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { Button } from '@polar-sh/orbit'
-import ListGroup from '@polar-sh/ui/components/atoms/ListGroup'
+import { ListGroup } from '@polar-sh/orbit'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { useState } from 'react'

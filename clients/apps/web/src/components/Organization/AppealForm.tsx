@@ -10,6 +10,11 @@ import { Button } from '@polar-sh/orbit'
 import { Textarea } from '@polar-sh/orbit/ui/textarea'
 import { Loader2 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
+import HumanReviewCase from './HumanReviewCase'
+
+// Gates the merchant-facing human-review case flow shown after a denied
+// appeal. Hardcoded off until the dedicated flow is finished.
+const NEW_CASE_FLOW_ENABLED = false
 
 interface AppealFormProps {
   organization: schemas['Organization']
@@ -94,7 +99,9 @@ const AppealForm: React.FC<AppealFormProps> = ({
             {decision === 'approved'
               ? 'Your appeal has been approved. Payment access has been restored.'
               : decision === 'rejected'
-                ? "Your appeal wasn't approved. If you believe this is wrong, please contact support — we can take another look."
+                ? NEW_CASE_FLOW_ENABLED
+                  ? "Your appeal wasn't approved."
+                  : "Your appeal wasn't approved. If you believe this is wrong, please contact support — we can take another look."
                 : pollingTimedOut
                   ? "This is taking longer than expected. Refresh the page in a few minutes — if it still hasn't updated, please contact support."
                   : 'We are reviewing your appeal. This usually takes about a minute.'}
@@ -114,6 +121,10 @@ const AppealForm: React.FC<AppealFormProps> = ({
               {submittedReason}
             </p>
           </div>
+        )}
+
+        {decision === 'rejected' && NEW_CASE_FLOW_ENABLED && (
+          <HumanReviewCase organization={organization} />
         )}
       </div>
     )

@@ -108,6 +108,7 @@ export default {
         },
       },
       inclTax: 'IVA (incluído)',
+      basePrice: 'Preço base',
     },
     trial: {
       ends: 'Teste termina a {endDate}',
@@ -277,6 +278,7 @@ export default {
     downloadables: 'Download de arquivos',
     meter_credit: 'Créditos de uso',
     feature_flag: 'Feature flag',
+    slack_shared_channel: 'canal partilhado do Slack',
   },
   ordinal: {
     zero: 'º',

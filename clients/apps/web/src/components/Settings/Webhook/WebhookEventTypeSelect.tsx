@@ -1,7 +1,7 @@
 'use client'
 
 import { enums } from '@polar-sh/client'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
+import { Checkbox } from '@polar-sh/orbit'
 import {
   Popover,
   PopoverContent,

@@ -9,7 +9,7 @@ import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
 import { Stripe } from '@stripe/stripe-js'
 import { useEffect, useMemo, useState } from 'react'
 import { loadPolarStripe } from '@/utils/stripe'
-import { Modal } from '../Modal'
+import { Modal } from '@polar-sh/orbit'
 import { OrderPaymentRetry } from './OrderPaymentRetry'
 import { SavedCardsSelector } from './SavedCardsSelector'
 

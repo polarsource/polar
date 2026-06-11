@@ -108,6 +108,7 @@ export default {
         },
       },
       inclTax: 'Moms (ingår)',
+      basePrice: 'Grundavgift',
     },
     trial: {
       ends: 'Testperioden slutar {endDate}',
@@ -276,6 +277,7 @@ export default {
     downloadables: 'Filnedladdningar',
     meter_credit: 'Mätarkrediter',
     feature_flag: 'Feature flag',
+    slack_shared_channel: 'Slack delad kanal',
   },
   ordinal: {
     zero: ':e',

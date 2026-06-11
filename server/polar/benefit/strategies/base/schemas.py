@@ -140,5 +140,5 @@ class BenefitGrantBase(IDSchema, TimestampedSchema):
 class BenefitSubscriberOrganization(OrganizationPublicBase): ...
 
 
-class BenefitSubscriberBase(BenefitBase):
+class BenefitSubscriberBase(BenefitPublicBase):
     organization: BenefitSubscriberOrganization

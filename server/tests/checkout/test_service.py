@@ -43,7 +43,6 @@ from polar.enums import (
     TaxBehavior,
     TaxProcessor,
 )
-from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.exceptions import NotPermitted, PaymentNotReady, PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
@@ -101,6 +100,7 @@ from polar.tax.tax_id import TaxIDFormat
 from polar.trial_redemption.repository import TrialRedemptionRepository
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_checkout,
@@ -6415,8 +6415,7 @@ class TestCheckoutCreatedEvent:
             auth_subject,
         )
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(SystemEvent.checkout_created)
+        events = await get_all_by_name(session, SystemEvent.checkout_created)
 
         assert len(events) == 1
         event = events[0]

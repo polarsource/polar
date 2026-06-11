@@ -74,6 +74,19 @@ styles + scoped CSS at build time. Tokens use the CSS `light-dark()` function to
 auto-swap between light and dark mode, so you author one styling pass and dark mode
 is free.
 
+### `display` defaults to `flex`
+
+Box defaults to `display: flex` for block-level elements (~90% of usage is flex), so a
+bare `<Box>` is a flex row. Set `flexDirection`, `gap`, etc. directly without repeating
+`display="flex"`. Inline elements (`as="span"`, `as="label"`) and `as="li"` keep their
+native display so semantics aren't broken. Pass an explicit `display` (e.g.
+`display="block"`, `display="grid"`) to override.
+
+```tsx
+<Box flexDirection="column" gap="m">…</Box>   // already flex
+<Box display="block">…</Box>                    // opt out of flex
+```
+
 ### Importing
 
 ```tsx
@@ -107,10 +120,10 @@ accessibility. Allowed values:
 
 ```tsx
 <Box as="section" padding="xl">…</Box>
-<Box as="ul" display="flex" flexDirection="column" rowGap="s">
+<Box as="ul" flexDirection="column" rowGap="s">
   <Box as="li">Item</Box>
 </Box>
-<Box as="nav" display="flex" alignItems="center" columnGap="m">…</Box>
+<Box as="nav" alignItems="center" columnGap="m">…</Box>
 ```
 
 DOM props for the chosen element are typed and forwarded (e.g. `onClick`, `htmlFor` on
@@ -164,6 +177,19 @@ auto-resolves light vs dark.
 
 **Shadow** (`ShadowToken`): `none`, `s`, `m`, `l`, `xl`.
 
+**Motion** — durations (`DurationToken`) and easings (`EasingToken`) for transitions:
+
+| Duration  | Value | Easing       | Curve                      |
+| --------- | ----- | ------------ | -------------------------- |
+| `instant` | 0ms   | `standard`   | general-purpose, symmetric |
+| `fast`    | 120ms | `decelerate` | enter (fast → settle)      |
+| `base`    | 200ms | `accelerate` | exit (settle → fast)       |
+| `slow`    | 320ms | `spring`     | slight overshoot           |
+| `slower`  | 480ms |              |                            |
+
+Durations are CSS variables, so motion can be globally tuned (or zeroed for reduced
+motion). Easings are compile-time constants.
+
 **Breakpoints** (`BreakpointKey`): `sm` (640), `md` (768), `lg` (1024), `xl` (1280). Used
 as keys in responsive prop objects (see below).
 
@@ -200,6 +226,7 @@ borderStyle: 'solid' | 'dashed' | 'dotted' | 'none'
 
 ```
 display: 'flex' | 'grid' | 'block' | 'inline' | 'inline-flex' | 'inline-block' | 'none' | 'contents'
+         // defaults to 'flex' for block-level elements (see "display defaults to flex" above)
 overflow / overflowX / overflowY: 'hidden' | 'auto' | 'scroll' | 'visible'
 width, height, minWidth, maxWidth, minHeight, maxHeight: string | number   // numbers → px
 aspectRatio: string                                                         // '16 / 9'
@@ -232,6 +259,22 @@ top, right, bottom, left, inset: string | number
 zIndex: number | string
 ```
 
+**Motion** (transitions; pair with pseudo-state props to animate hover/focus/active):
+
+```
+transitionProperty: 'none'|'all'|'common'|'colors'|'opacity'|'shadow'|'transform'
+transitionDuration: DurationToken                     // 'instant'|'fast'|'base'|'slow'|'slower'
+transitionTimingFunction (alias: ease): EasingToken   // 'standard'|'decelerate'|'accelerate'|'spring'
+transitionDelay: DurationToken
+transform: string                                      // e.g. 'translateY(-2px)', 'scale(1.02)'
+transformOrigin: string
+willChange: string
+```
+
+`transitionProperty` keywords expand to real property lists — `colors` → color +
+background-color + border-color, `common` → colors + box-shadow + opacity + transform.
+Without `transitionProperty`, `transitionDuration` applies to `all`.
+
 **Visual**:
 
 ```
@@ -251,7 +294,6 @@ keys (`sm`/`md`/`lg`/`xl`), and the pseudo-state keys (`hover`, `focus`, `active
 
 ```tsx
 <Box
-  display="flex"
   flexDirection={{ base: 'column', md: 'row' }}
   padding={{ base: 'l', lg: '2xl' }}
   gridTemplateColumns={{
@@ -272,7 +314,7 @@ queries, pseudo-state keys generate scoped pseudo-class rules.
 **Vertical stack**:
 
 ```tsx
-<Box display="flex" flexDirection="column" rowGap="l">
+<Box flexDirection="column" rowGap="l">
   …
 </Box>
 ```
@@ -280,7 +322,7 @@ queries, pseudo-state keys generate scoped pseudo-class rules.
 **Horizontal row, centered, with gap**:
 
 ```tsx
-<Box display="flex" alignItems="center" columnGap="m">
+<Box alignItems="center" columnGap="m">
   …
 </Box>
 ```
@@ -295,7 +337,6 @@ queries, pseudo-state keys generate scoped pseudo-class rules.
   borderStyle="solid"
   borderColor="border-primary"
   padding="xl"
-  display="flex"
   flexDirection="column"
   rowGap="m"
 >
@@ -306,22 +347,37 @@ queries, pseudo-state keys generate scoped pseudo-class rules.
 </Box>
 ```
 
-**Responsive grid**:
+**Interactive card (smooth hover)** — pseudo-state props animate instead of snapping when
+you add a transition:
 
 ```tsx
 <Box
-  display="grid"
-  gridTemplateColumns={{
-    base: '1fr',
-    md: 'repeat(2, 1fr)',
-    xl: 'repeat(4, 1fr)',
-  }}
+  borderRadius="l"
+  backgroundColor={{ base: 'background-card', hover: 'background-secondary' }}
+  boxShadow={{ base: 's', hover: 'm' }}
+  transform={{ hover: 'translateY(-2px)' }}
+  transitionProperty="common"
+  transitionDuration="fast"
+  ease="decelerate"
+  cursor={{ hover: 'pointer' }}
+  padding="xl"
+>
+  …
+</Box>
+```
+
+**Responsive grid** — prefer the `Grid` primitive (see below); it defaults to
+`display: grid` and uses short prop names:
+
+```tsx
+<Grid
+  templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', xl: 'repeat(4, 1fr)' }}
   gap="l"
 >
   {items.map((item) => (
     <Card key={item.id} {...item} />
   ))}
-</Box>
+</Grid>
 ```
 
 **Sticky toolbar**:
@@ -337,7 +393,6 @@ queries, pseudo-state keys generate scoped pseudo-class rules.
   borderColor="border-primary"
   paddingHorizontal="xl"
   paddingVertical="m"
-  display="flex"
   alignItems="center"
   justifyContent="between"
 >
@@ -360,7 +415,6 @@ queries, pseudo-state keys generate scoped pseudo-class rules.
 
 ```tsx
 <Box
-  display="flex"
   flexDirection="column"
   alignItems="center"
   justifyContent="center"
@@ -401,18 +455,58 @@ Open `clients/packages/orbit/src/utils/types.ts` to confirm — most needs are c
 genuinely missing CSS property comes up, prefer extending `BoxStyleProps` (with token
 support where applicable) over a tailwind escape hatch. Flag this on the PR.
 
+### `Grid`
+
+`Grid` is a `Box` preset for CSS grid. It defaults to `display: grid` and re-exposes the
+grid properties under short, Chakra-style prop names; every other Box prop (`gap`,
+`padding`, color, responsive objects, …) is inherited.
+
+```tsx
+import { Grid } from '@polar-sh/orbit'
+
+<Grid templateColumns="repeat(3, 1fr)" gap="m">
+  …
+</Grid>
+
+// areas + responsive
+<Grid
+  templateAreas={{ base: '"head" "main"', md: '"head head" "nav main"' }}
+  templateColumns={{ base: '1fr', md: '200px 1fr' }}
+  gap="l"
+/>
+```
+
+Prop names: `templateColumns`, `templateRows`, `templateAreas`, `autoFlow`, `autoRows`,
+`autoColumns`, `column`, `row`, and `inline` (renders `inline-grid`).
+
+Use `GridItem` for children that need to span or be placed explicitly:
+
+```tsx
+import { Grid, GridItem } from '@polar-sh/orbit'
+;<Grid templateColumns="repeat(4, 1fr)" gap="m">
+  <GridItem colSpan={2}>Spans two columns</GridItem>
+  <GridItem colStart={3} colEnd={5} rowSpan={2}>
+    Placed explicitly
+  </GridItem>
+  <GridItem area="sidebar">By template area</GridItem>
+</Grid>
+```
+
+`GridItem` props: `colSpan`/`rowSpan` (number or `"auto"`), `colStart`/`colEnd`/`rowStart`/
+`rowEnd`, and `area` — all responsive. Plus every Box prop.
+
 ### Other Orbit primitives
 
 Use these instead of hand-rolled tailwind components:
 
 ```tsx
 import { Text } from '@polar-sh/orbit' // typography (variant-driven)
-import { Button } from '@polar-sh/orbit'
+import { Button, Grid } from '@polar-sh/orbit'
 import { Avatar, SegmentedControl } from '@polar-sh/orbit'
 ```
 
 Prefer `Box` when you need full control; prefer the named primitive when one exists for
-your use case (Text for any text node, Button for actions).
+your use case (Text for any text node, Button for actions, Grid for grid layouts).
 
 ## Legacy Tailwind (deprecated)
 
@@ -545,7 +639,6 @@ if (isLoading) {
 if (!data?.length) {
   return (
     <Box
-      display="flex"
       flexDirection="column"
       alignItems="center"
       justifyContent="center"

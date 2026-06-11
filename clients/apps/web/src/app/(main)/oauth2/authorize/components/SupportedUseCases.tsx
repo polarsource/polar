@@ -2,8 +2,8 @@ import { Box } from '@polar-sh/orbit/Box'
 
 export default function SupportedUseCases() {
   return (
-    <Box display="flex" flexDirection="column" rowGap="l">
-      <Box display="flex" flexDirection="column" rowGap="s">
+    <Box flexDirection="column" rowGap="l">
+      <Box flexDirection="column" rowGap="s">
         <p className="text-sm font-medium">Supported Usecases</p>
         <p className="dark:text-polar-500 text-sm text-gray-500">
           SaaS subscriptions, digital downloads, software licenses, online
@@ -11,9 +11,9 @@ export default function SupportedUseCases() {
         </p>
       </Box>
 
-      <Box display="flex" flexDirection="column" rowGap="s">
+      <Box flexDirection="column" rowGap="s">
         <p className="text-sm font-medium">Prohibited Usecases</p>
-        <Box as="ul" display="flex" flexDirection="column" rowGap="xs">
+        <Box as="ul" flexDirection="column" rowGap="xs">
           <Box as="li">
             <p className="dark:text-polar-500 text-sm text-gray-500">
               • Physical goods or products requiring shipping
@@ -46,6 +46,7 @@ export default function SupportedUseCases() {
       </Box>
 
       <Box
+        display="block"
         borderTopWidth={1}
         borderStyle="solid"
         borderColor="border-primary"

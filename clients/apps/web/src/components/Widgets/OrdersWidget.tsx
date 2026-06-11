@@ -4,21 +4,23 @@ import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
 import { Card } from '@polar-sh/ui/components/atoms/Card'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { Status, type StatusColor } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { WidgetContainer } from './WidgetContainer'
 
-const orderStatusBadgeClassNames = (order: schemas['Order']) => {
+const orderStatusBadgeColor = (
+  order: schemas['Order'],
+): StatusColor | undefined => {
   switch (order.status) {
     case 'paid':
-      return 'bg-emerald-50 text-emerald-500 dark:bg-emerald-950'
+      return 'green'
     case 'pending':
-      return 'bg-yellow-50 text-yellow-500 dark:bg-yellow-950'
+      return 'yellow'
     case 'refunded':
     case 'partially_refunded':
-      return 'bg-violet-50 text-violet-500 dark:bg-violet-950 dark:text-violet-400'
+      return 'purple'
   }
 }
 
@@ -48,11 +50,12 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
       <div className="dark:text-polar-500 flex flex-row items-baseline justify-between text-sm text-gray-500">
         <span>{displayDate}</span>
         <Status
-          className={twMerge(
-            'px-1.5 py-0.5 text-xs capitalize',
-            orderStatusBadgeClassNames(order),
-          )}
-          status={order.status.split('_').join(' ')}
+          color={orderStatusBadgeColor(order)}
+          size="small"
+          status={order.status
+            .split('_')
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(' ')}
         />
       </div>
       <div className="flex flex-row justify-between gap-x-4">

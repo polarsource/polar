@@ -40,12 +40,14 @@ class OverviewSection(ChecklistMixin):
         unrefunded_orders_count: int = 0,
         agent_report: AnyAgentReport | None = None,
         agent_reviewed_at: datetime | None = None,
+        has_appeal_case: bool = False,
     ) -> None:
         self.org = organization
         self.orders_count = orders_count
         self.unrefunded_orders_count = unrefunded_orders_count
         self.agent_report = agent_report
         self.agent_reviewed_at = agent_reviewed_at
+        self.has_appeal_case = has_appeal_case
 
     # ------------------------------------------------------------------
     # Full-width: Organization Review card (primary content)
@@ -103,6 +105,36 @@ class OverviewSection(ChecklistMixin):
         """Full-width AI review card — the primary decision content."""
 
         with card(bordered=True):
+            if self.has_appeal_case:
+                support_case_url = (
+                    str(
+                        request.url_for(
+                            "organizations:detail", organization_id=self.org.id
+                        )
+                    )
+                    + "?section=support_case"
+                )
+                with tag.a(
+                    href=support_case_url,
+                    classes="mb-4 flex items-center justify-between gap-3 "
+                    "rounded-lg border border-warning/40 bg-warning/5 px-4 py-3 "
+                    "hover:bg-warning/10 transition-colors",
+                ):
+                    with tag.span(classes="flex items-center gap-2.5 min-w-0"):
+                        with tag.span(classes="icon-message-square text-warning"):
+                            pass
+                        with tag.span(
+                            classes="text-sm font-medium text-base-content/60"
+                        ):
+                            text("Human-review support case")
+                    with tag.span(
+                        classes="flex items-center gap-1 flex-none "
+                        "text-sm text-base-content/60"
+                    ):
+                        text("View case")
+                        with tag.span(classes="icon-arrow-right text-xs"):
+                            pass
+
             # --- No agent report: show fallback from org.review ---
             if self.agent_report is None:
                 if self.org.review:

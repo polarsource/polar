@@ -2,7 +2,7 @@
 
 import { Events } from '@/components/Events/Events'
 import MeterEventsTab from '@/components/Meter/MeterEventsTab'
-import Spinner from '@/components/Shared/Spinner'
+import { Spinner } from '@polar-sh/orbit'
 import { useEvents } from '@/hooks/queries/events'
 import { useMeterQuantities } from '@/hooks/queries/meters'
 import { ParsedMetricPeriod } from '@/hooks/queries/metrics'
@@ -15,18 +15,13 @@ import {
   CardContent,
   CardHeader,
 } from '@polar-sh/ui/components/atoms/Card'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@polar-sh/ui/components/atoms/Tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import { endOfMonth, startOfMonth, subMonths } from 'date-fns'
 import { useCallback, useContext, useMemo, useState } from 'react'
 import DateRangePicker from '../Metrics/DateRangePicker'
 import IntervalPicker, { getNextValidInterval } from '../Metrics/IntervalPicker'
 import MetricChart from '../Metrics/MetricChart'
-import { InlineModal } from '../Modal/InlineModal'
+import { InlineModal } from '@polar-sh/orbit'
 import { Well, WellContent, WellHeader } from '../Shared/Well'
 import FormattedUnits from './FormattedUnits'
 import MeterCustomersTab from './MeterCustomersTab'

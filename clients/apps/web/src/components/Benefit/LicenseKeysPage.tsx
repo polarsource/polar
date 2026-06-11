@@ -21,16 +21,11 @@ import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@polar-sh/ui/components/atoms/Tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useState } from 'react'
-import { InlineModal } from '../Modal/InlineModal'
+import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
 import { BenefitPage } from './BenefitPage'
 

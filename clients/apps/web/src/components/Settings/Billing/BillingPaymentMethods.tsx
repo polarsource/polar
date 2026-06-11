@@ -12,7 +12,7 @@ import { extractApiErrorMessage } from '@/utils/api/errors'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { Status } from '@polar-sh/orbit'
 import { X } from 'lucide-react'
 import { PaymentMethodDisplay } from '../../PaymentMethodDisplay'
 import { LoadingBox } from '../../Shared/LoadingBox'
@@ -77,12 +77,7 @@ const PaymentMethodRow = ({
   }
 
   return (
-    <Box
-      display="flex"
-      alignItems="center"
-      justifyContent="between"
-      columnGap="m"
-    >
+    <Box alignItems="center" justifyContent="between" columnGap="m">
       <PaymentMethodDisplay
         type={paymentMethod.type}
         card={
@@ -91,12 +86,9 @@ const PaymentMethodRow = ({
             : null
         }
       />
-      <Box display="flex" alignItems="center" columnGap="m">
+      <Box alignItems="center" columnGap="m">
         {paymentMethod.default ? (
-          <Status
-            status="Default Method"
-            className="bg-emerald-50 text-emerald-500 dark:bg-emerald-950"
-          />
+          <Status status="Default Method" color="green" />
         ) : (
           canSetDefault && (
             <Button
@@ -140,13 +132,8 @@ export const BillingPaymentMethods = ({
   const paymentMethods = data?.items ?? []
 
   return (
-    <Box display="flex" flexDirection="column" rowGap="l">
-      <Box
-        display="flex"
-        alignItems="start"
-        justifyContent="between"
-        columnGap="m"
-      >
+    <Box flexDirection="column" rowGap="l">
+      <Box alignItems="start" justifyContent="between" columnGap="m">
         <SectionDescription
           title="Payment methods"
           description="Cards used to pay for your Polar subscription"
@@ -156,7 +143,6 @@ export const BillingPaymentMethods = ({
         </Button>
       </Box>
       <Box
-        display="flex"
         flexDirection="column"
         rowGap="m"
         borderRadius="l"
@@ -168,7 +154,7 @@ export const BillingPaymentMethods = ({
         {isLoading ? (
           <LoadingBox height={64} borderRadius="m" />
         ) : paymentMethods.length === 0 ? (
-          <Box paddingVertical="l" textAlign="center">
+          <Box display="block" paddingVertical="l" textAlign="center">
             <Text color="muted">No payment methods on file</Text>
           </Box>
         ) : (
@@ -184,7 +170,12 @@ export const BillingPaymentMethods = ({
         )}
       </Box>
       {error && (
-        <Box borderRadius="m" backgroundColor="background-danger" padding="l">
+        <Box
+          display="block"
+          borderRadius="m"
+          backgroundColor="background-danger"
+          padding="l"
+        >
           <Text color="danger">{error}</Text>
         </Box>
       )}

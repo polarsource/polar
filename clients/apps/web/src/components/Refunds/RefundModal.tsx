@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/orbit'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
+import { Checkbox } from '@polar-sh/orbit'
 import {
   Form,
   FormControl,

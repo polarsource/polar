@@ -33,6 +33,7 @@ class CustomerPortalCustomer(IDSchema, TimestampedSchema):
     oauth_accounts: dict[str, CustomerPortalOAuthAccount]
     default_payment_method_id: UUID4 | None = None
     type: CustomerType | None = None
+    locale: str | None = None
 
 
 class CustomerPortalCustomerUpdate(Schema):

@@ -39,7 +39,7 @@ export function ChipSelect({
   }
 
   return (
-    <Box display="flex" flexWrap="wrap" gap="s">
+    <Box flexWrap="wrap" gap="s">
       {options.map((option) => {
         const { value, label } = normalizeOption(option)
         const isSelected = selected.includes(value)

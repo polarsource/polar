@@ -306,6 +306,36 @@ class TestUpdateOrganization:
         assert response.status_code == 422
 
     @pytest.mark.auth
+    async def test_non_updatable_feature_flags_ignored(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {
+            "billing_enabled": True,
+        }
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "feature_settings": {
+                    "billing_enabled": False,
+                    "off_session_charges_enabled": True,
+                    "checkout_localization_enabled": True,
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        feature_settings = response.json()["feature_settings"]
+        assert feature_settings["billing_enabled"] is True
+        assert feature_settings["off_session_charges_enabled"] is False
+        assert feature_settings["checkout_localization_enabled"] is True
+
+    @pytest.mark.auth
     async def test_update_customer_portal_settings_without_customer_key(
         self,
         client: AsyncClient,

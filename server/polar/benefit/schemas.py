@@ -19,6 +19,9 @@ from polar.benefit.strategies.license_keys.properties import (
 from polar.benefit.strategies.meter_credit.properties import (
     BenefitGrantMeterCreditProperties,
 )
+from polar.benefit.strategies.slack_shared_channel.properties import (
+    BenefitGrantSlackSharedChannelProperties,
+)
 from polar.customer.schemas.customer import CustomerResponse as Customer
 from polar.kit.schemas import (
     ClassName,
@@ -66,6 +69,11 @@ from .strategies.meter_credit.schemas import (
     BenefitMeterCreditCreate,
     BenefitMeterCreditUpdate,
 )
+from .strategies.slack_shared_channel.schemas import (
+    BenefitSlackSharedChannel,
+    BenefitSlackSharedChannelCreate,
+    BenefitSlackSharedChannelUpdate,
+)
 
 BENEFIT_DESCRIPTION_MIN_LENGTH = 3
 BENEFIT_DESCRIPTION_MAX_LENGTH = 42
@@ -84,7 +92,8 @@ BenefitCreate = Annotated[
     | BenefitDownloadablesCreate
     | BenefitLicenseKeysCreate
     | BenefitMeterCreditCreate
-    | BenefitFeatureFlagCreate,
+    | BenefitFeatureFlagCreate
+    | BenefitSlackSharedChannelCreate,
     Discriminator("type"),
     SetSchemaReference("BenefitCreate"),
 ]
@@ -98,6 +107,7 @@ BenefitUpdate = (
     | BenefitLicenseKeysUpdate
     | BenefitMeterCreditUpdate
     | BenefitFeatureFlagUpdate
+    | BenefitSlackSharedChannelUpdate
 )
 
 
@@ -108,7 +118,8 @@ Benefit = Annotated[
     | BenefitDownloadables
     | BenefitLicenseKeys
     | BenefitMeterCredit
-    | BenefitFeatureFlag,
+    | BenefitFeatureFlag
+    | BenefitSlackSharedChannel,
     Discriminator("type"),
     SetSchemaReference("Benefit"),
     MergeJSONSchema({"title": "Benefit"}),
@@ -123,6 +134,7 @@ benefit_schema_map: dict[BenefitType, type[Benefit]] = {
     BenefitType.license_keys: BenefitLicenseKeys,
     BenefitType.meter_credit: BenefitMeterCredit,
     BenefitType.feature_flag: BenefitFeatureFlag,
+    BenefitType.slack_shared_channel: BenefitSlackSharedChannel,
 }
 
 
@@ -180,6 +192,12 @@ class BenefitGrantFeatureFlagWebhook(BenefitGrantWebhookBase):
     previous_properties: BenefitGrantFeatureFlagProperties | None = None
 
 
+class BenefitGrantSlackSharedChannelWebhook(BenefitGrantWebhookBase):
+    benefit: BenefitSlackSharedChannel
+    properties: BenefitGrantSlackSharedChannelProperties
+    previous_properties: BenefitGrantSlackSharedChannelProperties | None = None
+
+
 BenefitGrantWebhook = Annotated[
     BenefitGrantDiscordWebhook
     | BenefitGrantCustomWebhook
@@ -187,7 +205,8 @@ BenefitGrantWebhook = Annotated[
     | BenefitGrantDownloadablesWebhook
     | BenefitGrantLicenseKeysWebhook
     | BenefitGrantMeterCreditWebhook
-    | BenefitGrantFeatureFlagWebhook,
+    | BenefitGrantFeatureFlagWebhook
+    | BenefitGrantSlackSharedChannelWebhook,
     SetSchemaReference("BenefitGrantWebhook"),
     MergeJSONSchema({"title": "BenefitGrantWebhook"}),
     ClassName("BenefitGrantWebhook"),

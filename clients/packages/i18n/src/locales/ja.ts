@@ -108,6 +108,7 @@ export default {
         },
         until: '{date}まで',
       },
+      basePrice: '基本料金',
     },
     trial: {
       ends: 'トライアル終了日 {endDate}',
@@ -280,6 +281,7 @@ export default {
     custom: 'カスタム',
     meter_credit: 'メータークレジット',
     feature_flag: '機能フラグ',
+    slack_shared_channel: 'Slack 共有チャンネル',
   },
   ordinal: {
     one: '番目',

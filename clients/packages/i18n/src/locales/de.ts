@@ -108,6 +108,7 @@ export default {
         },
       },
       inclTax: 'MwSt. (inklusive)',
+      basePrice: 'Grundpreis',
     },
     trial: {
       ends: 'Testphase endet am {endDate}',
@@ -282,6 +283,7 @@ export default {
     downloadables: 'Dateidownloads',
     meter_credit: 'Verbrauchsguthaben',
     feature_flag: 'Feature-Flag',
+    slack_shared_channel: 'Gemeinsamer Slack-Kanal',
   },
   ordinal: {
     zero: '.',

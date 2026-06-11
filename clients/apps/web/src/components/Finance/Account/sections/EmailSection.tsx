@@ -96,7 +96,7 @@ export const EmailSection = ({
             name="email"
             rules={{ required: 'Support email is required' }}
             render={({ field }) => (
-              <Box>
+              <Box display="block">
                 <Input type="email" {...field} placeholder="support@acme.com" />
                 <FormMessage />
               </Box>

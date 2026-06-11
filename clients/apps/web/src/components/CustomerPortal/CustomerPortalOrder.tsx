@@ -4,10 +4,9 @@ import { canRetryOrderPayment } from '@/utils/order'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { Status, type StatusColor } from '@polar-sh/orbit'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { OrderDownloadActions } from '../Orders/OrderDownloadActions'
 import { DetailRow } from '../Shared/DetailRow'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
@@ -23,17 +22,15 @@ const OrderStatusDisplayTitle: Record<schemas['Order']['status'], string> = {
   void: 'Void',
 }
 
-const OrderStatusDisplayColor: Record<schemas['Order']['status'], string> = {
-  draft: 'bg-gray-100 text-gray-500 dark:bg-gray-900 dark:text-gray-400',
-  paid: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500',
-  pending:
-    'bg-yellow-100 text-yellow-500 dark:bg-yellow-950 dark:text-yellow-500',
-  refunded:
-    'bg-violet-100 text-violet-500 dark:bg-violet-950 dark:text-violet-400',
-  partially_refunded:
-    'bg-violet-100 text-violet-500 dark:bg-violet-950 dark:text-violet-400',
-  void: 'bg-red-100 text-red-500 dark:bg-red-950 dark:text-red-400',
-}
+const OrderStatusDisplayColor: Record<schemas['Order']['status'], StatusColor> =
+  {
+    draft: 'gray',
+    paid: 'green',
+    pending: 'yellow',
+    refunded: 'purple',
+    partially_refunded: 'purple',
+    void: 'red',
+  }
 
 const CustomerPortalOrder = ({
   api,
@@ -66,7 +63,7 @@ const CustomerPortalOrder = ({
           <h3 className="text-2xl">{order.description}</h3>
           <Status
             status={OrderStatusDisplayTitle[order.status]}
-            className={twMerge(OrderStatusDisplayColor[order.status])}
+            color={OrderStatusDisplayColor[order.status]}
           />
 
           {/* Retry button */}

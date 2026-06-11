@@ -6,7 +6,7 @@ import { EventMetadataFilter } from '@/components/Events/EventMetadataFilter'
 import { Events } from '@/components/Events/Events'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
-import { Modal } from '@/components/Modal'
+import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import Pagination from '@/components/Pagination/Pagination'
 import { useEventNames, useEvents } from '@/hooks/queries/events'
@@ -17,7 +17,7 @@ import Search from '@mui/icons-material/Search'
 import { operations, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import { List, ListItem } from '@polar-sh/orbit'
 import {
   Select,
   SelectContent,
@@ -25,11 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/orbit'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/ui/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { endOfToday } from 'date-fns'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {

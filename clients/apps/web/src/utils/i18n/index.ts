@@ -22,18 +22,24 @@ export function parseAcceptLanguageHeader(
     .sort((a, b) => b.q - a.q)
 }
 
-function getLocaleFromAcceptLanguageHeader(
+export function getBrowserLocale(
   acceptLanguageHeader: string | null,
-): AcceptedLocale {
+): AcceptedLocale | null {
   const languages = parseAcceptLanguageHeader(acceptLanguageHeader)
 
   for (const { code } of languages) {
     if (isAcceptedLocale(code)) {
-      return code as AcceptedLocale
+      return code
     }
   }
 
-  return DEFAULT_LOCALE
+  return null
+}
+
+function getLocaleFromAcceptLanguageHeader(
+  acceptLanguageHeader: string | null,
+): AcceptedLocale {
+  return getBrowserLocale(acceptLanguageHeader) ?? DEFAULT_LOCALE
 }
 
 function getPrimaryLanguageForLocale(locale: string): string {

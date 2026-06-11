@@ -6,7 +6,7 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import Pill from '@polar-sh/ui/components/atoms/Pill'
+import { Pill } from '@polar-sh/orbit'
 
 const formatPrice = formatCurrency('standard', 'en-US')
 
@@ -37,7 +37,7 @@ const Detail = ({
   label: string
   children: React.ReactNode
 }) => (
-  <Box display="flex" flexDirection="column" rowGap="xs">
+  <Box flexDirection="column" rowGap="xs">
     <Text color="muted">{label}</Text>
     <Text>{children}</Text>
   </Box>
@@ -97,7 +97,6 @@ export const BillingSubscriptionCard = ({
 
   return (
     <Box
-      display="flex"
       flexDirection="column"
       rowGap="2xl"
       borderRadius="l"
@@ -107,14 +106,13 @@ export const BillingSubscriptionCard = ({
       padding="xl"
     >
       <Box
-        display="flex"
         flexDirection={{ base: 'column', md: 'row' }}
         rowGap="l"
         justifyContent={{ md: 'between' }}
         alignItems={{ md: 'start' }}
       >
-        <Box display="flex" flexDirection="column" rowGap="s">
-          <Box display="flex" alignItems="center" columnGap="m">
+        <Box flexDirection="column" rowGap="s">
+          <Box alignItems="center" columnGap="m">
             <Text variant="heading-xxs" as="h3">
               {plan.name}
             </Text>
@@ -131,12 +129,11 @@ export const BillingSubscriptionCard = ({
           {plan.description && <Text color="muted">{plan.description}</Text>}
         </Box>
         <Box
-          display="flex"
           flexDirection="column"
           rowGap="xs"
           alignItems={{ base: 'start', md: 'end' }}
         >
-          <Box display="flex" alignItems="baseline" columnGap="xs">
+          <Box alignItems="baseline" columnGap="xs">
             <Text variant="heading-xs" as="span">
               {subscription.amount === 0
                 ? 'Free'
@@ -185,7 +182,6 @@ export const BillingSubscriptionCard = ({
 
       {subscription.discount && (
         <Box
-          display="flex"
           flexDirection="column"
           rowGap="s"
           borderRadius="m"
@@ -193,7 +189,7 @@ export const BillingSubscriptionCard = ({
           backgroundColor="background-card"
           padding="l"
         >
-          <Box display="flex" alignItems="center" columnGap="l">
+          <Box alignItems="center" columnGap="l">
             <Text variant="body" as="h3">
               {subscription.discount.name}
             </Text>
@@ -215,7 +211,6 @@ export const BillingSubscriptionCard = ({
 
       {scheduledPlan && pendingChange && (
         <Box
-          display="flex"
           flexDirection="column"
           rowGap="m"
           columnGap="m"
@@ -224,7 +219,7 @@ export const BillingSubscriptionCard = ({
           backgroundColor="background-card"
           padding="l"
         >
-          <Box display="flex" flexDirection="column" columnGap="s">
+          <Box flexDirection="column" columnGap="s">
             <Text variant="body" as="h3">
               Plan change scheduled
             </Text>
@@ -236,13 +231,7 @@ export const BillingSubscriptionCard = ({
         </Box>
       )}
 
-      <Box
-        display="flex"
-        flexDirection="row"
-        flexWrap="wrap"
-        columnGap="m"
-        rowGap="m"
-      >
+      <Box flexDirection="row" flexWrap="wrap" columnGap="m" rowGap="m">
         <Button onClick={onChangePlan}>Change plan</Button>
       </Box>
     </Box>

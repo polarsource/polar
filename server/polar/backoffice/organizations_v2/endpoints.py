@@ -74,6 +74,7 @@ from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.organization_review import OrganizationReview
 from polar.models.support_case import (
     ReviewAppealSupportCase,
+    SupportCaseAttachment,
     SupportCaseMessageAuthorKind,
 )
 from polar.models.transaction import TransactionType
@@ -109,7 +110,10 @@ from polar.startup_program.service import (
 from polar.startup_program.service import (
     startup_program as startup_program_service,
 )
-from polar.support_case.repository import SupportCaseMessageRepository
+from polar.support_case.repository import (
+    SupportCaseAttachmentRepository,
+    SupportCaseMessageRepository,
+)
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.worker import enqueue_job
 
@@ -970,6 +974,9 @@ async def get_organization_detail(
             elif section == "support_case":
                 thread = None
                 author_emails: dict[uuid.UUID, str] = {}
+                attachments_by_message: dict[
+                    uuid.UUID, list[SupportCaseAttachment]
+                ] = {}
                 if organization.review is not None:
                     thread = await appeal_case_service.get_thread(
                         session, organization.review, visible_to=None
@@ -990,11 +997,20 @@ async def get_organization_detail(
                         author_emails = {
                             row.id: row.email for row in email_result.all()
                         }
+                    attachments = await SupportCaseAttachmentRepository.from_session(
+                        session
+                    ).list_by_case(case_.id)
+                    for attachment in attachments:
+                        if attachment.message_id is not None:
+                            attachments_by_message.setdefault(
+                                attachment.message_id, []
+                            ).append(attachment)
                 support_case_section = SupportCaseSection(
                     organization,
                     thread=thread,
                     author_emails=author_emails,
                     current_user_id=user_session.user_id,
+                    attachments_by_message=attachments_by_message,
                 )
                 with support_case_section.render(request):
                     pass

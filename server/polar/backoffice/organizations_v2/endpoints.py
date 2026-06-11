@@ -1695,14 +1695,14 @@ async def appeal_case_approve_dialog(
             error_message = "A reason is required to approve the appeal."
         else:
             review_repo = OrganizationReviewRepository.from_session(session)
-            await review_repo.record_human_decision(
-                organization_id=organization_id,
-                reviewer_id=user_session.user.id,
-                decision=DecisionType.APPROVE,
-                review_context=ReviewContext.APPEAL,
-                reason=reason,
-            )
             try:
+                await review_repo.record_human_decision(
+                    organization_id=organization_id,
+                    reviewer_id=user_session.user.id,
+                    decision=DecisionType.APPROVE,
+                    review_context=ReviewContext.APPEAL,
+                    reason=reason,
+                )
                 await organization_service.backoffice_approve(
                     session, organization, reason=reason
                 )
@@ -1714,6 +1714,9 @@ async def appeal_case_approve_dialog(
                     reason=reason,
                 )
             except (OrganizationError, AppealCaseError) as e:
+                # Discard the recorded decision so a failure can't commit
+                # half the approval (decision without org/case update).
+                await session.rollback()
                 error_message = e.args[0]
             else:
                 return _support_case_redirect(request, organization_id)
@@ -1785,14 +1788,14 @@ async def appeal_case_deny_dialog(
         form_data = await request.form()
         reason = str(form_data.get("reason", "")).strip() or None
         review_repo = OrganizationReviewRepository.from_session(session)
-        await review_repo.record_human_decision(
-            organization_id=organization_id,
-            reviewer_id=user_session.user.id,
-            decision=DecisionType.DENY,
-            review_context=ReviewContext.APPEAL,
-            reason=reason,
-        )
         try:
+            await review_repo.record_human_decision(
+                organization_id=organization_id,
+                reviewer_id=user_session.user.id,
+                decision=DecisionType.DENY,
+                review_context=ReviewContext.APPEAL,
+                reason=reason,
+            )
             await appeal_case_service.record_decision(
                 session,
                 case,
@@ -1801,6 +1804,9 @@ async def appeal_case_deny_dialog(
                 reason=reason,
             )
         except AppealCaseError as e:
+            # Discard the recorded decision so a failure can't commit it
+            # without the case actually being closed.
+            await session.rollback()
             error_message = e.args[0]
         else:
             return _support_case_redirect(request, organization_id)

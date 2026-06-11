@@ -90,7 +90,7 @@ class OrganizationListView:
         current_sort: str,
         current_direction: str,
         align: str = "left",
-        status_filter: OrganizationStatus | None = None,
+        status_param: str | None = None,
     ) -> Generator[None]:
         """Render a sortable table header with direction indicator."""
         is_active = current_sort == sort_key
@@ -111,8 +111,8 @@ class OrganizationListView:
 
         # Build hx-vals with status filter if present
         hx_vals_dict = {"sort": sort_key, "direction": next_direction}
-        if status_filter is not None:
-            hx_vals_dict["status"] = status_filter.value
+        if status_param is not None:
+            hx_vals_dict["status"] = status_param
 
         hx_vals = json.dumps(hx_vals_dict)
 
@@ -147,7 +147,7 @@ class OrganizationListView:
         has_more: bool,
         current_sort: str,
         current_direction: str,
-        status_filter: OrganizationStatus | None,
+        status_param: str | None,
     ) -> None:
         """Render Previous/Next pagination buttons.
 
@@ -161,8 +161,8 @@ class OrganizationListView:
             "sort": current_sort,
             "direction": current_direction,
         }
-        if status_filter is not None:
-            common_vals["status"] = status_filter.value
+        if status_param is not None:
+            common_vals["status"] = status_param
 
         def _nav_button(target_page: int, label: str, disabled: bool) -> None:
             if disabled:
@@ -443,6 +443,8 @@ class OrganizationListView:
             }
             if status_filter is not None:
                 form_attrs["hx_vals"] = json.dumps({"status": status_filter.value})
+            elif selected_open_cases:
+                form_attrs["hx_vals"] = json.dumps({"status": "open_cases"})
 
             with tag.form(**form_attrs):
                 # Search bar with filter toggle
@@ -690,6 +692,13 @@ class OrganizationListView:
         signals_by_org = signals_by_org or {}
         open_case_org_ids = open_case_org_ids or set()
         is_review_tab = status_filter == OrganizationStatus.REVIEW
+        # "Open cases" isn't an OrganizationStatus, so carry it as the status
+        # query value to preserve the selection across HTMX sort/pagination.
+        status_param = (
+            status_filter.value
+            if status_filter is not None
+            else ("open_cases" if selected_open_cases else None)
+        )
 
         with tag.div(id="org-list", classes="overflow-x-auto"):
             if not organizations:
@@ -708,7 +717,7 @@ class OrganizationListView:
                                 "name",
                                 current_sort,
                                 current_direction,
-                                status_filter=status_filter,
+                                status_param=status_param,
                             ):
                                 pass
 
@@ -722,7 +731,7 @@ class OrganizationListView:
                                     current_sort,
                                     current_direction,
                                     "center",
-                                    status_filter=status_filter,
+                                    status_param=status_param,
                                 ):
                                     pass
 
@@ -732,7 +741,7 @@ class OrganizationListView:
                                 "country",
                                 current_sort,
                                 current_direction,
-                                status_filter=status_filter,
+                                status_param=status_param,
                             ):
                                 pass
 
@@ -742,7 +751,7 @@ class OrganizationListView:
                                 "created",
                                 current_sort,
                                 current_direction,
-                                status_filter=status_filter,
+                                status_param=status_param,
                             ):
                                 pass
 
@@ -753,7 +762,7 @@ class OrganizationListView:
                                 current_sort,
                                 current_direction,
                                 "center",
-                                status_filter=status_filter,
+                                status_param=status_param,
                             ):
                                 pass
 
@@ -767,7 +776,7 @@ class OrganizationListView:
                                     current_sort,
                                     current_direction,
                                     "center",
-                                    status_filter=status_filter,
+                                    status_param=status_param,
                                 ):
                                     pass
 
@@ -778,7 +787,7 @@ class OrganizationListView:
                                 current_sort,
                                 current_direction,
                                 "right",
-                                status_filter=status_filter,
+                                status_param=status_param,
                             ):
                                 pass
 
@@ -802,7 +811,7 @@ class OrganizationListView:
                     has_more,
                     current_sort,
                     current_direction,
-                    status_filter,
+                    status_param,
                 )
 
     @contextlib.contextmanager

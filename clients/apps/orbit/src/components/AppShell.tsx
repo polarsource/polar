@@ -1,13 +1,13 @@
-import { Box } from '@polar-sh/orbit/Box'
-import { Text } from '@polar-sh/orbit'
+import { Box } from "@polar-sh/orbit/Box";
+import { Text } from "@polar-sh/orbit";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from '@polar-sh/ui/components/ui/sidebar'
-import Link from 'next/link'
-import { type ReactNode } from 'react'
-import { DocsSidebar } from './Sidebar'
+} from "@polar-sh/ui/components/ui/sidebar";
+import Link from "next/link";
+import { type ReactNode } from "react";
+import { DocsSidebar } from "./Sidebar";
 
 // Uses the shadcn Sidebar primitives (the same ones the Polar dashboard uses):
 // SidebarProvider sets up the sidebar context + the recessed page surface, the
@@ -21,10 +21,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* min-w-0 lets the inset shrink below its content's intrinsic width so
           wide children (code blocks, tables) scroll instead of overflowing the
           viewport. On md+ the card is fixed to the viewport and scrolls itself. */}
-      <SidebarInset className="border-polar-700 min-w-0 border md:h-[calc(100svh-1rem)] md:overflow-y-auto">
+      <SidebarInset className="dark:border-polar-700 border-gray-100 min-w-0 border md:h-[calc(100svh-1rem)] md:overflow-y-auto">
         <Box
           as="header"
-          display={{ base: 'flex', md: 'none' }}
+          display={{ base: "flex", md: "none" }}
           position="sticky"
           top={0}
           zIndex={20}
@@ -38,7 +38,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           borderColor="border-primary"
         >
           <SidebarTrigger />
-          <Link href="/" style={{ textDecoration: 'none' }}>
+          <Link href="/" style={{ textDecoration: "none" }}>
             <Text variant="default" color="default">
               Orbit
             </Text>
@@ -51,12 +51,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           minWidth={0}
           maxWidth={1040}
           marginHorizontal="auto"
-          paddingHorizontal={{ base: 'l', md: '3xl' }}
-          paddingVertical={{ base: 'xl', md: '3xl' }}
+          paddingHorizontal={{ base: "l", md: "3xl" }}
+          paddingVertical={{ base: "xl", md: "3xl" }}
         >
           {children}
         </Box>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { InlineModal } from '@/components/Modal/InlineModal'
+import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { useOAuth2Clients } from '@/hooks/queries/oauth'
 import ArrowForward from '@mui/icons-material/ArrowForward'

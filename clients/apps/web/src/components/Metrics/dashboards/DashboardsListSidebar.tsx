@@ -1,6 +1,6 @@
 'use client'
 
-import { Modal } from '@/components/Modal'
+import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { MetricDashboardEditorContent } from '@/components/DashboardOverview/MetricSelectorModal'
 import {

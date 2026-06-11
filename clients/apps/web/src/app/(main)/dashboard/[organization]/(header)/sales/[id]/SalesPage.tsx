@@ -3,7 +3,7 @@
 import { CustomerContextView } from '@/components/Customer/CustomerContextView'
 import CustomFieldValue from '@/components/CustomFields/CustomFieldValue'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { InlineModal } from '@/components/Modal/InlineModal'
+import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { DownloadInvoiceDashboard } from '@/components/Orders/DownloadInvoice'
 import { OrderStatus } from '@/components/Orders/OrderStatus'

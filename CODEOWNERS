@@ -18,6 +18,7 @@ infra/** @Yopi
 # Frontend
 clients/apps/web/src/components/Checkout/** @sebastianekstrom
 clients/packages/checkout/** @sebastianekstrom
+clients/packages/orbit/** @emilwidlund @sebastianekstrom
 
 # Docs
 /docs/ @pieterbeulque

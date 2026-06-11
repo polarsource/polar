@@ -9,7 +9,7 @@ import {
 } from '@/components/Benefit/utils'
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
-import { InlineModal } from '@/components/Modal/InlineModal'
+import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { useToast } from '@/components/Toast/use-toast'
 import { useDeleteBenefit } from '@/hooks/queries'

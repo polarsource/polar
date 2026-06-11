@@ -2,7 +2,7 @@
 
 import CreateMeterModalContent from '@/components/Meter/CreateMeterModalContent'
 import MeterSelector from '@/components/Meter/MeterSelector'
-import { InlineModal } from '@/components/Modal/InlineModal'
+import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { SpinnerNoMargin } from '@polar-sh/orbit'
 import { useMeters } from '@/hooks/queries/meters'

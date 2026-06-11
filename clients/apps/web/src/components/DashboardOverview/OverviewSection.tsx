@@ -1,7 +1,7 @@
 'use client'
 
 import { MetricGroup } from '@/components/Metrics/dashboards/MetricGroup'
-import { Modal } from '@/components/Modal'
+import { Modal } from '@polar-sh/orbit'
 import { useMetrics } from '@/hooks/queries'
 import { useChartRange } from '@/hooks/useChartRange'
 import {

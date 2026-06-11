@@ -48,7 +48,9 @@
     "@stylexjs/stylex": "^0.18.2",
     "@tanstack/react-table": "^8.21.3",
     "class-variance-authority": "^0.7.1",
+    "framer-motion": "^12.38.0",
     "lucide-react": "^0.577.0",
+    "react-focus-lock": "^2.13.7",
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {

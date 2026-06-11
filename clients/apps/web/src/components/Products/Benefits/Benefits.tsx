@@ -18,7 +18,7 @@ import { parseAsBoolean, useQueryState } from 'nuqs'
 import { useEffect, useState } from 'react'
 import CreateBenefitModalContent from '../../Benefit/CreateBenefitModalContent'
 import { Section } from '../../Layout/Section'
-import { InlineModal } from '../../Modal/InlineModal'
+import { InlineModal } from '@polar-sh/orbit'
 import { BenefitSearchComplex } from './BenefitSearchComplex'
 import { BenefitSearchSimple } from './BenefitSearchSimple'
 

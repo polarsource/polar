@@ -1,6 +1,6 @@
 'use client'
 
-import { InlineModalHeader } from '@/components/Modal/InlineModal'
+import { InlineModalHeader } from '@polar-sh/orbit'
 import { useCreateOrganizationAccessToken } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'

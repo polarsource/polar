@@ -3,7 +3,7 @@ import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { formatCurrency } from '@polar-sh/currency'
 import { List, ListItem } from '@polar-sh/orbit'
 import { useContext } from 'react'
-import { InlineModal } from '../Modal/InlineModal'
+import { InlineModal } from '@polar-sh/orbit'
 import { EmptyState } from '../Shared/EmptyState'
 import TollOutlined from '@mui/icons-material/TollOutlined'
 

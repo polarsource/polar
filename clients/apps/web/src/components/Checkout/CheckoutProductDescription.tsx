@@ -1,6 +1,6 @@
 'use client'
 
-import { Modal } from '@/components/Modal'
+import { Modal } from '@polar-sh/orbit'
 import { markdownOptions } from '@/utils/markdown'
 import { AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import Markdown from 'markdown-to-jsx'

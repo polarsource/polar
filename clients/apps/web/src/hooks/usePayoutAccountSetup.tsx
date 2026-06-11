@@ -1,5 +1,5 @@
 import AccountCreateModal from '@/components/Accounts/AccountCreateModal'
-import { Modal } from '@/components/Modal'
+import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import ManagePayoutAccountModal from '@/components/Payouts/ManagePayoutAccountModal'
 import {

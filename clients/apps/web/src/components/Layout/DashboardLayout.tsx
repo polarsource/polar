@@ -1,7 +1,7 @@
 'use client'
 
 import LogoIcon from '@/components/Brand/logos/LogoIcon'
-import { Modal } from '@/components/Modal'
+import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { useAuth } from '@/hooks/auth'
 import { OrganizationContext } from '@/providers/maintainerOrganization'

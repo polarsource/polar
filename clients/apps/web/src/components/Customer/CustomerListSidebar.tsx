@@ -1,7 +1,7 @@
 'use client'
 
 import { CreateCustomerModal } from '@/components/Customer/CreateCustomerModal'
-import { InlineModal } from '@/components/Modal/InlineModal'
+import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { Spinner } from '@polar-sh/orbit'
 import { useCustomers } from '@/hooks/queries'

@@ -6,7 +6,7 @@ import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight'
 import { Button } from '@polar-sh/orbit'
 import { ComponentProps, FormEvent, useCallback, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Modal } from '../Modal'
+import { Modal } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
 import { AuthModal } from './AuthModal'
 

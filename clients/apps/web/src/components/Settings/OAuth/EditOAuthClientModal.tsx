@@ -1,5 +1,5 @@
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
-import { InlineModalHeader } from '@/components/Modal/InlineModal'
+import { InlineModalHeader } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import {

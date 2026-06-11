@@ -20,7 +20,7 @@ import { useCallback, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 import UpdateBenefitModalContent from '../../../Benefit/UpdateBenefitModalContent'
 import { ConfirmModal } from '../../../Modal/ConfirmModal'
-import { InlineModal } from '../../../Modal/InlineModal'
+import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../../../Modal/useModal'
 import { toast } from '../../../Toast/use-toast'
 

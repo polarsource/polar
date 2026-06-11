@@ -1,6 +1,6 @@
 'use client'
 
-import { InlineModal, InlineModalHeader } from '@/components/Modal/InlineModal'
+import { InlineModal, InlineModalHeader } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import {
   useDeleteOrganizationAccessToken,

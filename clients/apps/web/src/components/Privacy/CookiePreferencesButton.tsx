@@ -1,6 +1,6 @@
 'use client'
 
-import { InlineModal } from '../Modal/InlineModal'
+import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
 import { CookiePreferencesModal } from './CookiePreferencesModal'
 

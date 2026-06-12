@@ -6,7 +6,11 @@ from polar.kit.visibility import Visibility
 from polar.models import Organization
 from polar.product.schemas import Product
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_benefit, create_product, set_product_benefits
+from tests.fixtures.random_objects import (
+    create_benefit,
+    create_product,
+    set_product_benefits,
+)
 
 
 @pytest.mark.asyncio

@@ -50,9 +50,7 @@ class TestBenefitTypeVisibility:
     def test_resolve_visibility_forces_public_for_non_configurable_with_none(
         self,
     ) -> None:
-        assert (
-            BenefitType.discord.resolve_visibility(None) == Visibility.public
-        )
+        assert BenefitType.discord.resolve_visibility(None) == Visibility.public
 
     def test_resolve_visibility_uses_explicit_value_for_configurable(self) -> None:
         assert (

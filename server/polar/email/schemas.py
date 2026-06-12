@@ -56,9 +56,7 @@ class SubscriptionEmail(SubscriptionBase): ...
 
 
 def _filter_email_benefit_list(benefits: list[Benefit]) -> list[Benefit]:
-    return [
-        benefit for benefit in benefits if benefit.visibility == Visibility.public
-    ]
+    return [benefit for benefit in benefits if benefit.visibility == Visibility.public]
 
 
 EmailBenefitList = Annotated[

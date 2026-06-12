@@ -87,7 +87,6 @@ class BenefitBase(MetadataOutputMixin, BenefitPublicBase):
         return value
 
 
-
 class BenefitGrantBase(IDSchema, TimestampedSchema):
     """
     A grant of a benefit to a customer.

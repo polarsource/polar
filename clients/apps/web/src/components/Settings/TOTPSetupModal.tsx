@@ -58,7 +58,7 @@ const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
         </p>
 
         <div className="flex flex-col items-center gap-0">
-          <div className="dark:bg-polar-800 flex justify-center rounded-lg bg-white p-4">
+          <div className="flex justify-center rounded-lg bg-white p-4">
             <QRCode value={enrollment.provisioning_uri} size={200} />
           </div>
 

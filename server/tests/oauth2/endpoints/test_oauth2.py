@@ -18,6 +18,7 @@ from polar.models import (
     UserOrganization,
     UserSession,
 )
+from polar.models.user_organization import OrganizationRole
 from polar.oauth2.service.oauth2_grant import oauth2_grant as oauth2_grant_service
 from polar.oauth2.sub_type import SubType
 from tests.fixtures.auth import AuthSubjectFixture
@@ -116,6 +117,33 @@ async def web_grant_oauth2_client(
             "grant_types": ["web"],
             "response_types": [],
             "scope": "openid profile email",
+        }
+    )
+    await save_fixture(oauth2_client)
+    return oauth2_client
+
+
+@pytest_asyncio.fixture
+async def web_grant_oauth2_client_broad_scope(
+    save_fixture: SaveFixture, user: User
+) -> OAuth2Client:
+    oauth2_client = OAuth2Client(
+        client_id="polar_ci_456",
+        client_secret="polar_cs_456",
+        registration_access_token="polar_crt_456",
+        user=user,
+    )
+    oauth2_client.set_client_metadata(
+        {
+            "client_name": "Broad Scope Client",
+            "redirect_uris": ["http://127.0.0.1:8000/docs/oauth2-redirect"],
+            "token_endpoint_auth_method": "client_secret_post",
+            "grant_types": ["web"],
+            "response_types": [],
+            "scope": (
+                "openid products:write organizations:write "
+                "transactions:read members:read"
+            ),
         }
     )
     await save_fixture(oauth2_client)
@@ -740,6 +768,33 @@ class TestOAuth2Authorize:
         assert response.status_code == 302
         location = response.headers["location"]
         assert "error=consent_required" in location
+
+    @pytest.mark.auth
+    async def test_organization_member_restricted_scopes(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        member = UserOrganization(
+            user=user, organization=organization, role=OrganizationRole.member
+        )
+        await save_fixture(member)
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid products:write organizations:write transactions:read",
+            "sub_type": "organization",
+            "sub": str(organization.id),
+            "prompt": "consent",
+        }
+        response = await client.get("/v1/oauth2/authorize", params=params)
+
+        json = response.json()
+        assert set(json["scopes"]) == {"openid", "products:write"}
 
 
 @pytest.mark.asyncio
@@ -1383,3 +1438,92 @@ class TestOAuth2Token:
         access_token = json["access_token"]
         assert access_token.startswith("polar_at_o_")
         assert "refresh_token" not in json
+
+    async def test_web_grant_sub_organization_member_restricted_scopes(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        web_grant_oauth2_client_broad_scope: OAuth2Client,
+    ) -> None:
+        member = UserOrganization(
+            user=user, organization=organization, role=OrganizationRole.member
+        )
+        await save_fixture(member)
+
+        token, token_hash = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
+        )
+        user_session = UserSession(
+            token=token_hash,
+            user_agent="tests",
+            user=user,
+            scopes=set(Scope),
+            expires_at=utc_now() + timedelta(seconds=60),
+        )
+        await save_fixture(user_session)
+
+        data = {
+            "grant_type": "web",
+            "session_token": token,
+            "client_id": web_grant_oauth2_client_broad_scope.client_id,
+            "client_secret": web_grant_oauth2_client_broad_scope.client_secret,
+            "sub_type": "organization",
+            "sub": str(organization.id),
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["access_token"].startswith("polar_at_o_")
+        assert set(json["scope"].split()) == {
+            "openid",
+            "products:write",
+            "members:read",
+        }
+
+    async def test_web_grant_sub_organization_owner_keeps_scopes(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+        web_grant_oauth2_client_broad_scope: OAuth2Client,
+    ) -> None:
+        token, token_hash = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
+        )
+        user_session = UserSession(
+            token=token_hash,
+            user_agent="tests",
+            user=user,
+            scopes=set(Scope),
+            expires_at=utc_now() + timedelta(seconds=60),
+        )
+        await save_fixture(user_session)
+
+        data = {
+            "grant_type": "web",
+            "session_token": token,
+            "client_id": web_grant_oauth2_client_broad_scope.client_id,
+            "client_secret": web_grant_oauth2_client_broad_scope.client_secret,
+            "sub_type": "organization",
+            "sub": str(organization.id),
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        json = response.json()
+        assert set(json["scope"].split()) == {
+            "openid",
+            "products:write",
+            "organizations:write",
+            "transactions:read",
+            "members:read",
+        }

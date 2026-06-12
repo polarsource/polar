@@ -17,6 +17,7 @@ for a future self-serve transfer flow and will be owner-only when introduced.
 
 from enum import StrEnum
 
+from polar.auth.scope import Scope
 from polar.models.user_organization import OrganizationRole
 
 
@@ -112,3 +113,86 @@ def roles_with_permission(
 ) -> set[OrganizationRole]:
     """Return the set of roles that grant the given permission."""
     return {role for role, perms in ROLE_PERMISSIONS.items() if permission in perms}
+
+
+# Maps each API `Scope` to the `OrganizationPermission`s that gate it, so an
+# organization-subject token issued by a member can be limited to the scopes
+# their role permits (org tokens bypass the role gate at request time, so a
+# member would otherwise escalate past their role). A scope is allowed for a
+# role iff every permission gating it is held by the role; this is the union of
+# permissions enforced by any endpoint reachable with the scope, so a scope
+# fronting an admin-only permission anywhere is withheld from members. An empty
+# set means no role-permission gates the scope (user-account scopes, or org
+# scopes gated only by membership today), so it is allowed for every role.
+_O = OrganizationPermission
+SCOPE_PERMISSIONS: dict[Scope, set[OrganizationPermission]] = {
+    Scope.openid: set(),
+    Scope.profile: set(),
+    Scope.email: set(),
+    Scope.user_read: set(),
+    Scope.user_write: set(),
+    Scope.notifications_read: set(),
+    Scope.notifications_write: set(),
+    Scope.notification_recipients_read: set(),
+    Scope.notification_recipients_write: set(),
+    Scope.customer_portal_read: set(),
+    Scope.customer_portal_write: set(),
+    Scope.member_sessions_write: set(),
+    Scope.wallets_read: set(),
+    Scope.wallets_write: set(),
+    Scope.customer_sessions_write: set(),
+    Scope.organizations_read: {_O.organization_manage},
+    Scope.organizations_write: {_O.organization_manage},
+    Scope.webhooks_read: {_O.organization_manage},
+    Scope.webhooks_write: {_O.organization_manage},
+    Scope.organization_access_tokens_read: {_O.organization_manage},
+    Scope.organization_access_tokens_write: {_O.organization_manage},
+    Scope.members_write: {_O.members_manage},
+    Scope.transactions_read: {_O.finance_read},
+    Scope.transactions_write: {_O.finance_manage},
+    Scope.payouts_read: {_O.finance_read},
+    Scope.payouts_write: {_O.finance_manage},
+    Scope.members_read: {_O.members_read},
+    Scope.products_read: {_O.products_read},
+    Scope.products_write: {_O.products_manage},
+    Scope.benefits_read: {_O.products_read},
+    Scope.benefits_write: {_O.products_manage},
+    Scope.discounts_read: {_O.products_read},
+    Scope.discounts_write: {_O.products_manage},
+    Scope.checkout_links_read: {_O.products_read},
+    Scope.checkout_links_write: {_O.products_manage},
+    Scope.files_read: {_O.products_read},
+    Scope.files_write: {_O.products_manage},
+    Scope.meters_read: {_O.products_read},
+    Scope.meters_write: {_O.products_manage},
+    Scope.license_keys_read: {_O.products_read},
+    Scope.license_keys_write: {_O.products_manage},
+    Scope.custom_fields_read: {_O.custom_fields_read},
+    Scope.custom_fields_write: {_O.custom_fields_manage},
+    Scope.customers_read: {_O.customers_read},
+    Scope.customers_write: {_O.customers_manage},
+    Scope.customer_seats_read: {_O.customers_read},
+    Scope.customer_seats_write: {_O.customers_manage},
+    Scope.checkouts_read: {_O.sales_read},
+    Scope.checkouts_write: {_O.sales_manage},
+    Scope.subscriptions_read: {_O.sales_read},
+    Scope.subscriptions_write: {_O.sales_manage},
+    Scope.orders_read: {_O.sales_read},
+    Scope.orders_write: {_O.sales_manage},
+    Scope.refunds_read: {_O.sales_read},
+    Scope.refunds_write: {_O.sales_manage},
+    Scope.payments_read: {_O.sales_read},
+    Scope.disputes_read: {_O.sales_read},
+    Scope.metrics_read: {_O.analytics_read},
+    Scope.metrics_write: {_O.analytics_manage},
+    Scope.events_read: {_O.analytics_read},
+    Scope.events_write: {_O.events_ingest},
+    Scope.customer_meters_read: {_O.analytics_read},
+}
+
+
+def allowed_scopes_for_role(role: OrganizationRole) -> set[Scope]:
+    """Return the scopes a role may exercise through an organization-subject
+    token: those whose gating permissions are all held by the role."""
+    perms = ROLE_PERMISSIONS[role]
+    return {scope for scope, required in SCOPE_PERMISSIONS.items() if required <= perms}

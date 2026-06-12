@@ -26,9 +26,11 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.user_organization import OrganizationRole
 
 from ..constants import AUTHORIZATION_CODE_PREFIX, JWT_CONFIG
 from ..requests import StarletteOAuth2Request
+from ..scopes import restrict_scope_to_role
 from ..service.oauth2_grant import oauth2_grant as oauth2_grant_service
 from ..sub_type import SubType, SubTypeValue
 from ..userinfo import UserInfo, generate_user_info
@@ -238,10 +240,13 @@ class ValidateSubAndPrompt:
                 sub_uuid = uuid.UUID(sub)
             except ValueError as e:
                 raise InvalidSubError() from e
-            organization = self._get_organization_admin(sub_uuid, user)
-            if organization is None:
+            membership = self._get_organization_membership(sub_uuid, user)
+            if membership is None:
                 raise InvalidSubError()
+            organization, role = membership
             grant.sub = organization
+            if payload.scope:
+                payload.data["scope"] = restrict_scope_to_role(payload.scope, role)
 
     def _validate_scope_consent(
         self,
@@ -308,11 +313,11 @@ class ValidateSubAndPrompt:
         if grant.sub is None:
             raise InvalidSubError()
 
-    def _get_organization_admin(
+    def _get_organization_membership(
         self, organization_id: uuid.UUID, user: User
-    ) -> Organization | None:
+    ) -> tuple[Organization, OrganizationRole] | None:
         statement = (
-            select(Organization)
+            select(Organization, UserOrganization.role)
             .join(
                 UserOrganization,
                 onclause=and_(
@@ -323,4 +328,7 @@ class ValidateSubAndPrompt:
             .where(Organization.id == organization_id)
         )
         result = self._session.execute(statement)
-        return result.unique().scalar_one_or_none()
+        row = result.unique().one_or_none()
+        if row is None:
+            return None
+        return row[0], row[1]

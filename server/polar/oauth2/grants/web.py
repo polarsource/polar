@@ -16,13 +16,17 @@ from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
 from polar.models import Organization, User, UserOrganization, UserSession
+from polar.models.user_organization import OrganizationRole
 
+from ..scopes import restrict_scope_to_role
 from ..sub_type import SubType, SubTypeValue
 
 
 class WebGrant(BaseGrant, TokenEndpointMixin):
     GRANT_TYPE = "web"
     TOKEN_ENDPOINT_AUTH_METHODS = ["client_secret_basic", "client_secret_post"]
+
+    _organization_role: OrganizationRole | None = None
 
     def validate_token_request(self) -> None:
         client = self._validate_request_client()
@@ -35,6 +39,9 @@ class WebGrant(BaseGrant, TokenEndpointMixin):
         client = self.request.client
         sub_type_value = self.request.user
         scope = self.request.payload.scope or client.scope
+
+        if self._organization_role is not None:
+            scope = restrict_scope_to_role(scope, self._organization_role)
 
         token = self.generate_token(
             user=sub_type_value, scope=scope, include_refresh_token=False
@@ -98,19 +105,20 @@ class WebGrant(BaseGrant, TokenEndpointMixin):
                 sub_uuid = uuid.UUID(sub)
             except ValueError as e:
                 raise InvalidRequestError("Invalid 'sub' UUID") from e
-            organization = self._get_organization_admin(sub_uuid, user)
-            if organization is None:
+            membership = self._get_organization_membership(sub_uuid, user)
+            if membership is None:
                 raise InvalidGrantError()
+            organization, self._organization_role = membership
             sub_value = organization
 
         assert sub_value is not None
         return sub_type, sub_value
 
-    def _get_organization_admin(
+    def _get_organization_membership(
         self, organization_id: uuid.UUID, user: User
-    ) -> Organization | None:
+    ) -> tuple[Organization, OrganizationRole] | None:
         statement = (
-            select(Organization)
+            select(Organization, UserOrganization.role)
             .join(
                 UserOrganization,
                 onclause=and_(
@@ -121,4 +129,7 @@ class WebGrant(BaseGrant, TokenEndpointMixin):
             .where(Organization.id == organization_id)
         )
         result = self.server.session.execute(statement)
-        return result.unique().scalar_one_or_none()
+        row = result.unique().one_or_none()
+        if row is None:
+            return None
+        return row[0], row[1]

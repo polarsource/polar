@@ -16,7 +16,8 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { MoreVertical } from 'lucide-react'
-import { useCallback, useRef } from 'react'
+import { parseAsString, useQueryState } from 'nuqs'
+import { useCallback, useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 import UpdateBenefitModalContent from '../../../Benefit/UpdateBenefitModalContent'
 import { ConfirmModal } from '../../../Modal/ConfirmModal'
@@ -40,8 +41,13 @@ export const BenefitRow = ({
   const {
     isShown: isEditShown,
     toggle: toggleEdit,
+    show: showEdit,
     hide: hideEdit,
   } = useModal()
+  const [editBenefitId, setEditBenefitId] = useQueryState(
+    'edit_benefit',
+    parseAsString,
+  )
   const {
     isShown: isDeleteShown,
     hide: hideDelete,
@@ -71,6 +77,15 @@ export const BenefitRow = ({
   const handleDirtyChange = useCallback((dirty: boolean) => {
     isDirtyRef.current = dirty
   }, [])
+
+  useEffect(() => {
+    if (editBenefitId !== benefit.id) {
+      return
+    }
+
+    showEdit()
+    setEditBenefitId(null)
+  }, [benefit.id, editBenefitId, setEditBenefitId, showEdit])
 
   const deleteBenefit = useDeleteBenefit(organization.id)
 

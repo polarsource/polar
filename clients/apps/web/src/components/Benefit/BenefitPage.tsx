@@ -12,6 +12,7 @@ import { Button } from '@polar-sh/orbit'
 import { DataTable } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { ColumnDef } from '@tanstack/react-table'
+import { ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useMemo } from 'react'
@@ -156,6 +157,17 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
           <BenefitGrantStatus grant={grant} />
         ),
       },
+      ...(benefit.type === 'slack_shared_channel'
+        ? [
+            {
+              id: 'slack_channel',
+              header: 'Slack',
+              cell: ({ row: { original: grant } }) => (
+                <SlackGrantDetails grant={grant} />
+              ),
+            } satisfies ColumnDef<schemas['BenefitGrant']>,
+          ]
+        : []),
       {
         accessorKey: 'created_at',
         header: 'Created',
@@ -201,7 +213,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
     )
 
     return cols
-  }, [memberColumnEnabled, organization.slug])
+  }, [benefit.type, memberColumnEnabled, organization.slug])
 
   return (
     <div className="flex flex-col gap-6">
@@ -226,6 +238,45 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
         onPaginationChange={setPagination}
         columns={columns}
       />
+    </div>
+  )
+}
+
+const SlackGrantDetails = ({ grant }: { grant: schemas['BenefitGrant'] }) => {
+  const properties =
+    grant.properties as schemas['BenefitGrantSlackSharedChannelProperties']
+  const status = properties.connected_team_id
+    ? 'Connected'
+    : properties.invite_url
+      ? 'Invite pending'
+      : properties.invited_email
+        ? 'Provisioning'
+        : 'Waiting for email'
+
+  return (
+    <div className="flex min-w-0 flex-col gap-2">
+      <div className="flex min-w-0 flex-col">
+        <span className="truncate font-mono text-sm">
+          {properties.channel_name ? `#${properties.channel_name}` : '—'}
+        </span>
+        <span className="dark:text-polar-500 truncate text-xs text-gray-500">
+          {status}
+          {properties.invited_email ? ` · ${properties.invited_email}` : ''}
+        </span>
+      </div>
+      {properties.invite_url && (
+        <a
+          href={properties.invite_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="self-start"
+        >
+          <Button size="sm" variant="secondary">
+            <ExternalLink className="h-3 w-3" />
+            Open invite
+          </Button>
+        </a>
+      )}
     </div>
   )
 }

@@ -110,11 +110,11 @@ class ProductRepository(
                 return case(
                     (
                         ProductPrice.amount_type == ProductPriceAmountType.custom,
-                        2,
+                        1,
                     ),
                     (
                         ProductPrice.amount_type == ProductPriceAmountType.fixed,
-                        3,
+                        2,
                     ),
                 )
             case ProductSortProperty.price_amount:

@@ -4,6 +4,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import (
     UUID4,
+    BeforeValidator,
     Discriminator,
     Field,
     Tag,
@@ -372,12 +373,38 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
         return ProductPriceMeteredUnitModel
 
 
+def _coerce_legacy_free_price(value: Any) -> Any:
+    """
+    Backward compatibility for the removed `free` price type.
+
+    `free` prices are no longer a distinct type: a free price is now a `fixed` price
+    with an amount of `0`. Some integrations still send `amount_type: "free"` on
+    input, so we keep accepting it and rewrite it to a `fixed` price of `0`. This is
+    deliberately not exposed in the OpenAPI schema (no `free` member in the union),
+    so it's dropped from future SDK versions.
+    """
+    if isinstance(value, dict) and value.get("amount_type") == "free":
+        return {
+            "amount_type": ProductPriceAmountType.fixed.value,
+            "price_amount": 0,
+            **{
+                key: value[key]
+                for key in ("price_currency", "tax_behavior")
+                if key in value
+            },
+        }
+    return value
+
+
 ProductPriceCreate = Annotated[
-    ProductPriceFixedCreate
-    | ProductPriceCustomCreate
-    | ProductPriceSeatBasedCreate
-    | ProductPriceMeteredUnitCreate,
-    Discriminator("amount_type"),
+    Annotated[
+        ProductPriceFixedCreate
+        | ProductPriceCustomCreate
+        | ProductPriceSeatBasedCreate
+        | ProductPriceMeteredUnitCreate,
+        Discriminator("amount_type"),
+    ],
+    BeforeValidator(_coerce_legacy_free_price),
 ]
 
 

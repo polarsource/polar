@@ -332,6 +332,31 @@ class TestCreateProduct:
 
         assert response.status_code == 201
 
+    @pytest.mark.auth
+    async def test_legacy_free_price_accepted_as_fixed(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # `free` is no longer a distinct price type, but we still accept it on input
+        # for backward compatibility and persist it as a fixed price of amount 0.
+        response = await client.post(
+            "/v1/products/",
+            json={
+                "name": "Product",
+                "organization_id": str(organization.id),
+                "recurring_interval": None,
+                "prices": [{"amount_type": "free", "price_currency": "usd"}],
+            },
+        )
+
+        assert response.status_code == 201
+        prices = response.json()["prices"]
+        assert len(prices) == 1
+        assert prices[0]["amount_type"] == "fixed"
+        assert prices[0]["price_amount"] == 0
+
 
 @pytest.mark.asyncio
 class TestUpdateProduct:

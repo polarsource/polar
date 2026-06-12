@@ -3535,8 +3535,8 @@ export interface paths {
       cookie?: never
     }
     /**
-     * List Public Benefit Grants
-     * @description List public benefits grants of the authenticated customer.
+     * List Benefit Grants
+     * @description List benefits grants of the authenticated customer.
      *
      *     **Scopes**: `customer_portal:read` `customer_portal:write`
      */

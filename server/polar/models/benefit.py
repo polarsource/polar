@@ -14,7 +14,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
 from polar.kit.schemas import SetSchemaReference
-from polar.kit.visibility import Visibility
+from polar.kit.visibility import Visibility, VisibilityMixin
 
 if TYPE_CHECKING:
     from polar.benefit.strategies import BenefitProperties
@@ -98,7 +98,7 @@ VISIBILITY_CONFIGURABLE_BENEFIT_TYPES: frozenset[BenefitType] = frozenset(
 )
 
 
-class Benefit(MetadataMixin, RecordModel):
+class Benefit(VisibilityMixin, MetadataMixin, RecordModel):
     __tablename__ = "benefits"
     __table_args__ = (
         Index(
@@ -110,10 +110,6 @@ class Benefit(MetadataMixin, RecordModel):
 
     search_vector: Mapped[str] = mapped_column(TSVECTOR, nullable=True, deferred=True)
 
-    visibility: Mapped[Visibility | None] = mapped_column(
-        StringEnum(Visibility),
-        nullable=True,
-    )
     type: Mapped[BenefitType] = mapped_column(
         StringEnum(BenefitType), nullable=False, index=True
     )

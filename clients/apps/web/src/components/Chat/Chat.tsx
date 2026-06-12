@@ -20,11 +20,14 @@ import { useFileDrop } from './useFileDrop'
 
 interface ComposerConfig {
   onSend: (text: string, fileIds: string[]) => Promise<{ error?: unknown }>
-  isPending: boolean
+  // The send mutation's in-flight state (uploads have their own internal
+  // tracking).
+  isSendPending: boolean
   uploader: ChatUploader
   placeholder?: string
-  minLength?: number
-  showCounter?: boolean
+  // Minimum typed-text length to allow sending; attachments are unaffected.
+  minTextLength?: number
+  showMinimumCharCounter?: boolean
   allowAttachments?: boolean
 }
 
@@ -119,10 +122,10 @@ export const Chat = ({
           <Composer
             ref={composerRef}
             uploader={composer.uploader}
-            isPending={composer.isPending}
+            isSendPending={composer.isSendPending}
             placeholder={composer.placeholder}
-            minLength={composer.minLength}
-            showCounter={composer.showCounter}
+            minTextLength={composer.minTextLength}
+            showMinimumCharCounter={composer.showMinimumCharCounter}
             allowAttachments={allowAttachments}
             onSend={(text, fileIds) => {
               // Capture scroll position before the forced scroll below.

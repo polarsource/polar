@@ -16,13 +16,15 @@ export interface ComposerHandle {
 interface Props {
   uploader: ChatUploader
   onSend: (text: string, fileIds: string[]) => Promise<{ error?: unknown }>
-  isPending: boolean
+  // The send mutation's in-flight state (uploads have their own internal
+  // tracking).
+  isSendPending: boolean
   placeholder?: string
-  // Minimum text length to send (e.g. a structured first message); 1 means
-  // any non-empty text.
-  minLength?: number
+  // Minimum typed-text length to allow sending (e.g. a structured first
+  // message); 1 means any non-empty text. Attachments are unaffected.
+  minTextLength?: number
   // Show the "Minimum N characters" + counter row under the input.
-  showCounter?: boolean
+  showMinimumCharCounter?: boolean
   allowAttachments?: boolean
   ref?: React.Ref<ComposerHandle>
 }
@@ -30,10 +32,10 @@ interface Props {
 export const Composer = ({
   uploader,
   onSend,
-  isPending,
+  isSendPending,
   placeholder = 'Write a reply…',
-  minLength = 1,
-  showCounter = false,
+  minTextLength = 1,
+  showMinimumCharCounter = false,
   allowAttachments = true,
   ref,
 }: Props) => {
@@ -58,13 +60,14 @@ export const Composer = ({
   } = useAttachmentUploads(uploader)
 
   const length = body.length
-  const hasValidText = body.trim().length >= minLength && length <= MAX_LENGTH
+  const hasValidText =
+    body.trim().length >= minTextLength && length <= MAX_LENGTH
   const hasContent =
     hasValidText || (allowAttachments && uploadedFileIds.length > 0)
   // Sending waits for every attachment to finish uploading; failed uploads
   // must be removed before the message can go out.
   const canSend = hasContent && !uploadsPending && !uploadsFailed
-  const busy = isPending || sending
+  const busy = isSendPending || sending
 
   useEffect(() => {
     const el = textareaRef.current
@@ -198,14 +201,14 @@ export const Composer = ({
           Couldn&rsquo;t send your message — please try again.
         </Text>
       )}
-      {showCounter && (
+      {showMinimumCharCounter && (
         <div className="flex gap-2">
           {/* Mirrors the attach-button column above so the captions align
               with the input. */}
           {allowAttachments && <div className="ml-[-10px] w-8 shrink-0" />}
           <Box display="flex" flexGrow={1} justifyContent="between">
             <Text variant="caption" color="muted">
-              Minimum {minLength} characters
+              Minimum {minTextLength} characters
             </Text>
             <Text variant="caption" color="muted">
               {length}/{MAX_LENGTH}

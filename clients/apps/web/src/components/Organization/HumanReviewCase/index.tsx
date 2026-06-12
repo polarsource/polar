@@ -115,9 +115,9 @@ const HumanReviewCase = ({ organization }: Props) => {
       className="dark:border-polar-700 dark:bg-polar-800 -mx-8 mt-8! -mb-8 rounded-b-2xl border-t bg-white p-8"
       composer={{
         uploader,
-        isPending: hasCase ? reply.isPending : requestReview.isPending,
-        minLength: hasCase ? 1 : 50,
-        showCounter: !hasCase,
+        isSendPending: hasCase ? reply.isPending : requestReview.isPending,
+        minTextLength: hasCase ? 1 : 50,
+        showMinimumCharCounter: !hasCase,
         allowAttachments: hasCase,
         placeholder: hasCase
           ? 'Write a reply…'

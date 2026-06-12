@@ -2571,8 +2571,6 @@ export interface components {
       organization_name: string
       /** Case Label */
       case_label: string
-      /** Message Excerpt */
-      message_excerpt: string
       /** Url */
       url: string
     }

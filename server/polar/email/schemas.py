@@ -200,7 +200,6 @@ class SupportCaseOrganizationNewMessageProps(EmailProps):
     # Recipient-facing label for the case type (e.g. "appeal"), so the copy
     # stays generic across support-case types.
     case_label: str
-    message_excerpt: str
     url: str
 
 

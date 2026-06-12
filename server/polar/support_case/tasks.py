@@ -22,8 +22,6 @@ from polar.user_organization.service import (
 )
 from polar.worker import AsyncSessionMaker, actor
 
-_EXCERPT_LIMIT = 140
-
 # Recipient-facing label per case type, so the email copy stays generic.
 _CASE_LABELS: dict[SupportCaseType, str] = {
     SupportCaseType.review_appeal: "appeal",
@@ -66,8 +64,6 @@ async def notify_organization_of_new_message(message_id: UUID) -> None:
         organization = members[0].organization
         recipients = [member.user.email for member in members]
 
-        body = message.body or ""
-        excerpt = body[:_EXCERPT_LIMIT] + ("…" if len(body) > _EXCERPT_LIMIT else "")
         case_label = _CASE_LABELS.get(case.type, "support case")
         url = settings.generate_frontend_url(
             f"/dashboard/{organization.slug}/finance/account"
@@ -81,7 +77,6 @@ async def notify_organization_of_new_message(message_id: UUID) -> None:
                         email=email,
                         organization_name=organization.name,
                         case_label=case_label,
-                        message_excerpt=excerpt,
                         url=url,
                     )
                 ),

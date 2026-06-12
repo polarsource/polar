@@ -30,6 +30,8 @@ from polar.integrations.polar.exceptions import (
     PolarSelfPaymentMethodInUse,
 )
 from polar.integrations.polar.schemas import (
+    OrganizationBenefitGrant,
+    OrganizationBenefitGrantUpdate,
     OrganizationBillingDetails,
     OrganizationBillingDetailsUpdate,
     OrganizationCheckoutRequest,
@@ -1315,3 +1317,54 @@ async def get_order_invoice(
         authz.organization.id, order_id
     )
     return OrganizationOrderInvoice(url=url)
+
+
+@router.get(
+    "/{id}/benefit-grants",
+    response_model=ListResource[OrganizationBenefitGrant],
+    summary="List Organization Benefit Grants",
+    responses={404: OrganizationNotFound},
+    tags=[APITag.private],
+)
+async def list_benefit_grants(
+    authz: AuthorizeOrgManageUser,
+) -> ListResource[OrganizationBenefitGrant]:
+    """List Slack shared channel benefit grants attached to this org's Polar
+    subscription."""
+    grants = await polar_self_service.list_benefit_grants(
+        authz.organization.id,
+        external_member_id=str(authz.auth_subject.subject.id),
+    )
+    items = [OrganizationBenefitGrant.from_sdk(grant) for grant in grants]
+    return ListResource(
+        items=items,
+        pagination=Pagination(total_count=len(items), max_page=1 if items else 0),
+    )
+
+
+@router.patch(
+    "/{id}/benefit-grants/{benefit_grant_id}",
+    response_model=OrganizationBenefitGrant,
+    summary="Update Organization Benefit Grant",
+    responses={
+        404: {
+            "description": "Organization or benefit grant not found.",
+            "model": ResourceNotFound.schema(),
+        },
+    },
+    tags=[APITag.private],
+)
+async def update_benefit_grant(
+    authz: AuthorizeOrgManageUser,
+    benefit_grant_id: str,
+    body: OrganizationBenefitGrantUpdate,
+) -> OrganizationBenefitGrant:
+    """Set the Slack admin email that should receive the Slack Connect invite
+    for this benefit grant."""
+    grant = await polar_self_service.update_benefit_grant(
+        authz.organization.id,
+        benefit_grant_id=benefit_grant_id,
+        update=body,
+        external_member_id=str(authz.auth_subject.subject.id),
+    )
+    return OrganizationBenefitGrant.from_sdk(grant)

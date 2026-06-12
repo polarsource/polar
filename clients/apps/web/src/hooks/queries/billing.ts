@@ -226,3 +226,49 @@ export const useUpdateOrganizationBillingDetails = (organizationId: string) =>
       })
     },
   })
+
+export type OrganizationBenefitGrant = schemas['OrganizationBenefitGrant']
+
+const isGrantProvisioning = (grant: OrganizationBenefitGrant) =>
+  !!grant.invited_email && !grant.is_granted && !grant.error_message
+
+export const useOrganizationBenefitGrants = (
+  organizationId: string | undefined,
+) =>
+  useQuery({
+    queryKey: ['organization-billing', organizationId, 'benefit-grants'],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/organizations/{id}/benefit-grants', {
+          params: { path: { id: organizationId ?? '' } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!organizationId,
+    refetchInterval: (query) =>
+      query.state.data?.items.some(isGrantProvisioning) ? 2000 : false,
+  })
+
+export const useUpdateOrganizationBenefitGrant = (organizationId: string) =>
+  useMutation({
+    mutationFn: (variables: {
+      benefitGrantId: string
+      body: schemas['OrganizationBenefitGrantUpdate']
+    }) =>
+      unwrap(
+        api.PATCH('/v1/organizations/{id}/benefit-grants/{benefit_grant_id}', {
+          params: {
+            path: {
+              id: organizationId,
+              benefit_grant_id: variables.benefitGrantId,
+            },
+          },
+          body: variables.body,
+        }),
+      ),
+    onSuccess: () => {
+      getQueryClient().invalidateQueries({
+        queryKey: ['organization-billing', organizationId, 'benefit-grants'],
+      })
+    },
+  })

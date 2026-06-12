@@ -13,7 +13,11 @@ from polar_sdk.models import (
     CheckoutCreate,
     CostMetadataInput,
     Customer,
+    CustomerBenefitGrant,
+    CustomerBenefitGrantUpdate,
     CustomerPaymentMethod,
+    CustomerPortalBenefitGrantsListSecurity,
+    CustomerPortalBenefitGrantsUpdateSecurity,
     CustomerPortalCustomer,
     CustomerPortalCustomersDeletePaymentMethodSecurity,
     CustomerPortalCustomersGetSecurity,
@@ -50,6 +54,7 @@ from polar.config import settings
 from polar.exceptions import PolarError as InternalPolarError
 
 from .exceptions import (
+    PolarSelfBenefitGrantNotFound,
     PolarSelfNotPaidOrder,
     PolarSelfPaymentMethodInUse,
     PolarSelfPaymentMethodNotFound,
@@ -877,6 +882,84 @@ class PolarSelfClient:
                 _raise_error(span, e, "polar.portal.update_customer")
             except httpx.RequestError as e:
                 _raise_network_error(span, e, "polar.portal.update_customer")
+
+    async def portal_list_benefit_grants(
+        self,
+        *,
+        external_customer_id: str,
+        external_member_id: str | None = None,
+    ) -> list[CustomerBenefitGrant]:
+        with logfire.span(
+            "polar.portal.list_benefit_grants",
+            external_customer_id=external_customer_id,
+            external_member_id=external_member_id,
+        ) as span:
+            grants: list[CustomerBenefitGrant] = []
+            try:
+                session = await self._sdk.customer_sessions.create_async(
+                    request=CustomerSessionCustomerExternalIDCreate(
+                        external_customer_id=external_customer_id,
+                        external_member_id=external_member_id,
+                    )
+                )
+                security = CustomerPortalBenefitGrantsListSecurity(
+                    customer_session=session.token,
+                )
+                response = await self._sdk.customer_portal.benefit_grants.list_async(
+                    security=security,
+                    page=1,
+                    limit=100,
+                )
+                while response is not None:
+                    grants.extend(response.result.items)
+                    response = response.next()
+            except PolarError as e:
+                _raise_error(span, e, "polar.portal.list_benefit_grants")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "polar.portal.list_benefit_grants")
+
+            span.set_attribute("grant_count", len(grants))
+            return grants
+
+    async def portal_update_benefit_grant(
+        self,
+        *,
+        external_customer_id: str,
+        benefit_grant_id: str,
+        update: CustomerBenefitGrantUpdate,
+        external_member_id: str | None = None,
+    ) -> CustomerBenefitGrant:
+        with logfire.span(
+            "polar.portal.update_benefit_grant",
+            external_customer_id=external_customer_id,
+            external_member_id=external_member_id,
+            benefit_grant_id=benefit_grant_id,
+        ) as span:
+            try:
+                session = await self._sdk.customer_sessions.create_async(
+                    request=CustomerSessionCustomerExternalIDCreate(
+                        external_customer_id=external_customer_id,
+                        external_member_id=external_member_id,
+                    )
+                )
+                return await self._sdk.customer_portal.benefit_grants.update_async(
+                    security=CustomerPortalBenefitGrantsUpdateSecurity(
+                        customer_session=session.token,
+                    ),
+                    id=benefit_grant_id,
+                    customer_benefit_grant_update=update,
+                )
+            except PolarError as e:
+                if e.status_code == 404:
+                    span.set_attribute("not_found", True)
+                    raise PolarSelfBenefitGrantNotFound(benefit_grant_id) from e
+                if e.status_code == 422:
+                    span.set_attribute("http.status_code", 422)
+                    span.set_attribute("error.body", str(e.body))
+                    raise PolarSelfClientValidationError(e.body) from e
+                _raise_error(span, e, "polar.portal.update_benefit_grant")
+            except httpx.RequestError as e:
+                _raise_network_error(span, e, "polar.portal.update_benefit_grant")
 
 
 _client: PolarSelfClient | None = None

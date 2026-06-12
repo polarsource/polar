@@ -369,6 +369,7 @@ const BenefitGrantSlackSharedChannel = ({
   const invitedEmail = properties.invited_email
   const inviteUrl = properties.invite_url
   const channelName = properties.channel_name
+  const isConnected = !!properties.connected_team_id
 
   const [email, setEmail] = useState(invitedEmail ?? customer.email ?? '')
 
@@ -387,24 +388,43 @@ const BenefitGrantSlackSharedChannel = ({
     [email, updateBenefitGrant, benefitGrant.id, benefitType],
   )
 
-  if (inviteUrl) {
+  if (isConnected) {
+    return (
+      <Text color="muted">
+        Connected to your Slack workspace
+        {channelName ? (
+          <>
+            {' '}
+            in channel <strong>{channelName}</strong>
+          </>
+        ) : null}
+        .
+      </Text>
+    )
+  }
+
+  if (benefitGrant.is_granted) {
     return (
       <Box display="flex" flexDirection="column" rowGap="s">
         <Text color="muted">
           Invite sent to {invitedEmail}.
-          {channelName ? ` Channel: ${channelName}.` : ''} Open the link to
-          accept in Slack.
+          {channelName ? ` Channel: ${channelName}.` : ''}{' '}
+          {inviteUrl
+            ? 'Open the link to accept in Slack.'
+            : 'Accept it from the invite email or your Slack Connect requests.'}
         </Text>
-        <a href={inviteUrl} target="_blank" rel="noopener noreferrer">
-          <Button asChild fullWidth variant="secondary">
-            Open Slack invite
-          </Button>
-        </a>
+        {inviteUrl && (
+          <a href={inviteUrl} target="_blank" rel="noopener noreferrer">
+            <Button asChild fullWidth variant="secondary">
+              Open Slack invite
+            </Button>
+          </a>
+        )}
       </Box>
     )
   }
 
-  // Email submitted, no invite yet, no error: worker is provisioning.
+  // Email submitted, not granted yet, no error: worker is provisioning.
   if (invitedEmail && !grantError) {
     return <ProvisioningState invitedEmail={invitedEmail} />
   }

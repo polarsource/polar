@@ -1396,6 +1396,52 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/benefit-grants': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Organization Benefit Grants
+     * @description List Slack shared channel benefit grants attached to this org's Polar
+     *     subscription.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    get: operations['organizations:list_benefit_grants']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/benefit-grants/{benefit_grant_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Update Organization Benefit Grant
+     * @description Set the Slack admin email that should receive the Slack Connect invite
+     *     for this benefit grant.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    patch: operations['organizations:update_benefit_grant']
+    trace?: never
+  }
   '/v1/subscriptions/': {
     parameters: {
       query?: never
@@ -21135,6 +21181,12 @@ export interface components {
       items: components['schemas']['OrganizationAccessToken'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[OrganizationBenefitGrant] */
+    ListResource_OrganizationBenefitGrant_: {
+      /** Items */
+      items: components['schemas']['OrganizationBenefitGrant'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[OrganizationMember] */
     ListResource_OrganizationMember_: {
       /** Items */
@@ -24257,6 +24309,49 @@ export interface components {
       /** Public Url */
       readonly public_url: string
     }
+    /** OrganizationBenefitGrant */
+    OrganizationBenefitGrant: {
+      /** Id */
+      id: string
+      /** Benefit Description */
+      benefit_description: string
+      /**
+       * Is Granted
+       * @description Whether the channel is provisioned and the invite sent.
+       */
+      is_granted: boolean
+      /**
+       * Is Connected
+       * @description Whether the invite was accepted by the customer's workspace.
+       */
+      is_connected: boolean
+      /**
+       * Invited Email
+       * @description Email of the Slack workspace admin the invite was sent to.
+       */
+      invited_email?: string | null
+      /**
+       * Invite Url
+       * @description Slack Connect invite URL. Not always available: Slack omits it for some email invites.
+       */
+      invite_url?: string | null
+      /** Channel Name */
+      channel_name?: string | null
+      /**
+       * Error Message
+       * @description Message of the last provisioning error, if any.
+       */
+      error_message?: string | null
+    }
+    /** OrganizationBenefitGrantUpdate */
+    OrganizationBenefitGrantUpdate: {
+      /**
+       * Invited Email
+       * Format: email
+       * @description Email of an admin in the customer's Slack workspace who should receive the Slack Connect invite.
+       */
+      invited_email: string
+    }
     /** OrganizationBillingDetails */
     OrganizationBillingDetails: {
       /**
@@ -25309,7 +25404,7 @@ export interface components {
        */
       created_at: string
       /** Invoice Number */
-      invoice_number: string
+      invoice_number: string | null
       /** Status */
       status: string
       /** Paid */
@@ -36468,6 +36563,91 @@ export interface operations {
         }
       }
       /** @description Order or invoice not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:list_benefit_grants': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_OrganizationBenefitGrant_']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:update_benefit_grant': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        benefit_grant_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationBenefitGrantUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationBenefitGrant']
+        }
+      }
+      /** @description Organization or benefit grant not found. */
       404: {
         headers: {
           [name: string]: unknown

@@ -72,13 +72,6 @@ class BenefitType(StrEnum):
     def is_visibility_configurable(self) -> bool:
         return self in VISIBILITY_CONFIGURABLE_BENEFIT_TYPES
 
-    def is_visibility_allowed(self, visibility: Visibility) -> bool:
-        # Benefits requiring customer action in the portal (e.g. Discord,
-        # GitHub, downloads) must stay visible, so only `public` is allowed.
-        if self.is_visibility_configurable():
-            return True
-        return visibility == Visibility.public
-
     def default_visibility(self) -> Visibility:
         match self:
             # Temporarily disabled untill benefit visibility backfill and ui rollout

@@ -477,7 +477,7 @@ class TestUpdateBenefit:
         assert json["properties"]["note"] == "UPDATED NOTE"
 
     @pytest.mark.auth
-    async def test_rejects_visibility_update_for_non_configurable_benefit(
+    async def test_ignores_visibility_update_for_non_configurable_benefit(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
@@ -503,7 +503,9 @@ class TestUpdateBenefit:
             },
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 200
+        json = response.json()
+        assert json["visibility"] == Visibility.public
 
     @pytest.mark.auth
     async def test_allows_visibility_update_for_custom_benefit(

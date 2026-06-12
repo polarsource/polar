@@ -11,6 +11,7 @@ from ..base.schemas import (
     BenefitCreateBase,
     BenefitSubscriberBase,
     BenefitUpdateBase,
+    BenefitUpdateVisibilityMixin,
 )
 
 Note = Annotated[
@@ -56,7 +57,7 @@ class BenefitCustomCreate(BenefitCreateBase):
     properties: BenefitCustomCreateProperties
 
 
-class BenefitCustomUpdate(BenefitUpdateBase):
+class BenefitCustomUpdate(BenefitUpdateVisibilityMixin, BenefitUpdateBase):
     type: Literal[BenefitType.custom]
     properties: BenefitCustomProperties | None = None
 

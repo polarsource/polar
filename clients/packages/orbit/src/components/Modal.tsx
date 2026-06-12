@@ -1,5 +1,3 @@
-import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import { Button } from '@polar-sh/orbit'
 import { motion } from 'motion/react'
 import React, {
   FunctionComponent,
@@ -12,6 +10,7 @@ import ReactDOM from 'react-dom'
 import FocusLock from 'react-focus-lock'
 import { twMerge } from 'tailwind-merge'
 import { Button } from './Button'
+import { X } from 'lucide-react'
 
 export interface ModalProps {
   title: string | JSX.Element

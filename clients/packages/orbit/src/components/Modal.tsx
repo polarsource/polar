@@ -1,7 +1,6 @@
-'use client'
-
-import { motion } from 'framer-motion'
-import { X } from 'lucide-react'
+import CloseOutlined from '@mui/icons-material/CloseOutlined'
+import { Button } from '@polar-sh/orbit'
+import { motion } from 'motion/react'
 import React, {
   FunctionComponent,
   MouseEvent,

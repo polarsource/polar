@@ -28,7 +28,7 @@ class TestBenefitTypeVisibility:
         [
             (BenefitType.custom, Visibility.public),
             (BenefitType.meter_credit, Visibility.public),
-            (BenefitType.feature_flag, Visibility.public),
+            (BenefitType.feature_flag, Visibility.private),
             (BenefitType.license_keys, Visibility.public),
             (BenefitType.discord, Visibility.public),
             (BenefitType.github_repository, Visibility.public),

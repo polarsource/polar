@@ -86,10 +86,6 @@ class BenefitBase(MetadataOutputMixin, BenefitPublicBase):
             return Visibility.public
         return value
 
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def visibility_configurable(self) -> bool:
-        return self.type.is_visibility_configurable()
 
 
 class BenefitGrantBase(IDSchema, TimestampedSchema):

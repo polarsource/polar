@@ -1,9 +1,11 @@
 import builtins
+from collections.abc import Sequence
 from decimal import Decimal
 from typing import Annotated, Any, Literal
 
 from pydantic import (
     UUID4,
+    BeforeValidator,
     Discriminator,
     Field,
     Tag,
@@ -48,6 +50,7 @@ from polar.kit.schemas import (
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
 from polar.kit.visibility import Visibility
 from polar.meter.unit import MeterUnit
+from polar.models import Benefit as BenefitModel
 from polar.models.product import ProductVisibility
 from polar.models.product_price import (
     ProductPriceAmountType,
@@ -875,8 +878,25 @@ class Product(MetadataOutputMixin, ProductBase):
     )
 
 
+BenefitPublicListInput = BenefitModel | BenefitPublic
+
+
+# Filter out hidden benefits before they're serialized to BenefitPublic, which
+# doesn't expose visibility. Already-serialized items have no visibility to check.
+def _filter_benefit_public_list(
+    benefits: Sequence[BenefitPublicListInput],
+) -> list[BenefitPublicListInput]:
+    return [
+        benefit
+        for benefit in benefits
+        if not isinstance(benefit, BenefitModel)
+        or benefit.visibility == Visibility.public
+    ]
+
+
 BenefitPublicList = Annotated[
     list[BenefitPublic],
+    BeforeValidator(_filter_benefit_public_list),
     Field(
         title="BenefitPublic",
         description="List of benefits granted by the product.",

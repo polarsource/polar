@@ -15,6 +15,7 @@ from polar.models import (
     Subscription,
     UserOrganization,
 )
+from polar.kit.visibility import Visibility
 from polar.models.benefit import BenefitType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -353,7 +354,6 @@ class TestCreateBenefit:
 
         json = response.json()
         assert json["visibility"] == Visibility.private
-        assert json["visibility_configurable"] is True
 
 
 @pytest.mark.asyncio

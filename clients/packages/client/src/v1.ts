@@ -3535,8 +3535,8 @@ export interface paths {
       cookie?: never
     }
     /**
-     * List Benefit Grants
-     * @description List benefits grants of the authenticated customer.
+     * List Public Benefit Grants
+     * @description List public benefits grants of the authenticated customer.
      *
      *     **Scopes**: `customer_portal:read` `customer_portal:write`
      */
@@ -7836,8 +7836,6 @@ export interface components {
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitCustomProperties']
-      /** Visibility Configurable */
-      readonly visibility_configurable: boolean
     }
     /**
      * BenefitCustomCreate
@@ -8124,8 +8122,6 @@ export interface components {
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitDiscordProperties']
-      /** Visibility Configurable */
-      readonly visibility_configurable: boolean
     }
     /** BenefitDiscordCreate */
     BenefitDiscordCreate: {
@@ -8357,8 +8353,6 @@ export interface components {
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitDownloadablesProperties']
-      /** Visibility Configurable */
-      readonly visibility_configurable: boolean
     }
     /** BenefitDownloadablesCreate */
     BenefitDownloadablesCreate: {
@@ -8570,8 +8564,6 @@ export interface components {
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitFeatureFlagProperties']
-      /** Visibility Configurable */
-      readonly visibility_configurable: boolean
     }
     /**
      * BenefitFeatureFlagCreate
@@ -8774,8 +8766,6 @@ export interface components {
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitGitHubRepositoryProperties']
-      /** Visibility Configurable */
-      readonly visibility_configurable: boolean
     }
     /** BenefitGitHubRepositoryCreate */
     BenefitGitHubRepositoryCreate: {
@@ -9918,8 +9908,6 @@ export interface components {
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitLicenseKeysProperties']
-      /** Visibility Configurable */
-      readonly visibility_configurable: boolean
     }
     /** BenefitLicenseKeysCreate */
     BenefitLicenseKeysCreate: {
@@ -10145,8 +10133,6 @@ export interface components {
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitMeterCreditProperties']
-      /** Visibility Configurable */
-      readonly visibility_configurable: boolean
     }
     /**
      * BenefitMeterCreditCreate
@@ -10499,8 +10485,6 @@ export interface components {
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitSlackSharedChannelProperties']
-      /** Visibility Configurable */
-      readonly visibility_configurable: boolean
     }
     /** BenefitSlackSharedChannelCreate */
     BenefitSlackSharedChannelCreate: {
@@ -16667,7 +16651,7 @@ export interface components {
       )[]
       /**
        * BenefitPublic
-       * @description The benefits granted by the product.
+       * @description List of benefits granted by the product.
        */
       benefits: components['schemas']['BenefitPublic'][]
       /**

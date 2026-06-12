@@ -173,6 +173,7 @@ export const SlackSharedChannelBenefitForm = ({
       ) : (
         <>
           <SlackIntegrationSetupPanel
+            key={setupNewIntegration ? 'new' : (integration?.id ?? 'new')}
             organizationId={organization.id}
             defaultDisplayName={organization.name}
             integration={setupNewIntegration ? null : integration}

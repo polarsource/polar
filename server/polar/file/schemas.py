@@ -70,14 +70,14 @@ class SupportCaseAttachmentFileCreate(FileCreateBase):
     service: Literal[FileServiceTypes.support_case_attachment]
     mime_type: str = Field(
         description=(
-            "MIME type of the file. Images, videos, PDF, CSV, "
+            "MIME type of the file. Images, videos, PDF, CSV, plain text, "
             "Word and Excel documents are supported."
         ),
         pattern=(
             r"^(image\/(jpeg|png|gif|webp)"
             r"|video\/(mp4|quicktime|webm)"
             r"|application\/pdf"
-            r"|text\/csv"
+            r"|text\/(csv|plain)"
             r"|application\/msword"
             r"|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document"
             r"|application\/vnd\.ms-excel"

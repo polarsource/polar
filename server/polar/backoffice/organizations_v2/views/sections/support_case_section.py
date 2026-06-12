@@ -314,7 +314,7 @@ class SupportCaseSection:
             if message.body:
                 with tag.div(classes=f"flex {justify}"):
                     with tag.div(
-                        classes=f"max-w-md text-sm {self._bubble(message, internal)}"
+                        classes=f"max-w-md text-sm whitespace-pre-wrap {self._bubble(message, internal)}"
                     ):
                         text(message.body)
             for attachment in attachments:

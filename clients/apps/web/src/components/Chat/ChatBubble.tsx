@@ -67,7 +67,7 @@ export const ChatBubble = ({
           >
             <div
               className={twMerge(
-                'flex flex-col gap-2 p-3',
+                'flex flex-col gap-2 p-3 whitespace-pre-wrap',
                 isSelf
                   ? twMerge(
                       'dark:bg-polar-100 rounded-l-2xl bg-neutral-800',

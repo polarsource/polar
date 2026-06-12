@@ -326,6 +326,26 @@ async def reconcile_events(
     return total_checked, total_missing, missing_ids
 
 
+def _format_ingested_at(dt: datetime) -> str:
+    return dt.strftime("%Y-%m-%d %H:%M:%S.%f")
+
+
+async def count_user_events_by_organization(
+    *,
+    after: datetime | None,
+    until: datetime,
+    exclude_organization_id: UUID,
+) -> dict[UUID, int]:
+    params = {
+        "until": _format_ingested_at(until),
+        "exclude_organization_id": str(exclude_organization_id),
+    }
+    if after is not None:
+        params["after"] = _format_ingested_at(after)
+    rows = await client.endpoint("user_events_count_endpoint", params)
+    return {UUID(row["organization_id"]): row["count"] for row in rows}
+
+
 def _finite(value: Any, default: float = 0.0) -> float:
     """Convert a value to float, returning default for NaN/Infinity."""
     try:

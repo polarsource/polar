@@ -168,12 +168,16 @@ class TestCreate:
 
         payout_account = await create_payout_account(save_fixture, organization, user)
 
-        payment_transaction_1 = await create_payment_transaction(save_fixture)
+        payment_transaction_1 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_1"
+        )
         balance_transaction_1 = await create_balance_transaction(
             save_fixture, account=account, payment_transaction=payment_transaction_1
         )
 
-        payment_transaction_2 = await create_payment_transaction(save_fixture)
+        payment_transaction_2 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_2"
+        )
         balance_transaction_2 = await create_balance_transaction(
             save_fixture, account=account, payment_transaction=payment_transaction_2
         )
@@ -207,7 +211,9 @@ class TestCreate:
 
         await create_payout_account(save_fixture, organization, user)
 
-        payment_transaction_1 = await create_payment_transaction(save_fixture)
+        payment_transaction_1 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_1"
+        )
         await create_balance_transaction(
             save_fixture, account=account, payment_transaction=payment_transaction_1
         )
@@ -240,7 +246,9 @@ class TestCreate:
 
         await create_payout_account(save_fixture, organization, user)
 
-        payment_transaction_1 = await create_payment_transaction(save_fixture)
+        payment_transaction_1 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_1"
+        )
         await create_balance_transaction(
             save_fixture, account=account, payment_transaction=payment_transaction_1
         )
@@ -266,12 +274,16 @@ class TestCreate:
     ) -> None:
         payout_account = await create_payout_account(save_fixture, organization, user)
 
-        payment_transaction_1 = await create_payment_transaction(save_fixture)
+        payment_transaction_1 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_1"
+        )
         balance_transaction_1 = await create_balance_transaction(
             save_fixture, account=account, payment_transaction=payment_transaction_1
         )
 
-        payment_transaction_2 = await create_payment_transaction(save_fixture)
+        payment_transaction_2 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_2"
+        )
         balance_transaction_2 = await create_balance_transaction(
             save_fixture, account=account, payment_transaction=payment_transaction_2
         )
@@ -307,7 +319,7 @@ class TestCreate:
 
         # Create an old balance transaction (8 days ago - should be available)
         payment_transaction_old = await create_payment_transaction(
-            save_fixture, created_at=now - timedelta(days=8)
+            save_fixture, created_at=now - timedelta(days=8), charge_id="CHARGE_1"
         )
         balance_transaction_old = await create_balance_transaction(
             save_fixture,
@@ -318,7 +330,7 @@ class TestCreate:
 
         # Create a recent balance transaction (2 days ago - should NOT be available)
         payment_transaction_recent = await create_payment_transaction(
-            save_fixture, created_at=now - timedelta(days=2)
+            save_fixture, created_at=now - timedelta(days=2), charge_id="CHARGE_2"
         )
         balance_transaction_recent = await create_balance_transaction(
             save_fixture,
@@ -360,12 +372,16 @@ class TestCreate:
             currency="eur",
         )
 
-        payment_transaction_1 = await create_payment_transaction(save_fixture)
+        payment_transaction_1 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_1"
+        )
         balance_transaction_1 = await create_balance_transaction(
             save_fixture, account=account, payment_transaction=payment_transaction_1
         )
 
-        payment_transaction_2 = await create_payment_transaction(save_fixture)
+        payment_transaction_2 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_2"
+        )
         balance_transaction_2 = await create_balance_transaction(
             save_fixture, account=account, payment_transaction=payment_transaction_2
         )
@@ -424,7 +440,9 @@ class TestCreate:
             created_at=utc_now() - datetime.timedelta(hours=25),
         )
 
-        payment_transaction_1 = await create_payment_transaction(save_fixture)
+        payment_transaction_1 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_1"
+        )
         await create_balance_transaction(
             save_fixture, account=account, payment_transaction=payment_transaction_1
         )
@@ -456,7 +474,9 @@ class TestCreate:
             created_at=utc_now() - datetime.timedelta(hours=25),
         )
 
-        payment_transaction_1 = await create_payment_transaction(save_fixture)
+        payment_transaction_1 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_1"
+        )
         balance_transaction_1 = await create_balance_transaction(
             save_fixture, account=account, payment_transaction=payment_transaction_1
         )

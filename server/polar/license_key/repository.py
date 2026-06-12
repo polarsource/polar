@@ -63,14 +63,6 @@ class LicenseKeyRepository(
         )
         return await self.get_one_or_none(statement)
 
-    async def get_by_id_for_update(self, id: UUID) -> LicenseKey | None:
-        statement = (
-            self.get_base_statement()
-            .where(LicenseKey.id == id)
-            .with_for_update(of=LicenseKey)
-        )
-        return await self.get_one_or_none(statement)
-
     async def get_readable_by_key(
         self,
         key: str,

@@ -164,11 +164,44 @@ When the `Polar-Version` header is omitted, requests are routed to the **Current
 
 ## SDK Strategy
 
-The SDK will follow the API versioning with patch versions for bug fixes:
+The SDK will support the three supported versions at any time, through submodules. For example:
 
-- **Format**: `2026-01.0`, `2026-01.1`, `2026-04.0`, etc.
-- **Support**: Exactly 3 SDK versions maintained, matching the API policy
-- **Versioning**: Patch versions (`2026-01.1`) include only bug fixes; major versions (`2026-04`) include contract changes
+```
+sdk/
+├── v2026_04/
+│   ├── __init__.py
+│   ├── client.py
+│   ├── models.py
+│   └── services/
+│       └── customers.py
+├── v2026_07/
+│   ├── __init__.py
+│   ├── client.py
+│   ├── models.py
+│   └── services/
+│       └── customers.py
+├── v2026_10/
+│   ├── __init__.py
+│   ├── client.py
+│   ├── models.py
+│   └── services/
+│       └── customers.py
+└── README.md
+```
+
+The user would use the client by importing the version they want:
+
+```py
+from polar.v2026_07 import Polar
+```
+
+Under the hood, this version would automatically use the schemas and services corresponding to that version and automatically set the version header when issuing requests. The good side effect is that it forces users to explicitly set a version.
+
+### Versioning strategy
+
+- Bug fixes, performance improvements to the generated code: **Patch** version
+- Added features, updates to the **Next** API version (models or endpoints): **Minor** version
+- API version cycle: **Major** version. Since we're removing a version, it's a breaking change — users will need to change their import.
 
 ## Implementation
 
@@ -414,6 +447,24 @@ We should have tests that lock the schema for N-1 and N versions to ensure no co
 ### Monitoring
 
 We should track adoption of each version and monitor for errors. After one or two release cycles, we can evaluate if the cadence and support window are working as intended or if adjustments are needed.
+
+### Rollout Plan
+
+#### ASAP
+
+- Start to tag API version in OpenAPI file.
+- Continue to work as we do today, i.e. "best-effort" backward compatibility
+
+#### Before September 2026
+
+- Implement the API versioning logic in the server
+- Have the SDK working as described in [SDK Strategy](#sdk-strategy)
+
+#### October 2026
+
+- **Freeze** the API as it is under the version `2026-10`
+- Start the cycles by setting up the version `2027-01` and start to work on this version only
+- Release the SDK with those two versions
 
 ## Appendix: Version Timeline Examples
 

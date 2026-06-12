@@ -9,10 +9,12 @@ from polar.auth.models import AuthSubject
 from polar.customer_portal.service.downloadables import (
     downloadable as downloadable_service,
 )
+from polar.exceptions import ValidationError
+from polar.file.repository import FileRepository
 from polar.logging import Logger
-from polar.models import Benefit, Customer, Member, Organization, User
+from polar.models import Benefit, Customer, File, Member, Organization, User
 
-from ..base.service import BenefitServiceProtocol
+from ..base.service import BenefitPropertiesValidationError, BenefitServiceProtocol
 from . import schemas
 from .properties import (
     BenefitDownloadablesProperties,
@@ -107,6 +109,30 @@ class BenefitDownloadablesService(
         return new_file_ids != previous_file_ids
 
     async def validate_properties(
-        self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        properties: dict[str, Any],
     ) -> BenefitDownloadablesProperties:
+        file_ids = [UUID(file_id) for file_id in properties["files"]]
+        repository = FileRepository.from_session(self.session)
+        files = await repository.get_all(
+            repository.get_base_statement().where(
+                File.organization_id == organization.id,
+                File.id.in_(file_ids),
+            )
+        )
+        accessible_file_ids = {file.id for file in files}
+        errors: list[ValidationError] = [
+            {
+                "type": "value_error",
+                "msg": "File not found.",
+                "loc": ("files", index),
+                "input": str(file_id),
+            }
+            for index, file_id in enumerate(file_ids)
+            if file_id not in accessible_file_ids
+        ]
+        if errors:
+            raise BenefitPropertiesValidationError(errors)
         return cast(BenefitDownloadablesProperties, properties)

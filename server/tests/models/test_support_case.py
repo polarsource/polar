@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from polar.models import OrganizationReview
@@ -6,6 +7,7 @@ from polar.models.file import File, FileServiceTypes
 from polar.models.organization import Organization
 from polar.models.support_case import (
     ReviewAppealSupportCase,
+    SupportCase,
     SupportCaseAttachment,
     SupportCaseAudience,
     SupportCaseMessage,
@@ -15,6 +17,7 @@ from polar.models.support_case import (
     SupportCaseParticipantKind,
 )
 from polar.postgres import AsyncSession
+from polar.support_case.repository import SupportCaseMessageRepository
 from polar.support_case.service import support_case as support_case_service
 from tests.fixtures.database import SaveFixture
 
@@ -183,3 +186,60 @@ class TestAttachmentCaseConsistency:
         )
         with pytest.raises(IntegrityError):
             await session.flush()
+
+
+@pytest.mark.asyncio
+class TestAwaitingPlatformExpression:
+    async def _awaiting(self, session: AsyncSession, case_id: object) -> bool:
+        expr = SupportCaseMessageRepository.awaiting_platform_expression()
+        result = await session.execute(
+            select(expr).select_from(SupportCase).where(SupportCase.id == case_id)
+        )
+        return result.scalar_one()
+
+    async def test_tracks_latest_external_author(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        case = ReviewAppealSupportCase(
+            organization_review_id=(await _review(save_fixture, organization)).id
+        )
+        await save_fixture(case)
+
+        # A participant opens the conversation -> platform owes a reply.
+        await support_case_service.post_message(
+            session,
+            case,
+            author_kind=SupportCaseMessageAuthorKind.merchant,
+            audience=[SupportCaseAudience.merchant],
+        )
+        assert await self._awaiting(session, case.id) is True
+
+        # Platform replies -> no longer awaiting.
+        await support_case_service.post_message(
+            session,
+            case,
+            author_kind=SupportCaseMessageAuthorKind.platform,
+            audience=[SupportCaseAudience.merchant],
+        )
+        assert await self._awaiting(session, case.id) is False
+
+        # An internal note (empty audience) must NOT flip it back.
+        await support_case_service.post_message(
+            session,
+            case,
+            author_kind=SupportCaseMessageAuthorKind.platform,
+            audience=[],
+        )
+        assert await self._awaiting(session, case.id) is False
+
+        # A fresh participant message -> awaiting again.
+        await support_case_service.post_message(
+            session,
+            case,
+            author_kind=SupportCaseMessageAuthorKind.merchant,
+            audience=[SupportCaseAudience.merchant],
+        )
+        assert await self._awaiting(session, case.id) is True

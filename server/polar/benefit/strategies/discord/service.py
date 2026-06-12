@@ -182,7 +182,10 @@ class BenefitDiscordService(
         )
 
     async def validate_properties(
-        self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        properties: dict[str, Any],
     ) -> BenefitDiscordProperties:
         guild_id: str = properties["guild_id"]
         role_id: str = properties["role_id"]

@@ -6,7 +6,7 @@ import type {
   BackgroundColorToken,
   TextColorToken,
 } from '@polar-sh/orbit/theme'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 import {
   CheckIcon,
   ClockIcon,

@@ -29,7 +29,7 @@ const textVariants = cva('', {
   variants: {
     variant: {
       default: 'text-sm',
-      body: 'text-base leading-relaxed',
+      body: 'text-base',
       label: 'text-xs font-medium',
       caption: 'text-xs leading-snug',
       mono: 'font-mono text-xs',

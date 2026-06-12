@@ -108,6 +108,9 @@ class BenefitLicenseKeysService(
         return diff_expires or diff_activations or diff_usage
 
     async def validate_properties(
-        self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        properties: dict[str, Any],
     ) -> BenefitLicenseKeysProperties:
         return cast(BenefitLicenseKeysProperties, properties)

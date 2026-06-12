@@ -18,6 +18,7 @@ from polar.models import (
     UserOrganization,
     UserSession,
 )
+from polar.models.user_organization import OrganizationRole
 from polar.oauth2.service.oauth2_grant import oauth2_grant as oauth2_grant_service
 from polar.oauth2.sub_type import SubType
 from tests.fixtures.auth import AuthSubjectFixture
@@ -741,6 +742,36 @@ class TestOAuth2Authorize:
         location = response.headers["location"]
         assert "error=consent_required" in location
 
+    @pytest.mark.auth
+    async def test_organization_list_excludes_member_without_manage(
+        self,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        oauth2_client: OAuth2Client,
+        save_fixture: SaveFixture,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=user,
+                organization=organization,
+                role=OrganizationRole.member,
+            )
+        )
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "organization",
+        }
+        response = await client.get("/v1/oauth2/authorize", params=params)
+
+        assert response.status_code == 200
+        json = response.json()
+        org_ids = {o["id"] for o in (json.get("organizations") or [])}
+        assert str(organization.id) not in org_ids
+
 
 @pytest.mark.asyncio
 class TestOAuth2Consent:
@@ -832,6 +863,73 @@ class TestOAuth2Consent:
         oauth2_client: OAuth2Client,
         sync_session: Session,
     ) -> None:
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "organization",
+            "sub": str(organization.id),
+        }
+        response = await client.post(
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+
+        assert response.status_code == 400
+        json = response.json()
+        assert json["error"] == "invalid_sub"
+
+    @pytest.mark.auth
+    async def test_organization_member_without_manage_forbidden(
+        self,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        oauth2_client: OAuth2Client,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=user,
+                organization=organization,
+                role=OrganizationRole.member,
+            )
+        )
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "organization",
+            "sub": str(organization.id),
+        }
+        response = await client.post(
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+
+        assert response.status_code == 400
+        json = response.json()
+        assert json["error"] == "invalid_sub"
+
+    @pytest.mark.auth
+    async def test_organization_manage_in_other_org_forbidden(
+        self,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+        oauth2_client: OAuth2Client,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=user,
+                organization=organization_second,
+                role=OrganizationRole.owner,
+            )
+        )
         params = {
             "client_id": oauth2_client.client_id,
             "response_type": "code",
@@ -1383,3 +1481,129 @@ class TestOAuth2Token:
         access_token = json["access_token"]
         assert access_token.startswith("polar_at_o_")
         assert "refresh_token" not in json
+
+    async def test_web_grant_sub_organization_member_without_manage_forbidden(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        web_grant_oauth2_client: OAuth2Client,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=user,
+                organization=organization,
+                role=OrganizationRole.member,
+            )
+        )
+        token, token_hash = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
+        )
+        user_session = UserSession(
+            token=token_hash,
+            user_agent="tests",
+            user=user,
+            scopes=set(Scope),
+            expires_at=utc_now() + timedelta(seconds=60),
+        )
+        await save_fixture(user_session)
+
+        data = {
+            "grant_type": "web",
+            "session_token": token,
+            "client_id": web_grant_oauth2_client.client_id,
+            "client_secret": web_grant_oauth2_client.client_secret,
+            "sub_type": "organization",
+            "sub": str(organization.id),
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 400
+
+    async def test_web_grant_sub_organization_admin(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        web_grant_oauth2_client: OAuth2Client,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=user,
+                organization=organization,
+                role=OrganizationRole.admin,
+            )
+        )
+        token, token_hash = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
+        )
+        user_session = UserSession(
+            token=token_hash,
+            user_agent="tests",
+            user=user,
+            scopes=set(Scope),
+            expires_at=utc_now() + timedelta(seconds=60),
+        )
+        await save_fixture(user_session)
+
+        data = {
+            "grant_type": "web",
+            "session_token": token,
+            "client_id": web_grant_oauth2_client.client_id,
+            "client_secret": web_grant_oauth2_client.client_secret,
+            "sub_type": "organization",
+            "sub": str(organization.id),
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["access_token"].startswith("polar_at_o_")
+
+    async def test_web_grant_sub_organization_manage_in_other_org_forbidden(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+        web_grant_oauth2_client: OAuth2Client,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=user,
+                organization=organization_second,
+                role=OrganizationRole.owner,
+            )
+        )
+        token, token_hash = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
+        )
+        user_session = UserSession(
+            token=token_hash,
+            user_agent="tests",
+            user=user,
+            scopes=set(Scope),
+            expires_at=utc_now() + timedelta(seconds=60),
+        )
+        await save_fixture(user_session)
+
+        data = {
+            "grant_type": "web",
+            "session_token": token,
+            "client_id": web_grant_oauth2_client.client_id,
+            "client_secret": web_grant_oauth2_client.client_secret,
+            "sub_type": "organization",
+            "sub": str(organization.id),
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 400

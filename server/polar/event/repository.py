@@ -241,27 +241,6 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
 
-    async def count_user_events_by_organization(
-        self,
-        *,
-        after: datetime | None,
-        until: datetime,
-        exclude_organization_id: UUID,
-    ) -> dict[UUID, int]:
-        statement = (
-            select(Event.organization_id, func.count(Event.id))
-            .where(
-                Event.source == EventSource.user,
-                Event.organization_id != exclude_organization_id,
-                Event.ingested_at <= until,
-            )
-            .group_by(Event.organization_id)
-        )
-        if after is not None:
-            statement = statement.where(Event.ingested_at > after)
-        result = await self.session.execute(statement)
-        return {row[0]: row[1] for row in result.all()}
-
     async def get_latest_meter_reset(
         self, customer: Customer, meter_id: UUID
     ) -> Event | None:

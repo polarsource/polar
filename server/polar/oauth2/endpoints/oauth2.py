@@ -6,7 +6,9 @@ from fastapi.openapi.constants import REF_TEMPLATE
 
 from polar.auth.dependencies import WebUserOrAnonymous
 from polar.auth.models import is_user
+from polar.auth.permission import OrganizationPermission
 from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWrite
+from polar.authz.service import get_accessible_org_ids
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import OAuth2Token, Organization
 from polar.openapi import APITag
@@ -169,10 +171,20 @@ async def authorize(
     organizations: Sequence[Organization] | None = None
     if grant.sub_type == SubType.organization:
         assert is_user(auth_subject)
+        manageable_org_ids = await get_accessible_org_ids(
+            session,
+            auth_subject,
+            permission=OrganizationPermission.organization_manage,
+        )
         organization_repository = OrganizationRepository.from_session(session)
-        organizations = await organization_repository.get_all_by_user(
+        all_organizations = await organization_repository.get_all_by_user(
             auth_subject.subject.id
         )
+        organizations = [
+            organization
+            for organization in all_organizations
+            if organization.id in manageable_org_ids
+        ]
 
     payload = grant.request.payload
     assert payload is not None

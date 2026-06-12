@@ -7,7 +7,7 @@ from polar_sdk.models import (
     PaymentMethodCard,
     ProductPriceFixed,
 )
-from pydantic import AfterValidator, Discriminator, Field, Tag
+from pydantic import AfterValidator, Discriminator, EmailStr, Field, Tag
 
 from polar.kit.address import AddressInput
 from polar.kit.http import get_safe_return_url
@@ -16,6 +16,7 @@ from polar.kit.schemas import Schema
 if TYPE_CHECKING:
     from polar_sdk.models import (
         Checkout,
+        CustomerBenefitGrantSlackSharedChannel,
         CustomerPaymentMethod,
         CustomerPortalCustomer,
         Order,
@@ -361,7 +362,7 @@ class OrganizationSubscriptionUpdate(Schema):
 class OrganizationOrder(Schema):
     id: str
     created_at: datetime
-    invoice_number: str
+    invoice_number: str | None
     status: str
     paid: bool
     total_amount: int = Field(
@@ -478,6 +479,57 @@ class OrganizationCustomerSession(Schema):
             "Short-lived customer session token bound to this organization's "
             "mirrored Polar billing customer. Authenticates against "
             "`/v1/customer-portal/customers/me/*` for the duration of its TTL."
+        ),
+    )
+
+
+class OrganizationBenefitGrant(Schema):
+    id: str
+    benefit_description: str
+    is_granted: bool = Field(
+        description="Whether the channel is provisioned and the invite sent.",
+    )
+    is_connected: bool = Field(
+        description="Whether the invite was accepted by the customer's workspace.",
+    )
+    invited_email: str | None = Field(
+        default=None,
+        description="Email of the Slack workspace admin the invite was sent to.",
+    )
+    invite_url: str | None = Field(
+        default=None,
+        description=(
+            "Slack Connect invite URL. Not always available: Slack omits it "
+            "for some email invites."
+        ),
+    )
+    channel_name: str | None = None
+    error_message: str | None = Field(
+        default=None,
+        description="Message of the last provisioning error, if any.",
+    )
+
+    @classmethod
+    def from_sdk(
+        cls, grant: "CustomerBenefitGrantSlackSharedChannel"
+    ) -> "OrganizationBenefitGrant":
+        return cls(
+            id=grant.id,
+            benefit_description=grant.benefit.description,
+            is_granted=grant.is_granted,
+            is_connected=grant.properties.connected_team_id is not None,
+            invited_email=grant.properties.invited_email,
+            invite_url=grant.properties.invite_url,
+            channel_name=grant.properties.channel_name,
+            error_message=grant.error.message if grant.error else None,
+        )
+
+
+class OrganizationBenefitGrantUpdate(Schema):
+    invited_email: EmailStr = Field(
+        description=(
+            "Email of an admin in the customer's Slack workspace who should "
+            "receive the Slack Connect invite."
         ),
     )
 

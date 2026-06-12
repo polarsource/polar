@@ -4,6 +4,9 @@ from typing import TYPE_CHECKING, Any
 
 import logfire
 from polar_sdk.models import (
+    CustomerBenefitGrantSlackSharedChannel,
+    CustomerBenefitGrantSlackSharedChannelPropertiesUpdate,
+    CustomerBenefitGrantSlackSharedChannelUpdate,
     CustomerPortalCustomerUpdate,
     LegacyRecurringProductPriceFixed,
     OrderBillingReason,
@@ -49,6 +52,7 @@ from .exceptions import (
     TransactionFeeBenefitError,
 )
 from .schemas import (
+    OrganizationBenefitGrantUpdate,
     OrganizationBillingDetailsUpdate,
     OrganizationPlan,
 )
@@ -561,6 +565,45 @@ class PolarSelfService:
             update=sdk_update,
             external_member_id=external_member_id,
         )
+
+    async def list_benefit_grants(
+        self,
+        organization_id: uuid.UUID,
+        *,
+        external_member_id: str | None = None,
+    ) -> list[CustomerBenefitGrantSlackSharedChannel]:
+        await self._ensure_polar_customer(organization_id)
+        grants = await get_client().portal_list_benefit_grants(
+            external_customer_id=str(organization_id),
+            external_member_id=external_member_id,
+        )
+        return [
+            grant
+            for grant in grants
+            if isinstance(grant, CustomerBenefitGrantSlackSharedChannel)
+        ]
+
+    async def update_benefit_grant(
+        self,
+        organization_id: uuid.UUID,
+        *,
+        benefit_grant_id: str,
+        update: OrganizationBenefitGrantUpdate,
+        external_member_id: str | None = None,
+    ) -> CustomerBenefitGrantSlackSharedChannel:
+        await self._ensure_polar_customer(organization_id)
+        grant = await get_client().portal_update_benefit_grant(
+            external_customer_id=str(organization_id),
+            benefit_grant_id=benefit_grant_id,
+            update=CustomerBenefitGrantSlackSharedChannelUpdate(
+                properties=CustomerBenefitGrantSlackSharedChannelPropertiesUpdate(
+                    invited_email=update.invited_email,
+                ),
+            ),
+            external_member_id=external_member_id,
+        )
+        assert isinstance(grant, CustomerBenefitGrantSlackSharedChannel)
+        return grant
 
     async def _ensure_polar_customer(self, organization_id: uuid.UUID) -> None:
         if not self.is_configured:

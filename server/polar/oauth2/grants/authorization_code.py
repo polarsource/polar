@@ -14,9 +14,11 @@ from authlib.oauth2.rfc7636 import CodeChallenge as _CodeChallenge
 from authlib.oidc.core.errors import ConsentRequiredError, LoginRequiredError
 from authlib.oidc.core.grants import OpenIDCode as _OpenIDCode
 from authlib.oidc.core.grants import OpenIDToken as _OpenIDToken
-from sqlalchemy import and_, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from polar.auth.permission import OrganizationPermission
+from polar.authz.repository import select_user_org_ids
 from polar.config import settings
 from polar.kit.crypto import generate_token, get_token_hash
 from polar.models import (
@@ -24,7 +26,6 @@ from polar.models import (
     OAuth2Client,
     Organization,
     User,
-    UserOrganization,
 )
 
 from ..constants import AUTHORIZATION_CODE_PREFIX, JWT_CONFIG
@@ -311,16 +312,14 @@ class ValidateSubAndPrompt:
     def _get_organization_admin(
         self, organization_id: uuid.UUID, user: User
     ) -> Organization | None:
-        statement = (
-            select(Organization)
-            .join(
-                UserOrganization,
-                onclause=and_(
-                    UserOrganization.user_id == user.id,
-                    UserOrganization.is_deleted.is_(False),
-                ),
-            )
-            .where(Organization.id == organization_id)
+        statement = select(Organization).where(
+            Organization.id == organization_id,
+            Organization.id.in_(
+                select_user_org_ids(
+                    user.id,
+                    permission=OrganizationPermission.organization_manage,
+                )
+            ),
         )
         result = self._session.execute(statement)
         return result.unique().scalar_one_or_none()

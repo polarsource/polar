@@ -111,7 +111,7 @@ export const SlackSharedChannelBenefitForm = ({
     ) {
       return
     }
-    if (update && !resolvedIntegration) {
+    if (update && resolvedIntegration === undefined) {
       return
     }
 

@@ -107,6 +107,9 @@ class BenefitDownloadablesService(
         return new_file_ids != previous_file_ids
 
     async def validate_properties(
-        self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        properties: dict[str, Any],
     ) -> BenefitDownloadablesProperties:
         return cast(BenefitDownloadablesProperties, properties)

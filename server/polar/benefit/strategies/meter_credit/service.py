@@ -139,7 +139,10 @@ class BenefitMeterCreditService(
         return False
 
     async def validate_properties(
-        self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        properties: dict[str, Any],
     ) -> BenefitMeterCreditProperties:
         meter_repository = MeterRepository.from_session(self.session)
         org_ids = await get_accessible_org_ids(self.session, auth_subject)

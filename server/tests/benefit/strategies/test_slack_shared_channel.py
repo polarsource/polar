@@ -1462,6 +1462,7 @@ class TestSlackSharedChannelValidate:
 
         result = await strategy.validate_properties(
             auth_subject,
+            organization,
             {**_BASE_PROPERTIES, "slack_integration_id": str(integration.id)},
         )
 
@@ -1473,6 +1474,7 @@ class TestSlackSharedChannelValidate:
         session: AsyncSession,
         redis: Redis,
         mocker: MockerFixture,
+        organization: Organization,
         auth_subject: AuthSubject[User],
         user_organization: UserOrganization,
     ) -> None:
@@ -1481,6 +1483,7 @@ class TestSlackSharedChannelValidate:
         with pytest.raises(BenefitPropertiesValidationError):
             await strategy.validate_properties(
                 auth_subject,
+                organization,
                 {**_BASE_PROPERTIES, "slack_integration_id": str(uuid4())},
             )
 
@@ -1507,6 +1510,7 @@ class TestSlackSharedChannelValidate:
         with pytest.raises(BenefitPropertiesValidationError):
             await strategy.validate_properties(
                 auth_subject,
+                organization,
                 {**_BASE_PROPERTIES, "slack_integration_id": str(integration.id)},
             )
 
@@ -1517,6 +1521,7 @@ class TestSlackSharedChannelValidate:
         redis: Redis,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
+        organization: Organization,
         organization_second: Organization,
         auth_subject: AuthSubject[User],
         user_organization: UserOrganization,
@@ -1533,6 +1538,7 @@ class TestSlackSharedChannelValidate:
         with pytest.raises(BenefitPropertiesValidationError):
             await strategy.validate_properties(
                 auth_subject,
+                organization,
                 {**_BASE_PROPERTIES, "slack_integration_id": str(integration.id)},
             )
 

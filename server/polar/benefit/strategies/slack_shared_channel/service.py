@@ -278,6 +278,7 @@ class BenefitSlackSharedChannelService(
     async def validate_properties(
         self,
         auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
         properties: dict[str, Any],
     ) -> BenefitSlackSharedChannelProperties:
         integration_id = properties["slack_integration_id"]

@@ -3,7 +3,7 @@
 import ChevronLeftRounded from '@mui/icons-material/ChevronLeftRounded'
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded'
 import { Button } from '@polar-sh/orbit'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useState } from 'react'
 
 const variants = {

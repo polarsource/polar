@@ -1,7 +1,7 @@
 import { twMerge } from 'tailwind-merge'
 
 const sizeClasses = {
-  small: 'px-[0.4em] py-[0.1em] text-xs',
+  small: 'px-[0.5em] py-[0.2em] text-xs',
   medium: 'px-[0.7em] py-[0.3em] text-sm',
 }
 
@@ -22,7 +22,7 @@ const colorClasses: Record<StatusColor, string> = {
   blue: 'bg-indigo-100 text-indigo-500 dark:bg-indigo-950 dark:text-indigo-500',
   purple:
     'bg-violet-100 text-violet-500 dark:bg-violet-950 dark:text-violet-400',
-  gray: 'bg-gray-100 text-gray-500 dark:bg-gray-900 dark:text-gray-400',
+  gray: 'bg-gray-200 text-gray-500 dark:bg-polar-700 dark:text-polar-500',
 }
 
 export interface StatusProps {

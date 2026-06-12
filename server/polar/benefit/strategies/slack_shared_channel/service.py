@@ -6,8 +6,6 @@ import httpx
 import structlog
 
 from polar.auth.models import AuthSubject
-from polar.auth.permission import OrganizationPermission
-from polar.authz.service import get_accessible_org_ids
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.integrations.slack.client import SlackClient
 from polar.integrations.slack.repository import SlackAppRepository
@@ -284,12 +282,7 @@ class BenefitSlackSharedChannelService(
         integration_id = properties["slack_integration_id"]
         repository = SlackAppRepository.from_session(self.session)
         integration = await repository.get_by_id(UUID(integration_id))
-        accessible_org_ids = await get_accessible_org_ids(
-            self.session,
-            auth_subject,
-            permission=OrganizationPermission.products_manage,
-        )
-        if integration is None or integration.organization_id not in accessible_org_ids:
+        if integration is None or integration.organization_id != organization.id:
             raise BenefitPropertiesValidationError(
                 [
                     {

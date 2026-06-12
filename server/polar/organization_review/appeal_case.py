@@ -20,6 +20,7 @@ from polar.support_case.repository import (
     SupportCaseMessageRepository,
 )
 from polar.support_case.service import support_case as support_case_service
+from polar.worker import enqueue_job
 
 
 class AppealCaseError(PolarError): ...
@@ -100,6 +101,13 @@ class AppealCaseService:
             await support_case_service.add_attachment(
                 session, case, file=file, message=message, audience=audience
             )
+        # Visible replies notify the case recipients by email (direct send,
+        # bypassing the legacy notification system).
+        if not internal:
+            enqueue_job(
+                "support_case.notify_organization_of_new_message",
+                message_id=message.id,
+            )
         return message
 
     async def record_decision(
@@ -131,6 +139,10 @@ class AppealCaseService:
             author_kind=SupportCaseMessageAuthorKind.platform,
             author_user=staff_user,
             audience=[SupportCaseAudience.merchant],
+        )
+        # Notify the case recipients of the decision (same email path as replies).
+        enqueue_job(
+            "support_case.notify_organization_of_new_message", message_id=message.id
         )
         # This records the decision on the case only. The caller drives org
         # state: approve via organization.backoffice_approve (built to override

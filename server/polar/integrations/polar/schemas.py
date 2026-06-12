@@ -361,7 +361,7 @@ class OrganizationSubscriptionUpdate(Schema):
 class OrganizationOrder(Schema):
     id: str
     created_at: datetime
-    invoice_number: str
+    invoice_number: str | None
     status: str
     paid: bool
     total_amount: int = Field(

@@ -42,8 +42,7 @@ from polar_sdk.models import (
     Subscription,
     SubscriptionCancel,
     SubscriptionProrationBehavior,
-    SubscriptionUpdateDiscount,
-    SubscriptionUpdateProduct,
+    SubscriptionUpdateBase,
 )
 from polar_sdk.models.polarerror import PolarError
 
@@ -362,7 +361,7 @@ class PolarSelfClient:
             try:
                 return await self._sdk.subscriptions.update_async(
                     id=subscription_id,
-                    subscription_update=SubscriptionUpdateProduct(
+                    subscription_update=SubscriptionUpdateBase(
                         product_id=product_id,
                         proration_behavior=proration_behavior,
                     ),
@@ -389,7 +388,7 @@ class PolarSelfClient:
             try:
                 return await self._sdk.subscriptions.update_async(
                     id=subscription_id,
-                    subscription_update=SubscriptionUpdateDiscount(
+                    subscription_update=SubscriptionUpdateBase(
                         discount_id=discount_id,
                     ),
                 )

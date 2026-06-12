@@ -62,7 +62,7 @@ dependencies = [
   "playwright>=1.60.0",
   "trafilatura>=2.0.0",
   "firecrawl-py>=4.28.2",
-  "polar-sdk==0.31.5",
+  "polar-sdk==0.31.7",
   "anyio>=4.13.0",
   "markdown-it-py>=4.2.0",
   "tzdata>=2026.2",
@@ -191,4 +191,4 @@ exclude-newer-package = { reauth = false } # Reauth is brand new, but remember t
 
 [tool.uv.sources]
 dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }
-polar-sdk = { url = "https://files.pythonhosted.org/packages/21/6c/b858596fcc39fdfb0757e24f24b86e96990e17d1ffed86639b04121c6e8c/polar_sdk-0.31.5-py3-none-any.whl" }
+polar-sdk = { url = "https://files.pythonhosted.org/packages/dc/e0/a88026b9432c7e2c0c096911ddc97cb06f483036a00a8afd5254efe1c16a/polar_sdk-0.31.7-py3-none-any.whl" }

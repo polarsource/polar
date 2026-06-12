@@ -82,3 +82,40 @@ export const getCreatableBenefitTypes = (
       type !== 'slack_shared_channel' ||
       !!organization.feature_settings?.slack_benefit_enabled,
   )
+
+export const VISIBILITY_CONFIGURABLE_BENEFIT_TYPES = [
+  'custom',
+  'license_keys',
+  'meter_credit',
+  'feature_flag',
+] as const satisfies readonly schemas['BenefitType'][]
+
+export type VisibilityConfigurableBenefitType =
+  (typeof VISIBILITY_CONFIGURABLE_BENEFIT_TYPES)[number]
+
+export function isBenefitVisibilityConfigurable(
+  benefitType: schemas['BenefitType'],
+): benefitType is VisibilityConfigurableBenefitType {
+  return (VISIBILITY_CONFIGURABLE_BENEFIT_TYPES as readonly string[]).includes(
+    benefitType,
+  )
+}
+
+export const DEFAULT_BENEFIT_VISIBILITY = {
+  custom: 'public',
+  license_keys: 'public',
+  meter_credit: 'public',
+  feature_flag: 'private',
+} as const satisfies Record<
+  VisibilityConfigurableBenefitType,
+  schemas['BenefitVisibility']
+>
+
+export const getDefaultBenefitVisibility = (
+  type: schemas['BenefitType'],
+): schemas['BenefitVisibility'] | undefined => {
+  if (!isBenefitVisibilityConfigurable(type)) {
+    return undefined
+  }
+  return DEFAULT_BENEFIT_VISIBILITY[type]
+}

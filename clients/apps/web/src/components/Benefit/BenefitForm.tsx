@@ -31,7 +31,13 @@ import { DownloadablesBenefitForm } from './Downloadables/BenefitForm'
 import { GitHubRepositoryBenefitForm } from './GitHubRepositoryBenefitForm'
 import { LicenseKeysBenefitForm } from './LicenseKeys/BenefitForm'
 import { MeterCreditBenefitForm } from './MeterCredit/BenefitForm'
-import { benefitsDisplayNames, getCreatableBenefitTypes } from './utils'
+import { BenefitVisibilityField } from './BenefitVisibilityField'
+import {
+  benefitsDisplayNames,
+  getCreatableBenefitTypes,
+  getDefaultBenefitVisibility,
+  isBenefitVisibilityConfigurable,
+} from './utils'
 
 export const NewBenefitForm = ({
   organization,
@@ -115,6 +121,12 @@ const BenefitForm = ({
       />
 
       {!update ? <BenefitTypeSelect organization={organization} /> : null}
+      {type !== 'usage' && isBenefitVisibilityConfigurable(type) ? (
+        <BenefitVisibilityField
+          key={type}
+          defaultValue={update ? undefined : getDefaultBenefitVisibility(type)}
+        />
+      ) : null}
       {type === 'custom' && <CustomBenefitForm update={update} />}
       {type === 'discord' && <DiscordBenefitForm />}
       {type === 'github_repository' && (

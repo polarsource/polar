@@ -24,7 +24,6 @@ import { ConfirmModal } from '../../../Modal/ConfirmModal'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../../../Modal/useModal'
 import { toast } from '../../../Toast/use-toast'
-import { BenefitVisibilityControl } from './BenefitVisibilityControl'
 
 interface BenefitRowProps {
   organization: schemas['Organization']

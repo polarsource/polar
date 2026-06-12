@@ -3,8 +3,10 @@ import sys
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Discriminator, TypeAdapter
+from pydantic import AfterValidator, BaseModel, Discriminator, TypeAdapter
 
+from polar.benefit.schemas import Benefit
+from polar.kit.visibility import Visibility
 from polar.notifications.notification import (
     MaintainerAccountCreditsGrantedNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
@@ -53,8 +55,20 @@ class EmailTemplate(StrEnum):
 class SubscriptionEmail(SubscriptionBase): ...
 
 
+def _filter_email_benefit_list(benefits: list[Benefit]) -> list[Benefit]:
+    return [
+        benefit for benefit in benefits if benefit.visibility == Visibility.public
+    ]
+
+
+EmailBenefitList = Annotated[
+    BenefitList,
+    AfterValidator(_filter_email_benefit_list),
+]
+
+
 class ProductEmail(ProductBase):
-    benefits: BenefitList
+    benefits: EmailBenefitList
 
 
 class OrderEmail(OrderBase):

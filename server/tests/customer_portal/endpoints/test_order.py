@@ -9,16 +9,19 @@ from pytest_mock import MockerFixture
 
 from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import utc_now
-from polar.models import Customer, Product
+from polar.kit.visibility import Visibility
+from polar.models import Customer, Organization, Product
 from polar.models.order import OrderStatus
 from polar.models.payment import PaymentStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_benefit,
     create_order,
     create_payment,
     create_subscription,
+    set_product_benefits,
 )
 
 
@@ -27,6 +30,43 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.order.service.stripe_service", new=mock)
     return mock
+
+
+@pytest.mark.asyncio
+class TestGetOrder:
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_excludes_non_public_benefits(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        public_benefit = await create_benefit(
+            save_fixture, organization=organization, description="Public benefit"
+        )
+        private_benefit = await create_benefit(
+            save_fixture, organization=organization, description="Private benefit"
+        )
+        private_benefit.visibility = Visibility.private
+        await save_fixture(private_benefit)
+        await set_product_benefits(
+            save_fixture,
+            product=product,
+            benefits=[public_benefit, private_benefit],
+        )
+
+        order = await create_order(save_fixture, product=product, customer=customer)
+
+        response = await client.get(f"/v1/customer-portal/orders/{order.id}")
+
+        assert response.status_code == 200
+
+        json = response.json()
+        benefit_ids = {benefit["id"] for benefit in json["product"]["benefits"]}
+        assert str(public_benefit.id) in benefit_ids
+        assert str(private_benefit.id) not in benefit_ids
 
 
 @pytest.mark.asyncio

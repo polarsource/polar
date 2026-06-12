@@ -2,14 +2,13 @@ from typing import Self
 
 from pydantic import Field, model_validator
 
-from polar.benefit.schemas import BenefitPublic
 from polar.file.schemas import ProductMediaFileRead
 from polar.kit.schemas import Schema
 from polar.models.organization import OrganizationCustomerPortalSettings
 from polar.organization.schemas import (
     OrganizationPublicBase,
 )
-from polar.product.schemas import ProductBase, ProductPrice
+from polar.product.schemas import BenefitPublicList, ProductBase, ProductPrice
 
 
 class CustomerProduct(ProductBase):
@@ -18,9 +17,7 @@ class CustomerProduct(ProductBase):
     prices: list[ProductPrice] = Field(
         description="List of available prices for this product."
     )
-    benefits: list[BenefitPublic] = Field(
-        title="BenefitPublic", description="The benefits granted by the product."
-    )
+    benefits: BenefitPublicList
     medias: list[ProductMediaFileRead] = Field(
         description="The medias associated to the product."
     )

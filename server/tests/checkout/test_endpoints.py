@@ -16,6 +16,7 @@ from polar.checkout.service import checkout as checkout_service
 from polar.enums import SubscriptionRecurringInterval, TaxBehavior, TaxProcessor
 from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import utc_now
+from polar.kit.visibility import Visibility
 from polar.models import (
     Checkout,
     Customer,
@@ -38,12 +39,14 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_account,
+    create_benefit,
     create_checkout,
     create_discount,
     create_organization,
     create_product,
     create_product_fixed_and_seat,
     create_webhook_endpoint,
+    set_product_benefits,
 )
 
 
@@ -758,6 +761,39 @@ class TestClientGet:
         json = response.json()
         assert json["id"] == str(checkout_open.id)
         assert "metadata" not in json
+
+    async def test_excludes_non_public_benefits(
+        self,
+        api_prefix: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        public_benefit = await create_benefit(
+            save_fixture, organization=organization, description="Public benefit"
+        )
+        private_benefit = await create_benefit(
+            save_fixture, organization=organization, description="Private benefit"
+        )
+        private_benefit.visibility = Visibility.private
+        await save_fixture(private_benefit)
+        await set_product_benefits(
+            save_fixture,
+            product=product,
+            benefits=[public_benefit, private_benefit],
+        )
+
+        checkout = await create_checkout(save_fixture, products=[product])
+
+        response = await client.get(f"{api_prefix}/client/{checkout.client_secret}")
+
+        assert response.status_code == 200
+
+        json = response.json()
+        benefit_ids = {benefit["id"] for benefit in json["product"]["benefits"]}
+        assert str(public_benefit.id) in benefit_ids
+        assert str(private_benefit.id) not in benefit_ids
 
 
 @pytest.mark.asyncio

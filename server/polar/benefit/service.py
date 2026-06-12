@@ -159,6 +159,7 @@ class BenefitService:
         benefit_strategy = get_benefit_strategy(create_schema.type, session, redis)
         properties = await benefit_strategy.validate_properties(
             auth_subject,
+            organization,
             create_schema.properties.model_dump(mode="json", by_alias=True),
         )
         visibility = create_schema.type.resolve_visibility(create_schema.visibility)
@@ -226,6 +227,7 @@ class BenefitService:
             benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
             update_dict["properties"] = await benefit_strategy.validate_properties(
                 auth_subject,
+                benefit.organization,
                 properties_update.model_dump(mode="json", by_alias=True),
             )
 

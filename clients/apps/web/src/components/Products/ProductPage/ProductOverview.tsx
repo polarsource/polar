@@ -124,10 +124,15 @@ export const ProductOverview = ({
                     <div className="flex flex-row items-center gap-2">
                       <Avatar
                         avatar_url={customer.avatar_url}
-                        name={customer.email ?? customer.name ?? '—'}
+                        name={customer.name ?? customer.email ?? '—'}
                       />
-                      <div className="overflow-hidden text-ellipsis">
-                        {customer.email ?? '—'}
+                      <div className="flex flex-col overflow-hidden">
+                        <span className="truncate">
+                          {customer.name ?? '—'}
+                        </span>
+                        <span className="dark:text-polar-500 truncate text-xs text-gray-500">
+                          {customer.email ?? '—'}
+                        </span>
                       </div>
                     </div>
                   )
@@ -239,24 +244,17 @@ export const ProductOverview = ({
                     <Avatar
                       className="h-8 w-8"
                       avatar_url={customer.avatar_url}
-                      name={customer.email ?? customer.name ?? '—'}
+                      name={customer.name ?? customer.email ?? '—'}
                     />
-                    <div className="truncate">{customer.email ?? '—'}</div>
+                    <div className="flex flex-col overflow-hidden">
+                      <span className="truncate">{customer.name ?? '—'}</span>
+                      <span className="dark:text-polar-500 truncate text-xs text-gray-500">
+                        {customer.email ?? '—'}
+                      </span>
+                    </div>
                   </div>
                 )
               },
-            },
-            {
-              accessorKey: 'amount',
-              enableSorting: true,
-              header: ({ column }) => (
-                <DataTableColumnHeader column={column} title="Amount" />
-              ),
-              cell: ({ row: { original: order } }) => (
-                <span>
-                  {formatCurrency('compact')(order.net_amount, order.currency)}
-                </span>
-              ),
             },
             {
               accessorKey: 'status',
@@ -267,6 +265,18 @@ export const ProductOverview = ({
               cell: ({ row: { original: order } }) => (
                 <span className="flex shrink">
                   <OrderStatus status={order.status} />
+                </span>
+              ),
+            },
+            {
+              accessorKey: 'amount',
+              enableSorting: true,
+              header: ({ column }) => (
+                <DataTableColumnHeader column={column} title="Amount" />
+              ),
+              cell: ({ row: { original: order } }) => (
+                <span>
+                  {formatCurrency('compact')(order.net_amount, order.currency)}
                 </span>
               ),
             },

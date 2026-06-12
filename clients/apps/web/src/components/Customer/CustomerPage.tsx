@@ -4,6 +4,7 @@ import { BenefitGrantStatus } from '@/components/Benefit/BenefitGrantStatus'
 import { CustomerEventsView } from '@/components/Customer/CustomerEventsView'
 import { CustomerUsageView } from '@/components/Customer/CustomerUsageView'
 import { MembersSection } from '@/components/Customer/MembersSection'
+import { OrderStatus } from '@/components/Orders/OrderStatus'
 import CostsPage from '@/app/(main)/dashboard/[organization]/(header)/analytics/costs/CostsPage'
 import PaymentMethod from '@/components/PaymentMethod/PaymentMethod'
 import PaymentStatus from '@/components/PaymentStatus/PaymentStatus'
@@ -367,12 +368,10 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 ),
               },
               {
-                header: 'Created At',
-                accessorKey: 'created_at',
+                header: 'Status',
+                accessorKey: 'status',
                 cell: ({ row: { original } }) => (
-                  <span className="dark:text-polar-500 text-sm text-gray-500">
-                    <FormattedDateTime datetime={original.created_at} />
-                  </span>
+                  <OrderStatus status={original.status} />
                 ),
               },
               {
@@ -383,6 +382,15 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                     original.net_amount,
                     original.currency,
                   ),
+              },
+              {
+                header: 'Date',
+                accessorKey: 'created_at',
+                cell: ({ row: { original } }) => (
+                  <span className="dark:text-polar-500 text-sm text-gray-500">
+                    <FormattedDateTime datetime={original.created_at} />
+                  </span>
+                ),
               },
               {
                 header: '',

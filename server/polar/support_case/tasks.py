@@ -82,4 +82,10 @@ async def notify_organization_of_new_message(message_id: UUID) -> None:
                 ),
                 to_email_addr=email,
                 subject=subject,
+                # Notification-only: send from noreply and drop the default
+                # support@ reply-to, so replies don't open a disconnected Plain
+                # thread. The footer tells recipients to respond on the case.
+                from_email_addr=f"noreply@{settings.EMAIL_FROM_DOMAIN}",
+                reply_to_name=None,
+                reply_to_email_addr=None,
             )

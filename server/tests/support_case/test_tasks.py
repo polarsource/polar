@@ -89,7 +89,12 @@ class TestNotifyOrganization:
         await _notify(message.id)
 
         enqueue.assert_called_once()
-        assert enqueue.call_args.kwargs["to_email_addr"] == user_organization.user.email
+        kwargs = enqueue.call_args.kwargs
+        assert kwargs["to_email_addr"] == user_organization.user.email
+        # Notification-only: from noreply, no reply-to (replies shouldn't open a
+        # disconnected Plain thread).
+        assert kwargs["from_email_addr"].startswith("noreply@")
+        assert kwargs["reply_to_email_addr"] is None
 
     async def test_skips_non_staff_message(
         self,

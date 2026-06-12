@@ -23,6 +23,10 @@ export function SupportCaseOrganizationNewMessage({
         .
       </Intro>
       <Button href={url}>View your {case_label}</Button>
+      <Text variant="caption">
+        This inbox isn't monitored — please don't reply to this email. To
+        respond, open your {case_label} using the button above.
+      </Text>
       <Footer email={email} />
     </WrapperPolar>
   )

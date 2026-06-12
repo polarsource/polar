@@ -50,7 +50,7 @@ ListSorting = Annotated[
 
 @router.get(
     "/",
-    summary="List Public Benefit Grants",
+    summary="List Benefit Grants",
     response_model=ListResource[CustomerBenefitGrant],
 )
 async def list(
@@ -78,7 +78,7 @@ async def list(
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[CustomerBenefitGrant]:
-    """List public benefits grants of the authenticated customer."""
+    """List benefits grants of the authenticated customer."""
     results, count = await customer_benefit_grant_service.list(
         session,
         auth_subject,

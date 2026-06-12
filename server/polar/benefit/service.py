@@ -210,21 +210,6 @@ class BenefitService:
                 ]
             )
 
-        if (
-            "visibility" in benefit_update.model_fields_set
-            and not benefit.type.is_visibility_configurable()
-        ):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "visibility"),
-                        "msg": "Visibility cannot be changed for this benefit type.",
-                        "input": getattr(benefit_update, "visibility", None),
-                    }
-                ]
-            )
-
         update_dict = benefit_update.model_dump(
             by_alias=True, exclude_unset=True, exclude={"type", "properties"}
         )

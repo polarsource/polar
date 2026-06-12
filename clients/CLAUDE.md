@@ -26,12 +26,14 @@ Files are limited to 250 lines of code (excluding blanks and comments) via the `
 ```
 clients/
 ├── apps/
-│   └── web/                    # Main Next.js application
-│       └── src/
-│           ├── app/            # App Router pages
-│           │   ├── (main)/     # Main layout (dashboard, org pages)
-│           │   └── (public)/   # Public pages
-│           └── hooks/          # React hooks
+│   ├── web/                    # Main Next.js application
+│   │   └── src/
+│   │       ├── app/            # App Router pages
+│   │       │   ├── (main)/     # Main layout (dashboard, org pages)
+│   │       │   └── (public)/   # Public pages
+│   │       └── hooks/          # React hooks
+│   ├── app/                    # iOS and Android app (Expo/React Native)
+│   └── orbit/                  # Orbit design system documentation and showcase
 ├── packages/
 │   ├── ui/                     # Shared UI components
 │   │   └── src/components/
@@ -41,7 +43,7 @@ clients/
 │   ├── client/                 # Generated API client
 │   ├── sdk/                    # Published SDK
 │   ├── checkout/               # Checkout package
-└   └── orbit/                  # Polar's design system containing components, design tokens, etc.
+│   └── orbit/                  # Polar's design system containing components, design tokens, etc.
 ```
 
 ## UI Authoring Rule (READ FIRST)

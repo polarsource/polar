@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any, cast
 
 from polar.auth.models import AuthSubject
-from polar.authz.service import get_accessible_org_ids
+from polar.authz.types import AccessibleOrganizationID
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.event.repository import EventRepository
 from polar.event.service import event as event_service
@@ -145,9 +145,8 @@ class BenefitMeterCreditService(
         properties: dict[str, Any],
     ) -> BenefitMeterCreditProperties:
         meter_repository = MeterRepository.from_session(self.session)
-        org_ids = await get_accessible_org_ids(self.session, auth_subject)
         meter = await meter_repository.get_readable_by_id(
-            properties["meter_id"], org_ids
+            properties["meter_id"], {AccessibleOrganizationID(organization.id)}
         )
         if meter is None:
             raise BenefitPropertiesValidationError(

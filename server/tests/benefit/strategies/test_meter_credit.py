@@ -1,11 +1,23 @@
+from uuid import uuid4
+
 import pytest
 
+from polar.auth.models import AuthSubject
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
+from polar.benefit.strategies.base.service import BenefitPropertiesValidationError
+from polar.benefit.strategies.meter_credit.service import BenefitMeterCreditService
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
-from polar.models import Customer, Organization, Product, Subscription
+from polar.models import (
+    Customer,
+    Organization,
+    Product,
+    Subscription,
+    User,
+    UserOrganization,
+)
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -290,3 +302,66 @@ class TestMeterCreditBenefitIntegration:
         # 80 units of pre-upgrade usage carry over against the new allowance
         assert customer_meter.consumed_units == 80
         assert customer_meter.balance == 920
+
+
+@pytest.mark.asyncio
+class TestValidateProperties:
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+        service = BenefitMeterCreditService(session, redis)
+
+        properties = await service.validate_properties(
+            auth_subject,
+            organization,
+            {"meter_id": str(meter.id), "units": 100, "rollover": False},
+        )
+
+        assert properties["meter_id"] == str(meter.id)
+
+    @pytest.mark.auth
+    async def test_meter_from_other_organization(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        organization_second: Organization,
+    ) -> None:
+        other_meter = await create_meter(save_fixture, organization=organization_second)
+        service = BenefitMeterCreditService(session, redis)
+
+        with pytest.raises(BenefitPropertiesValidationError):
+            await service.validate_properties(
+                auth_subject,
+                organization,
+                {"meter_id": str(other_meter.id), "units": 100, "rollover": False},
+            )
+
+    @pytest.mark.auth
+    async def test_unknown_meter(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        service = BenefitMeterCreditService(session, redis)
+
+        with pytest.raises(BenefitPropertiesValidationError):
+            await service.validate_properties(
+                auth_subject,
+                organization,
+                {"meter_id": str(uuid4()), "units": 100, "rollover": False},
+            )

@@ -2,7 +2,7 @@
 
 import { schemas } from '@polar-sh/client'
 import { Box, type BoxProps } from '@polar-sh/orbit/Box'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 import { useTheme } from 'next-themes'
 import { ChecklistRow } from './ChecklistRow'
 

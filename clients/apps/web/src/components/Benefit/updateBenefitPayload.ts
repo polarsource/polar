@@ -1,4 +1,5 @@
 import { operations, schemas } from '@polar-sh/client'
+import { isBenefitVisibilityConfigurable } from './utils'
 
 export type BenefitUpdate =
   operations['benefits:update']['requestBody']['content']['application/json']
@@ -9,7 +10,7 @@ export const prepareBenefitUpdatePayload = (
 ): BenefitUpdate => {
   const payload = { ...benefitUpdate }
 
-  if (!benefit.visibility_configurable && 'visibility' in payload) {
+  if (!isBenefitVisibilityConfigurable(benefit.type) && 'visibility' in payload) {
     delete payload.visibility
   }
 

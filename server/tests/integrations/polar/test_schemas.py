@@ -55,7 +55,6 @@ def _fee_benefit(*, fee_percent: int = 380, fee_fixed: int = 35) -> dict[str, An
         "deletable": True,
         "is_deleted": False,
         "visibility": "public",
-        "visibility_configurable": False,
         "organization_id": "org_1",
         "metadata": {
             "type": "transaction_fee",

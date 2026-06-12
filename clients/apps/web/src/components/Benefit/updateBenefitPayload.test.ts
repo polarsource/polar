@@ -8,7 +8,7 @@ import {
 describe('prepareBenefitUpdatePayload', () => {
   it('removes visibility for non-configurable benefit types', () => {
     const payload = prepareBenefitUpdatePayload(
-      { visibility_configurable: false } as schemas['Benefit'],
+      { type: 'slack_shared_channel' } as schemas['Benefit'],
       {
         type: 'slack_shared_channel',
         description: 'Slack',
@@ -29,7 +29,7 @@ describe('prepareBenefitUpdatePayload', () => {
 
   it('keeps visibility for configurable benefit types', () => {
     const payload = prepareBenefitUpdatePayload(
-      { visibility_configurable: true } as schemas['Benefit'],
+      { type: 'feature_flag' } as schemas['Benefit'],
       {
         type: 'feature_flag',
         description: 'Flag',

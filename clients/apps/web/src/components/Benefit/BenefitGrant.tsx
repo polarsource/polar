@@ -354,10 +354,13 @@ const BenefitGrantDiscord = ({
 const BenefitGrantSlackSharedChannel = ({
   api,
   benefitGrant,
+  locale = DEFAULT_LOCALE,
 }: {
   api: Client
   benefitGrant: schemas['CustomerBenefitGrantSlackSharedChannel']
+  locale?: AcceptedLocale
 }) => {
+  const t = useTranslations(locale)
   const {
     benefit: { type: benefitType },
     customer,
@@ -391,14 +394,11 @@ const BenefitGrantSlackSharedChannel = ({
   if (isConnected) {
     return (
       <Text color="muted">
-        Connected to your Slack workspace
-        {channelName ? (
-          <>
-            {' '}
-            in channel <strong>{channelName}</strong>
-          </>
-        ) : null}
-        .
+        {channelName
+          ? t('checkout.benefits.slackSharedChannel.connectedChannel', {
+              channel: channelName,
+            })
+          : t('checkout.benefits.slackSharedChannel.connected')}
       </Text>
     )
   }
@@ -407,16 +407,20 @@ const BenefitGrantSlackSharedChannel = ({
     return (
       <Box display="flex" flexDirection="column" rowGap="s">
         <Text color="muted">
-          Invite sent to {invitedEmail}.
-          {channelName ? ` Channel: ${channelName}.` : ''}{' '}
+          {t('checkout.benefits.slackSharedChannel.inviteSent', {
+            email: invitedEmail ?? '',
+          })}
+          {channelName
+            ? ` ${t('checkout.benefits.slackSharedChannel.channel', { channel: channelName })}`
+            : ''}{' '}
           {inviteUrl
-            ? 'Open the link to accept in Slack.'
-            : 'Accept it from the invite email or your Slack Connect requests.'}
+            ? t('checkout.benefits.slackSharedChannel.openLinkToAccept')
+            : t('checkout.benefits.slackSharedChannel.acceptFromEmail')}
         </Text>
         {inviteUrl && (
           <a href={inviteUrl} target="_blank" rel="noopener noreferrer">
             <Button asChild fullWidth variant="secondary">
-              Open Slack invite
+              {t('checkout.benefits.slackSharedChannel.openInvite')}
             </Button>
           </a>
         )}
@@ -426,7 +430,7 @@ const BenefitGrantSlackSharedChannel = ({
 
   // Email submitted, not granted yet, no error: worker is provisioning.
   if (invitedEmail && !grantError) {
-    return <ProvisioningState invitedEmail={invitedEmail} />
+    return <ProvisioningState invitedEmail={invitedEmail} locale={locale} />
   }
 
   return (
@@ -439,14 +443,13 @@ const BenefitGrantSlackSharedChannel = ({
     >
       {invitedEmail ? (
         <Text color="muted">
-          We couldn&apos;t set up your Slack channel with{' '}
-          <strong>{invitedEmail}</strong>. Double-check the email and try again,
-          or reach out to the seller if it keeps failing.
+          {t('checkout.benefits.slackSharedChannel.setupFailed', {
+            email: invitedEmail,
+          })}
         </Text>
       ) : (
         <Text color="muted">
-          Enter the email of an admin in your Slack workspace. They&apos;ll
-          receive a Slack Connect invite for a private channel.
+          {t('checkout.benefits.slackSharedChannel.enterEmail')}
         </Text>
       )}
       {invitedEmail && grantError?.message && (
@@ -459,16 +462,25 @@ const BenefitGrantSlackSharedChannel = ({
         required
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        placeholder="slack-admin@yourcompany.com"
+        placeholder={t('checkout.benefits.slackSharedChannel.emailPlaceholder')}
       />
       <Button type="submit" loading={updateBenefitGrant.isPending} fullWidth>
-        {invitedEmail ? 'Try again' : 'Request Slack invite'}
+        {invitedEmail
+          ? t('checkout.benefits.slackSharedChannel.tryAgain')
+          : t('checkout.benefits.slackSharedChannel.requestInvite')}
       </Button>
     </Box>
   )
 }
 
-const ProvisioningState = ({ invitedEmail }: { invitedEmail: string }) => {
+const ProvisioningState = ({
+  invitedEmail,
+  locale = DEFAULT_LOCALE,
+}: {
+  invitedEmail: string
+  locale?: AcceptedLocale
+}) => {
+  const t = useTranslations(locale)
   const queryClient = getQueryClient()
   useEffect(() => {
     const interval = setInterval(() => {
@@ -479,8 +491,9 @@ const ProvisioningState = ({ invitedEmail }: { invitedEmail: string }) => {
 
   return (
     <Text color="muted">
-      Setting up your Slack channel for <strong>{invitedEmail}</strong>... You
-      should receive an invite in your inbox shortly.
+      {t('checkout.benefits.slackSharedChannel.provisioning', {
+        email: invitedEmail,
+      })}
     </Text>
   )
 }
@@ -552,6 +565,7 @@ export const BenefitGrant = ({
           benefitGrant={
             benefitGrant as schemas['CustomerBenefitGrantSlackSharedChannel']
           }
+          locale={locale}
         />
       )}
     </div>

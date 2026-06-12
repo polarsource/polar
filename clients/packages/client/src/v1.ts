@@ -1011,9 +1011,35 @@ export interface paths {
      * Reply to Appeal Case
      * @description Post a merchant reply to the human-review case.
      *
+     *     The reply may carry free text, attachments, or both. Attachments must
+     *     first be uploaded through the files API with service
+     *     ``support_case_attachment``.
+     *
      *     **Scopes**: `organizations:write`
      */
     post: operations['organizations:reply_to_appeal_case']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/appeal/case/attachments/{attachment_id}/download': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Download Appeal Case Attachment
+     * @description Redirect to a short-lived presigned URL for a merchant-visible attachment.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['organizations:download_appeal_case_attachment']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -19952,6 +19978,7 @@ export interface components {
       | components['schemas']['DownloadableFileCreate']
       | components['schemas']['ProductMediaFileCreate']
       | components['schemas']['OrganizationAvatarFileCreate']
+      | components['schemas']['SupportCaseAttachmentFileCreate']
     /** FileDownload */
     FileDownload: {
       /**
@@ -20003,7 +20030,11 @@ export interface components {
      * FileServiceTypes
      * @enum {string}
      */
-    FileServiceTypes: 'downloadable' | 'product_media' | 'organization_avatar'
+    FileServiceTypes:
+      | 'downloadable'
+      | 'product_media'
+      | 'organization_avatar'
+      | 'support_case_attachment'
     /** FileUpload */
     FileUpload: {
       /**
@@ -21062,6 +21093,7 @@ export interface components {
         | components['schemas']['DownloadableFileRead']
         | components['schemas']['ProductMediaFileRead']
         | components['schemas']['OrganizationAvatarFileRead']
+        | components['schemas']['SupportCaseAttachmentFileRead']
       )[]
       pagination: components['schemas']['Pagination']
     }
@@ -31230,6 +31262,119 @@ export interface components {
       id: string
       type: components['schemas']['SupportCaseType']
     }
+    /** SupportCaseAttachment */
+    SupportCaseAttachment: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /** Message Id */
+      message_id: string | null
+      file: components['schemas']['SupportCaseAttachmentFile']
+    }
+    /** SupportCaseAttachmentFile */
+    SupportCaseAttachmentFile: {
+      /** Name */
+      name: string
+      /** Mime Type */
+      mime_type: string
+      /** Size */
+      size: number
+    }
+    /**
+     * SupportCaseAttachmentFileCreate
+     * @description Schema to create a file attached to a support case.
+     */
+    SupportCaseAttachmentFileCreate: {
+      /** Organization Id */
+      organization_id?: string | null
+      /** Name */
+      name: string
+      /**
+       * Mime Type
+       * @description MIME type of the file. Images, videos, PDF, CSV, plain text, Word and Excel documents are supported.
+       */
+      mime_type: string
+      /**
+       * Size
+       * @description Size of the file. A maximum of 250 MB is allowed for this type of file.
+       */
+      size: number
+      /** Checksum Sha256 Base64 */
+      checksum_sha256_base64?: string | null
+      upload: components['schemas']['S3FileCreateMultipart']
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      service: 'support_case_attachment'
+      /** Version */
+      version?: string | null
+    }
+    /**
+     * SupportCaseAttachmentFileRead
+     * @description File attached to a support case (private; fetched via presigned URL).
+     */
+    SupportCaseAttachmentFileRead: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
+      /** Name */
+      name: string
+      /** Path */
+      path: string
+      /** Mime Type */
+      mime_type: string
+      /** Size */
+      size: number
+      /** Storage Version */
+      storage_version: string | null
+      /** Checksum Etag */
+      checksum_etag: string | null
+      /** Checksum Sha256 Base64 */
+      checksum_sha256_base64: string | null
+      /** Checksum Sha256 Hex */
+      checksum_sha256_hex: string | null
+      /** Last Modified At */
+      last_modified_at: string | null
+      /** Version */
+      version: string | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      service: 'support_case_attachment'
+      /** Is Uploaded */
+      is_uploaded: boolean
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Size Readable */
+      readonly size_readable: string
+    }
     /** SupportCaseMessage */
     SupportCaseMessage: {
       /**
@@ -31263,10 +31408,15 @@ export interface components {
       | 'merchant'
       | 'customer'
       | 'system'
-    /** SupportCaseMessageCreate */
+    /**
+     * SupportCaseMessageCreate
+     * @description A reply: free text, attachments (already uploaded files), or both.
+     */
     SupportCaseMessageCreate: {
       /** Body */
-      body: string
+      body?: string | null
+      /** File Ids */
+      file_ids?: string[]
     }
     /**
      * SupportCaseMessageType
@@ -31289,6 +31439,8 @@ export interface components {
       case: components['schemas']['SupportCase']
       /** Messages */
       messages: components['schemas']['SupportCaseMessage'][]
+      /** Attachments */
+      attachments: components['schemas']['SupportCaseAttachment'][]
       /** Is Open */
       is_open: boolean
     }
@@ -35687,6 +35839,54 @@ export interface operations {
       }
     }
   }
+  'organizations:download_appeal_case_attachment': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        attachment_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Redirect to a presigned download URL. */
+      302: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Support case not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'organizations:mark_ai_onboarding_complete': {
     parameters: {
       query?: never
@@ -39614,6 +39814,7 @@ export interface operations {
             | components['schemas']['DownloadableFileRead']
             | components['schemas']['ProductMediaFileRead']
             | components['schemas']['OrganizationAvatarFileRead']
+            | components['schemas']['SupportCaseAttachmentFileRead']
         }
       }
       /** @description You don't have the permission to update this file. */
@@ -39718,6 +39919,7 @@ export interface operations {
             | components['schemas']['DownloadableFileRead']
             | components['schemas']['ProductMediaFileRead']
             | components['schemas']['OrganizationAvatarFileRead']
+            | components['schemas']['SupportCaseAttachmentFileRead']
         }
       }
       /** @description You don't have the permission to update this file. */
@@ -57350,7 +57552,12 @@ export const feedbackTypeValues: ReadonlyArray<
 > = ['bug', 'feedback', 'question']
 export const fileServiceTypesValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['FileServiceTypes']
-> = ['downloadable', 'product_media', 'organization_avatar']
+> = [
+  'downloadable',
+  'product_media',
+  'organization_avatar',
+  'support_case_attachment',
+]
 export const filterConjunctionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['FilterConjunction']
 > = ['and', 'or']
@@ -59447,6 +59654,12 @@ export const subscriptionUpdateClearedEventNameValues: ReadonlyArray<
 export const subscriptionUpdatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionUpdatedEvent']['name']
 > = ['subscription.updated']
+export const supportCaseAttachmentFileCreateServiceValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SupportCaseAttachmentFileCreate']['service']
+> = ['support_case_attachment']
+export const supportCaseAttachmentFileReadServiceValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SupportCaseAttachmentFileRead']['service']
+> = ['support_case_attachment']
 export const supportCaseMessageAuthorKindValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SupportCaseMessageAuthorKind']
 > = ['platform', 'merchant', 'customer', 'system']

@@ -1,8 +1,9 @@
 from collections.abc import Sequence
 
-from polar.models import Customer, Organization, User
+from polar.models import Customer, File, Organization, User
 from polar.models.support_case import (
     SupportCase,
+    SupportCaseAttachment,
     SupportCaseAudience,
     SupportCaseMessage,
     SupportCaseMessageAuthorKind,
@@ -13,6 +14,7 @@ from polar.models.support_case import (
 from polar.postgres import AsyncSession
 
 from .repository import (
+    SupportCaseAttachmentRepository,
     SupportCaseMessageRepository,
     SupportCaseParticipantRepository,
     SupportCaseRepository,
@@ -143,6 +145,37 @@ class SupportCaseService:
             type=SupportCaseMessageType.released,
             author_kind=SupportCaseMessageAuthorKind.platform,
             author_user=actor,
+        )
+
+    async def add_attachment(
+        self,
+        session: AsyncSession,
+        case: SupportCase,
+        *,
+        file: File,
+        message: SupportCaseMessage | None = None,
+        audience: Sequence[SupportCaseAudience] = (),
+    ) -> SupportCaseAttachment:
+        """Attach an uploaded file to a case.
+
+        Pass ``message`` to pin the attachment to a conversational turn — its
+        provenance (who/when/role) is that message's. Omit it only for an
+        attachment with no conversational author: a file that belongs to the
+        case itself (e.g. a system-generated artifact). User uploads always
+        carry a message.
+        """
+        repository = SupportCaseAttachmentRepository.from_session(session)
+        return await repository.create(
+            SupportCaseAttachment(
+                case=case,
+                file=file,
+                # Set the scalar FK, not a `message=` relationship: the message
+                # is reached via the composite (case_id, message_id) FK, whose
+                # case_id is already owned by `case` above
+                message_id=message.id if message is not None else None,
+                audience=list(audience),
+            ),
+            flush=True,
         )
 
 

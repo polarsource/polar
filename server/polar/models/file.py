@@ -30,6 +30,7 @@ class FileServiceTypes(StrEnum):
     downloadable = "downloadable"
     product_media = "product_media"
     organization_avatar = "organization_avatar"
+    support_case_attachment = "support_case_attachment"
 
 
 class File(RecordModel):
@@ -89,4 +90,10 @@ class ProductMediaFile(File):
 class OrganizationAvatarFile(File):
     __mapper_args__ = {
         "polymorphic_identity": FileServiceTypes.organization_avatar,
+    }
+
+
+class SupportCaseAttachmentFile(File):
+    __mapper_args__ = {
+        "polymorphic_identity": FileServiceTypes.support_case_attachment,
     }

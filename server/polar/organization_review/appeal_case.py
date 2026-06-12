@@ -2,10 +2,11 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from polar.exceptions import PolarError
-from polar.models import Organization, User
+from polar.models import File, Organization, User
 from polar.models.organization_review import OrganizationReview
 from polar.models.support_case import (
     ReviewAppealSupportCase,
+    SupportCaseAttachment,
     SupportCaseAudience,
     SupportCaseMessage,
     SupportCaseMessageAuthorKind,
@@ -15,6 +16,7 @@ from polar.models.support_case import (
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.support_case.repository import (
     ReviewAppealSupportCaseRepository,
+    SupportCaseAttachmentRepository,
     SupportCaseMessageRepository,
 )
 from polar.support_case.service import support_case as support_case_service
@@ -80,23 +82,31 @@ class AppealCaseService:
         *,
         author_kind: SupportCaseMessageAuthorKind,
         author_user: User | None = None,
-        body: str,
+        body: str | None = None,
+        files: Sequence[File] = (),
         internal: bool = False,
     ) -> SupportCaseMessage:
+        """Post a reply, optionally carrying one or more uploaded files."""
         await self._assert_open(session, case)
+        audience = [] if internal else [SupportCaseAudience.merchant]
         message = await support_case_service.post_message(
             session,
             case,
             author_kind=author_kind,
             author_user=author_user,
             body=body,
-            audience=[] if internal else [SupportCaseAudience.merchant],
+            audience=audience,
         )
+        for file in files:
+            await support_case_service.add_attachment(
+                session, case, file=file, message=message, audience=audience
+            )
         # Visible replies notify the case recipients by email (direct send,
-        # bypassing the legacy notification system.
+        # bypassing the legacy notification system).
         if not internal:
             enqueue_job(
-                "support_case.notify_organization_of_new_message", message_id=message.id
+                "support_case.notify_organization_of_new_message",
+                message_id=message.id,
             )
         return message
 
@@ -160,6 +170,32 @@ class AppealCaseService:
         is_open = await message_repository.is_open(case.id)
         messages = await message_repository.list_by_case(case.id, visible_to=visible_to)
         return case, is_open, messages
+
+    async def list_attachments(
+        self,
+        session: AsyncSession | AsyncReadSession,
+        case: ReviewAppealSupportCase,
+        *,
+        visible_to: SupportCaseAudience | None,
+    ) -> Sequence[SupportCaseAttachment]:
+        repository = SupportCaseAttachmentRepository.from_session(session)
+        return await repository.list_by_case(case.id, visible_to=visible_to)
+
+    async def get_attachment(
+        self,
+        session: AsyncSession | AsyncReadSession,
+        case: ReviewAppealSupportCase,
+        attachment_id: UUID,
+        *,
+        visible_to: SupportCaseAudience | None,
+    ) -> SupportCaseAttachment | None:
+        repository = SupportCaseAttachmentRepository.from_session(session)
+        attachment = await repository.get_by_id_for_case(attachment_id, case.id)
+        if attachment is None:
+            return None
+        if visible_to is not None and visible_to not in attachment.audience:
+            return None
+        return attachment
 
     async def _assert_open(
         self, session: AsyncSession, case: ReviewAppealSupportCase

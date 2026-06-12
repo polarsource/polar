@@ -100,6 +100,14 @@ class SupportCaseMessageRepository(
         return latest_type != SupportCaseMessageType.closed
 
 
+class SupportCaseParticipantRepository(
+    RepositorySoftDeletionIDMixin[SupportCaseParticipant, UUID],
+    RepositorySoftDeletionMixin[SupportCaseParticipant],
+    RepositoryBase[SupportCaseParticipant],
+):
+    model = SupportCaseParticipant
+
+
 class SupportCaseAttachmentRepository(
     RepositorySoftDeletionIDMixin[SupportCaseAttachment, UUID],
     RepositorySoftDeletionMixin[SupportCaseAttachment],
@@ -107,23 +115,39 @@ class SupportCaseAttachmentRepository(
 ):
     model = SupportCaseAttachment
 
-    async def list_by_case(self, case_id: UUID) -> Sequence[SupportCaseAttachment]:
-        """A case's attachments (oldest first) with their file eager-loaded."""
+    async def list_by_case(
+        self, case_id: UUID, *, visible_to: SupportCaseAudience | None = None
+    ) -> Sequence[SupportCaseAttachment]:
+        """A case's attachments (oldest first) with their file eager-loaded.
+
+        ``visible_to`` filters by audience for a non-platform reader; ``None``
+        is the platform, which sees everything (mirrors the message repository).
+        """
         statement = (
             self.get_base_statement()
             .where(SupportCaseAttachment.case_id == case_id)
             .options(joinedload(SupportCaseAttachment.file))
             .order_by(SupportCaseAttachment.created_at.asc())
         )
+        if visible_to is not None:
+            statement = statement.where(
+                SupportCaseAttachment.audience.contains([visible_to])
+            )
         return await self.get_all(statement)
 
-
-class SupportCaseParticipantRepository(
-    RepositorySoftDeletionIDMixin[SupportCaseParticipant, UUID],
-    RepositorySoftDeletionMixin[SupportCaseParticipant],
-    RepositoryBase[SupportCaseParticipant],
-):
-    model = SupportCaseParticipant
+    async def get_by_id_for_case(
+        self, attachment_id: UUID, case_id: UUID
+    ) -> SupportCaseAttachment | None:
+        """An attachment scoped to its case, with its file eager-loaded."""
+        statement = (
+            self.get_base_statement()
+            .where(
+                SupportCaseAttachment.id == attachment_id,
+                SupportCaseAttachment.case_id == case_id,
+            )
+            .options(joinedload(SupportCaseAttachment.file))
+        )
+        return await self.get_one_or_none(statement)
 
 
 class ReviewAppealSupportCaseRepository(

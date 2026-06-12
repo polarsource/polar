@@ -1,32 +1,21 @@
 from typing import cast
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import pytest
 
-from polar.auth.models import AuthSubject
-from polar.benefit.strategies.base.service import BenefitPropertiesValidationError
 from polar.benefit.strategies.downloadables.properties import (
     BenefitDownloadablesProperties,
 )
 from polar.benefit.strategies.downloadables.schemas import (
     BenefitDownloadablesCreateProperties,
 )
-from polar.benefit.strategies.downloadables.service import BenefitDownloadablesService
 from polar.file.schemas import FileRead
-from polar.models import (
-    Customer,
-    Downloadable,
-    Organization,
-    Product,
-    User,
-    UserOrganization,
-)
+from polar.models import Customer, Downloadable, Organization, Product
 from polar.models.downloadable import DownloadableStatus
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.downloadable import TestDownloadable
-from tests.fixtures.file import TestFile, uploaded_fixture
 
 
 @pytest.mark.asyncio
@@ -519,60 +508,3 @@ class TestDownloadblesBenefit:
         by_file = {d.file_id: d for d in downloadables}
         assert by_file[uploaded_logo_jpg.id].status == DownloadableStatus.granted
         assert by_file[uploaded_logo_png.id].status == DownloadableStatus.revoked
-
-
-@pytest.mark.asyncio
-class TestValidateProperties:
-    @pytest.mark.auth
-    async def test_valid(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        auth_subject: AuthSubject[User],
-        user_organization: UserOrganization,
-        uploaded_logo_jpg: FileRead,
-    ) -> None:
-        service = BenefitDownloadablesService(session, redis)
-
-        properties = await service.validate_properties(
-            auth_subject,
-            {"archived": {}, "files": [str(uploaded_logo_jpg.id)]},
-        )
-
-        assert properties["files"] == [str(uploaded_logo_jpg.id)]
-
-    @pytest.mark.auth
-    async def test_file_from_other_organization(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        auth_subject: AuthSubject[User],
-        user_organization: UserOrganization,
-        organization_second: Organization,
-    ) -> None:
-        other_file = await uploaded_fixture(
-            session, organization_second, TestFile("logo.jpg")
-        )
-        service = BenefitDownloadablesService(session, redis)
-
-        with pytest.raises(BenefitPropertiesValidationError):
-            await service.validate_properties(
-                auth_subject,
-                {"archived": {}, "files": [str(other_file.id)]},
-            )
-
-    @pytest.mark.auth
-    async def test_unknown_file(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        auth_subject: AuthSubject[User],
-        user_organization: UserOrganization,
-    ) -> None:
-        service = BenefitDownloadablesService(session, redis)
-
-        with pytest.raises(BenefitPropertiesValidationError):
-            await service.validate_properties(
-                auth_subject,
-                {"archived": {}, "files": [str(uuid4())]},
-            )

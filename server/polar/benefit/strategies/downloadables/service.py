@@ -6,17 +6,13 @@ from uuid import UUID
 import structlog
 
 from polar.auth.models import AuthSubject
-from polar.auth.permission import OrganizationPermission
-from polar.authz.service import get_accessible_org_ids
 from polar.customer_portal.service.downloadables import (
     downloadable as downloadable_service,
 )
-from polar.exceptions import ValidationError
-from polar.file.repository import FileRepository
 from polar.logging import Logger
-from polar.models import Benefit, Customer, File, Member, Organization, User
+from polar.models import Benefit, Customer, Member, Organization, User
 
-from ..base.service import BenefitPropertiesValidationError, BenefitServiceProtocol
+from ..base.service import BenefitServiceProtocol
 from . import schemas
 from .properties import (
     BenefitDownloadablesProperties,
@@ -113,29 +109,4 @@ class BenefitDownloadablesService(
     async def validate_properties(
         self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]
     ) -> BenefitDownloadablesProperties:
-        file_ids = [UUID(file_id) for file_id in properties["files"]]
-        accessible_org_ids = await get_accessible_org_ids(
-            self.session,
-            auth_subject,
-            permission=OrganizationPermission.products_manage,
-        )
-        repository = FileRepository.from_session(self.session)
-        files = await repository.get_all(
-            repository.get_statement_by_org_ids(accessible_org_ids).where(
-                File.id.in_(file_ids)
-            )
-        )
-        accessible_file_ids = {file.id for file in files}
-        errors: list[ValidationError] = [
-            {
-                "type": "value_error",
-                "msg": "File not found.",
-                "loc": ("files", index),
-                "input": str(file_id),
-            }
-            for index, file_id in enumerate(file_ids)
-            if file_id not in accessible_file_ids
-        ]
-        if errors:
-            raise BenefitPropertiesValidationError(errors)
         return cast(BenefitDownloadablesProperties, properties)

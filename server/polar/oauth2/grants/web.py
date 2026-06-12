@@ -10,12 +10,14 @@ from authlib.oauth2.rfc6749.errors import (
 )
 from authlib.oauth2.rfc6749.grants import BaseGrant, TokenEndpointMixin
 from authlib.oauth2.rfc6749.hooks import hooked
-from sqlalchemy import and_, select
+from sqlalchemy import select
 
+from polar.auth.permission import OrganizationPermission
+from polar.authz.repository import select_user_org_ids
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
-from polar.models import Organization, User, UserOrganization, UserSession
+from polar.models import Organization, User, UserSession
 
 from ..sub_type import SubType, SubTypeValue
 
@@ -109,16 +111,14 @@ class WebGrant(BaseGrant, TokenEndpointMixin):
     def _get_organization_admin(
         self, organization_id: uuid.UUID, user: User
     ) -> Organization | None:
-        statement = (
-            select(Organization)
-            .join(
-                UserOrganization,
-                onclause=and_(
-                    UserOrganization.user_id == user.id,
-                    UserOrganization.is_deleted.is_(False),
-                ),
-            )
-            .where(Organization.id == organization_id)
+        statement = select(Organization).where(
+            Organization.id == organization_id,
+            Organization.id.in_(
+                select_user_org_ids(
+                    user.id,
+                    permission=OrganizationPermission.organization_manage,
+                )
+            ),
         )
         result = self.server.session.execute(statement)
         return result.unique().scalar_one_or_none()

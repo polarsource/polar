@@ -4,7 +4,7 @@ import { X } from 'lucide-react'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import { AttachmentIcon } from './AttachmentIcon'
-import { truncateFilename } from './fileTypes'
+import { truncateFilename } from './fileUtils'
 import { type UploadingAttachment } from './useAttachmentUploads'
 
 interface Props {

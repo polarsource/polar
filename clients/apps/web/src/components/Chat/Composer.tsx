@@ -1,40 +1,47 @@
-import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2, Paperclip, Send } from 'lucide-react'
 import React, { useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { AttachmentChips } from './AttachmentChips'
-import { ACCEPTED_FILE_TYPES } from './fileTypes'
+import { type ChatUploader } from './types'
 import { useAttachmentUploads } from './useAttachmentUploads'
 
-const REQUEST_MIN_LENGTH = 50
 const MAX_LENGTH = 5000
 
-export interface ReplyBoxHandle {
+export interface ComposerHandle {
   addFiles: (files: File[]) => void
 }
 
 interface Props {
-  organization: schemas['Organization']
+  uploader: ChatUploader
   onSend: (text: string, fileIds: string[]) => Promise<{ error?: unknown }>
   isPending: boolean
-  mode?: 'reply' | 'request'
   placeholder?: string
-  ref?: React.Ref<ReplyBoxHandle>
+  // Minimum text length to send (e.g. a structured first message); 1 means
+  // any non-empty text.
+  minLength?: number
+  // Show the "Minimum N characters" + counter row under the input.
+  showCounter?: boolean
+  allowAttachments?: boolean
+  ref?: React.Ref<ComposerHandle>
 }
 
-export const ReplyBox = ({
-  organization,
+export const Composer = ({
+  uploader,
   onSend,
   isPending,
-  mode = 'reply',
   placeholder = 'Write a reply…',
+  minLength = 1,
+  showCounter = false,
+  allowAttachments = true,
   ref,
 }: Props) => {
   const [body, setBody] = useState('')
   const [flying, setFlying] = useState(false)
   const [sendFailed, setSendFailed] = useState(false)
+  // Guards against double-submits; the isPending prop only covers the message
+  // mutation itself.
   const [sending, setSending] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -48,14 +55,14 @@ export const ReplyBox = ({
     uploadsPending,
     uploadsFailed,
     uploadedFileIds,
-  } = useAttachmentUploads(organization)
+  } = useAttachmentUploads(uploader)
 
-  const allowAttachments = mode === 'reply'
-  const minLength = mode === 'request' ? REQUEST_MIN_LENGTH : 1
   const length = body.length
   const hasValidText = body.trim().length >= minLength && length <= MAX_LENGTH
   const hasContent =
     hasValidText || (allowAttachments && uploadedFileIds.length > 0)
+  // Sending waits for every attachment to finish uploading; failed uploads
+  // must be removed before the message can go out.
   const canSend = hasContent && !uploadsPending && !uploadsFailed
   const busy = isPending || sending
 
@@ -68,6 +75,7 @@ export const ReplyBox = ({
 
   const onFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     addFiles(Array.from(e.target.files ?? []))
+    // Reset so picking the same file again still fires onChange.
     e.target.value = ''
   }
 
@@ -104,7 +112,7 @@ export const ReplyBox = ({
             <input
               ref={fileInputRef}
               type="file"
-              accept={ACCEPTED_FILE_TYPES}
+              accept={uploader.accept}
               multiple
               onChange={onFilesSelected}
               className="hidden"
@@ -190,14 +198,14 @@ export const ReplyBox = ({
           Couldn&rsquo;t send your message — please try again.
         </Text>
       )}
-      {mode === 'request' && (
+      {showCounter && (
         <div className="flex gap-2">
           {/* Mirrors the attach-button column above so the captions align
               with the input. */}
-          <div className="ml-[-10px] w-8 shrink-0" />
+          {allowAttachments && <div className="ml-[-10px] w-8 shrink-0" />}
           <Box display="flex" flexGrow={1} justifyContent="between">
             <Text variant="caption" color="muted">
-              Minimum {REQUEST_MIN_LENGTH} characters
+              Minimum {minLength} characters
             </Text>
             <Text variant="caption" color="muted">
               {length}/{MAX_LENGTH}

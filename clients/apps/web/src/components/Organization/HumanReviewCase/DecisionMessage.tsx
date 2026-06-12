@@ -4,9 +4,9 @@ import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'framer-motion'
 import { Check, X } from 'lucide-react'
 import React from 'react'
-import { BUBBLE_SPRING, ROW_FADE } from './ChatBubble'
+import { BUBBLE_SPRING, ROW_FADE } from '@/components/Chat/ChatBubble'
+import { exactTime, relativeTime } from '@/components/Chat/time'
 import { MessageAvatar } from './MessageAvatar'
-import { exactTime, relativeTime } from './time'
 
 interface Props {
   message: schemas['SupportCaseMessage']

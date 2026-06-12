@@ -1,26 +1,28 @@
 import { UploadAbortedError } from '@/components/FileUpload/Upload'
-import { schemas } from '@polar-sh/client'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { uploadCaseAttachment } from './caseAttachments'
-import { isAcceptedFile } from './fileTypes'
-
-const MAX_FILE_SIZE = 250 * 1024 * 1024
-const MAX_FILES = 10
+import { formatFileSize } from './fileUtils'
+import { type ChatUploader } from './types'
 
 export interface UploadingAttachment {
   id: string
   file: File
   preview: string | null
   status: 'uploading' | 'uploaded' | 'error'
+  // Uploaded fraction of the file, 0..1.
   progress: number
+  // Server-side file id, set once the upload completes.
   fileId?: string
 }
 
-export const useAttachmentUploads = (organization: schemas['Organization']) => {
+// Owns the eager-upload lifecycle: files start uploading the moment they're
+// added, so sending only needs the collected file ids. All policy (what's
+// accepted, size/count limits, the actual transfer) comes from the uploader.
+export const useAttachmentUploads = (uploader: ChatUploader) => {
   const [attachments, setAttachments] = useState<UploadingAttachment[]>([])
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
 
   const attachmentsRef = useRef(attachments)
+  // In-flight upload abort handles, keyed by attachment id.
   const abortsRef = useRef(new Map<string, () => void>())
 
   useEffect(() => {
@@ -39,6 +41,7 @@ export const useAttachmentUploads = (organization: schemas['Organization']) => {
 
   const update = useCallback(
     (id: string, patch: (a: UploadingAttachment) => UploadingAttachment) => {
+      // No-op if the attachment was removed while its upload was in flight.
       setAttachments((prev) => prev.map((a) => (a.id === id ? patch(a) : a)))
     },
     [],
@@ -48,22 +51,26 @@ export const useAttachmentUploads = (organization: schemas['Organization']) => {
     (files: File[]) => {
       setAttachmentError(null)
 
-      const accepted = files.filter(isAcceptedFile)
+      const accepted = files.filter(uploader.isAccepted)
       if (accepted.length < files.length) {
         setAttachmentError('Some files have an unsupported format.')
       }
 
       const valid = accepted.filter((file) => {
-        if (file.size > MAX_FILE_SIZE) {
-          setAttachmentError(`${file.name} is too large (max 250 MB).`)
+        if (file.size > uploader.maxFileSize) {
+          setAttachmentError(
+            `${file.name} is too large (max ${formatFileSize(
+              uploader.maxFileSize,
+            )}).`,
+          )
           return false
         }
         return true
       })
 
-      const room = MAX_FILES - attachmentsRef.current.length
+      const room = uploader.maxFiles - attachmentsRef.current.length
       if (valid.length > room) {
-        setAttachmentError(`You can attach at most ${MAX_FILES} files.`)
+        setAttachmentError(`You can attach at most ${uploader.maxFiles} files.`)
       }
       const toAdd = valid.slice(0, Math.max(room, 0))
       if (toAdd.length === 0) return
@@ -80,10 +87,8 @@ export const useAttachmentUploads = (organization: schemas['Organization']) => {
       setAttachments((prev) => [...prev, ...entries])
 
       for (const entry of entries) {
-        const { promise, abort } = uploadCaseAttachment(
-          organization,
-          entry.file,
-          (progress) => update(entry.id, (a) => ({ ...a, progress })),
+        const { promise, abort } = uploader.upload(entry.file, (progress) =>
+          update(entry.id, (a) => ({ ...a, progress })),
         )
         abortsRef.current.set(entry.id, abort)
         promise
@@ -96,6 +101,8 @@ export const useAttachmentUploads = (organization: schemas['Organization']) => {
             })),
           )
           .catch((error) => {
+            // Aborts are user-initiated (chip removed / unmount) — no error
+            // state to show.
             if (!(error instanceof UploadAbortedError)) {
               update(entry.id, (a) => ({ ...a, status: 'error' }))
             }
@@ -103,7 +110,7 @@ export const useAttachmentUploads = (organization: schemas['Organization']) => {
           .finally(() => abortsRef.current.delete(entry.id))
       }
     },
-    [organization, update],
+    [uploader, update],
   )
 
   const removeAttachment = useCallback((id: string) => {

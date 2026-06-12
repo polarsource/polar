@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
-import { getExtension } from './fileTypes'
+import { getExtension } from './fileUtils'
 
 const DEFAULT_CLASS = 'dark:text-polar-400 h-4 w-4 shrink-0 text-gray-500'
 
@@ -18,6 +18,8 @@ interface Props {
   className?: string
 }
 
+// Icon for a file identified by name + MIME type. Extension-aware since
+// browsers report vague or empty MIME types for Office files.
 export const FileTypeIcon = ({ name, mimeType, className }: Props) => {
   const cls = twMerge(DEFAULT_CLASS, className)
   const ext = getExtension(name)

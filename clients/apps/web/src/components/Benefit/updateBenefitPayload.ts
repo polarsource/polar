@@ -10,7 +10,10 @@ export const prepareBenefitUpdatePayload = (
 ): BenefitUpdate => {
   const payload = { ...benefitUpdate }
 
-  if (!isBenefitVisibilityConfigurable(benefit.type) && 'visibility' in payload) {
+  if (
+    !isBenefitVisibilityConfigurable(benefit.type) &&
+    'visibility' in payload
+  ) {
     delete payload.visibility
   }
 

@@ -23,20 +23,27 @@ export const ChannelNamePreview = ({ template, organizationId }: Props) => {
       template: debouncedTemplate,
       customer_name: 'Sample Customer',
       customer_email: 'customer@example.com',
-    }).then((result) => {
-      if (cancelled) return
-      if (result.error) {
-        const detail = Array.isArray(result.error.detail)
-          ? result.error.detail[0]?.msg
-          : undefined
-        const message = typeof detail === 'string' ? detail : 'Invalid template'
-        setError(message)
-        setRendered(null)
-        return
-      }
-      setError(null)
-      setRendered(result.data?.channel_name ?? null)
     })
+      .then((result) => {
+        if (cancelled) return
+        if (result.error) {
+          const detail = Array.isArray(result.error.detail)
+            ? result.error.detail[0]?.msg
+            : undefined
+          const message =
+            typeof detail === 'string' ? detail : 'Invalid template'
+          setError(message)
+          setRendered(null)
+          return
+        }
+        setError(null)
+        setRendered(result.data?.channel_name ?? null)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setError('Could not render the preview')
+        setRendered(null)
+      })
     return () => {
       cancelled = true
     }

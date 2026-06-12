@@ -1,8 +1,10 @@
 from collections.abc import Sequence
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import delete
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from polar.kit.repository import (
     RepositoryBase,
@@ -37,6 +39,37 @@ class ExternalEventRepository(
             ExternalEvent.source == source, ExternalEvent.external_id == external_id
         )
         return await self.get_one_or_none(statement)
+
+    async def create_on_conflict_do_nothing(
+        self, object: ExternalEvent
+    ) -> tuple[ExternalEvent, bool]:
+        # Atomic upsert that closes the TOCTOU race between SELECT and INSERT
+        # when the same external event is delivered concurrently to multiple
+        # API instances. Returns (event, created) where `created` is True only
+        # when this call actually inserted the row.
+        column_names = {col.key for col in ExternalEvent.__table__.columns}
+        values: dict[str, Any] = {
+            key: value for key, value in object.__dict__.items() if key in column_names
+        }
+
+        statement = (
+            pg_insert(ExternalEvent)
+            .values(**values)
+            .on_conflict_do_nothing(index_elements=["source", "external_id"])
+            .returning(ExternalEvent)
+        )
+        result = await self.session.execute(statement)
+        inserted = result.scalars().first()
+        if inserted is not None:
+            return inserted, True
+
+        existing = await self.get_by_source_and_external_id(
+            object.source, object.external_id
+        )
+        assert existing is not None, (
+            "external_events row missing after on_conflict_do_nothing conflict"
+        )
+        return existing, False
 
     async def get_all_unhandled(
         self, older_than: datetime | None = None

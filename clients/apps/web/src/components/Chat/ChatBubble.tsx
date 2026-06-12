@@ -1,15 +1,12 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { MessageAttachments } from './MessageAttachments'
 import { exactTime, relativeTime } from './time'
 import { type ChatAttachment, type ChatMessage } from './types'
 
-// Bubbles spring up and scale in from the corner they were "sent" from,
-// iMessage-style. Soft enough to be felt, settles in ~400ms with a gentle
-// overshoot. Exported so custom rows (rendered via renderMessage) can match.
 export const BUBBLE_SPRING = {
   type: 'spring',
   stiffness: 300,
@@ -22,14 +19,8 @@ export const ROW_FADE = { duration: 0.25, ease: 'easeOut' } as const
 interface Props {
   message: ChatMessage
   attachments?: ChatAttachment[]
-  // Avatar node for this message's sender; shown on the last bubble of a
-  // group. Should render at 28px (h-7 w-7) to match the spacer.
   avatar?: React.ReactNode
   animate: boolean
-  // Grouping flags for consecutive messages by the same sender (Messenger
-  // style): inner corners connect, only the group's outer corners stay round,
-  // the tail and avatar sit on the last bubble, and the timestamp shows once
-  // per group.
   isFirstInGroup: boolean
   isLastInGroup: boolean
 }
@@ -42,7 +33,6 @@ export const ChatBubble = ({
   isFirstInGroup,
   isLastInGroup,
 }: Props) => {
-  // Freeze the entrance decision at mount so a later render can't re-trigger it.
   const [showEntrance] = useState(animate)
 
   const isSelf = message.sender === 'self'
@@ -75,9 +65,6 @@ export const ChatBubble = ({
               transformOrigin: isSelf ? 'bottom right' : 'bottom left',
             }}
           >
-            {/* Tailwind div instead of Box: the bubbles need different
-                light/dark relationships than any existing Orbit token
-                provides. */}
             <div
               className={twMerge(
                 'flex flex-col gap-2 p-3',

@@ -1,5 +1,5 @@
 import { Text } from '@polar-sh/orbit'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 import { X } from 'lucide-react'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'

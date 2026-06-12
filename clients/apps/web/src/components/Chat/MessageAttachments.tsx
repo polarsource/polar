@@ -7,7 +7,6 @@ import { type ChatAttachment } from './types'
 
 interface Props {
   attachments: ChatAttachment[]
-  // Rendered inside a 'self' (inverse) bubble vs an 'other' (card) bubble.
   inverse: boolean
 }
 
@@ -52,8 +51,6 @@ const Row = ({
   )
 }
 
-// Attachment rows under a chat message's body, linking to their download URL
-// (in a new tab) when one is provided.
 export const MessageAttachments = ({ attachments, inverse }: Props) => {
   if (attachments.length === 0) return null
 

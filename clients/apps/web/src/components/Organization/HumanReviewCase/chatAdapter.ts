@@ -1,10 +1,12 @@
-import { type ChatAttachment, type ChatMessage, type ChatUploader } from '@/components/Chat/types'
+import {
+  type ChatAttachment,
+  type ChatMessage,
+  type ChatUploader,
+} from '@/components/Chat/types'
 import { getExtension } from '@/components/Chat/fileUtils'
 import { Upload } from '@/components/FileUpload/Upload'
 import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
-
-// ─── Backend policy for support-case attachments ───────────────────────────
 
 // Mirrors the exact MIME types the backend accepts.
 const ACCEPTED_MIME_TYPES = [
@@ -24,8 +26,6 @@ const ACCEPTED_MIME_TYPES = [
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 ]
 
-// Extension → canonical MIME, used as a fallback when the browser reports no
-// type (common for Office files dragged from disk).
 const EXTENSION_TO_MIME: Record<string, string> = {
   pdf: 'application/pdf',
   jpg: 'image/jpeg',
@@ -46,15 +46,14 @@ const EXTENSION_TO_MIME: Record<string, string> = {
 
 const isAcceptedFile = (file: File): boolean => {
   if (ACCEPTED_MIME_TYPES.includes(file.type)) return true
-  // Browser didn't report a usable type — fall back to the extension.
+
   if (file.type === '') {
     return EXTENSION_TO_MIME[getExtension(file.name)] !== undefined
   }
+
   return false
 }
 
-// Uploads run through the files service (S3 multipart) with the
-// support-case service type and the backend's limits.
 export const supportCaseUploader = (
   organization: schemas['Organization'],
 ): ChatUploader => ({
@@ -85,8 +84,6 @@ export const supportCaseUploader = (
   },
 })
 
-// ─── SupportCaseThread → chat model ─────────────────────────────────────────
-
 export const toChatMessages = (
   messages: schemas['SupportCaseMessage'][],
 ): ChatMessage[] =>
@@ -97,8 +94,6 @@ export const toChatMessages = (
     sender: message.author_kind === 'merchant' ? 'self' : 'other',
   }))
 
-// Authenticated endpoint that 302-redirects to a presigned download URL —
-// works as a plain link target (cookies ride along on navigation).
 export const toChatAttachments = (
   organizationId: string,
   attachments: schemas['SupportCaseAttachment'][],

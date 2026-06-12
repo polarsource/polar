@@ -1,8 +1,6 @@
 'use client'
 
-import {
-  type ScrollFadeHandle,
-} from '@/components/Shared/ScrollFade'
+import { type ScrollFadeHandle } from '@/components/Shared/ScrollFade'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Paperclip } from 'lucide-react'
@@ -20,12 +18,9 @@ import { useFileDrop } from './useFileDrop'
 
 interface ComposerConfig {
   onSend: (text: string, fileIds: string[]) => Promise<{ error?: unknown }>
-  // The send mutation's in-flight state (uploads have their own internal
-  // tracking).
   isSendPending: boolean
   uploader: ChatUploader
   placeholder?: string
-  // Minimum typed-text length to allow sending; attachments are unaffected.
   minTextLength?: number
   showMinimumCharCounter?: boolean
   allowAttachments?: boolean
@@ -42,15 +37,11 @@ interface Props {
   otherAvatar?: React.ReactNode
   renderMessage?: RenderChatMessage
   closedNotice?: string
-  // Bring the chat into view when it mounts (e.g. after an explicit "start a
-  // conversation" action).
+
   scrollIntoViewOnMount?: boolean
   className?: string
 }
 
-// A complete chat surface: header, message thread, attachment drop zone and
-// composer. Domain-free — data, copy, avatars, upload policy and custom
-// message rendering are all injected.
 export const Chat = ({
   messages,
   attachments = [],
@@ -66,8 +57,7 @@ export const Chat = ({
   className,
 }: Props) => {
   const [sendSignal, setSendSignal] = useState(0)
-  // Set on send when the thread was scrolled up — the 'self' message that
-  // follows shouldn't animate, since we're force-scrolling to the bottom.
+
   const [suppressSelfAnimation, setSuppressSelfAnimation] = useState(false)
   const scrollFadeRef = useRef<ScrollFadeHandle>(null)
   const composerRef = useRef<ComposerHandle>(null)
@@ -83,9 +73,7 @@ export const Chat = ({
     if (scrollIntoViewOnMount) {
       rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
     }
-    // Mount-only by design.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [scrollIntoViewOnMount])
 
   return (
     <div
@@ -128,7 +116,6 @@ export const Chat = ({
             showMinimumCharCounter={composer.showMinimumCharCounter}
             allowAttachments={allowAttachments}
             onSend={(text, fileIds) => {
-              // Capture scroll position before the forced scroll below.
               setSuppressSelfAnimation(
                 scrollFadeRef.current?.isAtBottom() === false,
               )

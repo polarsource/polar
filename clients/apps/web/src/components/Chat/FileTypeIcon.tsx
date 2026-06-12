@@ -18,8 +18,6 @@ interface Props {
   className?: string
 }
 
-// Icon for a file identified by name + MIME type. Extension-aware since
-// browsers report vague or empty MIME types for Office files.
 export const FileTypeIcon = ({ name, mimeType, className }: Props) => {
   const cls = twMerge(DEFAULT_CLASS, className)
   const ext = getExtension(name)

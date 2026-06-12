@@ -1,6 +1,6 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 import { Loader2, Paperclip, Send } from 'lucide-react'
 import React, { useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { AttachmentChips } from './AttachmentChips'
@@ -16,14 +16,9 @@ export interface ComposerHandle {
 interface Props {
   uploader: ChatUploader
   onSend: (text: string, fileIds: string[]) => Promise<{ error?: unknown }>
-  // The send mutation's in-flight state (uploads have their own internal
-  // tracking).
   isSendPending: boolean
   placeholder?: string
-  // Minimum typed-text length to allow sending (e.g. a structured first
-  // message); 1 means any non-empty text. Attachments are unaffected.
   minTextLength?: number
-  // Show the "Minimum N characters" + counter row under the input.
   showMinimumCharCounter?: boolean
   allowAttachments?: boolean
   ref?: React.Ref<ComposerHandle>
@@ -42,8 +37,7 @@ export const Composer = ({
   const [body, setBody] = useState('')
   const [flying, setFlying] = useState(false)
   const [sendFailed, setSendFailed] = useState(false)
-  // Guards against double-submits; the isPending prop only covers the message
-  // mutation itself.
+
   const [sending, setSending] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -64,8 +58,7 @@ export const Composer = ({
     body.trim().length >= minTextLength && length <= MAX_LENGTH
   const hasContent =
     hasValidText || (allowAttachments && uploadedFileIds.length > 0)
-  // Sending waits for every attachment to finish uploading; failed uploads
-  // must be removed before the message can go out.
+
   const canSend = hasContent && !uploadsPending && !uploadsFailed
   const busy = isSendPending || sending
 
@@ -78,7 +71,7 @@ export const Composer = ({
 
   const onFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     addFiles(Array.from(e.target.files ?? []))
-    // Reset so picking the same file again still fires onChange.
+
     e.target.value = ''
   }
 
@@ -169,7 +162,7 @@ export const Composer = ({
             rows={1}
             placeholder={placeholder}
             maxLength={MAX_LENGTH}
-            className="dark:text-polar-50 block max-h-[72px] w-full resize-none overflow-y-auto border-0 bg-transparent py-3 pr-12 pl-4 text-sm leading-5 text-gray-900 shadow-none ring-0 outline-none placeholder:text-gray-400 focus:border-0 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
+            className="dark:text-polar-50 block max-h-[240px] w-full resize-none overflow-y-auto border-0 bg-transparent py-3 pr-12 pl-4 text-sm leading-5 text-gray-900 shadow-none ring-0 outline-none placeholder:text-gray-400 focus:border-0 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
           />
           <button
             type="button"
@@ -203,8 +196,6 @@ export const Composer = ({
       )}
       {showMinimumCharCounter && (
         <div className="flex gap-2">
-          {/* Mirrors the attach-button column above so the captions align
-              with the input. */}
           {allowAttachments && <div className="ml-[-10px] w-8 shrink-0" />}
           <Box display="flex" flexGrow={1} justifyContent="between">
             <Text variant="caption" color="muted">

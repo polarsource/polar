@@ -8,21 +8,16 @@ export interface UploadingAttachment {
   file: File
   preview: string | null
   status: 'uploading' | 'uploaded' | 'error'
-  // Uploaded fraction of the file, 0..1.
   progress: number
-  // Server-side file id, set once the upload completes.
   fileId?: string
 }
 
-// Owns the eager-upload lifecycle: files start uploading the moment they're
-// added, so sending only needs the collected file ids. All policy (what's
-// accepted, size/count limits, the actual transfer) comes from the uploader.
 export const useAttachmentUploads = (uploader: ChatUploader) => {
   const [attachments, setAttachments] = useState<UploadingAttachment[]>([])
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
 
   const attachmentsRef = useRef(attachments)
-  // In-flight upload abort handles, keyed by attachment id.
+
   const abortsRef = useRef(new Map<string, () => void>())
 
   useEffect(() => {
@@ -41,7 +36,6 @@ export const useAttachmentUploads = (uploader: ChatUploader) => {
 
   const update = useCallback(
     (id: string, patch: (a: UploadingAttachment) => UploadingAttachment) => {
-      // No-op if the attachment was removed while its upload was in flight.
       setAttachments((prev) => prev.map((a) => (a.id === id ? patch(a) : a)))
     },
     [],
@@ -101,8 +95,6 @@ export const useAttachmentUploads = (uploader: ChatUploader) => {
             })),
           )
           .catch((error) => {
-            // Aborts are user-initiated (chip removed / unmount) — no error
-            // state to show.
             if (!(error instanceof UploadAbortedError)) {
               update(entry.id, (a) => ({ ...a, status: 'error' }))
             }

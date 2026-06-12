@@ -1,7 +1,7 @@
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { Check, X } from 'lucide-react'
 import React from 'react'
 import { BUBBLE_SPRING, ROW_FADE } from '@/components/Chat/ChatBubble'

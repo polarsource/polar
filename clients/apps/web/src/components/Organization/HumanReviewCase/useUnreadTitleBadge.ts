@@ -30,7 +30,7 @@ export const useUnreadTitleBadge = (
       }
     } else {
       seenCountRef.current = count
-      // Viewing the thread also clears the persistent sidebar unread badge.
+
       markSeen(organizationId, count)
     }
   }, [count, organizationId])

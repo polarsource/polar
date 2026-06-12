@@ -1,9 +1,6 @@
 export const getExtension = (name: string): string =>
   name.includes('.') ? (name.split('.').pop() ?? '').toLowerCase() : ''
 
-// Shorten a filename for display: show at most `maxLength` characters followed
-// by an ellipsis. Names that only overshoot by a few characters (within
-// `tolerance`) are shown in full, since truncating them barely saves any space.
 export const truncateFilename = (
   name: string,
   maxLength = 20,

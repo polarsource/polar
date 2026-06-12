@@ -223,6 +223,9 @@ class SupportCaseParticipant(RecordModel):
         nullable=True,
         default=None,
     )
+    # UNUSED: never written or read yet. Reserved for per-participant unread
+    # state; the backoffice "awaiting reply" dot is derived from message order
+    # instead. Drop this column if no upcoming case feature claims it.
     last_read_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )

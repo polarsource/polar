@@ -198,6 +198,7 @@ class OrganizationListView:
         *,
         signals: Signals | None = None,
         has_open_case: bool = False,
+        awaiting_reply: bool = False,
         link_to_case: bool = False,
     ) -> Generator[None]:
         """Render a single organization row in the table.
@@ -256,8 +257,15 @@ class OrganizationListView:
                             text("Appeal Pending")
                     # Open support case(s) — generic, not appeal-specific
                     if has_open_case:
-                        with tag.span(classes="badge badge-warning badge-xs mt-1"):
-                            text("Open case")
+                        with tag.div(classes="flex items-center gap-1 mt-1"):
+                            with tag.span(classes="badge badge-warning badge-xs"):
+                                text("Open case")
+                            if awaiting_reply:
+                                with tag.span(
+                                    classes="tooltip text-warning",
+                                    data_tip="Awaiting reply",
+                                ):
+                                    text("●")
 
             # Priority — Review tab only, sits next to Organization
             if signals is not None:
@@ -347,6 +355,7 @@ class OrganizationListView:
         selected_deleted: DeletedFilter = "exclude",
         signals_by_org: dict[uuid.UUID, Signals] | None = None,
         open_case_org_ids: set[uuid.UUID] | None = None,
+        awaiting_reply_org_ids: set[uuid.UUID] | None = None,
         selected_open_cases: bool = False,
         open_cases_count: int = 0,
     ) -> Generator[None]:
@@ -666,6 +675,7 @@ class OrganizationListView:
             current_direction,
             signals_by_org,
             open_case_org_ids,
+            awaiting_reply_org_ids,
             selected_open_cases,
         )
 
@@ -682,6 +692,7 @@ class OrganizationListView:
         current_direction: str,
         signals_by_org: dict[uuid.UUID, Signals] | None = None,
         open_case_org_ids: set[uuid.UUID] | None = None,
+        awaiting_reply_org_ids: set[uuid.UUID] | None = None,
         selected_open_cases: bool = False,
     ) -> None:
         """Render the ``#org-list`` block — table with Review-only columns.
@@ -691,6 +702,7 @@ class OrganizationListView:
         """
         signals_by_org = signals_by_org or {}
         open_case_org_ids = open_case_org_ids or set()
+        awaiting_reply_org_ids = awaiting_reply_org_ids or set()
         is_review_tab = status_filter == OrganizationStatus.REVIEW
         # "Open cases" isn't an OrganizationStatus, so carry it as the status
         # query value to preserve the selection across HTMX sort/pagination.
@@ -801,6 +813,7 @@ class OrganizationListView:
                                 org,
                                 signals=signals_by_org.get(org.id),
                                 has_open_case=org.id in open_case_org_ids,
+                                awaiting_reply=org.id in awaiting_reply_org_ids,
                                 link_to_case=selected_open_cases,
                             ):
                                 pass
@@ -827,6 +840,7 @@ class OrganizationListView:
         *,
         signals_by_org: dict[uuid.UUID, Signals] | None = None,
         open_case_org_ids: set[uuid.UUID] | None = None,
+        awaiting_reply_org_ids: set[uuid.UUID] | None = None,
         selected_open_cases: bool = False,
     ) -> Generator[None]:
         """Render only the organization table (for HTMX updates)."""
@@ -841,6 +855,7 @@ class OrganizationListView:
             current_direction,
             signals_by_org,
             open_case_org_ids,
+            awaiting_reply_org_ids,
             selected_open_cases,
         )
 

@@ -38,6 +38,8 @@ describe('prepareBenefitUpdatePayload', () => {
       } as BenefitUpdate,
     )
 
-    expect(payload.visibility).toBe('private')
+    expect('visibility' in payload ? payload.visibility : undefined).toBe(
+      'private',
+    )
   })
 })

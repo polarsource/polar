@@ -39,10 +39,10 @@ export const ProductOverview = ({
       product.is_recurring ? organization.id : undefined,
       product.is_recurring
         ? {
-            product_id: product.id,
-            active: true,
-            limit: 10,
-          }
+          product_id: product.id,
+          active: true,
+          limit: 10,
+        }
         : undefined,
     )
 

@@ -31,7 +31,7 @@ from ..responses import HXRedirectResponse
 router = APIRouter()
 
 # (case, organization, is_open, assignee_email)
-Row = tuple[ReviewAppealSupportCase, Organization, bool, str | None]
+Row = tuple[ReviewAppealSupportCase, Organization, bool, str | None, bool]
 
 
 def _list_tabs(request: Request, status: str, assigned: str) -> list[Tab]:
@@ -82,7 +82,13 @@ def _render_table(request: Request, rows: Sequence[Row]) -> None:
                         with tag.th():
                             text(header)
             with tag.tbody():
-                for case, organization, is_open, assignee_email in rows:
+                for (
+                    case,
+                    organization,
+                    is_open,
+                    assignee_email,
+                    awaiting_platform,
+                ) in rows:
                     case_url = (
                         str(
                             request.url_for(
@@ -103,7 +109,14 @@ def _render_table(request: Request, rows: Sequence[Row]) -> None:
                             with tag.div(classes="badge badge-outline badge-sm"):
                                 text("Review appeal")
                         with tag.td():
-                            _status_badge(is_open)
+                            with tag.div(classes="flex items-center gap-2"):
+                                _status_badge(is_open)
+                                if awaiting_platform:
+                                    with tag.span(
+                                        classes="tooltip text-warning",
+                                        data_tip="Awaiting reply",
+                                    ):
+                                        text("●")
                         with tag.td():
                             if assignee_email:
                                 text(assignee_email)
@@ -184,12 +197,14 @@ async def list_cases(
     user_session: UserSession = Depends(get_admin),
 ) -> None:
     is_open = SupportCaseMessageRepository.is_open_expression()
+    awaiting_platform = SupportCaseMessageRepository.awaiting_platform_expression()
     statement = (
         select(
             ReviewAppealSupportCase,
             Organization,
             is_open.label("is_open"),
             User.email.label("assignee_email"),
+            awaiting_platform.label("awaiting_platform"),
         )
         .join(
             OrganizationReview,

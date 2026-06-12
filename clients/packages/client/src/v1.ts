@@ -8268,8 +8268,6 @@ export interface components {
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
       description?: string | null
-      /** @description The visibility of the benefit in the customer portal. */
-      visibility?: components['schemas']['BenefitVisibility'] | null
       /**
        * Type
        * @constant
@@ -8477,8 +8475,6 @@ export interface components {
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
       description?: string | null
-      /** @description The visibility of the benefit in the customer portal. */
-      visibility?: components['schemas']['BenefitVisibility'] | null
       /**
        * Type
        * @constant
@@ -8936,8 +8932,6 @@ export interface components {
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
       description?: string | null
-      /** @description The visibility of the benefit in the customer portal. */
-      visibility?: components['schemas']['BenefitVisibility'] | null
       /**
        * Type
        * @constant
@@ -10660,8 +10654,6 @@ export interface components {
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
       description?: string | null
-      /** @description The visibility of the benefit in the customer portal. */
-      visibility?: components['schemas']['BenefitVisibility'] | null
       /**
        * Type
        * @constant

@@ -11,6 +11,7 @@ from tagflow import tag, text
 from polar.models import Organization
 from polar.models.support_case import (
     ReviewAppealSupportCase,
+    SupportCaseAttachment,
     SupportCaseMessage,
     SupportCaseMessageAuthorKind,
     SupportCaseMessageType,
@@ -67,11 +68,13 @@ class SupportCaseSection:
         thread: Thread | None = None,
         author_emails: dict[UUID, str] | None = None,
         current_user_id: UUID | None = None,
+        attachments_by_message: dict[UUID, list[SupportCaseAttachment]] | None = None,
     ) -> None:
         self.org = organization
         self.thread = thread
         self.author_emails = author_emails or {}
         self.current_user_id = current_user_id
+        self.attachments_by_message = attachments_by_message or {}
 
     @contextlib.contextmanager
     def render(self, request: Request) -> Generator[None]:
@@ -88,7 +91,7 @@ class SupportCaseSection:
             case, is_open, messages = self.thread
             with card(bordered=True):
                 self._render_header(request, case, is_open, messages)
-                self._render_timeline(messages)
+                self._render_timeline(request, messages)
                 if is_open:
                     self._render_composer(request)
             yield
@@ -215,7 +218,9 @@ class SupportCaseSection:
 
     # -- Timeline -----------------------------------------------------------
 
-    def _render_timeline(self, messages: Sequence[SupportCaseMessage]) -> None:
+    def _render_timeline(
+        self, request: Request, messages: Sequence[SupportCaseMessage]
+    ) -> None:
         with tag.div(classes="relative"):
             # The rail line, centered under the icon nodes (w-9 → center 18px).
             with tag.div(
@@ -226,9 +231,9 @@ class SupportCaseSection:
                 classes="grid grid-cols-[minmax(0,15rem)_minmax(0,1fr)] gap-x-6 gap-y-5"
             ):
                 for message in messages:
-                    self._render_entry(message)
+                    self._render_entry(request, message)
 
-    def _render_entry(self, message: SupportCaseMessage) -> None:
+    def _render_entry(self, request: Request, message: SupportCaseMessage) -> None:
         is_event = message.type != SupportCaseMessageType.chat
         internal = not message.audience
 
@@ -253,7 +258,7 @@ class SupportCaseSection:
                         text(line)
 
         # Right cell: conversation content (empty for pure milestones).
-        self._render_content(message, is_event, internal)
+        self._render_content(request, message, is_event, internal)
 
     def _node(self, message: SupportCaseMessage, internal: bool) -> tuple[str, str]:
         if message.type != SupportCaseMessageType.chat:
@@ -290,9 +295,14 @@ class SupportCaseSection:
         return [email, when] if email else [when]
 
     def _render_content(
-        self, message: SupportCaseMessage, is_event: bool, internal: bool
+        self,
+        request: Request,
+        message: SupportCaseMessage,
+        is_event: bool,
+        internal: bool,
     ) -> None:
-        if not message.body:
+        attachments = self.attachments_by_message.get(message.id, [])
+        if not message.body and not attachments:
             # Milestone with no body still occupies its grid cell.
             with tag.div():
                 pass
@@ -300,9 +310,48 @@ class SupportCaseSection:
 
         merchant = message.author_kind == SupportCaseMessageAuthorKind.merchant
         justify = "justify-end" if merchant else "justify-start"
-        with tag.div(classes=f"flex items-center {justify}"):
-            with tag.div(classes=f"max-w-md text-sm {self._bubble(message, internal)}"):
-                text(message.body)
+        with tag.div(classes="flex flex-col gap-2"):
+            if message.body:
+                with tag.div(classes=f"flex {justify}"):
+                    with tag.div(
+                        classes=f"max-w-md text-sm {self._bubble(message, internal)}"
+                    ):
+                        text(message.body)
+            for attachment in attachments:
+                with tag.div(classes=f"flex {justify}"):
+                    self._render_attachment(request, attachment)
+
+    def _render_attachment(
+        self, request: Request, attachment: SupportCaseAttachment
+    ) -> None:
+        file = attachment.file
+        url = str(
+            request.url_for(
+                "support_cases:attachment_download", attachment_id=attachment.id
+            )
+        )
+        with tag.a(
+            href=url,
+            target="_blank",
+            classes="flex items-center gap-2 max-w-md rounded-lg border "
+            "border-base-200 bg-base-100 px-3 py-2 hover:bg-base-200",
+        ):
+            with tag.span(classes="icon-paperclip text-base-content/40"):
+                pass
+            with tag.div(classes="min-w-0"):
+                with tag.div(classes="text-sm font-medium truncate"):
+                    text(file.name)
+                with tag.div(classes="text-xs text-base-content/50"):
+                    text(self._format_size(file.size))
+
+    @staticmethod
+    def _format_size(size: int) -> str:
+        value = float(size)
+        for unit in ("B", "KB", "MB", "GB"):
+            if value < 1024:
+                return f"{value:.0f} {unit}" if unit == "B" else f"{value:.1f} {unit}"
+            value /= 1024
+        return f"{value:.1f} TB"
 
     def _bubble(self, message: SupportCaseMessage, internal: bool) -> str:
         if internal:

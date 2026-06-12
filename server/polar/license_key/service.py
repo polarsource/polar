@@ -236,6 +236,15 @@ class LicenseKeyService:
         license_key: LicenseKey,
         activate: LicenseKeyActivate,
     ) -> LicenseKeyActivation:
+        await session.refresh(
+            license_key,
+            attribute_names=["status", "expires_at", "limit_activations", "deleted_at"],
+            with_for_update=True,
+        )
+
+        if license_key.deleted_at is not None:
+            raise ResourceNotFound()
+
         if not license_key.is_active():
             raise NotPermitted(
                 "License key is no longer active. "

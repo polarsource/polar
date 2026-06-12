@@ -378,7 +378,14 @@ class OrganizationListView:
                 label="All",
                 url=str(request.url_for("organizations:list")),
                 active=status_filter is None and not selected_open_cases,
-                count=sum(status_counts.values()),
+                # Mirror the default list, which hides denied/blocked orgs (they
+                # have their own tabs) — otherwise the count overstates the rows.
+                count=sum(
+                    count
+                    for status, count in status_counts.items()
+                    if status
+                    not in (OrganizationStatus.DENIED, OrganizationStatus.BLOCKED)
+                ),
             ),
             Tab(
                 label="Review",

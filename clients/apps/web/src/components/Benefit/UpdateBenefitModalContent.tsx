@@ -31,7 +31,8 @@ const UpdateBenefitModalContent = ({
   const router = useRouter()
   const defaultValues = useMemo((): BenefitUpdate => {
     if (!isBenefitVisibilityConfigurable(benefit.type)) {
-      const { visibility: _visibility, ...values } = benefit
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { visibility, ...values } = benefit
       return values
     }
     return benefit

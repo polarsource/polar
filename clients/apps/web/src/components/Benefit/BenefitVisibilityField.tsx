@@ -43,6 +43,7 @@ const BenefitVisibilityOption = ({
     borderWidth={1}
     borderStyle="solid"
     borderColor="border-primary"
+    display="flex"
     padding="l"
     backgroundColor={
       selected
@@ -52,20 +53,19 @@ const BenefitVisibilityOption = ({
     transitionProperty="colors"
     transitionDuration="base"
     cursor={{ hover: 'pointer' }}
+    rowGap="xs"
   >
     <Box alignItems="center" columnGap="s">
       <RadioGroupItem value={value} id={id} />
-      <Text
-        variant="default"
-        color={selected ? 'default' : 'muted'}
-        className="font-medium"
-      >
+      <Text variant="default" color={selected ? 'default' : 'muted'}>
         {label}
       </Text>
     </Box>
-    <Text variant="default" color="muted" className="pt-1">
-      {description}
-    </Text>
+    <Box>
+      <Text variant="default" color="muted">
+        {description}
+      </Text>
+    </Box>
   </Box>
 )
 

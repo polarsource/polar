@@ -1,0 +1,41 @@
+DESCRIPTION >
+    Counts user events per organization within an ingested_at window,
+    excluding a given organization. Used by polar_self event ingestion tracking.
+
+NODE user_events_count_query
+SQL >
+    %
+    SELECT organization_id, uniqExact(id) AS count
+    FROM events_by_ingested_at
+    WHERE
+        source = 'user'
+        AND organization_id != toUUID(
+            {{
+                String(
+                    exclude_organization_id,
+                    '00000000-0000-0000-0000-000000000000',
+                    description="Organization UUID to exclude",
+                )
+            }}
+        )
+        AND ingested_at <= toDateTime64(
+            {{
+                String(
+                    until,
+                    '2024-01-01 00:00:00.000',
+                    description="Upper bound (inclusive) on ingested_at, UTC",
+                )
+            }}, 3, 'UTC'
+        )
+        {% if defined(after) %}
+            AND ingested_at > toDateTime64(
+                {{ String(after, description="Lower bound (exclusive) on ingested_at, UTC") }}, 3, 'UTC'
+            )
+        {% end %}
+    GROUP BY organization_id
+
+NODE user_events_count_output
+SQL >
+    SELECT toString(organization_id) AS organization_id, count FROM user_events_count_query
+
+TYPE ENDPOINT

@@ -234,6 +234,26 @@ export default {
         activationDeactivationFailed:
           "Échec de la désactivation de l'activation",
       },
+      slackSharedChannel: {
+        connected: 'Connecté à votre espace de travail Slack.',
+        connectedChannel:
+          'Connecté à votre espace de travail Slack dans le canal {channel}.',
+        inviteSent: 'Invitation envoyée à {email}.',
+        channel: 'Canal : {channel}.',
+        openLinkToAccept: 'Ouvrez le lien pour accepter dans Slack.',
+        acceptFromEmail:
+          "Acceptez-la depuis l'e-mail d'invitation ou vos demandes Slack Connect.",
+        openInvite: "Ouvrir l'invitation Slack",
+        provisioning:
+          'Configuration de votre canal Slack pour {email}... Vous devriez recevoir une invitation dans votre boîte de réception sous peu.',
+        setupFailed:
+          "Nous n'avons pas pu configurer votre canal Slack avec {email}. Vérifiez l'adresse e-mail et réessayez, ou contactez le vendeur si le problème persiste.",
+        enterEmail:
+          "Saisissez l'adresse e-mail d'un administrateur de votre espace de travail Slack. Il recevra une invitation Slack Connect pour un canal privé.",
+        emailPlaceholder: 'slack-admin@yourcompany.com',
+        tryAgain: 'Réessayer',
+        requestInvite: 'Demander une invitation Slack',
+      },
     },
     confirmation: {
       confirmPayment: 'Confirmer le paiement',

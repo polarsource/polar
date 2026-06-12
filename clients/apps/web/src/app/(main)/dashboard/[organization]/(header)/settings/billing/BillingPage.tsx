@@ -6,6 +6,7 @@ import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { BillingAddressModal } from '@/components/Settings/Billing/BillingAddressModal'
 import { BillingAddressSection } from '@/components/Settings/Billing/BillingAddressSection'
+import { BillingBenefitGrants } from '@/components/Settings/Billing/BillingBenefitGrants'
 import { BillingOrdersTable } from '@/components/Settings/Billing/BillingOrdersTable'
 import { BillingPaymentMethods } from '@/components/Settings/Billing/BillingPaymentMethods'
 import { BillingSubscriptionCard } from '@/components/Settings/Billing/BillingSubscriptionCard'
@@ -148,6 +149,8 @@ export default function BillingPage({
             </Box>
           )}
         </Section>
+
+        <BillingBenefitGrants organizationId={organization.id} />
 
         <Section id="payment-methods">
           <BillingPaymentMethods

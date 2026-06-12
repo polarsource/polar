@@ -15,6 +15,7 @@ from polar.config import settings
 from polar.event.repository import EventRepository
 from polar.external_event.service import external_event as external_event_service
 from polar.integrations.plain.service import plain as plain_service
+from polar.integrations.tinybird.service import count_user_events_by_organization
 from polar.kit.utils import utc_now
 from polar.models.external_event import ExternalEventSource
 from polar.worker import (
@@ -160,11 +161,11 @@ async def track_event_ingestion() -> None:
         last_flush = await repository.get_latest_polar_self_ingestion_timestamp(
             self_organization_id
         )
-        counts = await repository.count_user_events_by_organization(
-            after=last_flush,
-            until=cutoff,
-            exclude_organization_id=self_organization_id,
-        )
+    counts = await count_user_events_by_organization(
+        after=last_flush,
+        until=cutoff,
+        exclude_organization_id=self_organization_id,
+    )
     if not counts:
         return
     await get_client().track_event_ingestion(counts=counts, cutoff=cutoff)

@@ -156,3 +156,9 @@ class SlackIntegration(TimestampedSchema):
     @classmethod
     def empty_if_none(cls, value: str | None) -> str:
         return _empty_if_none(value)
+
+
+class SlackIntegrationsResponse(Schema):
+    integrations: list[SlackIntegration] = Field(
+        description="Slack apps configured for the organization."
+    )

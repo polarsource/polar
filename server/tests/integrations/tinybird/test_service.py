@@ -1,7 +1,7 @@
 import asyncio
 import json
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import httpx
 import pytest
@@ -18,6 +18,7 @@ from polar.integrations.tinybird.service import (
     TinybirdEventsQuery,
     TinybirdEventTypesQuery,
     _event_to_tinybird,
+    count_user_events_by_organization,
 )
 from polar.models import Event
 from polar.models.event import EventSource
@@ -326,6 +327,106 @@ class TestTinybirdEventsQuery:
             stats_by_key[(org_2, "shared.event", EventSource.system)].occurrences == 1
         )
         assert stats_by_key[(org_2, "org2.only", EventSource.user)].occurrences == 1
+
+
+@pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
+@pytest.mark.asyncio
+class TestCountUserEventsByOrganization:
+    async def test_groups_counts_and_filters(
+        self, tinybird_client: TinybirdClient
+    ) -> None:
+        org_a = uuid.uuid4()
+        org_b = uuid.uuid4()
+        org_excluded = uuid.uuid4()
+        now = datetime.now(UTC)
+        events = [
+            create_test_event(organization_id=org_a, source=EventSource.user),
+            create_test_event(organization_id=org_a, source=EventSource.user),
+            create_test_event(organization_id=org_a, source=EventSource.system),
+            create_test_event(organization_id=org_b, source=EventSource.user),
+            create_test_event(organization_id=org_excluded, source=EventSource.user),
+        ]
+
+        tinybird_events = [_event_to_tinybird(e) for e in events]
+        await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
+
+        counts = await count_user_events_by_organization(
+            after=now - timedelta(minutes=1),
+            until=now + timedelta(minutes=1),
+            exclude_organization_id=org_excluded,
+        )
+
+        assert counts[org_a] == 2
+        assert counts[org_b] == 1
+        assert org_excluded not in counts
+
+    async def test_after_is_exclusive_until_is_inclusive(
+        self, tinybird_client: TinybirdClient
+    ) -> None:
+        org_id = uuid.uuid4()
+        boundary = datetime.now(UTC).replace(microsecond=123000)
+        event_at_boundary = create_test_event(
+            organization_id=org_id, source=EventSource.user
+        )
+        event_at_boundary.ingested_at = boundary
+        event_after_boundary = create_test_event(
+            organization_id=org_id, source=EventSource.user
+        )
+        event_after_boundary.ingested_at = boundary + timedelta(milliseconds=1)
+
+        tinybird_events = [
+            _event_to_tinybird(e) for e in (event_at_boundary, event_after_boundary)
+        ]
+        await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
+
+        counts = await count_user_events_by_organization(
+            after=boundary,
+            until=boundary + timedelta(milliseconds=1),
+            exclude_organization_id=uuid.uuid4(),
+        )
+
+        assert counts[org_id] == 1
+
+    async def test_deduplicates_by_event_id(
+        self, tinybird_client: TinybirdClient
+    ) -> None:
+        org_id = uuid.uuid4()
+        now = datetime.now(UTC)
+        event = create_test_event(organization_id=org_id, source=EventSource.user)
+
+        tinybird_event = _event_to_tinybird(event)
+        await tinybird_client.ingest(DATASOURCE_EVENTS, [tinybird_event], wait=True)
+        await tinybird_client.ingest(DATASOURCE_EVENTS, [tinybird_event], wait=True)
+
+        counts = await count_user_events_by_organization(
+            after=now - timedelta(minutes=1),
+            until=now + timedelta(minutes=1),
+            exclude_organization_id=uuid.uuid4(),
+        )
+
+        assert counts[org_id] == 1
+
+    async def test_no_lower_bound_when_after_is_none(
+        self, tinybird_client: TinybirdClient
+    ) -> None:
+        org_id = uuid.uuid4()
+        now = datetime.now(UTC)
+        old_event = create_test_event(organization_id=org_id, source=EventSource.user)
+        old_event.ingested_at = now - timedelta(days=365)
+        recent_event = create_test_event(
+            organization_id=org_id, source=EventSource.user
+        )
+
+        tinybird_events = [_event_to_tinybird(e) for e in (old_event, recent_event)]
+        await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
+
+        counts = await count_user_events_by_organization(
+            after=None,
+            until=now + timedelta(minutes=1),
+            exclude_organization_id=uuid.uuid4(),
+        )
+
+        assert counts[org_id] == 2
 
 
 async def _get_source_stats(

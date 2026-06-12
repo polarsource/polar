@@ -105,11 +105,13 @@ export const SlackSharedChannelBenefitForm = ({
 
   useEffect(() => {
     if (
-      update ||
       connected ||
       integrationResolutionPending ||
       linkedIntegrationId === ''
     ) {
+      return
+    }
+    if (update && !resolvedIntegration) {
       return
     }
 
@@ -121,6 +123,7 @@ export const SlackSharedChannelBenefitForm = ({
     connected,
     integrationResolutionPending,
     linkedIntegrationId,
+    resolvedIntegration,
     setValue,
     update,
   ])

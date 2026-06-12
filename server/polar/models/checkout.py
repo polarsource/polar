@@ -287,7 +287,7 @@ class Checkout(
                 f"/checkout/{self.client_secret}/confirmation"
             )
         try:
-            return self._success_url.format(CHECKOUT_ID=self.id)
+            return self._success_url.replace("{CHECKOUT_ID}", str(self.id))
         except (KeyError, ValueError):
             return self._success_url
 

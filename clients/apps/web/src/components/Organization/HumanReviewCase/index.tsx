@@ -9,7 +9,7 @@ import {
 } from '@/hooks/queries/org'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
-import { Loader2 } from 'lucide-react'
+import { Loader2, MessageCircle } from 'lucide-react'
 import React, { useCallback, useMemo, useState } from 'react'
 import {
   supportCaseUploader,
@@ -111,6 +111,16 @@ const HumanReviewCase = ({ organization }: Props) => {
         <MessageAvatar organization={organization} fromMerchant={false} />
       }
       renderMessage={renderMessage}
+      emptyState={
+        <div className="flex max-w-xs flex-col items-center gap-2 text-center">
+          <MessageCircle className="dark:text-polar-600 h-8 w-8 text-gray-300" />
+          <Text color="muted">Start the conversation</Text>
+          <Text variant="caption" color="muted" align="center">
+            Share any details you think we should take into account. Our team
+            will take a look.
+          </Text>
+        </div>
+      }
       scrollIntoViewOnMount={started}
       className="dark:border-polar-700 dark:bg-polar-800 -mx-8 mt-8! -mb-8 rounded-b-2xl border-t bg-white p-8"
       composer={{

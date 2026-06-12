@@ -1,9 +1,10 @@
 import { useDiscordGuild } from '@/hooks/queries'
 import { getBotDiscordAuthorizeURL } from '@/utils/auth'
 import { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
-import { Input } from '@polar-sh/orbit'
 import {
+  Button,
+  Checkbox,
+  Input,
   Select,
   SelectContent,
   SelectGroup,
@@ -12,9 +13,8 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
+  TextArea,
 } from '@polar-sh/orbit'
-import { TextArea } from '@polar-sh/orbit'
-import { Checkbox } from '@polar-sh/orbit'
 import {
   FormControl,
   FormDescription,
@@ -32,6 +32,7 @@ import { GitHubRepositoryBenefitForm } from './GitHubRepositoryBenefitForm'
 import { LicenseKeysBenefitForm } from './LicenseKeys/BenefitForm'
 import { MeterCreditBenefitForm } from './MeterCredit/BenefitForm'
 import { BenefitVisibilityField } from './BenefitVisibilityField'
+import { SlackSharedChannelBenefitForm } from './SlackSharedChannelBenefitForm'
 import {
   benefitsDisplayNames,
   getCreatableBenefitTypes,
@@ -53,12 +54,14 @@ export const NewBenefitForm = ({
 interface UpdateBenefitFormProps {
   organization: schemas['Organization']
   type: schemas['BenefitType']
+  benefitId: string
   onUploadingChange?: (uploading: boolean) => void
 }
 
 export const UpdateBenefitForm = ({
   organization,
   type,
+  benefitId,
   onUploadingChange,
 }: UpdateBenefitFormProps) => {
   return (
@@ -66,6 +69,7 @@ export const UpdateBenefitForm = ({
       organization={organization}
       type={type}
       update={true}
+      benefitId={benefitId}
       onUploadingChange={onUploadingChange}
     />
   )
@@ -75,6 +79,7 @@ interface BenefitFormProps {
   organization: schemas['Organization']
   type: schemas['BenefitType'] | 'usage'
   update?: boolean
+  benefitId?: string
   onUploadingChange?: (uploading: boolean) => void
 }
 
@@ -82,6 +87,7 @@ const BenefitForm = ({
   organization,
   type,
   update = false,
+  benefitId,
   onUploadingChange,
 }: BenefitFormProps) => {
   const { control } = useFormContext<schemas['BenefitCreate']>()
@@ -144,6 +150,13 @@ const BenefitForm = ({
         <MeterCreditBenefitForm organization={organization} />
       )}
       {type === 'feature_flag' && <FeatureFlagBenefitForm />}
+      {type === 'slack_shared_channel' && (
+        <SlackSharedChannelBenefitForm
+          organization={organization}
+          update={update}
+          benefitId={benefitId}
+        />
+      )}
     </>
   )
 }

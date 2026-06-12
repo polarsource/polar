@@ -234,6 +234,26 @@ export default {
         activationDeletedDescription: 'Aktivierung erfolgreich gelöscht',
         activationDeactivationFailed: 'Deaktivierung fehlgeschlagen',
       },
+      slackSharedChannel: {
+        connected: 'Mit deinem Slack-Arbeitsbereich verbunden.',
+        connectedChannel:
+          'Mit deinem Slack-Arbeitsbereich im Kanal {channel} verbunden.',
+        inviteSent: 'Einladung an {email} gesendet.',
+        channel: 'Kanal: {channel}.',
+        openLinkToAccept: 'Öffne den Link, um in Slack zu akzeptieren.',
+        acceptFromEmail:
+          'Akzeptiere sie über die Einladungs-E-Mail oder deine Slack-Connect-Anfragen.',
+        openInvite: 'Slack-Einladung öffnen',
+        provisioning:
+          'Dein Slack-Kanal für {email} wird eingerichtet... Du solltest in Kürze eine Einladung in deinem Posteingang erhalten.',
+        setupFailed:
+          'Wir konnten deinen Slack-Kanal mit {email} nicht einrichten. Überprüfe die E-Mail-Adresse und versuche es erneut, oder wende dich an den Verkäufer, wenn es weiterhin fehlschlägt.',
+        enterEmail:
+          'Gib die E-Mail-Adresse eines Administrators in deinem Slack-Arbeitsbereich ein. Die Person erhält eine Slack-Connect-Einladung für einen privaten Kanal.',
+        emailPlaceholder: 'slack-admin@yourcompany.com',
+        tryAgain: 'Erneut versuchen',
+        requestInvite: 'Slack-Einladung anfordern',
+      },
     },
     confirmation: {
       confirmPayment: 'Zahlung bestätigen',

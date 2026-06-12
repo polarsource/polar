@@ -15,6 +15,7 @@ export type CreateBenefitModalParams = {
   description?: string
   error?: string
   guild_token?: string
+  slack_integration_id?: string
 }
 
 interface CreateBenefitModalContentProps {
@@ -31,7 +32,7 @@ const CreateBenefitModalContent = ({
   defaultValues,
 }: CreateBenefitModalContentProps) => {
   const searchParams = useSearchParams()
-  const { type, description, error, ...properties } =
+  const { type, description, error, slack_integration_id, ...properties } =
     useMemo<CreateBenefitModalParams>(() => {
       if (defaultValues) {
         return defaultValues
@@ -55,6 +56,7 @@ const CreateBenefitModalContent = ({
       visibility: getDefaultBenefitVisibility(benefitType),
       properties: {
         ...properties,
+        ...(slack_integration_id ? { slack_integration_id } : {}),
       },
     } as schemas['BenefitCreate'],
   })

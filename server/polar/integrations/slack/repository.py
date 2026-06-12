@@ -19,6 +19,14 @@ class SlackAppRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def list_by_organization_id(self, organization_id: UUID) -> list[SlackApp]:
+        statement = (
+            self.get_base_statement()
+            .where(SlackApp.organization_id == organization_id)
+            .order_by(SlackApp.created_at.desc())
+        )
+        return list(await self.get_all(statement))
+
     async def delete(self, integration: SlackApp) -> None:
         await self.session.delete(integration)
         await self.session.flush()

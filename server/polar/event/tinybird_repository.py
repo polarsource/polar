@@ -13,6 +13,7 @@ from polar.integrations.tinybird.service import (
 )
 from polar.kit.metadata import MetadataQuery
 from polar.meter.filter import Filter
+from polar.models import Meter
 from polar.models.event import EventSource
 
 type EventNameStats = tuple[str, EventSource, int, datetime, datetime]
@@ -175,6 +176,19 @@ class TinybirdEventRepository:
             event_id=event_id,
         )
         return count > 0
+
+    async def get_meter_customer_ids(
+        self, meter: Meter
+    ) -> tuple[list[UUID], list[str]]:
+        tinybird_query = TinybirdEventsQuery((meter.organization_id,))
+        tinybird_query.filter_by_filter(meter.filter)
+        tinybird_query.filter_by_aggregation(meter.aggregation)
+
+        (
+            customer_ids,
+            external_customer_ids,
+        ) = await tinybird_query.get_distinct_customer_ids()
+        return [UUID(c) for c in customer_ids], external_customer_ids
 
     async def get_descendant_aggregates(
         self,

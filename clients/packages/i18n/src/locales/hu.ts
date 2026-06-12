@@ -232,6 +232,26 @@ export default {
         activationDeletedDescription: 'Aktiválás sikeresen törölve',
         activationDeactivationFailed: 'Aktiválás deaktiválása sikertelen',
       },
+      slackSharedChannel: {
+        connected: 'Csatlakoztatva a Slack munkaterületedhez.',
+        connectedChannel:
+          'Csatlakoztatva a Slack munkaterületedhez a(z) {channel} csatornán.',
+        inviteSent: 'Meghívó elküldve ide: {email}.',
+        channel: 'Csatorna: {channel}.',
+        openLinkToAccept: 'Nyisd meg a linket az elfogadáshoz a Slackben.',
+        acceptFromEmail:
+          'Fogadd el a meghívó e-mailből vagy a Slack Connect-kérésekből.',
+        openInvite: 'Slack-meghívó megnyitása',
+        provisioning:
+          'Slack csatorna beállítása erre: {email}... Hamarosan kapsz egy meghívót a postaládádba.',
+        setupFailed:
+          'Nem sikerült beállítani a Slack csatornát ehhez: {email}. Ellenőrizd az e-mail címet, és próbáld újra, vagy ha továbbra sem sikerül, vedd fel a kapcsolatot az eladóval.',
+        enterEmail:
+          'Add meg a Slack munkaterületed egyik adminjának e-mail címét. Ők kapnak egy Slack Connect-meghívót egy privát csatornához.',
+        emailPlaceholder: 'slack-admin@yourcompany.com',
+        tryAgain: 'Próbáld újra',
+        requestInvite: 'Slack-meghívó kérése',
+      },
     },
     confirmation: {
       confirmPayment: 'Fizetés megerősítése',

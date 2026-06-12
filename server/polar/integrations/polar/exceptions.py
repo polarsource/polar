@@ -56,6 +56,15 @@ class PolarSelfPaymentMethodNotFound(PolarError):
         self.payment_method_id = payment_method_id
 
 
+class PolarSelfBenefitGrantNotFound(PolarError):
+    def __init__(self, benefit_grant_id: str) -> None:
+        super().__init__(
+            f"Benefit grant {benefit_grant_id!r} not found.",
+            status_code=404,
+        )
+        self.benefit_grant_id = benefit_grant_id
+
+
 class PolarSelfPaymentMethodInUse(PolarError):
     def __init__(self, payment_method_id: str) -> None:
         super().__init__(

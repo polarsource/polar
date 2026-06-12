@@ -267,6 +267,26 @@ export default {
         open: 'Open Discord',
         selectAccount: 'Select a Discord account',
       },
+      slackSharedChannel: {
+        connected: 'Connected to your Slack workspace.',
+        connectedChannel:
+          'Connected to your Slack workspace in channel {channel}.',
+        inviteSent: 'Invite sent to {email}.',
+        channel: 'Channel: {channel}.',
+        openLinkToAccept: 'Open the link to accept in Slack.',
+        acceptFromEmail:
+          'Accept it from the invite email or your Slack Connect requests.',
+        openInvite: 'Open Slack invite',
+        provisioning:
+          'Setting up your Slack channel for {email}... You should receive an invite in your inbox shortly.',
+        setupFailed:
+          "We couldn't set up your Slack channel with {email}. Double-check the email and try again, or reach out to the seller if it keeps failing.",
+        enterEmail:
+          "Enter the email of an admin in your Slack workspace. They'll receive a Slack Connect invite for a private channel.",
+        emailPlaceholder: 'slack-admin@yourcompany.com',
+        tryAgain: 'Try again',
+        requestInvite: 'Request Slack invite',
+      },
       licenseKey: {
         copy: 'Copy',
         copiedToClipboard: 'Copied To Clipboard',

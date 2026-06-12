@@ -1,0 +1,15 @@
+- name: smoke_counts_user_events
+  description: Counts user events per organization within the window
+  parameters: until=2024-01-02 00:00:00.000
+  expected_result: |
+    {"organization_id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","count":1}
+
+- name: smoke_excludes_organization
+  description: Excluded organization is filtered out
+  parameters: exclude_organization_id=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa&until=2024-01-02 00:00:00.000
+  expected_result: ''
+
+- name: smoke_after_is_exclusive
+  description: Events ingested at or before the after bound are excluded
+  parameters: after=2024-01-01 12:00:00.000&until=2024-01-02 00:00:00.000
+  expected_result: ''

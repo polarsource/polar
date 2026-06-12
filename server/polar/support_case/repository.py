@@ -100,6 +100,24 @@ class SupportCaseMessageRepository(
         return latest_type != SupportCaseMessageType.closed
 
 
+class SupportCaseAttachmentRepository(
+    RepositorySoftDeletionIDMixin[SupportCaseAttachment, UUID],
+    RepositorySoftDeletionMixin[SupportCaseAttachment],
+    RepositoryBase[SupportCaseAttachment],
+):
+    model = SupportCaseAttachment
+
+    async def list_by_case(self, case_id: UUID) -> Sequence[SupportCaseAttachment]:
+        """A case's attachments (oldest first) with their file eager-loaded."""
+        statement = (
+            self.get_base_statement()
+            .where(SupportCaseAttachment.case_id == case_id)
+            .options(joinedload(SupportCaseAttachment.file))
+            .order_by(SupportCaseAttachment.created_at.asc())
+        )
+        return await self.get_all(statement)
+
+
 class SupportCaseParticipantRepository(
     RepositorySoftDeletionIDMixin[SupportCaseParticipant, UUID],
     RepositorySoftDeletionMixin[SupportCaseParticipant],

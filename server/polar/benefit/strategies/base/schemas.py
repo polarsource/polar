@@ -51,6 +51,9 @@ class BenefitUpdateBase(MetadataInputMixin, Schema):
             "Will be displayed on products having this benefit."
         ),
     )
+
+
+class BenefitUpdateVisibilityMixin(Schema):
     visibility: BenefitVisibility | None = Field(
         None,
         description="The visibility of the benefit in the customer portal.",

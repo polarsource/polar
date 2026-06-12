@@ -20,7 +20,11 @@ from polar.benefit.strategies.custom.schemas import (
     BenefitCustomUpdate,
 )
 from polar.benefit.strategies.discord.schemas import BenefitDiscordUpdate
+from polar.benefit.strategies.downloadables.schemas import BenefitDownloadablesUpdate
 from polar.benefit.strategies.feature_flag.schemas import BenefitFeatureFlagUpdate
+from polar.benefit.strategies.github_repository.schemas import (
+    BenefitGitHubRepositoryUpdate,
+)
 from polar.benefit.strategies.slack_shared_channel.schemas import (
     BenefitSlackSharedChannelCreate,
     BenefitSlackSharedChannelCreateProperties,
@@ -28,6 +32,7 @@ from polar.benefit.strategies.slack_shared_channel.schemas import (
 )
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
+from polar.kit.schemas import Schema
 from polar.kit.visibility import Visibility
 from polar.models import Benefit, Organization, SlackApp, User, UserOrganization
 from polar.models.benefit import BenefitType
@@ -604,37 +609,20 @@ class TestUpdate:
         assert properties["slack_integration_id"] == str(integration.id)
         assert properties["channel_name_template"] == "vip-{customer_name}"
 
-    @pytest.mark.auth
-    @pytest.mark.parametrize("visibility", [Visibility.private, None])
-    async def test_rejects_visibility_update_for_non_configurable_benefit(
+    @pytest.mark.parametrize(
+        "update_schema",
+        [
+            BenefitDiscordUpdate,
+            BenefitDownloadablesUpdate,
+            BenefitGitHubRepositoryUpdate,
+            BenefitSlackSharedChannelUpdate,
+        ],
+    )
+    def test_visibility_field_absent_from_non_configurable_update_schema(
         self,
-        visibility: Visibility | None,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        redis: Redis,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
+        update_schema: type[Schema],
     ) -> None:
-        benefit = await create_benefit(
-            save_fixture,
-            organization=organization,
-            type=BenefitType.discord,
-            properties={
-                "guild_id": "123",
-                "role_id": "456",
-                "kick_member": False,
-            },
-        )
-
-        update_schema = BenefitDiscordUpdate.model_validate(
-            {"type": BenefitType.discord, "visibility": visibility}
-        )
-
-        with pytest.raises(PolarRequestValidationError):
-            await benefit_service.update(
-                session, redis, benefit, update_schema, auth_subject
-            )
+        assert "visibility" not in update_schema.model_fields
 
     @pytest.mark.auth
     async def test_allows_visibility_update_for_custom_benefit(

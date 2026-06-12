@@ -43,17 +43,13 @@ class ExternalEventService:
     ) -> ExternalEvent:
         repository = ExternalEventRepository.from_session(session)
 
-        event = await repository.get_by_source_and_external_id(source, external_id)
-        if event is not None:
-            return event
-
-        event = await repository.create(
+        event, created = await repository.create_on_conflict_do_nothing(
             ExternalEvent(
                 source=source, task_name=task_name, external_id=external_id, data=data
-            ),
-            flush=True,
+            )
         )
-        enqueue_job(task_name, event.id, delay=delay)
+        if created:
+            enqueue_job(task_name, event.id, delay=delay)
         return event
 
     async def resend(self, event: ExternalEvent) -> None:

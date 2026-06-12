@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, select
+from sqlalchemy import ColumnElement, func, select
 from sqlalchemy.orm import joinedload
 
 from polar.kit.repository.base import (
@@ -15,6 +15,7 @@ from polar.models.support_case import (
     SupportCaseAttachment,
     SupportCaseAudience,
     SupportCaseMessage,
+    SupportCaseMessageAuthorKind,
     SupportCaseMessageType,
     SupportCaseParticipant,
 )
@@ -98,6 +99,31 @@ class SupportCaseMessageRepository(
             .scalar_subquery()
         )
         return latest_type != SupportCaseMessageType.closed
+
+    @staticmethod
+    def awaiting_platform_expression() -> ColumnElement[bool]:
+        """True when the latest externally-visible message wasn't sent by our
+        side — i.e. a participant spoke last and the platform owes a reply.
+        Defined by exclusion (not ``platform``/``system``) so it stays correct
+        for any participant kind. Internal notes and lifecycle events (empty
+        audience) are ignored, so they don't clear it.
+        """
+        latest_author = (
+            select(SupportCaseMessage.author_kind)
+            .where(
+                SupportCaseMessage.case_id == SupportCase.id,
+                func.cardinality(SupportCaseMessage.audience) > 0,
+            )
+            .order_by(SupportCaseMessage.created_at.desc())
+            .limit(1)
+            .scalar_subquery()
+        )
+        return latest_author.notin_(
+            [
+                SupportCaseMessageAuthorKind.platform,
+                SupportCaseMessageAuthorKind.system,
+            ]
+        )
 
 
 class SupportCaseParticipantRepository(

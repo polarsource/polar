@@ -117,24 +117,28 @@ export const SlackTeamInviteesSelect = ({
         </PopoverContent>
       </Popover>
 
-      {selectedUsers.length > 0 && (
+      {!isLoading && value.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {selectedUsers.map((user) => (
-            <div
-              key={user.id}
-              className="dark:bg-polar-800 flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 text-xs"
-            >
-              <span>{user.real_name || user.name}</span>
-              <button
-                type="button"
-                onClick={() => remove(user.id)}
-                aria-label={`Remove ${user.real_name || user.name}`}
-                className="opacity-60 hover:opacity-100"
+          {value.map((id) => {
+            const user = (users ?? []).find((u) => u.id === id)
+            const name = user ? user.real_name || user.name : id
+            return (
+              <div
+                key={id}
+                className="dark:bg-polar-800 flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 text-xs"
               >
-                <XIcon className="h-3 w-3" />
-              </button>
-            </div>
-          ))}
+                <span>{name}</span>
+                <button
+                  type="button"
+                  onClick={() => remove(id)}
+                  aria-label={`Remove ${name}`}
+                  className="opacity-60 hover:opacity-100"
+                >
+                  <XIcon className="h-3 w-3" />
+                </button>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

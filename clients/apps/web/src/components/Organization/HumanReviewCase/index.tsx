@@ -105,7 +105,7 @@ const HumanReviewCase = ({ organization }: Props) => {
       messages={chatMessages}
       attachments={chatAttachments}
       isOpen={thread?.is_open ?? true}
-      description="Our team usually replies within 24–48 business hours if we need anything further. Everything happens right here, no need to reach out to support, we’ll keep you posted in this thread."
+      description="Account reviews are handled directly in-app, so reaching out to support won't speed up the process or provide additional status updates while the review is underway. Thanks for your patience."
       selfAvatar={<MessageAvatar organization={organization} fromMerchant />}
       otherAvatar={
         <MessageAvatar organization={organization} fromMerchant={false} />

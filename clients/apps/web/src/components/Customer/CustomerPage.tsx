@@ -387,9 +387,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 header: 'Date',
                 accessorKey: 'created_at',
                 cell: ({ row: { original } }) => (
-                  <span className="dark:text-polar-500 text-sm text-gray-500">
-                    <FormattedDateTime datetime={original.created_at} />
-                  </span>
+                  <FormattedDateTime datetime={original.created_at} />
                 ),
               },
               {
@@ -422,13 +420,11 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 header: 'Created At',
                 accessorKey: 'created_at',
                 cell: ({ row: { original } }) => (
-                  <span className="dark:text-polar-500 text-sm text-gray-500">
-                    <FormattedDateTime
-                      dateStyle="medium"
-                      resolution="time"
-                      datetime={original.created_at}
-                    />
-                  </span>
+                  <FormattedDateTime
+                    dateStyle="medium"
+                    resolution="time"
+                    datetime={original.created_at}
+                  />
                 ),
               },
               {
@@ -503,9 +499,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 accessorKey: 'granted_at',
                 cell: ({ row: { original } }) =>
                   original.granted_at ? (
-                    <span className="dark:text-polar-500 text-sm text-gray-500">
-                      <FormattedDateTime datetime={original.granted_at} />
-                    </span>
+                    <FormattedDateTime datetime={original.granted_at} />
                   ) : (
                     <span>—</span>
                   ),
@@ -515,9 +509,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 accessorKey: 'revoked_at',
                 cell: ({ row: { original } }) =>
                   original.revoked_at ? (
-                    <span className="dark:text-polar-500 text-sm text-gray-500">
-                      <FormattedDateTime datetime={original.revoked_at} />
-                    </span>
+                    <FormattedDateTime datetime={original.revoked_at} />
                   ) : (
                     <span className="dark:text-polar-800 text-gray-400">—</span>
                   ),

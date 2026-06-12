@@ -133,11 +133,6 @@ export const BenefitRow = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <BenefitVisibilityControl
-            organizationId={organization.id}
-            benefit={benefit}
-            selected={selected}
-          />
           <Switch
             checked={selected}
             onCheckedChange={(checked) => onToggle(benefit, checked)}

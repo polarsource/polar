@@ -100,3 +100,17 @@ Tinybird has a slight latency from PostgreSQL, so if your end timestamp is close
 
 - **Full backfill**: `uv run python -m scripts.backfill_tinybird_events --batch-size 5000 --start-date <iso8601> --cutoff-date <iso8601>`
 - **Cleanup/reingest specific events**: `uv run python -m scripts.tinybird_events_cleanup events.json --delete --reingest`
+
+## Restoring missing events from Tinybird to PostgreSQL
+
+If user events are missing from PostgreSQL but exist in Tinybird (e.g., due to database issues), use the reingest script to restore them:
+
+```bash
+# Dry run — report missing events without re-ingesting
+uv run python -m scripts.reingest_missing_events <organization_id> --start <iso8601> --end <iso8601> --dry-run
+
+# Re-ingest missing events
+uv run python -m scripts.reingest_missing_events <organization_id> --start <iso8601> --end <iso8601>
+```
+
+The script queries Tinybird's `events_by_ingested_at` datasource for user events in the specified time window, compares with PostgreSQL, and inserts any missing events. Only `source = 'user'` events are processed.

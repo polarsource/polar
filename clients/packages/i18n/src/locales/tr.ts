@@ -236,6 +236,26 @@ export default {
         activationDeletedDescription: 'Aktivasyon başarıyla silindi',
         activationDeactivationFailed: 'Aktivasyon devre dışı bırakılamadı',
       },
+      slackSharedChannel: {
+        connected: 'Slack çalışma alanınıza bağlandı.',
+        connectedChannel:
+          '{channel} kanalındaki Slack çalışma alanınıza bağlandı.',
+        inviteSent: '{email} adresine davet gönderildi.',
+        channel: 'Kanal: {channel}.',
+        openLinkToAccept: 'Slack’te kabul etmek için bağlantıyı açın.',
+        acceptFromEmail:
+          'Daveti e-posta davetinden veya Slack Connect isteklerinizden kabul edin.',
+        openInvite: 'Slack davetini aç',
+        provisioning:
+          '{email} için Slack kanalınız hazırlanıyor... Kısa süre içinde gelen kutunuza bir davet ulaşmalıdır.',
+        setupFailed:
+          '{email} ile Slack kanalınız kurulamadı. E-postayı kontrol edip tekrar deneyin veya sorun devam ederse satıcıyla iletişime geçin.',
+        enterEmail:
+          'Slack çalışma alanınızdaki bir yöneticinin e-postasını girin. Özel bir kanal için bir Slack Connect daveti alacaklar.',
+        emailPlaceholder: 'slack-admin@sirketiniz.com',
+        tryAgain: 'Tekrar dene',
+        requestInvite: 'Slack daveti iste',
+      },
     },
     confirmation: {
       confirmPayment: 'Ödemeyi onayla',

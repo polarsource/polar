@@ -210,21 +210,6 @@ class BenefitService:
                 ]
             )
 
-        if (
-            benefit_update.visibility is not None
-            and not benefit.type.is_visibility_allowed(benefit_update.visibility)
-        ):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "visibility"),
-                        "msg": "This visibility is not allowed for this benefit type.",
-                        "input": benefit_update.visibility,
-                    }
-                ]
-            )
-
         update_dict = benefit_update.model_dump(
             by_alias=True, exclude_unset=True, exclude={"type", "properties"}
         )

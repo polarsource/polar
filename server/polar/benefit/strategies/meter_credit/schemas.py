@@ -11,6 +11,7 @@ from ..base.schemas import (
     BenefitCreateBase,
     BenefitSubscriberBase,
     BenefitUpdateBase,
+    BenefitUpdateVisibilityMixin,
 )
 
 INT_MAX_VALUE = 2_147_483_647
@@ -55,7 +56,7 @@ class BenefitMeterCreditCreate(BenefitCreateBase):
     properties: BenefitMeterCreditCreateProperties
 
 
-class BenefitMeterCreditUpdate(BenefitUpdateBase):
+class BenefitMeterCreditUpdate(BenefitUpdateVisibilityMixin, BenefitUpdateBase):
     type: Literal[BenefitType.meter_credit]
     properties: BenefitMeterCreditCreateProperties | None = None
 

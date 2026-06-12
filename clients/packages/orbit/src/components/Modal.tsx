@@ -1,7 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { X } from 'lucide-react'
+import { motion } from 'motion/react'
 import React, {
   FunctionComponent,
   MouseEvent,
@@ -13,6 +12,7 @@ import ReactDOM from 'react-dom'
 import FocusLock from 'react-focus-lock'
 import { twMerge } from 'tailwind-merge'
 import { Button } from './Button'
+import { X } from 'lucide-react'
 
 export interface ModalProps {
   title: string | JSX.Element

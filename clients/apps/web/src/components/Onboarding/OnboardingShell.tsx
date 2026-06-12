@@ -3,7 +3,7 @@
 import { useAuth } from '@/hooks'
 import { CONFIG } from '@/utils/config'
 import { Box } from '@polar-sh/orbit/Box'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'

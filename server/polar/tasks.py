@@ -30,6 +30,7 @@ from polar.personal_access_token import tasks as personal_access_token
 from polar.processor_transaction import tasks as processor_transaction
 from polar.receipt import tasks as receipt
 from polar.subscription import tasks as subscription
+from polar.support_case import tasks as support_case
 from polar.transaction import tasks as transaction
 from polar.user import tasks as user
 from polar.webhook import tasks as webhook
@@ -66,6 +67,7 @@ __all__ = [
     "slo_report",
     "stripe",
     "subscription",
+    "support_case",
     "tinybird",
     "transaction",
     "user",

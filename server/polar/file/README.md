@@ -1,7 +1,8 @@
 # File Service
 
-Storing, managing and accessing files on AWS S3. Currently for our hosted
-downloads benefit.
+Storing, managing and accessing files on AWS S3 for various service types
+including downloadable files, product media, organization avatars, and support
+case attachments.
 
 
 ### Development Configuration (Optional)

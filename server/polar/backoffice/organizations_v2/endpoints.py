@@ -291,6 +291,37 @@ async def _orgs_with_open_cases(
     return set(result.scalars().all())
 
 
+def _awaiting_reply_org_ids() -> Select[tuple[uuid.UUID]]:
+    """Select of organization ids with an open case awaiting a platform reply."""
+    return (
+        select(OrganizationReview.organization_id)
+        .join(
+            ReviewAppealSupportCase,
+            ReviewAppealSupportCase.organization_review_id == OrganizationReview.id,
+        )
+        .where(
+            ReviewAppealSupportCase.deleted_at.is_(None),
+            SupportCaseMessageRepository.is_open_expression(),
+            SupportCaseMessageRepository.awaiting_platform_expression(),
+        )
+        .distinct()
+    )
+
+
+async def _orgs_awaiting_reply(
+    session: AsyncSession, organizations: Sequence[Organization]
+) -> set[uuid.UUID]:
+    """Org ids (among the given page) with an open case awaiting a reply."""
+    org_ids = [org.id for org in organizations]
+    if not org_ids:
+        return set()
+    statement = _awaiting_reply_org_ids().where(
+        OrganizationReview.organization_id.in_(org_ids)
+    )
+    result = await session.execute(statement)
+    return set(result.scalars().all())
+
+
 async def _build_review_signals(
     session: AsyncSession, orgs: Sequence[Organization]
 ) -> dict[uuid.UUID, Signals]:
@@ -601,6 +632,7 @@ async def list_organizations(
             signals_by_org = await _build_review_signals(session, organizations)
 
     open_case_org_ids = await _orgs_with_open_cases(session, organizations)
+    awaiting_reply_org_ids = await _orgs_awaiting_reply(session, organizations)
 
     is_htmx_table_request = request.headers.get("HX-Target") == "org-list"
 
@@ -615,6 +647,7 @@ async def list_organizations(
             direction,
             signals_by_org=signals_by_org,
             open_case_org_ids=open_case_org_ids,
+            awaiting_reply_org_ids=awaiting_reply_org_ids,
             selected_open_cases=selected_open_cases,
         ):
             pass
@@ -651,6 +684,7 @@ async def list_organizations(
                 selected_deleted=deleted_filter,
                 signals_by_org=signals_by_org,
                 open_case_org_ids=open_case_org_ids,
+                awaiting_reply_org_ids=awaiting_reply_org_ids,
                 selected_open_cases=selected_open_cases,
                 open_cases_count=open_cases_count,
             ):

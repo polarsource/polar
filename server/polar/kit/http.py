@@ -96,7 +96,11 @@ async def check_url_reachable(
     async def _check_redirect(response: httpx.Response) -> None:
         if response.is_redirect:
             location = response.headers.get("location", "")
-            await validate_crawlable_url(location)
+            # `Location` may be a relative reference (RFC 7231). Resolve it
+            # against the current URL — the same resolution httpx uses to
+            # follow the redirect — so we validate the URL actually fetched.
+            absolute_location = response.url.join(location)
+            await validate_crawlable_url(str(absolute_location))
 
     try:
         async with httpx.AsyncClient(

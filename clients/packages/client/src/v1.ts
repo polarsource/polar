@@ -34289,6 +34289,13 @@ export interface operations {
           'application/json': components['schemas']['SlackIntegrationsResponse']
         }
       }
+      /** @description Organization not found or Slack benefit not enabled. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
       /** @description Validation Error */
       422: {
         headers: {

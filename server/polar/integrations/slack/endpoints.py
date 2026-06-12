@@ -85,6 +85,9 @@ async def _assert_slack_benefit_enabled(
 @router.get(
     "",
     response_model=SlackIntegrationsResponse,
+    responses={
+        404: {"description": "Organization not found or Slack benefit not enabled."}
+    },
 )
 async def list_integrations(
     organization_id: Annotated[OrganizationID, Query()],

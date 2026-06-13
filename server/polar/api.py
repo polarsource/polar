@@ -37,6 +37,7 @@ from polar.integrations.polar.endpoints import router as polar_self_router
 from polar.integrations.resend.endpoints import router as resend_router
 from polar.integrations.slack.endpoints import router as slack_router
 from polar.integrations.stripe.endpoints import router as stripe_router
+from polar.insights.endpoints import router as insights_router
 from polar.license_key.endpoints import router as license_key_router
 from polar.member.endpoints import customer_members_router
 from polar.member.endpoints import router as member_router
@@ -127,6 +128,8 @@ router.include_router(cli_router)
 router.include_router(files_router)
 # /metrics
 router.include_router(metrics_router)
+# /insights
+router.include_router(insights_router)
 # /license-keys
 router.include_router(license_key_router)
 # /checkout-links

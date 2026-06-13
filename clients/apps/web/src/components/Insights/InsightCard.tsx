@@ -1,8 +1,7 @@
 'use client'
 
-import { Text } from '@polar-sh/orbit'
+import { Text, Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import type { Insight, InsightCategory } from './types'
 import { twMerge } from 'tailwind-merge'

@@ -50,6 +50,7 @@ from .merchant_migration_record import (
 from .meter import Meter
 from .meter_event import MeterEvent
 from .metric_dashboard import MetricDashboard
+from .insight_feedback import InsightFeedback, InsightFeedbackAction
 from .notification import Notification
 from .notification_recipient import NotificationRecipient
 from .oauth2_authorization_code import OAuth2AuthorizationCode
@@ -172,6 +173,8 @@ __all__ = [
     "Meter",
     "MeterEvent",
     "MetricDashboard",
+    "InsightFeedback",
+    "InsightFeedbackAction",
     "Model",
     "Notification",
     "NotificationRecipient",

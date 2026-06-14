@@ -22,7 +22,6 @@ const VARIANTS: TextVariant[] = [
   'default',
   'label',
   'caption',
-  'mono',
 ]
 
 const COLORS: TextColor[] = [
@@ -48,6 +47,12 @@ const PROPS: PropRow[] = [
     type: 'TextVariant',
     default: 'default',
     description: 'Type-scale style.',
+  },
+  {
+    name: 'monospace',
+    type: 'boolean',
+    default: 'false',
+    description: 'Switches to the mono font family, keeping the variant size.',
   },
   {
     name: 'color',
@@ -104,7 +109,7 @@ export default function TypographyPage() {
 
       <Section
         title="Type scale"
-        description="Headings use the display face at the larger sizes; body, label, caption, and mono cover supporting copy."
+        description="Headings use the display face at the larger sizes; body, label, and caption cover supporting copy. The monospace prop swaps any variant to the mono font."
       >
         <Box flexDirection="column" rowGap="xl">
           {VARIANTS.map((variant) => (
@@ -118,7 +123,7 @@ export default function TypographyPage() {
               <Text variant={variant} as="span">
                 The quick brown fox
               </Text>
-              <Text variant="mono" color="default">
+              <Text monospace color="default">
                 {variant}
               </Text>
             </Box>
@@ -134,7 +139,7 @@ export default function TypographyPage() {
           {COLORS.map((color) => (
             <Box key={color} alignItems="baseline" columnGap="l">
               <Box minWidth={96}>
-                <Text variant="mono" color="default">
+                <Text monospace color="default">
                   {color}
                 </Text>
               </Box>

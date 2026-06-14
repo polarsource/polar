@@ -2550,7 +2550,7 @@
       "type": "\"right\" | \"left\" | \"center\" | \"justify\" | null",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 58
+        "line": 55
       }
     },
     {
@@ -2558,7 +2558,7 @@
       "type": "E",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 84
+        "line": 81
       }
     },
     {
@@ -2566,7 +2566,7 @@
       "type": "string",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 85
+        "line": 82
       }
     },
     {
@@ -2574,7 +2574,7 @@
       "type": "\"disabled\" | \"inherit\" | \"default\" | \"muted\" | \"accent\" | \"danger\" | \"error\" | \"warning\" | \"success\" | \"inverse\" | \"white\" | \"black\" | null",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 44
+        "line": 41
       }
     },
     {
@@ -2582,7 +2582,7 @@
       "type": "boolean",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 89
+        "line": 86
       }
     },
     {
@@ -2590,7 +2590,15 @@
       "type": "boolean",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 86
+        "line": 83
+      }
+    },
+    {
+      "name": "monospace",
+      "type": "boolean",
+      "source": {
+        "path": "clients/packages/orbit/src/primitives/createText.tsx",
+        "line": 87
       }
     },
     {
@@ -2598,7 +2606,7 @@
       "type": "number",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 88
+        "line": 85
       }
     },
     {
@@ -2606,15 +2614,15 @@
       "type": "string",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 87
+        "line": 84
       }
     },
     {
       "name": "variant",
-      "type": "\"body\" | \"caption\" | \"label\" | \"default\" | \"mono\" | \"heading-2xl\" | \"heading-xl\" | \"heading-l\" | \"heading-m\" | \"heading-s\" | \"heading-xs\" | \"heading-xxs\" | null",
+      "type": "\"body\" | \"caption\" | \"label\" | \"default\" | \"heading-2xl\" | \"heading-xl\" | \"heading-l\" | \"heading-m\" | \"heading-s\" | \"heading-xs\" | \"heading-xxs\" | null",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 30
+        "line": 28
       }
     },
     {
@@ -2622,7 +2630,7 @@
       "type": "\"wrap\" | \"nowrap\" | \"balance\" | \"pretty\" | null",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 64
+        "line": 61
       }
     }
   ],

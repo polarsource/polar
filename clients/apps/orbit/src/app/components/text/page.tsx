@@ -7,12 +7,20 @@ import {
   Section,
   type PropRow,
 } from '@/components/docs'
-import { ColorSamples, StateSamples, VariantSamples } from './examples'
+import {
+  ColorSamples,
+  MonospaceSamples,
+  StateSamples,
+  VariantSamples,
+} from './examples'
 
 const variantCode = `<Text variant="heading-l" as="h1">Page title</Text>
 <Text variant="body">Comfortable reading copy.</Text>
-<Text variant="label">Field label</Text>
-<Text variant="mono">npm install</Text>`
+<Text variant="label">Field label</Text>`
+
+const monospaceCode = `<Text variant="heading-s" monospace>404</Text>
+<Text variant="body" monospace>npm install @polar-sh/orbit</Text>
+<Text variant="label" monospace>POLAR_TOKEN</Text>`
 
 const colorCode = `<Text color="default">De-emphasised copy</Text>
 <Text color="accent">Accent</Text>
@@ -29,7 +37,14 @@ const textProps: PropRow[] = [
     type: 'TextVariant',
     default: "'default'",
     description:
-      'default | body | label | caption | mono | heading-2xl | heading-xl | heading-l | heading-m | heading-s | heading-xs | heading-xxs.',
+      'default | body | label | caption | heading-2xl | heading-xl | heading-l | heading-m | heading-s | heading-xs | heading-xxs.',
+  },
+  {
+    name: 'monospace',
+    type: 'boolean',
+    default: 'false',
+    description:
+      'Renders the text in the monospace font family while keeping the size and weight from variant. Pair with any variant.',
   },
   {
     name: 'color',
@@ -100,7 +115,8 @@ export default function TextPage() {
         <Prose>
           <Text variant="body" color="default">
             Headings use the display scale and respond to viewport width. Body,
-            label, caption and mono cover supporting copy. Built-in loading and
+            label and caption cover supporting copy, and the monospace prop
+            switches any of them to the mono font. Built-in loading and
             lineThrough states cover common UI affordances without extra markup.
           </Text>
         </Prose>
@@ -108,10 +124,19 @@ export default function TextPage() {
 
       <Section
         title="Variants"
-        description="Each variant maps to a typographic role. The token name is shown in mono above each sample."
+        description="Each variant maps to a typographic role. The token name is shown in monospace above each sample."
       >
         <Example code={variantCode} align="stretch">
           <VariantSamples />
+        </Example>
+      </Section>
+
+      <Section
+        title="Monospace"
+        description="monospace is a boolean prop, not a variant. It swaps in the mono font family while keeping the size and weight from variant, so any text — a heading, body copy or a label — can be monospaced."
+      >
+        <Example code={monospaceCode} align="stretch">
+          <MonospaceSamples />
         </Example>
       </Section>
 

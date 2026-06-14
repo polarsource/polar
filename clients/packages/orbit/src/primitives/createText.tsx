@@ -23,8 +23,6 @@ type TextTag =
   | 'h5'
   | 'h6'
 
-const HEADING_BASE = 'text-black dark:text-white'
-
 const textVariants = cva('', {
   variants: {
     variant: {
@@ -32,14 +30,13 @@ const textVariants = cva('', {
       body: 'text-base',
       label: 'text-xs font-medium',
       caption: 'text-xs leading-snug',
-      mono: 'font-mono text-xs',
-      'heading-2xl': `${HEADING_BASE} font-display text-6xl md:text-8xl`,
-      'heading-xl': `${HEADING_BASE} font-display text-5xl md:text-7xl`,
-      'heading-l': `${HEADING_BASE} font-display text-4xl md:text-5xl`,
-      'heading-m': `${HEADING_BASE} text-3xl md:text-5xl`,
-      'heading-s': `${HEADING_BASE} text-2xl md:text-3xl`,
-      'heading-xs': `${HEADING_BASE} text-xl  md:text-2xl`,
-      'heading-xxs': `${HEADING_BASE} text-lg  md:text-xl`,
+      'heading-2xl': `font-display text-6xl md:text-8xl`,
+      'heading-xl': `font-display text-5xl md:text-7xl`,
+      'heading-l': `font-display text-4xl md:text-5xl`,
+      'heading-m': `text-3xl md:text-5xl`,
+      'heading-s': `text-2xl md:text-3xl`,
+      'heading-xs': `text-xl  md:text-2xl`,
+      'heading-xxs': `text-lg  md:text-xl`,
     },
     color: {
       default: 'text-black dark:text-white',
@@ -87,6 +84,7 @@ type TextProps<E extends TextTag = 'p'> = TextStyleProps & {
   placeholderText?: string
   placeholderNumberOfLines?: number
   lineThrough?: boolean
+  monospace?: boolean
 } & Omit<
     ComponentPropsWithoutRef<E>,
     keyof TextStyleProps | 'className' | 'loading'
@@ -142,6 +140,7 @@ function Text<E extends TextTag = 'p'>({
   placeholderText,
   placeholderNumberOfLines,
   lineThrough,
+  monospace,
   ...props
 }: TextProps<E> & { style?: React.CSSProperties }): JSX.Element {
   const Tag = (as ?? 'p') as ElementType
@@ -175,6 +174,7 @@ function Text<E extends TextTag = 'p'>({
     <Tag
       className={twMerge(
         textVariants({ variant, color, align, wrap }),
+        monospace ? 'font-mono' : undefined,
         className,
       )}
       style={mergedStyle}

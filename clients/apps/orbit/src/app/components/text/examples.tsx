@@ -13,7 +13,15 @@ const variants: TextVariant[] = [
   'default',
   'label',
   'caption',
-  'mono',
+]
+
+// monospace is an independent boolean prop, not a variant: it swaps the font
+// family while keeping whatever size/weight the variant defines.
+const monospaceVariants: TextVariant[] = [
+  'heading-s',
+  'body',
+  'default',
+  'label',
 ]
 
 const colors: TextColor[] = [
@@ -40,10 +48,35 @@ export function VariantSamples() {
           borderStyle="solid"
           borderColor="border-secondary"
         >
-          <Text variant="mono" color="default">
+          <Text monospace color="default">
             {variant}
           </Text>
           <Text variant={variant}>The quick brown fox</Text>
+        </Box>
+      ))}
+    </Box>
+  )
+}
+
+export function MonospaceSamples() {
+  return (
+    <Box flexDirection="column" rowGap="xl" width="100%">
+      {monospaceVariants.map((variant) => (
+        <Box
+          key={variant}
+          flexDirection="column"
+          rowGap="xs"
+          paddingBottom="l"
+          borderBottomWidth={1}
+          borderStyle="solid"
+          borderColor="border-secondary"
+        >
+          <Text variant="caption" color="muted">
+            variant=&quot;{variant}&quot; monospace
+          </Text>
+          <Text variant={variant} monospace>
+            npm install @polar-sh/orbit
+          </Text>
         </Box>
       ))}
     </Box>
@@ -56,7 +89,7 @@ export function ColorSamples() {
       {colors.map((color) => (
         <Box key={color} alignItems="baseline" columnGap="m">
           <Box width={96} flexShrink={0}>
-            <Text variant="mono" color="default">
+            <Text monospace color="default">
               {color}
             </Text>
           </Box>
@@ -82,19 +115,19 @@ export function StateSamples() {
   return (
     <Box flexDirection="column" rowGap="xl" width="100%" maxWidth={360}>
       <Box flexDirection="column" rowGap="xs">
-        <Text variant="mono" color="default">
+        <Text monospace color="default">
           loading
         </Text>
         <Text loading placeholderText="Loading a single line of text" />
       </Box>
       <Box flexDirection="column" rowGap="xs">
-        <Text variant="mono" color="default">
+        <Text monospace color="default">
           loading, placeholderNumberOfLines=3
         </Text>
         <Text loading placeholderNumberOfLines={3} />
       </Box>
       <Box flexDirection="column" rowGap="xs">
-        <Text variant="mono" color="default">
+        <Text monospace color="default">
           lineThrough
         </Text>
         <Text lineThrough color="default">

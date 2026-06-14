@@ -65,7 +65,7 @@ function TypeChip({
       borderRadius="s"
       backgroundColor="background-card"
     >
-      <Text variant="mono" color="accent" as="span">
+      <Text monospace color="accent" as="span">
         {label}
       </Text>
     </Box>
@@ -93,7 +93,7 @@ function TypeChip({
       <TooltipTrigger asChild>{trigger}</TooltipTrigger>
       <TooltipContent>
         <Box maxWidth={360}>
-          <Text variant="mono" color="inherit" wrap="pretty">
+          <Text monospace color="inherit" wrap="pretty">
             {type}
           </Text>
         </Box>
@@ -142,19 +142,19 @@ export function PropsTable({ rows, slug }: { rows: PropRow[]; slug?: string }) {
             borderColor="border-primary"
           >
             <Box alignItems="center" columnGap="s" flexWrap="wrap">
-              <Text variant="mono" color="default">
+              <Text monospace color="default">
                 {row.name}
               </Text>
               <TypeChip type={row.type} source={row.source} />
               {row.default !== undefined && (
                 <Chip>
-                  <Text variant="mono" color="default" as="span">
+                  <Text monospace color="default" as="span">
                     {`default: ${row.default}`}
                   </Text>
                 </Chip>
               )}
               {row.required && (
-                <Text variant="mono" color="danger">
+                <Text monospace color="danger">
                   required
                 </Text>
               )}

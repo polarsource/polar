@@ -196,3 +196,82 @@ export function StateSamples() {
     </Box>
   )
 }
+
+const DOS = [
+  'Pick a variant for the role (body, label, heading-l), never a raw font size.',
+  'Set as on headings so the document outline is correct; the visual size and the heading level are independent.',
+  'Use color="inherit" to adopt a parent Box color, for example to animate hover and active states.',
+  'Pass raw numbers as children with a formatter, and add tabularNums when figures sit in a column.',
+  'Compose layout and spacing with Box around Text.',
+  'For truncation that reveals the full text in a tooltip on hover, use the Truncated component; use truncate for plain clamping.',
+]
+
+const DONTS = [
+  'Do not reach for a class to set size, weight, color or leading. Text owns typography and has no className prop.',
+  'Do not encode hierarchy with size alone. An h2 can use any heading variant.',
+  'Do not pre-format numbers with toLocaleString. Let formatter do it so output stays consistent and SSR safe.',
+  'Do not nest layout containers inside Text. Keep children to text and inline content.',
+  'Do not use a heading variant for non-heading emphasis. Reach for the right variant, monospace or a color token.',
+]
+
+function PracticeList({
+  title,
+  items,
+  tone,
+}: {
+  title: string
+  items: string[]
+  tone: 'success' | 'danger'
+}) {
+  return (
+    <Box
+      flexDirection="column"
+      rowGap="m"
+      flexGrow={1}
+      flexBasis={0}
+      minWidth={240}
+      padding="xl"
+      borderRadius="m"
+      borderWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+    >
+      <Text color={tone}>{title}</Text>
+      <Box
+        as="ul"
+        flexDirection="column"
+        rowGap="m"
+        margin="none"
+        padding="none"
+      >
+        {items.map((item) => (
+          <Box
+            as="li"
+            key={item}
+            display="flex"
+            columnGap="m"
+            alignItems="start"
+          >
+            <Text color={tone}>{tone === 'success' ? '✓' : '✗'}</Text>
+            <Text>{item}</Text>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  )
+}
+
+export function BestPractices() {
+  return (
+    <Box
+      flexDirection={{ base: 'column', md: 'row' }}
+      columnGap="l"
+      rowGap="l"
+      width="100%"
+      alignItems="stretch"
+    >
+      <PracticeList title="Do" tone="success" items={DOS} />
+      <PracticeList title="Avoid" tone="danger" items={DONTS} />
+    </Box>
+  )
+}

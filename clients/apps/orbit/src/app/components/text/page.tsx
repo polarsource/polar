@@ -8,6 +8,7 @@ import {
   type PropRow,
 } from '@/components/docs'
 import {
+  BestPractices,
   ColorSamples,
   MonospaceSamples,
   NumberSamples,
@@ -130,19 +131,26 @@ export default function TextPage() {
     <>
       <PageHeader
         title="Text"
-        description="Variant-driven typography for every text node. Pick a variant for the role, an optional color token and a semantic element via as. Colors resolve light and dark automatically."
+        description="Variant-driven typography for anything text-related."
       />
 
       <Section
         title="Overview"
-        description="Use Text for any text node rather than tailwind text classes. The variant sets size, weight and font family; color and alignment layer on top."
+        description="Use Text for any text node, never a div with tailwind text classes. You choose what the text is; the component decides how it looks."
       >
         <Prose>
           <Text variant="body" color="default">
-            Headings use the display scale and respond to viewport width. Body,
-            label and caption cover supporting copy, and the monospace prop
-            switches any of them to the mono font. Built-in loading and
-            lineThrough states cover common UI affordances without extra markup.
+            Each prop sits on one axis. variant is the role (size, weight and
+            font family), color is the tone, and as is the element. Orthogonal
+            modifiers layer on without touching the role: monospace,
+            tabularNums, truncate, lineThrough and a formatter for numbers.
+            Colors resolve light and dark automatically, and loading renders a
+            skeleton with no extra markup.
+          </Text>
+          <Text variant="body" color="muted">
+            Text has no className. Size, weight, color and leading are owned by
+            the props above, so compose layout and spacing with Box around Text
+            rather than reaching for utility classes.
           </Text>
         </Prose>
       </Section>
@@ -199,6 +207,13 @@ export default function TextPage() {
         <Example code={stateCode} align="stretch">
           <StateSamples />
         </Example>
+      </Section>
+
+      <Section
+        title="Best practices"
+        description="Keep typographic decisions inside Text. Choose the role and tone; let the component own the rest."
+      >
+        <BestPractices />
       </Section>
 
       <Section title="Props">

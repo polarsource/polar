@@ -108,10 +108,6 @@ const VARIANT_DEFAULT_WRAP: Partial<
   'heading-2xl': 'balance',
   'heading-xl': 'balance',
   'heading-l': 'balance',
-  'heading-m': 'balance',
-  'heading-s': 'balance',
-  'heading-xs': 'balance',
-  'heading-xxs': 'balance',
 }
 
 // Pinned locale so server and client render identical strings (an unpinned

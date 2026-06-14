@@ -7902,6 +7902,8 @@ export interface components {
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitCustomProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitCustomCreate
@@ -8188,6 +8190,8 @@ export interface components {
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitDiscordProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /** BenefitDiscordCreate */
     BenefitDiscordCreate: {
@@ -8419,6 +8423,8 @@ export interface components {
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitDownloadablesProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /** BenefitDownloadablesCreate */
     BenefitDownloadablesCreate: {
@@ -8630,6 +8636,8 @@ export interface components {
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitFeatureFlagProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitFeatureFlagCreate
@@ -8832,6 +8840,8 @@ export interface components {
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitGitHubRepositoryProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /** BenefitGitHubRepositoryCreate */
     BenefitGitHubRepositoryCreate: {
@@ -9974,6 +9984,8 @@ export interface components {
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitLicenseKeysProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /** BenefitLicenseKeysCreate */
     BenefitLicenseKeysCreate: {
@@ -10199,6 +10211,8 @@ export interface components {
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitMeterCreditProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitMeterCreditCreate
@@ -10551,6 +10565,8 @@ export interface components {
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitSlackSharedChannelProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /** BenefitSlackSharedChannelCreate */
     BenefitSlackSharedChannelCreate: {

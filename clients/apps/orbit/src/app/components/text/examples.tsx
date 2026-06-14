@@ -83,6 +83,65 @@ export function MonospaceSamples() {
   )
 }
 
+const numberValues = [3290033, 48200, 1500, 42]
+
+export function NumberSamples() {
+  return (
+    <Box flexDirection="column" rowGap="m" width="100%">
+      {numberValues.map((value) => (
+        <Box
+          key={value}
+          alignItems="baseline"
+          justifyContent="between"
+          columnGap="l"
+          paddingBottom="m"
+          borderBottomWidth={1}
+          borderStyle="solid"
+          borderColor="border-secondary"
+        >
+          <Text variant="caption" color="muted" monospace>
+            {value}
+          </Text>
+          <Box alignItems="baseline" columnGap="xl">
+            <Text variant="body" formatter="number" tabularNums>
+              {value}
+            </Text>
+            <Text variant="body" color="muted" formatter="compact" tabularNums>
+              {value}
+            </Text>
+          </Box>
+        </Box>
+      ))}
+    </Box>
+  )
+}
+
+const truncateSentence =
+  'Orbit is the Polar design system: tokens, primitives and components for building product interfaces quickly and consistently.'
+
+export function TruncateSamples() {
+  return (
+    <Box flexDirection="column" rowGap="xl" width="100%" maxWidth={360}>
+      <Box flexDirection="column" rowGap="xs">
+        <Text variant="caption" color="muted">
+          truncate
+        </Text>
+        <Text variant="body" truncate>
+          {truncateSentence}
+        </Text>
+      </Box>
+      <Box flexDirection="column" rowGap="xs">
+        <Text variant="caption" color="muted">
+          truncate={'{2}'}
+        </Text>
+        <Text variant="body" truncate={2}>
+          {truncateSentence}
+        </Text>
+      </Box>
+    </Box>
+  )
+}
+
 export function ColorSamples() {
   return (
     <Box flexDirection="column" rowGap="m" width="100%">

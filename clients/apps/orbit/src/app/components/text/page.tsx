@@ -10,17 +10,26 @@ import {
 import {
   ColorSamples,
   MonospaceSamples,
+  NumberSamples,
   StateSamples,
+  TruncateSamples,
   VariantSamples,
 } from './examples'
 
-const variantCode = `<Text variant="heading-l" as="h1">Page title</Text>
+const variantCode = `<Text variant="heading-l">Page title</Text>
 <Text variant="body">Comfortable reading copy.</Text>
 <Text variant="label">Field label</Text>`
 
 const monospaceCode = `<Text variant="heading-s" monospace>404</Text>
 <Text variant="body" monospace>npm install @polar-sh/orbit</Text>
 <Text variant="label" monospace>POLAR_TOKEN</Text>`
+
+const numberCode = `<Text variant="heading-s" formatter="number">{3290033}</Text>
+<Text variant="body" formatter="compact">{3290033}</Text>
+<Text formatter={(v) => \`$\${v}\`}>{42}</Text>`
+
+const truncateCode = `<Text variant="body" truncate>One line, then an ellipsis…</Text>
+<Text variant="body" truncate={2}>Clamped to two lines…</Text>`
 
 const colorCode = `<Text color="default">De-emphasised copy</Text>
 <Text color="accent">Accent</Text>
@@ -47,6 +56,26 @@ const textProps: PropRow[] = [
       'Renders the text in the monospace font family while keeping the size and weight from variant. Pair with any variant.',
   },
   {
+    name: 'formatter',
+    type: "'number' | 'compact' | ((value) => string)",
+    description:
+      "Formats the children value for display. 'number' adds grouping separators (3,290,033), 'compact' shortens (3.3M), or pass a function for full control. Pass the raw value as children.",
+  },
+  {
+    name: 'tabularNums',
+    type: 'boolean',
+    default: 'false',
+    description:
+      'Uses tabular (monospaced) figures so numbers line up in columns. Ideal for tables and stat readouts.',
+  },
+  {
+    name: 'truncate',
+    type: 'boolean | number',
+    default: 'false',
+    description:
+      'true clamps to a single line with an ellipsis; a number clamps to that many lines.',
+  },
+  {
     name: 'color',
     type: 'TextColor',
     default: "'default'",
@@ -56,8 +85,9 @@ const textProps: PropRow[] = [
   {
     name: 'as',
     type: "'p' | 'span' | 'label' | 'strong' | 'code' | 'h1'..'h6' | …",
-    default: "'p'",
-    description: 'Underlying element. DOM props for the element are forwarded.',
+    default: 'inferred from variant',
+    description:
+      'Underlying element. Defaults to a sensible element per variant (heading variants render h1 to h6, everything else p). Override for the correct document outline. DOM props are forwarded.',
   },
   {
     name: 'align',
@@ -92,11 +122,6 @@ const textProps: PropRow[] = [
     type: 'boolean',
     default: 'false',
     description: 'Applies a line-through text decoration.',
-  },
-  {
-    name: 'className',
-    type: 'string',
-    description: 'Merged after the variant classes via tailwind-merge.',
   },
 ]
 
@@ -133,10 +158,28 @@ export default function TextPage() {
 
       <Section
         title="Monospace"
-        description="monospace is a boolean prop, not a variant. It swaps in the mono font family while keeping the size and weight from variant, so any text — a heading, body copy or a label — can be monospaced."
+        description="monospace is a boolean prop, not a variant. It swaps in the mono font family while keeping the size and weight from variant, so any text (a heading, body copy or a label) can be monospaced."
       >
         <Example code={monospaceCode} align="stretch">
           <MonospaceSamples />
+        </Example>
+      </Section>
+
+      <Section
+        title="Formatting"
+        description="Pass a raw value as children and a formatter to render it: 'number' for grouping separators, 'compact' for short magnitudes, or a function for anything else. Formatting lives in the component, so call sites never hand-roll toLocaleString. Add tabularNums to align figures in columns."
+      >
+        <Example code={numberCode} align="stretch">
+          <NumberSamples />
+        </Example>
+      </Section>
+
+      <Section
+        title="Truncation"
+        description="truncate owns the overflow CSS: true clamps to one line, a number clamps to that many lines."
+      >
+        <Example code={truncateCode} align="stretch">
+          <TruncateSamples />
         </Example>
       </Section>
 

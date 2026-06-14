@@ -55,6 +55,23 @@ const PROPS: PropRow[] = [
     description: 'Switches to the mono font family, keeping the variant size.',
   },
   {
+    name: 'formatter',
+    type: "'number' | 'compact' | function",
+    description: 'Formats the children value, e.g. number to 3,290,033.',
+  },
+  {
+    name: 'tabularNums',
+    type: 'boolean',
+    default: 'false',
+    description: 'Aligns figures in columns with tabular numerals.',
+  },
+  {
+    name: 'truncate',
+    type: 'boolean | number',
+    default: 'false',
+    description: 'Clamps to one line (true) or N lines (number) with ellipsis.',
+  },
+  {
     name: 'color',
     type: 'TextColor',
     default: 'default',

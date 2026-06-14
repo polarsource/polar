@@ -2556,17 +2556,19 @@
     {
       "name": "as",
       "type": "E",
+      "description": "Underlying DOM element. Defaults to a sensible element per variant (heading variants render `h1`–`h6`, everything else `p`). Override to keep a correct document outline. DOM props for the element are typed and forwarded.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 81
+        "line": 162
       }
     },
     {
-      "name": "className",
-      "type": "string",
+      "name": "children",
+      "type": "ReactNode",
+      "description": "The text to render. Prefer plain strings and numbers; inline elements are allowed where you genuinely need them (a `<br>`, an inline link), but reach for Box to compose layout rather than nesting containers inside Text.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 82
+        "line": 177
       }
     },
     {
@@ -2578,43 +2580,75 @@
       }
     },
     {
-      "name": "lineThrough",
-      "type": "boolean",
+      "name": "formatter",
+      "type": "TextFormatter",
+      "description": "Format the children value for display. 'number' adds grouping separators (3290033 → \"3,290,033\"), 'compact' shortens (3290033 → \"3.3M\"), or pass a function for full control. Pass the raw value as children, not a pre-formatted string.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 86
+        "line": 219
+      }
+    },
+    {
+      "name": "lineThrough",
+      "type": "boolean",
+      "description": "Apply a line-through decoration, e.g. for a struck-out previous price.",
+      "source": {
+        "path": "clients/packages/orbit/src/primitives/createText.tsx",
+        "line": 196
       }
     },
     {
       "name": "loading",
       "type": "boolean",
+      "description": "Render a pulsing skeleton placeholder instead of children, for content that is still loading.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 83
+        "line": 182
       }
     },
     {
       "name": "monospace",
       "type": "boolean",
+      "description": "Render in the monospace font family while keeping the variant's size and weight. Orthogonal to `variant`, so any text can be monospaced.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 87
+        "line": 201
       }
     },
     {
       "name": "placeholderNumberOfLines",
       "type": "number",
+      "description": "When greater than 1, renders a multi-line loading skeleton with that many lines.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 85
+        "line": 192
       }
     },
     {
       "name": "placeholderText",
       "type": "string",
+      "description": "Sizes the single-line loading skeleton. Falls back to children, then to \"Loading...\".",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 84
+        "line": 187
+      }
+    },
+    {
+      "name": "tabularNums",
+      "type": "boolean",
+      "description": "Align figures for vertical scanning in tables and stat readouts. Pairs well with a numeric `formatter`.",
+      "source": {
+        "path": "clients/packages/orbit/src/primitives/createText.tsx",
+        "line": 206
+      }
+    },
+    {
+      "name": "truncate",
+      "type": "number | boolean",
+      "description": "Truncate overflow. `true` clamps to a single line with an ellipsis; a number clamps to that many lines. The component owns the CSS, so callers never hand-roll line-clamp utilities.",
+      "source": {
+        "path": "clients/packages/orbit/src/primitives/createText.tsx",
+        "line": 212
       }
     },
     {

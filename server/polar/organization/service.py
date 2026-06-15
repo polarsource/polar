@@ -1250,7 +1250,9 @@ class OrganizationService:
             review.appeal_reviewed_at = datetime.now(UTC)
             session.add(review)
 
-        note = internal_note if internal_note is not None else notes[organization.status]
+        note = (
+            internal_note if internal_note is not None else notes[organization.status]
+        )
         target_status = await self._reactivate_organization(
             session,
             organization,

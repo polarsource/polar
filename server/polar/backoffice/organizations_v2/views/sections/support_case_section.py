@@ -199,9 +199,7 @@ class SupportCaseSection:
                     text("Release")
             else:
                 label = "Take over" if assignee_id is not None else "Take case"
-                with button(
-                    variant="neutral", size="sm", outline=True, hx_post=take_url
-                ):
+                with button(variant="neutral", size="sm", hx_post=take_url):
                     text(label)
             with button(
                 variant="error",

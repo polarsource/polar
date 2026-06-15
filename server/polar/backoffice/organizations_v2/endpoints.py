@@ -950,7 +950,7 @@ async def get_organization_detail(
                     unrefunded_orders_count=unrefunded_orders_count,
                     agent_report=parsed_agent_report,
                     agent_reviewed_at=agent_reviewed_at,
-                    has_appeal_case=appeal_case is not None,
+                    has_open_appeal_case=appeal_case is not None and appeal_case_open,
                 )
                 with overview.render(
                     request, setup_data=setup_data, payment_stats=payment_stats

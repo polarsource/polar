@@ -40,14 +40,14 @@ class OverviewSection(ChecklistMixin):
         unrefunded_orders_count: int = 0,
         agent_report: AnyAgentReport | None = None,
         agent_reviewed_at: datetime | None = None,
-        has_appeal_case: bool = False,
+        has_open_appeal_case: bool = False,
     ) -> None:
         self.org = organization
         self.orders_count = orders_count
         self.unrefunded_orders_count = unrefunded_orders_count
         self.agent_report = agent_report
         self.agent_reviewed_at = agent_reviewed_at
-        self.has_appeal_case = has_appeal_case
+        self.has_open_appeal_case = has_open_appeal_case
 
     # ------------------------------------------------------------------
     # Full-width: Organization Review card (primary content)
@@ -105,7 +105,7 @@ class OverviewSection(ChecklistMixin):
         """Full-width AI review card — the primary decision content."""
 
         with card(bordered=True):
-            if self.has_appeal_case:
+            if self.has_open_appeal_case:
                 support_case_url = (
                     str(
                         request.url_for(

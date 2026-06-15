@@ -169,6 +169,10 @@ class OrganizationFeatureSettings(Schema):
     slack_benefit_enabled: bool = Field(
         False, description="Enables the slack shared channel benefit"
     )
+    preview_access_enabled: bool = Field(
+        False,
+        description="If this organization has preview access to new features enabled",
+    )
 
 
 class OrganizationFeatureSettingsUpdate(Schema):

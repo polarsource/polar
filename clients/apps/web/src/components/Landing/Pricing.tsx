@@ -23,7 +23,7 @@ const TIERS: Tier[] = [
     free: true,
     desc: 'Free to start validating ideas.',
     fees: ['5.00% + 50¢ per transaction'],
-    features: ['All features to sell', 'Standard Support'],
+    features: ['All features to sell', 'Standard support'],
   },
   {
     name: 'Pro',
@@ -31,7 +31,11 @@ const TIERS: Tier[] = [
     period: '/month',
     desc: 'For builders & early teams.',
     fees: ['3.80% + 40¢ per transaction'],
-    features: ['All features on Starter', 'Prioritized Support'],
+    features: [
+      'All features on Starter',
+      'Preview access to new features',
+      'Prioritized support',
+    ],
   },
   {
     name: 'Growth',
@@ -39,7 +43,11 @@ const TIERS: Tier[] = [
     period: '/month',
     desc: 'For scaling startups.',
     fees: ['3.60% + 35¢ per transaction'],
-    features: ['All features on Pro', 'Prioritized Support'],
+    features: [
+      'All features on Pro',
+      'Preview access to new features',
+      'Prioritized support',
+    ],
   },
   {
     name: 'Scale',
@@ -47,7 +55,12 @@ const TIERS: Tier[] = [
     period: '/month',
     desc: 'For fast growing businesses.',
     fees: ['3.40% + 30¢ per transaction'],
-    features: ['All features on Growth', 'Slack Channel', 'P1 Support'],
+    features: [
+      'All features on Growth',
+      'Preview access to new features',
+      'Shared Slack channel',
+      'P1 Support',
+    ],
   },
 ]
 

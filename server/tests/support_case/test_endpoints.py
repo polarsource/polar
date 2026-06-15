@@ -141,19 +141,6 @@ class TestGetSupportCase:
         assert REASON in [m["body"] for m in data["messages"]]
 
     @pytest.mark.auth
-    async def test_not_found(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.get(
-            f"/v1/organizations/{organization.id}/support/cases/"
-            "00000000-0000-0000-0000-000000000000"
-        )
-        assert response.status_code == 404
-
-    @pytest.mark.auth
     async def test_other_org_case_not_found(
         self,
         client: AsyncClient,

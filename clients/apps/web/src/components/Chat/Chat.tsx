@@ -38,10 +38,7 @@ interface Props {
   renderMessage?: RenderChatMessage
   emptyState?: React.ReactNode
   closedNotice?: string
-
   scrollIntoViewOnMount?: boolean
-  // Fill the parent's height and pin the composer to the bottom, instead of
-  // the default fixed-height thread.
   fillHeight?: boolean
   className?: string
 }

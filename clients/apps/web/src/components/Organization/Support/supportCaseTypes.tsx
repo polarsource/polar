@@ -10,19 +10,16 @@ type Organization = schemas['Organization']
 interface SupportCaseTypeMeta {
   label: string
   description?: string
-  // ReactNode = custom row, null = hide, undefined = fall through to defaults.
+
   renderActionMessage?: (
     message: SupportCaseMessage,
     organization: Organization,
   ) => React.ReactNode | null | undefined
 }
 
-// 'review_appeal' -> 'Review appeal'
 const humanize = (type: string): string =>
   type.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase())
 
-// Per-type config. Add an entry to support a new case type; anything not
-// listed still works with a humanized label + default bubbles.
 const REGISTRY: Partial<Record<SupportCaseType, SupportCaseTypeMeta>> = {
   review_appeal: {
     label: 'Account review',
@@ -51,7 +48,6 @@ export const getSupportCaseTypeMeta = (
   type: SupportCaseType,
 ): SupportCaseTypeMeta => REGISTRY[type] ?? { label: humanize(type) }
 
-// Generic lifecycle events are hidden for every case type.
 const LIFECYCLE_HIDDEN = new Set<string>([
   'opened',
   'closed',
@@ -59,12 +55,6 @@ const LIFECYCLE_HIDDEN = new Set<string>([
   'released',
 ])
 
-/**
- * Render a single non-default support message: type-specific action rendering
- * first, then generic lifecycle handling, then a humanized caption fallback so
- * unknown/future message types still render sensibly. Returns `undefined` to
- * fall back to the default chat bubble, `null` to hide.
- */
 export const renderSupportMessage = (
   message: SupportCaseMessage,
   organization: Organization,

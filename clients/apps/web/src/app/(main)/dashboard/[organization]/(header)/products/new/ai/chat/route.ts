@@ -100,6 +100,7 @@ Polar has these benefit types:
  - File downloads: downloadable files of any kind up to 10GB each
  - GitHub repository access: automatically invite subscribers to private GitHub repo(s)
  - Discord server access: automatic role assignment and server invites for community access
+ - Shared Slack channel: give customers a shared Slack channel via Slack Connect
  - Meter credits: allows you to credit a customer's Usage Meter balance
  - Feature flag: a benefit that grants feature flags to customers, which can be queried via the Polar API and webhooks to verify access and entitlements in your software
  - Custom benefit: a catch-all benefit that allows you to optionally attach a custom Markdown note which is made available to your customers when they purchase your product
@@ -108,7 +109,7 @@ Polar has these benefit types:
 
 While Polar fully supports these benefits, your chat capabilities are limited.
 
-You will not be able to configure file downloads, Discord invites or GitHub repository access for now, since the user has to
+You will not be able to configure file downloads, Discord invites, GitHub repository access, or Shared Slack channels for now, since the user has to
 authenticate with these third party services before being able to set up a benefit. That's impossible from this chat,
 and you should route the user to manual setup instead.
 

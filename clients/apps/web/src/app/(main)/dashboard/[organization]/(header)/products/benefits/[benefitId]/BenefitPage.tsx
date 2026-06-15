@@ -9,7 +9,7 @@ import {
 } from '@/components/Benefit/utils'
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
-import { Button, InlineModal } from '@polar-sh/orbit'
+import { Button, InlineModal, Status } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { useToast } from '@/components/Toast/use-toast'
 import { useDeleteBenefit } from '@/hooks/queries'
@@ -133,11 +133,21 @@ const ClientPage: React.FC<ClientPageProps> = ({
               {resolveBenefitIcon(benefit.type, 'h-4 w-4')}
             </span>
             <div className="flex flex-col">
-              <p className="text-lg">
-                {(benefit.description?.length ?? 0) > 0
-                  ? benefit.description
-                  : '—'}
-              </p>
+              <div className="flex min-w-0 flex-row items-center gap-4">
+                <p className="truncate text-lg">
+                  {(benefit.description?.length ?? 0) > 0
+                    ? benefit.description
+                    : '—'}
+                </p>
+                <Status
+                  color="gray"
+                  status={
+                    benefit.visibility === 'public'
+                      ? 'Visible to customers'
+                      : 'Hidden from customers'
+                  }
+                />
+              </div>
               <div className="dark:text-polar-500 flex flex-row items-center gap-2 font-mono text-sm text-gray-500">
                 <span>{benefitsDisplayNames[benefit.type]}</span>
               </div>

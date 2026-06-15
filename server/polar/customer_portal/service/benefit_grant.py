@@ -13,6 +13,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
+from polar.kit.visibility import Visibility
 from polar.models import (
     Benefit,
     BenefitGrant,
@@ -254,6 +255,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
             .where(
                 BenefitGrant.is_deleted.is_(False),
                 BenefitGrant.is_revoked.is_(False),
+                Benefit.visibility == Visibility.public,
             )
             .options(
                 contains_eager(BenefitGrant.benefit).options(

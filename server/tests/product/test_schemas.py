@@ -6,8 +6,11 @@ from pydantic import TypeAdapter, ValidationError
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.currency import PresentmentCurrency
+from polar.kit.visibility import Visibility
+from polar.models import Organization
 from polar.models.product_price import ProductPriceAmountType
 from polar.product.schemas import (
+    BenefitPublicList,
     ProductCreate,
     ProductCreateOneTime,
     ProductCreateRecurring,
@@ -15,7 +18,8 @@ from polar.product.schemas import (
     ProductPriceFixedCreate,
     ProductPriceMeteredUnitCreate,
 )
-from tests.fixtures.random_objects import METER_ID
+from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import METER_ID, create_benefit
 
 # PostgreSQL int4 range limit
 INT_MAX_VALUE = 2_147_483_647
@@ -462,3 +466,32 @@ class TestProductCreateDiscriminator:
         # No recurring_interval error
         for e in errors:
             assert "recurring_interval" not in str(e["loc"])
+
+
+@pytest.mark.asyncio
+class TestBenefitPublicList:
+    async def test_excludes_non_public_benefits(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        public_benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            description="Public benefit",
+        )
+        private_benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            description="Private benefit",
+        )
+        private_benefit.visibility = Visibility.private
+        await save_fixture(private_benefit)
+
+        adapter: TypeAdapter[BenefitPublicList] = TypeAdapter(BenefitPublicList)
+        benefits = adapter.validate_python(
+            [public_benefit, private_benefit], from_attributes=True
+        )
+
+        assert len(benefits) == 1
+        assert benefits[0].description == "Public benefit"

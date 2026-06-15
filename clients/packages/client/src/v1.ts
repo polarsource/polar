@@ -16733,7 +16733,7 @@ export interface components {
       )[]
       /**
        * BenefitPublic
-       * @description The benefits granted by the product.
+       * @description List of benefits granted by the product.
        */
       benefits: components['schemas']['BenefitPublic'][]
       /**

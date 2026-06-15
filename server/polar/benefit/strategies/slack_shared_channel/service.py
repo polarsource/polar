@@ -128,6 +128,11 @@ class BenefitSlackSharedChannelService(
         if existing_channel_id:
             channel_id = existing_channel_id
             channel_name = grant_properties.get("channel_name", "")
+            await self._unarchive_channel(
+                bot_token=bot_token,
+                channel=channel_id,
+                bound_logger=bound_logger,
+            )
         elif sibling_channel := await self._find_sibling_channel(benefit, customer):
             channel_id, channel_name = sibling_channel
         else:
@@ -210,12 +215,9 @@ class BenefitSlackSharedChannelService(
 
         properties = self._get_properties(benefit)
         channel_id = grant_properties.get("channel_id")
-        revoked_properties: BenefitGrantSlackSharedChannelProperties = {
-            "invited_email": grant_properties.get("invited_email", "")
-        }
 
         if not properties.get("archive_on_revoke") or not channel_id:
-            return revoked_properties
+            return self._revoked_properties(grant_properties, keep_channel=True)
 
         grant_repository = BenefitGrantRepository.from_session(self.session)
         total_grants = (
@@ -236,12 +238,12 @@ class BenefitSlackSharedChannelService(
                 "Slack channel still used by other grants; skipping archive",
                 channel_id=channel_id,
             )
-            return revoked_properties
+            return self._revoked_properties(grant_properties, keep_channel=True)
 
         integration = await self._get_integration(benefit)
         if integration is None or integration.bot_token is None:
             bound_logger.info("Slack integration uninstalled; skipping archive")
-            return revoked_properties
+            return self._revoked_properties(grant_properties, keep_channel=True)
 
         try:
             result = await self._client.conversations_archive(
@@ -255,13 +257,33 @@ class BenefitSlackSharedChannelService(
             error = result.get("error", "")
             if error in _ARCHIVE_NOOP_ERRORS:
                 bound_logger.info("Slack channel already archived or gone", error=error)
-                return revoked_properties
+                return self._revoked_properties(
+                    grant_properties, keep_channel=error != "channel_not_found"
+                )
             bound_logger.warning("Slack archive returned error", error=error)
             if error in _ARCHIVE_TRANSIENT_ERRORS:
                 raise BenefitRetriableError()
             raise BenefitActionRequiredError(f"Slack archive error: {error}")
 
-        return revoked_properties
+        return self._revoked_properties(grant_properties, keep_channel=True)
+
+    def _revoked_properties(
+        self,
+        grant_properties: BenefitGrantSlackSharedChannelProperties,
+        *,
+        keep_channel: bool,
+    ) -> BenefitGrantSlackSharedChannelProperties:
+        revoked: BenefitGrantSlackSharedChannelProperties = {
+            "invited_email": grant_properties.get("invited_email", "")
+        }
+        if keep_channel:
+            channel_id = grant_properties.get("channel_id")
+            if channel_id:
+                revoked["channel_id"] = channel_id
+                channel_name = grant_properties.get("channel_name")
+                if channel_name:
+                    revoked["channel_name"] = channel_name
+        return revoked
 
     async def requires_update(
         self,

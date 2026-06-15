@@ -1007,6 +1007,43 @@ class TestSlackSharedChannelGrant:
             email="admin@customer.example",
         )
 
+    async def test_grant_unarchives_reused_channel_by_id(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        client = _mock_client(mocker)
+        strategy = _strategy(session, redis, client)
+
+        existing: BenefitGrantSlackSharedChannelProperties = {
+            "invited_email": "admin@customer.example",
+            "channel_id": "CEXIST",
+            "channel_name": "support-existing",
+        }
+        result = await strategy.grant(benefit, customer, existing)
+
+        assert result["channel_id"] == "CEXIST"
+        client.conversations_unarchive.assert_awaited_once_with(
+            bot_token="xoxb-test-token", channel="CEXIST"
+        )
+        client.conversations_create.assert_not_awaited()
+        client.conversations_invite_shared.assert_awaited_once_with(
+            bot_token="xoxb-test-token",
+            channel="CEXIST",
+            email="admin@customer.example",
+        )
+
     async def test_grant_retries_on_name_taken(
         self,
         session: AsyncSession,
@@ -1308,7 +1345,10 @@ class TestSlackSharedChannelRevoke:
         client.conversations_archive.assert_awaited_once_with(
             bot_token="xoxb-test-token", channel="C123"
         )
-        assert result == {"invited_email": "admin@customer.example"}
+        assert result == {
+            "invited_email": "admin@customer.example",
+            "channel_id": "C123",
+        }
 
     async def test_revoke_archives_when_last_grant_on_channel(
         self,
@@ -1348,7 +1388,10 @@ class TestSlackSharedChannelRevoke:
         client.conversations_archive.assert_awaited_once_with(
             bot_token="xoxb-test-token", channel="C123"
         )
-        assert result == {"invited_email": "admin@customer.example"}
+        assert result == {
+            "invited_email": "admin@customer.example",
+            "channel_id": "C123",
+        }
 
     async def test_revoke_skips_archive_when_channel_used_by_other_benefit(
         self,
@@ -1402,7 +1445,10 @@ class TestSlackSharedChannelRevoke:
         )
 
         client.conversations_archive.assert_not_awaited()
-        assert result == {"invited_email": "admin@customer.example"}
+        assert result == {
+            "invited_email": "admin@customer.example",
+            "channel_id": "C123",
+        }
 
     async def test_revoke_skips_when_archive_disabled(
         self,
@@ -1575,7 +1621,13 @@ class TestSlackSharedChannelRevoke:
             {"invited_email": "admin@customer.example", "channel_id": "C123"},
         )
 
-        assert result == {"invited_email": "admin@customer.example"}
+        if error == "channel_not_found":
+            assert result == {"invited_email": "admin@customer.example"}
+        else:
+            assert result == {
+                "invited_email": "admin@customer.example",
+                "channel_id": "C123",
+            }
 
     async def test_revoke_archive_permanent_error_raises_action_required(
         self,

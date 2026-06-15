@@ -22,6 +22,7 @@ _BOT_EVENTS = [
     "tokens_revoked",
     "app_uninstalled",
     "channel_shared",
+    "channel_id_changed",
 ]
 
 

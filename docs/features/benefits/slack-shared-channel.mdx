@@ -1,0 +1,47 @@
+---
+title: "Shared Slack Channel"
+sidebarTitle: "Slack"
+description: "Give customers a shared Slack channel via Slack Connect"
+---
+
+The Shared Slack Channel benefit automatically provisions a dedicated Slack channel for each customer and shares it with their workspace through [Slack Connect](https://slack.com/connect).
+
+- A new channel is created in your Slack workspace for every customer who gets the benefit
+- The channel is shared with the customer's own workspace — no need for them to join yours
+- Channels can be archived automatically when the benefit is revoked
+
+<Note>
+  The Shared Slack Channel benefit is currently in preview. If you're on a paid plan, you'll be able
+  to create a Shared Slack Channel benefit.
+</Note>
+
+## Create Shared Slack Channel Benefit
+
+1. Go to [`Benefits`](https://polar.sh/to/dashboard/products/benefits)
+2. Click `+ New Benefit` to create a new benefit
+3. Choose `Shared Slack Channel` as the `Type`
+
+### **Connect your Slack workspace**
+
+The first time you create this benefit, you'll be prompted to connect the Slack workspace where channels should be created. You can reuse the same workspace across multiple benefits.
+
+### **Channel name template**
+
+Channel names are generated from a template, so every customer's channel follows the same naming convention. The template supports the following placeholders:
+
+- `{customer_name}` — the customer's name
+- `{customer_email_local}` — the local part of the customer's email (everything before the `@`)
+- `{metadata.<key>}` — any value stored in the customer's metadata, e.g. `{metadata.company}`
+
+For example, `support-{customer_email_local}` produces a channel like `support-jane` for `jane@acme.com`.
+
+### **Other options**
+
+- **Private channel** — create the channel as private. Recommended, and enabled by default.
+- **Welcome message** — an optional message posted to the channel right after it's created.
+- **Team invitees** — members of your Slack workspace to automatically invite to every channel created for this benefit.
+- **Archive on revoke** — archive the channel when the benefit is revoked (for example, when a subscription is canceled). Enabled by default.
+
+## Customer Experience
+
+When a customer is granted the benefit, they're asked for the email address of an admin in their own Slack workspace. Polar creates the channel, invites your team members, posts your welcome message, and sends a Slack Connect invitation to that admin. Once they accept, the shared channel appears in their workspace and you can start talking right away.

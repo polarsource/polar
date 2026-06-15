@@ -9,6 +9,7 @@ from polar.kit.repository import (
 )
 from polar.models import Feedback
 from polar.models.feedback import FeedbackStatus, FeedbackType
+from polar.models.organization import Organization, support_tier_sql_rank
 
 
 class FeedbackRepository(
@@ -19,13 +20,20 @@ class FeedbackRepository(
     model = Feedback
 
     def get_by_status_statement(
-        self, status: FeedbackStatus
+        self, status: FeedbackStatus, *, sort: str = "recency"
     ) -> Select[tuple[Feedback]]:
-        return (
-            self.get_base_statement()
-            .where(Feedback.status == status)
-            .order_by(Feedback.created_at.desc())
-        )
+        statement = self.get_base_statement().where(Feedback.status == status)
+        if sort == "tier":
+            # Opt-in: highest support tier first, recency as the tiebreaker.
+            # Correlated scalar subquery keeps the joinedload(organization) the
+            # caller adds untouched.
+            tier_rank = (
+                select(support_tier_sql_rank(Organization.support_tier))
+                .where(Organization.id == Feedback.organization_id)
+                .scalar_subquery()
+            )
+            return statement.order_by(tier_rank.desc(), Feedback.created_at.desc())
+        return statement.order_by(Feedback.created_at.desc())
 
     async def get_type_counts(self, status: FeedbackStatus) -> dict[FeedbackType, int]:
         """Return the number of (non-deleted) feedbacks per type for a status."""

@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
@@ -11,6 +11,7 @@ from tagflow import tag, text
 from polar.file.service import file as file_service
 from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Organization, User
+from polar.models.organization import support_tier_sql_rank
 from polar.models.organization_review import OrganizationReview
 from polar.models.support_case import ReviewAppealSupportCase, SupportCaseAttachment
 from polar.models.user_session import UserSession
@@ -22,7 +23,7 @@ from polar.support_case.repository import (
 )
 from polar.support_case.service import support_case as support_case_service
 
-from ..components import datatable
+from ..components import datatable, support_tier_badge
 from ..components._tab_nav import Tab, tab_nav
 from ..dependencies import get_admin
 from ..layout import layout
@@ -34,11 +35,11 @@ router = APIRouter()
 Row = tuple[ReviewAppealSupportCase, Organization, bool, str | None, bool]
 
 
-def _list_tabs(request: Request, status: str, assigned: str) -> list[Tab]:
+def _list_tabs(request: Request, status: str, assigned: str, sort: str) -> list[Tab]:
     base = str(request.url_for("support_cases:list"))
 
     def url(status: str, assigned: str) -> str:
-        return f"{base}?status={status}&assigned={assigned}"
+        return f"{base}?status={status}&assigned={assigned}&sort={sort}"
 
     # Status (left) filters preserve the current assignment. The assignment
     # filters (right, pushed via ml-auto) toggle: clicking the active one
@@ -67,13 +68,27 @@ def _status_badge(is_open: bool) -> None:
         text("Open" if is_open else "Closed")
 
 
-def _render_table(request: Request, rows: Sequence[Row]) -> None:
+def _tier_sort_header(request: Request, sort: str) -> None:
+    """Clickable 'Tier' header that toggles the opt-in tier sort, preserving
+    the current tab/assignment filters."""
+    params = dict(request.query_params)
+    params["sort"] = "recency" if sort == "tier" else "tier"
+    query = "&".join(f"{k}={v}" for k, v in params.items())
+    href = f"{request.url_for('support_cases:list')}?{query}"
+    with tag.a(href=href, classes="link link-hover"):
+        text("Tier ↓" if sort == "tier" else "Tier")
+
+
+def _render_table(request: Request, rows: Sequence[Row], sort: str) -> None:
     with tag.div(classes="overflow-x-auto"):
         with tag.table(classes="table table-zebra"):
             with tag.thead():
                 with tag.tr():
+                    with tag.th():
+                        text("Organization")
+                    with tag.th():
+                        _tier_sort_header(request, sort)
                     for header in (
-                        "Organization",
                         "Type",
                         "Status",
                         "Assignee",
@@ -105,6 +120,8 @@ def _render_table(request: Request, rows: Sequence[Row]) -> None:
                         with tag.td():
                             with tag.a(href=case_url, classes="link"):
                                 text(organization.name)
+                        with tag.td():
+                            support_tier_badge(organization.support_tier)
                         with tag.td():
                             with tag.div(classes="badge badge-outline badge-sm"):
                                 text("Review appeal")
@@ -193,6 +210,7 @@ async def list_cases(
     pagination: PaginationParamsQuery,
     status: Annotated[str, Query()] = "open",
     assigned: Annotated[str, Query()] = "all",
+    sort: Annotated[str, Query()] = "recency",
     session: AsyncSession = Depends(get_db_read_session),
     user_session: UserSession = Depends(get_admin),
 ) -> None:
@@ -235,9 +253,20 @@ async def list_cases(
         statement = statement.where(unassigned)
         count_statement = count_statement.where(unassigned)
 
+    # Opt-in tier sort: highest tier first, recency as the tiebreaker. Default
+    # stays pure recency so an urgent low-tier case is never buried.
+    order_by: tuple[Any, ...]
+    if sort == "tier":
+        order_by = (
+            support_tier_sql_rank(Organization.support_tier).desc(),
+            ReviewAppealSupportCase.created_at.desc(),
+        )
+    else:
+        order_by = (ReviewAppealSupportCase.created_at.desc(),)
+
     count = await session.scalar(count_statement) or 0
     result = await session.execute(
-        statement.order_by(ReviewAppealSupportCase.created_at.desc())
+        statement.order_by(*order_by)
         .limit(pagination.limit)
         .offset((pagination.page - 1) * pagination.limit)
     )
@@ -251,10 +280,10 @@ async def list_cases(
         with tag.div(classes="flex flex-col gap-4"):
             with tag.h1(classes="text-4xl"):
                 text("Cases")
-            with tab_nav(_list_tabs(request, status, assigned)):
+            with tab_nav(_list_tabs(request, status, assigned, sort)):
                 pass
             if rows:
-                _render_table(request, rows)
+                _render_table(request, rows, sort)
             else:
                 with tag.div(classes="text-center py-12 text-base-content/50"):
                     text("No cases in this view.")

@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from enum import IntEnum, StrEnum
+from enum import StrEnum
 from typing import TYPE_CHECKING, Annotated, Any, Literal, NotRequired, Self, TypedDict
 from urllib.parse import urlparse
 from uuid import UUID
@@ -10,6 +10,7 @@ from sqlalchemy import (
     BigInteger,
     CheckConstraint,
     ColumnElement,
+    ColumnExpressionArgument,
     ForeignKey,
     Integer,
     String,
@@ -17,6 +18,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Uuid,
     and_,
+    case,
     or_,
 )
 from sqlalchemy.dialects.postgresql import CITEXT, JSONB
@@ -237,28 +239,72 @@ class SnoozeType(StrEnum):
         }[self]
 
 
-class SupportTier(IntEnum):
-    """Named support tiers, keyed by the benefit's metadata ``level``."""
+class SupportTier(StrEnum):
+    """Support priority tier, denormalized from the active Polar support benefit.
 
-    pro = 2
-    growth = 3
-    scale = 4
+    Declaration order *is* the priority rank (``free`` lowest, ``enterprise`` the
+    open-universe catch-all for bespoke tiers). The column persists only paid
+    tiers; ``free`` is represented by ``NULL`` and reached via :meth:`coalesce`.
+    The benefit grant remains the source of truth — this is a read cache for
+    internal triage (review queue, support/feedback panels) and is not exposed
+    on any merchant-facing API.
+    """
+
+    free = "free"
+    pro = "pro"
+    growth = "growth"
+    scale = "scale"
+    enterprise = "enterprise"
+
+    @property
+    def rank(self) -> int:
+        """Priority rank from declaration order; mirrored by ``support_tier_sql_rank``."""
+        return tuple(SupportTier).index(self)
 
     def get_display_name(self) -> str:
-        return self.name.capitalize()
+        return self.value.capitalize()
 
     @classmethod
-    def from_level(cls, level: int | None) -> "SupportTier | None":
-        """Map a benefit's metadata ``level`` to a known tier, or ``None``.
+    def coalesce(cls, tier: "SupportTier | None") -> "SupportTier":
+        """Read a (nullable) stored tier as a total value — ``NULL`` is ``free``."""
+        return tier if tier is not None else cls.free
 
-        Only the self-serve tiers are recognized.
+    @classmethod
+    def from_plain_external_id(cls, external_id: str | None) -> "SupportTier | None":
+        """Map a benefit's Plain tier external id to the internal tier.
+
+        Names diverge (Plain's ``"startup"`` is our ``growth``). A missing/empty
+        id means the default (free) tier → ``None``; any unrecognized non-empty
+        id is a bespoke deal → ``enterprise``.
         """
-        if level is None:
+        if not external_id:
             return None
-        try:
-            return cls(level)
-        except ValueError:
-            return None
+        return _PLAIN_TIER_EXTERNAL_IDS.get(external_id, cls.enterprise)
+
+
+# Plain tier external id -> internal SupportTier. ``free`` has no id (it's the
+# Plain default tier / NULL). Unknown non-empty ids fall through to enterprise.
+_PLAIN_TIER_EXTERNAL_IDS: dict[str, SupportTier] = {
+    "pro": SupportTier.pro,
+    "startup": SupportTier.growth,
+    "scale": SupportTier.scale,
+}
+
+
+def support_tier_sql_rank(
+    column: ColumnExpressionArgument[SupportTier | None],
+) -> ColumnElement[int]:
+    """SQL rank for sorting by ``SupportTier`` declaration order.
+
+    ``NULL`` (free) ranks lowest, so ``ORDER BY support_tier_sql_rank(col).desc()``
+    surfaces the highest tier first. Mirrors :attr:`SupportTier.rank` so the SQL
+    sort and the Python rank can't drift.
+    """
+    return case(
+        {tier.value: tier.rank for tier in SupportTier},
+        value=column,
+        else_=SupportTier.free.rank,
+    )
 
 
 class OrganizationCapabilities(TypedDict):
@@ -528,11 +574,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         StringEnum(SnoozeType), nullable=True, default=None
     )
 
-    # Support priority tier — the benefit's metadata ``level``, denormalized
-    # from the active Polar support grant (see SupportTier). NULL = free; only
-    # paid tiers are persisted, higher level = higher priority.
-    support_tier: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, default=None
+    # Support priority tier, denormalized from the active Polar support benefit
+    # grant (see SupportTier). NULL = free; only paid tiers are persisted.
+    support_tier: Mapped[SupportTier | None] = mapped_column(
+        StringEnum(SupportTier, length=16), nullable=True, default=None
     )
 
     total_balance: Mapped[int | None] = mapped_column(

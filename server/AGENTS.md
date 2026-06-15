@@ -165,7 +165,19 @@ async def create_resource(
     return await resource_service.create(session, auth_subject, resource_create)
 ```
 
-## Auth Dependencies
+## Authentication
+
+The backend uses a custom auth system built on FastAPI dependency injection. The core type
+is `AuthSubject[T]` — the authenticated entity, where `T` is `User`, `Organization`,
+`Customer`, or `Anonymous`. An endpoint **without** an `auth_subject` dependency is public.
+
+Credentials resolve in order — customer session token, user session cookie, then API tokens
+(OAuth2, Personal Access, Organization Access) — falling back to `Anonymous`. The endpoint's
+authenticator then validates the resolved subject type and its scopes. **Scopes** gate
+operations: an `Authenticator` declares `required_scopes`, and access is granted if the
+subject holds at least one of them.
+
+Define per-module authenticators in the module's `auth.py`:
 
 ```python
 # polar/{module}/auth.py
@@ -193,6 +205,10 @@ ResourcesWrite = Annotated[
     ),
 ]
 ```
+
+For endpoints used only by the web dashboard or internal backoffice, use the predefined
+dependencies from `polar/auth/dependencies.py` instead of defining your own: `WebUser`
+(logged-in `AuthSubject[User]`), `WebUserOrAnonymous`, and `AdminUser` (admin privileges).
 
 ## Pydantic Schemas
 
@@ -239,6 +255,12 @@ async def resource_created(resource_id: UUID) -> None:
 ```
 
 ## Testing
+
+Test files mirror the source layout: `polar/{module}/endpoints.py` → `tests/{module}/test_endpoints.py`.
+`test_endpoints` and `test_task` are **E2E** — they exercise real behavior (DB, etc.) and don't mock
+the unit under test. Reuse existing fixtures (`SaveFixture`, `AsyncSession`, …) and don't re-set data a
+fixture already provides. Organize class-based — typically one class per method under test, one test per
+scenario, with descriptive names.
 
 ### Service Tests (Unit)
 
@@ -290,6 +312,11 @@ class TestListResources:
 
 Cross-cutting patterns the team enforces in code review. New backend code is expected to follow them.
 
+### Imports
+Keep `import` statements at module top, never inside functions or methods. Import models from
+`polar.models`, services from their module, and use FastAPI dependency injection for sessions,
+repositories, and services.
+
 ### Service singletons & imports
 Name the singleton the bare domain noun in its module; importers alias it with a `_service` suffix:
 ```python
@@ -317,7 +344,7 @@ select(X).options(joinedload(X.rel))   # or selectinload / contains_eager
 Exception: a relationship may always eager-load (`lazy="selectin"`/`"joined"`) when there's a legitimate reason to — typically many-to-many association tables.
 
 ### Errors → status-coded `PolarError`, not validation errors
-Logical/conflict errors are `PolarError` subclasses carrying their own `status_code`; the global exception handler renders them. Don't catch and re-raise as `PolarRequestValidationError` — that's only for request-*payload* validation (→ 422). Declare them on the endpoint's `responses=` so the OpenAPI client gets the schema:
+Logical/conflict errors are `PolarError` subclasses carrying their own `status_code` (409 conflict, 404 not found; 422 is for request-payload validation only); the global exception handler renders them. Don't catch and re-raise as `PolarRequestValidationError` — that's only for request-*payload* validation (→ 422). Declare them on the endpoint's `responses=` so the OpenAPI client gets the schema:
 ```python
 class CaseClosedError(PolarError):
     def __init__(self) -> None:
@@ -336,6 +363,14 @@ Set `response_model` and return the ORM object; FastAPI serializes it via `from_
 async def create(...) -> Resource:   # ORM model, not the schema
     return await resource_service.create(...)
 ```
+
+## Tax ID Validation
+
+When adding or modifying tax ID validators in `polar/tax/tax_id.py`:
+- Keep validators minimal — no lengthy docstrings; the code should be self-explanatory.
+- Follow existing patterns (e.g. `CLTINValidator`, `TRTINValidator`).
+- Use the `stdnum` library when a module exists for the tax ID type.
+- Add a few representative valid-format tests and only one invalid case per type — no excessive negatives.
 
 ## Key Files Reference
 

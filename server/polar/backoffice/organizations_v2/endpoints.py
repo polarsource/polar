@@ -1754,7 +1754,10 @@ async def appeal_case_approve_dialog(
                     reason=reason,
                 )
                 await organization_service.backoffice_approve(
-                    session, organization, reason=reason
+                    session,
+                    organization,
+                    reason=reason,
+                    internal_note="Appeal approved — see support case.",
                 )
                 await appeal_case_service.record_decision(
                     session,
@@ -1830,7 +1833,7 @@ async def appeal_case_deny_dialog(
     opened after the AI appeal was rejected), so there is no org-status change
     to make — the decision records the outcome on the case and locks it.
     """
-    _, case = await _load_org_with_appeal_case(session, organization_id)
+    organization, case = await _load_org_with_appeal_case(session, organization_id)
 
     error_message: str | None = None
 
@@ -1852,6 +1855,9 @@ async def appeal_case_deny_dialog(
                 approved=False,
                 staff_user=user_session.user,
                 reason=reason,
+            )
+            await organization_service.add_internal_note(
+                session, organization, "Appeal denied — see support case."
             )
         except AppealCaseError as e:
             # Discard the recorded decision so a failure can't commit it

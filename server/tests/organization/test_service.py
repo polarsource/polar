@@ -4087,6 +4087,29 @@ class TestStatusTransitions:
         assert "Merchant provided additional docs" in result.internal_notes
         assert "pending Stripe Identity" in result.internal_notes
 
+    async def test_internal_note_overrides_default_note_and_omits_reason(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.backoffice_approve(
+            session,
+            organization,
+            reason="Lives on the support case, not the note",
+            internal_note="Appeal approved — see support case.",
+        )
+
+        assert result.internal_notes is not None
+        assert "Appeal approved — see support case." in result.internal_notes
+        # The default reactivation wording and the reason are both dropped.
+        assert "reactivated from denied" not in result.internal_notes
+        assert "Lives on the support case" not in result.internal_notes
+
     @pytest.mark.parametrize(
         "current",
         [OrganizationStatus.DENIED, OrganizationStatus.BLOCKED],

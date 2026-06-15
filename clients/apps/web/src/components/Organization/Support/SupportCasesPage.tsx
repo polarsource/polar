@@ -24,7 +24,6 @@ export const SupportCasesPage = ({
   const { data, isLoading } = useSupportCases(organization.id)
   const cases = data?.items ?? []
 
-  // Real-time: refresh the list whenever any case in this org gets a message.
   const emitter = useOrganizationSSE(organization.id)
   useEffect(() => {
     const onMessage = () => {

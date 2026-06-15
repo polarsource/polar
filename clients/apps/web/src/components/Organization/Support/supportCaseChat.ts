@@ -7,11 +7,6 @@ import {
 import { Upload } from '@/components/FileUpload/Upload'
 import { schemas } from '@polar-sh/client'
 
-// Shared support-case ⇄ Chat-kit glue, used by both the /support route and the
-// (legacy) inline appeal chat on /finance/account. The only per-surface
-// difference is the attachment download URL, injected via `mapChatAttachments`.
-
-// Mirrors the exact MIME types the backend accepts.
 const ACCEPTED_MIME_TYPES = [
   'application/pdf',
   'image/jpeg',

@@ -37,8 +37,6 @@ export const SupportCaseView = ({ organization, caseId }: Props) => {
   const reply = useReplySupportCase(organization.id, caseId)
   useUnreadTitleBadge(organization.id, thread?.messages)
 
-  // Real-time: refetch the thread when a new message lands for this case.
-  // Polling stays on as a slow fallback for dropped SSE connections.
   const queryClient = useQueryClient()
   const emitter = useOrganizationSSE(organization.id)
   useEffect(() => {

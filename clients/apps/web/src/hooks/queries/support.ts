@@ -20,8 +20,6 @@ export const useSupportCases = (organizationId: string) =>
 export const useSupportCase = (
   organizationId: string,
   caseId: string,
-  // Real-time updates come via SSE (useOrganizationSSE); this slow poll is
-  // only a fallback for dropped connections.
   pollInterval: number = 60_000,
 ) =>
   useQuery({

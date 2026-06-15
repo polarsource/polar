@@ -214,8 +214,6 @@ class SupportCaseService:
             flush=True,
         )
 
-    # --- Merchant-facing, type-agnostic access (keyed by case id) ---
-
     async def get_org_case(
         self,
         session: AsyncSession | AsyncReadSession,

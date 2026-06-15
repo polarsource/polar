@@ -43,6 +43,10 @@ export const MessageThread = ({
     return () => clearInterval(interval)
   }, [])
 
+  const [initialMessageIds] = useState(
+    () => new Set(messages.map((message) => message.id)),
+  )
+
   const rendered = messages.map((message) => renderMessage?.(message))
   const isBubble = (index: number) =>
     index >= 0 && index < messages.length && rendered[index] === undefined
@@ -87,7 +91,9 @@ export const MessageThread = ({
 
           const sameSender = (other: number) =>
             isBubble(other) && messages[other].sender === message.sender
-          const animate = !(message.sender === 'self' && suppressSelfAnimation)
+          const animate =
+            !initialMessageIds.has(message.id) &&
+            !(message.sender === 'self' && suppressSelfAnimation)
           return (
             <ChatBubble
               key={message.id}

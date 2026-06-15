@@ -38,6 +38,7 @@ interface Props {
   renderMessage?: RenderChatMessage
   emptyState?: React.ReactNode
   closedNotice?: string
+
   scrollIntoViewOnMount?: boolean
   fillHeight?: boolean
   className?: string

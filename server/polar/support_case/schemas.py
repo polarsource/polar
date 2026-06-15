@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Self
 
 from pydantic import UUID4, Field, model_validator
@@ -24,6 +25,15 @@ class SupportCaseMessage(IDSchema, TimestampedSchema):
 
 class SupportCase(IDSchema, TimestampedSchema):
     type: SupportCaseType
+
+
+class SupportCaseListItem(IDSchema, TimestampedSchema):
+    """A row in the merchant's support-cases table (any case type)."""
+
+    type: SupportCaseType
+    is_open: bool
+    awaiting_platform: bool
+    last_message_at: datetime | None
 
 
 class SupportCaseAttachmentFile(Schema):

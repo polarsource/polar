@@ -1,7 +1,8 @@
 from collections.abc import Sequence
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, func, select
+from sqlalchemy import ColumnElement, Select, func, select
 from sqlalchemy.orm import joinedload
 
 from polar.kit.repository.base import (
@@ -18,6 +19,7 @@ from polar.models.support_case import (
     SupportCaseMessageAuthorKind,
     SupportCaseMessageType,
     SupportCaseParticipant,
+    SupportCaseParticipantKind,
 )
 
 # Message types whose latest occurrence determines the open/closed state.
@@ -33,6 +35,64 @@ class SupportCaseRepository(
     RepositoryBase[SupportCase],
 ):
     model = SupportCase
+
+    @staticmethod
+    def _merchant_participant_exists(organization_id: UUID) -> ColumnElement[bool]:
+        """An organization is the merchant on the enclosing case (live row)."""
+        return (
+            select(SupportCaseParticipant.id)
+            .where(
+                SupportCaseParticipant.case_id == SupportCase.id,
+                SupportCaseParticipant.kind == SupportCaseParticipantKind.merchant,
+                SupportCaseParticipant.organization_id == organization_id,
+                SupportCaseParticipant.deleted_at.is_(None),
+            )
+            .exists()
+        )
+
+    async def get_org_case(
+        self, organization_id: UUID, case_id: UUID
+    ) -> SupportCase | None:
+        """A case by id, scoped to an org via its merchant participant.
+
+        Type-agnostic ownership gate: returns the concrete polymorphic subclass
+        only when the org is a live merchant participant of the case.
+        """
+        statement = (
+            self.get_base_statement()
+            .where(SupportCase.id == case_id)
+            .where(self._merchant_participant_exists(organization_id))
+        )
+        return await self.get_one_or_none(statement)
+
+    def get_org_cases_statement(
+        self, organization_id: UUID
+    ) -> Select[tuple[SupportCase, bool, bool, datetime | None]]:
+        """All cases (any type) an org participates in, with derived columns,
+        ordered by most recent externally-visible activity."""
+        last_message_at = (
+            select(func.max(SupportCaseMessage.created_at))
+            .where(
+                SupportCaseMessage.case_id == SupportCase.id,
+                func.cardinality(SupportCaseMessage.audience) > 0,
+            )
+            .scalar_subquery()
+        )
+        return (
+            self.get_base_statement()
+            .where(self._merchant_participant_exists(organization_id))
+            .add_columns(
+                SupportCaseMessageRepository.is_open_expression().label("is_open"),
+                SupportCaseMessageRepository.awaiting_platform_expression().label(
+                    "awaiting_platform"
+                ),
+                last_message_at.label("last_message_at"),
+            )
+            .order_by(
+                last_message_at.desc().nulls_last(),
+                SupportCase.created_at.desc(),
+            )
+        )
 
 
 class SupportCaseMessageRepository(

@@ -12,8 +12,10 @@ import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined'
 import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
 import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined'
+import SupportAgentOutlined from '@mui/icons-material/SupportAgentOutlined'
 import TrendingUp from '@mui/icons-material/TrendingUp'
 import TuneOutlined from '@mui/icons-material/TuneOutlined'
+import { useSupportCases } from '@/hooks/queries/support'
 import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
 import { ShoppingCart } from 'lucide-react'
@@ -131,12 +133,16 @@ const useResolveRoutes = (
 
 type RouteOptions = {
   canManageBilling: boolean
+  hasSupportCases: boolean
 }
 
 const useRouteOptions = (org?: schemas['Organization']): RouteOptions => {
   const canManageBilling =
     useHasPermission(org?.id, 'organization:manage') === true
-  return { canManageBilling }
+  // One shared query (cache key ['supportCases', id]); empty when none exist.
+  const { data: supportCases } = useSupportCases(org?.id ?? '')
+  const hasSupportCases = (supportCases?.items.length ?? 0) > 0
+  return { canManageBilling, hasSupportCases }
 }
 
 export const useDashboardRoutes = (
@@ -345,6 +351,15 @@ const organizationRoutesList = (
     if: true,
     subs: orgFinanceSubRoutesList(org),
     extra: org ? <AppealCaseUnreadBadge organization={org} /> : undefined,
+  },
+  {
+    id: 'support',
+    title: 'Support',
+    link: `/dashboard/${org?.slug}/support`,
+    icon: <SupportAgentOutlined fontSize="inherit" />,
+    if: options.hasSupportCases,
+    checkIsActive: (currentRoute: string): boolean =>
+      currentRoute.startsWith(`/dashboard/${org?.slug}/support`),
   },
   {
     id: 'settings',

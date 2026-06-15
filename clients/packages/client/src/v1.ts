@@ -1468,6 +1468,97 @@ export interface paths {
     patch: operations['organizations:update_benefit_grant']
     trace?: never
   }
+  '/v1/organizations/{id}/support/cases': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Support Cases
+     * @description List the organization's support cases (any type), newest activity first.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['support:list_support_cases']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/support/cases/{case_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Support Case
+     * @description Get a support case and its merchant-visible timeline.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['support:get_support_case']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/support/cases/{case_id}/messages': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Reply to Support Case
+     * @description Post a merchant reply (text, attachments, or both) to a support case.
+     *
+     *     Attachments must first be uploaded through the files API with service
+     *     ``support_case_attachment``.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['support:reply_to_support_case']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/support/cases/{case_id}/attachments/{attachment_id}/download': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Download Support Case Attachment
+     * @description Redirect to a short-lived presigned URL for a merchant-visible attachment.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['support:download_support_case_attachment']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/subscriptions/': {
     parameters: {
       query?: never
@@ -21277,6 +21368,12 @@ export interface components {
       items: components['schemas']['Subscription'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[SupportCaseListItem] */
+    ListResource_SupportCaseListItem_: {
+      /** Items */
+      items: components['schemas']['SupportCaseListItem'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[TaxJurisdiction] */
     ListResource_TaxJurisdiction_: {
       /** Items */
@@ -31494,6 +31591,47 @@ export interface components {
       /** Size Readable */
       readonly size_readable: string
     }
+    /** SupportCaseClosedError */
+    SupportCaseClosedError: {
+      /**
+       * Error
+       * @example SupportCaseClosedError
+       * @constant
+       */
+      error: 'SupportCaseClosedError'
+      /** Detail */
+      detail: string
+    }
+    /**
+     * SupportCaseListItem
+     * @description A row in the merchant's support-cases table (any case type).
+     */
+    SupportCaseListItem: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      type: components['schemas']['SupportCaseType']
+      /** Is Open */
+      is_open: boolean
+      /** Awaiting Platform */
+      awaiting_platform: boolean
+      /** Last Message At */
+      last_message_at: string | null
+    }
     /** SupportCaseMessage */
     SupportCaseMessage: {
       /**
@@ -36853,6 +36991,186 @@ export interface operations {
         }
       }
       /** @description Organization or benefit grant not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'support:list_support_cases': {
+    parameters: {
+      query?: {
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_SupportCaseListItem_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'support:get_support_case': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        case_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SupportCaseThread']
+        }
+      }
+      /** @description Support case not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'support:reply_to_support_case': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        case_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SupportCaseMessageCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SupportCaseMessage']
+        }
+      }
+      /** @description Support case not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The case is closed. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SupportCaseClosedError']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'support:download_support_case_attachment': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        case_id: string
+        attachment_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Redirect to a presigned download URL. */
+      302: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Support case not found. */
       404: {
         headers: {
           [name: string]: unknown

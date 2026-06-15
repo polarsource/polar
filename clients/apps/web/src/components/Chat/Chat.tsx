@@ -31,7 +31,7 @@ interface Props {
   attachments?: ChatAttachment[]
   isOpen: boolean
   composer: ComposerConfig
-  title?: string
+  title?: string | null
   description?: React.ReactNode
   selfAvatar?: React.ReactNode
   otherAvatar?: React.ReactNode
@@ -40,6 +40,9 @@ interface Props {
   closedNotice?: string
 
   scrollIntoViewOnMount?: boolean
+  // Fill the parent's height and pin the composer to the bottom, instead of
+  // the default fixed-height thread.
+  fillHeight?: boolean
   className?: string
 }
 
@@ -56,6 +59,7 @@ export const Chat = ({
   emptyState,
   closedNotice = 'Chat ended',
   scrollIntoViewOnMount = false,
+  fillHeight = false,
   className,
 }: Props) => {
   const [sendSignal, setSendSignal] = useState(0)
@@ -81,7 +85,11 @@ export const Chat = ({
     <div
       ref={rootRef}
       {...(dropEnabled ? dropHandlers : {})}
-      className={twMerge('relative', className)}
+      className={twMerge(
+        'relative',
+        fillHeight && 'flex min-h-0 flex-1 flex-col',
+        className,
+      )}
     >
       {dropEnabled && isDragging && (
         <div className="dark:border-polar-600 dark:bg-polar-800/90 dark:text-polar-50 pointer-events-none absolute inset-0 z-10 flex items-center justify-center gap-2 rounded-[inherit] border-2 border-dashed border-gray-300 bg-white/90 text-sm font-medium text-gray-700">
@@ -89,15 +97,23 @@ export const Chat = ({
           Drop to attach
         </div>
       )}
-      <Box display="flex" flexDirection="column" rowGap="l">
-        <Box display="flex" flexDirection="column" rowGap="xs">
-          <h4 className="font-medium">{title}</h4>
-          {description && (
-            <Text variant="caption" color="muted">
-              {description}
-            </Text>
-          )}
-        </Box>
+      <Box
+        display="flex"
+        flexDirection="column"
+        rowGap="l"
+        flexGrow={fillHeight ? 1 : undefined}
+        minHeight={fillHeight ? 0 : undefined}
+      >
+        {(title || description) && (
+          <Box display="flex" flexDirection="column" rowGap="xs">
+            {title && <h4 className="font-medium">{title}</h4>}
+            {description && (
+              <Text variant="caption" color="muted">
+                {description}
+              </Text>
+            )}
+          </Box>
+        )}
         <MessageThread
           messages={messages}
           attachments={attachments}
@@ -105,6 +121,7 @@ export const Chat = ({
           otherAvatar={otherAvatar}
           renderMessage={renderMessage}
           emptyState={emptyState}
+          fillHeight={fillHeight}
           scrollToBottomSignal={sendSignal}
           scrollFadeRef={scrollFadeRef}
           suppressSelfAnimation={suppressSelfAnimation}

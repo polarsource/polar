@@ -1,5 +1,7 @@
 from collections.abc import Sequence
+from uuid import UUID
 
+from polar.exceptions import PolarError
 from polar.models import Customer, File, Organization, User
 from polar.models.support_case import (
     SupportCase,
@@ -11,7 +13,8 @@ from polar.models.support_case import (
     SupportCaseParticipant,
     SupportCaseParticipantKind,
 )
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
+from polar.worker import enqueue_job
 
 from .repository import (
     SupportCaseAttachmentRepository,
@@ -19,6 +22,11 @@ from .repository import (
     SupportCaseParticipantRepository,
     SupportCaseRepository,
 )
+
+
+class SupportCaseClosedError(PolarError):
+    def __init__(self, case_id: UUID) -> None:
+        super().__init__(f"Case {case_id} is closed.", 409)
 
 
 class SupportCaseService:
@@ -177,6 +185,96 @@ class SupportCaseService:
             ),
             flush=True,
         )
+
+    # --- Merchant-facing, type-agnostic access (keyed by case id) ---
+
+    async def get_org_case(
+        self,
+        session: AsyncSession | AsyncReadSession,
+        *,
+        organization_id: UUID,
+        case_id: UUID,
+    ) -> SupportCase | None:
+        """Resolve a case by id, scoped to an org (the single ownership gate).
+
+        Returns the concrete case (any type) only when the org is a live
+        merchant participant; ``None`` otherwise.
+        """
+        repository = SupportCaseRepository.from_session(session)
+        return await repository.get_org_case(organization_id, case_id)
+
+    async def get_thread(
+        self,
+        session: AsyncSession | AsyncReadSession,
+        case: SupportCase,
+        *,
+        visible_to: SupportCaseAudience | None,
+    ) -> tuple[
+        SupportCase,
+        bool,
+        Sequence[SupportCaseMessage],
+        Sequence[SupportCaseAttachment],
+    ]:
+        """A case's open state, messages and attachments, audience-filtered."""
+        message_repository = SupportCaseMessageRepository.from_session(session)
+        attachment_repository = SupportCaseAttachmentRepository.from_session(session)
+        is_open = await message_repository.is_open(case.id)
+        messages = await message_repository.list_by_case(case.id, visible_to=visible_to)
+        attachments = await attachment_repository.list_by_case(
+            case.id, visible_to=visible_to
+        )
+        return case, is_open, messages, attachments
+
+    async def reply(
+        self,
+        session: AsyncSession,
+        case: SupportCase,
+        *,
+        author_kind: SupportCaseMessageAuthorKind,
+        author_user: User | None = None,
+        body: str | None = None,
+        files: Sequence[File] = (),
+        audience: Sequence[SupportCaseAudience] = (SupportCaseAudience.merchant,),
+    ) -> SupportCaseMessage:
+        """Post a reply (text + attachments) to an open case."""
+        await self._assert_open(session, case)
+        message = await self.post_message(
+            session,
+            case,
+            author_kind=author_kind,
+            author_user=author_user,
+            body=body,
+            audience=audience,
+        )
+        for file in files:
+            await self.add_attachment(
+                session, case, file=file, message=message, audience=audience
+            )
+        enqueue_job(
+            "support_case.notify_organization_of_new_message", message_id=message.id
+        )
+        return message
+
+    async def get_attachment(
+        self,
+        session: AsyncSession | AsyncReadSession,
+        case: SupportCase,
+        attachment_id: UUID,
+        *,
+        visible_to: SupportCaseAudience | None,
+    ) -> SupportCaseAttachment | None:
+        repository = SupportCaseAttachmentRepository.from_session(session)
+        attachment = await repository.get_by_id_for_case(attachment_id, case.id)
+        if attachment is None:
+            return None
+        if visible_to is not None and visible_to not in attachment.audience:
+            return None
+        return attachment
+
+    async def _assert_open(self, session: AsyncSession, case: SupportCase) -> None:
+        repository = SupportCaseMessageRepository.from_session(session)
+        if not await repository.is_open(case.id):
+            raise SupportCaseClosedError(case.id)
 
 
 support_case = SupportCaseService()

@@ -100,6 +100,10 @@
               "engineering/oncall/trigger-webhooks",
               "engineering/oncall/run-one-off-jobs"
             ]
+          },
+          {
+            "group": "Postmortems",
+            "pages": ["engineering/postmortems/2026-06-12"]
           }
         ]
       }

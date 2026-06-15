@@ -301,7 +301,7 @@ export default {
     custom: 'カスタム',
     meter_credit: 'メータークレジット',
     feature_flag: '機能フラグ',
-    slack_shared_channel: 'Slack 共有チャンネル',
+    slack_shared_channel: 'Slack共有チャンネル',
   },
   ordinal: {
     one: '番目',

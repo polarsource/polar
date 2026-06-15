@@ -490,6 +490,11 @@ class TestCreateOrderItemsFromPending:
             assert order_item.amount == 50_00
             assert order_item.proration is True
 
+            # Seat-change prorations charge a delta, not the full seat amount,
+            # so the label must not imply a total seat count (which wouldn't
+            # reconcile with the prorated amount).
+            assert "seat" not in order_item.label
+
             await create_order(
                 save_fixture,
                 customer=customer,

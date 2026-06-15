@@ -36,6 +36,7 @@ interface Props {
   selfAvatar?: React.ReactNode
   otherAvatar?: React.ReactNode
   renderMessage?: RenderChatMessage
+  emptyState?: React.ReactNode
   closedNotice?: string
 
   scrollIntoViewOnMount?: boolean
@@ -52,6 +53,7 @@ export const Chat = ({
   selfAvatar,
   otherAvatar,
   renderMessage,
+  emptyState,
   closedNotice = 'Chat ended',
   scrollIntoViewOnMount = false,
   className,
@@ -102,6 +104,7 @@ export const Chat = ({
           selfAvatar={selfAvatar}
           otherAvatar={otherAvatar}
           renderMessage={renderMessage}
+          emptyState={emptyState}
           scrollToBottomSignal={sendSignal}
           scrollFadeRef={scrollFadeRef}
           suppressSelfAnimation={suppressSelfAnimation}

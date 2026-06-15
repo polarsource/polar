@@ -17,6 +17,7 @@ interface Props {
   selfAvatar?: React.ReactNode
   otherAvatar?: React.ReactNode
   renderMessage?: RenderChatMessage
+  emptyState?: React.ReactNode
   scrollToBottomSignal?: number
   scrollFadeRef?: React.Ref<ScrollFadeHandle>
   suppressSelfAnimation?: boolean
@@ -28,6 +29,7 @@ export const MessageThread = ({
   selfAvatar,
   otherAvatar,
   renderMessage,
+  emptyState,
   scrollToBottomSignal,
   scrollFadeRef,
   suppressSelfAnimation,
@@ -41,6 +43,15 @@ export const MessageThread = ({
   const rendered = messages.map((message) => renderMessage?.(message))
   const isBubble = (index: number) =>
     index >= 0 && index < messages.length && rendered[index] === undefined
+  const visibleCount = rendered.filter((r) => r !== null).length
+
+  if (visibleCount === 0 && emptyState) {
+    return (
+      <div className="flex h-[420px] flex-col items-center justify-center">
+        {emptyState}
+      </div>
+    )
+  }
 
   return (
     <ScrollFade

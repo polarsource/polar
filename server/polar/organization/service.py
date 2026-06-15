@@ -1212,6 +1212,7 @@ class OrganizationService:
         next_review_threshold: int | None = None,
         *,
         reason: str,
+        internal_note: str | None = None,
     ) -> Organization:
         """Backoffice override to re-activate a DENIED or BLOCKED organization.
 
@@ -1222,6 +1223,10 @@ class OrganizationService:
 
         If a review with a submitted appeal exists, the appeal is recorded as
         APPROVED so the merchant's frontend reflects the approval.
+
+        ``internal_note`` overrides the default reactivation note (and omits the
+        reason line) so callers can record a context-specific note instead — the
+        appeal flow points to the support case rather than repeating its reason.
         """
         notes = {
             OrganizationStatus.DENIED: "Organization reactivated from denied.",
@@ -1245,11 +1250,12 @@ class OrganizationService:
             review.appeal_reviewed_at = datetime.now(UTC)
             session.add(review)
 
+        note = internal_note if internal_note is not None else notes[organization.status]
         target_status = await self._reactivate_organization(
             session,
             organization,
-            note=notes[organization.status],
-            reason=reason,
+            note=note,
+            reason=None if internal_note is not None else reason,
             next_review_threshold=next_review_threshold,
         )
         log.info(
@@ -1260,6 +1266,13 @@ class OrganizationService:
             slug=organization.slug,
         )
         return organization
+
+    async def add_internal_note(
+        self, session: AsyncSession, organization: Organization, message: str
+    ) -> None:
+        """Append a timestamped, admin-only internal note (append-only)."""
+        _append_internal_note(organization, message)
+        session.add(organization)
 
     async def handle_ongoing_review_verdict(
         self,

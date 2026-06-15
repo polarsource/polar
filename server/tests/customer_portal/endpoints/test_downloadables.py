@@ -11,12 +11,14 @@ from polar.benefit.strategies.downloadables.schemas import (
     BenefitDownloadablesCreateProperties,
 )
 from polar.customer_portal.schemas.downloadables import DownloadableRead
-from polar.models import Customer, File, Organization, Product
+from polar.models import Customer, Downloadable, File, Member, Organization, Product
+from polar.models.file import DownloadableFile, FileServiceTypes
 from polar.postgres import AsyncSession, sql
 from polar.redis import Redis
-from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT
+from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT, MEMBER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.downloadable import TestDownloadable
+from tests.fixtures.random_objects import create_benefit_grant, create_member
 
 
 @pytest.mark.asyncio
@@ -273,3 +275,154 @@ class TestDownloadablesEndpoints:
         assert downloadable["file"]["checksum_sha256_base64"] == downloaded_base64
         assert uploaded_logo_jpg.checksum_sha256_hex == downloaded_hex
         assert downloadable["file"]["checksum_sha256_hex"] == downloaded_hex
+
+
+async def _create_downloadable_file(
+    save_fixture: SaveFixture, organization: Organization, name: str = "asset.bin"
+) -> File:
+    """Create an uploaded, enabled downloadable File row without hitting S3."""
+    file = DownloadableFile(
+        organization_id=organization.id,
+        name=name,
+        path=f"downloadables/{name}",
+        mime_type="application/octet-stream",
+        size=1024,
+        service=FileServiceTypes.downloadable,
+        is_uploaded=True,
+        is_enabled=True,
+    )
+    await save_fixture(file)
+    return file
+
+
+@pytest.mark.asyncio
+class TestDownloadablesMemberAccess:
+    """Members are entitled to a downloadable through their own benefit grant,
+    not through Downloadable.member_id (which is shared across a customer's
+    members)."""
+
+    @pytest.mark.auth(MEMBER_AUTH_SUBJECT)
+    async def test_member_with_grant_sees_downloadables(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        member: Member,
+    ) -> None:
+        file = await _create_downloadable_file(save_fixture, organization)
+        benefit, _ = await TestDownloadable.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitDownloadablesCreateProperties(files=[file.id]),
+        )
+
+        # The member is entitled via their own benefit grant.
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit,
+            granted=True,
+            member=member,
+        )
+
+        response = await client.get("/v1/customer-portal/downloadables/")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total_count"] == 1
+        assert len(data["items"]) == 1
+
+    @pytest.mark.auth(MEMBER_AUTH_SUBJECT)
+    async def test_member_without_grant_sees_nothing(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        member: Member,
+    ) -> None:
+        file = await _create_downloadable_file(save_fixture, organization)
+        await TestDownloadable.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitDownloadablesCreateProperties(files=[file.id]),
+        )
+
+        # No benefit grant for this member -> no downloadables visible.
+        response = await client.get("/v1/customer-portal/downloadables/")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total_count"] == 0
+        assert len(data["items"]) == 0
+
+    @pytest.mark.auth(MEMBER_AUTH_SUBJECT)
+    async def test_member_sees_downloadable_attributed_to_other_member(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        member: Member,
+    ) -> None:
+        """Reproduces the seat-based collision: a single downloadable row is
+        shared per (customer, file, benefit), so its member_id points at whoever
+        was granted first. A member entitled via their own grant must still see
+        it."""
+        file = await _create_downloadable_file(save_fixture, organization)
+        benefit, _ = await TestDownloadable.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitDownloadablesCreateProperties(files=[file.id]),
+        )
+
+        # Attribute the shared downloadable row to a different member.
+        other_member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="other.member@example.com",
+        )
+        await session.execute(
+            sql.update(Downloadable)
+            .where(Downloadable.customer_id == customer.id)
+            .values(member_id=other_member.id)
+        )
+
+        # This member is entitled via their own grant.
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit,
+            granted=True,
+            member=member,
+        )
+
+        response = await client.get("/v1/customer-portal/downloadables/")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total_count"] == 1
+        assert len(data["items"]) == 1

@@ -30,7 +30,7 @@ const columnsCode = `const columns: DataTableColumnDef<Order>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Amount" />
     ),
-    cell: ({ row }) => <Text variant="mono">{format(row.original.amount)}</Text>,
+    cell: ({ row }) => <Text monospace>{format(row.original.amount)}</Text>,
   },
 ]`
 

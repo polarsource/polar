@@ -62,7 +62,7 @@ export default function ShadowsPage() {
                 boxShadow={token}
               />
               <Box flexDirection="column" rowGap="xs">
-                <Text variant="mono" color="inherit">
+                <Text monospace color="inherit">
                   {token}
                 </Text>
                 <Text variant="caption" color="default">

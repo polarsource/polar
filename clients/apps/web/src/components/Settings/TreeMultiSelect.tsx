@@ -138,7 +138,7 @@ export function TreeMultiSelect<T extends string>({
                   checked={groupChecked}
                   onCheckedChange={() => onToggleGroup(group)}
                 />
-                <Text variant="mono">{group.label}</Text>
+                <Text monospace>{group.label}</Text>
               </Box>
 
               <Box flexDirection="column" pl="xl">
@@ -156,7 +156,7 @@ export function TreeMultiSelect<T extends string>({
                       checked={selected.has(option)}
                       onCheckedChange={() => onToggleOption(option)}
                     />
-                    <Text variant="mono">{option}</Text>
+                    <Text monospace>{option}</Text>
                     {renderOptionSuffix?.(option)}
                   </Box>
                 ))}

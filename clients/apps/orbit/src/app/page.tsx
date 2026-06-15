@@ -54,7 +54,7 @@ function LinkCard({
         cursor="pointer"
       >
         <Box alignItems="center" justifyContent="between">
-          <Text variant="mono" color="muted">
+          <Text monospace color="muted">
             {index}
           </Text>
           <Box
@@ -159,7 +159,7 @@ export default function HomePage() {
           >
             <GridItem>
               <Box flexDirection="column" rowGap="m">
-                <Text variant="mono" color="muted">
+                <Text monospace color="muted">
                   {String(i + 1).padStart(2, '0')}
                 </Text>
                 <Text variant="heading-s" as="h3">

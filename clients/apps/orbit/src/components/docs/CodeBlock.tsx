@@ -64,7 +64,7 @@ export function CodeBlock({
         {highlighted ? (
           <div dangerouslySetInnerHTML={{ __html: highlighted }} />
         ) : (
-          <Text as="code" variant="mono" color="inherit">
+          <Text as="code" monospace color="inherit">
             <pre className="m-0">{code}</pre>
           </Text>
         )}

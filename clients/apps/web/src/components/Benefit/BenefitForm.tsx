@@ -127,7 +127,7 @@ const BenefitForm = ({
       />
 
       {!update ? <BenefitTypeSelect organization={organization} /> : null}
-      {type !== 'usage' && isBenefitVisibilityConfigurable(type) ? (
+      {isBenefitVisibilityConfigurable(type) ? (
         <BenefitVisibilityField
           key={type}
           defaultValue={update ? undefined : getDefaultBenefitVisibility(type)}

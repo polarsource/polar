@@ -96,7 +96,7 @@ export type VisibilityConfigurableBenefitType =
   (typeof VISIBILITY_CONFIGURABLE_BENEFIT_TYPES)[number]
 
 export function isBenefitVisibilityConfigurable(
-  benefitType: schemas['BenefitType'],
+  benefitType: schemas['BenefitType'] | 'usage',
 ): benefitType is VisibilityConfigurableBenefitType {
   return (VISIBILITY_CONFIGURABLE_BENEFIT_TYPES as readonly string[]).includes(
     benefitType,

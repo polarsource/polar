@@ -81,6 +81,12 @@ BenefitGrantWebhookPayload = (
 class PolarSelfService:
     INITIAL_MEMBER_DELAY_MS = 1000
 
+    PREVIEW_ACCESS_FEATURE_FLAGS = (
+        "reset_proration_behavior_enabled",
+        "off_session_charges_enabled",
+        "slack_benefit_enabled",
+    )
+
     @property
     def is_configured(self) -> bool:
         return settings.POLAR_SELF_ENABLED
@@ -655,6 +661,7 @@ class PolarSelfService:
             if not isinstance(benefit_type, str) or benefit_type not in (
                 "transaction_fee",
                 "support",
+                "preview_access",
             ):
                 return
 
@@ -669,6 +676,10 @@ class PolarSelfService:
                     )
                 case "support":
                     await self._apply_support(session, organization_id, active_grant)
+                case "preview_access":
+                    await self._apply_preview_access(
+                        session, organization_id, active_grant
+                    )
 
     async def handle_order_created_event(
         self, payload: WebhookOrderCreatedPayload
@@ -955,6 +966,31 @@ class PolarSelfService:
                 tenant_external_id=str(organization_id),
                 tier_external_id=effective_tier_external_id,
             )
+
+    async def _apply_preview_access(
+        self,
+        session: AsyncSession,
+        organization_id: uuid.UUID,
+        grant: "BenefitGrant | None",
+    ) -> None:
+        enabled = grant is not None
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            organization_id, include_blocked=True
+        )
+        if organization is None:
+            return
+
+        with logfire.span(
+            "polar_self.webhook.preview_access.applied",
+            organization_id=str(organization_id),
+            enabled=enabled,
+        ):
+            organization.feature_settings = {
+                **organization.feature_settings,
+                **{flag: enabled for flag in self.PREVIEW_ACCESS_FEATURE_FLAGS},
+            }
 
     async def _fetch_active_grant(
         self, customer_id: str, benefit_type: str

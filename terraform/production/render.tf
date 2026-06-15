@@ -79,9 +79,12 @@ resource "render_postgres" "db" {
   ]
 
   lifecycle {
+    prevent_destroy = true
     ignore_changes = [
       ip_allow_list,
       disk_size_gb,
+      database_user,
+      database_name,
     ]
   }
 

@@ -85,6 +85,7 @@ class PolarSelfService:
         "reset_proration_behavior_enabled",
         "off_session_charges_enabled",
         "slack_benefit_enabled",
+        "preview_access_enabled",
     )
 
     @property

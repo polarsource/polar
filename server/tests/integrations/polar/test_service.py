@@ -61,6 +61,7 @@ _PREVIEW_FLAGS_ENABLED = {
     "reset_proration_behavior_enabled": True,
     "off_session_charges_enabled": True,
     "slack_benefit_enabled": True,
+    "preview_access_enabled": True,
 }
 _PREVIEW_FLAGS_DISABLED = {flag: False for flag in _PREVIEW_FLAGS_ENABLED}
 _CUSTOMER_ID = _CUSTOMER_DICT["id"]

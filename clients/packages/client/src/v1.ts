@@ -24966,6 +24966,12 @@ export interface components {
        * @default false
        */
       slack_benefit_enabled: boolean
+      /**
+       * Preview Access Enabled
+       * @description If this organization has preview access to new features enabled
+       * @default false
+       */
+      preview_access_enabled: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate

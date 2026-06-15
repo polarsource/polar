@@ -314,6 +314,8 @@ select(X).options(joinedload(X.rel))   # or selectinload / contains_eager
 ```
 (Populating a backref into an unloaded collection — e.g. `case=case` — is passive and does **not** trigger the raise.)
 
+Exception: a relationship may always eager-load (`lazy="selectin"`/`"joined"`) when there's a legitimate reason to — typically many-to-many association tables.
+
 ### Errors → status-coded `PolarError`, not validation errors
 Logical/conflict errors are `PolarError` subclasses carrying their own `status_code`; the global exception handler renders them. Don't catch and re-raise as `PolarRequestValidationError` — that's only for request-*payload* validation (→ 422). Declare them on the endpoint's `responses=` so the OpenAPI client gets the schema:
 ```python
@@ -323,6 +325,8 @@ class CaseClosedError(PolarError):
 
 @router.post(..., responses={409: {"model": CaseClosedError.schema()}})
 ```
+Always set a proper `status_code` for errors that are normal business operations. The default (500) is still rendered correctly by the handler, **but** Sentry reports it as a hard error — so an expected conflict would page you as if it were a crash.
+
 (Don't add a content-less `422: {"description": ...}` override — it clobbers FastAPI's default `HTTPValidationError` and breaks the generated client.)
 
 ### Endpoints return ORM models

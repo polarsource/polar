@@ -91,6 +91,11 @@ resource "render_postgres" "db" {
   depends_on = [render_registry_credential.ghcr, render_project.polar]
 }
 
+import {
+  to = render_postgres.db
+  id = "dpg-d8m0n4poagis73du7gr0-a"
+}
+
 # =============================================================================
 # Redis
 # =============================================================================

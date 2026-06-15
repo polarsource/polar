@@ -90,7 +90,7 @@ class OrganizationListView:
         current_sort: str,
         current_direction: str,
         align: str = "left",
-        status_filter: OrganizationStatus | None = None,
+        status_param: str | None = None,
     ) -> Generator[None]:
         """Render a sortable table header with direction indicator."""
         is_active = current_sort == sort_key
@@ -111,8 +111,8 @@ class OrganizationListView:
 
         # Build hx-vals with status filter if present
         hx_vals_dict = {"sort": sort_key, "direction": next_direction}
-        if status_filter is not None:
-            hx_vals_dict["status"] = status_filter.value
+        if status_param is not None:
+            hx_vals_dict["status"] = status_param
 
         hx_vals = json.dumps(hx_vals_dict)
 
@@ -147,7 +147,7 @@ class OrganizationListView:
         has_more: bool,
         current_sort: str,
         current_direction: str,
-        status_filter: OrganizationStatus | None,
+        status_param: str | None,
     ) -> None:
         """Render Previous/Next pagination buttons.
 
@@ -161,8 +161,8 @@ class OrganizationListView:
             "sort": current_sort,
             "direction": current_direction,
         }
-        if status_filter is not None:
-            common_vals["status"] = status_filter.value
+        if status_param is not None:
+            common_vals["status"] = status_param
 
         def _nav_button(target_page: int, label: str, disabled: bool) -> None:
             if disabled:
@@ -197,6 +197,9 @@ class OrganizationListView:
         org: Organization,
         *,
         signals: Signals | None = None,
+        has_open_case: bool = False,
+        awaiting_reply: bool = False,
+        link_to_case: bool = False,
     ) -> Generator[None]:
         """Render a single organization row in the table.
 
@@ -205,16 +208,19 @@ class OrganizationListView:
         """
         days_in_status = self.calculate_days_in_status(org)
 
+        detail_url = str(
+            request.url_for("organizations:detail", organization_id=org.id)
+        )
+        # From the Open cases tab, deep-link straight to the case thread.
+        if link_to_case:
+            detail_url += "?section=support_case"
+
         with tag.tr(classes="hover:bg-base-100"):
             # Organization name and status
             with tag.td(classes="py-4 max-w-xs"):
                 with tag.div(classes="flex flex-col gap-1"):
                     with tag.a(
-                        href=str(
-                            request.url_for(
-                                "organizations:detail", organization_id=org.id
-                            )
-                        ),
+                        href=detail_url,
                         classes="font-semibold hover:underline flex items-center gap-2",
                     ):
                         with tag.span(
@@ -249,6 +255,17 @@ class OrganizationListView:
                     ):
                         with tag.span(classes="badge badge-info badge-xs mt-1"):
                             text("Appeal Pending")
+                    # Open support case(s) — generic, not appeal-specific
+                    if has_open_case:
+                        with tag.div(classes="flex items-center gap-1 mt-1"):
+                            with tag.span(classes="badge badge-warning badge-xs"):
+                                text("Open case")
+                            if awaiting_reply:
+                                with tag.span(
+                                    classes="tooltip text-warning",
+                                    data_tip="Awaiting reply",
+                                ):
+                                    text("●")
 
             # Priority — Review tab only, sits next to Organization
             if signals is not None:
@@ -337,6 +354,10 @@ class OrganizationListView:
         selected_has_appeal: str | None = None,
         selected_deleted: DeletedFilter = "exclude",
         signals_by_org: dict[uuid.UUID, Signals] | None = None,
+        open_case_org_ids: set[uuid.UUID] | None = None,
+        awaiting_reply_org_ids: set[uuid.UUID] | None = None,
+        selected_open_cases: bool = False,
+        open_cases_count: int = 0,
     ) -> Generator[None]:
         """Render the complete list view."""
 
@@ -356,8 +377,15 @@ class OrganizationListView:
             Tab(
                 label="All",
                 url=str(request.url_for("organizations:list")),
-                active=status_filter is None,
-                count=sum(status_counts.values()),
+                active=status_filter is None and not selected_open_cases,
+                # Mirror the default list, which hides denied/blocked orgs (they
+                # have their own tabs) — otherwise the count overstates the rows.
+                count=sum(
+                    count
+                    for status, count in status_counts.items()
+                    if status
+                    not in (OrganizationStatus.DENIED, OrganizationStatus.BLOCKED)
+                ),
             ),
             Tab(
                 label="Review",
@@ -401,6 +429,15 @@ class OrganizationListView:
                 count=status_counts.get(OrganizationStatus.OFFBOARDING, 0),
                 badge_variant="warning",
             ),
+            # Pushed to the right — a separate dimension from the status tabs.
+            Tab(
+                label="Open cases",
+                url=str(request.url_for("organizations:list")) + "?status=open_cases",
+                active=selected_open_cases,
+                count=open_cases_count,
+                badge_variant="warning",
+                extra_classes="ml-auto",
+            ),
         ]
 
         with tab_nav(tabs):
@@ -422,6 +459,8 @@ class OrganizationListView:
             }
             if status_filter is not None:
                 form_attrs["hx_vals"] = json.dumps({"status": status_filter.value})
+            elif selected_open_cases:
+                form_attrs["hx_vals"] = json.dumps({"status": "open_cases"})
 
             with tag.form(**form_attrs):
                 # Search bar with filter toggle
@@ -642,6 +681,9 @@ class OrganizationListView:
             current_sort,
             current_direction,
             signals_by_org,
+            open_case_org_ids,
+            awaiting_reply_org_ids,
+            selected_open_cases,
         )
 
         yield
@@ -656,6 +698,9 @@ class OrganizationListView:
         current_sort: str,
         current_direction: str,
         signals_by_org: dict[uuid.UUID, Signals] | None = None,
+        open_case_org_ids: set[uuid.UUID] | None = None,
+        awaiting_reply_org_ids: set[uuid.UUID] | None = None,
+        selected_open_cases: bool = False,
     ) -> None:
         """Render the ``#org-list`` block — table with Review-only columns.
 
@@ -663,7 +708,16 @@ class OrganizationListView:
         partial swap), so both paths agree on column count.
         """
         signals_by_org = signals_by_org or {}
+        open_case_org_ids = open_case_org_ids or set()
+        awaiting_reply_org_ids = awaiting_reply_org_ids or set()
         is_review_tab = status_filter == OrganizationStatus.REVIEW
+        # "Open cases" isn't an OrganizationStatus, so carry it as the status
+        # query value to preserve the selection across HTMX sort/pagination.
+        status_param = (
+            status_filter.value
+            if status_filter is not None
+            else ("open_cases" if selected_open_cases else None)
+        )
 
         with tag.div(id="org-list", classes="overflow-x-auto"):
             if not organizations:
@@ -682,7 +736,7 @@ class OrganizationListView:
                                 "name",
                                 current_sort,
                                 current_direction,
-                                status_filter=status_filter,
+                                status_param=status_param,
                             ):
                                 pass
 
@@ -696,7 +750,7 @@ class OrganizationListView:
                                     current_sort,
                                     current_direction,
                                     "center",
-                                    status_filter=status_filter,
+                                    status_param=status_param,
                                 ):
                                     pass
 
@@ -706,7 +760,7 @@ class OrganizationListView:
                                 "country",
                                 current_sort,
                                 current_direction,
-                                status_filter=status_filter,
+                                status_param=status_param,
                             ):
                                 pass
 
@@ -716,7 +770,7 @@ class OrganizationListView:
                                 "created",
                                 current_sort,
                                 current_direction,
-                                status_filter=status_filter,
+                                status_param=status_param,
                             ):
                                 pass
 
@@ -727,7 +781,7 @@ class OrganizationListView:
                                 current_sort,
                                 current_direction,
                                 "center",
-                                status_filter=status_filter,
+                                status_param=status_param,
                             ):
                                 pass
 
@@ -741,7 +795,7 @@ class OrganizationListView:
                                     current_sort,
                                     current_direction,
                                     "center",
-                                    status_filter=status_filter,
+                                    status_param=status_param,
                                 ):
                                     pass
 
@@ -752,7 +806,7 @@ class OrganizationListView:
                                 current_sort,
                                 current_direction,
                                 "right",
-                                status_filter=status_filter,
+                                status_param=status_param,
                             ):
                                 pass
 
@@ -765,6 +819,9 @@ class OrganizationListView:
                                 request,
                                 org,
                                 signals=signals_by_org.get(org.id),
+                                has_open_case=org.id in open_case_org_ids,
+                                awaiting_reply=org.id in awaiting_reply_org_ids,
+                                link_to_case=selected_open_cases,
                             ):
                                 pass
 
@@ -774,7 +831,7 @@ class OrganizationListView:
                     has_more,
                     current_sort,
                     current_direction,
-                    status_filter,
+                    status_param,
                 )
 
     @contextlib.contextmanager
@@ -789,6 +846,9 @@ class OrganizationListView:
         current_direction: str = "asc",
         *,
         signals_by_org: dict[uuid.UUID, Signals] | None = None,
+        open_case_org_ids: set[uuid.UUID] | None = None,
+        awaiting_reply_org_ids: set[uuid.UUID] | None = None,
+        selected_open_cases: bool = False,
     ) -> Generator[None]:
         """Render only the organization table (for HTMX updates)."""
 
@@ -801,6 +861,9 @@ class OrganizationListView:
             current_sort,
             current_direction,
             signals_by_org,
+            open_case_org_ids,
+            awaiting_reply_org_ids,
+            selected_open_cases,
         )
 
         yield

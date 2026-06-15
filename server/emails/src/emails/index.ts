@@ -28,6 +28,7 @@ import { SubscriptionRevoked } from './subscription_revoked'
 import { SubscriptionTrialConversionReminder } from './subscription_trial_conversion_reminder'
 import { SubscriptionUncanceled } from './subscription_uncanceled'
 import { SubscriptionUpdated } from './subscription_updated'
+import { SupportCaseOrganizationNewMessage } from './support_case_organization_new_message'
 import { WebhookEndpointDisabled } from './webhook_endpoint_disabled'
 
 const TEMPLATES: Record<string, React.FC<never>> = {
@@ -55,6 +56,7 @@ const TEMPLATES: Record<string, React.FC<never>> = {
   subscription_trial_conversion_reminder: SubscriptionTrialConversionReminder,
   subscription_uncanceled: SubscriptionUncanceled,
   subscription_updated: SubscriptionUpdated,
+  support_case_organization_new_message: SupportCaseOrganizationNewMessage,
   webhook_endpoint_disabled: WebhookEndpointDisabled,
   notification_new_sale: NotificationNewSale,
   notification_new_subscription: NotificationNewSubscription,

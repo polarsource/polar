@@ -72,7 +72,6 @@ const plugins = [
 export default function Downloads() {
   return (
     <Box
-      display="flex"
       flexDirection="column"
       marginHorizontal="auto"
       height="100%"
@@ -81,15 +80,8 @@ export default function Downloads() {
       maxWidth="72rem"
       rowGap={{ base: '2xl', md: '5xl' }}
     >
-      <Box
-        display="flex"
-        width="100%"
-        flexDirection="column"
-        alignItems="center"
-        rowGap="2xl"
-      >
+      <Box width="100%" flexDirection="column" alignItems="center" rowGap="2xl">
         <Box
-          display="flex"
           flexDirection="column"
           alignItems="center"
           rowGap="2xl"
@@ -110,7 +102,7 @@ export default function Downloads() {
           </p>
         </Box>
       </Box>
-      <Box display="flex" flexDirection="column" rowGap="2xl">
+      <Box flexDirection="column" rowGap="2xl">
         <Box
           display="grid"
           gridTemplateColumns={{
@@ -119,7 +111,7 @@ export default function Downloads() {
           }}
           gap="2xl"
         >
-          <Box display="flex" flexDirection="column" rowGap="s">
+          <Box flexDirection="column" rowGap="s">
             <h3 className="text-2xl">Mobile Apps</h3>
             <p className="dark:text-polar-500 text-lg text-gray-500">
               Your business in the palm of your hand
@@ -134,12 +126,7 @@ export default function Downloads() {
               href={link.href ?? '#'}
               target={link.target}
             >
-              <Box
-                display="flex"
-                flexDirection="row"
-                alignItems="center"
-                columnGap="l"
-              >
+              <Box flexDirection="row" alignItems="center" columnGap="l">
                 <span>{link.icon}</span>
                 {!link.href ? (
                   <span className="dark:text-polar-500 font-mono text-sm text-gray-500">
@@ -147,7 +134,7 @@ export default function Downloads() {
                   </span>
                 ) : null}
               </Box>
-              <Box display="flex" flexDirection="column" gap="s">
+              <Box flexDirection="column" gap="s">
                 <h3 className="text-xl">{link.title}</h3>
                 <p className="dark:text-polar-500 font-sm text-gray-500">
                   {link.description}
@@ -157,7 +144,7 @@ export default function Downloads() {
           ))}
         </Box>
       </Box>
-      <Box display="flex" flexDirection="column" rowGap="2xl">
+      <Box flexDirection="column" rowGap="2xl">
         <Box
           display="grid"
           gridTemplateColumns={{
@@ -166,7 +153,7 @@ export default function Downloads() {
           }}
           gap="2xl"
         >
-          <Box display="flex" flexDirection="column" rowGap="s">
+          <Box flexDirection="column" rowGap="s">
             <h3 className="text-2xl">Plugins</h3>
             <p className="dark:text-polar-500 text-lg text-gray-500">
               Polar integrated in your favourite apps
@@ -179,12 +166,7 @@ export default function Downloads() {
               href={link.href}
               target="_blank"
             >
-              <Box
-                display="flex"
-                flexDirection="row"
-                alignItems="center"
-                columnGap="l"
-              >
+              <Box flexDirection="row" alignItems="center" columnGap="l">
                 <span>{link.icon}</span>
                 {!link.href ? (
                   <span className="dark:text-polar-500 font-mono text-sm text-gray-500">
@@ -192,7 +174,7 @@ export default function Downloads() {
                   </span>
                 ) : null}
               </Box>
-              <Box display="flex" flexDirection="column" gap="s">
+              <Box flexDirection="column" gap="s">
                 <h3 className="text-xl">{link.title}</h3>
                 <p className="dark:text-polar-500 font-sm text-gray-500">
                   {link.description}

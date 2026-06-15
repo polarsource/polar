@@ -3,7 +3,7 @@
 import GetStartedButton from '@/components/Auth/GetStartedButton'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -29,7 +29,7 @@ export const Hero = () => {
       whileInView="visible"
       viewport={{ once: true }}
     >
-      <Box display="flex">
+      <Box>
         <Text variant="heading-2xl">
           Turn Usage
           <br />

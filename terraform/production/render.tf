@@ -276,6 +276,8 @@ module "production" {
       KE = "P052518030C"
       # Canada (GST/HST)
       CA = "720474766 RT9999"
+      # Australia (GST)
+      AU = "300038975137"
     })
     tax_processors                 = "[\"stripe\"]"
     tax_record_processor           = "stripe"

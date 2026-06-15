@@ -20,6 +20,7 @@ from .strategies.feature_flag.service import BenefitFeatureFlagService
 from .strategies.github_repository.service import BenefitGitHubRepositoryService
 from .strategies.license_keys.service import BenefitLicenseKeysService
 from .strategies.meter_credit.service import BenefitMeterCreditService
+from .strategies.slack_shared_channel.service import BenefitSlackSharedChannelService
 
 _STRATEGY_CLASS_MAP: dict[
     BenefitType,
@@ -32,6 +33,7 @@ _STRATEGY_CLASS_MAP: dict[
     BenefitType.license_keys: BenefitLicenseKeysService,
     BenefitType.meter_credit: BenefitMeterCreditService,
     BenefitType.feature_flag: BenefitFeatureFlagService,
+    BenefitType.slack_shared_channel: BenefitSlackSharedChannelService,
 }
 
 

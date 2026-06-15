@@ -62,7 +62,7 @@ interface FieldProps {
 }
 
 const Field = ({ label, htmlFor, children }: FieldProps) => (
-  <Box display="flex" flexDirection="column" rowGap="s">
+  <Box flexDirection="column" rowGap="s">
     <Text as="label" htmlFor={htmlFor}>
       {label}
     </Text>
@@ -126,7 +126,6 @@ export const StartupProgramForm = () => {
   return (
     <Box
       as="form"
-      display="flex"
       flexDirection="column"
       rowGap="l"
       padding={{

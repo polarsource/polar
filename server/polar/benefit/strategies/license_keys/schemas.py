@@ -10,6 +10,7 @@ from ..base.schemas import (
     BenefitCreateBase,
     BenefitSubscriberBase,
     BenefitUpdateBase,
+    BenefitUpdateVisibilityMixin,
 )
 
 
@@ -69,7 +70,7 @@ class BenefitLicenseKeysCreate(BenefitCreateBase):
     properties: BenefitLicenseKeysCreateProperties
 
 
-class BenefitLicenseKeysUpdate(BenefitUpdateBase):
+class BenefitLicenseKeysUpdate(BenefitUpdateVisibilityMixin, BenefitUpdateBase):
     type: Literal[BenefitType.license_keys]
     properties: BenefitLicenseKeysCreateProperties | None = None
 

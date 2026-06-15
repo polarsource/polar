@@ -22,7 +22,7 @@ export const PayoutAccountSection = ({
 }: Props) => {
   const tone = step.status === 'failed' ? 'danger' : 'warning'
   const banners = reasonItems.length > 0 && (
-    <Box display="flex" flexDirection="column" rowGap="m">
+    <Box flexDirection="column" rowGap="m">
       {reasonItems.map((reason) => (
         <PathCardBanner key={reason} tone={tone} title={reason} />
       ))}

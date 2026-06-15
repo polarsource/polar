@@ -3,6 +3,8 @@ import type {
   BorderColorToken,
   BorderRadiusToken,
   BreakpointKey,
+  DurationToken,
+  EasingToken,
   ShadowToken,
   SpacingToken,
   TextColorToken,
@@ -87,6 +89,7 @@ export interface LayoutProps {
     | 'block'
     | 'inline'
     | 'inline-flex'
+    | 'inline-grid'
     | 'inline-block'
     | 'none'
     | 'contents'
@@ -129,8 +132,14 @@ export interface FlexProps {
 export interface GridProps {
   gridTemplateColumns?: ResponsiveValue<string>
   gridTemplateRows?: ResponsiveValue<string>
-  gridColumn?: ResponsiveValue<string>
-  gridRow?: ResponsiveValue<string>
+  gridTemplateAreas?: ResponsiveValue<string>
+  gridColumn?: ResponsiveValue<string | number>
+  gridRow?: ResponsiveValue<string | number>
+  gridArea?: ResponsiveValue<string>
+  gridColumnStart?: ResponsiveValue<number | string>
+  gridColumnEnd?: ResponsiveValue<number | string>
+  gridRowStart?: ResponsiveValue<number | string>
+  gridRowEnd?: ResponsiveValue<number | string>
   gridAutoFlow?: ResponsiveValue<
     'row' | 'column' | 'dense' | 'row-dense' | 'column-dense'
   >
@@ -148,6 +157,32 @@ export interface PositionProps {
   left?: ResponsiveValue<string | number>
   inset?: ResponsiveValue<string | number>
   zIndex?: ResponsiveValue<number | string>
+}
+
+/**
+ * Curated `transition-property` presets. Keyword values expand to a real
+ * property list so authors don't hand-write CSS — `colors` is the common case
+ * for token-driven hover states, `common` covers most interactive surfaces.
+ */
+export type TransitionProperty =
+  | 'none'
+  | 'all'
+  | 'common'
+  | 'colors'
+  | 'opacity'
+  | 'shadow'
+  | 'transform'
+
+export interface MotionProps {
+  transitionProperty?: ResponsiveValue<TransitionProperty>
+  transitionDuration?: ResponsiveValue<DurationToken>
+  transitionTimingFunction?: ResponsiveValue<EasingToken>
+  /** Alias for `transitionTimingFunction`. */
+  ease?: ResponsiveValue<EasingToken>
+  transitionDelay?: ResponsiveValue<DurationToken>
+  transform?: ResponsiveValue<string>
+  transformOrigin?: ResponsiveValue<string>
+  willChange?: ResponsiveValue<string>
 }
 
 export interface VisualProps {
@@ -176,4 +211,5 @@ export type BoxStyleProps = SpacingProps &
   FlexProps &
   GridProps &
   PositionProps &
+  MotionProps &
   VisualProps

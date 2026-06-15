@@ -2,7 +2,7 @@
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
 import { Button } from '@polar-sh/orbit'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import Link from 'next/link'
 import { ComponentType, PropsWithChildren, ReactNode } from 'react'
 import { Section } from '../Section'

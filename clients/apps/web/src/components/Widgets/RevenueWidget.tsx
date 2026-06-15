@@ -3,15 +3,11 @@ import { OrganizationContext } from '@/providers/maintainerOrganization'
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
 import KeyboardArrowUp from '@mui/icons-material/KeyboardArrowUp'
 import { formatCurrency } from '@polar-sh/currency'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/ui/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { endOfMonth, format, startOfMonth, subMonths } from 'date-fns'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Spinner from '../Shared/Spinner'
+import { Spinner } from '@polar-sh/orbit'
 import { WidgetContainer } from './WidgetContainer'
 
 interface RevenueWidgetProps {

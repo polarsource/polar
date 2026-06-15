@@ -52,6 +52,9 @@ class BenefitFeatureFlagService(
         return False
 
     async def validate_properties(
-        self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        properties: dict[str, Any],
     ) -> BenefitFeatureFlagProperties:
         return cast(BenefitFeatureFlagProperties, properties)

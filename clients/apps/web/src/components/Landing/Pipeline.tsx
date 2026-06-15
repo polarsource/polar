@@ -79,7 +79,6 @@ const CheckIcon = ({ active }: { active: boolean }) => (
     borderRadius="full"
     backgroundColor="background-success"
     color="text-success"
-    display="flex"
     alignItems="center"
     justifyContent="center"
     flexShrink={0}
@@ -107,7 +106,6 @@ const BankIcon = () => (
     borderRadius="full"
     backgroundColor="background-card"
     color="text-secondary"
-    display="flex"
     alignItems="center"
     justifyContent="center"
     flexShrink={0}
@@ -133,12 +131,7 @@ const BankIcon = () => (
 )
 
 const ArrowDown = () => (
-  <Box
-    display="flex"
-    justifyContent="center"
-    color="text-tertiary"
-    paddingVertical="m"
-  >
+  <Box justifyContent="center" color="text-tertiary" paddingVertical="m">
     <svg
       width="20"
       height="30"
@@ -156,7 +149,7 @@ const ArrowDown = () => (
 )
 
 const Chevron = ({ open }: { open: boolean }) => (
-  <Box color="text-tertiary" display="flex" flexShrink={0}>
+  <Box color="text-tertiary" flexShrink={0}>
     <svg
       width="16"
       height="16"
@@ -182,7 +175,6 @@ export const Pipeline = () => {
   return (
     <Box
       position="relative"
-      display="flex"
       flexDirection="column"
       rowGap={{ base: '2xl', md: '4xl' }}
       paddingTop={{ base: 'l', md: '3xl' }}
@@ -195,8 +187,8 @@ export const Pipeline = () => {
         alignItems="start"
       >
         {/* Accordion */}
-        <Box as="ul" display="flex" flexDirection="column" rowGap="2xl">
-          <Box display="flex" flexDirection="column" rowGap="2xl">
+        <Box as="ul" flexDirection="column" rowGap="2xl">
+          <Box flexDirection="column" rowGap="2xl">
             <Text variant="heading-l" as="h2" wrap="balance">
               Everything between usage & revenue
             </Text>
@@ -218,14 +210,13 @@ export const Pipeline = () => {
                   rowGap="l"
                 >
                   <Box
-                    display="flex"
                     alignItems="center"
                     justifyContent="between"
                     columnGap="l"
                     cursor="pointer"
                     onClick={() => setActive(index)}
                   >
-                    <Box display="flex" flexDirection="row" columnGap="s">
+                    <Box flexDirection="row" columnGap="s">
                       <Text
                         variant="heading-xxs"
                         color={open ? undefined : 'muted'}
@@ -236,18 +227,12 @@ export const Pipeline = () => {
                     <Chevron open={open} />
                   </Box>
                   {open && (
-                    <Box
-                      paddingBottom="l"
-                      display="flex"
-                      flexDirection="column"
-                      rowGap="m"
-                    >
+                    <Box paddingBottom="l" flexDirection="column" rowGap="m">
                       <Text variant="body" color="muted">
                         {aspect.desc}
                       </Text>
                       <Link href={aspect.href}>
                         <Box
-                          display="flex"
                           alignItems="center"
                           columnGap="m"
                           width="fit-content"
@@ -274,7 +259,6 @@ export const Pipeline = () => {
           width="100%"
           maxWidth={{ base: '100%' }}
           marginHorizontal="auto"
-          display="flex"
           flexDirection="column"
           paddingVertical={{ base: '2xl', md: '5xl' }}
           paddingHorizontal={{ base: '2xl', md: '5xl' }}
@@ -284,7 +268,6 @@ export const Pipeline = () => {
         >
           {/* Customer */}
           <Box
-            display="flex"
             alignItems="center"
             columnGap="m"
             backgroundColor="background-secondary"
@@ -295,7 +278,7 @@ export const Pipeline = () => {
               avatar_url="/assets/team/emil.png"
               className="h-10 w-10 text-sm"
             />
-            <Box display="flex" flexDirection="column">
+            <Box flexDirection="column">
               <Text>John Doe</Text>
               <Text color="muted">Consumed 23,820 tokens</Text>
             </Box>
@@ -304,10 +287,9 @@ export const Pipeline = () => {
           <ArrowDown />
 
           {/* Polar */}
-          <Box display="flex" flexDirection="column" rowGap="s">
+          <Box flexDirection="column" rowGap="s">
             <Box
               paddingVertical="m"
-              display="flex"
               justifyContent="center"
               backgroundColor="background-secondary"
             >
@@ -316,7 +298,6 @@ export const Pipeline = () => {
             {GROUPS.map((group, groupIndex) => (
               <Box
                 key={groupIndex}
-                display="flex"
                 flexDirection="column"
                 backgroundColor="background-secondary"
                 padding="s"
@@ -327,7 +308,6 @@ export const Pipeline = () => {
                   return (
                     <Box
                       key={aspect.title}
-                      display="flex"
                       alignItems="center"
                       columnGap="l"
                       paddingVertical="s"
@@ -353,19 +333,18 @@ export const Pipeline = () => {
 
           {/* Payout */}
           <Box
-            display="flex"
             alignItems="center"
             columnGap="l"
             backgroundColor="background-secondary"
             padding="l"
           >
             <BankIcon />
-            <Box display="flex" flexDirection="column" rowGap="xs">
-              <Box display="flex" alignItems="baseline" columnGap="s">
+            <Box flexDirection="column" rowGap="xs">
+              <Box alignItems="baseline" columnGap="s">
                 <Text>Merchant Payout</Text>
                 <Text color="muted">Acme Inc</Text>
               </Box>
-              <Box display="flex" alignItems="baseline" columnGap="s">
+              <Box alignItems="baseline" columnGap="s">
                 <Text color="success">$9,311</Text>
                 <Text color="muted">SEB **** 9128</Text>
               </Box>

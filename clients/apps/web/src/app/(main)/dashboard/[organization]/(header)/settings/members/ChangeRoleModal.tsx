@@ -80,7 +80,7 @@ export function ChangeRoleModal({
   }
 
   return (
-    <Box display="flex" flexDirection="column" rowGap="xl" padding="2xl">
+    <Box flexDirection="column" rowGap="xl" padding="2xl">
       <Text variant="heading-xxs" as="h3">
         Change Role
       </Text>
@@ -111,6 +111,7 @@ export function ChangeRoleModal({
       </Select>
       {orderedRoles.length > 0 && (
         <Box
+          display="block"
           maxHeight="30vh"
           overflowY="auto"
           borderRadius="m"
@@ -156,7 +157,7 @@ export function ChangeRoleModal({
           </table>
         </Box>
       )}
-      <Box display="flex" columnGap="s">
+      <Box columnGap="s">
         <Button
           onClick={handleSave}
           disabled={updateMemberRole.isPending}

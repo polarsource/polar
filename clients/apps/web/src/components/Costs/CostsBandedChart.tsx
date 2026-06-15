@@ -1,6 +1,6 @@
 'use client'
 
-import Spinner from '@/components/Shared/Spinner'
+import { Spinner } from '@polar-sh/orbit'
 import {
   Area,
   CartesianGrid,

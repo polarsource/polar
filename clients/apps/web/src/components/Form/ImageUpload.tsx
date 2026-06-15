@@ -1,6 +1,6 @@
 'use client'
 
-import { SpinnerNoMargin } from '@/components/Shared/Spinner'
+import { SpinnerNoMargin } from '@polar-sh/orbit'
 import { upload } from '@vercel/blob/client'
 import { ImageIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'

@@ -370,6 +370,55 @@ export const useOrganizationReviewStatus = (
     initialData,
   })
 
+export const useRequestHumanReview = (id: string) =>
+  useMutation({
+    mutationFn: ({ reason }: { reason: string }) =>
+      api.POST('/v1/organizations/{id}/appeal/human-review', {
+        params: { path: { id } },
+        body: { reason },
+      }),
+    onSuccess: async (result) => {
+      if (result.error) return
+      getQueryClient().invalidateQueries({ queryKey: ['appealCase', id] })
+    },
+  })
+
+export const useAppealCase = (
+  id: string,
+  enabled: boolean = true,
+  pollInterval: number = 10_000,
+) =>
+  useQuery({
+    queryKey: ['appealCase', id],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/organizations/{id}/appeal/case', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: enabled && !!id,
+    refetchInterval: (query) => {
+      if (!query.state.data?.is_open) return false
+      const hidden = typeof document !== 'undefined' && document.hidden
+      return hidden ? Math.max(pollInterval, 30_000) : pollInterval
+    },
+    refetchIntervalInBackground: true,
+  })
+
+export const useReplyToAppealCase = (id: string) =>
+  useMutation({
+    mutationFn: ({ body, file_ids }: { body?: string; file_ids?: string[] }) =>
+      api.POST('/v1/organizations/{id}/appeal/case/messages', {
+        params: { path: { id } },
+        body: { body: body || null, file_ids },
+      }),
+    onSuccess: async (result) => {
+      if (result.error) return
+      getQueryClient().invalidateQueries({ queryKey: ['appealCase', id] })
+    },
+  })
+
 export const useDeleteOrganization = () =>
   useMutation({
     mutationFn: (variables: { id: string }) => {

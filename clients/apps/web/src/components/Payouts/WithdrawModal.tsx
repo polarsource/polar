@@ -8,10 +8,10 @@ import { Button } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Link from 'next/link'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { Modal } from '../Modal'
+import { Modal } from '@polar-sh/orbit'
 import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'
-import SpinnerNoMargin from '../Shared/Spinner'
+import { Spinner as SpinnerNoMargin } from '@polar-sh/orbit'
 
 interface WithdrawModalProps {
   organization: schemas['Organization']

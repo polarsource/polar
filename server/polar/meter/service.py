@@ -32,6 +32,7 @@ from polar.billing_entry.repository import BillingEntryRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.event.repository import EventRepository
+from polar.event.tinybird_repository import TinybirdEventRepository
 from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause, get_metadata_clause
 from polar.kit.pagination import PaginationParams
@@ -280,26 +281,13 @@ class MeterService:
         repository = MeterRepository.from_session(session)
         meter = await repository.update(meter, update_dict={"archived_at": None})
 
-        event_repository = EventRepository.from_session(session)
+        tinybird_repository = TinybirdEventRepository()
         customer_repository = CustomerRepository.from_session(session)
 
-        # Find customers by customer_id on matching events
-        customer_ids_statement = (
-            event_repository.get_meter_statement(meter)
-            .with_only_columns(Event.customer_id)
-            .where(Event.customer_id.is_not(None))
-            .distinct()
-        )
-        customer_ids = list(await session.scalars(customer_ids_statement))
-
-        # Find customers by external_customer_id on matching events
-        external_ids_statement = (
-            event_repository.get_meter_statement(meter)
-            .with_only_columns(Event.external_customer_id)
-            .where(Event.external_customer_id.is_not(None))
-            .distinct()
-        )
-        external_customer_ids = list(await session.scalars(external_ids_statement))
+        (
+            customer_ids,
+            external_customer_ids,
+        ) = await tinybird_repository.get_meter_customer_ids(meter)
 
         # Get all affected customers and touch their meters
         clauses = []
@@ -316,21 +304,6 @@ class MeterService:
                 enqueue_job("customer_meter.update_customer", customer.id)
 
         return meter
-
-    async def events(
-        self,
-        session: AsyncSession,
-        meter: Meter,
-        *,
-        pagination: PaginationParams,
-    ) -> tuple[Sequence[Event], int]:
-        repository = EventRepository.from_session(session)
-        statement = repository.get_meter_statement(meter).order_by(
-            Event.timestamp.desc()
-        )
-        return await repository.paginate(
-            statement, limit=pagination.limit, page=pagination.page
-        )
 
     async def get_quantities(
         self,

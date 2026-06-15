@@ -108,6 +108,7 @@ export default {
         },
       },
       inclTax: 'Impuestos (incluidos)',
+      basePrice: 'Precio base',
     },
     trial: {
       ends: 'La prueba finaliza el {endDate}',
@@ -232,6 +233,26 @@ export default {
         activationDeletedDescription: 'Activación eliminada correctamente',
         activationDeactivationFailed: 'Error al desactivar la activación',
       },
+      slackSharedChannel: {
+        connected: 'Conectado a tu espacio de trabajo de Slack.',
+        connectedChannel:
+          'Conectado a tu espacio de trabajo de Slack en el canal {channel}.',
+        inviteSent: 'Invitación enviada a {email}.',
+        channel: 'Canal: {channel}.',
+        openLinkToAccept: 'Abre el enlace para aceptarlo en Slack.',
+        acceptFromEmail:
+          'Acéptalo desde el correo de invitación o desde tus solicitudes de Slack Connect.',
+        openInvite: 'Abrir invitación de Slack',
+        provisioning:
+          'Configurando tu canal de Slack para {email}... Deberías recibir una invitación en tu bandeja de entrada en breve.',
+        setupFailed:
+          'No pudimos configurar tu canal de Slack con {email}. Revisa el correo y vuelve a intentarlo, o contacta con el vendedor si sigue fallando.',
+        enterEmail:
+          'Introduce el correo electrónico de un administrador de tu espacio de trabajo de Slack. Recibirá una invitación de Slack Connect para un canal privado.',
+        emailPlaceholder: 'slack-admin@yourcompany.com',
+        tryAgain: 'Intentar de nuevo',
+        requestInvite: 'Solicitar invitación de Slack',
+      },
     },
     confirmation: {
       confirmPayment: 'Confirmar pago',
@@ -278,6 +299,7 @@ export default {
     downloadables: 'Descargas de archivos',
     meter_credit: 'Créditos de consumo',
     feature_flag: 'Feature flag',
+    slack_shared_channel: 'canal compartido de Slack',
   },
   ordinal: {
     zero: 'º',

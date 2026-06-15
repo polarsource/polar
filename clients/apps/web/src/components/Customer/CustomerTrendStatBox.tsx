@@ -5,11 +5,7 @@ import {
 import { formatHumanFriendlyScalar, formatPercentage } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/ui/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
 import { PropsWithChildren, useMemo } from 'react'
 

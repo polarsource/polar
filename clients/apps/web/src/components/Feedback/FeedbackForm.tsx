@@ -3,7 +3,7 @@ import { MemoizedMarkdown } from '@/components/Markdown/MemoizedMarkdown'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
-import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
+import { Tabs, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import { TextArea } from '@polar-sh/orbit'
 import {
   Form,
@@ -230,6 +230,7 @@ export const FeedbackForm = ({
 
         {validationOutcome?.kind === 'rejection' && (
           <Box
+            display="block"
             borderRadius="l"
             backgroundColor="background-warning"
             color="text-warning"
@@ -241,6 +242,7 @@ export const FeedbackForm = ({
 
         {validationOutcome?.kind === 'info' && (
           <Box
+            display="block"
             borderRadius="l"
             backgroundColor="background-pending"
             color="text-pending"
@@ -254,6 +256,7 @@ export const FeedbackForm = ({
 
         {apiError && (
           <Box
+            display="block"
             borderRadius="l"
             backgroundColor="background-danger"
             color="text-danger"

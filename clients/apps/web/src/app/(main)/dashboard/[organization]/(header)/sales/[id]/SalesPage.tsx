@@ -3,7 +3,7 @@
 import { CustomerContextView } from '@/components/Customer/CustomerContextView'
 import CustomFieldValue from '@/components/CustomFields/CustomFieldValue'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { InlineModal } from '@/components/Modal/InlineModal'
+import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { DownloadInvoiceDashboard } from '@/components/Orders/DownloadInvoice'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
@@ -36,7 +36,7 @@ import { Button } from '@polar-sh/orbit'
 import { DataTable } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { Status } from '@polar-sh/orbit'
 import { Separator } from '@radix-ui/react-dropdown-menu'
 import Link from 'next/link'
 import React from 'react'
@@ -457,10 +457,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 header: 'Status',
                 cell: ({ row }) => (
                   <Status
-                    className={twMerge(
-                      RefundStatusDisplayColor[row.original.status],
-                      'w-fit',
-                    )}
+                    color={RefundStatusDisplayColor[row.original.status]}
                     status={RefundStatusDisplayTitle[row.original.status]}
                   />
                 ),
@@ -476,12 +473,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 cell: ({ row }) => (
                   <Status
                     status={row.original.revoke_benefits ? 'True' : 'False'}
-                    className={twMerge(
-                      'w-fit',
-                      row.original.revoke_benefits
-                        ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950'
-                        : 'bg-red-100 text-red-500 dark:bg-red-950',
-                    )}
+                    color={row.original.revoke_benefits ? 'green' : 'red'}
                   />
                 ),
               },
@@ -522,10 +514,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 header: 'Status',
                 cell: ({ row }) => (
                   <Status
-                    className={twMerge(
-                      DisputeStatusDisplayColor[row.original.status],
-                      'w-fit',
-                    )}
+                    color={DisputeStatusDisplayColor[row.original.status]}
                     status={DisputeStatusDisplayTitle[row.original.status]}
                   />
                 ),

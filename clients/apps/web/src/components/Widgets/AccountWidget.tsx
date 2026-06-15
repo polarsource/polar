@@ -1,12 +1,11 @@
 import { useOrganizationAccount, useTransactionsSummary } from '@/hooks/queries'
 import { usePayouts } from '@/hooks/queries/payouts'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { PayoutStatus } from '@/components/Payouts/PayoutStatus'
 import { ClientResponseError } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Card } from '@polar-sh/ui/components/atoms/Card'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { useContext } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { WidgetContainer } from './WidgetContainer'
 
 export interface AccountWidgetProps {
@@ -57,15 +56,7 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
                     year: 'numeric',
                   })}
                 </span>
-                <Status
-                  status={payout.status.split('_').join(' ')}
-                  className={twMerge(
-                    'px-1.5 py-0.5 text-xs capitalize',
-                    payout.status === 'succeeded'
-                      ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-950'
-                      : 'bg-yellow-50 text-yellow-500 dark:bg-yellow-950',
-                  )}
-                />
+                <PayoutStatus payout={payout} size="small" />
               </div>
               <div className="flex flex-row justify-between gap-x-4">
                 <h3>Payout</h3>

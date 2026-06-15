@@ -8,6 +8,7 @@ from ..base.schemas import (
     BenefitCreateBase,
     BenefitSubscriberBase,
     BenefitUpdateBase,
+    BenefitUpdateVisibilityMixin,
 )
 
 
@@ -38,7 +39,7 @@ class BenefitFeatureFlagCreate(BenefitCreateBase):
     properties: BenefitFeatureFlagCreateProperties
 
 
-class BenefitFeatureFlagUpdate(BenefitUpdateBase):
+class BenefitFeatureFlagUpdate(BenefitUpdateVisibilityMixin, BenefitUpdateBase):
     type: Literal[BenefitType.feature_flag]
     properties: BenefitFeatureFlagProperties | None = None
 

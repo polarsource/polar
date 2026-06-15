@@ -1,3 +1,4 @@
+import { AppealCaseUnreadBadge } from '@/components/Organization/HumanReviewCase/AppealCaseUnreadBadge'
 import { useHasPermission } from '@/hooks/permissions'
 import { PolarHog, usePostHog } from '@/hooks/posthog'
 import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
@@ -37,6 +38,7 @@ export type Route = {
   readonly selectedExactMatchOnly?: boolean
   readonly selectedMatchFallback?: boolean
   readonly checkIsActive?: (currentPath: string) => boolean
+  readonly extra?: React.ReactNode
 }
 
 export type SubRouteWithActive = SubRoute & { readonly isActive: boolean }
@@ -327,6 +329,7 @@ const orgFinanceSubRoutesList = (org?: schemas['Organization']): SubRoute[] => [
   {
     title: 'Account',
     link: `/dashboard/${org?.slug}/finance/account`,
+    extra: org ? <AppealCaseUnreadBadge organization={org} /> : undefined,
   },
 ]
 
@@ -341,6 +344,7 @@ const organizationRoutesList = (
     icon: <AttachMoneyOutlined fontSize="inherit" />,
     if: true,
     subs: orgFinanceSubRoutesList(org),
+    extra: org ? <AppealCaseUnreadBadge organization={org} /> : undefined,
   },
   {
     id: 'settings',

@@ -33,6 +33,7 @@ from sqlalchemy.sql.util import ClauseAdapter
 from polar.event.repository import EventRepository
 from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
+from polar.meter.aggregation import Aggregation, PropertyAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import Event
 from polar.models.event import EventSource
@@ -325,6 +326,26 @@ async def reconcile_events(
     return total_checked, total_missing, missing_ids
 
 
+def _format_ingested_at(dt: datetime) -> str:
+    return dt.strftime("%Y-%m-%d %H:%M:%S.%f")
+
+
+async def count_user_events_by_organization(
+    *,
+    after: datetime | None,
+    until: datetime,
+    exclude_organization_id: UUID,
+) -> dict[UUID, int]:
+    params = {
+        "until": _format_ingested_at(until),
+        "exclude_organization_id": str(exclude_organization_id),
+    }
+    if after is not None:
+        params["after"] = _format_ingested_at(after)
+    rows = await client.endpoint("user_events_count_endpoint", params)
+    return {UUID(row["organization_id"]): row["count"] for row in rows}
+
+
 def _finite(value: Any, default: float = 0.0) -> float:
     """Convert a value to float, returning default for NaN/Infinity."""
     try:
@@ -479,6 +500,16 @@ class TinybirdEventsQuery:
     def filter_by_filter(self, f: Filter) -> Self:
         self._filters.append(self._translate_filter(f))
         return self
+
+    def filter_by_aggregation(self, aggregation: Aggregation) -> Self:
+        if not isinstance(aggregation, PropertyAggregation):
+            return self
+        if aggregation.property in Event._filterable_fields:
+            allowed_type, _ = Event._filterable_fields[aggregation.property]
+            if allowed_type is not int:
+                self._filters.append(false())
+            return self
+        return self.filter_numeric_metadata_property(aggregation.property)
 
     def filter_by_metadata(self, query: dict[str, list[str]]) -> Self:
         for key, values in query.items():
@@ -694,6 +725,34 @@ class TinybirdEventsQuery:
         event_ids = [str(row["id"]) for row in id_rows]
 
         return event_ids, total
+
+    async def get_distinct_customer_ids(self) -> tuple[list[str], list[str]]:
+        base_filter = self._get_organization_filter()
+
+        customer_statement = (
+            sqlalchemy.select(events_table.c.customer_id)
+            .distinct()
+            .where(base_filter, events_table.c.customer_id.is_not(None))
+        )
+        external_statement = (
+            sqlalchemy.select(events_table.c.external_customer_id)
+            .distinct()
+            .where(base_filter, events_table.c.external_customer_id.is_not(None))
+        )
+        for f in self._filters:
+            customer_statement = customer_statement.where(f)
+            external_statement = external_statement.where(f)
+
+        customer_sql, customer_template = _compile(customer_statement)
+        external_sql, external_template = _compile(external_statement)
+
+        customer_rows = await client.query(customer_sql, db_statement=customer_template)
+        external_rows = await client.query(external_sql, db_statement=external_template)
+
+        return (
+            [str(row["customer_id"]) for row in customer_rows],
+            [str(row["external_customer_id"]) for row in external_rows],
+        )
 
     @staticmethod
     def _get_agg_col_for_table(table: Any, field_path: str) -> Any:

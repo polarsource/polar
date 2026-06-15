@@ -91,6 +91,27 @@ export const breakpoints = stylex.defineConsts({
   xl: 1280,
 })
 
+// ─── Motion ───────────────────────────────────────────────────────────────────
+// Durations are vars so motion can be globally tuned (or zeroed for
+// prefers-reduced-motion) by overriding the custom properties. Easings are
+// compile-time constants — they never need to vary at runtime.
+// ──────────────────────────────────────────────────────────────────────────────
+
+export const durations = stylex.defineVars({
+  instant: '0ms',
+  fast: '120ms',
+  base: '200ms',
+  slow: '320ms',
+  slower: '480ms',
+})
+
+export const easings = stylex.defineConsts({
+  standard: 'cubic-bezier(0.2, 0, 0, 1)', // general-purpose, symmetric
+  decelerate: 'cubic-bezier(0, 0, 0, 1)', // enter (fast → settle)
+  accelerate: 'cubic-bezier(0.3, 0, 1, 1)', // exit (settle → fast)
+  spring: 'cubic-bezier(0.5, 1.25, 0.4, 1)', // slight overshoot
+})
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type StyleXTokenKeys<T> = Exclude<
@@ -109,3 +130,5 @@ export type ColorToken =
 export type BorderRadiusToken = StyleXTokenKeys<typeof borderRadii>
 export type ShadowToken = StyleXTokenKeys<typeof shadows>
 export type BreakpointKey = keyof typeof breakpoints
+export type DurationToken = StyleXTokenKeys<typeof durations>
+export type EasingToken = keyof typeof easings

@@ -246,7 +246,10 @@ class BenefitGitHubRepositoryService(
         )
 
     async def validate_properties(
-        self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        properties: dict[str, Any],
     ) -> BenefitGitHubRepositoryProperties:
         if is_organization(auth_subject):
             # TODO: Support organization tokens

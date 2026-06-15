@@ -1,3 +1,4 @@
+from collections.abc import Awaitable, Callable
 from decimal import Decimal
 from unittest.mock import MagicMock
 
@@ -8,6 +9,7 @@ from pytest_mock.plugin import MockerFixture
 from polar.auth.models import AuthSubject
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import PolarRequestValidationError
+from polar.integrations.tinybird.client import TinybirdClient
 from polar.meter.service import meter as meter_service
 from polar.models import Benefit, Customer, Meter, Organization, Product, Subscription
 from polar.models.benefit import BenefitType
@@ -126,6 +128,7 @@ class TestMeterArchive:
     async def test_unarchive_success(
         self,
         save_fixture: SaveFixture,
+        tinybird_client: TinybirdClient,
         session: AsyncSession,
         meter: Meter,
         organization: Organization,
@@ -144,6 +147,8 @@ class TestMeterArchive:
     async def test_unarchive_queues_customer_meter_updates(
         self,
         save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
         enqueue_job_mock: MagicMock,
         session: AsyncSession,
         meter: Meter,
@@ -160,17 +165,19 @@ class TestMeterArchive:
         # Create an event that matches the meter for this customer
         # (default name="TEST_EVENT" matches the default meter filter)
         await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer,
         )
 
         # Create an event for the deleted customer that matches the meter - should be ignored
         await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=deleted_customer,
         )
+
+        await flush_tinybird_events()
 
         # First archive the meter
         await meter_service.archive(session, meter)
@@ -188,6 +195,7 @@ class TestMeterArchive:
         self,
         enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
+        tinybird_client: TinybirdClient,
         session: AsyncSession,
         meter: Meter,
         customer: Customer,

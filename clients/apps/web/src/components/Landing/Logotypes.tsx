@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import Link from 'next/link'
 import { JSX } from 'react'
 import { MiddayWordmark, Speakeasy, StillaAIWordmark, Tailwind } from './Logos'

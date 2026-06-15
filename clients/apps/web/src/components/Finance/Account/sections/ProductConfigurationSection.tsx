@@ -19,12 +19,7 @@ export const ProductConfigurationSection = ({ organization }: Props) => {
 
   if (isLoading) {
     return (
-      <Box
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        paddingVertical="xl"
-      >
+      <Box alignItems="center" justifyContent="center" paddingVertical="xl">
         <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
       </Box>
     )

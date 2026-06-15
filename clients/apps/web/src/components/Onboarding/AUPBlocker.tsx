@@ -5,7 +5,6 @@ import { Box } from '@polar-sh/orbit/Box'
 export function AUPBlocker({ categories }: { categories: string[] }) {
   return (
     <Box
-      display="flex"
       flexDirection="column"
       rowGap="m"
       borderRadius="m"

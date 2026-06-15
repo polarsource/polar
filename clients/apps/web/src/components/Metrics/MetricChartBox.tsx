@@ -1,6 +1,6 @@
 'use client'
 
-import Spinner from '@/components/Shared/Spinner'
+import { Spinner } from '@polar-sh/orbit'
 import { ParsedMetricsResponse } from '@/hooks/queries'
 import { getFormattedMetricValue } from '@/utils/metrics'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
@@ -17,21 +17,17 @@ import {
   SelectValue,
 } from '@polar-sh/orbit'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { Status } from '@polar-sh/orbit'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/ui/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import React, { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Modal } from '../Modal'
+import { Modal } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
 import MetricChart from './MetricChart'
 import { ShareChartModal } from './ShareChartModal'
@@ -247,10 +243,7 @@ const MetricChartBox = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="inline-flex cursor-help">
-                      <Status
-                        status="Experimental"
-                        className="bg-blue-100 text-xs text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-                      />
+                      <Status status="Experimental" color="blue" size="small" />
                     </span>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
@@ -268,10 +261,7 @@ const MetricChartBox = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="inline-flex cursor-help">
-                      <Status
-                        status="Experimental"
-                        className="bg-blue-100 text-xs text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-                      />
+                      <Status status="Experimental" color="blue" size="small" />
                     </span>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
@@ -340,12 +330,7 @@ const MetricChartBox = ({
               status={
                 trend > 0 ? `+${trend.toFixed(0)}%` : `${trend.toFixed(0)}%`
               }
-              className={twMerge(
-                'text-sm',
-                trend > 0
-                  ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950'
-                  : 'bg-red-100 text-red-500 dark:bg-red-950',
-              )}
+              color={trend > 0 ? 'green' : 'red'}
             />
           )}
           {shareable && (

@@ -1,7 +1,7 @@
 'use client'
 
-import Switch from '@polar-sh/ui/components/atoms/Switch'
-import { AnimatePresence, motion } from 'framer-motion'
+import { Switch } from '@polar-sh/orbit'
+import { AnimatePresence, motion } from 'motion/react'
 import { memo, useEffect, useRef, useState } from 'react'
 
 // ── Plan definitions ────────────────────────────────────────────────────────

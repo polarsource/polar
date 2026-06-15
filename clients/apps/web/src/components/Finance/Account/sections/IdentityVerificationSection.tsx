@@ -46,7 +46,7 @@ export const IdentityVerificationSection = ({
         onStart={start}
       />
       {showBanners && (
-        <Box display="flex" flexDirection="column" rowGap="m">
+        <Box flexDirection="column" rowGap="m">
           {reasonItems.map((reason) => (
             <PathCardBanner key={reason} tone={tone} title={reason} />
           ))}

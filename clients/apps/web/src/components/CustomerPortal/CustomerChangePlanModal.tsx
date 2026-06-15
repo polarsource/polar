@@ -1,6 +1,6 @@
 'use client'
 
-import { InlineModalHeader } from '@/components/Modal/InlineModal'
+import { InlineModalHeader } from '@polar-sh/orbit'
 import {
   useCustomerPaymentMethods,
   useCustomerUpdateSubscription,
@@ -9,8 +9,8 @@ import { hasLegacyRecurringPrices } from '@/utils/product'
 import { formatTrialEnd, useTrialChangeOutcome } from '@/utils/trial-change'
 import { Client, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
+import { List, ListItem } from '@polar-sh/orbit'
+import { Checkbox } from '@polar-sh/orbit'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'

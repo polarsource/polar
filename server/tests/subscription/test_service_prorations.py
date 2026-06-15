@@ -13,7 +13,6 @@ from pytest_mock import MockerFixture
 
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
-from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.models import (
     BillingEntry,
@@ -39,6 +38,7 @@ from polar.subscription.repository import SubscriptionUpdateRepository
 from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_discount,
@@ -94,10 +94,7 @@ async def assert_system_events(
     customer: Customer,
     num_events_expected: int,
 ) -> list[Event]:
-    event_repository = EventRepository.from_session(session)
-    events = await event_repository.get_all_by_name(
-        SystemEvent.subscription_product_updated
-    )
+    events = await get_all_by_name(session, SystemEvent.subscription_product_updated)
     assert len(events) == num_events_expected
 
     events = sorted(events, key=lambda e: e.ingested_at)
@@ -397,9 +394,8 @@ class TestUpdateProductProrations:
                         == time_of_update + relativedelta(years=1)
                     )
 
-            event_repository = EventRepository.from_session(session)
-            events = await event_repository.get_all_by_name(
-                SystemEvent.subscription_product_updated
+            events = await get_all_by_name(
+                session, SystemEvent.subscription_product_updated
             )
             assert len(events) == 1
             event = events[0]
@@ -901,9 +897,8 @@ class TestUpdateProductProrations:
             assert subscriptions[2].product_id           == products[2].id
             # fmt: on
 
-            event_repository = EventRepository.from_session(session)
-            events = await event_repository.get_all_by_name(
-                SystemEvent.subscription_product_updated
+            events = await get_all_by_name(
+                session, SystemEvent.subscription_product_updated
             )
             assert len(events) == 1
             event = events[0]

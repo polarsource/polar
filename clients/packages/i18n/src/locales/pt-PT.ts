@@ -108,6 +108,7 @@ export default {
         },
       },
       inclTax: 'IVA (incluído)',
+      basePrice: 'Preço base',
     },
     trial: {
       ends: 'Teste termina a {endDate}',
@@ -232,6 +233,26 @@ export default {
         activationDeletedDescription: 'Ativação excluída com sucesso',
         activationDeactivationFailed: 'Falha na desativação',
       },
+      slackSharedChannel: {
+        connected: 'Ligado ao seu espaço de trabalho Slack.',
+        connectedChannel:
+          'Ligado ao seu espaço de trabalho Slack no canal {channel}.',
+        inviteSent: 'Convite enviado para {email}.',
+        channel: 'Canal: {channel}.',
+        openLinkToAccept: 'Abra a ligação para aceitar no Slack.',
+        acceptFromEmail:
+          'Aceite-o a partir do email do convite ou dos seus pedidos do Slack Connect.',
+        openInvite: 'Abrir convite do Slack',
+        provisioning:
+          'A configurar o seu canal do Slack para {email}... Deverá receber um convite na sua caixa de entrada em breve.',
+        setupFailed:
+          'Não foi possível configurar o seu canal do Slack com {email}. Verifique o email e tente novamente, ou contacte o vendedor se continuar a falhar.',
+        enterEmail:
+          'Introduza o email de um administrador no seu espaço de trabalho Slack. Ele irá receber um convite do Slack Connect para um canal privado.',
+        emailPlaceholder: 'slack-admin@yourcompany.com',
+        tryAgain: 'Tentar novamente',
+        requestInvite: 'Pedir convite do Slack',
+      },
     },
     confirmation: {
       confirmPayment: 'Confirmar pagamento',
@@ -277,6 +298,7 @@ export default {
     downloadables: 'Download de arquivos',
     meter_credit: 'Créditos de uso',
     feature_flag: 'Feature flag',
+    slack_shared_channel: 'canal partilhado do Slack',
   },
   ordinal: {
     zero: 'º',

@@ -15,14 +15,14 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@polar-sh/ui/components/atoms/Sidebar'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ComponentProps, PropsWithChildren, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { AuthModal } from '../Auth/AuthModal'
 import GetStartedButton from '../Auth/GetStartedButton'
-import { Modal } from '../Modal'
+import { Modal } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
 import { NavPopover, NavPopoverSection } from './NavPopover'
 

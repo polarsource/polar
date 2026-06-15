@@ -10,7 +10,7 @@ import {
 } from '@polar-sh/i18n'
 import { Button } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import { List, ListItem } from '@polar-sh/orbit'
 import { useCallback } from 'react'
 
 interface LicenseKeyActivationsProps {

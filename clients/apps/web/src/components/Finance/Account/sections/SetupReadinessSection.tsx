@@ -1,8 +1,8 @@
 'use client'
 
 import { CheckoutLinkManagementModal } from '@/components/CheckoutLinks/CheckoutLinkManagementModal'
-import { InlineModal } from '@/components/Modal/InlineModal'
-import { Modal } from '@/components/Modal'
+import { InlineModal } from '@polar-sh/orbit'
+import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { CreateAccessTokenModal } from '@/components/Settings/CreateAccessTokenModal'
 import NewWebhookModal from '@/components/Settings/Webhook/NewWebhookModal'
@@ -72,14 +72,14 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
   }
 
   return (
-    <Box display="flex" flexDirection="column" rowGap="xl">
+    <Box flexDirection="column" rowGap="xl">
       <Text variant="default" color="muted">
         You&rsquo;re not integrated with Polar yet. Pick the option that fits
         your setup. You can always switch later.
       </Text>
 
-      <Box display="flex" flexDirection="column" rowGap="xl">
-        <Box display="flex" flexDirection="column" rowGap="s">
+      <Box flexDirection="column" rowGap="xl">
+        <Box flexDirection="column" rowGap="s">
           <Text variant="caption" color="muted">
             No-code
           </Text>
@@ -134,8 +134,9 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
           />
         </Box>
 
-        <Box display="flex" alignItems="center" columnGap="m">
+        <Box alignItems="center" columnGap="m">
           <Box
+            display="block"
             flexGrow={1}
             borderTopWidth={1}
             borderStyle="solid"
@@ -150,6 +151,7 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
             or
           </Text>
           <Box
+            display="block"
             flexGrow={1}
             borderTopWidth={1}
             borderStyle="solid"
@@ -157,8 +159,8 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
           />
         </Box>
 
-        <Box display="flex" flexDirection="column" rowGap="s">
-          <Box display="flex" alignItems="baseline" columnGap="s">
+        <Box flexDirection="column" rowGap="s">
+          <Box alignItems="baseline" columnGap="s">
             <Text variant="caption" color="muted">
               API integration
             </Text>
@@ -244,7 +246,7 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
         isShown={!!createdToken}
         hide={() => setCreatedToken(undefined)}
         modalContent={
-          <Box display="flex" flexDirection="column" rowGap="m" padding="xl">
+          <Box flexDirection="column" rowGap="m" padding="xl">
             <CopyToClipboardInput
               value={createdToken?.token ?? ''}
               onCopy={() => toast({ title: 'Copied to clipboard' })}
@@ -256,7 +258,7 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
                 won&rsquo;t be able to see it again.
               </span>
             </Banner>
-            <Box display="flex" justifyContent="end">
+            <Box justifyContent="end">
               <Button onClick={() => setCreatedToken(undefined)}>Done</Button>
             </Box>
           </Box>

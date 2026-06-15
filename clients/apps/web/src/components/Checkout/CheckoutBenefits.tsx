@@ -7,10 +7,10 @@ import {
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import { List, ListItem } from '@polar-sh/orbit'
 import { useEffect } from 'react'
 import { BenefitGrant } from '../Benefit/BenefitGrant'
-import { SpinnerNoMargin } from '../Shared/Spinner'
+import { SpinnerNoMargin } from '@polar-sh/orbit'
 
 interface CheckoutBenefitsProps {
   checkout: ProductCheckoutPublic

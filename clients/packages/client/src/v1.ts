@@ -287,7 +287,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/integrations/slack/integration': {
+  '/v1/integrations/slack': {
     parameters: {
       query?: never
       header?: never
@@ -295,17 +295,13 @@ export interface paths {
       cookie?: never
     }
     /**
-     * Get Integration
+     * List Integrations
      * @description **Scopes**: `organizations:read` `organizations:write`
      */
-    get: operations['integrations_slack:get_integration']
+    get: operations['integrations_slack:list_integrations']
     put?: never
     post?: never
-    /**
-     * Delete Integration
-     * @description **Scopes**: `organizations:write`
-     */
-    delete: operations['integrations_slack:delete_integration']
+    delete?: never
     options?: never
     head?: never
     patch?: never
@@ -411,21 +407,25 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/integrations/slack/link': {
+  '/v1/integrations/slack/{id}': {
     parameters: {
       query?: never
       header?: never
       path?: never
       cookie?: never
     }
-    get?: never
-    put?: never
     /**
-     * Link
+     * Get Integration
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['integrations_slack:get_integration']
+    put?: never
+    post?: never
+    /**
+     * Delete Integration
      * @description **Scopes**: `organizations:write`
      */
-    post: operations['integrations_slack:link']
-    delete?: never
+    delete: operations['integrations_slack:delete_integration']
     options?: never
     head?: never
     patch?: never
@@ -974,6 +974,98 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/appeal/human-review': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Request Human Review
+     * @description Open a human-review case after the AI appeal was denied.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['organizations:request_human_review']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/appeal/case': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Appeal Case
+     * @description Get the merchant's human-review case and its visible timeline.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['organizations:get_appeal_case']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/appeal/case/messages': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Reply to Appeal Case
+     * @description Post a merchant reply to the human-review case.
+     *
+     *     The reply may carry free text, attachments, or both. Attachments must
+     *     first be uploaded through the files API with service
+     *     ``support_case_attachment``.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['organizations:reply_to_appeal_case']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/appeal/case/attachments/{attachment_id}/download': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Download Appeal Case Attachment
+     * @description Redirect to a short-lived presigned URL for a merchant-visible attachment.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['organizations:download_appeal_case_attachment']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organizations/{id}/ai-onboarding-complete': {
     parameters: {
       query?: never
@@ -1328,6 +1420,52 @@ export interface paths {
     options?: never
     head?: never
     patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/benefit-grants': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Organization Benefit Grants
+     * @description List Slack shared channel benefit grants attached to this org's Polar
+     *     subscription.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    get: operations['organizations:list_benefit_grants']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/benefit-grants/{benefit_grant_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Update Organization Benefit Grant
+     * @description Set the Slack admin email that should receive the Slack Connect invite
+     *     for this benefit grant.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    patch: operations['organizations:update_benefit_grant']
     trace?: never
   }
   '/v1/subscriptions/': {
@@ -1971,6 +2109,26 @@ export interface paths {
     get: operations['benefits:grants']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/benefits/slack/preview-channel-name': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Preview Channel Name
+     * @description **Scopes**: `benefits:write`
+     */
+    post: operations['benefits:preview_channel_name']
     delete?: never
     options?: never
     head?: never
@@ -7675,6 +7833,7 @@ export interface components {
       | components['schemas']['BenefitLicenseKeys']
       | components['schemas']['BenefitMeterCredit']
       | components['schemas']['BenefitFeatureFlag']
+      | components['schemas']['BenefitSlackSharedChannel']
     BenefitCreate:
       | components['schemas']['BenefitCustomCreate']
       | components['schemas']['BenefitDiscordCreate']
@@ -7683,6 +7842,7 @@ export interface components {
       | components['schemas']['BenefitLicenseKeysCreate']
       | components['schemas']['BenefitMeterCreditCreate']
       | components['schemas']['BenefitFeatureFlagCreate']
+      | components['schemas']['BenefitSlackSharedChannelCreate']
     /**
      * BenefitCustom
      * @description A benefit of type `custom`.
@@ -7739,7 +7899,11 @@ export interface components {
        */
       organization_id: string
       metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitCustomProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitCustomCreate
@@ -7778,6 +7942,8 @@ export interface components {
        * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       properties: components['schemas']['BenefitCustomCreateProperties']
     }
     /**
@@ -7846,7 +8012,6 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitCustomSubscriberProperties']
     }
@@ -7882,6 +8047,8 @@ export interface components {
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
       description?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       /**
        * Type
        * @constant
@@ -8020,7 +8187,11 @@ export interface components {
        */
       organization_id: string
       metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitDiscordProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /** BenefitDiscordCreate */
     BenefitDiscordCreate: {
@@ -8056,6 +8227,8 @@ export interface components {
        * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       properties: components['schemas']['BenefitDiscordCreateProperties']
     }
     /**
@@ -8149,7 +8322,6 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitDiscordSubscriberProperties']
     }
@@ -8248,7 +8420,11 @@ export interface components {
        */
       organization_id: string
       metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitDownloadablesProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /** BenefitDownloadablesCreate */
     BenefitDownloadablesCreate: {
@@ -8284,6 +8460,8 @@ export interface components {
        * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       properties: components['schemas']['BenefitDownloadablesCreateProperties']
     }
     /** BenefitDownloadablesCreateProperties */
@@ -8357,7 +8535,6 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitDownloadablesSubscriberProperties']
     }
@@ -8456,7 +8633,11 @@ export interface components {
        */
       organization_id: string
       metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitFeatureFlagProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitFeatureFlagCreate
@@ -8495,6 +8676,8 @@ export interface components {
        * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       properties: components['schemas']['BenefitFeatureFlagCreateProperties']
     }
     /**
@@ -8557,7 +8740,6 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitFeatureFlagSubscriberProperties']
     }
@@ -8590,6 +8772,8 @@ export interface components {
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
       description?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       /**
        * Type
        * @constant
@@ -8653,7 +8837,11 @@ export interface components {
        */
       organization_id: string
       metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitGitHubRepositoryProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /** BenefitGitHubRepositoryCreate */
     BenefitGitHubRepositoryCreate: {
@@ -8689,6 +8877,8 @@ export interface components {
        * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       properties: components['schemas']['BenefitGitHubRepositoryCreateProperties']
     }
     /**
@@ -8789,7 +8979,6 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitGitHubRepositorySubscriberProperties']
     }
@@ -8924,6 +9113,7 @@ export interface components {
         | components['schemas']['BenefitGrantLicenseKeysProperties']
         | components['schemas']['BenefitGrantCustomProperties']
         | components['schemas']['BenefitGrantFeatureFlagProperties']
+        | components['schemas']['BenefitGrantSlackSharedChannelProperties']
     }
     /** BenefitGrantCustomProperties */
     BenefitGrantCustomProperties: Record<string, never>
@@ -9530,6 +9720,97 @@ export interface components {
         | components['schemas']['BenefitGrantMeterCreditProperties']
         | null
     }
+    /** BenefitGrantSlackSharedChannelProperties */
+    BenefitGrantSlackSharedChannelProperties: {
+      /** Invited Email */
+      invited_email?: string
+      /** Channel Id */
+      channel_id?: string
+      /** Channel Name */
+      channel_name?: string
+      /** Invite Id */
+      invite_id?: string
+      /** Invite Url */
+      invite_url?: string
+      /** Connected Team Id */
+      connected_team_id?: string
+    }
+    /** BenefitGrantSlackSharedChannelWebhook */
+    BenefitGrantSlackSharedChannelWebhook: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the grant.
+       */
+      id: string
+      /**
+       * Granted At
+       * @description The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+       */
+      granted_at?: string | null
+      /**
+       * Is Granted
+       * @description Whether the benefit is granted.
+       */
+      is_granted: boolean
+      /**
+       * Revoked At
+       * @description The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+       */
+      revoked_at?: string | null
+      /**
+       * Is Revoked
+       * @description Whether the benefit is revoked.
+       */
+      is_revoked: boolean
+      /**
+       * Subscription Id
+       * @description The ID of the subscription that granted this benefit.
+       */
+      subscription_id: string | null
+      /**
+       * Order Id
+       * @description The ID of the order that granted this benefit.
+       */
+      order_id: string | null
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer concerned by this grant.
+       */
+      customer_id: string
+      /**
+       * Member Id
+       * @description The ID of the member concerned by this grant.
+       */
+      member_id?: string | null
+      /**
+       * Benefit Id
+       * Format: uuid4
+       * @description The ID of the benefit concerned by this grant.
+       */
+      benefit_id: string
+      /** @description The error information if the benefit grant failed with an unrecoverable error. */
+      error?: components['schemas']['BenefitGrantError'] | null
+      customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
+      benefit: components['schemas']['BenefitSlackSharedChannel']
+      properties: components['schemas']['BenefitGrantSlackSharedChannelProperties']
+      previous_properties?:
+        | components['schemas']['BenefitGrantSlackSharedChannelProperties']
+        | null
+    }
     /**
      * BenefitGrantSortProperty
      * @enum {string}
@@ -9549,6 +9830,7 @@ export interface components {
       | components['schemas']['BenefitGrantLicenseKeysWebhook']
       | components['schemas']['BenefitGrantMeterCreditWebhook']
       | components['schemas']['BenefitGrantFeatureFlagWebhook']
+      | components['schemas']['BenefitGrantSlackSharedChannelWebhook']
     /**
      * BenefitGrantedEvent
      * @description An event created by Polar when a benefit is granted to a customer.
@@ -9699,7 +9981,11 @@ export interface components {
        */
       organization_id: string
       metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitLicenseKeysProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /** BenefitLicenseKeysCreate */
     BenefitLicenseKeysCreate: {
@@ -9735,6 +10021,8 @@ export interface components {
        * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       properties: components['schemas']['BenefitLicenseKeysCreateProperties']
     }
     /** BenefitLicenseKeysCreateProperties */
@@ -9813,7 +10101,6 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitLicenseKeysSubscriberProperties']
     }
@@ -9854,6 +10141,8 @@ export interface components {
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
       description?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       /**
        * Type
        * @constant
@@ -9919,7 +10208,11 @@ export interface components {
        */
       organization_id: string
       metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitMeterCreditProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitMeterCreditCreate
@@ -9958,6 +10251,8 @@ export interface components {
        * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       properties: components['schemas']['BenefitMeterCreditCreateProperties']
     }
     /**
@@ -10040,7 +10335,6 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitMeterCreditSubscriberProperties']
     }
@@ -10083,6 +10377,8 @@ export interface components {
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
       description?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
       /**
        * Type
        * @constant
@@ -10214,6 +10510,250 @@ export interface components {
        */
       name: 'benefit.revoked'
       metadata: components['schemas']['BenefitGrantMetadata']
+    }
+    /** BenefitSlackSharedChannel */
+    BenefitSlackSharedChannel: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'slack_shared_channel'
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /**
+       * Selectable
+       * @description Whether the benefit is selectable when creating a product.
+       */
+      selectable: boolean
+      /**
+       * Deletable
+       * @description Whether the benefit is deletable.
+       */
+      deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is deleted.
+       */
+      is_deleted: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the benefit.
+       */
+      organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
+      properties: components['schemas']['BenefitSlackSharedChannelProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
+    }
+    /** BenefitSlackSharedChannelCreate */
+    BenefitSlackSharedChannelCreate: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'slack_shared_channel'
+      /**
+       * Description
+       * @description The description of the benefit. Will be displayed on products having this benefit.
+       */
+      description: string
+      /**
+       * Organization Id
+       * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
+      properties: components['schemas']['BenefitSlackSharedChannelCreateProperties']
+    }
+    /** BenefitSlackSharedChannelCreateProperties */
+    BenefitSlackSharedChannelCreateProperties: {
+      /**
+       * Slack Integration Id
+       * Format: uuid4
+       * @description Polar Slack integration to use for this benefit.
+       */
+      slack_integration_id: string
+      /** Channel Name Template */
+      channel_name_template: string
+      /**
+       * Private
+       * @default true
+       */
+      private: boolean
+      /** Welcome Message */
+      welcome_message?: string | null
+      /**
+       * Archive On Revoke
+       * @default true
+       */
+      archive_on_revoke: boolean
+      /** Team Invitees */
+      team_invitees?: string[]
+    }
+    /** BenefitSlackSharedChannelProperties */
+    BenefitSlackSharedChannelProperties: {
+      /**
+       * Slack Integration Id
+       * Format: uuid4
+       * @description Polar Slack integration linked to this benefit.
+       */
+      slack_integration_id: string
+      /**
+       * Channel Name Template
+       * @description Template for the channel name. Supports placeholders: {customer_name}, {customer_email_local}, and {metadata.<key>} for any value stored in customer user metadata.
+       */
+      channel_name_template: string
+      /**
+       * Private
+       * @description Create the channel as private (recommended).
+       * @default true
+       */
+      private: boolean
+      /**
+       * Welcome Message
+       * @description Optional message posted to the channel right after creation.
+       */
+      welcome_message?: string | null
+      /**
+       * Archive On Revoke
+       * @description Archive the channel when the benefit is revoked.
+       * @default true
+       */
+      archive_on_revoke: boolean
+      /**
+       * Team Invitees
+       * @description Slack user IDs from the merchant workspace to invite to every channel created for this benefit.
+       */
+      team_invitees?: string[]
+    }
+    /** BenefitSlackSharedChannelSubscriber */
+    BenefitSlackSharedChannelSubscriber: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Type
+       * @constant
+       */
+      type: 'slack_shared_channel'
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /**
+       * Selectable
+       * @description Whether the benefit is selectable when creating a product.
+       */
+      selectable: boolean
+      /**
+       * Deletable
+       * @description Whether the benefit is deletable.
+       */
+      deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is deleted.
+       */
+      is_deleted: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the benefit.
+       */
+      organization_id: string
+      organization: components['schemas']['BenefitSubscriberOrganization']
+      properties: components['schemas']['BenefitSlackSharedChannelSubscriberProperties']
+    }
+    /** BenefitSlackSharedChannelSubscriberProperties */
+    BenefitSlackSharedChannelSubscriberProperties: Record<string, never>
+    /** BenefitSlackSharedChannelUpdate */
+    BenefitSlackSharedChannelUpdate: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Description
+       * @description The description of the benefit. Will be displayed on products having this benefit.
+       */
+      description?: string | null
+      /**
+       * Type
+       * @constant
+       */
+      type: 'slack_shared_channel'
+      properties?:
+        | components['schemas']['BenefitSlackSharedChannelCreateProperties']
+        | null
     }
     /**
      * BenefitSortProperty
@@ -10359,6 +10899,11 @@ export interface components {
       metadata: components['schemas']['BenefitGrantMetadata']
     }
     /**
+     * Visibility
+     * @enum {string}
+     */
+    BenefitVisibility: 'draft' | 'private' | 'public'
+    /**
      * BillingAddressFieldMode
      * @enum {string}
      */
@@ -10501,6 +11046,63 @@ export interface components {
        * @example 4242
        */
       last4: string
+    }
+    /** CaseAlreadyExistsError */
+    CaseAlreadyExistsError: {
+      /**
+       * Error
+       * @example CaseAlreadyExistsError
+       * @constant
+       */
+      error: 'CaseAlreadyExistsError'
+      /** Detail */
+      detail: string
+    }
+    /** CaseClosedError */
+    CaseClosedError: {
+      /**
+       * Error
+       * @example CaseClosedError
+       * @constant
+       */
+      error: 'CaseClosedError'
+      /** Detail */
+      detail: string
+    }
+    /** ChannelNamePreviewRequest */
+    ChannelNamePreviewRequest: {
+      /** Organization Id */
+      organization_id?: string | null
+      /** Template */
+      template: string
+      /**
+       * Customer Name
+       * @default Sample Customer
+       */
+      customer_name: string
+      /**
+       * Customer Email
+       * @default customer@example.com
+       */
+      customer_email: string
+      /** Customer Metadata */
+      customer_metadata?: {
+        [key: string]: string | number | boolean
+      }
+    }
+    /** ChannelNamePreviewResponse */
+    ChannelNamePreviewResponse: {
+      /** Channel Name */
+      channel_name: string
+    }
+    /** ChannelNamePreviewValidationErrorResponse */
+    ChannelNamePreviewValidationErrorResponse: {
+      /** Error */
+      error: string
+      /** Detail */
+      detail: {
+        [key: string]: unknown
+      }[]
     }
     /**
      * Checkout
@@ -14209,6 +14811,7 @@ export interface components {
       | components['schemas']['CustomerBenefitGrantCustom']
       | components['schemas']['CustomerBenefitGrantMeterCredit']
       | components['schemas']['CustomerBenefitGrantFeatureFlag']
+      | components['schemas']['CustomerBenefitGrantSlackSharedChannel']
     /** CustomerBenefitGrantCustom */
     CustomerBenefitGrantCustom: {
       /**
@@ -14613,6 +15216,71 @@ export interface components {
        */
       benefit_type: 'meter_credit'
     }
+    /** CustomerBenefitGrantSlackSharedChannel */
+    CustomerBenefitGrantSlackSharedChannel: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /** Granted At */
+      granted_at: string | null
+      /** Revoked At */
+      revoked_at: string | null
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+      /** Member Id */
+      member_id?: string | null
+      /**
+       * Benefit Id
+       * Format: uuid4
+       */
+      benefit_id: string
+      /** Subscription Id */
+      subscription_id: string | null
+      /** Order Id */
+      order_id: string | null
+      /** Is Granted */
+      is_granted: boolean
+      /** Is Revoked */
+      is_revoked: boolean
+      error?: components['schemas']['BenefitGrantError'] | null
+      customer: components['schemas']['CustomerPortalCustomer']
+      benefit: components['schemas']['BenefitSlackSharedChannelSubscriber']
+      properties: components['schemas']['BenefitGrantSlackSharedChannelProperties']
+    }
+    /** CustomerBenefitGrantSlackSharedChannelPropertiesUpdate */
+    CustomerBenefitGrantSlackSharedChannelPropertiesUpdate: {
+      /**
+       * Invited Email
+       * Format: email
+       */
+      invited_email: string
+    }
+    /** CustomerBenefitGrantSlackSharedChannelUpdate */
+    CustomerBenefitGrantSlackSharedChannelUpdate: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      benefit_type: 'slack_shared_channel'
+      properties: components['schemas']['CustomerBenefitGrantSlackSharedChannelPropertiesUpdate']
+    }
     /**
      * CustomerBenefitGrantSortProperty
      * @enum {string}
@@ -14634,6 +15302,7 @@ export interface components {
       | components['schemas']['CustomerBenefitGrantCustomUpdate']
       | components['schemas']['CustomerBenefitGrantMeterCreditUpdate']
       | components['schemas']['CustomerBenefitGrantFeatureFlagUpdate']
+      | components['schemas']['CustomerBenefitGrantSlackSharedChannelUpdate']
     /**
      * CustomerCancellationReason
      * @enum {string}
@@ -15722,6 +16391,12 @@ export interface components {
        * @default false
        */
       member_model_enabled: boolean
+      /**
+       * Checkout Localization Enabled
+       * @description Whether localization is enabled for this organization.
+       * @default false
+       */
+      checkout_localization_enabled: boolean
     }
     CustomerPaymentMethod:
       | components['schemas']['PaymentMethodCard']
@@ -15874,6 +16549,8 @@ export interface components {
       /** Default Payment Method Id */
       default_payment_method_id?: string | null
       type?: components['schemas']['CustomerType'] | null
+      /** Locale */
+      locale?: string | null
     }
     /** CustomerPortalCustomerSettings */
     CustomerPortalCustomerSettings: {
@@ -16497,6 +17174,7 @@ export interface components {
         | components['schemas']['BenefitGrantLicenseKeysProperties']
         | components['schemas']['BenefitGrantCustomProperties']
         | components['schemas']['BenefitGrantFeatureFlagProperties']
+        | components['schemas']['BenefitGrantSlackSharedChannelProperties']
     }
     /**
      * CustomerStateIndividual
@@ -19366,6 +20044,7 @@ export interface components {
       | components['schemas']['DownloadableFileCreate']
       | components['schemas']['ProductMediaFileCreate']
       | components['schemas']['OrganizationAvatarFileCreate']
+      | components['schemas']['SupportCaseAttachmentFileCreate']
     /** FileDownload */
     FileDownload: {
       /**
@@ -19417,7 +20096,11 @@ export interface components {
      * FileServiceTypes
      * @enum {string}
      */
-    FileServiceTypes: 'downloadable' | 'product_media' | 'organization_avatar'
+    FileServiceTypes:
+      | 'downloadable'
+      | 'product_media'
+      | 'organization_avatar'
+      | 'support_case_attachment'
     /** FileUpload */
     FileUpload: {
       /**
@@ -19623,6 +20306,11 @@ export interface components {
     HTTPValidationError: {
       /** Detail */
       detail?: components['schemas']['ValidationError'][]
+    }
+    /** HumanReviewRequest */
+    HumanReviewRequest: {
+      /** Reason */
+      reason: string
     }
     /**
      * IdentityVerificationStatus
@@ -20471,6 +21159,7 @@ export interface components {
         | components['schemas']['DownloadableFileRead']
         | components['schemas']['ProductMediaFileRead']
         | components['schemas']['OrganizationAvatarFileRead']
+        | components['schemas']['SupportCaseAttachmentFileRead']
       )[]
       pagination: components['schemas']['Pagination']
     }
@@ -20514,6 +21203,12 @@ export interface components {
     ListResource_OrganizationAccessToken_: {
       /** Items */
       items: components['schemas']['OrganizationAccessToken'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[OrganizationBenefitGrant] */
+    ListResource_OrganizationBenefitGrant_: {
+      /** Items */
+      items: components['schemas']['OrganizationBenefitGrant'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[OrganizationMember] */
@@ -23638,6 +24333,49 @@ export interface components {
       /** Public Url */
       readonly public_url: string
     }
+    /** OrganizationBenefitGrant */
+    OrganizationBenefitGrant: {
+      /** Id */
+      id: string
+      /** Benefit Description */
+      benefit_description: string
+      /**
+       * Is Granted
+       * @description Whether the channel is provisioned and the invite sent.
+       */
+      is_granted: boolean
+      /**
+       * Is Connected
+       * @description Whether the invite was accepted by the customer's workspace.
+       */
+      is_connected: boolean
+      /**
+       * Invited Email
+       * @description Email of the Slack workspace admin the invite was sent to.
+       */
+      invited_email?: string | null
+      /**
+       * Invite Url
+       * @description Slack Connect invite URL. Not always available: Slack omits it for some email invites.
+       */
+      invite_url?: string | null
+      /** Channel Name */
+      channel_name?: string | null
+      /**
+       * Error Message
+       * @description Message of the last provisioning error, if any.
+       */
+      error_message?: string | null
+    }
+    /** OrganizationBenefitGrantUpdate */
+    OrganizationBenefitGrantUpdate: {
+      /**
+       * Invited Email
+       * Format: email
+       * @description Email of an admin in the customer's Slack workspace who should receive the Slack Connect invite.
+       */
+      invited_email: string
+    }
     /** OrganizationBillingDetails */
     OrganizationBillingDetails: {
       /**
@@ -24012,7 +24750,7 @@ export interface components {
           )
         | null
       feature_settings?:
-        | components['schemas']['OrganizationFeatureSettings']
+        | components['schemas']['OrganizationFeatureSettingsUpdate']
         | null
       subscription_settings?:
         | components['schemas']['OrganizationSubscriptionSettings']
@@ -24228,6 +24966,38 @@ export interface components {
        * @default false
        */
       slack_benefit_enabled: boolean
+    }
+    /**
+     * OrganizationFeatureSettingsUpdate
+     * @description Feature settings that organizations can update themselves.
+     *
+     *     Other feature settings are managed by Polar staff: they're ignored if
+     *     provided and keep their current value.
+     */
+    OrganizationFeatureSettingsUpdate: {
+      /**
+       * Seat Based Pricing Enabled
+       * @description If this organization has seat-based pricing enabled
+       * @default false
+       */
+      seat_based_pricing_enabled: boolean
+      /**
+       * Member Model Enabled
+       * @description If this organization has the Member model enabled
+       * @default false
+       */
+      member_model_enabled: boolean
+      /**
+       * Checkout Localization Enabled
+       * @description If this organization has checkout localization enabled
+       * @default false
+       */
+      checkout_localization_enabled: boolean
+      /**
+       * Overview Metrics
+       * @description Ordered list of metric slugs shown on the dashboard overview.
+       */
+      overview_metrics?: string[] | null
     }
     /** OrganizationIndividualLegalEntitySchema */
     OrganizationIndividualLegalEntitySchema: {
@@ -24658,7 +25428,7 @@ export interface components {
        */
       created_at: string
       /** Invoice Number */
-      invoice_number: string
+      invoice_number: string | null
       /** Status */
       status: string
       /** Paid */
@@ -25478,7 +26248,7 @@ export interface components {
           )
         | null
       feature_settings?:
-        | components['schemas']['OrganizationFeatureSettings']
+        | components['schemas']['OrganizationFeatureSettingsUpdate']
         | null
       subscription_settings?:
         | components['schemas']['OrganizationSubscriptionSettings']
@@ -28666,35 +29436,6 @@ export interface components {
        */
       signing_secret?: string | null
     }
-    /** SlackIntegrationLink */
-    SlackIntegrationLink: {
-      /**
-       * Benefit Id
-       * Format: uuid4
-       * @description Benefit to link the integration to.
-       */
-      benefit_id: string
-      /**
-       * Integration Id
-       * Format: uuid4
-       * @description Slack integration to link.
-       */
-      integration_id: string
-    }
-    /** SlackIntegrationLinkBadRequestResponse */
-    SlackIntegrationLinkBadRequestResponse: {
-      /**
-       * Error
-       * @enum {string}
-       */
-      error:
-        | 'BadRequest'
-        | 'SlackIntegrationAlreadyLinked'
-        | 'SlackIntegrationNotInstalled'
-        | 'SlackIntegrationBenefitAlreadyLinked'
-      /** Detail */
-      detail: string
-    }
     /** SlackIntegrationManifest */
     SlackIntegrationManifest: {
       /**
@@ -28711,15 +29452,13 @@ export interface components {
        */
       display_name: string
     }
-    /** SlackIntegrationQueryBadRequestResponse */
-    SlackIntegrationQueryBadRequestResponse: {
+    /** SlackIntegrationsResponse */
+    SlackIntegrationsResponse: {
       /**
-       * Error
-       * @constant
+       * Integrations
+       * @description Slack apps configured for the organization.
        */
-      error: 'BadRequest'
-      /** Detail */
-      detail: string
+      integrations: components['schemas']['SlackIntegration'][]
     }
     /** SlackWorkspaceUser */
     SlackWorkspaceUser: {
@@ -30615,6 +31354,214 @@ export interface components {
       /** Github Username */
       github_username?: string | null
     }
+    /** SupportCase */
+    SupportCase: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      type: components['schemas']['SupportCaseType']
+    }
+    /** SupportCaseAttachment */
+    SupportCaseAttachment: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /** Message Id */
+      message_id: string | null
+      file: components['schemas']['SupportCaseAttachmentFile']
+    }
+    /** SupportCaseAttachmentFile */
+    SupportCaseAttachmentFile: {
+      /** Name */
+      name: string
+      /** Mime Type */
+      mime_type: string
+      /** Size */
+      size: number
+    }
+    /**
+     * SupportCaseAttachmentFileCreate
+     * @description Schema to create a file attached to a support case.
+     */
+    SupportCaseAttachmentFileCreate: {
+      /** Organization Id */
+      organization_id?: string | null
+      /** Name */
+      name: string
+      /**
+       * Mime Type
+       * @description MIME type of the file. Images, videos, PDF, CSV, plain text, Word and Excel documents are supported.
+       */
+      mime_type: string
+      /**
+       * Size
+       * @description Size of the file. A maximum of 250 MB is allowed for this type of file.
+       */
+      size: number
+      /** Checksum Sha256 Base64 */
+      checksum_sha256_base64?: string | null
+      upload: components['schemas']['S3FileCreateMultipart']
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      service: 'support_case_attachment'
+      /** Version */
+      version?: string | null
+    }
+    /**
+     * SupportCaseAttachmentFileRead
+     * @description File attached to a support case (private; fetched via presigned URL).
+     */
+    SupportCaseAttachmentFileRead: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
+      /** Name */
+      name: string
+      /** Path */
+      path: string
+      /** Mime Type */
+      mime_type: string
+      /** Size */
+      size: number
+      /** Storage Version */
+      storage_version: string | null
+      /** Checksum Etag */
+      checksum_etag: string | null
+      /** Checksum Sha256 Base64 */
+      checksum_sha256_base64: string | null
+      /** Checksum Sha256 Hex */
+      checksum_sha256_hex: string | null
+      /** Last Modified At */
+      last_modified_at: string | null
+      /** Version */
+      version: string | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      service: 'support_case_attachment'
+      /** Is Uploaded */
+      is_uploaded: boolean
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Size Readable */
+      readonly size_readable: string
+    }
+    /** SupportCaseMessage */
+    SupportCaseMessage: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      type: components['schemas']['SupportCaseMessageType']
+      author_kind: components['schemas']['SupportCaseMessageAuthorKind']
+      /** Body */
+      body: string | null
+    }
+    /**
+     * SupportCaseMessageAuthorKind
+     * @enum {string}
+     */
+    SupportCaseMessageAuthorKind:
+      | 'platform'
+      | 'merchant'
+      | 'customer'
+      | 'system'
+    /**
+     * SupportCaseMessageCreate
+     * @description A reply: free text, attachments (already uploaded files), or both.
+     */
+    SupportCaseMessageCreate: {
+      /** Body */
+      body?: string | null
+      /** File Ids */
+      file_ids?: string[]
+    }
+    /**
+     * SupportCaseMessageType
+     * @description Known message types. Stored as a plain string column (not a DB enum):
+     *     ``chat`` and lifecycle values are generic, while action values are
+     *     domain-specific and grow per case type. Validated at the app boundary.
+     * @enum {string}
+     */
+    SupportCaseMessageType:
+      | 'chat'
+      | 'opened'
+      | 'closed'
+      | 'assigned'
+      | 'released'
+      | 'appeal_approved'
+      | 'appeal_denied'
+      | 'info_requested'
+    /** SupportCaseThread */
+    SupportCaseThread: {
+      case: components['schemas']['SupportCase']
+      /** Messages */
+      messages: components['schemas']['SupportCaseMessage'][]
+      /** Attachments */
+      attachments: components['schemas']['SupportCaseAttachment'][]
+      /** Is Open */
+      is_open: boolean
+    }
+    /**
+     * SupportCaseType
+     * @enum {string}
+     */
+    SupportCaseType: 'review_appeal'
     SystemEvent:
       | components['schemas']['MeterCreditEvent']
       | components['schemas']['MeterResetEvent']
@@ -33466,11 +34413,10 @@ export interface operations {
       }
     }
   }
-  'integrations_slack:get_integration': {
+  'integrations_slack:list_integrations': {
     parameters: {
-      query?: {
-        integration_id?: string | null
-        benefit_id?: string | null
+      query: {
+        organization_id: string
       }
       header?: never
       path?: never
@@ -33484,55 +34430,10 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['SlackIntegration']
+          'application/json': components['schemas']['SlackIntegrationsResponse']
         }
       }
-      /** @description Provide exactly one of integration_id or benefit_id. */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['SlackIntegrationQueryBadRequestResponse']
-        }
-      }
-      /** @description No Slack integration configured. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'integrations_slack:delete_integration': {
-    parameters: {
-      query: {
-        integration_id: string
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description No Slack integration configured. */
+      /** @description Organization not found or Slack benefit not enabled. */
       404: {
         headers: {
           [name: string]: unknown
@@ -33733,18 +34634,16 @@ export interface operations {
       }
     }
   }
-  'integrations_slack:link': {
+  'integrations_slack:get_integration': {
     parameters: {
       query?: never
       header?: never
-      path?: never
+      path: {
+        id: string
+      }
       cookie?: never
     }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['SlackIntegrationLink']
-      }
-    }
+    requestBody?: never
     responses: {
       /** @description Successful Response */
       200: {
@@ -33755,16 +34654,43 @@ export interface operations {
           'application/json': components['schemas']['SlackIntegration']
         }
       }
-      /** @description Slack integration is not installed, already linked, or belongs to a different organization. */
-      400: {
+      /** @description No Slack integration configured. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['SlackIntegrationLinkBadRequestResponse']
+          'application/json': components['schemas']['HTTPValidationError']
         }
       }
-      /** @description Benefit or Slack integration not found. */
+    }
+  }
+  'integrations_slack:delete_integration': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description No Slack integration configured. */
       404: {
         headers: {
           [name: string]: unknown
@@ -34908,6 +35834,200 @@ export interface operations {
       }
     }
   }
+  'organizations:request_human_review': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['HumanReviewRequest']
+      }
+    }
+    responses: {
+      /** @description Human review case opened. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SupportCase']
+        }
+      }
+      /** @description Support case not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description A human-review case already exists for this review. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CaseAlreadyExistsError']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:get_appeal_case': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Appeal case thread returned. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SupportCaseThread']
+        }
+      }
+      /** @description Support case not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:reply_to_appeal_case': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SupportCaseMessageCreate']
+      }
+    }
+    responses: {
+      /** @description Reply posted. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SupportCaseMessage']
+        }
+      }
+      /** @description Support case not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The case is closed. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CaseClosedError']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:download_appeal_case_attachment': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        attachment_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Redirect to a presigned download URL. */
+      302: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Support case not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'organizations:mark_ai_onboarding_complete': {
     parameters: {
       query?: never
@@ -35642,6 +36762,91 @@ export interface operations {
         }
       }
       /** @description Order or invoice not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:list_benefit_grants': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_OrganizationBenefitGrant_']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:update_benefit_grant': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        benefit_grant_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationBenefitGrantUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationBenefitGrant']
+        }
+      }
+      /** @description Organization or benefit grant not found. */
       404: {
         headers: {
           [name: string]: unknown
@@ -37036,6 +38241,7 @@ export interface operations {
           | components['schemas']['BenefitLicenseKeysUpdate']
           | components['schemas']['BenefitMeterCreditUpdate']
           | components['schemas']['BenefitFeatureFlagUpdate']
+          | components['schemas']['BenefitSlackSharedChannelUpdate']
       }
     }
     responses: {
@@ -37115,6 +38321,39 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'benefits:preview_channel_name': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ChannelNamePreviewRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ChannelNamePreviewResponse']
+        }
+      }
+      /** @description Invalid channel name template. */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ChannelNamePreviewValidationErrorResponse']
         }
       }
     }
@@ -38801,6 +40040,7 @@ export interface operations {
             | components['schemas']['DownloadableFileRead']
             | components['schemas']['ProductMediaFileRead']
             | components['schemas']['OrganizationAvatarFileRead']
+            | components['schemas']['SupportCaseAttachmentFileRead']
         }
       }
       /** @description You don't have the permission to update this file. */
@@ -38905,6 +40145,7 @@ export interface operations {
             | components['schemas']['DownloadableFileRead']
             | components['schemas']['ProductMediaFileRead']
             | components['schemas']['OrganizationAvatarFileRead']
+            | components['schemas']['SupportCaseAttachmentFileRead']
         }
       }
       /** @description You don't have the permission to update this file. */
@@ -55641,6 +56882,12 @@ export const benefitMeterCreditCreateTypeValues: ReadonlyArray<
 export const benefitRevokedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitRevokedEvent']['name']
 > = ['benefit.revoked']
+export const benefitSlackSharedChannelTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitSlackSharedChannel']['type']
+> = ['slack_shared_channel']
+export const benefitSlackSharedChannelCreateTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitSlackSharedChannelCreate']['type']
+> = ['slack_shared_channel']
 export const benefitSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitSortProperty']
 > = [
@@ -55668,6 +56915,9 @@ export const benefitTypeValues: ReadonlyArray<
 export const benefitUpdatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitUpdatedEvent']['name']
 > = ['benefit.updated']
+export const benefitVisibilityValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitVisibility']
+> = ['draft', 'private', 'public']
 export const billingAddressFieldModeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BillingAddressFieldMode']
 > = ['required', 'optional', 'disabled']
@@ -56287,6 +57537,9 @@ export const customerBenefitGrantLicenseKeysUpdateBenefit_typeValues: ReadonlyAr
 export const customerBenefitGrantMeterCreditUpdateBenefit_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerBenefitGrantMeterCreditUpdate']['benefit_type']
 > = ['meter_credit']
+export const customerBenefitGrantSlackSharedChannelUpdateBenefit_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['CustomerBenefitGrantSlackSharedChannelUpdate']['benefit_type']
+> = ['slack_shared_channel']
 export const customerBenefitGrantSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerBenefitGrantSortProperty']
 > = [
@@ -56525,7 +57778,12 @@ export const feedbackTypeValues: ReadonlyArray<
 > = ['bug', 'feedback', 'question']
 export const fileServiceTypesValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['FileServiceTypes']
-> = ['downloadable', 'product_media', 'organization_avatar']
+> = [
+  'downloadable',
+  'product_media',
+  'organization_avatar',
+  'support_case_attachment',
+]
 export const filterConjunctionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['FilterConjunction']
 > = ['and', 'or']
@@ -58421,14 +59679,6 @@ export const seatStatusValues: ReadonlyArray<
 export const seatTierTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SeatTierType']
 > = ['volume', 'graduated']
-export const slackIntegrationLinkBadRequestResponseErrorValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['SlackIntegrationLinkBadRequestResponse']['error']
-> = [
-  'BadRequest',
-  'SlackIntegrationAlreadyLinked',
-  'SlackIntegrationNotInstalled',
-  'SlackIntegrationBenefitAlreadyLinked',
-]
 export const stripeAccountCountryValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['StripeAccountCountry']
 > = [
@@ -58630,6 +59880,30 @@ export const subscriptionUpdateClearedEventNameValues: ReadonlyArray<
 export const subscriptionUpdatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionUpdatedEvent']['name']
 > = ['subscription.updated']
+export const supportCaseAttachmentFileCreateServiceValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SupportCaseAttachmentFileCreate']['service']
+> = ['support_case_attachment']
+export const supportCaseAttachmentFileReadServiceValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SupportCaseAttachmentFileRead']['service']
+> = ['support_case_attachment']
+export const supportCaseMessageAuthorKindValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SupportCaseMessageAuthorKind']
+> = ['platform', 'merchant', 'customer', 'system']
+export const supportCaseMessageTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SupportCaseMessageType']
+> = [
+  'chat',
+  'opened',
+  'closed',
+  'assigned',
+  'released',
+  'appeal_approved',
+  'appeal_denied',
+  'info_requested',
+]
+export const supportCaseTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SupportCaseType']
+> = ['review_appeal']
 export const taxBehaviorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TaxBehavior']
 > = ['inclusive', 'exclusive']

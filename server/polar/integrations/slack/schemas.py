@@ -116,11 +116,6 @@ class SlackWorkspaceUsersResponse(Schema):
     )
 
 
-class SlackIntegrationLink(Schema):
-    benefit_id: UUID4 = Field(description="Benefit to link the integration to.")
-    integration_id: UUID4 = Field(description="Slack integration to link.")
-
-
 class SlackIntegration(TimestampedSchema):
     id: UUID4 = Field(description="ID of the Slack integration.")
     organization_id: UUID4 = Field(
@@ -161,3 +156,9 @@ class SlackIntegration(TimestampedSchema):
     @classmethod
     def empty_if_none(cls, value: str | None) -> str:
         return _empty_if_none(value)
+
+
+class SlackIntegrationsResponse(Schema):
+    integrations: list[SlackIntegration] = Field(
+        description="Slack apps configured for the organization."
+    )

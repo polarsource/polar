@@ -64,8 +64,39 @@ class OrganizationAvatarFileCreate(FileCreateBase):
     )
 
 
+class SupportCaseAttachmentFileCreate(FileCreateBase):
+    """Schema to create a file attached to a support case."""
+
+    service: Literal[FileServiceTypes.support_case_attachment]
+    mime_type: str = Field(
+        description=(
+            "MIME type of the file. Images, videos, PDF, CSV, plain text, "
+            "Word and Excel documents are supported."
+        ),
+        pattern=(
+            r"^(image\/(jpeg|png|gif|webp)"
+            r"|video\/(mp4|quicktime|webm)"
+            r"|application\/pdf"
+            r"|text\/(csv|plain)"
+            r"|application\/msword"
+            r"|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document"
+            r"|application\/vnd\.ms-excel"
+            r"|application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet)$"
+        ),
+    )
+    size: int = Field(
+        description=(
+            "Size of the file. A maximum of 250 MB is allowed for this type of file."
+        ),
+        le=250 * 1024 * 1024,
+    )
+
+
 FileCreate = Annotated[
-    DownloadableFileCreate | ProductMediaFileCreate | OrganizationAvatarFileCreate,
+    DownloadableFileCreate
+    | ProductMediaFileCreate
+    | OrganizationAvatarFileCreate
+    | SupportCaseAttachmentFileCreate,
     Discriminator("service"),
     SetSchemaReference("FileCreate"),
 ]
@@ -82,6 +113,12 @@ class DownloadableFileRead(FileReadBase):
     """File to be associated with the downloadables benefit."""
 
     service: Literal[FileServiceTypes.downloadable]
+
+
+class SupportCaseAttachmentFileRead(FileReadBase):
+    """File attached to a support case (private; fetched via presigned URL)."""
+
+    service: Literal[FileServiceTypes.support_case_attachment]
 
 
 class PublicFileReadBase(FileReadBase):
@@ -104,7 +141,10 @@ class OrganizationAvatarFileRead(PublicFileReadBase):
 
 
 FileRead = Annotated[
-    DownloadableFileRead | ProductMediaFileRead | OrganizationAvatarFileRead,
+    DownloadableFileRead
+    | ProductMediaFileRead
+    | OrganizationAvatarFileRead
+    | SupportCaseAttachmentFileRead,
     Discriminator("service"),
     MergeJSONSchema({"title": "FileRead"}),
     ClassName("FileRead"),

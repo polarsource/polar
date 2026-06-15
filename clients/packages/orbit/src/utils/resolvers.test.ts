@@ -384,6 +384,39 @@ describe('addArbitraryProp — { base: X } goes to scoped <style>, not inline', 
     )
     expect(responsiveCSS).toContain('grid-template-columns: repeat(3, 1fr)')
   })
+
+  it('grid-template-areas arbitrary value (scalar → inlineStyle)', () => {
+    const { inlineStyle } = resolveBoxStyles(
+      { gridTemplateAreas: '"a b" "c d"' },
+      'scope',
+    )
+    expect(inlineStyle.gridTemplateAreas).toBe('"a b" "c d"')
+  })
+
+  it('grid placement longhands (gridArea, gridColumnStart) pass through', () => {
+    const { inlineStyle } = resolveBoxStyles(
+      { gridArea: 'header', gridColumnStart: 2 },
+      'scope',
+    )
+    expect(inlineStyle.gridArea).toBe('header')
+    expect(inlineStyle.gridColumnStart).toBe(2)
+  })
+
+  it('gridColumn span string (as GridItem builds it) is emitted verbatim', () => {
+    const { inlineStyle } = resolveBoxStyles(
+      { gridColumn: 'span 2 / span 2' },
+      'scope',
+    )
+    expect(inlineStyle.gridColumn).toBe('span 2 / span 2')
+  })
+
+  it('inline-grid display maps through as a token style', () => {
+    const { stylexStyles } = resolveBoxStyles(
+      { display: 'inline-grid' },
+      'scope',
+    )
+    expect(stylexStyles).toEqual([{ display: 'inline-grid' }])
+  })
 })
 
 describe('CSS string builder', () => {
@@ -455,6 +488,95 @@ describe('responsive object — undefined keys', () => {
     )
     expect(responsiveCSS).not.toContain('768px')
     expect(responsiveCSS).toContain('width: 200px')
+  })
+})
+
+describe('motion — transition tokens', () => {
+  it('transitionDuration scalar pushes the matching style', () => {
+    const { stylexStyles, responsiveCSS } = resolveBoxStyles(
+      { transitionDuration: 'fast' },
+      'scope',
+    )
+    expect(stylexStyles).toHaveLength(1)
+    expect(responsiveCSS).toBeNull()
+  })
+
+  it('transitionProperty keyword expands to a property list', () => {
+    const { responsiveCSS } = resolveBoxStyles(
+      { transitionProperty: { md: 'colors' } },
+      'scope',
+    )
+    expect(responsiveCSS).toContain(
+      'transition-property: color, background-color, border-color',
+    )
+  })
+
+  it('transitionProperty "common" expands transform + shadow + opacity', () => {
+    const { responsiveCSS } = resolveBoxStyles(
+      { transitionProperty: { hover: 'common' } },
+      'scope',
+    )
+    expect(responsiveCSS).toContain('box-shadow')
+    expect(responsiveCSS).toContain('transform')
+    expect(responsiveCSS).toContain('opacity')
+  })
+
+  it('ease is an alias for transitionTimingFunction', () => {
+    const viaEase = resolveBoxStyles({ ease: 'spring' }, 'scope')
+    const viaFull = resolveBoxStyles(
+      { transitionTimingFunction: 'spring' },
+      'scope',
+    )
+    expect(viaEase.stylexStyles).toEqual(viaFull.stylexStyles)
+  })
+
+  it('transitionTimingFunction wins over ease alias when both set', () => {
+    const { stylexStyles } = resolveBoxStyles(
+      { transitionTimingFunction: 'standard', ease: 'spring' },
+      'scope',
+    )
+    const standard = resolveBoxStyles(
+      { transitionTimingFunction: 'standard' },
+      'scope',
+    )
+    expect(stylexStyles).toEqual(standard.stylexStyles)
+  })
+
+  it('responsive transitionTimingFunction emits a cubic-bezier value', () => {
+    const { responsiveCSS } = resolveBoxStyles(
+      { transitionTimingFunction: { md: 'decelerate' } },
+      'scope',
+    )
+    expect(responsiveCSS).toMatch(/transition-timing-function:\s*cubic-bezier/)
+  })
+
+  it('transform arbitrary scalar goes to inlineStyle', () => {
+    const { inlineStyle } = resolveBoxStyles(
+      { transform: 'scale(1.02)' },
+      'scope',
+    )
+    expect(inlineStyle.transform).toBe('scale(1.02)')
+  })
+
+  it('transform responsive (hover) writes a kebab-case rule', () => {
+    const { responsiveCSS } = resolveBoxStyles(
+      { transform: { hover: 'translateY(-2px)' } },
+      'scope',
+    )
+    expect(responsiveCSS).toContain(':hover')
+    expect(responsiveCSS).toContain('transform: translateY(-2px)')
+  })
+
+  it('willChange and transformOrigin convert to kebab-case in responsive CSS', () => {
+    const { responsiveCSS } = resolveBoxStyles(
+      {
+        willChange: { md: 'transform' },
+        transformOrigin: { md: 'top left' },
+      },
+      'scope',
+    )
+    expect(responsiveCSS).toContain('will-change: transform')
+    expect(responsiveCSS).toContain('transform-origin: top left')
   })
 })
 

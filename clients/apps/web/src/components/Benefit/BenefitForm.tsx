@@ -1,9 +1,10 @@
 import { useDiscordGuild } from '@/hooks/queries'
 import { getBotDiscordAuthorizeURL } from '@/utils/auth'
-import { enums, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
-import { Input } from '@polar-sh/orbit'
+import { schemas } from '@polar-sh/client'
 import {
+  Button,
+  Checkbox,
+  Input,
   Select,
   SelectContent,
   SelectGroup,
@@ -12,9 +13,8 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
+  TextArea,
 } from '@polar-sh/orbit'
-import { TextArea } from '@polar-sh/orbit'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   FormControl,
   FormDescription,
@@ -31,7 +31,8 @@ import { DownloadablesBenefitForm } from './Downloadables/BenefitForm'
 import { GitHubRepositoryBenefitForm } from './GitHubRepositoryBenefitForm'
 import { LicenseKeysBenefitForm } from './LicenseKeys/BenefitForm'
 import { MeterCreditBenefitForm } from './MeterCredit/BenefitForm'
-import { benefitsDisplayNames } from './utils'
+import { SlackSharedChannelBenefitForm } from './SlackSharedChannelBenefitForm'
+import { benefitsDisplayNames, getCreatableBenefitTypes } from './utils'
 
 export const NewBenefitForm = ({
   organization,
@@ -47,12 +48,14 @@ export const NewBenefitForm = ({
 interface UpdateBenefitFormProps {
   organization: schemas['Organization']
   type: schemas['BenefitType']
+  benefitId: string
   onUploadingChange?: (uploading: boolean) => void
 }
 
 export const UpdateBenefitForm = ({
   organization,
   type,
+  benefitId,
   onUploadingChange,
 }: UpdateBenefitFormProps) => {
   return (
@@ -60,6 +63,7 @@ export const UpdateBenefitForm = ({
       organization={organization}
       type={type}
       update={true}
+      benefitId={benefitId}
       onUploadingChange={onUploadingChange}
     />
   )
@@ -69,6 +73,7 @@ interface BenefitFormProps {
   organization: schemas['Organization']
   type: schemas['BenefitType'] | 'usage'
   update?: boolean
+  benefitId?: string
   onUploadingChange?: (uploading: boolean) => void
 }
 
@@ -76,6 +81,7 @@ const BenefitForm = ({
   organization,
   type,
   update = false,
+  benefitId,
   onUploadingChange,
 }: BenefitFormProps) => {
   const { control } = useFormContext<schemas['BenefitCreate']>()
@@ -114,7 +120,7 @@ const BenefitForm = ({
         }}
       />
 
-      {!update ? <BenefitTypeSelect /> : null}
+      {!update ? <BenefitTypeSelect organization={organization} /> : null}
       {type === 'custom' && <CustomBenefitForm update={update} />}
       {type === 'discord' && <DiscordBenefitForm />}
       {type === 'github_repository' && (
@@ -132,6 +138,13 @@ const BenefitForm = ({
         <MeterCreditBenefitForm organization={organization} />
       )}
       {type === 'feature_flag' && <FeatureFlagBenefitForm />}
+      {type === 'slack_shared_channel' && (
+        <SlackSharedChannelBenefitForm
+          organization={organization}
+          update={update}
+          benefitId={benefitId}
+        />
+      )}
     </>
   )
 }
@@ -393,8 +406,13 @@ const DiscordBenefitForm = () => {
   )
 }
 
-const BenefitTypeSelect = () => {
+const BenefitTypeSelect = ({
+  organization,
+}: {
+  organization: schemas['Organization']
+}) => {
   const { control } = useFormContext<schemas['BenefitCustomCreate']>()
+  const benefitTypes = getCreatableBenefitTypes(organization)
 
   return (
     <FormField
@@ -413,7 +431,7 @@ const BenefitTypeSelect = () => {
                   <SelectValue placeholder="Select a benefit type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {enums.benefitTypeValues.map((value) => (
+                  {benefitTypes.map((value) => (
                     <SelectItem key={value} value={value}>
                       {benefitsDisplayNames[value]}
                     </SelectItem>

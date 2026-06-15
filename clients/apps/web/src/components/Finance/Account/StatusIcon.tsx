@@ -6,7 +6,7 @@ import type {
   BackgroundColorToken,
   TextColorToken,
 } from '@polar-sh/orbit/theme'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 import {
   CheckIcon,
   ClockIcon,
@@ -50,7 +50,6 @@ export const StatusIcon = ({ status }: Props) => {
 
   return (
     <Box
-      display="flex"
       alignItems="center"
       justifyContent="center"
       width={24}

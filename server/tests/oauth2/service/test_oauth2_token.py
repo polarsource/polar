@@ -6,7 +6,7 @@ from pytest_mock import MockerFixture
 
 from polar.email.schemas import OAuth2LeakedTokenEmail
 from polar.enums import TokenType
-from polar.models import OAuth2Client, Organization, User, UserOrganization
+from polar.models import OAuth2Client, OAuth2Token, Organization, User, UserOrganization
 from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -260,3 +260,135 @@ class TestGetByAccessToken:
         assert result is not None
         assert result.client_id == oauth2_client.client_id
         log_mock.warning.assert_called_once()
+
+
+@pytest.mark.asyncio
+class TestDeleteExpired:
+    async def test_deletes_expired_without_refresh_token(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        oauth2_client: OAuth2Client,
+        user: User,
+    ) -> None:
+        expired = await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="polar_at_u_expired",
+            refresh_token="polar_rt_u_expired",
+            scopes=["openid"],
+            user=user,
+            issued_at=int(time.time()) - 7200,
+            expires_in=3600,
+        )
+        # Simulate a token without a refresh token (e.g. MCP web grant).
+        expired.refresh_token = None  # pyright: ignore
+        await save_fixture(expired)
+
+        await oauth2_token_service.delete_expired(session)
+
+        deleted = await session.get(OAuth2Token, expired.id)
+        assert deleted is None
+
+    async def test_deletes_expired_with_revoked_refresh_token(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        oauth2_client: OAuth2Client,
+        user: User,
+    ) -> None:
+        expired = await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="polar_at_u_revoked",
+            refresh_token="polar_rt_u_revoked",
+            scopes=["openid"],
+            user=user,
+            issued_at=int(time.time()) - 7200,
+            expires_in=3600,
+            refresh_token_revoked_at=int(time.time()) - 7200,
+        )
+
+        await oauth2_token_service.delete_expired(session)
+
+        deleted = await session.get(OAuth2Token, expired.id)
+        assert deleted is None
+
+    async def test_preserves_active_refresh_token(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        oauth2_client: OAuth2Client,
+        user: User,
+    ) -> None:
+        expired = await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="polar_at_u_refreshable",
+            refresh_token="polar_rt_u_refreshable",
+            scopes=["openid"],
+            user=user,
+            issued_at=int(time.time()) - 7200,
+            expires_in=3600,
+        )
+
+        await oauth2_token_service.delete_expired(session)
+
+        preserved = await session.get(OAuth2Token, expired.id)
+        assert preserved is not None
+
+    async def test_preserves_valid_token(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        oauth2_client: OAuth2Client,
+        user: User,
+    ) -> None:
+        valid = await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="polar_at_u_valid",
+            refresh_token="polar_rt_u_valid",
+            scopes=["openid"],
+            user=user,
+            issued_at=int(time.time()),
+            expires_in=3600,
+        )
+        valid.refresh_token = None  # pyright: ignore
+        await save_fixture(valid)
+
+        await oauth2_token_service.delete_expired(session)
+
+        preserved = await session.get(OAuth2Token, valid.id)
+        assert preserved is not None
+
+    async def test_preserves_app_client_tokens(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        oauth2_client: OAuth2Client,
+        user: User,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch(
+            "polar.oauth2.service.oauth2_token.APP_CLIENT_ID",
+            oauth2_client.client_id,
+        )
+
+        expired = await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="polar_at_u_app",
+            refresh_token="polar_rt_u_app",
+            scopes=["openid"],
+            user=user,
+            issued_at=int(time.time()) - 7200,
+            expires_in=3600,
+        )
+        expired.refresh_token = None  # pyright: ignore
+        await save_fixture(expired)
+
+        await oauth2_token_service.delete_expired(session)
+
+        preserved = await session.get(OAuth2Token, expired.id)
+        assert preserved is not None

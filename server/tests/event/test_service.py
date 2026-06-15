@@ -48,6 +48,7 @@ from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.events import get_all_by_name, get_all_by_organization
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_checkout,
@@ -568,8 +569,7 @@ class TestIngest:
 
         await event_service.ingest(session, auth_subject, ingest)
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_organization(organization.id)
+        events = await get_all_by_organization(session, organization.id)
         assert len(events) == count
 
         for event in events:
@@ -599,8 +599,7 @@ class TestIngest:
 
         await event_service.ingest(session, auth_subject, ingest)
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        events = await get_all_by_organization(session, auth_subject.subject.id)
         assert len(events) == count
 
         for event in events:
@@ -640,8 +639,7 @@ class TestIngest:
 
         await event_service.ingest(session, auth_subject, ingest)
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        events = await get_all_by_organization(session, auth_subject.subject.id)
         assert len(events) == 1
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
@@ -652,7 +650,6 @@ class TestIngest:
         auth_subject: AuthSubject[Organization],
     ) -> None:
         event_type_repository = EventTypeRepository.from_session(session)
-        event_repository = EventRepository.from_session(session)
 
         ingest_first = EventsIngest(
             events=[
@@ -672,7 +669,7 @@ class TestIngest:
         assert event_type.name == "api.request"
         assert event_type.label == "api.request"
 
-        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        events = await get_all_by_organization(session, auth_subject.subject.id)
         assert len(events) == 1
         assert events[0].event_type_id == event_type.id
 
@@ -687,7 +684,7 @@ class TestIngest:
 
         await event_service.ingest(session, auth_subject, ingest_second)
 
-        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        events = await get_all_by_organization(session, auth_subject.subject.id)
         assert len(events) == 2
         assert events[0].event_type_id == event_type.id
         assert events[1].event_type_id == event_type.id
@@ -706,8 +703,6 @@ class TestIngest:
         session: AsyncSession,
         auth_subject: AuthSubject[Organization],
     ) -> None:
-        event_repository = EventRepository.from_session(session)
-
         ingest = EventsIngest(
             events=[
                 EventCreateExternalCustomer(
@@ -731,7 +726,7 @@ class TestIngest:
         await event_service.ingest(session, auth_subject, ingest)
         await event_service.ingested(session, list(enqueue_events_mock.call_args[0]))
 
-        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        events = await get_all_by_organization(session, auth_subject.subject.id)
         assert len(events) == 3
 
         parent = next(e for e in events if e.name == "support_request")
@@ -765,8 +760,6 @@ class TestIngest:
         session: AsyncSession,
         auth_subject: AuthSubject[Organization],
     ) -> None:
-        event_repository = EventRepository.from_session(session)
-
         child_ingest = EventsIngest(
             events=[
                 EventCreateExternalCustomer(
@@ -779,7 +772,7 @@ class TestIngest:
         await event_service.ingest(session, auth_subject, child_ingest)
         await event_service.ingested(session, list(enqueue_events_mock.call_args[0]))
 
-        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        events = await get_all_by_organization(session, auth_subject.subject.id)
         assert len(events) == 1
         child = events[0]
         assert child.parent_id is None
@@ -798,7 +791,7 @@ class TestIngest:
         await event_service.ingested(session, list(enqueue_events_mock.call_args[0]))
 
         await session.refresh(child)
-        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        events = await get_all_by_organization(session, auth_subject.subject.id)
         parent = next(e for e in events if e.name == "support_request")
 
         assert child.parent_id == parent.id
@@ -828,8 +821,6 @@ class TestIngest:
         session: AsyncSession,
         auth_subject: AuthSubject[Organization],
     ) -> None:
-        event_repository = EventRepository.from_session(session)
-
         for name, external_id, parent_id in [
             ("ggc", "ggc-id", "gc-id"),
             ("gc", "gc-id", "c-id"),
@@ -853,7 +844,7 @@ class TestIngest:
                 session, list(enqueue_events_mock.call_args[0])
             )
 
-        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        events = await get_all_by_organization(session, auth_subject.subject.id)
         assert len(events) == 3
         by_name = {e.name: e for e in events}
         # ggc and gc are linked to their parent rows as those rows now exist,
@@ -884,7 +875,7 @@ class TestIngest:
         )
         await event_service.ingested(session, list(enqueue_events_mock.call_args[0]))
 
-        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        events = await get_all_by_organization(session, auth_subject.subject.id)
         by_name = {e.name: e for e in events}
         p = by_name["p"]
         c = by_name["c"]
@@ -955,8 +946,7 @@ class TestIngest:
 
         await event_service.ingest(session, auth_subject, ingest)
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        events = await get_all_by_organization(session, auth_subject.subject.id)
         assert len(events) == 1
         assert events[0].member_id == member.id
         assert events[0].customer_id == customer.id
@@ -1033,8 +1023,7 @@ class TestIngest:
 
         await event_service.ingest(session, auth_subject, ingest)
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        events = await get_all_by_organization(session, auth_subject.subject.id)
         assert len(events) == 1
         assert events[0].external_member_id == "member-abc"
         assert events[0].external_customer_id == "test-customer"
@@ -1057,8 +1046,7 @@ class TestIngest:
 
         await event_service.ingest(session, auth_subject, ingest)
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        events = await get_all_by_organization(session, auth_subject.subject.id)
         assert len(events) == 1
         assert events[0].member_id is None
         assert events[0].external_member_id is None
@@ -1892,8 +1880,7 @@ class TestSystemEvents:
 
         await order_service.handle_payment(session, order, payment)
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(SystemEvent.order_paid)
+        events = await get_all_by_name(session, SystemEvent.order_paid)
         assert len(events) == 1
         event = events[0]
 
@@ -1944,8 +1931,7 @@ class TestSystemEvents:
 
         await order_service.handle_payment(session, order, payment)
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(SystemEvent.order_paid)
+        events = await get_all_by_name(session, SystemEvent.order_paid)
         assert len(events) == 1
         event = events[0]
 
@@ -1985,8 +1971,7 @@ class TestSystemEvents:
 
         await order_service.handle_payment(session, order, payment)
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(SystemEvent.order_paid)
+        events = await get_all_by_name(session, SystemEvent.order_paid)
         assert len(events) == 1
         event = events[0]
 
@@ -2011,10 +1996,7 @@ class TestSystemEvents:
             session, checkout
         )
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_created
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_created)
         assert len(events) == 1
         event = events[0]
 
@@ -2052,10 +2034,7 @@ class TestSystemEvents:
                 customer_comment="Too pricey for me",
             )
 
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_name(
-            SystemEvent.subscription_canceled
-        )
+        events = await get_all_by_name(session, SystemEvent.subscription_canceled)
         assert len(events) == 1
         event = events[0]
 

@@ -9,7 +9,7 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { DataTable, DataTableColumnDef } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import Pill from '@polar-sh/ui/components/atoms/Pill'
+import { Pill } from '@polar-sh/orbit'
 import { useCallback } from 'react'
 import { Button } from '@polar-sh/orbit'
 
@@ -133,7 +133,7 @@ export const BillingOrdersTable = ({
       size: 56,
       cell: ({ row: { original } }) =>
         original.is_invoice_generated ? (
-          <Box display="flex" justifyContent="end">
+          <Box justifyContent="end">
             <DownloadInvoiceButton
               organizationId={organizationId}
               order={original}
@@ -146,7 +146,6 @@ export const BillingOrdersTable = ({
   if (orders.length === 0) {
     return (
       <Box
-        display="flex"
         flexDirection="column"
         alignItems="center"
         justifyContent="center"

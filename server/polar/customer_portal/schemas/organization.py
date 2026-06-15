@@ -33,6 +33,10 @@ class CustomerOrganizationFeatureSettings(Schema):
         default=False,
         description="Whether the member model is enabled for this organization.",
     )
+    checkout_localization_enabled: bool = Field(
+        default=False,
+        description="Whether localization is enabled for this organization.",
+    )
 
 
 class CustomerOrganization(OrganizationPublicBase):
@@ -49,6 +53,7 @@ class CustomerOrganization(OrganizationPublicBase):
         if self.feature_settings is not None:
             self.organization_features = CustomerOrganizationFeatureSettings(
                 member_model_enabled=self.feature_settings.member_model_enabled,
+                checkout_localization_enabled=self.feature_settings.checkout_localization_enabled,
             )
         return self
 

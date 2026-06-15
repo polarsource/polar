@@ -54,6 +54,8 @@ def _fee_benefit(*, fee_percent: int = 380, fee_fixed: int = 35) -> dict[str, An
         "selectable": True,
         "deletable": True,
         "is_deleted": False,
+        "visibility": "public",
+        "visibility_configurable": False,
         "organization_id": "org_1",
         "metadata": {
             "type": "transaction_fee",
@@ -173,6 +175,7 @@ class TestOrganizationSubscriptionFromSdk:
                 "email_verified": True,
                 "type": "individual",
                 "name": "c",
+                "billing_name": None,
                 "billing_address": None,
                 "tax_id": None,
                 "organization_id": "org_1",

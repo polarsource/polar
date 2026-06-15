@@ -2,7 +2,7 @@
 
 import { schemas } from '@polar-sh/client'
 import { Box, type BoxProps } from '@polar-sh/orbit/Box'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'motion/react'
 import { useTheme } from 'next-themes'
 import { ChecklistRow } from './ChecklistRow'
 
@@ -35,7 +35,6 @@ export const ReviewChecklist = ({
 
   return (
     <Box
-      display="flex"
       flexDirection="column"
       rowGap="s"
       // eslint-disable-next-line polar/no-style-box
@@ -43,7 +42,7 @@ export const ReviewChecklist = ({
     >
       {isLoading ? (
         Array.from({ length: 8 }, (_, i) => (
-          <Box key={`placeholder-${i}`} {...cardStyles}>
+          <Box display="block" key={`placeholder-${i}`} {...cardStyles}>
             <ChecklistRow isLoading={true} />
           </Box>
         ))
@@ -67,7 +66,7 @@ export const ReviewChecklist = ({
                     ease: [0.4, 0, 0.2, 1],
                   }}
                 >
-                  <Box {...cardStyles}>
+                  <Box display="block" {...cardStyles}>
                     <ChecklistRow isLoading={false} step={step} />
                   </Box>
                 </motion.div>

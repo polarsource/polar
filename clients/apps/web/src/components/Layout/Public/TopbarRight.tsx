@@ -2,7 +2,7 @@
 
 import { AuthModal } from '@/components/Auth/AuthModal'
 import GetStartedButton from '@/components/Auth/GetStartedButton'
-import { Modal } from '@/components/Modal'
+import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
 import Popover from '@/components/Notifications/NotificationsPopover'

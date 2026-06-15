@@ -22,7 +22,11 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
+    from polar.models.customer import Customer
+    from polar.models.file import File
+    from polar.models.organization import Organization
     from polar.models.organization_review import OrganizationReview
+    from polar.models.user import User
 
 
 class SupportCaseType(StrEnum):
@@ -64,6 +68,8 @@ class SupportCaseMessageType(StrEnum):
     # lifecycle (generic)
     opened = "opened"
     closed = "closed"
+    assigned = "assigned"
+    released = "released"
     # actions (review_appeal)
     appeal_approved = "appeal_approved"
     appeal_denied = "appeal_denied"
@@ -91,6 +97,14 @@ class SupportCase(RecordModel):
     type: Mapped[SupportCaseType] = mapped_column(
         StringEnum(SupportCaseType, length=32), nullable=False, index=True
     )
+    # Staff member currently handling the case (advisory; no exclusivity).
+    assigned_user_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("users.id", ondelete="set null"),
+        nullable=True,
+        default=None,
+        index=True,
+    )
 
     __mapper_args__ = {"polymorphic_on": "type"}
 
@@ -109,6 +123,10 @@ class SupportCase(RecordModel):
         return relationship(
             "SupportCaseAttachment", lazy="raise", back_populates="case"
         )
+
+    @declared_attr
+    def assigned_user(cls) -> Mapped["User | None"]:
+        return relationship("User", lazy="raise")
 
 
 class ReviewAppealSupportCase(SupportCase):
@@ -205,6 +223,9 @@ class SupportCaseParticipant(RecordModel):
         nullable=True,
         default=None,
     )
+    # UNUSED: never written or read yet. Reserved for per-participant unread
+    # state; the backoffice "awaiting reply" dot is derived from message order
+    # instead. Drop this column if no upcoming case feature claims it.
     last_read_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
@@ -212,6 +233,18 @@ class SupportCaseParticipant(RecordModel):
     @declared_attr
     def case(cls) -> Mapped["SupportCase"]:
         return relationship("SupportCase", lazy="raise", back_populates="participants")
+
+    @declared_attr
+    def organization(cls) -> Mapped["Organization | None"]:
+        return relationship("Organization", lazy="raise")
+
+    @declared_attr
+    def platform_user(cls) -> Mapped["User | None"]:
+        return relationship("User", lazy="raise")
+
+    @declared_attr
+    def customer(cls) -> Mapped["Customer | None"]:
+        return relationship("Customer", lazy="raise")
 
 
 class SupportCaseMessage(RecordModel):
@@ -256,6 +289,10 @@ class SupportCaseMessage(RecordModel):
     def case(cls) -> Mapped["SupportCase"]:
         return relationship("SupportCase", lazy="raise", back_populates="messages")
 
+    @declared_attr
+    def author_user(cls) -> Mapped["User | None"]:
+        return relationship("User", lazy="raise")
+
 
 class SupportCaseAttachment(RecordModel):
     """A file attached to a case, optionally to a specific message.
@@ -293,3 +330,7 @@ class SupportCaseAttachment(RecordModel):
     @declared_attr
     def case(cls) -> Mapped["SupportCase"]:
         return relationship("SupportCase", lazy="raise", back_populates="attachments")
+
+    @declared_attr
+    def file(cls) -> Mapped["File"]:
+        return relationship("File", lazy="raise")

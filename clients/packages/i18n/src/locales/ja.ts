@@ -108,6 +108,7 @@ export default {
         },
         until: '{date}まで',
       },
+      basePrice: '基本料金',
     },
     trial: {
       ends: 'トライアル終了日 {endDate}',
@@ -237,6 +238,26 @@ export default {
         activationDeactivationFailed:
           'アクティベーションの無効化に失敗しました',
       },
+      slackSharedChannel: {
+        connected: 'Slackワークスペースに接続済みです。',
+        connectedChannel:
+          'Slackワークスペースのチャンネル {channel} に接続済みです。',
+        inviteSent: '{email} に招待を送信しました。',
+        channel: 'チャンネル: {channel}。',
+        openLinkToAccept: 'Slackでリンクを開いて承認してください。',
+        acceptFromEmail:
+          '招待メールまたはSlack Connectのリクエストから承認してください。',
+        openInvite: 'Slack招待を開く',
+        provisioning:
+          '{email} 用のSlackチャンネルを設定しています... まもなく受信箱に招待が届きます。',
+        setupFailed:
+          '{email} でSlackチャンネルを設定できませんでした。メールアドレスを確認してもう一度お試しください。改善しない場合は販売者にお問い合わせください。',
+        enterEmail:
+          'Slackワークスペースの管理者のメールアドレスを入力してください。プライベートチャンネル用のSlack Connect招待が送信されます。',
+        emailPlaceholder: 'slack-admin@yourcompany.com',
+        tryAgain: '再試行',
+        requestInvite: 'Slack招待をリクエスト',
+      },
     },
     confirmation: {
       confirmPayment: '支払いを確認',
@@ -280,6 +301,7 @@ export default {
     custom: 'カスタム',
     meter_credit: 'メータークレジット',
     feature_flag: '機能フラグ',
+    slack_shared_channel: 'Slack 共有チャンネル',
   },
   ordinal: {
     one: '番目',

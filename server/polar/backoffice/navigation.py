@@ -40,4 +40,7 @@ NAVIGATION = [
     navigation.NavigationItem(
         "Feedback", "feedbacks:list", active_route_name_prefix="feedbacks:"
     ),
+    navigation.NavigationItem(
+        "Cases", "support_cases:list", active_route_name_prefix="support_cases:"
+    ),
 ]

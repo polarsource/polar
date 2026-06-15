@@ -16,6 +16,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
+from polar.kit.visibility import Visibility
 from polar.models import Benefit, Organization, ProductBenefit, User
 from polar.models.benefit import BenefitType
 from polar.models.webhook_endpoint import WebhookEventType
@@ -41,6 +42,7 @@ class BenefitService:
         organization_id: Sequence[uuid.UUID] | None = None,
         id_in: Sequence[uuid.UUID] | None = None,
         id_not_in: Sequence[uuid.UUID] | None = None,
+        visibility: Sequence[Visibility] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[BenefitSortProperty]] = [
@@ -68,6 +70,9 @@ class BenefitService:
 
         if query is not None:
             statement = statement.where(Benefit.description.ilike(f"%{query}%"))
+
+        if visibility is not None:
+            statement = statement.where(Benefit.visibility.in_(visibility))
 
         if metadata is not None:
             statement = apply_metadata_clause(Benefit, statement, metadata)
@@ -131,6 +136,21 @@ class BenefitService:
             OrganizationPermission.products_manage,
         )
 
+        if (
+            create_schema.type == BenefitType.slack_shared_channel
+            and not organization.feature_settings.get("slack_benefit_enabled", False)
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "type"),
+                        "msg": "Slack shared channel benefit is not enabled for this organization.",
+                        "input": create_schema.type,
+                    }
+                ]
+            )
+
         try:
             is_tax_applicable = getattr(create_schema, "is_tax_applicable")
         except AttributeError:
@@ -139,6 +159,7 @@ class BenefitService:
         benefit_strategy = get_benefit_strategy(create_schema.type, session, redis)
         properties = await benefit_strategy.validate_properties(
             auth_subject,
+            organization,
             create_schema.properties.model_dump(mode="json", by_alias=True),
         )
 
@@ -146,12 +167,14 @@ class BenefitService:
             organization=organization,
             is_tax_applicable=is_tax_applicable,
             properties=properties,
+            visibility=create_schema.type.resolve_visibility(create_schema.visibility),
             **create_schema.model_dump(
                 by_alias=True,
                 exclude={
                     "organization_id",
                     "is_tax_applicable",
                     "properties",
+                    "visibility",
                 },
             ),
         )
@@ -199,6 +222,7 @@ class BenefitService:
             benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
             update_dict["properties"] = await benefit_strategy.validate_properties(
                 auth_subject,
+                benefit.organization,
                 properties_update.model_dump(mode="json", by_alias=True),
             )
 

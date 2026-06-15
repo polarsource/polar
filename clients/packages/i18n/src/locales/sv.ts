@@ -108,6 +108,7 @@ export default {
         },
       },
       inclTax: 'Moms (ingår)',
+      basePrice: 'Grundavgift',
     },
     trial: {
       ends: 'Testperioden slutar {endDate}',
@@ -231,6 +232,26 @@ export default {
         activationDeletedDescription: 'Aktivering borttagen',
         activationDeactivationFailed: 'Avaktivering misslyckades',
       },
+      slackSharedChannel: {
+        connected: 'Ansluten till din Slack-arbetsyta.',
+        connectedChannel:
+          'Ansluten till din Slack-arbetsyta i kanalen {channel}.',
+        inviteSent: 'Inbjudan skickad till {email}.',
+        channel: 'Kanal: {channel}.',
+        openLinkToAccept: 'Öppna länken för att acceptera i Slack.',
+        acceptFromEmail:
+          'Acceptera den från inbjudningsmejlet eller dina Slack Connect-förfrågningar.',
+        openInvite: 'Öppna Slack-inbjudan',
+        provisioning:
+          'Konfigurerar din Slack-kanal för {email}... Du bör få en inbjudan i inkorgen inom kort.',
+        setupFailed:
+          'Vi kunde inte konfigurera din Slack-kanal med {email}. Kontrollera mejladressen och försök igen, eller kontakta säljaren om det fortsätter att misslyckas.',
+        enterEmail:
+          'Ange e-postadressen till en administratör i din Slack-arbetsyta. Personen får en Slack Connect-inbjudan till en privat kanal.',
+        emailPlaceholder: 'slack-admin@yourcompany.com',
+        tryAgain: 'Försök igen',
+        requestInvite: 'Begär Slack-inbjudan',
+      },
     },
     confirmation: {
       confirmPayment: 'Bekräfta betalning',
@@ -276,6 +297,7 @@ export default {
     downloadables: 'Filnedladdningar',
     meter_credit: 'Mätarkrediter',
     feature_flag: 'Feature flag',
+    slack_shared_channel: 'Slack delad kanal',
   },
   ordinal: {
     zero: ':e',

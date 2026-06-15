@@ -108,6 +108,7 @@ export default {
         },
       },
       inclTax: 'Btw (inbegrepen)',
+      basePrice: 'Basisprijs',
     },
     trial: {
       ends: 'Proefperiode eindigt op {endDate}',
@@ -232,6 +233,26 @@ export default {
         activationDeletedDescription: 'Activatie succesvol verwijderd',
         activationDeactivationFailed: 'Deactiveren mislukt',
       },
+      slackSharedChannel: {
+        connected: 'Verbonden met je Slack-werkruimte.',
+        connectedChannel:
+          'Verbonden met je Slack-werkruimte in kanaal {channel}.',
+        inviteSent: 'Uitnodiging verzonden naar {email}.',
+        channel: 'Kanaal: {channel}.',
+        openLinkToAccept: 'Open de link om deze in Slack te accepteren.',
+        acceptFromEmail:
+          'Accepteer via de uitnodigingsmail of je Slack Connect-verzoeken.',
+        openInvite: 'Open Slack-uitnodiging',
+        provisioning:
+          'Je Slack-kanaal voor {email} wordt ingesteld... Je ontvangt binnenkort een uitnodiging in je inbox.',
+        setupFailed:
+          'We konden je Slack-kanaal met {email} niet instellen. Controleer het e-mailadres en probeer het opnieuw, of neem contact op met de verkoper als het blijft mislukken.',
+        enterEmail:
+          'Voer het e-mailadres in van een beheerder in je Slack-werkruimte. Die ontvangt een Slack Connect-uitnodiging voor een privékanaal.',
+        emailPlaceholder: 'slack-admin@yourcompany.com',
+        tryAgain: 'Opnieuw proberen',
+        requestInvite: 'Slack-uitnodiging aanvragen',
+      },
     },
     confirmation: {
       confirmPayment: 'Betaling bevestigen',
@@ -279,6 +300,7 @@ export default {
     downloadables: 'Bestandsdownloads',
     meter_credit: 'Verbruikstegoed',
     feature_flag: 'Feature flag',
+    slack_shared_channel: 'Gedeeld Slack-kanaal',
   },
   ordinal: {
     zero: 'de',

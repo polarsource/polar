@@ -112,6 +112,36 @@ class TestListCustomers:
         assert json["items"][0]["external_id"] == "ext_456"
 
     @pytest.mark.auth
+    async def test_query_filter_by_billing_name(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer1@example.com",
+            name="Customer One",
+            billing_name="Acme Corporation",
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer2@example.com",
+            name="Customer Two",
+            billing_name="Globex Inc",
+        )
+
+        response = await client.get("/v1/customers/", params={"query": "Acme"})
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["id"] == str(customer.id)
+
+    @pytest.mark.auth
     async def test_active_filter(
         self,
         save_fixture: SaveFixture,

@@ -108,6 +108,7 @@ export default {
         },
       },
       inclTax: '부가세 (포함)',
+      basePrice: '기본 가격',
     },
     trial: {
       ends: '체험 종료일: {endDate}',
@@ -231,6 +232,25 @@ export default {
         activationDeletedDescription: '라이선스 키가 비활성화되었습니다',
         activationDeactivationFailed: '라이선스 키 비활성화 실패',
       },
+      slackSharedChannel: {
+        connected: 'Slack 워크스페이스에 연결되었습니다.',
+        connectedChannel:
+          '채널 {channel}의 Slack 워크스페이스에 연결되었습니다.',
+        inviteSent: '{email}로 초대장이 전송되었습니다.',
+        channel: '채널: {channel}.',
+        openLinkToAccept: 'Slack에서 수락하려면 링크를 여세요.',
+        acceptFromEmail: '초대 이메일 또는 Slack Connect 요청에서 수락하세요.',
+        openInvite: 'Slack 초대 열기',
+        provisioning:
+          '{email}을 위한 Slack 채널을 설정하는 중입니다... 곧 받은편지함으로 초대장이 도착할 것입니다.',
+        setupFailed:
+          '{email}로 Slack 채널을 설정하지 못했습니다. 이메일을 다시 확인한 후 다시 시도하세요. 계속 실패하면 판매자에게 문의하세요.',
+        enterEmail:
+          'Slack 워크스페이스의 관리자 이메일을 입력하세요. 비공개 채널용 Slack Connect 초대장이 전송됩니다.',
+        emailPlaceholder: 'slack-admin@yourcompany.com',
+        tryAgain: '다시 시도',
+        requestInvite: 'Slack 초대 요청',
+      },
     },
     confirmation: {
       confirmPayment: '결제 확인',
@@ -276,6 +296,7 @@ export default {
     downloadables: '파일 다운로드',
     meter_credit: '사용량 크레딧',
     feature_flag: '기능 플래그',
+    slack_shared_channel: 'Slack 공유 채널',
   },
   ordinal: {
     zero: '번째',

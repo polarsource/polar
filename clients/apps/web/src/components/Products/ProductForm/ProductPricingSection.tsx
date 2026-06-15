@@ -61,7 +61,7 @@ export const ProductPricingSection = ({
     name: 'prices',
   })
 
-  const { fields: prices, append, remove, replace } = pricesFieldArray
+  const { fields: prices, append, prepend, remove, replace } = pricesFieldArray
 
   const defaultCurrency = organization.default_presentment_currency
 
@@ -304,6 +304,31 @@ export const ProductPricingSection = ({
     })
   }, [activeCurrencies, append])
 
+  const handleAddSeatPrice = useCallback(() => {
+    const newPrices: ProductPriceCreate[] = activeCurrencies.map(
+      (currency) => ({
+        price_currency: currency as schemas['PresentmentCurrency'],
+        amount_type: 'seat_based',
+        seat_tiers: {
+          seat_tier_type: 'volume',
+          tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 0 }],
+        },
+      }),
+    )
+    append(newPrices)
+  }, [activeCurrencies, append])
+
+  const handleAddBasePrice = useCallback(() => {
+    const newPrices: ProductPriceCreate[] = activeCurrencies.map(
+      (currency) => ({
+        price_currency: currency as schemas['PresentmentCurrency'],
+        amount_type: 'fixed',
+        price_amount: 0,
+      }),
+    )
+    prepend(newPrices)
+  }, [activeCurrencies, prepend])
+
   const handleRemovePrice = useCallback(
     (indexToRemove: number) => {
       const currentPrices = getValues('prices')
@@ -327,12 +352,48 @@ export const ProductPricingSection = ({
           .reverse()
 
         indicesToRemove.forEach((i) => remove(i))
-      } else {
+      } else if (!hasPriceCurrency(priceToRemove)) {
         remove(indexToRemove)
+      } else {
+        // Static prices are kept in sync across currencies by their position
+        // within each currency group (see handleAmountTypeChange). Remove the
+        // corresponding price in every currency so the rows don't desynchronize.
+        const removedCurrency = priceToRemove.price_currency || 'usd'
+        const pricesByCurr = groupPricesByCurrency(currentPrices)
+        const positionInCurrency = (
+          pricesByCurr.get(removedCurrency) || []
+        ).findIndex((p) => p.index === indexToRemove)
+
+        const indicesToRemove = Array.from(pricesByCurr.values())
+          .map((currencyPrices) => currencyPrices[positionInCurrency]?.index)
+          .filter((i): i is number => i !== undefined)
+          .sort((a, b) => b - a)
+
+        indicesToRemove.forEach((i) => remove(i))
       }
     },
     [getValues, remove],
   )
+
+  const staticPricesForSelectedCurrency = pricesForSelectedCurrency.filter(
+    (p) => !isMeteredPrice(p.price as ProductPrice),
+  )
+
+  const onlyStaticPrice =
+    staticPricesForSelectedCurrency.length === 1
+      ? staticPricesForSelectedCurrency[0]?.price
+      : undefined
+
+  const onlyStaticAmountType =
+    onlyStaticPrice && 'amount_type' in onlyStaticPrice
+      ? onlyStaticPrice.amount_type
+      : null
+
+  const canAddSeatPricing =
+    onlyStaticAmountType === 'fixed' &&
+    !!organization.feature_settings?.seat_based_pricing_enabled
+
+  const canAddBasePrice = onlyStaticAmountType === 'seat_based'
 
   if (isLegacyRecurringProduct) {
     return (
@@ -497,47 +558,71 @@ export const ProductPricingSection = ({
 
         <div className="flex flex-col gap-y-6 py-6">
           <div className="flex flex-row items-center justify-between">
-            <h3>Price Type</h3>
-            {recurringInterval !== null && (
-              <Button
-                className="self-start"
-                variant="secondary"
-                size="sm"
-                onClick={handleAddMeteredPrice}
-              >
-                Add metered price
-              </Button>
-            )}
-          </div>
-          {pricesForSelectedCurrency.map(({ price, index }) => (
-            <div
-              key={`${selectedCurrency}-${index}`}
-              className={
-                pricesForSelectedCurrency.length > 1 &&
-                isMeteredPrice(price as ProductPrice)
-                  ? 'dark:border-polar-700 rounded-2xl border border-gray-200 p-4'
-                  : ''
-              }
-            >
-              <ProductPriceItem
-                organization={organization}
-                index={index}
-                currency={validatedSelectedCurrency}
-                onRemove={handleRemovePrice}
-                onAmountTypeChange={handleAmountTypeChange}
-                canRemove={
-                  isMeteredPrice(price as ProductPrice) &&
-                  (pricesForSelectedCurrency.filter((p) =>
-                    isMeteredPrice(p.price as ProductPrice),
-                  ).length > 1 ||
-                    pricesForSelectedCurrency.filter(
-                      (p) => !isMeteredPrice(p.price as ProductPrice),
-                    ).length >= 1)
-                }
-                key={`${selectedCurrency}-${index}`}
-              />
+            <h3>Price Configuration</h3>
+            <div className="flex flex-row items-center gap-2">
+              {canAddSeatPricing && (
+                <Button
+                  className="self-start"
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleAddSeatPrice}
+                >
+                  Add seat pricing
+                </Button>
+              )}
+              {canAddBasePrice && (
+                <Button
+                  className="self-start"
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleAddBasePrice}
+                >
+                  Add base price
+                </Button>
+              )}
+              {recurringInterval !== null &&
+                pricesForSelectedCurrency.length > 0 && (
+                  <Button
+                    className="self-start"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleAddMeteredPrice}
+                  >
+                    Add metered price
+                  </Button>
+                )}
             </div>
-          ))}
+          </div>
+          {pricesForSelectedCurrency.map(({ price, index }) => {
+            const isMetered = isMeteredPrice(price as ProductPrice)
+            const meteredPriceCount = pricesForSelectedCurrency.filter((p) =>
+              isMeteredPrice(p.price as ProductPrice),
+            ).length
+            const staticPriceCount =
+              pricesForSelectedCurrency.length - meteredPriceCount
+
+            return (
+              <div
+                key={`${selectedCurrency}-${index}`}
+                className="dark:border-polar-700 rounded-2xl border border-gray-200 p-4"
+              >
+                <ProductPriceItem
+                  organization={organization}
+                  index={index}
+                  currency={validatedSelectedCurrency}
+                  onRemove={handleRemovePrice}
+                  onAmountTypeChange={handleAmountTypeChange}
+                  canChangeType={!isMetered && staticPriceCount <= 1}
+                  canRemove={
+                    staticPriceCount > 1 ||
+                    (isMetered &&
+                      (meteredPriceCount > 1 || staticPriceCount >= 1))
+                  }
+                  key={`${selectedCurrency}-${index}`}
+                />
+              </div>
+            )
+          })}
         </div>
 
         {recurringInterval && (

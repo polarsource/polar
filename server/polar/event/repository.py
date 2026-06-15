@@ -9,25 +9,18 @@ from sqlalchemy import (
 from sqlalchemy import (
     ColumnElement,
     ColumnExpressionArgument,
-    Numeric,
     Select,
     String,
-    UnaryExpression,
     and_,
-    asc,
-    case,
     cast,
-    desc,
     func,
     literal,
-    literal_column,
     or_,
     select,
-    text,
     update,
 )
 from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
-from sqlalchemy.orm import aliased, joinedload
+from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
@@ -38,7 +31,6 @@ from polar.models import (
     BillingEntry,
     Customer,
     Event,
-    EventType,
     Meter,
 )
 from polar.models.event import EventSource
@@ -56,19 +48,12 @@ _MAX_RESOLVE_DEPTH = 100
 class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
     model = Event
 
-    # Note: this method is deprecated. Typically when you get_all you want to use
-    # Tinybird instead of postgres.
-    async def get_all_by_name(self, name: str) -> Sequence[Event]:
-        statement = self.get_base_statement().where(Event.name == name)
-        return await self.get_all(statement)
-
-    # Note: this method is deprecated. Typically when you get_all you want to use
-    # Tinybird instead of postgres.
-    async def get_all_by_organization(self, organization_id: UUID) -> Sequence[Event]:
-        statement = self.get_base_statement().where(
-            Event.organization_id == organization_id
-        )
-        return await self.get_all(statement)
+    def get_statement_by_org_ids(
+        self, org_ids: set[AccessibleOrganizationID]
+    ) -> Select[tuple[Event]]:
+        statement = self.get_base_statement()
+        statement = statement.where(Event.organization_id.in_(org_ids))
+        return statement
 
     async def get_recent_balance_order_exchange_rate(
         self,
@@ -256,27 +241,6 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
 
-    async def count_user_events_by_organization(
-        self,
-        *,
-        after: datetime | None,
-        until: datetime,
-        exclude_organization_id: UUID,
-    ) -> dict[UUID, int]:
-        statement = (
-            select(Event.organization_id, func.count(Event.id))
-            .where(
-                Event.source == EventSource.user,
-                Event.organization_id != exclude_organization_id,
-                Event.ingested_at <= until,
-            )
-            .group_by(Event.organization_id)
-        )
-        if after is not None:
-            statement = statement.where(Event.ingested_at > after)
-        result = await self.session.execute(statement)
-        return {row[0]: row[1] for row in result.all()}
-
     async def get_latest_meter_reset(
         self, customer: Customer, meter_id: UUID
     ) -> Event | None:
@@ -292,28 +256,6 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             .limit(1)
         )
         return await self.get_one_or_none(statement)
-
-    def get_event_names_statement(
-        self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[str, EventSource, int, datetime, datetime]]:
-        return (
-            self.get_statement_by_org_ids(org_ids)
-            .with_only_columns(
-                Event.name,
-                Event.source,
-                func.count(Event.id).label("occurrences"),
-                func.min(Event.timestamp).label("first_seen"),
-                func.max(Event.timestamp).label("last_seen"),
-            )
-            .group_by(Event.name, Event.source)
-        )
-
-    def get_statement_by_org_ids(
-        self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Event]]:
-        statement = self.get_base_statement()
-        statement = statement.where(Event.organization_id.in_(org_ids))
-        return statement
 
     def get_customer_id_filter_clause(
         self, customer_id: Sequence[UUID]
@@ -456,333 +398,6 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         return {
             row.event_id: [str(aid) for aid in row.ancestors] for row in result.all()
         }
-
-    async def get_hierarchy_stats(
-        self,
-        statement: Select[tuple[Event]],
-        aggregate_fields: Sequence[str] = ("cost.amount",),
-        sorting: Sequence[tuple[str, bool]] = (("total", True),),
-        timestamp_series: Any = None,
-        interval: TimeInterval | None = None,
-        timezone: str | None = None,
-    ) -> Sequence[dict[str, Any]]:
-        """
-        Get aggregate statistics grouped by root event name across all hierarchies.
-
-        Uses root_id for efficient rollup and joins with event_types for labels:
-        1. Filter root events based on statement
-        2. Roll up costs from all events in each hierarchy (via root_id)
-        3. Calculate avg, p10, p90, p99 on those rolled-up totals across root events with same name
-        4. Join with event_types to include labels
-
-        Args:
-            statement: Base query for root events to include
-            aggregate_fields: List of user_metadata field paths to aggregate
-            sorting: List of (property, is_desc) tuples for sorting
-            timestamp_series: Optional CTE for time bucketing. If provided, stats are grouped by timestamp.
-            interval: Time interval for bucketing (required when timestamp_series is provided)
-            timezone: Timezone for date_trunc (required when timestamp_series is provided)
-
-        Returns:
-            List of dicts containing name, label, occurrences, and statistics for each field.
-            If timestamp_series is provided, also includes timestamp for each row.
-        """
-        root_events_subquery = (
-            statement.where(
-                and_(Event.parent_id.is_(None), Event.source == EventSource.user)
-            )
-            .order_by(None)
-            .subquery()
-        )
-
-        all_events = aliased(Event, name="all_events")
-        customer = aliased(Customer, name="customer")
-
-        bucket_expr: ColumnElement[datetime] | None = None
-        if (
-            timestamp_series is not None
-            and interval is not None
-            and timezone is not None
-        ):
-            bucket_expr = func.date_trunc(
-                interval.value,
-                literal_column("root_event.timestamp"),
-                literal_column(f"'{timezone}'"),
-            )
-
-        per_root_select_exprs: list[ColumnElement[Any]] = [
-            literal_column("root_event.id").label("root_id"),
-            literal_column("root_event.name").label("root_name"),
-            literal_column("root_event.organization_id").label("root_org_id"),
-            customer.id.label("customer_id"),
-            literal_column("root_event.external_customer_id").label(
-                "external_customer_id"
-            ),
-        ]
-
-        if bucket_expr is not None:
-            per_root_select_exprs.append(bucket_expr.label("bucket"))
-
-        for field_path in aggregate_fields:
-            field_parts = field_path.split(".")
-            pg_path = "{" + ",".join(field_parts) + "}"
-            safe_field_name = field_path.replace(".", "_")
-
-            field_expr = cast(
-                all_events.user_metadata.op("#>>")(literal_column(f"'{pg_path}'")),
-                Numeric,
-            )
-
-            sum_expr = func.sum(field_expr).label(f"{safe_field_name}_total")
-            per_root_select_exprs.append(sum_expr)
-
-        group_by_exprs: list[ColumnElement[Any]] = [
-            literal_column("root_event.id"),
-            literal_column("root_event.name"),
-            literal_column("root_event.organization_id"),
-            literal_column("customer.id"),
-            literal_column("root_event.external_customer_id"),
-        ]
-        if bucket_expr is not None:
-            group_by_exprs.append(bucket_expr)
-
-        per_root_query = (
-            select(*per_root_select_exprs)
-            .select_from(root_events_subquery.alias("root_event"))
-            .join(all_events, all_events.root_id == literal_column("root_event.id"))
-            .outerjoin(
-                customer,
-                or_(
-                    customer.id == literal_column("root_event.customer_id"),
-                    and_(
-                        customer.external_id
-                        == literal_column("root_event.external_customer_id"),
-                        customer.organization_id
-                        == literal_column("root_event.organization_id"),
-                    ),
-                ),
-            )
-            .group_by(*group_by_exprs)
-        )
-
-        per_root_subquery = per_root_query.subquery("per_root_totals")
-
-        event_type = aliased(EventType, name="event_type")
-
-        if timestamp_series is not None:
-            timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
-
-            aggregation_exprs = []
-            for field_path in aggregate_fields:
-                safe_field_name = field_path.replace(".", "_")
-                total_col: ColumnElement[Any] = getattr(
-                    per_root_subquery.c, f"{safe_field_name}_total"
-                )
-
-                aggregation_exprs.extend(
-                    [
-                        func.sum(total_col).label(f"{safe_field_name}_sum"),
-                        func.avg(func.coalesce(total_col, 0)).label(
-                            f"{safe_field_name}_avg"
-                        ),
-                        func.percentile_cont(0.10)
-                        .within_group(func.coalesce(total_col, 0))
-                        .label(f"{safe_field_name}_p10"),
-                        func.percentile_cont(0.90)
-                        .within_group(func.coalesce(total_col, 0))
-                        .label(f"{safe_field_name}_p90"),
-                        func.percentile_cont(0.99)
-                        .within_group(func.coalesce(total_col, 0))
-                        .label(f"{safe_field_name}_p99"),
-                    ]
-                )
-
-            stats_query = (
-                select(
-                    timestamp_column.label("timestamp"),
-                    per_root_subquery.c.root_name.label("name"),
-                    event_type.id.label("event_type_id"),
-                    event_type.label.label("label"),
-                    func.count(
-                        getattr(
-                            per_root_subquery.c,
-                            f"{aggregate_fields[0].replace('.', '_')}_total",
-                        )
-                    ).label("occurrences"),
-                    (
-                        func.count(per_root_subquery.c.customer_id.distinct())
-                        + func.count(
-                            case(
-                                (
-                                    per_root_subquery.c.customer_id.is_(None),
-                                    per_root_subquery.c.external_customer_id,
-                                )
-                            ).distinct()
-                        )
-                    ).label("customers"),
-                    *aggregation_exprs,
-                )
-                .select_from(
-                    timestamp_series.outerjoin(
-                        per_root_subquery,
-                        per_root_subquery.c.bucket == timestamp_column,
-                    )
-                )
-                .outerjoin(
-                    event_type,
-                    and_(
-                        event_type.name == per_root_subquery.c.root_name,
-                        event_type.organization_id == per_root_subquery.c.root_org_id,
-                    ),
-                )
-                .group_by(
-                    timestamp_column,
-                    per_root_subquery.c.root_name,
-                    event_type.id,
-                    event_type.label,
-                )
-            )
-        else:
-            aggregation_exprs = []
-            for field_path in aggregate_fields:
-                safe_field_name = field_path.replace(".", "_")
-                total_col_ref: ColumnElement[Any] = literal_column(
-                    f"{safe_field_name}_total"
-                )
-
-                aggregation_exprs.extend(
-                    [
-                        func.sum(total_col_ref).label(f"{safe_field_name}_sum"),
-                        func.avg(func.coalesce(total_col_ref, 0)).label(
-                            f"{safe_field_name}_avg"
-                        ),
-                        func.percentile_cont(0.10)
-                        .within_group(func.coalesce(total_col_ref, 0))
-                        .label(f"{safe_field_name}_p10"),
-                        func.percentile_cont(0.90)
-                        .within_group(func.coalesce(total_col_ref, 0))
-                        .label(f"{safe_field_name}_p90"),
-                        func.percentile_cont(0.99)
-                        .within_group(func.coalesce(total_col_ref, 0))
-                        .label(f"{safe_field_name}_p99"),
-                    ]
-                )
-
-            stats_query = (
-                select(
-                    per_root_subquery.c.root_name.label("name"),
-                    event_type.id.label("event_type_id"),
-                    event_type.label.label("label"),
-                    func.count(per_root_subquery.c.root_id).label("occurrences"),
-                    (
-                        func.count(per_root_subquery.c.customer_id.distinct())
-                        + func.count(
-                            case(
-                                (
-                                    per_root_subquery.c.customer_id.is_(None),
-                                    per_root_subquery.c.external_customer_id,
-                                )
-                            ).distinct()
-                        )
-                    ).label("customers"),
-                    *aggregation_exprs,
-                )
-                .select_from(per_root_subquery)
-                .outerjoin(
-                    event_type,
-                    and_(
-                        event_type.name == per_root_subquery.c.root_name,
-                        event_type.organization_id == per_root_subquery.c.root_org_id,
-                    ),
-                )
-                .group_by(
-                    per_root_subquery.c.root_name, event_type.id, event_type.label
-                )
-            )
-
-        order_by_clauses: list[UnaryExpression[Any]] = []
-
-        if timestamp_series is not None:
-            order_by_clauses.append(asc(text("timestamp")))
-
-        for criterion, is_desc_sort in sorting:
-            clause_function = desc if is_desc_sort else asc
-            if criterion == "name":
-                order_by_clauses.append(clause_function(text("name")))
-            elif criterion == "occurrences":
-                order_by_clauses.append(clause_function(text("occurrences")))
-            elif criterion in ("total", "average", "p10", "p90", "p99"):
-                if aggregate_fields:
-                    safe_field_name = aggregate_fields[0].replace(".", "_")
-                    suffix_map = {
-                        "total": "sum",
-                        "average": "avg",
-                        "p10": "p10",
-                        "p90": "p90",
-                        "p99": "p99",
-                    }
-                    suffix = suffix_map[criterion]
-                    order_by_clauses.append(
-                        clause_function(text(f"{safe_field_name}_{suffix}"))
-                    )
-
-        if order_by_clauses:
-            stats_query = stats_query.order_by(*order_by_clauses)
-
-        result = await self.session.execute(stats_query)
-        rows = result.all()
-
-        result_list = []
-        for row in rows:
-            row_dict = {
-                "name": row.name,
-                "label": row.label,
-                "event_type_id": row.event_type_id,
-                "occurrences": row.occurrences,
-                "customers": row.customers,
-                "totals": {
-                    field.replace(".", "_"): getattr(
-                        row, f"{field.replace('.', '_')}_sum"
-                    )
-                    or 0
-                    for field in aggregate_fields
-                },
-                "averages": {
-                    field.replace(".", "_"): getattr(
-                        row, f"{field.replace('.', '_')}_avg"
-                    )
-                    or 0
-                    for field in aggregate_fields
-                },
-                "p10": {
-                    field.replace(".", "_"): getattr(
-                        row, f"{field.replace('.', '_')}_p10"
-                    )
-                    or 0
-                    for field in aggregate_fields
-                },
-                "p90": {
-                    field.replace(".", "_"): getattr(
-                        row, f"{field.replace('.', '_')}_p90"
-                    )
-                    or 0
-                    for field in aggregate_fields
-                },
-                "p99": {
-                    field.replace(".", "_"): getattr(
-                        row, f"{field.replace('.', '_')}_p99"
-                    )
-                    or 0
-                    for field in aggregate_fields
-                },
-            }
-
-            if timestamp_series is not None:
-                row_dict["timestamp"] = row.timestamp
-
-            result_list.append(row_dict)
-
-        return result_list
 
     async def get_timestamp_series(
         self,

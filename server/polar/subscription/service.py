@@ -1351,6 +1351,12 @@ class SubscriptionService:
                     session, subscription, product, proration_behavior
                 )
 
+            if resolved_discount is not None:
+                ctx.add_event_metadata(
+                    discount_id=None
+                    if resolved_discount == "unset"
+                    else str(resolved_discount.id),
+                )
             ctx.add_event_metadata(
                 product_id=str(product.id),
                 proration_behavior=proration_behavior,

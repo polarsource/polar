@@ -98,14 +98,14 @@ export const BenefitVisibilityField = ({
                 value="public"
                 selected={field.value === 'public'}
                 label="Visible"
-                description="Customers can see this benefit in customer-facing product and benefit lists."
+                description="Customers can see this benefit after purchase, including in order confirmations and the Customer Portal."
               />
               <BenefitVisibilityOption
                 id="benefit-visibility-private"
                 value="private"
                 selected={field.value === 'private'}
                 label="Hidden"
-                description="Still granted after purchase, but not visible in customer-facing product or benefit lists."
+                description="Granted after purchase, but is never shown to customers."
               />
             </RadioGroup>
           </FormControl>

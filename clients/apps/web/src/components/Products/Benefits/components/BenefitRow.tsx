@@ -106,7 +106,6 @@ export const BenefitRow = ({
     })
   }, [deleteBenefit, benefit])
 
-  const visibilityConfigurable = isBenefitVisibilityConfigurable(benefit.type)
   const isPublic = benefit.visibility === 'public'
 
   return (
@@ -138,7 +137,7 @@ export const BenefitRow = ({
               <span className="dark:text-polar-500 text-xs text-gray-500">
                 {benefitsDisplayNames[benefit.type]}
               </span>
-              {selected && visibilityConfigurable && !isPublic ? (
+              {selected && !isPublic ? (
                 <span className="dark:bg-polar-700 dark:text-polar-500 inline-flex items-center rounded-full bg-gray-100 px-2 text-xs text-gray-500">
                   Hidden from customers
                 </span>

@@ -2,7 +2,6 @@
 
 import {
   benefitsDisplayNames,
-  isBenefitVisibilityConfigurable,
   resolveBenefitIcon,
 } from '@/components/Benefit/utils'
 import { useDeleteBenefit } from '@/hooks/queries'

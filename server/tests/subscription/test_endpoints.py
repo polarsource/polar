@@ -513,6 +513,38 @@ class TestSubscriptionProductUpdate:
 
 
 @pytest.mark.asyncio
+class TestSubscriptionUpdateMixedFields:
+    @pytest.mark.auth
+    async def test_mixed_seats_and_discount_returns_422(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """
+        Mixing fields from different SubscriptionUpdate union members should return 422.
+
+        A payload with both 'seats' (from SubscriptionUpdateSeats) and 'discount_id'
+        (from SubscriptionUpdateBase) is invalid. Before the fix, Pydantic silently
+        matched SubscriptionUpdateBase and dropped 'seats', returning HTTP 200.
+        After the fix, extra='forbid' on all union members causes a 422.
+        """
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=datetime(2023, 1, 1),
+        )
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"seats": 10, "discount_id": None},
+        )
+        assert response.status_code == 422
+
+
+@pytest.mark.asyncio
 class TestSubscriptionUpdateCancel:
     async def test_anonymous(
         self,

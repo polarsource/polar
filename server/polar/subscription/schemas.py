@@ -3,7 +3,14 @@ from datetime import datetime
 from typing import Annotated, Literal
 
 from fastapi import Path
-from pydantic import UUID4, AliasChoices, AliasPath, Field, FutureDatetime
+from pydantic import (
+    UUID4,
+    AliasChoices,
+    AliasPath,
+    ConfigDict,
+    Field,
+    FutureDatetime,
+)
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
@@ -270,6 +277,8 @@ SubscriptionCreate = SubscriptionCreateCustomer | SubscriptionCreateExternalCust
 
 
 class SubscriptionUpdateBase(Schema):
+    model_config = ConfigDict(extra="forbid")
+
     product_id: UUID4 | None = Field(
         default=None,
         description="Update subscription to another product.",
@@ -316,6 +325,8 @@ class SubscriptionUpdateBase(Schema):
 
 
 class SubscriptionUpdateSeats(Schema):
+    model_config = ConfigDict(extra="forbid")
+
     seats: int = Field(
         description="Update the number of seats for this subscription.",
         ge=1,
@@ -330,6 +341,8 @@ class SubscriptionUpdateSeats(Schema):
 
 
 class SubscriptionUpdateBillingPeriod(Schema):
+    model_config = ConfigDict(extra="forbid")
+
     current_billing_period_end: FutureDatetime = Field(
         description=inspect.cleandoc(
             """
@@ -342,6 +355,8 @@ class SubscriptionUpdateBillingPeriod(Schema):
 
 
 class SubscriptionCancelBase(Schema):
+    model_config = ConfigDict(extra="forbid")
+
     customer_cancellation_reason: CustomerCancellationReason | None = Field(
         None,
         description=inspect.cleandoc(
@@ -403,6 +418,8 @@ class SubscriptionRevoke(SubscriptionCancelBase):
 
 
 class SubscriptionUpdateClear(Schema):
+    model_config = ConfigDict(extra="forbid")
+
     pending_update: Literal[None] = Field(
         description="Clear the pending subscription update. Set to null to remove scheduled changes."
     )

@@ -1,0 +1,90 @@
+---
+title: "2026-06-12"
+description: "An incident report detailing the outage of the Polar platform on June 12, 2026, its impact, root cause analysis, and actions taken to prevent future occurrences."
+---
+
+## Summary
+
+On Jun 12, 2026 at 13:17 UTC, the Polar platform was down for an hour.
+
+The incident occurred following a routine security procedure of rotating the credentials to our database. We restored a Point in Time (PIT) snapshot of our database, timestamped 13:17 (UTC), losing less than a minute of data, which was fully restored and reconciled post-incident at 14:16.
+
+No customer data was permanently lost. A small number of events and in-flight transactions that occurred during the recovery window were subsequently reconciled.
+
+This post-mortem explains what happened, how we recovered, and the actions we are taking to prevent similar incidents in the future.
+
+## Impact
+
+Between 13:17 and 14:18 (UTC):
+
+- The Polar dashboard, API, and checkout infrastructure were unavailable.
+- Event ingestion was unavailable during part of the recovery process.
+- Webhook delivery was delayed while systems recovered.
+
+No customer data was permanently lost.
+
+## Chronology
+
+_All times are in UTC._
+
+- **13:16:07:** Terraform Cloud plan runs to rotate credentials
+- **13:16:55**: Terraform Cloud plan is applied
+- _**13:16:59**: Point in Time database backup (automatically run)_
+- **13:17:44**: Terraform begins to destroy database
+- **13:17:46**: Database dropped
+- **13:17:46**: Polar fully down. **Incident starts**
+- **13:25:00**: Status page is updated to down
+- **13:25:04**: Maintenance mode enabled
+- **13:30:12**: Database restoration from Point In Time snapshot started
+- **14:16:47**: Database is restored and confirmed to contain all data but with no read replica
+- **14:17:00**: All sandbox services are restarted with the new database host
+- **14:17:31**: Maintenance mode disabled
+- **14:18:00**: All production services are restarted with the new database host
+- **14:18:00**: Polar confirmed to be up but with degraded performance on metrics endpoints
+- **14:23:27**: Database read replica is enabled and begins backfilling data.
+- **14:26:00**: Status page is updated to “degraded”
+- **17:07:00**: Missing user events and orders are recreated in database
+- **18:30:00**: End of the incident
+
+## Root cause analysis
+
+### Primary root cause
+
+On June 12, we initiated a routine database credential rotation through Terraform. Due a configuration flaw, the database credentials were tied directly to the Terraform database resource. Updating those credentials triggered a replacement of the resource. Because deletion protection was not enabled on the production database, the database was deleted and a new instance was created.
+
+### Contributing factors
+
+Since sandbox and production are running on a single database instance setup, it was not possible to run the Terraform configuration change only in sandbox, causing both environments to be affected simultaneously.
+
+## What went well
+
+- The team began recovery efforts immediately after the incident started.
+- PIT recovery worked as designed and allowed us to restore the database from a snapshot less than one minute before deletion.
+- The maintenance page allowed us to communicate clearly while recovery was underway.
+- Public status updates and communication were published quickly.
+
+## What could have gone better
+
+- Maintenance page messaging was not reflecting the actual situation.
+- Monitoring and alerting did not surface the issue quickly enough.
+- Incident response process, and recovery coordination.
+- Database environment variables were duplicated in all services, which caused delays, leading to webhooks not being recovered immediately with other services when updating.
+
+## Actions
+
+### Immediate (this week)
+
+- Prevent database resource replacement in Terraform.
+- Formalize a Terraform apply process and checklist.
+- Have a common environment group across all services for database environment variables.
+- Improve our playbook for rotating credentials.
+- Increase the frequency of our full database backups, for the possible case where PITR wouldn’t work.
+
+### Mid term (before end of June)
+
+- Review and improve our incident response process and coordination across the team.
+- Research and design a high availability proxy for our Event Ingestion endpoint.
+
+### Long term
+
+- Research and explore globally distributed, resilient database systems.

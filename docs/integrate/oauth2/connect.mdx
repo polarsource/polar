@@ -36,7 +36,7 @@ The parameters are the one described in the [OpenID Connect specification](https
   of the scopes you declared when creating the OAuth2 client.
 </ParamField>
 
-If you redirect the user to this URL, they'll see a page asking them to grant access to their data, corresponding to the scopes you asked for. By default, the user will also be prompted to select one of their organizations, as Polar generates organization-level access tokens by default.
+If you redirect the user to this URL, they'll see a page asking them to grant access to their data, corresponding to the scopes you asked for. By default, the user will also be prompted to select one of their organizations that they have management permissions for, as Polar generates organization-level access tokens by default.
 
 <img src="/assets/integrate/oauth2/connect.png" />
 
@@ -84,7 +84,7 @@ The `access_token` will allow you to make authenticated API requests on behalf o
 
 By default, Polar OAuth2 flow generates **organization-level** access tokens. These tokens are tied to a specific organization rather than a user, allowing requests to operate only on that organization's data, which improves privacy and security.
 
-When using the default flow, the user will be prompted to select one of their organizations before allowing access to their data:
+When using the default flow, the user will be prompted to select one of their organizations that they have management permissions for before allowing access to their data:
 
 ```
 https://polar.sh/oauth2/authorize?response_type=code&client_id=polar_ci_j3X95_MgfdSCeCd2qkFnUw&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&scope=openid%20email

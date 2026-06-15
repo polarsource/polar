@@ -300,7 +300,7 @@ const AccessTokenItem = ({
                 title: 'Copied to clipboard',
               })
             }}
-            monospace
+            variant="mono"
           />
           <Banner color="blue">
             <span className="text-sm">

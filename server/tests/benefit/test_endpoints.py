@@ -354,6 +354,30 @@ class TestCreateBenefit:
         json = response.json()
         assert json["visibility"] == Visibility.private
 
+    @pytest.mark.auth
+    async def test_rejects_non_public_visibility_for_non_configurable_benefit(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/benefits/",
+            json={
+                "type": BenefitType.discord,
+                "description": "Discord benefit",
+                "properties": {
+                    "guild_id": "123",
+                    "role_id": "456",
+                    "kick_member": False,
+                },
+                "organization_id": str(organization.id),
+                "visibility": Visibility.private,
+            },
+        )
+
+        assert response.status_code == 422
+
 
 @pytest.mark.asyncio
 class TestUpdateBenefit:

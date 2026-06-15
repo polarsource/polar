@@ -296,7 +296,7 @@ export default {
     downloadables: '파일 다운로드',
     meter_credit: '사용량 크레딧',
     feature_flag: '기능 플래그',
-    slack_shared_channel: 'Slack 공유 채널',
+    slack_shared_channel: '공유 Slack 채널',
   },
   ordinal: {
     zero: '번째',

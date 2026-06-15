@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
+from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.models import Customer, File, Organization, User
 from polar.models.support_case import (
@@ -86,7 +87,7 @@ class SupportCaseService:
         audience: Sequence[SupportCaseAudience] = (),
     ) -> SupportCaseMessage:
         repository = SupportCaseMessageRepository.from_session(session)
-        return await repository.create(
+        message = await repository.create(
             SupportCaseMessage(
                 case=case,
                 type=type,
@@ -96,6 +97,33 @@ class SupportCaseService:
                 audience=list(audience),
             ),
             flush=True,
+        )
+        await self._publish_message_event(session, case, message)
+        return message
+
+    async def _publish_message_event(
+        self,
+        session: AsyncSession,
+        case: SupportCase,
+        message: SupportCaseMessage,
+    ) -> None:
+        """Nudge the merchant org's open clients to refetch the thread.
+
+        Only externally-visible messages warrant a real-time refresh; internal
+        notes (empty audience) are invisible to the merchant and skipped.
+        """
+        if not message.audience:
+            return
+        participant_repository = SupportCaseParticipantRepository.from_session(session)
+        organization_id = await participant_repository.get_merchant_organization_id(
+            case.id
+        )
+        if organization_id is None:
+            return
+        await eventstream_publish(
+            "support_case.message",
+            {"case_id": str(case.id)},
+            organization_id=organization_id,
         )
 
     async def close(

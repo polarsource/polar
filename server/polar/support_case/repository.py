@@ -193,6 +193,16 @@ class SupportCaseParticipantRepository(
 ):
     model = SupportCaseParticipant
 
+    async def get_merchant_organization_id(self, case_id: UUID) -> UUID | None:
+        """The organization that is the merchant participant of a case, if any."""
+        statement = select(SupportCaseParticipant.organization_id).where(
+            SupportCaseParticipant.case_id == case_id,
+            SupportCaseParticipant.kind == SupportCaseParticipantKind.merchant,
+            SupportCaseParticipant.deleted_at.is_(None),
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none()
+
 
 class SupportCaseAttachmentRepository(
     RepositorySoftDeletionIDMixin[SupportCaseAttachment, UUID],

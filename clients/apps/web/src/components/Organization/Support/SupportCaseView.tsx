@@ -6,11 +6,13 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { MessageAvatar } from '@/components/Organization/HumanReviewCase/MessageAvatar'
 import { useUnreadTitleBadge } from '@/components/Organization/HumanReviewCase/useUnreadTitleBadge'
 import { useReplySupportCase, useSupportCase } from '@/hooks/queries/support'
+import { useOrganizationSSE } from '@/hooks/sse'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback, useEffect, useMemo } from 'react'
 import {
   supportCaseUploader,
   toChatAttachments,
@@ -34,6 +36,26 @@ export const SupportCaseView = ({ organization, caseId }: Props) => {
   } = useSupportCase(organization.id, caseId)
   const reply = useReplySupportCase(organization.id, caseId)
   useUnreadTitleBadge(organization.id, thread?.messages)
+
+  // Real-time: refetch the thread when a new message lands for this case.
+  // Polling stays on as a slow fallback for dropped SSE connections.
+  const queryClient = useQueryClient()
+  const emitter = useOrganizationSSE(organization.id)
+  useEffect(() => {
+    const onMessage = (payload: { case_id?: string }) => {
+      if (payload?.case_id !== caseId) return
+      queryClient.invalidateQueries({
+        queryKey: ['supportCase', organization.id, caseId],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['supportCases', organization.id],
+      })
+    }
+    emitter.on('support_case.message', onMessage)
+    return () => {
+      emitter.off('support_case.message', onMessage)
+    }
+  }, [emitter, queryClient, organization.id, caseId])
 
   const messages = useMemo(() => thread?.messages ?? [], [thread])
   const messageById = useMemo(

@@ -184,6 +184,7 @@ export const BenefitRow = ({
             hideModal={hideEdit}
             requestClose={requestClose}
             onDirtyChange={handleDirtyChange}
+            confirmOnUpdate
           />
         }
       />

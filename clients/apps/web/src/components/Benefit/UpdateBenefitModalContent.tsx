@@ -8,10 +8,12 @@ import { MouseEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { UpdateBenefitForm } from '../Benefit/BenefitForm'
 import { isBenefitVisibilityConfigurable } from '../Benefit/utils'
+import { ConfirmModal } from '../Modal/ConfirmModal'
+import { useModal } from '../Modal/useModal'
+import { toast } from '../Toast/use-toast'
 
 type BenefitUpdate =
   operations['benefits:update']['requestBody']['content']['application/json']
-import { toast } from '../Toast/use-toast'
 
 interface UpdateBenefitModalContentProps {
   organization: schemas['Organization']
@@ -19,6 +21,7 @@ interface UpdateBenefitModalContentProps {
   hideModal: () => void
   requestClose: () => void
   onDirtyChange?: (dirty: boolean) => void
+  confirmOnUpdate?: boolean
 }
 
 const UpdateBenefitModalContent = ({
@@ -27,6 +30,7 @@ const UpdateBenefitModalContent = ({
   hideModal,
   requestClose,
   onDirtyChange,
+  confirmOnUpdate = false,
 }: UpdateBenefitModalContentProps) => {
   const router = useRouter()
   const defaultValues = useMemo((): BenefitUpdate => {
@@ -43,10 +47,18 @@ const UpdateBenefitModalContent = ({
   const { setError } = form
 
   const [isUploading, setIsUploading] = useState(false)
+  const [pendingUpdate, setPendingUpdate] = useState<BenefitUpdate | null>(null)
+
   const { isDirty } = form.formState
   useEffect(() => {
     onDirtyChange?.(isDirty || isUploading)
   }, [isDirty, isUploading, onDirtyChange])
+
+  const {
+    isShown: isConfirmShown,
+    show: showConfirm,
+    hide: hideConfirm,
+  } = useModal()
 
   const updateSubscriptionBenefit = useUpdateBenefit(organization.id)
 
@@ -79,6 +91,24 @@ const UpdateBenefitModalContent = ({
     [hideModal, router, updateSubscriptionBenefit, benefit, setError],
   )
 
+  const onValidSubmit = useCallback(
+    (values: BenefitUpdate) => {
+      if (confirmOnUpdate) {
+        setPendingUpdate(values)
+        showConfirm()
+      } else {
+        handleUpdateNewBenefit(values)
+      }
+    },
+    [confirmOnUpdate, showConfirm, handleUpdateNewBenefit],
+  )
+
+  const handleConfirmUpdate = useCallback(() => {
+    if (pendingUpdate) {
+      handleUpdateNewBenefit(pendingUpdate)
+    }
+  }, [pendingUpdate, handleUpdateNewBenefit])
+
   const onCancel = (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     e.stopPropagation()
@@ -96,7 +126,10 @@ const UpdateBenefitModalContent = ({
         <Form {...form}>
           <form
             className="flex flex-col gap-y-6"
-            onSubmit={handleSubmit(handleUpdateNewBenefit)}
+            onSubmit={(e) => {
+              e.stopPropagation()
+              handleSubmit(onValidSubmit)(e)
+            }}
           >
             <UpdateBenefitForm
               organization={organization}
@@ -120,6 +153,13 @@ const UpdateBenefitModalContent = ({
           </form>
         </Form>
       </div>
+      <ConfirmModal
+        isShown={isConfirmShown}
+        hide={hideConfirm}
+        title="Update this benefit?"
+        description="Changes to this benefit will be applied to all products that use it, and to existing customers who already have it."
+        onConfirm={handleConfirmUpdate}
+      />
     </div>
   )
 }

@@ -4,6 +4,13 @@ import { createSHA256 } from 'hash-wasm'
 
 const CHUNK_SIZE = 10000000 // 10MB
 
+export class UploadAbortedError extends Error {
+  constructor() {
+    super('Upload aborted')
+    this.name = 'UploadAbortedError'
+  }
+}
+
 export type FileRead =
   | schemas['DownloadableFileRead']
   | schemas['ProductMediaFileRead']
@@ -31,6 +38,22 @@ export class Upload {
   onFileUploadProgress: (file: schemas['FileUpload'], uploaded: number) => void
   onFileUploaded: (response: FileRead) => void
   onFileUploadError: (fileId: string, error: Error) => void
+  private aborted = false
+  private currentXhr: XMLHttpRequest | null = null
+
+  // Stops the upload: aborts the in-flight part request and prevents any
+  // further parts (or the finalize call) from running. The error callback
+  // receives an UploadAbortedError.
+  abort() {
+    this.aborted = true
+    this.currentXhr?.abort()
+  }
+
+  private throwIfAborted() {
+    if (this.aborted) {
+      throw new UploadAbortedError()
+    }
+  }
 
   constructor({
     organization,
@@ -87,6 +110,7 @@ export class Upload {
     const hasher = await createSHA256()
 
     for (let i = 1; i <= chunkCount; i++) {
+      this.throwIfAborted()
       const chunk_start = (i - 1) * CHUNK_SIZE
       let chunk_end = i * CHUNK_SIZE
       if (chunk_end > this.file.size) {
@@ -128,6 +152,7 @@ export class Upload {
      * non-consecutive order according to their docs.
      */
     for (let i = 0; i < partCount; i++) {
+      this.throwIfAborted()
       const part = parts[i]
       const completed = await this.upload({
         part,
@@ -155,9 +180,14 @@ export class Upload {
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest()
+      this.currentXhr = xhr
 
       xhr.onreadystatechange = () => {
         if (xhr.readyState === 4) {
+          if (this.aborted) {
+            reject(new UploadAbortedError())
+            return
+          }
           if (xhr.status === 200) {
             const etag = xhr.getResponseHeader('ETag')
             if (!etag) {
@@ -237,6 +267,7 @@ export class Upload {
         },
       })
 
+      this.throwIfAborted()
       await this.complete(createFileResponse, uploadedParts)
     } catch (e) {
       const error = e instanceof Error ? e : new Error('Upload failed')

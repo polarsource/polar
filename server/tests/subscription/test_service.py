@@ -2911,6 +2911,13 @@ class TestUpdate:
             updated,
         )
 
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(updated.id)
+        assert event.user_metadata["product_id"] == str(new_product.id)
+        assert event.user_metadata["discount_id"] == str(discount_percentage_50.id)
+
     async def test_combined_update_product_discount_next_period(
         self,
         session: AsyncSession,

@@ -378,7 +378,10 @@ class BenefitSlackSharedChannelService(
         while True:
             try:
                 result = await self._client.conversations_list(
-                    bot_token=bot_token, cursor=cursor, types=types
+                    bot_token=bot_token,
+                    cursor=cursor,
+                    types=types,
+                    exclude_archived=False,
                 )
             except httpx.HTTPError as e:
                 raise BenefitRetriableError() from e
@@ -398,6 +401,15 @@ class BenefitSlackSharedChannelService(
                 channel_id = channel.get("id")
                 if not isinstance(channel_id, str):
                     continue
+
+                if channel.get("is_archived"):
+                    unarchived = await self._unarchive_channel(
+                        bot_token=bot_token,
+                        channel=channel_id,
+                        bound_logger=bound_logger,
+                    )
+                    if not unarchived:
+                        return None
 
                 if channel.get("is_private"):
                     if not channel.get("is_member"):
@@ -442,6 +454,30 @@ class BenefitSlackSharedChannelService(
 
         bound_logger.info(
             "Slack public channel join skipped",
+            channel_id=channel,
+            error=result.get("error"),
+        )
+        return False
+
+    async def _unarchive_channel(
+        self,
+        *,
+        bot_token: str,
+        channel: str,
+        bound_logger: Any,
+    ) -> bool:
+        try:
+            result = await self._client.conversations_unarchive(
+                bot_token=bot_token, channel=channel
+            )
+        except httpx.HTTPError as e:
+            raise BenefitRetriableError() from e
+
+        if result.get("ok") or result.get("error") == "not_archived":
+            return True
+
+        bound_logger.info(
+            "Slack channel unarchive skipped",
             channel_id=channel,
             error=result.get("error"),
         )

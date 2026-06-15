@@ -195,6 +195,32 @@ class TestCheckUrlReachable:
         assert result.error is not None
 
     @pytest.mark.asyncio
+    async def test_malformed_redirect_location(self) -> None:
+        """A malformed `Location` (e.g. invalid port) is unreachable, not a 500.
+
+        `response.url.join(location)` raises `httpx.InvalidURL` for such
+        headers; since that isn't an `httpx.HTTPError`, it must be converted
+        to a graceful `reachable=False` result rather than escaping.
+        """
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            if str(request.url) == "https://example.com/":
+                return httpx.Response(
+                    302, headers={"location": "https://example.com:abc/login"}
+                )
+            raise AssertionError(f"should not follow redirect to {request.url}")
+
+        with patch(
+            "anyio.getaddrinfo",
+            new=AsyncMock(return_value=_fake_getaddrinfo("93.184.216.34")),
+        ):
+            with _mock_transport(handler):
+                result = await check_url_reachable("https://example.com")
+
+        assert result.reachable is False
+        assert result.error is not None
+
+    @pytest.mark.asyncio
     async def test_unreachable_on_4xx(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(404)

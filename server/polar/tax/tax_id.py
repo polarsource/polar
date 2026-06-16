@@ -1,4 +1,3 @@
-import json
 import re
 from collections.abc import Sequence
 from enum import StrEnum
@@ -507,10 +506,8 @@ class TaxIDType(TypeDecorator[Any]):
 
     def process_result_value(self, value: Any, dialect: Dialect) -> Any:
         if value is not None:
-            # Handle legacy double-serialized values (stored as JSON strings)
-            if isinstance(value, str):
-                value = json.loads(value)
-            return tuple(value)
+            tax_id, tax_id_type = value
+            return (tax_id, TaxIDFormat(tax_id_type))
         return value
 
 

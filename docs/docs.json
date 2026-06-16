@@ -33,7 +33,7 @@
         "groups": [
           {
             "group": "Bootup",
-            "pages": ["introduction", "migrate", "migrate-away"]
+            "pages": ["introduction", "migrate"]
           },
           {
             "group": "Features",
@@ -205,7 +205,8 @@
               "merchant-of-record/fees",
               "merchant-of-record/supported-countries",
               "merchant-of-record/acceptable-use",
-              "merchant-of-record/account-reviews"
+              "merchant-of-record/account-reviews",
+              "migrate-away"
             ]
           }
         ]

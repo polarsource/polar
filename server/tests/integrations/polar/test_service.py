@@ -660,8 +660,11 @@ class TestApplySupport:
         plain_update_tenant_tier_mock.assert_awaited_once_with(
             tenant_external_id=str(ORG_A), tier_external_id=None
         )
-        # No plain_tier_external_id on the grant -> free (NULL) on the org.
-        assert organization_repository_mock.get_by_id.return_value.support_tier is None
+
+        assert (
+            organization_repository_mock.get_by_id.return_value.support_tier
+            == SupportTier.pro
+        )
 
     async def test_active_grant_with_plain_tier(
         self,
@@ -687,61 +690,6 @@ class TestApplySupport:
         assert (
             organization_repository_mock.get_by_id.return_value.support_tier
             == SupportTier.pro
-        )
-
-    async def test_plain_startup_tier_maps_to_growth(
-        self,
-        session_mock: AsyncSession,
-        organization_repository_mock: MagicMock,
-        plain_update_tenant_tier_mock: AsyncMock,
-    ) -> None:
-        # Names diverge: Plain's "startup" is our growth. Plain still gets "startup".
-        grant = _make_grant(
-            metadata={
-                "type": "support",
-                "level": "3",
-                "slack": "true",
-                "prioritized": "true",
-                "plain_tier_external_id": "startup",
-            }
-        )
-
-        await polar_self._apply_support(session_mock, ORG_A, grant)
-
-        plain_update_tenant_tier_mock.assert_awaited_once_with(
-            tenant_external_id=str(ORG_A), tier_external_id="startup"
-        )
-        assert (
-            organization_repository_mock.get_by_id.return_value.support_tier
-            == SupportTier.growth
-        )
-
-    async def test_unknown_plain_tier_maps_to_enterprise(
-        self,
-        session_mock: AsyncSession,
-        organization_repository_mock: MagicMock,
-        plain_update_tenant_tier_mock: AsyncMock,
-    ) -> None:
-        # Bespoke/unrecognized tier id -> enterprise (open universe), but Plain
-        # keeps full fidelity with the raw id.
-        grant = _make_grant(
-            metadata={
-                "type": "support",
-                "level": "3",
-                "slack": "true",
-                "prioritized": "true",
-                "plain_tier_external_id": "bespoke-deal",
-            }
-        )
-
-        await polar_self._apply_support(session_mock, ORG_A, grant)
-
-        plain_update_tenant_tier_mock.assert_awaited_once_with(
-            tenant_external_id=str(ORG_A), tier_external_id="bespoke-deal"
-        )
-        assert (
-            organization_repository_mock.get_by_id.return_value.support_tier
-            == SupportTier.enterprise
         )
 
     async def test_no_grant_unsets_tier(
@@ -770,23 +718,6 @@ class TestApplySupport:
         await polar_self._apply_support(session_mock, ORG_A, None)
 
         # Plain gets the default tier; the org stays NULL (the two agree).
-        plain_update_tenant_tier_mock.assert_awaited_once_with(
-            tenant_external_id=str(ORG_A), tier_external_id="free"
-        )
-        assert organization_repository_mock.get_by_id.return_value.support_tier is None
-
-    async def test_grant_without_tier_falls_back_to_default(
-        self,
-        session_mock: AsyncSession,
-        organization_repository_mock: MagicMock,
-        plain_update_tenant_tier_mock: AsyncMock,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        monkeypatch.setattr(settings, "PLAIN_DEFAULT_TIER_EXTERNAL_ID", "free")
-        grant = _make_support_grant()
-
-        await polar_self._apply_support(session_mock, ORG_A, grant)
-
         plain_update_tenant_tier_mock.assert_awaited_once_with(
             tenant_external_id=str(ORG_A), tier_external_id="free"
         )
@@ -828,31 +759,14 @@ class TestApplySupport:
 
 
 class TestSupportTier:
-    def test_from_plain_external_id_known(self) -> None:
-        assert SupportTier.from_plain_external_id("pro") == SupportTier.pro
-        # Names diverge: Plain's "startup" is our growth.
-        assert SupportTier.from_plain_external_id("startup") == SupportTier.growth
-        assert SupportTier.from_plain_external_id("scale") == SupportTier.scale
+    def test_from_level_known(self) -> None:
+        assert SupportTier.from_level(2) == SupportTier.pro
+        assert SupportTier.from_level(3) == SupportTier.growth
+        assert SupportTier.from_level(4) == SupportTier.scale
 
-    def test_from_plain_external_id_unknown_is_enterprise(self) -> None:
-        assert SupportTier.from_plain_external_id("bespoke") == SupportTier.enterprise
-
-    @pytest.mark.parametrize("value", [None, ""])
-    def test_from_plain_external_id_empty_is_none(self, value: str | None) -> None:
-        assert SupportTier.from_plain_external_id(value) is None
-
-    def test_rank_follows_declaration_order(self) -> None:
-        assert (
-            SupportTier.free.rank
-            < SupportTier.pro.rank
-            < SupportTier.growth.rank
-            < SupportTier.scale.rank
-            < SupportTier.enterprise.rank
-        )
-
-    def test_coalesce_treats_none_as_free(self) -> None:
-        assert SupportTier.coalesce(None) == SupportTier.free
-        assert SupportTier.coalesce(SupportTier.scale) == SupportTier.scale
+    @pytest.mark.parametrize("level", [None, 0, 1, 5, 99])
+    def test_from_level_unknown_or_none_is_none(self, level: int | None) -> None:
+        assert SupportTier.from_level(level) is None
 
 
 @pytest.mark.asyncio

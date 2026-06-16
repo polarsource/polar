@@ -9,7 +9,7 @@ from polar.kit.repository import (
 )
 from polar.models import Feedback
 from polar.models.feedback import FeedbackStatus, FeedbackType
-from polar.models.organization import Organization, support_tier_sql_rank
+from polar.models.organization import Organization
 
 
 class FeedbackRepository(
@@ -27,12 +27,14 @@ class FeedbackRepository(
             # Opt-in: highest support tier first, recency as the tiebreaker.
             # Correlated scalar subquery keeps the joinedload(organization) the
             # caller adds untouched.
-            tier_rank = (
-                select(support_tier_sql_rank(Organization.support_tier))
+            tier_level = (
+                select(Organization.support_tier)
                 .where(Organization.id == Feedback.organization_id)
                 .scalar_subquery()
             )
-            return statement.order_by(tier_rank.desc(), Feedback.created_at.desc())
+            return statement.order_by(
+                tier_level.desc().nullslast(), Feedback.created_at.desc()
+            )
         return statement.order_by(Feedback.created_at.desc())
 
     async def get_type_counts(self, status: FeedbackStatus) -> dict[FeedbackType, int]:

@@ -11,7 +11,6 @@ from tagflow import tag, text
 from polar.file.service import file as file_service
 from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Organization, User
-from polar.models.organization import support_tier_sql_rank
 from polar.models.organization_review import OrganizationReview
 from polar.models.support_case import ReviewAppealSupportCase, SupportCaseAttachment
 from polar.models.user_session import UserSession
@@ -258,7 +257,7 @@ async def list_cases(
     order_by: tuple[Any, ...]
     if sort == "tier":
         order_by = (
-            support_tier_sql_rank(Organization.support_tier).desc(),
+            Organization.support_tier.desc().nullslast(),
             ReviewAppealSupportCase.created_at.desc(),
         )
     else:

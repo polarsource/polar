@@ -954,7 +954,6 @@ class PolarSelfService:
         effective_tier_external_id = (
             plain_tier_external_id or settings.PLAIN_DEFAULT_TIER_EXTERNAL_ID
         )
-        support_tier = SupportTier.from_plain_external_id(plain_tier_external_id)
 
         with logfire.span(
             "polar_self.webhook.support.applied",
@@ -964,20 +963,14 @@ class PolarSelfService:
             prioritized=prioritized,
             plain_tier_external_id=plain_tier_external_id,
             effective_tier_external_id=effective_tier_external_id,
-            support_tier=support_tier,
         ):
-            # Denormalize the tier onto the org for internal triage (review queue,
-            # support/feedback panels). The benefit grant stays the source of
-            # truth; NULL = free, so a revoked grant resets to NULL.
             organization_repository = OrganizationRepository.from_session(session)
             organization = await organization_repository.get_by_id(
                 organization_id, include_blocked=True
             )
             if organization is not None:
-                organization.support_tier = support_tier
+                organization.support_tier = SupportTier.from_level(level)
 
-            # Plain keeps receiving the raw tier id (full fidelity for bespoke
-            # tiers); org NULL <=> Plain's default tier.
             await plain_service.update_tenant_tier(
                 tenant_external_id=str(organization_id),
                 tier_external_id=effective_tier_external_id,

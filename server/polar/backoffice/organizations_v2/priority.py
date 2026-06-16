@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from polar.models import Organization
-from polar.models.organization import SupportTier
 from polar.organization_review.schemas import PaymentMetrics
 
 # Aging: 2.5 pts per day, capped at 50.
@@ -44,12 +43,10 @@ FAST_MOVER_MIN_PAYMENTS = 25
 # A flat boost for having any held payout, regardless of how many.
 HELD_PAYOUT_PTS = 25.0
 
-# Support tier (SLA): a paying merchant shouldn't languish in review. A modest,
-# ordinal-scaled nudge — capped below the risk/payment/fast-mover signals so it
-# orders *within* a risk band but never lets "they paid" outrank real risk or
-# aging. free=0, pro=5, growth=10, scale/enterprise=15.
-SUPPORT_TIER_PTS_PER_RANK = 5.0
-SUPPORT_TIER_MAX_PTS = 15.0
+# Support tier (SLA): a paying merchant shouldn't languish in review. A modest
+# nudge keyed off the benefit level (pro=2, growth=3, scale=4)
+# NULL/free=0, pro=5, growth=10, scale=15.
+SUPPORT_TIER_PTS_PER_LEVEL = 5.0
 
 
 @dataclass
@@ -142,9 +139,11 @@ def _held_payout_component(held_payout_count: int) -> float:
 
 
 def _support_tier_component(org: Organization) -> float:
-    # Ordinal-scaled SLA nudge; NULL (free) contributes nothing.
-    tier = SupportTier.coalesce(org.support_tier)
-    return min(tier.rank * SUPPORT_TIER_PTS_PER_RANK, SUPPORT_TIER_MAX_PTS)
+    # SLA nudge scaled by levels above the free floor; NULL (free) adds nothing.
+    level = org.support_tier
+    if level is None:
+        return 0.0
+    return (level - 1) * SUPPORT_TIER_PTS_PER_LEVEL
 
 
 def compute(

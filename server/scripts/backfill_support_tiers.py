@@ -32,12 +32,12 @@ class BackfillResult:
 
 
 async def resolve_support_tier(organization_id: uuid.UUID) -> SupportTier | None:
-    """Derive an org's support tier from its active Polar support grant.
+    """Derive an org's support level from its active Polar support grant.
 
-    The same mapping the benefit-grant webhook applies, but read-only: no DB
-    write and no Plain push. The webhook only fires on future grant changes, so
-    this populates the column for existing paying orgs. Returns None (free)
-    when there's no Polar customer or no support grant.
+    The same value the benefit-grant webhook stores, but read-only: no DB write
+    and no Plain push. The webhook only fires on future grant changes, so this
+    populates the column for existing paying orgs. Returns None (free) when
+    there's no Polar customer or no support grant.
     """
     customer = await get_client().get_customer_by_external_id_or_none(
         str(organization_id)
@@ -47,10 +47,10 @@ async def resolve_support_tier(organization_id: uuid.UUID) -> SupportTier | None
     grant = await polar_self_service._fetch_active_grant(customer.id, "support")
     if grant is None:
         return None
-    _, _, _, plain_tier_external_id = polar_self_service._extract_support(
+    level, _, _, _ = polar_self_service._extract_support(
         grant.benefit.metadata or {}, grant.benefit_id
     )
-    return SupportTier.from_plain_external_id(plain_tier_external_id)
+    return SupportTier.from_level(level)
 
 
 async def _process_organization(
@@ -86,7 +86,8 @@ async def _process_organization(
 
         if dry_run:
             typer.echo(
-                f"  Would set {organization_name} ({organization_id}) -> {tier.value}"
+                f"  Would set {organization_name} ({organization_id}) "
+                f"-> {tier.get_display_name()}"
             )
             async with result_lock:
                 result.tiers_set += 1

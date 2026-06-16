@@ -17,7 +17,6 @@ from polar.backoffice.organizations_v2.priority import (
     AGING_DAILY_PTS,
     AGING_MAX_PTS,
     HELD_PAYOUT_PTS,
-    SUPPORT_TIER_MAX_PTS,
     compute,
 )
 from polar.models.organization import SupportTier
@@ -51,7 +50,7 @@ def _org(
     created_days_ago: int = 100,
     days_in_status: int = 0,
     total_balance: int | None = 0,
-    support_tier: SupportTier | None = None,
+    support_tier: int | None = None,
 ) -> Any:
     """Build a fake Organization with just the timestamps the formula reads.
 
@@ -98,35 +97,20 @@ class TestAgingComponent:
 
 class TestSupportTierComponent:
     def test_free_or_null_contributes_nothing(self) -> None:
+        # Free has no grant — it's stored as NULL (None).
         assert compute(_org(), now=NOW).support_tier_pts == 0.0
-        assert (
-            compute(_org(support_tier=SupportTier.free), now=NOW).support_tier_pts
-            == 0.0
-        )
+        assert compute(_org(support_tier=None), now=NOW).support_tier_pts == 0.0
 
-    def test_ordinal_scaled(self) -> None:
+    def test_level_scaled(self) -> None:
         assert compute(
             _org(support_tier=SupportTier.pro), now=NOW
         ).support_tier_pts == pytest.approx(5.0)
         assert compute(
             _org(support_tier=SupportTier.growth), now=NOW
         ).support_tier_pts == pytest.approx(10.0)
-
-    def test_caps_at_max(self) -> None:
         assert compute(
             _org(support_tier=SupportTier.scale), now=NOW
-        ).support_tier_pts == pytest.approx(SUPPORT_TIER_MAX_PTS)
-        assert compute(
-            _org(support_tier=SupportTier.enterprise), now=NOW
-        ).support_tier_pts == pytest.approx(SUPPORT_TIER_MAX_PTS)
-
-    def test_never_outranks_aging(self) -> None:
-        # A fresh top-tier org (15) must not beat a moderately-stale free org (aging 25).
-        enterprise_fresh = compute(
-            _org(days_in_status=0, support_tier=SupportTier.enterprise), now=NOW
-        )
-        aged_free = compute(_org(days_in_status=10), now=NOW)
-        assert aged_free.priority > enterprise_fresh.priority
+        ).support_tier_pts == pytest.approx(15.0)
 
 
 class TestRiskComponent:

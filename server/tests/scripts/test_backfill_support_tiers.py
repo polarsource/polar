@@ -97,7 +97,7 @@ class TestResolveSupportTier:
         grant = _make_grant(
             metadata={
                 "type": "support",
-                "level": "2",
+                "level": "4",
                 "slack": "false",
                 "prioritized": "true",
                 "plain_tier_external_id": "scale",

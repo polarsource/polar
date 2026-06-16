@@ -10,6 +10,7 @@ import { BillingBenefitGrants } from '@/components/Settings/Billing/BillingBenef
 import { BillingOrdersTable } from '@/components/Settings/Billing/BillingOrdersTable'
 import { BillingPaymentMethods } from '@/components/Settings/Billing/BillingPaymentMethods'
 import { BillingSubscriptionCard } from '@/components/Settings/Billing/BillingSubscriptionCard'
+import { SandboxPreviewAccessNotice } from '@/components/Settings/Billing/SandboxPreviewAccessNotice'
 import { StartupProgramCallout } from '@/components/Settings/Billing/StartupProgramCallout'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import { LoadingBox } from '@/components/Shared/LoadingBox'
@@ -26,6 +27,7 @@ import {
 
 import { PolarEmbedPaymentMethod } from '@polar-sh/checkout/payment-method'
 import { usePaymentMethodRedirectResult } from '@polar-sh/checkout/react/payment-method'
+import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { useQueryClient } from '@tanstack/react-query'
@@ -124,6 +126,17 @@ export default function BillingPage({
         title="Billing"
       >
         <AccessRestricted message="You don't have permission to manage billing for this organization. Ask an admin if you need access." />
+      </DashboardBody>
+    )
+  }
+
+  if (CONFIG.IS_SANDBOX) {
+    return (
+      <DashboardBody
+        wrapperClassName="max-w-(--breakpoint-md)!"
+        title="Billing"
+      >
+        <SandboxPreviewAccessNotice organization={organization} />
       </DashboardBody>
     )
   }

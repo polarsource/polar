@@ -108,12 +108,13 @@ jobs:
 
       - name: Deploy Backend to Render
         run: |
+          TAG="sha-${GITHUB_SHA::7}"
           ./.github/workflows/deploy_server.sh \
-            "${{ inputs.docker-digest }}" \
+            "$TAG" \
             "${{ inputs.has-migrations }}" \
             "${{ inputs.render-api-service-id }}" \
             "${{ inputs.render-worker-service-ids }}" \
-            "${{ inputs.docker-digest-playwright }}" \
+            "$TAG" \
             "${{ inputs.render-playwright-worker-service-ids }}"
         env:
           RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
@@ -140,13 +141,16 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v6.0.3
+      - name: Resolve image tag
+        id: tag
+        run: echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
       - uses: getsentry/action-release@v3.7.0
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
         with:
           environment: ${{ inputs.environment }}
-          dist: ${{ inputs.docker-digest }}
+          dist: ${{ steps.tag.outputs.tag }}
           release: ${{ github.sha }}
           projects: server
           working_directory: ./server

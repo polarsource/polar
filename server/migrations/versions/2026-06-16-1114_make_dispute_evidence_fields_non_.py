@@ -1,7 +1,7 @@
 """make dispute evidence fields non nullable
 
 Revision ID: 8759ef42733b
-Revises: 9cc1600f3dab
+Revises: 01cce9b1fcc2
 Create Date: 2026-06-16 11:14:51.222955
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "8759ef42733b"
-down_revision = "9cc1600f3dab"
+down_revision = "01cce9b1fcc2"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

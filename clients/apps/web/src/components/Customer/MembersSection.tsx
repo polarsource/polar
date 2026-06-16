@@ -46,8 +46,7 @@ export const MembersSection = ({
   // Only show Members section for team customers when member model is enabled
   const isEnabled =
     organization?.feature_settings?.member_model_enabled &&
-    organization?.feature_settings?.seat_based_pricing_enabled &&
-    customer.type === 'team'
+    organization?.feature_settings?.seat_based_pricing_enabled
 
   const members = useMemo(
     () => membersData?.pages.flatMap((page) => page.items) ?? [],

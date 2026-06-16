@@ -68,7 +68,6 @@ from polar.postgres import AsyncSession
 from polar.product.guard import (
     MeteredPrice,
     is_fixed_price,
-    is_free_price,
     is_metered_price,
     is_seat_price,
     is_static_price,
@@ -1059,7 +1058,7 @@ class TestCycle:
             await subscription_service.cycle(session, ctx, subscription)
 
         price = product_recurring_free_price.prices[0]
-        assert is_free_price(price)
+        assert price.is_free
         billing_entry_repository = BillingEntryRepository.from_session(session)
         billing_entries = await billing_entry_repository.get_pending_by_subscription(
             subscription.id

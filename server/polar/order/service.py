@@ -100,7 +100,6 @@ from polar.payment_method.service import payment_method as payment_method_servic
 from polar.product.guard import (
     is_custom_price,
     is_fixed_price,
-    is_free_price,
     is_seat_price,
     is_static_price,
 )
@@ -943,19 +942,13 @@ class OrderService:
                     }
                 ]
             )
-        if any(
-            not (is_fixed_price(price) or is_free_price(price))
-            for price in static_prices
-        ):
+        if any(not is_fixed_price(price) for price in static_prices):
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
                         "loc": ("body", "product_id"),
-                        "msg": (
-                            "Off-session charges only support fixed-price and "
-                            "free products."
-                        ),
+                        "msg": "Off-session charges only support fixed-price products.",
                         "input": payload.product_id,
                     }
                 ]

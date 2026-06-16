@@ -51,7 +51,6 @@ class ProductPriceType(StrEnum):
 class ProductPriceAmountType(StrEnum):
     fixed = "fixed"
     custom = "custom"
-    free = "free"
     metered_unit = "metered_unit"
     seat_based = "seat_based"
 
@@ -153,7 +152,6 @@ class ProductPrice(RecordModel):
     def is_static(self) -> bool:
         return self.amount_type in {
             ProductPriceAmountType.fixed,
-            ProductPriceAmountType.free,
             ProductPriceAmountType.custom,
             ProductPriceAmountType.seat_based,
         }
@@ -164,7 +162,6 @@ class ProductPrice(RecordModel):
         return cls.amount_type.in_(
             (
                 ProductPriceAmountType.fixed,
-                ProductPriceAmountType.free,
                 ProductPriceAmountType.custom,
                 ProductPriceAmountType.seat_based,
             )
@@ -297,35 +294,6 @@ class LegacyRecurringProductPriceCustom(
 ):
     __mapper_args__ = {
         "polymorphic_identity": f"{LEGACY_IDENTITY_PREFIX}{ProductPriceAmountType.custom}",
-        "polymorphic_load": "inline",
-    }
-
-
-class _ProductPriceFree(ProductPrice):
-    amount_type: Mapped[Literal[ProductPriceAmountType.free]] = mapped_column(
-        use_existing_column=True, default=ProductPriceAmountType.free
-    )
-
-    @property
-    def is_free(self) -> bool:
-        return True
-
-    __mapper_args__ = {
-        "polymorphic_abstract": True,
-        "polymorphic_load": "inline",
-    }
-
-
-class ProductPriceFree(NewProductPrice, _ProductPriceFree):
-    __mapper_args__ = {
-        "polymorphic_identity": ProductPriceAmountType.free,
-        "polymorphic_load": "inline",
-    }
-
-
-class LegacyRecurringProductPriceFree(LegacyRecurringProductPrice, _ProductPriceFree):
-    __mapper_args__ = {
-        "polymorphic_identity": f"{LEGACY_IDENTITY_PREFIX}{ProductPriceAmountType.free}",
         "polymorphic_load": "inline",
     }
 

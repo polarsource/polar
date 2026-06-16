@@ -95,7 +95,6 @@ from polar.product.schemas import (
     ProductCreateOneTime,
     ProductCreateRecurring,
     ProductPriceFixedCreate,
-    ProductPriceFreeCreate,
     ProductPriceMeteredUnitCreate,
     ProductPriceSeatBasedCreate,
     ProductPriceSeatTier,
@@ -951,18 +950,13 @@ async def _seed_polar_self_billing_catalog(
         assert isinstance(benefit_descriptions, list)
         assert price_amount is None or isinstance(price_amount, int)
 
-        price_create: ProductPriceFixedCreate | ProductPriceFreeCreate
-        if price_amount is None:
-            price_create = ProductPriceFreeCreate(
-                amount_type=ProductPriceAmountType.free,
-            )
-        else:
-            price_create = ProductPriceFixedCreate(
-                amount_type=ProductPriceAmountType.fixed,
-                tax_behavior=TaxBehaviorOption.exclusive,
-                price_amount=price_amount,
-                price_currency=PresentmentCurrency.usd,
-            )
+        price_create: ProductPriceFixedCreate
+        price_create = ProductPriceFixedCreate(
+            amount_type=ProductPriceAmountType.fixed,
+            tax_behavior=TaxBehaviorOption.exclusive,
+            price_amount=0 if price_amount is None else price_amount,
+            price_currency=PresentmentCurrency.usd,
+        )
 
         product = await product_service.create(
             session=session,

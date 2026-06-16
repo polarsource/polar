@@ -76,7 +76,6 @@ from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceCustom,
     ProductPriceFixed,
-    ProductPriceFree,
     ProductPriceSeatUnit,
 )
 from polar.models.subscription import SubscriptionStatus
@@ -664,7 +663,8 @@ class TestCreate:
         discount_fixed_once: Discount,
     ) -> None:
         price = product_one_time_free_price.prices[0]
-        assert isinstance(price, ProductPriceFree)
+        assert isinstance(price, ProductPriceFixed)
+        assert price.is_free
 
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.create(
@@ -756,7 +756,8 @@ class TestCreate:
         product_one_time_free_price: Product,
     ) -> None:
         price = product_one_time_free_price.prices[0]
-        assert isinstance(price, ProductPriceFree)
+        assert isinstance(price, ProductPriceFixed)
+        assert price.is_free
         mocker.patch.object(
             checkout_service, "_get_ip_country", return_value=ip_country
         )
@@ -3212,7 +3213,8 @@ class TestUpdate:
         )
 
         price = checkout_one_time_free.product_price
-        assert isinstance(price, ProductPriceFree)
+        assert isinstance(price, ProductPriceFixed)
+        assert price.is_free
         assert checkout.amount == 0
         assert checkout.currency == "usd"
 

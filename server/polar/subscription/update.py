@@ -46,11 +46,14 @@ def _collect_proratable_amounts(
 ) -> list[tuple[ProductPrice, int]]:
     """Pair each proratable price with its base amount.
 
-    Only fixed and seat prices are prorated; free, custom and metered prices are
-    skipped.
+    Only fixed and seat prices with a non-zero amount are prorated; free (zero-amount),
+    custom and metered prices are skipped, as they would only contribute a meaningless
+    zero proration entry.
     """
     priced_entries: list[tuple[ProductPrice, int]] = []
     for price in prices:
+        if price.is_free:
+            continue
         if is_fixed_price(price):
             priced_entries.append((price, price.price_amount))
         elif is_seat_price(price) and seats is not None:

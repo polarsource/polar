@@ -20,7 +20,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
   const staticPrice = product.prices.find(
     ({ amount_type, price_currency }) =>
       price_currency === currency &&
-      ['fixed', 'custom', 'free', 'seat_based'].includes(amount_type),
+      ['fixed', 'custom', 'seat_based'].includes(amount_type),
   )
 
   if (!staticPrice) {

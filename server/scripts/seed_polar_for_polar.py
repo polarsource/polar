@@ -38,7 +38,6 @@ from polar_sdk.models import (
     ProductBenefitsUpdate,
     ProductCreateRecurring,
     ProductPriceFixedCreate,
-    ProductPriceFreeCreate,
     ProductUpdate,
     ProductVisibility,
     PublicSubscriptionProrationBehavior,
@@ -303,9 +302,10 @@ async def _seed_products(
                     f"with {len(desired_benefit_ids)} benefit(s)"
                 )
                 continue
-            price: ProductPriceFixedCreate | ProductPriceFreeCreate
+            price: ProductPriceFixedCreate
             if price_amount is None:
-                price = ProductPriceFreeCreate()
+                # A free price is a fixed price with an amount of 0.
+                price = ProductPriceFixedCreate(price_amount=0)
             else:
                 price = ProductPriceFixedCreate(price_amount=price_amount)
             request = ProductCreateRecurring(

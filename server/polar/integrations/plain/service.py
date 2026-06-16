@@ -83,6 +83,10 @@ log = structlog.get_logger(__name__)
 
 PLAIN_WORKSPACE_ID = "w_01JE9TRRX9KT61D8P2CH77XDQM"
 
+# Plain caches customer cards for this duration. Keep it short so dynamic fields
+# like the organization status stay in sync with the dashboard.
+CUSTOMER_CARD_TTL_SECONDS = 60 * 60
+
 
 def plain_thread_url(thread_id: str) -> str:
     return f"https://app.plain.com/workspace/{PLAIN_WORKSPACE_ID}/thread/{thread_id}"
@@ -497,7 +501,7 @@ class PlainService:
 
         return CustomerCard(
             key=CustomerCardKey.user,
-            timeToLiveSeconds=86400,
+            timeToLiveSeconds=CUSTOMER_CARD_TTL_SECONDS,
             components=[
                 component.model_dump(by_alias=True, exclude_none=True)
                 for component in components
@@ -552,7 +556,7 @@ class PlainService:
 
         return CustomerCard(
             key=CustomerCardKey.organization,
-            timeToLiveSeconds=86400,
+            timeToLiveSeconds=CUSTOMER_CARD_TTL_SECONDS,
             components=[
                 component.model_dump(by_alias=True, exclude_none=True)
                 for component in components
@@ -594,6 +598,25 @@ class PlainService:
                 ComponentContainerContentInput(
                     component_divider=ComponentDividerInput(
                         divider_spacing_size=ComponentDividerSpacingSize.M
+                    )
+                ),
+                ComponentContainerContentInput(
+                    component_row=ComponentRowInput(
+                        row_main_content=[
+                            ComponentRowContentInput(
+                                component_text=ComponentTextInput(
+                                    text="Status",
+                                    text_size=ComponentTextSize.S,
+                                    text_color=ComponentTextColor.MUTED,
+                                )
+                            ),
+                            ComponentRowContentInput(
+                                component_text=ComponentTextInput(
+                                    text=organization.status.get_display_name(),
+                                )
+                            ),
+                        ],
+                        row_aside_content=[],
                     )
                 ),
                 ComponentContainerContentInput(
@@ -864,7 +887,7 @@ class PlainService:
 
         return CustomerCard(
             key=CustomerCardKey.customer,
-            timeToLiveSeconds=86400,
+            timeToLiveSeconds=CUSTOMER_CARD_TTL_SECONDS,
             components=[
                 component.model_dump(by_alias=True, exclude_none=True)
                 for component in components
@@ -1137,7 +1160,7 @@ class PlainService:
 
         return CustomerCard(
             key=CustomerCardKey.order,
-            timeToLiveSeconds=86400,
+            timeToLiveSeconds=CUSTOMER_CARD_TTL_SECONDS,
             components=[
                 component.model_dump(by_alias=True, exclude_none=True)
                 for component in components
@@ -1279,7 +1302,7 @@ class PlainService:
 
         return CustomerCard(
             key=CustomerCardKey.snippets,
-            timeToLiveSeconds=86400,
+            timeToLiveSeconds=CUSTOMER_CARD_TTL_SECONDS,
             components=[
                 component.model_dump(by_alias=True, exclude_none=True)
                 for component in components

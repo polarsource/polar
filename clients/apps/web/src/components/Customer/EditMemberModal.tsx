@@ -112,7 +112,7 @@ export const EditMemberModal = ({
           </Box>
           <Button
             type="submit"
-            className="self-start"
+            className="self-end"
             loading={updateMember.isPending}
           >
             Save Member

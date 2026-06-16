@@ -414,7 +414,9 @@ customers_search_vector_update_function = PGFunction(
     definition="""
     RETURNS trigger AS $$
     BEGIN
-        NEW.search_vector := to_tsvector('simple', coalesce(NEW.name, ''));
+        NEW.search_vector :=
+            setweight(to_tsvector('simple', coalesce(NEW.name, '')), 'A') ||
+            setweight(to_tsvector('simple', coalesce(NEW.email, '')), 'A');
         RETURN NEW;
     END
     $$ LANGUAGE plpgsql;

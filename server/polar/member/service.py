@@ -247,6 +247,44 @@ class MemberService:
             new_email=customer.email,
         )
 
+    async def sync_customer_name_with_member(
+        self, session: AsyncSession, customer: Customer
+    ) -> None:
+        """Mirror customer.name onto the member that represents the customer
+        itself — the one auto-created with the same email as the customer.
+
+        A team customer always has exactly one member whose email matches
+        customer.email (its "self" member, independent of who holds the owner
+        role). When the customer is renamed, that member's name would otherwise
+        drift, so we keep it in sync. Other team members have their own
+        distinct names and are left untouched."""
+        if customer.email is None:
+            return
+
+        repository = MemberRepository.from_session(session)
+
+        member = await repository.get_by_customer_id_and_email(
+            customer.id, customer.email
+        )
+
+        if member is None:
+            return
+
+        if member.name == customer.name:
+            return
+
+        old_name = member.name
+
+        await repository.update(member, update_dict={"name": customer.name})
+
+        log.info(
+            "member.sync_customer_name_with_member",
+            customer_id=customer.id,
+            member_id=member.id,
+            old_name=old_name,
+            new_name=customer.name,
+        )
+
     async def create_owner_member(
         self,
         session: AsyncSession,

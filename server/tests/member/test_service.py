@@ -1164,3 +1164,145 @@ class TestGetOrCreateByEmail:
         )
 
         assert member.role == MemberRole.owner
+
+
+@pytest.mark.asyncio
+class TestSyncCustomerNameWithMember:
+    async def test_team_customer_syncs_matching_email_member(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="team@example.com",
+            name="New Team Name",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="team@example.com",
+            name="Old Member Name",
+        )
+
+        await member_service.sync_customer_name_with_member(session, customer)
+
+        assert member.name == "New Team Name"
+
+    async def test_matches_member_email_case_insensitively(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="Team@Example.com",
+            name="New Team Name",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="team@example.com",
+            name="Old Member Name",
+        )
+
+        await member_service.sync_customer_name_with_member(session, customer)
+
+        assert member.name == "New Team Name"
+
+    async def test_individual_customer_is_skipped(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="person@example.com",
+            name="New Customer Name",
+        )
+        customer.type = CustomerType.individual
+        await save_fixture(customer)
+
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="person@example.com",
+            name="Old Member Name",
+        )
+
+        await member_service.sync_customer_name_with_member(session, customer)
+
+        assert member.name == "Old Member Name"
+
+    async def test_no_member_for_customer_email_is_noop(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="team@example.com",
+            name="New Team Name",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="someone-else@example.com",
+            name="Old Member Name",
+        )
+
+        await member_service.sync_customer_name_with_member(session, customer)
+
+        assert member.name == "Old Member Name"
+
+    async def test_name_already_in_sync_does_not_update(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="team@example.com",
+            name="Same Name",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="team@example.com",
+            name="Same Name",
+        )
+
+        update_spy = mocker.spy(MemberRepository, "update")
+
+        await member_service.sync_customer_name_with_member(session, customer)
+
+        update_spy.assert_not_called()
+        assert member.name == "Same Name"

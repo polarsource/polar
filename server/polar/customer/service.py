@@ -533,6 +533,9 @@ class CustomerService:
         if email_changed:
             await member_service.sync_owner_email(session, updated_customer)
 
+        if customer_update.name is not None:
+            await member_service.sync_customer_name_with_member(session, updated_customer)
+
         return updated_customer
 
     async def delete(

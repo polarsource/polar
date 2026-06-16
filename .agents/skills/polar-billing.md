@@ -172,9 +172,8 @@ Individual payment transaction.
 
 | ProductPrice Types | Description |
 |-------------------|-------------|
-| `ProductPriceFixed` | Fixed amount |
+| `ProductPriceFixed` | Fixed amount (set `price_amount=0` for free) |
 | `ProductPriceCustom` | Merchant sets at checkout |
-| `ProductPriceFree` | Zero cost |
 | `ProductPriceMeteredUnit` | Pay-per-unit |
 | `ProductPriceSeatUnit` | Per-seat with tiers |
 

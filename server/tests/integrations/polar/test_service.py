@@ -856,45 +856,6 @@ class TestSupportTier:
 
 
 @pytest.mark.asyncio
-class TestResolveSupportTier:
-    async def test_no_customer_returns_none(self, mocker: MockerFixture) -> None:
-        client = MagicMock()
-        client.get_customer_by_external_id_or_none = AsyncMock(return_value=None)
-        mocker.patch("polar.integrations.polar.service.get_client", return_value=client)
-
-        assert await polar_self.resolve_support_tier(ORG_A) is None
-
-    async def test_no_support_grant_returns_none(self, mocker: MockerFixture) -> None:
-        client = MagicMock()
-        client.get_customer_by_external_id_or_none = AsyncMock(
-            return_value=MagicMock(id=_CUSTOMER_ID)
-        )
-        client.list_customer_benefit_grants = AsyncMock(return_value=[])
-        mocker.patch("polar.integrations.polar.service.get_client", return_value=client)
-
-        assert await polar_self.resolve_support_tier(ORG_A) is None
-
-    async def test_resolves_tier_from_active_grant(self, mocker: MockerFixture) -> None:
-        grant = _make_grant(
-            metadata={
-                "type": "support",
-                "level": "2",
-                "slack": "false",
-                "prioritized": "true",
-                "plain_tier_external_id": "scale",
-            }
-        )
-        client = MagicMock()
-        client.get_customer_by_external_id_or_none = AsyncMock(
-            return_value=MagicMock(id=_CUSTOMER_ID)
-        )
-        client.list_customer_benefit_grants = AsyncMock(return_value=[grant])
-        mocker.patch("polar.integrations.polar.service.get_client", return_value=client)
-
-        assert await polar_self.resolve_support_tier(ORG_A) == SupportTier.scale
-
-
-@pytest.mark.asyncio
 class TestHandleBenefitGrantEvent:
     async def test_created_with_transaction_fee_applies_current_state(
         self,

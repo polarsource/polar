@@ -1027,28 +1027,5 @@ class PolarSelfService:
             )
         return matching[0] if matching else None
 
-    async def resolve_support_tier(
-        self, organization_id: uuid.UUID
-    ) -> SupportTier | None:
-        """Derive an org's support tier from its active Polar support grant.
-
-        The same mapping the benefit-grant webhook applies, but read-only: no DB
-        write and no Plain push. Used by the backfill to populate the column for
-        existing paying orgs (the webhook only fires on future grant changes).
-        Returns None (free) when there's no Polar customer or no support grant.
-        """
-        customer = await get_client().get_customer_by_external_id_or_none(
-            str(organization_id)
-        )
-        if customer is None:
-            return None
-        grant = await self._fetch_active_grant(customer.id, "support")
-        if grant is None:
-            return None
-        _, _, _, plain_tier_external_id = self._extract_support(
-            grant.benefit.metadata or {}, grant.benefit_id
-        )
-        return SupportTier.from_plain_external_id(plain_tier_external_id)
-
 
 polar_self = PolarSelfService()

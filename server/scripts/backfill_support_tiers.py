@@ -7,12 +7,14 @@ import typer
 from rich.progress import Progress, TaskID
 
 from polar.config import settings
+from polar.integrations.polar.client import get_client
 from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.db.postgres import (
     AsyncSessionMaker,
     create_async_sessionmaker,
 )
 from polar.models import Organization
+from polar.models.organization import SupportTier
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession, create_async_engine
 
@@ -29,6 +31,28 @@ class BackfillResult:
     error_details: list[tuple[str, str]] = field(default_factory=list)
 
 
+async def resolve_support_tier(organization_id: uuid.UUID) -> SupportTier | None:
+    """Derive an org's support tier from its active Polar support grant.
+
+    The same mapping the benefit-grant webhook applies, but read-only: no DB
+    write and no Plain push. The webhook only fires on future grant changes, so
+    this populates the column for existing paying orgs. Returns None (free)
+    when there's no Polar customer or no support grant.
+    """
+    customer = await get_client().get_customer_by_external_id_or_none(
+        str(organization_id)
+    )
+    if customer is None:
+        return None
+    grant = await polar_self_service._fetch_active_grant(customer.id, "support")
+    if grant is None:
+        return None
+    _, _, _, plain_tier_external_id = polar_self_service._extract_support(
+        grant.benefit.metadata or {}, grant.benefit_id
+    )
+    return SupportTier.from_plain_external_id(plain_tier_external_id)
+
+
 async def _process_organization(
     *,
     organization_id: uuid.UUID,
@@ -43,7 +67,7 @@ async def _process_organization(
 ) -> None:
     async with semaphore:
         try:
-            tier = await polar_self_service.resolve_support_tier(organization_id)
+            tier = await resolve_support_tier(organization_id)
         except Exception:
             async with result_lock:
                 result.errors += 1

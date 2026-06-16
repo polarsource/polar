@@ -220,6 +220,10 @@ class DisputeService:
                 await dispute_case_service.open_case(
                     session, dispute, organization=dispute.payment.organization
                 )
+            elif not await dispute_case_service.is_open(session, case):
+                # Dispute reopened after we'd closed the case (e.g. a prevented
+                # dispute that Stripe escalated back to needs_response).
+                await dispute_case_service.reopen(session, case)
             return
 
         if case is None or not await dispute_case_service.is_open(session, case):

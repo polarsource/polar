@@ -755,6 +755,59 @@ class TestUpsertFromStripeDisputeCase:
         assert case is not None
         assert not await dispute_case_service.is_open(session, case)
 
+    async def test_reopens_case_when_dispute_returns_to_needs_response(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        dispute_transaction_service_mock: MagicMock,
+        refund_service_mock: MagicMock,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        charge_id = "STRIPE_CHARGE_ID"
+        await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        needs_response = build_stripe_dispute(
+            status="needs_response",
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[],
+        )
+        dispute = await dispute_service.upsert_from_stripe(session, needs_response)
+        case = await dispute_case_service.get_case(session, dispute)
+        assert case is not None
+        assert await dispute_case_service.is_open(session, case)
+
+        # Rapid-resolution: dispute becomes prevented and the case is closed.
+        prevented = build_stripe_dispute(
+            status="lost",
+            id=needs_response.id,
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[
+                build_stripe_balance_transaction(
+                    amount=-order.due_amount, reporting_category="dispute", fee=0
+                )
+            ],
+        )
+        dispute = await dispute_service.upsert_from_stripe(session, prevented)
+        assert dispute.status == DisputeStatus.prevented
+        assert not await dispute_case_service.is_open(session, case)
+
+        # Stripe escalates it back to needs_response: the case must reopen.
+        reopened = build_stripe_dispute(
+            status="needs_response",
+            id=needs_response.id,
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[],
+        )
+        dispute = await dispute_service.upsert_from_stripe(session, reopened)
+        assert dispute.status == DisputeStatus.needs_response
+        assert await dispute_case_service.is_open(session, case)
+
     async def test_posts_under_review_message_on_transition(
         self,
         save_fixture: SaveFixture,

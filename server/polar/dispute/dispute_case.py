@@ -78,6 +78,18 @@ class DisputeCaseService:
         repository = SupportCaseMessageRepository.from_session(session)
         return await repository.is_open(case.id)
 
+    async def reopen(
+        self, session: AsyncSession, case: DisputeSupportCase
+    ) -> SupportCaseMessage:
+        """Reopen a closed case when its dispute needs a response again."""
+        return await support_case_service.post_message(
+            session,
+            case,
+            type=SupportCaseMessageType.opened,
+            author_kind=SupportCaseMessageAuthorKind.system,
+            audience=[SupportCaseAudience.merchant],
+        )
+
     async def mark_under_review(
         self, session: AsyncSession, case: DisputeSupportCase
     ) -> SupportCaseMessage:

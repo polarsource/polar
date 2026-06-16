@@ -53,7 +53,10 @@ export const useUpdateMember = (memberId: string, customerId: string) =>
         params: { path: { id: memberId } },
         body,
       }),
-    onSuccess: async () => {
+    onSuccess: async ({ error }) => {
+      if (error) {
+        return
+      }
       getQueryClient().invalidateQueries({
         queryKey: ['members', customerId],
       })

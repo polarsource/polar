@@ -35,27 +35,35 @@ export const EditMemberModal = ({
   const updateMember = useUpdateMember(member.id, customerId)
 
   const handleUpdateMember = (memberUpdate: MemberUpdateForm) => {
-    updateMember.mutateAsync(memberUpdate).then(({ error }) => {
-      if (error) {
-        if (error.detail) {
-          if (isValidationError(error.detail)) {
-            setValidationErrors(error.detail, form.setError)
-          } else {
-            toast({
-              title: 'Member Update Failed',
-              description: `Error updating member ${member.email}: ${error.detail}`,
-            })
+    updateMember
+      .mutateAsync(memberUpdate)
+      .then(({ error }) => {
+        if (error) {
+          if (error.detail) {
+            if (isValidationError(error.detail)) {
+              setValidationErrors(error.detail, form.setError)
+            } else {
+              toast({
+                title: 'Member Update Failed',
+                description: `Error updating member ${member.email}: ${error.detail}`,
+              })
+            }
           }
+          return
         }
-        return
-      }
 
-      toast({
-        title: 'Member Updated',
-        description: `Member ${member.email} updated successfully`,
+        toast({
+          title: 'Member Updated',
+          description: `Member ${member.email} updated successfully`,
+        })
+        onClose()
       })
-      onClose()
-    })
+      .catch(() => {
+        toast({
+          title: 'Member Update Failed',
+          description: `Error updating member ${member.email}. Please try again.`,
+        })
+      })
   }
 
   return (

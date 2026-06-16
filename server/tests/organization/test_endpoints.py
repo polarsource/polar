@@ -314,7 +314,7 @@ class TestUpdateOrganization:
         user_organization: UserOrganization,
     ) -> None:
         organization.feature_settings = {
-            "billing_enabled": True,
+            "preview_access_enabled": True,
         }
         await save_fixture(organization)
 
@@ -322,7 +322,7 @@ class TestUpdateOrganization:
             f"/v1/organizations/{organization.id}",
             json={
                 "feature_settings": {
-                    "billing_enabled": False,
+                    "preview_access_enabled": False,
                     "off_session_charges_enabled": True,
                     "checkout_localization_enabled": True,
                 },
@@ -331,7 +331,7 @@ class TestUpdateOrganization:
 
         assert response.status_code == 200
         feature_settings = response.json()["feature_settings"]
-        assert feature_settings["billing_enabled"] is True
+        assert feature_settings["preview_access_enabled"] is True
         assert feature_settings["off_session_charges_enabled"] is False
         assert feature_settings["checkout_localization_enabled"] is True
 

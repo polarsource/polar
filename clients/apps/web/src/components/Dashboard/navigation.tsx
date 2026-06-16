@@ -360,10 +360,7 @@ const organizationRoutesList = (
       {
         title: 'Billing',
         link: `/dashboard/${org?.slug}/settings/billing`,
-        if:
-          options.canManageBilling &&
-          (CONFIG.ENVIRONMENT === 'production' ||
-            (org?.feature_settings?.billing_enabled ?? false)),
+        if: options.canManageBilling && CONFIG.ENVIRONMENT === 'production',
       },
       {
         title: 'Members',

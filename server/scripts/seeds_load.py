@@ -1573,11 +1573,6 @@ async def create_seed_data(
         organization.details_submitted_at = utc_now()
         organization.set_status(org_data.get("status", OrganizationStatus.CREATED))
         organization.feature_settings = org_data.get("feature_settings", {})
-        if org_data["slug"] != POLAR_ORG_SLUG:
-            organization.feature_settings = {
-                **organization.feature_settings,
-                "billing_enabled": True,
-            }
         if "customer_email_settings" in org_data:
             organization.customer_email_settings = org_data["customer_email_settings"]
         session.add(organization)

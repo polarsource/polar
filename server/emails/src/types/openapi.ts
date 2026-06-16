@@ -300,6 +300,7 @@ export interface components {
       | components['schemas']['BenefitLicenseKeys']
       | components['schemas']['BenefitMeterCredit']
       | components['schemas']['BenefitFeatureFlag']
+      | components['schemas']['BenefitSlackSharedChannel']
     /**
      * BenefitCustom
      * @description A benefit of type `custom`.
@@ -356,7 +357,11 @@ export interface components {
        */
       organization_id: string
       metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitCustomProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitCustomProperties
@@ -422,7 +427,11 @@ export interface components {
        */
       organization_id: string
       metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitDiscordProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitDiscordProperties
@@ -498,7 +507,11 @@ export interface components {
        */
       organization_id: string
       metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitDownloadablesProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /** BenefitDownloadablesProperties */
     BenefitDownloadablesProperties: {
@@ -566,7 +579,11 @@ export interface components {
        */
       organization_id: string
       metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitFeatureFlagProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitFeatureFlagProperties
@@ -629,7 +646,11 @@ export interface components {
        */
       organization_id: string
       metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitGitHubRepositoryProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitGitHubRepositoryProperties
@@ -723,7 +744,11 @@ export interface components {
        */
       organization_id: string
       metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitLicenseKeysProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /** BenefitLicenseKeysProperties */
     BenefitLicenseKeysProperties: {
@@ -794,7 +819,11 @@ export interface components {
        */
       organization_id: string
       metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitMeterCreditProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
     }
     /**
      * BenefitMeterCreditProperties
@@ -811,6 +840,105 @@ export interface components {
        */
       meter_id: string
     }
+    /** BenefitSlackSharedChannel */
+    BenefitSlackSharedChannel: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'slack_shared_channel'
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /**
+       * Selectable
+       * @description Whether the benefit is selectable when creating a product.
+       */
+      selectable: boolean
+      /**
+       * Deletable
+       * @description Whether the benefit is deletable.
+       */
+      deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is deleted.
+       */
+      is_deleted: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the benefit.
+       */
+      organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
+      properties: components['schemas']['BenefitSlackSharedChannelProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
+    }
+    /** BenefitSlackSharedChannelProperties */
+    BenefitSlackSharedChannelProperties: {
+      /**
+       * Slack Integration Id
+       * Format: uuid4
+       * @description Polar Slack integration linked to this benefit.
+       */
+      slack_integration_id: string
+      /**
+       * Channel Name Template
+       * @description Template for the channel name. Supports placeholders: {customer_name}, {customer_email_local}, and {metadata.<key>} for any value stored in customer user metadata.
+       */
+      channel_name_template: string
+      /**
+       * Private
+       * @description Create the channel as private (recommended).
+       * @default true
+       */
+      private: boolean
+      /**
+       * Welcome Message
+       * @description Optional message posted to the channel right after creation.
+       * @default null
+       */
+      welcome_message: string | null
+      /**
+       * Archive On Revoke
+       * @description Archive the channel when the benefit is revoked.
+       * @default true
+       */
+      archive_on_revoke: boolean
+      /**
+       * Team Invitees
+       * @description Slack user IDs from the merchant workspace to invite to every channel created for this benefit.
+       */
+      team_invitees?: string[]
+    }
+    /**
+     * Visibility
+     * @enum {string}
+     */
+    BenefitVisibility: 'draft' | 'private' | 'public'
     /**
      * CustomerCancellationReason
      * @enum {string}
@@ -1905,17 +2033,17 @@ export interface components {
        */
       off_session_charges_enabled: boolean
       /**
-       * Billing Enabled
-       * @description If this organization has billing enabled
-       * @default false
-       */
-      billing_enabled: boolean
-      /**
        * Slack Benefit Enabled
        * @description Enables the slack shared channel benefit
        * @default false
        */
       slack_benefit_enabled: boolean
+      /**
+       * Preview Access Enabled
+       * @description If this organization has preview access to new features enabled
+       * @default false
+       */
+      preview_access_enabled: boolean
     }
     /** OrganizationInviteEmail */
     OrganizationInviteEmail: {

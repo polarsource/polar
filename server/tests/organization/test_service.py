@@ -211,7 +211,6 @@ class TestCreate:
                     "slug": "my-new-organization",
                     "feature_settings": {
                         "checkout_localization_enabled": True,
-                        "billing_enabled": True,
                         "off_session_charges_enabled": True,
                     },
                 }
@@ -3430,7 +3429,7 @@ class TestUpdateFeatureSettings:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        organization.feature_settings = {"billing_enabled": True}
+        organization.feature_settings = {"preview_access_enabled": True}
         await save_fixture(organization)
 
         result = await organization_service.update(
@@ -3439,14 +3438,14 @@ class TestUpdateFeatureSettings:
             OrganizationUpdate.model_validate(
                 {
                     "feature_settings": {
-                        "billing_enabled": False,
+                        "preview_access_enabled": False,
                         "checkout_localization_enabled": True,
                     }
                 }
             ),
         )
 
-        assert result.feature_settings["billing_enabled"] is True
+        assert result.feature_settings["preview_access_enabled"] is True
         assert result.feature_settings["checkout_localization_enabled"] is True
 
     async def test_enable_member_model_enqueues_backfill(

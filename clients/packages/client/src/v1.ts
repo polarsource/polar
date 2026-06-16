@@ -24955,12 +24955,6 @@ export interface components {
        */
       off_session_charges_enabled: boolean
       /**
-       * Billing Enabled
-       * @description If this organization has billing enabled
-       * @default false
-       */
-      billing_enabled: boolean
-      /**
        * Slack Benefit Enabled
        * @description Enables the slack shared channel benefit
        * @default false

@@ -6,6 +6,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.benefit.grant.service import BenefitGrantService
+from polar.dispute.dispute_case import dispute_case as dispute_case_service
 from polar.dispute.service import DisputePaymentNotFoundError
 from polar.dispute.service import dispute as dispute_service
 from polar.enums import PaymentProcessor, TaxProcessor
@@ -614,6 +615,135 @@ class TestUpsertFromStripe:
 
         dispute_transaction_service_mock.create_dispute.assert_awaited_once()
         assert subscription.status == "canceled"
+
+
+@pytest.mark.asyncio
+class TestUpsertFromStripeDisputeCase:
+    async def test_opens_case_when_needs_response(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        charge_id = "STRIPE_CHARGE_ID"
+        await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        stripe_dispute = build_stripe_dispute(
+            status="needs_response",
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[],
+        )
+
+        dispute = await dispute_service.upsert_from_stripe(session, stripe_dispute)
+
+        case = await dispute_case_service.get_case(session, dispute)
+        assert case is not None
+        assert case.dispute_id == dispute.id
+        assert await dispute_case_service.is_open(session, case)
+
+    async def test_open_is_idempotent_on_repeated_webhook(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        charge_id = "STRIPE_CHARGE_ID"
+        await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        stripe_dispute = build_stripe_dispute(
+            status="needs_response",
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[],
+        )
+
+        dispute = await dispute_service.upsert_from_stripe(session, stripe_dispute)
+        first_case = await dispute_case_service.get_case(session, dispute)
+
+        # A retried/duplicate webhook must not raise nor open a second case.
+        dispute = await dispute_service.upsert_from_stripe(session, stripe_dispute)
+        second_case = await dispute_case_service.get_case(session, dispute)
+
+        assert first_case is not None
+        assert second_case is not None
+        assert second_case.id == first_case.id
+
+    async def test_does_not_open_case_when_prevented(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        dispute_transaction_service_mock: MagicMock,
+        refund_service_mock: MagicMock,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        charge_id = "STRIPE_CHARGE_ID"
+        await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        # Rapid-resolution dispute: resolved as prevented, no merchant response
+        # is needed, so no case should be opened.
+        stripe_dispute = build_stripe_dispute(
+            status="lost",
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[
+                build_stripe_balance_transaction(
+                    amount=-order.due_amount, reporting_category="dispute", fee=0
+                )
+            ],
+        )
+
+        dispute = await dispute_service.upsert_from_stripe(session, stripe_dispute)
+
+        assert dispute.status == DisputeStatus.prevented
+        assert await dispute_case_service.get_case(session, dispute) is None
+
+    async def test_closes_case_when_resolved(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        dispute_transaction_service_mock: MagicMock,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        charge_id = "STRIPE_CHARGE_ID"
+        await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        needs_response = build_stripe_dispute(
+            status="needs_response",
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[],
+        )
+        dispute = await dispute_service.upsert_from_stripe(session, needs_response)
+        case = await dispute_case_service.get_case(session, dispute)
+        assert case is not None
+        assert await dispute_case_service.is_open(session, case)
+
+        won = build_stripe_dispute(
+            status="won",
+            id=needs_response.id,
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[],
+        )
+        dispute = await dispute_service.upsert_from_stripe(session, won)
+
+        assert dispute.status == DisputeStatus.won
+        case = await dispute_case_service.get_case(session, dispute)
+        assert case is not None
+        assert not await dispute_case_service.is_open(session, case)
 
 
 @pytest.mark.asyncio

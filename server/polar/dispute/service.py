@@ -10,6 +10,7 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.customer.repository import CustomerRepository
+from polar.dispute.dispute_case import dispute_case as dispute_case_service
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
 from polar.integrations.chargeback_stop.types import ChargebackStopAlert
@@ -192,7 +193,25 @@ class DisputeService:
                 )
                 await self._revoke(session, dispute)
 
-        return await repository.update(dispute)
+        dispute = await repository.update(dispute)
+        await self._sync_support_case(session, dispute)
+        return dispute
+
+    async def _sync_support_case(self, session: AsyncSession, dispute: Dispute) -> None:
+        """Reconcile the merchant support case with the dispute's status.
+
+        Open it the first time the dispute needs a response, close it once the
+        dispute is resolved. Idempotent: a no-op on repeated/retried webhooks.
+        """
+        case = await dispute_case_service.get_case(session, dispute)
+        if dispute.status == DisputeStatus.needs_response:
+            if case is None:
+                await dispute_case_service.open_case(
+                    session, dispute, organization=dispute.payment.organization
+                )
+        elif dispute.closed and case is not None:
+            if await dispute_case_service.is_open(session, case):
+                await dispute_case_service.close(session, case)
 
     async def upsert_from_chargeback_stop(
         self, session: AsyncSession, alert: ChargebackStopAlert
@@ -258,7 +277,9 @@ class DisputeService:
     ) -> tuple[Payment, Order]:
         payment_repository = PaymentRepository.from_session(session)
         payment = await payment_repository.get_by_processor_id(
-            PaymentProcessor.stripe, processor_id, options=(joinedload(Payment.order),)
+            PaymentProcessor.stripe,
+            processor_id,
+            options=(joinedload(Payment.order), joinedload(Payment.organization)),
         )
         if payment is None or payment.order is None:
             raise DisputePaymentNotFoundError(processor, processor_id)

@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from typing import Literal
 from unittest.mock import MagicMock
 
@@ -108,6 +109,69 @@ class TestUpsertFromStripe:
         assert dispute.currency == stripe_dispute.currency
         assert dispute.order == order
         assert dispute.payment == payment
+
+    async def test_new_captures_stripe_evidence_fields(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        charge_id = "STRIPE_CHARGE_ID"
+        await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        due_by = int(datetime(2026, 7, 1, 12, 0, tzinfo=UTC).timestamp())
+        stripe_dispute = build_stripe_dispute(
+            status="needs_response",
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[],
+            reason="product_not_received",
+            network_reason_code="13.1",
+            evidence_due_by=due_by,
+            has_evidence=True,
+            past_due=False,
+            submission_count=2,
+        )
+
+        dispute = await dispute_service.upsert_from_stripe(session, stripe_dispute)
+
+        assert dispute.reason == "product_not_received"
+        assert dispute.network_reason_code == "13.1"
+        assert dispute.evidence_due_by == datetime(2026, 7, 1, 12, 0, tzinfo=UTC)
+        assert dispute.has_evidence is True
+        assert dispute.past_due is False
+        assert dispute.submission_count == 2
+
+    async def test_new_handles_absent_optional_evidence_fields(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        charge_id = "STRIPE_CHARGE_ID"
+        await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        # Stripe drops network_reason_code and evidence_details.due_by when null,
+        # and the SDK raises AttributeError on the missing keys — the upsert must
+        # tolerate their absence.
+        stripe_dispute = build_stripe_dispute(
+            status="needs_response",
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[],
+        )
+
+        dispute = await dispute_service.upsert_from_stripe(session, stripe_dispute)
+
+        assert dispute.reason == "fraudulent"
+        assert dispute.network_reason_code is None
+        assert dispute.evidence_due_by is None
 
     async def test_update_from_dispute_id(
         self,

@@ -1,11 +1,15 @@
+from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Literal
 from uuid import UUID
 
 from sqlalchemy import (
+    TIMESTAMP,
     BigInteger,
+    Boolean,
     ColumnElement,
     ForeignKey,
+    Integer,
     String,
     UniqueConstraint,
     Uuid,
@@ -91,6 +95,27 @@ class Dispute(RecordModel):
     )
     dispute_alert_processor_id: Mapped[str | None] = mapped_column(
         String, nullable=True
+    )
+
+    # Details from the processor's dispute object (Stripe). Null until we get
+    # the dispute webhook: ChargebackStop early-warnings arrive first, without
+    # it. `evidence_due_by` is the deadline to respond; the rest is submission
+    # state, kept in sync by the `charge.dispute.updated` webhook.
+    reason: Mapped[str | None] = mapped_column(String, nullable=True)
+    network_reason_code: Mapped[str | None] = mapped_column(String, nullable=True)
+    evidence_due_by: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
+    # Nullable for now: added without a DB backfill, populated app-side going
+    # forward (`default`) and backfilled for historical rows by
+    # `scripts/backfill_dispute_evidence_state.py`. A follow-up makes them
+    # non-nullable once the backfill has run.
+    has_evidence: Mapped[bool | None] = mapped_column(
+        Boolean, nullable=True, default=False
+    )
+    past_due: Mapped[bool | None] = mapped_column(Boolean, nullable=True, default=False)
+    submission_count: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=0
     )
 
     order_id: Mapped[UUID] = mapped_column(

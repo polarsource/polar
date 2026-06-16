@@ -71,7 +71,7 @@ resource "render_postgres" "db" {
   version        = "15"
   disk_size_gb   = 500
 
-  high_availability_enabled = true
+  high_availability_enabled = false
 
   read_replicas = [
     { name = "polar-read" },
@@ -79,13 +79,21 @@ resource "render_postgres" "db" {
   ]
 
   lifecycle {
+    prevent_destroy = true
     ignore_changes = [
       ip_allow_list,
       disk_size_gb,
+      database_user,
+      database_name,
     ]
   }
 
   depends_on = [render_registry_credential.ghcr, render_project.polar]
+}
+
+import {
+  to = render_postgres.db
+  id = "dpg-d8m0n4poagis73du7gr0-a"
 }
 
 # =============================================================================

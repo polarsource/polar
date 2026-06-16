@@ -1,7 +1,7 @@
 """Include customer email in search_vector
 
 Revision ID: 7a3f0b9c2d1e
-Revises: 1d8e332efb2f
+Revises: 71f487d81fbc
 Create Date: 2026-06-16 15:30:00.000000
 
 """
@@ -13,7 +13,7 @@ from alembic_utils.pg_function import PGFunction
 
 # revision identifiers, used by Alembic.
 revision = "7a3f0b9c2d1e"
-down_revision = "1d8e332efb2f"
+down_revision = "71f487d81fbc"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

@@ -641,6 +641,49 @@ class MemberService:
                 return existing_member
             raise
 
+    async def _validate_email_change(
+        self,
+        session: AsyncSession,
+        member: Member,
+        new_email: str,
+    ) -> None:
+        # The owner's email on an individual customer is auto-synced from
+        # customer.email (see sync_owner_email). A direct edit would be silently
+        # reverted and could spawn a duplicate owner on portal sign-in.
+        if member.role == MemberRole.owner:
+            customer_repository = CustomerRepository.from_session(session)
+            customer = await customer_repository.get_by_id(member.customer_id)
+            if customer is None or customer.type == CustomerType.individual:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "email"),
+                            "msg": (
+                                "Cannot change the email of an individual customer's "
+                                "owner. Update the customer's email instead."
+                            ),
+                            "input": new_email,
+                        }
+                    ]
+                )
+
+        repository = MemberRepository.from_session(session)
+        existing = await repository.get_by_customer_id_and_email(
+            member.customer_id, new_email
+        )
+        if existing is not None and existing.id != member.id:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "email"),
+                        "msg": "A member with this email already exists for this customer.",
+                        "input": new_email,
+                    }
+                ]
+            )
+
     async def update(
         self,
         session: AsyncSession,
@@ -650,6 +693,7 @@ class MemberService:
         role: MemberRole | None = None,
         caller_member: Member | None = None,
         allow_ownership_transfer: bool = False,
+        email: str | None = None,
     ) -> Member:
         """
         Update a member.
@@ -659,6 +703,8 @@ class MemberService:
             member: Member to update
             name: Optional new name
             role: Optional new role
+            email: Optional new email. Cannot be changed for the owner of an
+                   individual customer.
             caller_member: The member making the request (for customer portal ownership transfer)
             allow_ownership_transfer: If True, allows ownership transfer without caller_member
                                       (for admin API). The existing owner will be demoted.
@@ -728,11 +774,19 @@ class MemberService:
                     ]
                 )
 
+        normalized_email: str | None = None
+        if email is not None:
+            normalized_email = email.strip()
+            if normalized_email != member.email:
+                await self._validate_email_change(session, member, normalized_email)
+
         update_dict = {}
         if name is not None:
             update_dict["name"] = name
         if role is not None and not transferred:
             update_dict["role"] = role
+        if normalized_email is not None and normalized_email != member.email:
+            update_dict["email"] = normalized_email
 
         if not update_dict and not transferred:
             return member
@@ -742,6 +796,7 @@ class MemberService:
             if update_dict
             else member
         )
+
         log.info(
             "member.update.success",
             member_id=member.id,

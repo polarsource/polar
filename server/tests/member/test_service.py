@@ -6,11 +6,17 @@ from pytest_mock import MockerFixture
 from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject
-from polar.exceptions import NotPermitted
+from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
-from polar.models import Customer, Member, Organization, User, UserOrganization
+from polar.models import (
+    Customer,
+    Member,
+    Organization,
+    User,
+    UserOrganization,
+)
 from polar.models.customer import CustomerType
 from polar.models.member import MemberRole
 from polar.postgres import AsyncSession
@@ -792,6 +798,161 @@ class TestUpdate:
 
         assert updated_member.id == member.id
         assert updated_member.modified_at == original_updated_at
+
+
+@pytest.mark.asyncio
+class TestUpdateEmail:
+    @pytest.mark.auth
+    async def test_update_email(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test updating a member's email (non-owner)."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="member@example.com",
+            role=MemberRole.member,
+        )
+
+        updated_member = await member_service.update(
+            session, member, email="  new@example.com  "
+        )
+
+        assert updated_member.id == member.id
+        assert updated_member.email == "new@example.com"
+
+    @pytest.mark.auth
+    async def test_update_email_rejects_duplicate_in_customer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Changing an email to one already used by another member of the same
+        customer is rejected (case-insensitive)."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="taken@example.com",
+            role=MemberRole.owner,
+        )
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="member@example.com",
+            role=MemberRole.member,
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await member_service.update(session, member, email="TAKEN@example.com")
+
+        assert "already exists" in str(exc_info.value).lower()
+
+    @pytest.mark.auth
+    async def test_update_email_owner_individual_customer_blocked(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """The owner's email on an individual customer is auto-synced and cannot
+        be edited directly."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        customer.type = CustomerType.individual
+        await save_fixture(customer)
+
+        owner = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="owner@example.com",
+            role=MemberRole.owner,
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await member_service.update(session, owner, email="new@example.com")
+
+        assert "individual customer" in str(exc_info.value).lower()
+
+    @pytest.mark.auth
+    async def test_update_email_owner_team_customer_allowed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Team customers legitimately have members with distinct emails, so the
+        owner email is editable there."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        owner = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="owner@example.com",
+            role=MemberRole.owner,
+        )
+
+        updated_member = await member_service.update(
+            session, owner, email="new@example.com"
+        )
+
+        assert updated_member.email == "new@example.com"
+
+    @pytest.mark.auth
+    async def test_update_email_allows_own_casing_change(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Re-casing a member's own email is not treated as a duplicate: the
+        case-insensitive lookup matches the member itself, which is excluded."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="member@example.com",
+            role=MemberRole.member,
+        )
+
+        updated_member = await member_service.update(
+            session, member, email="Member@example.com"
+        )
+
+        assert updated_member.id == member.id
+        assert updated_member.email == "Member@example.com"
 
 
 @pytest.mark.asyncio

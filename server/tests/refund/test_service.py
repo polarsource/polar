@@ -1028,3 +1028,128 @@ class TestOrganizationRefundsBlocked:
         # Verify refund was created
         assert refund is not None
         assert refund.order_id == order.id
+
+
+NOTICE_ACTOR = "refund.send_chargeback_prevention_notice"
+
+
+def _notice_calls(enqueue_job_mock: MagicMock) -> list[Any]:
+    return [
+        call
+        for call in enqueue_job_mock.call_args_list
+        if call.args and call.args[0] == NOTICE_ACTOR
+    ]
+
+
+@pytest.mark.asyncio
+class TestChargebackPreventionNotice:
+    async def test_enqueues_on_create_from_dispute(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.refund.service.enqueue_job")
+
+        order, payment, _ = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=250,
+        )
+        dispute = await create_dispute(
+            save_fixture, order, payment, amount=1000, tax_amount=250
+        )
+
+        refund = await refund_service.create_from_dispute(
+            session, dispute, "DISPUTE_BALANCE_TRANSACTION_ID"
+        )
+
+        notice_calls = _notice_calls(enqueue_job_mock)
+        assert len(notice_calls) == 1
+        assert notice_calls[0].args == (NOTICE_ACTOR, refund.id)
+
+    async def test_enqueues_once_on_stripe_transition_to_succeeded(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.refund.service.enqueue_job")
+
+        order, payment, _ = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=250,
+        )
+        await create_dispute(
+            save_fixture,
+            order,
+            payment,
+            payment_processor_id=None,
+            alert_processor=DisputeAlertProcessor.chargeback_stop,
+            alert_processor_id="CHARGEBACK_STOP_ALERT_ID",
+        )
+
+        pending_stripe_refund = build_stripe_refund(
+            status="pending",
+            amount=100,
+            id="re_stripe_refund_cbs",
+            charge_id=payment.processor_id,
+            metadata={"cbs_related_alert_id": "CHARGEBACK_STOP_ALERT_ID"},
+        )
+        refund = await refund_service.upsert_from_stripe(session, pending_stripe_refund)
+        assert refund.reason == RefundReason.dispute_prevention
+        assert refund.status == RefundStatus.pending
+        # No notice while the refund is still pending.
+        assert _notice_calls(enqueue_job_mock) == []
+
+        succeeded_stripe_refund = build_stripe_refund(
+            id=pending_stripe_refund.id,
+            status="succeeded",
+            amount=100,
+            charge_id=payment.processor_id,
+            metadata={"cbs_related_alert_id": "CHARGEBACK_STOP_ALERT_ID"},
+        )
+        refund = await refund_service.upsert_from_stripe(
+            session, succeeded_stripe_refund
+        )
+        assert refund.status == RefundStatus.succeeded
+
+        notice_calls = _notice_calls(enqueue_job_mock)
+        assert len(notice_calls) == 1
+        assert notice_calls[0].args == (NOTICE_ACTOR, refund.id)
+
+    async def test_does_not_enqueue_for_other_reason(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.refund.service.enqueue_job")
+
+        order, payment, _ = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=250,
+        )
+
+        stripe_refund = build_stripe_refund(
+            status="succeeded", amount=1250, charge_id=payment.processor_id
+        )
+        refund = await refund_service.create_from_stripe(session, stripe_refund)
+        assert refund.status == RefundStatus.succeeded
+        assert refund.reason != RefundReason.dispute_prevention
+
+        assert _notice_calls(enqueue_job_mock) == []

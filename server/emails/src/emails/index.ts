@@ -1,3 +1,4 @@
+import { ChargebackPreventionRefund } from './chargeback_prevention_refund'
 import { CustomerEmailChangedNotification } from './customer_email_changed_notification'
 import { CustomerEmailUpdateVerification } from './customer_email_update_verification'
 import { CustomerSessionCode } from './customer_session_code'
@@ -61,6 +62,7 @@ const TEMPLATES: Record<string, React.FC<never>> = {
   notification_new_sale: NotificationNewSale,
   notification_new_subscription: NotificationNewSubscription,
   notification_credits_granted: NotificationCreditsGranted,
+  chargeback_prevention_refund: ChargebackPreventionRefund,
   polar_self_subscription_confirmation: PolarSelfSubscriptionConfirmation,
   polar_self_subscription_cycled: PolarSelfSubscriptionCycled,
   polar_self_startup_program_welcome: PolarSelfStartupProgramWelcome,

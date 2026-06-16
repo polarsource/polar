@@ -71,7 +71,7 @@ resource "render_postgres" "db" {
   version        = "15"
   disk_size_gb   = 500
 
-  high_availability_enabled = true
+  high_availability_enabled = false
 
   read_replicas = [
     { name = "polar-read" },

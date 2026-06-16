@@ -9,10 +9,6 @@ on:
         description: "Environment to deploy to (sandbox or production)"
         required: true
         type: string
-      docker-digest:
-        description: "Docker image digest to deploy"
-        required: true
-        type: string
       render-api-service-id:
         description: "Render API service ID"
         required: true
@@ -37,11 +33,6 @@ on:
         required: false
         type: boolean
         default: false
-      docker-digest-playwright:
-        description: "Playwright Docker image digest to deploy"
-        required: false
-        type: string
-        default: ""
       render-playwright-worker-service-ids:
         description: "Comma-separated list of Render playwright worker service IDs"
         required: false

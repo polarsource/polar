@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import Sequence
+from datetime import UTC, datetime
 
 import stripe as stripe_lib
 from sqlalchemy.orm import joinedload
@@ -141,6 +142,21 @@ class DisputeService:
         was_closed = dispute.closed
         dispute.payment_processor = PaymentProcessor.stripe
         dispute.payment_processor_id = stripe_dispute.id
+
+        # Capture what Stripe expects in response, and the submission state it
+        # reports back (kept current by every `charge.dispute.updated` event).
+        # Stripe omits null optional fields from the payload, and the SDK raises
+        # AttributeError on a missing key — so read those via `.get()`.
+        evidence_details = stripe_dispute.evidence_details
+        due_by = evidence_details.get("due_by")
+        dispute.reason = stripe_dispute.reason
+        dispute.network_reason_code = stripe_dispute.get("network_reason_code")
+        dispute.evidence_due_by = (
+            datetime.fromtimestamp(due_by, tz=UTC) if due_by else None
+        )
+        dispute.has_evidence = evidence_details.has_evidence
+        dispute.past_due = evidence_details.past_due
+        dispute.submission_count = evidence_details.submission_count
 
         new_status = DisputeStatus.from_stripe(stripe_dispute.status)
 

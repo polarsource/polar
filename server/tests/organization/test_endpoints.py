@@ -5,6 +5,8 @@ import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
+from polar.config import settings
+from polar.integrations.polar.service import PolarSelfService
 from polar.models import Product, User
 from polar.models.account import Account
 from polar.models.organization import Organization, OrganizationStatus
@@ -145,6 +147,76 @@ class TestGetOrganization:
 
         json = response.json()
         assert json["id"] == str(organization.id)
+
+
+@pytest.mark.asyncio
+class TestEnablePreviewAccess:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/enable-preview-access"
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.post(
+            f"/v1/organizations/{uuid.uuid4()}/enable-preview-access"
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_not_admin(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/enable-preview-access"
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_forbidden_outside_sandbox(
+        self,
+        client: AsyncClient,
+        mocker: MockerFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch.object(settings, "is_sandbox", return_value=False)
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/enable-preview-access"
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch.object(settings, "is_sandbox", return_value=True)
+        organization.feature_settings = {"issue_funding_enabled": True}
+        await save_fixture(organization)
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/enable-preview-access"
+        )
+
+        assert response.status_code == 200
+        feature_settings = response.json()["feature_settings"]
+        for flag in PolarSelfService.PREVIEW_ACCESS_FEATURE_FLAGS:
+            assert feature_settings[flag] is True
+        # Existing flags are preserved.
+        assert feature_settings["issue_funding_enabled"] is True
 
 
 @pytest.mark.asyncio
@@ -314,7 +386,7 @@ class TestUpdateOrganization:
         user_organization: UserOrganization,
     ) -> None:
         organization.feature_settings = {
-            "billing_enabled": True,
+            "preview_access_enabled": True,
         }
         await save_fixture(organization)
 
@@ -322,7 +394,7 @@ class TestUpdateOrganization:
             f"/v1/organizations/{organization.id}",
             json={
                 "feature_settings": {
-                    "billing_enabled": False,
+                    "preview_access_enabled": False,
                     "off_session_charges_enabled": True,
                     "checkout_localization_enabled": True,
                 },
@@ -331,7 +403,7 @@ class TestUpdateOrganization:
 
         assert response.status_code == 200
         feature_settings = response.json()["feature_settings"]
-        assert feature_settings["billing_enabled"] is True
+        assert feature_settings["preview_access_enabled"] is True
         assert feature_settings["off_session_charges_enabled"] is False
         assert feature_settings["checkout_localization_enabled"] is True
 

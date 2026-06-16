@@ -1,0 +1,102 @@
+---
+title: "Migrate Away from Polar"
+sidebarTitle: "Migrate Away"
+description: "Move your customers, payment methods, and subscriptions to another payment provider whenever you choose."
+---
+
+You own your business, and that includes the freedom to leave. If you decide Polar isn't the right fit, we'll help you move your customers and their saved payment methods to another payment provider so your subscribers experience as little disruption as possible.
+
+Because Polar is a [Merchant of Record](/merchant-of-record/introduction), your customers' payment methods are securely vaulted with our payment processor (Stripe). Moving them to your own account is a coordinated, support-assisted process rather than a one-click export, so we can do it securely and in line with card network rules.
+
+<Note>
+**This process is handled by our team**
+
+Migrations are not self-serve today. To get started, email [support@polar.sh](mailto:support@polar.sh) with the account you want to migrate to, and we'll guide you through every step.
+</Note>
+
+## What can be moved
+
+| Data | Moves to your new provider | Notes |
+| --- | --- | --- |
+| Customers | Yes | Name, email, and billing details. |
+| Saved payment methods | Yes | Easiest Stripe-to-Stripe. We can also move them to any PCI-compliant provider via Stripe's secure PAN export. |
+| Products, prices, discounts, benefits | No, recreate them | These live in your Polar configuration and need to be set up again on your new provider. |
+| Active subscriptions | No, recreate them | Recreate them on your new provider following your existing billing cycle, then cancel on Polar. See [Recreating your subscriptions](#recreating-your-subscriptions). |
+
+<Note>
+**Stripe to Stripe is the simplest path**
+
+If your new provider is Stripe, we transfer your customers and their saved payment methods directly between Stripe accounts. Moving to a different provider is also supported through Stripe's secure PAN export, which sends card data to any PCI-compliant processor. Both paths are handled by our team, so no card data ever passes through you and your customers don't need to re-enter their details.
+</Note>
+
+## The holding period
+
+When you start a migration, we set your Polar organization to an **offboarding** state. While offboarding:
+
+- Your existing subscriptions keep renewing until you cancel them, so customers are never cut off mid-transition.
+- New checkouts are disabled, since you're moving your business elsewhere.
+- **Payouts are paused for 120 days.**
+
+<Warning>
+**Why payouts are held for 120 days**
+
+We hold your remaining balance for 120 days to cover any refunds and chargebacks that may still come in on payments processed while you were on Polar. Disputes can be filed weeks or months after a purchase, and as Merchant of Record we're liable for them. Holding the balance protects both you and us from a negative balance after you've already withdrawn.
+
+After 120 days, your remaining balance is released and you can withdraw it.
+</Warning>
+
+## How the migration works
+
+<Steps>
+  <Step title="Tell us where you're going">
+    Email [support@polar.sh](mailto:support@polar.sh) with the Stripe account (or other provider) you want to migrate to. We confirm the details and set your organization to offboarding.
+  </Step>
+  <Step title="We transfer your customers and payment methods">
+    We coordinate a secure transfer of your customers and their saved payment methods to your new account. Stripe-to-Stripe is a direct account-to-account copy. For other providers, we use Stripe's PAN export to send card data to your PCI-compliant processor. No card data passes through you, keeping the migration PCI-compliant.
+  </Step>
+  <Step title="Recreate your catalog on the new provider">
+    Set up your products, prices, discounts, and benefits on your new provider. These configurations live in Polar and don't transfer automatically.
+  </Step>
+  <Step title="Recreate your subscriptions">
+    Recreate active subscriptions on your new provider, aligned to each customer's existing Polar billing cycle, then cancel them on Polar. See the warning below to avoid double billing.
+  </Step>
+  <Step title="Withdraw your remaining balance">
+    After the 120-day holding period, withdraw your released balance. See [Withdrawing your remaining balance](#withdrawing-your-remaining-balance).
+  </Step>
+</Steps>
+
+## Recreating your subscriptions
+
+To keep billing seamless, recreate each active subscription on your new provider so its **first charge lands on the same date as the next Polar renewal**. This way the customer is billed once per period, by exactly one provider.
+
+<Warning>
+**Cancel your Polar subscriptions to avoid double billing**
+
+Once a subscription is live on your new provider, cancel the matching Polar subscription so Polar stops generating renewals for it. If you leave both active, your customer will be charged twice for the same period.
+</Warning>
+
+You can cancel subscriptions individually from the dashboard. See [Manage Subscriptions](/features/subscriptions/manage) for the details. We recommend canceling at the end of the current period so customers keep access through the time they've already paid for.
+
+## Withdrawing your remaining balance
+
+After the 120-day holding period ends, your remaining balance is released and you can withdraw it to your connected bank account, subject to the standard minimum payout threshold. If your balance is below the minimum for your country, reach out to support and we'll help you withdraw the remainder.
+
+## Frequently asked questions
+
+<AccordionGroup>
+  <Accordion title="Will my customers notice the migration?">
+    They shouldn't experience an interruption. Subscriptions keep renewing on Polar until you cancel them, and we transfer saved payment methods so they don't need to re-enter card details. The main visible change is who appears on their statement once you start billing from your new provider.
+  </Accordion>
+  <Accordion title="Can I move to a provider other than Stripe?">
+    Yes. Stripe-to-Stripe is the easiest path, but we can also move your saved payment methods to another provider through Stripe's secure PAN export, as long as your new processor is PCI-compliant and able to receive the data.
+  </Accordion>
+  <Accordion title="Why can't I just export the card numbers myself?">
+    Raw card data is subject to strict PCI and card network rules and is never handed to merchants directly. Payment methods are moved account-to-account through the processor's secure migration process, which is why this step is handled by our team.
+  </Accordion>
+  <Accordion title="What happens to refunds and chargebacks during the holding period?">
+    We continue to process refunds and handle any chargebacks on payments made while you were on Polar, drawing from your held balance. This is the reason for the 120-day hold.
+  </Accordion>
+  <Accordion title="How do I start?">
+    Email [support@polar.sh](mailto:support@polar.sh) with your destination account and we'll take it from there.
+  </Accordion>
+</AccordionGroup>

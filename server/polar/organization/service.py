@@ -1988,6 +1988,32 @@ class OrganizationService:
         )
         return organization
 
+    async def enable_preview_access(
+        self, session: AsyncSession, organization: Organization
+    ) -> Organization:
+        """Enable preview access to in-preview features for this organization.
+
+        Mirrors the paid-plan benefit webhook
+        (`PolarSelfService._apply_preview_access`) by flipping on every
+        `PREVIEW_ACCESS_FEATURE_FLAGS` flag, so Sandbox testing matches the real
+        paid-plan behavior. Intended for Sandbox only: the endpoint guards on
+        `settings.is_sandbox()`.
+        """
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.update(
+            organization,
+            update_dict={
+                "feature_settings": {
+                    **organization.feature_settings,
+                    **{
+                        flag: True
+                        for flag in polar_self_service.PREVIEW_ACCESS_FEATURE_FLAGS
+                    },
+                }
+            },
+        )
+        return organization
+
     async def set_capability(
         self,
         session: AsyncSession,

@@ -109,6 +109,18 @@ export default function ClientPage({
             title="Features"
             description="Manage alpha & beta features for your organization"
           />
+          {CONFIG.IS_SANDBOX && (
+            <Alert color="gray" className="p-3 px-4 text-sm">
+              To enable paid access to preview features in sandbox, go to{' '}
+              <Link
+                href="./billing"
+                className="font-medium underline hover:no-underline"
+              >
+                Settings → Billing
+              </Link>
+              .
+            </Alert>
+          )}
           <FeatureSettings
             organization={org}
             readOnly={!canManageOrganization}

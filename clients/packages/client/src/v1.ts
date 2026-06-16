@@ -759,6 +759,31 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/enable-preview-access': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Enable Preview Access
+     * @description Enable preview access to in-preview features for an organization.
+     *
+     *     On the Sandbox environment, organizations can opt into the features that
+     *     are otherwise only available to paid plans in production.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['organizations:enable_preview_access']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organizations/{id}/submit-review': {
     parameters: {
       query?: never
@@ -35395,6 +35420,55 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['OrganizationSlugAvailability']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:enable_preview_access': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Preview access enabled. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Organization']
+        }
+      }
+      /** @description Preview access can only be enabled on the Sandbox environment. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */

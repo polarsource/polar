@@ -107,9 +107,9 @@ If you want to work with payments and subscriptions, you'll need to set up a Str
 
 > [!IMPORTANT]
 > Put all Stripe values in the central secrets file `~/.config/polar/secrets.env`, **not** in `server/.env`.
-> `setup-environment` regenerates `server/.env` from the central file on every run (including each Conductor
-> worktree launch and `dev up --clean`), and the central file's values win — so edits made directly to
-> `server/.env` are overwritten.
+> Whenever `setup-environment` regenerates `server/.env` (a fresh clone or worktree, `dev up --clean`,
+> `dev stripe`, or a manual run), it rebuilds the file from the central secrets and those values win — so
+> edits made directly to `server/.env` are overwritten.
 >
 > Do **not** rely on `dev stripe` for the webhook secrets when using the dashboard-endpoint flow below: it
 > derives the secret from `stripe listen --print-secret` (the Stripe CLI listener, a different secret) and

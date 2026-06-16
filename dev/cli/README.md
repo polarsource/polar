@@ -54,18 +54,6 @@ dev seed --reset        # Recreate database and load fresh seed data
 dev help                # Show all commands
 ```
 
-### Deploy lock
-
-```bash
-dev lock-deploys "<reason>"   # Block all merges to main (announces in Slack)
-dev unlock-deploys            # Lift the block (announces in Slack)
-```
-
-Uses your `gh` CLI auth to trigger the `deploy-lock.yml` / `deploy-unlock.yml`
-workflows, which toggle a GitHub ruleset. The `/emergency` PR command still
-works because its identity is on the ruleset's bypass list.
-
-
 ## Docker dev environment
 
 One shared infra stack (postgres, redis, minio, tinybird) plus one app stack (api, worker, web) per worktree, each on its own DB / Redis index / buckets. Service-aware commands auto-route by service name (`api`/`worker`/`web` → this instance, `db`/`redis`/`minio`/`tinybird` → shared). `dev docker --help` for the full list.

@@ -2,8 +2,6 @@ from tagflow import tag, text
 
 from polar.models.organization import SupportTier
 
-# Escalating emphasis with tier. Free / NULL renders nothing — it's the floor,
-# so a badge on every free org would just be noise.
 _TIER_BADGE_CLASS: dict[SupportTier, str] = {
     SupportTier.pro: "badge-ghost border border-base-300",
     SupportTier.growth: "badge-info",
@@ -12,7 +10,6 @@ _TIER_BADGE_CLASS: dict[SupportTier, str] = {
 
 
 def support_tier_badge(level: int | None, *, size: str = "badge-sm") -> None:
-    """Render a support-tier badge, or nothing for free / NULL (the floor)."""
     tier = SupportTier.from_level(level)
     if tier is None:
         return

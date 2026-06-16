@@ -123,9 +123,7 @@ export const MembersSection = ({
               isCustomer={selectedMember.email === customer.email}
               onClose={hideEditMemberModal}
             />
-          ) : (
-            <></>
-          )
+          ) : null
         }
       />
     </div>

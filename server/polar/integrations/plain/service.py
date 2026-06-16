@@ -552,7 +552,9 @@ class PlainService:
 
         return CustomerCard(
             key=CustomerCardKey.organization,
-            timeToLiveSeconds=86400,
+            # Short TTL so the organization status stays in sync on all
+            # threads (including old ones) shortly after it changes.
+            timeToLiveSeconds=3600,
             components=[
                 component.model_dump(by_alias=True, exclude_none=True)
                 for component in components
@@ -620,6 +622,25 @@ class PlainService:
                                 )
                             )
                         ],
+                    )
+                ),
+                ComponentContainerContentInput(
+                    component_row=ComponentRowInput(
+                        row_main_content=[
+                            ComponentRowContentInput(
+                                component_text=ComponentTextInput(
+                                    text="Status",
+                                    text_size=ComponentTextSize.S,
+                                    text_color=ComponentTextColor.MUTED,
+                                )
+                            ),
+                            ComponentRowContentInput(
+                                component_text=ComponentTextInput(
+                                    text=organization.status.get_display_name(),
+                                )
+                            ),
+                        ],
+                        row_aside_content=[],
                     )
                 ),
                 ComponentContainerContentInput(

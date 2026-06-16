@@ -141,6 +141,7 @@ class DisputeService:
             )
 
         was_closed = dispute.closed
+        previous_status = dispute.status
         dispute.payment_processor = PaymentProcessor.stripe
         dispute.payment_processor_id = stripe_dispute.id
 
@@ -194,24 +195,45 @@ class DisputeService:
                 await self._revoke(session, dispute)
 
         dispute = await repository.update(dispute)
-        await self._sync_support_case(session, dispute)
+        await self._sync_support_case(session, dispute, previous_status=previous_status)
         return dispute
 
-    async def _sync_support_case(self, session: AsyncSession, dispute: Dispute) -> None:
+    async def _sync_support_case(
+        self,
+        session: AsyncSession,
+        dispute: Dispute,
+        *,
+        previous_status: DisputeStatus | None,
+    ) -> None:
         """Reconcile the merchant support case with the dispute's status.
 
-        Open it the first time the dispute needs a response, close it once the
-        dispute is resolved. Idempotent: a no-op on repeated/retried webhooks.
+        Opens the case the first time the dispute needs a response, posts the
+        milestone updates (under review, won, lost) and closes it on resolution.
+        Idempotent: opening is guarded by the existing case, the closing
+        milestones by the case being open, and the (non-closing) under-review
+        milestone by an actual status change — so retried webhooks are no-ops.
         """
         case = await dispute_case_service.get_case(session, dispute)
+
         if dispute.status == DisputeStatus.needs_response:
             if case is None:
                 await dispute_case_service.open_case(
                     session, dispute, organization=dispute.payment.organization
                 )
-        elif dispute.closed and case is not None:
-            if await dispute_case_service.is_open(session, case):
-                await dispute_case_service.close(session, case)
+            return
+
+        if case is None or not await dispute_case_service.is_open(session, case):
+            return
+
+        if dispute.status == DisputeStatus.under_review:
+            if dispute.status != previous_status:
+                await dispute_case_service.mark_under_review(session, case)
+        elif dispute.status in (DisputeStatus.won, DisputeStatus.lost):
+            await dispute_case_service.resolve(
+                session, case, won=dispute.status == DisputeStatus.won
+            )
+        elif dispute.closed:  # prevented: silent close, the merchant never acted
+            await dispute_case_service.close(session, case)
 
     async def upsert_from_chargeback_stop(
         self, session: AsyncSession, alert: ChargebackStopAlert

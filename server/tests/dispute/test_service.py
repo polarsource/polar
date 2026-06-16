@@ -13,8 +13,10 @@ from polar.enums import PaymentProcessor, TaxProcessor
 from polar.integrations.chargeback_stop.types import ChargebackStopAlert
 from polar.models import Customer, Organization, Product
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
+from polar.models.support_case import DisputeSupportCase, SupportCaseMessageType
 from polar.postgres import AsyncSession
 from polar.refund.service import RefundService
+from polar.support_case.repository import SupportCaseMessageRepository
 from polar.tax.calculation.base import AlreadyRevertedError
 from polar.transaction.service.dispute import DisputeTransactionService
 from tests.fixtures.database import SaveFixture
@@ -69,6 +71,14 @@ def build_chargeback_stop_alert(
         transaction_amount_in_cents=transaction_amount_in_cents,
         transaction_currency_code=transaction_currency_code.upper(),
     )
+
+
+async def _message_types(
+    session: AsyncSession, case: DisputeSupportCase
+) -> list[SupportCaseMessageType]:
+    repository = SupportCaseMessageRepository.from_session(session)
+    messages = await repository.list_by_case(case.id)
+    return [message.type for message in messages]
 
 
 @pytest.mark.asyncio
@@ -744,6 +754,156 @@ class TestUpsertFromStripeDisputeCase:
         case = await dispute_case_service.get_case(session, dispute)
         assert case is not None
         assert not await dispute_case_service.is_open(session, case)
+
+    async def test_posts_under_review_message_on_transition(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        charge_id = "STRIPE_CHARGE_ID"
+        await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        needs_response = build_stripe_dispute(
+            status="needs_response",
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[],
+        )
+        await dispute_service.upsert_from_stripe(session, needs_response)
+
+        under_review = build_stripe_dispute(
+            status="under_review",
+            id=needs_response.id,
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[],
+        )
+        dispute = await dispute_service.upsert_from_stripe(session, under_review)
+
+        case = await dispute_case_service.get_case(session, dispute)
+        assert case is not None
+        assert await dispute_case_service.is_open(session, case)
+        types = await _message_types(session, case)
+        assert types.count(SupportCaseMessageType.dispute_under_review) == 1
+
+    async def test_under_review_message_not_duplicated_on_retry(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        charge_id = "STRIPE_CHARGE_ID"
+        await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        needs_response = build_stripe_dispute(
+            status="needs_response",
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[],
+        )
+        await dispute_service.upsert_from_stripe(session, needs_response)
+        under_review = build_stripe_dispute(
+            status="under_review",
+            id=needs_response.id,
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[],
+        )
+        await dispute_service.upsert_from_stripe(session, under_review)
+        dispute = await dispute_service.upsert_from_stripe(session, under_review)
+
+        case = await dispute_case_service.get_case(session, dispute)
+        assert case is not None
+        types = await _message_types(session, case)
+        assert types.count(SupportCaseMessageType.dispute_under_review) == 1
+
+    async def test_posts_won_outcome_then_closes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        dispute_transaction_service_mock: MagicMock,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        charge_id = "STRIPE_CHARGE_ID"
+        await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        needs_response = build_stripe_dispute(
+            status="needs_response",
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[],
+        )
+        await dispute_service.upsert_from_stripe(session, needs_response)
+
+        won = build_stripe_dispute(
+            status="won",
+            id=needs_response.id,
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[],
+        )
+        dispute = await dispute_service.upsert_from_stripe(session, won)
+
+        case = await dispute_case_service.get_case(session, dispute)
+        assert case is not None
+        assert not await dispute_case_service.is_open(session, case)
+        types = await _message_types(session, case)
+        # Outcome event is recorded before the case is closed.
+        assert types.index(SupportCaseMessageType.dispute_won) < types.index(
+            SupportCaseMessageType.closed
+        )
+
+    async def test_posts_lost_outcome_then_closes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        dispute_transaction_service_mock: MagicMock,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        charge_id = "STRIPE_CHARGE_ID"
+        await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        needs_response = build_stripe_dispute(
+            status="needs_response",
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[],
+        )
+        await dispute_service.upsert_from_stripe(session, needs_response)
+
+        lost = build_stripe_dispute(
+            status="lost",
+            id=needs_response.id,
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[
+                build_stripe_balance_transaction(
+                    amount=-order.due_amount, reporting_category="dispute", fee=1500
+                )
+            ],
+        )
+        dispute = await dispute_service.upsert_from_stripe(session, lost)
+
+        case = await dispute_case_service.get_case(session, dispute)
+        assert case is not None
+        assert not await dispute_case_service.is_open(session, case)
+        types = await _message_types(session, case)
+        assert types.index(SupportCaseMessageType.dispute_lost) < types.index(
+            SupportCaseMessageType.closed
+        )
 
 
 @pytest.mark.asyncio

@@ -85,19 +85,23 @@ class TestCreate:
         )
 
         # Transactions available for payouts
-        payment_transaction_1 = await create_payment_transaction(save_fixture)
+        payment_transaction_1 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_1"
+        )
         balance_transaction_1 = await create_balance_transaction(
             save_fixture, account=account, payment_transaction=payment_transaction_1
         )
 
-        payment_transaction_2 = await create_payment_transaction(save_fixture)
+        payment_transaction_2 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_2"
+        )
         balance_transaction_2 = await create_balance_transaction(
             save_fixture, account=account, payment_transaction=payment_transaction_2
         )
 
         # Transactions not available for payouts
         payment_transaction_3 = await create_payment_transaction(
-            save_fixture, created_at=utc_now()
+            save_fixture, created_at=utc_now(), charge_id="CHARGE_3"
         )
         balance_transaction_3 = await create_balance_transaction(
             save_fixture,
@@ -151,11 +155,15 @@ class TestReverse:
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
 
-        payment_transaction_1 = await create_payment_transaction(save_fixture)
+        payment_transaction_1 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_1"
+        )
         balance_transaction_1 = await create_balance_transaction(
             save_fixture, account=account, payment_transaction=payment_transaction_1
         )
-        payment_transaction_2 = await create_payment_transaction(save_fixture)
+        payment_transaction_2 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_2"
+        )
         balance_transaction_2 = await create_balance_transaction(
             save_fixture, account=account, payment_transaction=payment_transaction_2
         )

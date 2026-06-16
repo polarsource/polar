@@ -2,7 +2,15 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import BigInteger, Float, ForeignKey, Integer, String, Uuid
+from sqlalchemy import (
+    BigInteger,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Uuid,
+)
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.enums import TaxProcessor
@@ -198,6 +206,15 @@ class Transaction(RecordModel):
     """
 
     __tablename__ = "transactions"
+    __table_args__ = (
+        Index(
+            "ix_payment_charge_id_uniqueness",
+            "type",
+            "charge_id",
+            unique=True,
+            postgresql_where="type = 'payment'",
+        ),
+    )
 
     type: Mapped[TransactionType] = mapped_column(String, nullable=False, index=True)
     """Type of transaction."""

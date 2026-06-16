@@ -5,7 +5,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import classes, tag, text
 
@@ -111,12 +111,14 @@ async def list(
                 or_(Subscription.id == parsed_uuid, Organization.id == parsed_uuid)
             )
         except ValueError:
+            ts_query_simple = func.websearch_to_tsquery("simple", query)
+            ilike_term = f"%{query}%"
             statement = statement.where(
                 or_(
-                    Customer.email.ilike(f"%{query}%"),
-                    Customer.name.ilike(f"%{query}%"),
-                    Organization.slug.ilike(f"%{query}%"),
-                    Organization.name.ilike(f"%{query}%"),
+                    Customer.search_vector.op("@@")(ts_query_simple),
+                    Customer.email.ilike(ilike_term),
+                    Organization.slug.ilike(ilike_term),
+                    Organization.name.ilike(ilike_term),
                 )
             )
 

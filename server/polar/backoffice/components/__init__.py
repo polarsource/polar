@@ -12,6 +12,7 @@ from ._metric_card import metric_card
 from ._modal import modal
 from ._state import card, empty_state, loading_state
 from ._status_badge import status_badge
+from ._support_tier_badge import support_tier_badge
 from ._tab_nav import Tab, tab_nav
 
 __all__ = [
@@ -32,5 +33,6 @@ __all__ = [
     "modal",
     "navigation",
     "status_badge",
+    "support_tier_badge",
     "tab_nav",
 ]

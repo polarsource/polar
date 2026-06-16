@@ -19,6 +19,7 @@ from polar.backoffice.organizations_v2.priority import (
     HELD_PAYOUT_PTS,
     compute,
 )
+from polar.models.organization import SupportTier
 from polar.organization_review.schemas import PaymentMetrics
 
 
@@ -49,6 +50,7 @@ def _org(
     created_days_ago: int = 100,
     days_in_status: int = 0,
     total_balance: int | None = 0,
+    support_tier: int | None = None,
 ) -> Any:
     """Build a fake Organization with just the timestamps the formula reads.
 
@@ -60,6 +62,7 @@ def _org(
     org.created_at = NOW - timedelta(days=created_days_ago)
     org.status_updated_at = NOW - timedelta(days=days_in_status)
     org.total_balance = total_balance
+    org.support_tier = support_tier
     return org
 
 
@@ -90,6 +93,24 @@ class TestAgingComponent:
             now=NOW,
         )
         assert aged.priority > fresh.priority
+
+
+class TestSupportTierComponent:
+    def test_free_or_null_contributes_nothing(self) -> None:
+        # Free has no grant — it's stored as NULL (None).
+        assert compute(_org(), now=NOW).support_tier_pts == 0.0
+        assert compute(_org(support_tier=None), now=NOW).support_tier_pts == 0.0
+
+    def test_level_scaled(self) -> None:
+        assert compute(
+            _org(support_tier=SupportTier.pro), now=NOW
+        ).support_tier_pts == pytest.approx(5.0)
+        assert compute(
+            _org(support_tier=SupportTier.growth), now=NOW
+        ).support_tier_pts == pytest.approx(10.0)
+        assert compute(
+            _org(support_tier=SupportTier.scale), now=NOW
+        ).support_tier_pts == pytest.approx(15.0)
 
 
 class TestRiskComponent:

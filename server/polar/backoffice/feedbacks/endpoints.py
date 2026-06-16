@@ -15,7 +15,13 @@ from polar.models.feedback import FeedbackStatus, FeedbackType
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 
 from .. import forms
-from ..components import button, confirmation_dialog, datatable, description_list
+from ..components import (
+    button,
+    confirmation_dialog,
+    datatable,
+    description_list,
+    support_tier_badge,
+)
 from ..components._tab_nav import Tab, tab_nav
 from ..layout import layout
 from ..responses import HXRedirectResponse
@@ -125,9 +131,10 @@ async def _render_list(
     route_name: str,
     breadcrumb_label: str,
     feedback_type: FeedbackType | None,
+    sort: str,
 ) -> None:
     repository = FeedbackRepository.from_session(session)
-    statement = repository.get_by_status_statement(status).options(
+    statement = repository.get_by_status_statement(status, sort=sort).options(
         joinedload(Feedback.user), joinedload(Feedback.organization)
     )
     if feedback_type is not None:
@@ -162,7 +169,7 @@ async def _render_list(
                 ):
                     pass
             if items:
-                _render_table(request, items)
+                _render_table(request, items, sort)
             else:
                 with tag.div(classes="text-center py-12 text-gray-500"):
                     text("No feedback in this view.")
@@ -170,18 +177,30 @@ async def _render_list(
                 pass
 
 
-def _render_table(request: Request, items: Sequence[Feedback]) -> None:
+def _tier_sort_header(request: Request, sort: str) -> None:
+    """Clickable 'Tier' header toggling the opt-in tier sort, preserving the
+    current tab (inbox/triaged) and type filter."""
+    params = dict(request.query_params)
+    params["sort"] = "recency" if sort == "tier" else "tier"
+    query = "&".join(f"{k}={v}" for k, v in params.items())
+    with tag.a(href=f"{request.url.path}?{query}", classes="link link-hover"):
+        text("Tier ↓" if sort == "tier" else "Tier")
+
+
+def _render_table(request: Request, items: Sequence[Feedback], sort: str) -> None:
     with tag.div(classes="overflow-x-auto"):
         with tag.table(classes="table table-zebra"):
             with tag.thead():
                 with tag.tr():
-                    for header in (
-                        "Type",
-                        "Message",
-                        "Organization",
-                        "User",
-                        "Submitted",
-                    ):
+                    with tag.th():
+                        text("Type")
+                    with tag.th():
+                        text("Message")
+                    with tag.th():
+                        text("Organization")
+                    with tag.th():
+                        _tier_sort_header(request, sort)
+                    for header in ("User", "Submitted"):
                         with tag.th():
                             text(header)
             with tag.tbody():
@@ -210,6 +229,8 @@ def _render_row(request: Request, feedback: Feedback) -> None:
             ):
                 text(feedback.organization.name)
         with tag.td():
+            support_tier_badge(feedback.organization.support_tier)
+        with tag.td():
             with tag.a(
                 href=str(request.url_for("users:get", id=feedback.user_id)),
                 classes="link",
@@ -224,6 +245,7 @@ async def list_inbox(
     request: Request,
     pagination: PaginationParamsQuery,
     feedback_type: Annotated[FeedbackType | None, Query(alias="type")] = None,
+    sort: Annotated[str, Query()] = "recency",
     session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
     await _render_list(
@@ -234,6 +256,7 @@ async def list_inbox(
         route_name="feedbacks:list",
         breadcrumb_label="Inbox",
         feedback_type=feedback_type,
+        sort=sort,
     )
 
 
@@ -242,6 +265,7 @@ async def list_triaged(
     request: Request,
     pagination: PaginationParamsQuery,
     feedback_type: Annotated[FeedbackType | None, Query(alias="type")] = None,
+    sort: Annotated[str, Query()] = "recency",
     session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
     await _render_list(
@@ -252,6 +276,7 @@ async def list_triaged(
         route_name="feedbacks:list_triaged",
         breadcrumb_label="Triaged",
         feedback_type=feedback_type,
+        sort=sort,
     )
 
 

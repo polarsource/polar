@@ -1,7 +1,7 @@
-import revalidate from '@/app/actions'
 import { useUpdateCustomer } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
+import { useRouter } from 'next/navigation'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import {
@@ -31,6 +31,7 @@ export const EditCustomerModal = ({
     | schemas['SubscriptionCustomer']
   onClose: () => void
 }) => {
+  const router = useRouter()
   const form = useForm<CustomerUpdateForm>({
     defaultValues: {
       name: customer.name || '',
@@ -75,7 +76,7 @@ export const EditCustomerModal = ({
         title: 'Customer Updated',
         description: `Customer ${customer.email ?? customer.name ?? 'customer'} updated successfully`,
       })
-      revalidate(`customer:${customer.id}`)
+      router.refresh()
       onClose()
     })
   }

@@ -79,6 +79,9 @@ export const useUpdateCustomer = (customerId: string, organizationId: string) =>
       getQueryClient().invalidateQueries({
         queryKey: ['customers', organizationId],
       })
+      getQueryClient().invalidateQueries({
+        queryKey: ['customers', 'id', customerId],
+      })
     },
   })
 

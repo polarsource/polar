@@ -71,6 +71,12 @@ class DisputeCaseService:
         repository = DisputeSupportCaseRepository.from_session(session)
         return await repository.get_by_dispute(dispute.id)
 
+    async def is_open(
+        self, session: AsyncSession | AsyncReadSession, case: DisputeSupportCase
+    ) -> bool:
+        repository = SupportCaseMessageRepository.from_session(session)
+        return await repository.is_open(case.id)
+
     async def close(
         self,
         session: AsyncSession,
@@ -91,8 +97,7 @@ class DisputeCaseService:
     async def _assert_open(
         self, session: AsyncSession, case: DisputeSupportCase
     ) -> None:
-        repository = SupportCaseMessageRepository.from_session(session)
-        if not await repository.is_open(case.id):
+        if not await self.is_open(session, case):
             raise CaseClosedError(case.id)
 
 

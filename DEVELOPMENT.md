@@ -105,9 +105,20 @@ You can override the secrets file location with `POLAR_SECRETS_FILE` environment
 
 If you want to work with payments and subscriptions, you'll need to set up a Stripe development environment:
 
+> [!IMPORTANT]
+> Put all Stripe values in the central secrets file `~/.config/polar/secrets.env`, **not** in `server/.env`.
+> `setup-environment` regenerates `server/.env` from the central file on every run (including each Conductor
+> worktree launch and `dev up --clean`), and the central file's values win — so edits made directly to
+> `server/.env` are overwritten.
+>
+> Do **not** rely on `dev stripe` for the webhook secrets when using the dashboard-endpoint flow below: it
+> derives the secret from `stripe listen --print-secret` (the Stripe CLI listener, a different secret) and
+> writes that one value to *both* `POLAR_STRIPE_WEBHOOK_SECRET` and `POLAR_STRIPE_CONNECT_WEBHOOK_SECRET`,
+> clobbering your two distinct dashboard secrets. Set those by hand in the central file.
+
 1. **Create a Stripe account** at [https://dashboard.stripe.com/register](https://dashboard.stripe.com/register)
 
-2. **Copy your API keys** from the [Stripe API Keys page](https://dashboard.stripe.com/test/apikeys) and add them to your `server/.env` file:
+2. **Copy your API keys** from the [Stripe API Keys page](https://dashboard.stripe.com/test/apikeys) and add them to your `~/.config/polar/secrets.env` file:
 
     ```
     POLAR_STRIPE_SECRET_KEY=sk_test_...
@@ -124,14 +135,14 @@ If you want to work with payments and subscriptions, you'll need to set up a Str
     - Set enabled events to only the events listed in `DIRECT_IMPLEMENTED_WEBHOOKS` (see `polar/integrations/stripe/endpoints.py`)
     - Click continue, Select Webhook endpoint
     - Set the endpoint URL to: `https://your-domain.ngrok-free.app/v1/integrations/stripe/webhook`
-    - Copy the webhook signing secret and add it to your `server/.env` file:
+    - Copy the webhook signing secret and add it to your `~/.config/polar/secrets.env` file:
         ```
         POLAR_STRIPE_WEBHOOK_SECRET=whsec_...
         ```
     - Restart the same operation with:
         - events listed in `CONNECT_IMPLEMENTED_WEBHOOKS` (see `polar/integrations/stripe/endpoints.py`)
         - Set the endpoint URL to: `https://your-domain.ngrok-free.app/v1/integrations/stripe/webhook-connect`
-        - Copy the webhook signing secret and add it to your `server/.env` file:
+        - Copy the webhook signing secret and add it to your `~/.config/polar/secrets.env` file:
             ```
             POLAR_STRIPE_CONNECT_WEBHOOK_SECRET=whsec_...
             ```

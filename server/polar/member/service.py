@@ -275,7 +275,7 @@ class MemberService:
 
         old_name = member.name
 
-        await repository.update(member, update_dict={"name": customer.name})
+        await self.update(session, member, name=customer.name)
 
         log.info(
             "member.sync_customer_name_with_member",

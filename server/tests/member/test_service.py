@@ -1222,7 +1222,7 @@ class TestSyncCustomerNameWithMember:
 
         assert member.name == "New Team Name"
 
-    async def test_individual_customer_is_skipped(
+    async def test_individual_customer_syncs_matching_email_member(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -1247,7 +1247,7 @@ class TestSyncCustomerNameWithMember:
 
         await member_service.sync_customer_name_with_member(session, customer)
 
-        assert member.name == "Old Member Name"
+        assert member.name == "New Customer Name"
 
     async def test_no_member_for_customer_email_is_noop(
         self,

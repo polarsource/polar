@@ -21,9 +21,9 @@ We're early on a new one, called Orbit, and still figuring a lot of it out. We a
 
 The starting observation is simple. The problem is not that LLMs can't write CSS or Tailwind classes. They write it fluently. The problem is that they write it without being aware of the underlying decisions.
 
-Ask an LLM to build a card and it will reach for `p-4`, `rounded-lg`, `bg-gray-100`, `dark:bg-zinc-900`, `text-gray-500`. Every value is reasonable. None of them is necessarily yours. Multiply that across hundreds of components and thousands of generations, and your interface slowly drifts into a thousand slightly different grays.
+Ask an LLM to build a card and it will reach for `p-4`, `rounded-lg`, `bg-gray-100`, `dark:bg-zinc-900`, `text-gray-500`. Every value is reasonable. None of them is necessarily yours. Multiply that across hundreds of components and thousands of generations, and your interface slowly drifts into a thousand slightly different grays. Even though you've tried to prevent it in CLAUDE.md
 
-So the bet we're making with Orbit is this: make it hard to express an off-brand decision in code in the first place. Ideally close to impossible. If a value isn't a design decision we've actually made, we'd like it to not typecheck.
+So the bet we're making with Orbit is this: make it hard to express an off-brand decision in code in the first place. Ideally close to impossible. If a value isn't a design decision we've actually made, it should not pass our CI.
 
 ### Before we begin
 
@@ -76,11 +76,11 @@ This flips who has to be careful. Instead of trusting every author, human or LLM
 
 ### The bet: make tokens the only vocabulary
 
-We're trying out StyleX, Meta's compile-time, type-safe styling library, in place of Tailwind. But StyleX is the mechanism, not the point. The point is what it lets us build on top: a single primitive, Box, that accepts design tokens as typed props and not much else.
+We're trying out StyleX, Meta's compile-time, type-safe styling library, in place of Tailwind. But StyleX is the mechanism, not the point. The point is what it lets us build on top: a single primitive, `<Box />`, that accepts design tokens as typed props and not much else.
 
 Our styling API is heavily inspired by Shopify’s [Restyle](https://shopify.github.io/restyle/) system.
 
-Here’s the same card, the Orbit way:
+Here’s the Orbit way:
 
 ```tsx
 <Box
@@ -99,7 +99,7 @@ Here’s the same card, the Orbit way:
 </Box>
 ```
 
-Every value here is derived from a decision. “padding” does not take “17px”, it takes a set of predefined sizes. backgroundColor does not take a hex code, it takes the names of colors we have actually defined. The types come straight from the token definitions:
+Every value here is derived from a decision. “padding” does not take “16px”, it takes a set of predefined sizes. backgroundColor does not take a hex code, it takes the names of colors we have actually defined. The types come straight from the token definitions:
 
 ```ts
 export const spacing = stylex.defineVars({

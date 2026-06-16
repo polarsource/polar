@@ -83,6 +83,7 @@ from .subscription_meter import SubscriptionMeter
 from .subscription_product_price import SubscriptionProductPrice
 from .subscription_update import SubscriptionUpdate
 from .support_case import (
+    DisputeSupportCase,
     ReviewAppealSupportCase,
     SupportCase,
     SupportCaseAttachment,
@@ -127,6 +128,7 @@ __all__ = [
     "DiscountProduct",
     "DiscountRedemption",
     "Dispute",
+    "DisputeSupportCase",
     "Downloadable",
     "EmailLog",
     "EmailOTP",

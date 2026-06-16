@@ -10,6 +10,7 @@ from polar.kit.repository.base import (
     RepositorySoftDeletionMixin,
 )
 from polar.models.support_case import (
+    DisputeSupportCase,
     ReviewAppealSupportCase,
     SupportCase,
     SupportCaseAttachment,
@@ -188,5 +189,19 @@ class ReviewAppealSupportCaseRepository(
     ) -> ReviewAppealSupportCase | None:
         statement = self.get_base_statement().where(
             ReviewAppealSupportCase.organization_review_id == organization_review_id
+        )
+        return await self.get_one_or_none(statement)
+
+
+class DisputeSupportCaseRepository(
+    RepositorySoftDeletionIDMixin[DisputeSupportCase, UUID],
+    RepositorySoftDeletionMixin[DisputeSupportCase],
+    RepositoryBase[DisputeSupportCase],
+):
+    model = DisputeSupportCase
+
+    async def get_by_dispute(self, dispute_id: UUID) -> DisputeSupportCase | None:
+        statement = self.get_base_statement().where(
+            DisputeSupportCase.dispute_id == dispute_id
         )
         return await self.get_one_or_none(statement)

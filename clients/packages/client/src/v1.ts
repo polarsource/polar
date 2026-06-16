@@ -31432,7 +31432,7 @@ export interface components {
      * SupportCaseType
      * @enum {string}
      */
-    SupportCaseType: 'review_appeal'
+    SupportCaseType: 'review_appeal' | 'dispute'
     SystemEvent:
       | components['schemas']['MeterCreditEvent']
       | components['schemas']['MeterResetEvent']
@@ -59765,7 +59765,7 @@ export const supportCaseMessageTypeValues: ReadonlyArray<
 ]
 export const supportCaseTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SupportCaseType']
-> = ['review_appeal']
+> = ['review_appeal', 'dispute']
 export const taxBehaviorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TaxBehavior']
 > = ['inclusive', 'exclusive']

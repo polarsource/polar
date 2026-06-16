@@ -23,6 +23,7 @@ from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
     from polar.models.customer import Customer
+    from polar.models.dispute import Dispute
     from polar.models.file import File
     from polar.models.organization import Organization
     from polar.models.organization_review import OrganizationReview
@@ -31,7 +32,8 @@ if TYPE_CHECKING:
 
 class SupportCaseType(StrEnum):
     review_appeal = "review_appeal"
-    # future: dispute, refund_request
+    dispute = "dispute"
+    # future: refund_request
 
 
 class SupportCaseParticipantKind(StrEnum):
@@ -91,6 +93,11 @@ class SupportCase(RecordModel):
         CheckConstraint(
             "(type = 'review_appeal') = (organization_review_id IS NOT NULL)",
             name="organization_review_matches_type",
+        ),
+        # A dispute case must link to a dispute — and only that type may.
+        CheckConstraint(
+            "(type = 'dispute') = (dispute_id IS NOT NULL)",
+            name="dispute_matches_type",
         ),
     )
 
@@ -152,6 +159,32 @@ Index(
     ReviewAppealSupportCase.organization_review_id,
     unique=True,
     postgresql_where=text("organization_review_id IS NOT NULL AND deleted_at IS NULL"),
+)
+
+
+class DisputeSupportCase(SupportCase):
+    """A support case handling a payment dispute (chargeback)."""
+
+    __mapper_args__ = {"polymorphic_identity": SupportCaseType.dispute}
+
+    dispute_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey("disputes.id", ondelete="restrict"),
+        nullable=True,
+        default=None,
+    )
+
+    @declared_attr
+    def dispute(cls) -> Mapped["Dispute"]:
+        return relationship("Dispute", lazy="raise")
+
+
+# One live dispute case per dispute.
+Index(
+    "ix_support_cases_dispute_dispute_id",
+    DisputeSupportCase.dispute_id,
+    unique=True,
+    postgresql_where=text("dispute_id IS NOT NULL AND deleted_at IS NULL"),
 )
 
 

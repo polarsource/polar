@@ -28,24 +28,3 @@ jobs:
           gh api --method PUT \
             /repos/${{ github.repository }}/rulesets/${{ vars.DEPLOY_LOCK_RULESET_ID }} \
             -f enforcement=active
-
-      - name: Announce in Slack
-        uses: slackapi/slack-github-action@v3.0.3
-        with:
-          method: chat.postMessage
-          token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
-          errors: true
-          payload: |
-            {
-              "channel": "C093CJXJXPT",
-              "text": "Deploys locked by ${{ github.actor }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":lock: *Deploys locked* by *${{ github.actor }}*\n*Reason:* ${{ inputs.reason }}\n\nNeed to ship urgently? Comment `/emergency` on your PR — this bypasses the lock."
-                  }
-                }
-              ]
-            }

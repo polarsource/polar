@@ -76,6 +76,10 @@ class SupportCaseMessageType(StrEnum):
     appeal_approved = "appeal_approved"
     appeal_denied = "appeal_denied"
     info_requested = "info_requested"
+    # actions (dispute)
+    dispute_under_review = "dispute_under_review"
+    dispute_won = "dispute_won"
+    dispute_lost = "dispute_lost"
 
 
 class SupportCase(RecordModel):

@@ -31437,6 +31437,9 @@ export interface components {
       | 'appeal_approved'
       | 'appeal_denied'
       | 'info_requested'
+      | 'dispute_under_review'
+      | 'dispute_won'
+      | 'dispute_lost'
     /** SupportCaseThread */
     SupportCaseThread: {
       case: components['schemas']['SupportCase']
@@ -59830,6 +59833,9 @@ export const supportCaseMessageTypeValues: ReadonlyArray<
   'appeal_approved',
   'appeal_denied',
   'info_requested',
+  'dispute_under_review',
+  'dispute_won',
+  'dispute_lost',
 ]
 export const supportCaseTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SupportCaseType']

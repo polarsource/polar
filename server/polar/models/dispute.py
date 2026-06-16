@@ -106,17 +106,9 @@ class Dispute(RecordModel):
     evidence_due_by: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
-    # Nullable for now: added without a DB backfill, populated app-side going
-    # forward (`default`) and backfilled for historical rows by
-    # `scripts/backfill_dispute_evidence_state.py`. A follow-up makes them
-    # non-nullable once the backfill has run.
-    has_evidence: Mapped[bool | None] = mapped_column(
-        Boolean, nullable=True, default=False
-    )
-    past_due: Mapped[bool | None] = mapped_column(Boolean, nullable=True, default=False)
-    submission_count: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, default=0
-    )
+    has_evidence: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    past_due: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    submission_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     order_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("orders.id"), nullable=False, index=True

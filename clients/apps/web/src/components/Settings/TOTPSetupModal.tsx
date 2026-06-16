@@ -1,6 +1,6 @@
 'use client'
 
-import { Modal } from '@polar-sh/orbit'
+import { Modal, Text } from '@polar-sh/orbit'
 import { useTOTPEnroll, useTOTPEnable } from '@/hooks/auth'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
@@ -23,6 +23,7 @@ export interface TOTPSetupModalProps {
 const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
   const [code, setCode] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [invalidCodeError, setInvalidCodeError] = useState<boolean>(false)
   const [enrollment, setEnrollment] = useState<
     schemas['TOTPEnrollment'] | null
   >(null)
@@ -38,7 +39,7 @@ const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
         <div className="flex flex-col gap-6 p-8">
           <p className="dark:text-polar-400 text-sm text-gray-600">
             To set this up, you&rsquo;ll need an authenticator app like Google
-            Authenticator or Authy.
+            Authenticator or a password manager that supports TOTP.
           </p>
           {error && (
             <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
@@ -112,9 +113,16 @@ const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
             </Button>
           </div>
           {error && (
-            <p className="text-center text-sm text-red-500 dark:text-red-400">
+            <Text color="danger" align="center">
               {error}
-            </p>
+            </Text>
+          )}
+          {invalidCodeError && (
+            <Text color="danger" variant="caption" align="center">
+              Using Authy? It doesn&apos;t support the modern and secure
+              algorithms we use. We recommend choosing a different authenticator
+              app.
+            </Text>
           )}
         </div>
       </div>
@@ -136,6 +144,7 @@ const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
   }
 
   const handleVerify = async () => {
+    setInvalidCodeError(false)
     if (!code || code.length !== 6) {
       setError('Please enter a 6-digit code')
       return
@@ -144,6 +153,7 @@ const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
     const { error } = await totpEnable.mutateAsync(code)
     if (error) {
       setError('Invalid code. Please try again.')
+      setInvalidCodeError(true)
       return
     }
     toast({ title: 'Two-factor authentication enabled' })

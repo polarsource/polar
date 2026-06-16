@@ -1,11 +1,14 @@
 'use client'
 
+import { useModal } from '@/components/Modal/useModal'
 import { useMembers } from '@/hooks/queries/members'
 import { useOrganization } from '@/hooks/queries/org'
-import { DataTable, type StatusColor } from '@polar-sh/orbit'
+import { schemas } from '@polar-sh/client'
+import { DataTable, InlineModal, type StatusColor } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Status } from '@polar-sh/orbit'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { EditMemberModal } from './EditMemberModal'
 
 const roleDisplayConfig: Record<
   'owner' | 'billing_manager' | 'member',
@@ -32,6 +35,15 @@ export const MembersSection = ({
     !!organizationId,
   )
   const { data: membersData, isLoading } = useMembers(customerId)
+
+  const [selectedMember, setSelectedMember] = useState<
+    schemas['Member'] | null
+  >(null)
+  const {
+    show: showEditMemberModal,
+    hide: hideEditMemberModal,
+    isShown: isEditMemberModalShown,
+  } = useModal()
 
   // Only show Members section for team customers when member model is enabled
   const isEnabled =
@@ -97,6 +109,23 @@ export const MembersSection = ({
         ]}
         isLoading={isLoading}
         className="text-sm"
+        onRowClick={({ original }) => {
+          setSelectedMember(original)
+          showEditMemberModal()
+        }}
+      />
+      <InlineModal
+        isShown={isEditMemberModalShown}
+        hide={hideEditMemberModal}
+        modalContent={
+          selectedMember ? (
+            <EditMemberModal
+              member={selectedMember}
+              customerId={customerId}
+              onClose={hideEditMemberModal}
+            />
+          ) : null
+        }
       />
     </div>
   )

@@ -31600,6 +31600,7 @@ export interface components {
       | 've_rif'
       | 'vn_tin'
       | 'za_vat'
+      | 'mu_tan'
     /**
      * TaxJurisdiction
      * @description Aggregated tax remitted by Polar for a single jurisdiction.
@@ -59918,6 +59919,7 @@ export const taxIDFormatValues: ReadonlyArray<
   've_rif',
   'vn_tin',
   'za_vat',
+  'mu_tan',
 ]
 export const taxJurisdictionSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TaxJurisdictionSortProperty']

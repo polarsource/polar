@@ -67,6 +67,7 @@ from polar.tax.tax_id import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
         ("123-456-789", "GE", ("123456789", TaxIDFormat.ge_vat)),
         ("12345678901", "GE", ("12345678901", TaxIDFormat.ge_vat)),
         ("GE12345678901", "GE", ("12345678901", TaxIDFormat.ge_vat)),
+        ("28392339", "MU", ("28392339", TaxIDFormat.mu_tan)),
     ],
 )
 def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> None:
@@ -99,6 +100,7 @@ def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> No
         ("1234567890", "GE"),  # Between supported lengths (10)
         ("123456789012", "GE"),  # Too long
         ("12345678A", "GE"),  # Non-digit
+        ("88392339", "MU"),  # Wrong leading digit
     ],
 )
 def test_validate_tax_id_invalid(number: str, country: str) -> None:

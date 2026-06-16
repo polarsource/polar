@@ -17,7 +17,12 @@ from polar.order.service import order as order_service
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
-from polar.tax.tax_id import InvalidTaxID, to_stripe_tax_id, validate_tax_id
+from polar.tax.tax_id import (
+    IncompatibleTaxIDFormat,
+    InvalidTaxID,
+    to_stripe_tax_id,
+    validate_tax_id,
+)
 
 from ..repository.payment_method import CustomerPaymentMethodRepository
 from ..schemas.customer import (
@@ -30,7 +35,10 @@ from ..schemas.customer import (
 )
 
 if TYPE_CHECKING:
-    from stripe.params._customer_create_params import CustomerCreateParams
+    from stripe.params._customer_create_params import (
+        CustomerCreateParams,
+        CustomerCreateParamsTaxIdDatum,
+    )
     from stripe.params._modify_customer_params import ModifyCustomerParams
 
 
@@ -170,12 +178,14 @@ class CustomerService:
                 params["invoice_settings"] = {
                     "default_payment_method": new_default_payment_method.processor_id,
                 }
+            stripe_tax_id: CustomerCreateParamsTaxIdDatum | None = None
+            if customer.tax_id is not None:
+                try:
+                    stripe_tax_id = to_stripe_tax_id(customer.tax_id)
+                except IncompatibleTaxIDFormat:
+                    stripe_tax_id = None
             await stripe_service.update_customer(
-                customer.stripe_customer_id,
-                tax_id=to_stripe_tax_id(customer.tax_id)
-                if customer.tax_id is not None
-                else None,
-                **params,
+                customer.stripe_customer_id, tax_id=stripe_tax_id, **params
             )
 
         if new_default_payment_method is not None:
@@ -227,7 +237,10 @@ class CustomerService:
             if customer.billing_address is not None:
                 params["address"] = customer.billing_address.to_dict()  # type: ignore
             if customer.tax_id is not None:
-                params["tax_id_data"] = [to_stripe_tax_id(customer.tax_id)]
+                try:
+                    params["tax_id_data"] = [to_stripe_tax_id(customer.tax_id)]
+                except IncompatibleTaxIDFormat:
+                    pass
             stripe_customer = await stripe_service.create_customer(**params)
             repository = CustomerRepository.from_session(session)
             customer = await repository.update(

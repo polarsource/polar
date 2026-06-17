@@ -24713,6 +24713,9 @@ export interface components {
       subscription_settings?:
         | components['schemas']['OrganizationSubscriptionSettings']
         | null
+      notification_settings?:
+        | components['schemas']['OrganizationNotificationSettings']
+        | null
       customer_email_settings?:
         | components['schemas']['OrganizationCustomerEmailSettings']
         | null
@@ -32147,7 +32150,9 @@ export interface components {
     /** UserOrganizationNotificationSettings */
     UserOrganizationNotificationSettings: {
       /** @description The authenticated user's notification preferences for this organization. */
-      notification_settings: components['schemas']['OrganizationNotificationSettings']
+      notification_settings?:
+        | components['schemas']['OrganizationNotificationSettings']
+        | null
     }
     /** UserOrganizationNotificationSettingsUpdate */
     UserOrganizationNotificationSettingsUpdate: {

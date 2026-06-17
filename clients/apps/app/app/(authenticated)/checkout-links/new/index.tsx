@@ -11,7 +11,6 @@ import { Input } from '@/components/Shared/Input'
 import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import { useCheckoutLinkCreate } from '@/hooks/polar/checkout_links'
-import { useInfiniteDiscounts } from '@/hooks/polar/discounts'
 import { useInfiniteProducts } from '@/hooks/polar/products'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useToast } from '@/providers/ToastProvider'
@@ -43,10 +42,6 @@ export default function CreateCheckoutLink() {
     () => productsData?.pages.flatMap((page) => page.items) ?? [],
     [productsData],
   )
-
-  useInfiniteDiscounts(organization?.id, {
-    sorting: ['name'],
-  })
 
   const defaultValues: CheckoutLinkCreateForm = {
     label: '',

@@ -1,0 +1,499 @@
+---
+title: "API Versioning"
+description: "Proposal for a date-based API versioning strategy with strict change policies and predictable release cadence"
+---
+
+<Info>
+**Status**: Draft
+
+**Created**: 2026-06-08
+
+**Comments**: All aspects of this proposal are open for debate, particularly release cadence and support window duration.
+
+</Info>
+
+## Abstract
+
+This RFC proposes a date-based API versioning strategy for Polar with the following characteristics:
+
+- **Version lifecycle**: 3 versions maintained with ~9-month support window — open for discussion
+- **Release cadence**: Quarterly (January, April, July, October) — open for discussion
+- **Change policy**: Strict freeze on Current and Deprecated versions; all contract changes through Next version
+- **Version naming**: `YYYY-MM` format (e.g., `2026-01`, `2026-04`)
+- **Versioning mechanism**: `Polar-Version` header, defaulting to Current version
+
+The goal is to establish a predictable, disciplined API evolution process that balances innovation with stability.
+
+## Motivation
+
+### Problems with Current Approach
+
+Currently, Polar lacks a formal API versioning strategy. Our current approach is "best-effort", where we _try_ to limit breaking changes and maintain backward compatibility, but we have no guarantees or clear policies. This leads to several issues:
+
+- No strong guarantees for consumers about stability and support duration
+- Deprecated fields and endpoints accumulate over time, increasing technical debt
+- SDK versioning is inconsistent and often lags behind API changes
+
+### Desired Outcomes
+
+Our goal is to implement a robust API versioning strategy that provides clear guarantees to consumers, enables disciplined API evolution, and reduces technical debt; while maintaining a **fast-paced** and **innovative** development process.
+
+## Proposal
+
+### Release Schedule
+
+Releases occur on a **quarterly cadence** during the **first week of each quarter** (January, April, July, October).
+
+The release is **calendar-driven**: it happens on the scheduled date regardless of feature completion. Incomplete work is deferred to the Next version.
+
+### Version Lifecycle
+
+Exactly **3 versions** are maintained at any time:
+
+```
+[N-1: deprecated] → [N: default] → [Next: in development]
+```
+
+#### State Transitions
+
+On each release:
+
+1. **N-1** is **removed**
+2. **N** becomes **N-1** and is **deprecated**
+3. The **Next version** becomes **N** and is the new default. It is **frozen** for contract changes.
+4. A **new Next version** is created for ongoing development
+
+#### Timeline Example
+
+```
+Before Q2 2026 release:
+  2025-10  (N-1, to be removed)
+  2026-01  (N, default)
+  2026-04  (Next, in development)
+
+After Q2 2026 release:
+  2026-01  (N-1, to be removed on next release)
+  2026-04  (N, default) ← was Next
+  2026-07  (Next, in development)
+  (2025-10 is now removed)
+```
+
+Each version follows this lifecycle:
+
+- **~3 months**: Next (development phase, accepts all changes)
+- **~3 months**: Current (frozen, default version)
+- **~3 months**: Deprecated (frozen, removal pending)
+- **Total**: ~9 months of support
+
+<Note>
+  If this is seen as too aggressive, we can consider a longer support window
+  (e.g., 12 months) by maintaining 4 versions instead of 3. See Appendix for
+  timeline examples.
+</Note>
+
+### Change Policy
+
+#### Strict Freeze Rule
+
+**Deprecated and Current versions are completely frozen for contract changes.**
+
+| **Change Type**                          | **Deprecated** | **Current** | **Next** |
+| ---------------------------------------- | -------------- | ----------- | -------- |
+| Add endpoint                             | ❌             | ❌          | ✅       |
+| Remove endpoint                          | ❌             | ❌          | ✅       |
+| Modify schema (add/remove/change fields) | ❌             | ❌          | ✅       |
+| Change input/output format               | ❌             | ❌          | ✅       |
+| Bug fixes                                | ✅             | ✅          | ✅       |
+| Performance improvements                 | ✅             | ✅          | ✅       |
+| Internal implementation changes          | ✅             | ✅          | ✅       |
+
+**Rationale**: This strict policy prevents any contract changes from affecting stable versions, ensuring maximum stability for consumers and clarity for engineering team. Even backward-compatible changes (adding optional fields) must go through the Next version.
+
+#### Development Flow
+
+1. All contract changes are developed against the **Next** version
+2. When released, Next becomes Current and is frozen
+3. New contract changes target the new Next version
+4. Bug fixes can be applied to any maintained version
+
+Polar dashboard and mobile app will always use the **Next** version, so it can benefit from latest features immediately. Breaking changes are less disruptive for internal clients since we control both sides of the contract.
+
+### Version Increment
+
+The version **always increments on schedule**, even if no contract changes have been made in that quarter.
+
+**Rationale**: Maintaining a regular cadence with predictable version numbers simplifies planning and avoids gaps in the version sequence.
+
+### Removal Policy
+
+Deprecated versions are **removed on the next release date** (hard cutoff).
+
+### Version Naming
+
+API versions use the `YYYY-MM` format representing the quarter of release:
+
+```
+2026-01  # Q1 2026 (January release)
+2026-04  # Q2 2026 (April release)
+2026-07  # Q3 2026 (July release)
+2026-10  # Q4 2026 (October release)
+2027-01  # Q1 2027 (January release)
+```
+
+**Rationale**: This format decouples the naming scheme from the release cadence. If we later decide to release monthly or semi-annually, the naming scheme remains valid without migration.
+
+### Versioning Mechanism
+
+#### Request Header
+
+Clients specify the API version using a custom header:
+
+```http
+Polar-Version: 2026-01
+```
+
+#### Default Behavior
+
+When the `Polar-Version` header is omitted, requests are routed to the **Current** version.
+
+<Warning>
+  The default version changes over time as new versions are released. **Clients
+  should explicitly set the `Polar-Version` header to avoid unexpected
+  disruptions when the Current version changes.**
+</Warning>
+
+## SDK Strategy
+
+The SDK will support the three supported versions at any time, through submodules. For example:
+
+```
+sdk/
+├── v2026_04/
+│   ├── __init__.py
+│   ├── client.py
+│   ├── models.py
+│   └── services/
+│       └── customers.py
+├── v2026_07/
+│   ├── __init__.py
+│   ├── client.py
+│   ├── models.py
+│   └── services/
+│       └── customers.py
+├── v2026_10/
+│   ├── __init__.py
+│   ├── client.py
+│   ├── models.py
+│   └── services/
+│       └── customers.py
+└── README.md
+```
+
+The user would use the client by importing the version they want:
+
+```py
+from polar.v2026_07 import Polar
+```
+
+Under the hood, this version would automatically use the schemas and services corresponding to that version and automatically set the version header when issuing requests. The good side effect is that it forces users to explicitly set a version.
+
+### Versioning strategy
+
+- Bug fixes, performance improvements to the generated code: **Patch** version
+- Added features, updates to the **Next** API version (models or endpoints): **Minor** version
+- API version cycle: **Major** version. Since we're removing a version, it's a breaking change — users will need to change their import.
+
+## Implementation
+
+### Backend: Header-based routing POC
+
+We introduce a new `version` decorator to put on top of routes. By default, without the decorator, the route is available on all versions. If the decorator is used, the route is only available on the specified version(s). A more specific version takes precedence over a more general one.
+
+Custom routing classes will then take care to create sub-FastAPI apps that expose the right endpoints and schemas for each version. The main app will route requests to the appropriate sub-app based on the `Polar-Version` header.
+
+```python Usage
+class ItemOld(BaseModel):
+    name: str
+    description: str
+
+
+class ItemNew(BaseModel):
+    name: str
+
+
+# Standard router definition
+router = APIRouter(prefix="/v1/items", tags=[APITag.public])
+
+
+@router.get("/")
+@version(APIVersion(2026, 1))
+async def item_old() -> ItemOld:
+    # Old endpoint with version decorator, should only be included in version 2026-01.
+    return ItemOld(name="Old Item", description="This is an old item.")
+
+
+@router.get("/")
+async def item_new() -> ItemNew:
+    # New endpoint without version decorator, should be included in all versions.
+    return ItemNew(name="New Item")
+
+
+# Generate a wrapper router that'll include only the endpoints relevant for the specified version.
+old_router = VersionedAPIRouter(version=APIVersion(2026, 1))
+old_router.include_router(router)
+# Include the wrapper router in a FastAPI app to generate the OpenAPI schema for that version.
+old_app = FastAPI(openapi_url="/2026-01/openapi.json", version="2026-01")
+old_app.include_router(old_router)
+
+
+new_router = VersionedAPIRouter(version=APIVersion(2026, 4))
+new_router.include_router(router)
+new_app = FastAPI(openapi_url="/2026-04/openapi.json", version="2026-04")
+new_app.include_router(new_router)
+
+# Add versioned apps as routes in a main FastAPI app
+# with a custom route class that matches the incoming version header and dispatches to the correct app.
+app = FastAPI()
+app.routes.append(
+    VersionRoute(
+        version=APIVersion(2026, 1), current_version=APIVersion(2026, 4), app=old_app
+    )
+)
+app.routes.append(
+    VersionRoute(
+        version=APIVersion(2026, 4), current_version=APIVersion(2026, 4), app=new_app
+    )
+)
+```
+
+```python POC Implementation expandable
+import functools
+import typing
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+from ratelimit.types import Scope
+from starlette.datastructures import Headers
+from starlette.routing import BaseRoute, Match, Route
+from starlette.types import ASGIApp, Receive, Send
+
+from polar.openapi import APITag
+from polar.routing import APIRouter
+
+
+class APIVersion:
+    __slots__ = ("month", "year")
+    year: int
+    month: int
+
+    def __init__(self, year: int, month: int):
+        self.year = year
+        self.month = month
+
+    def __str__(self) -> str:
+        return f"{self.year}-{self.month:02d}"
+
+    def __eq__(self, value: object, /) -> bool:
+        if not isinstance(value, APIVersion):
+            return NotImplemented
+        return value.year == self.year and value.month == self.month
+
+    def __lt__(self, value: object, /) -> bool:
+        if not isinstance(value, APIVersion):
+            return NotImplemented
+        if self.year != value.year:
+            return self.year < value.year
+        return self.month < value.month
+
+    def __le__(self, value: object, /) -> bool:
+        if not isinstance(value, APIVersion):
+            return NotImplemented
+        if self.year != value.year:
+            return self.year < value.year
+        return self.month <= value.month
+
+    def __gt__(self, value: object, /) -> bool:
+        if not isinstance(value, APIVersion):
+            return NotImplemented
+        if self.year != value.year:
+            return self.year > value.year
+        return self.month > value.month
+
+    def __ge__(self, value: object, /) -> bool:
+        if not isinstance(value, APIVersion):
+            return NotImplemented
+        if self.year != value.year:
+            return self.year > value.year
+        return self.month >= value.month
+
+    @classmethod
+    def parse(cls, version_str: str) -> "APIVersion":
+        try:
+            year_str, month_str = version_str.split("-")
+            return cls(year=int(year_str), month=int(month_str))
+        except ValueError as e:
+            raise ValueError(f"Invalid version string: {version_str}") from e
+
+
+def version(*versions: APIVersion):
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            return await func(*args, **kwargs)
+
+        wrapper._api_versions = versions  # type: ignore[attr-defined]
+        return wrapper
+
+    return decorator
+
+
+class VersionedAPIRouter(APIRouter):
+    def __init__(self, version: APIVersion, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.version = version
+
+    def add_api_route(self, path, endpoint, *, methods=None, **kwargs):
+        endpoint_versions = getattr(endpoint, "_api_versions", None)
+        conflicting_route = self._get_conflicting_route(path, methods)
+
+        if endpoint_versions is None:
+            if conflicting_route is not None:
+                conflicting_route_versions = getattr(
+                    conflicting_route.endpoint, "_api_versions", None
+                )
+                if conflicting_route_versions is not None:
+                    return
+        elif self.version not in endpoint_versions:
+            return
+
+        if conflicting_route is not None:
+            self.routes.remove(conflicting_route)
+
+        super().add_api_route(path, endpoint, methods=methods, **kwargs)
+
+    def _get_conflicting_route(
+        self, path: str, methods: set[str] | list[str] | None
+    ) -> Route | None:
+        for route in self.routes:
+            if not isinstance(route, Route):
+                continue
+            if route.path == path and route.methods == set(methods or []):
+                return route
+        return None
+
+
+class VersionRoute(BaseRoute):
+    def __init__(
+        self,
+        version: APIVersion,
+        current_version: APIVersion,
+        app: ASGIApp,
+        name: str | None = None,
+    ) -> None:
+        self.version = version
+        self.current_version = current_version
+        self.app = app
+        self.name = name
+
+    @property
+    def routes(self) -> list[BaseRoute]:
+        return getattr(self.app, "routes", [])
+
+    def matches(self, scope: Scope) -> tuple[Match, Scope]:
+        if scope["type"] in ("http", "websocket"):
+            headers = Headers(scope=scope)
+            raw_version = headers.get("polar-version")
+            try:
+                request_version = (
+                    APIVersion.parse(raw_version)
+                    if raw_version
+                    else self.current_version
+                )
+            except ValueError:
+                return Match.NONE, scope
+
+            if request_version == self.version:
+                child_scope = {"endpoint": self.app}
+                return Match.FULL, child_scope
+        return Match.NONE, {}
+
+    async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
+        await self.app(scope, receive, send)
+
+    def __eq__(self, other: typing.Any) -> bool:
+        if not isinstance(other, VersionRoute):
+            return NotImplemented
+        return self.version == other.version and self.app == other.app
+
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        name = self.name or ""
+        return (
+            f"{class_name}(version={self.version!r}, name={name!r}, app={self.app!r})"
+        )
+```
+
+### Testing
+
+We should have tests that lock the schema for N-1 and N versions to ensure no contract changes are allowed. If a change is attempted, the test should fail, indicating that the change must be made in the Next version instead.
+
+### Documentation
+
+1. **Version selector**: Allow users to view docs for each maintained version
+2. **Version indicators**: Clearly mark deprecated versions in documentation
+3. **Changelog**: Maintain per-version changelog
+4. **Migration guides**: Provide guides for migrating between versions
+
+### Monitoring
+
+We should track adoption of each version and monitor for errors. After one or two release cycles, we can evaluate if the cadence and support window are working as intended or if adjustments are needed.
+
+### Rollout Plan
+
+#### ASAP
+
+- Start to tag API version in OpenAPI file.
+- Continue to work as we do today, i.e. "best-effort" backward compatibility
+
+#### Before September 2026
+
+- Implement the API versioning logic in the server
+- Have the SDK working as described in [SDK Strategy](#sdk-strategy)
+
+#### October 2026
+
+- **Freeze** the API as it is under the version `2026-10`
+- Start the cycles by setting up the version `2027-01` and start to work on this version only
+- Release the SDK with those two versions
+
+## Appendix: Version Timeline Examples
+
+### Scenario A: Quarterly Cadence, 9-month Support (Proposed)
+
+```
+Jan 2026:  Release 2026-01
+  Maintained: 2025-10 (N-1), 2026-01 (N), 2026-04 (next)
+
+Apr 2026:  Release 2026-04
+  Maintained: 2026-01 (N-1), 2026-04 (N), 2026-07 (next)
+  Removed: 2025-10
+
+Jul 2026:  Release 2026-07
+  Maintained: 2026-04 (N-1), 2026-07 (N), 2026-10 (next)
+  Removed: 2026-01
+
+Oct 2026:  Release 2026-10
+  Maintained: 2026-07 (N-1), 2026-10 (N), 2027-01 (next)
+  Removed: 2026-04
+```
+
+### Scenario B: Quarterly Cadence, 12-month Support
+
+```
+Jan 2026:  Release 2026-01
+  Maintained: 2025-07 (N-2), 2025-10 (N-1), 2026-01 (N), 2026-04 (next)
+
+Apr 2026:  Release 2026-04
+  Maintained: 2025-10 (N-2), 2026-01 (N-1), 2026-04 (N), 2026-07 (next)
+  Removed: 2025-07
+```

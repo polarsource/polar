@@ -389,7 +389,6 @@ class OrganizationPublicBase(OrganizationBase):
 
     feature_settings: SkipJsonSchema[OrganizationFeatureSettings | None]
     subscription_settings: SkipJsonSchema[OrganizationSubscriptionSettings]
-    notification_settings: SkipJsonSchema[OrganizationNotificationSettings]
     customer_email_settings: SkipJsonSchema[OrganizationCustomerEmailSettings]
 
 
@@ -420,8 +419,11 @@ class Organization(OrganizationBase):
     subscription_settings: OrganizationSubscriptionSettings = Field(
         description="Settings related to subscriptions management",
     )
-    notification_settings: OrganizationNotificationSettings = Field(
+    notification_settings: SkipJsonSchema[OrganizationNotificationSettings] = Field(
         description="Settings related to notifications",
+        default_factory=lambda: OrganizationNotificationSettings(
+            new_order=True, new_subscription=True
+        ),
     )
     customer_email_settings: OrganizationCustomerEmailSettings = Field(
         description="Settings related to customer emails",
@@ -546,7 +548,6 @@ class OrganizationUpdate(Schema):
 
     feature_settings: OrganizationFeatureSettingsUpdate | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
-    notification_settings: OrganizationNotificationSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
     customer_portal_settings: OrganizationCustomerPortalSettings | None = None
     default_presentment_currency: PresentmentCurrency | None = Field(

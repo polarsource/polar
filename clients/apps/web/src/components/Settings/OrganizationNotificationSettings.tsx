@@ -19,10 +19,7 @@ const OrganizationNotificationSettings: React.FC<
     useUpdateUserOrganizationNotificationSettings(organization.id)
 
   const { value: settings, update } = useOptimisticSave(
-    // TODO (maxime): default to organization settings is temporary while user level is Nullable.
-    // once backfill script ran and user level is non-nullable, we can remove the fallback to organization settings.
-    userNotificationSettings.notification_settings ??
-      organization.notification_settings,
+    userNotificationSettings.notification_settings,
     async (notification_settings) => {
       const { error } =
         await updateUserOrganizationNotificationSettings.mutateAsync({

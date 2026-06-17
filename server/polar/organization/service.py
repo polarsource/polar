@@ -751,6 +751,16 @@ class OrganizationService:
 
         organization = await repository.update(organization, update_dict=update_dict)
         await repository.soft_delete(organization)
+
+        # Close an open *appeal* support case — it's moot once the org is gone.
+        # Only appeals: dispute and refund cases are deliberately left open, as
+        # they're financial matters (chargebacks, refunds) that outlive the
+        # merchant deleting their account.
+        review_repository = OrganizationReviewRepository.from_session(session)
+        review = await review_repository.get_by_organization(organization.id)
+        if review is not None:
+            await appeal_case_service.close_for_organization_deletion(session, review)
+
         polar_self_service.enqueue_delete_customer(organization_id=organization.id)
 
         log.info(

@@ -213,6 +213,30 @@ class AppealCaseService:
             session, case, approved=approved, staff_user=staff_user, reason=reason
         )
 
+    async def close_for_organization_deletion(
+        self, session: AsyncSession, review: OrganizationReview
+    ) -> SupportCaseMessage | None:
+        """Close the review's appeal case when its organization is deleted.
+
+        A silent, internal lifecycle close (system author, no decision, no
+        merchant email) — the merchant is gone, so the case should stop sitting
+        open in the backoffice. No-op when there's no case or it's already
+        closed.
+        """
+        case = await self.get_case(session, review)
+        if case is None:
+            return None
+        message_repository = SupportCaseMessageRepository.from_session(session)
+        if not await message_repository.is_open(case.id):
+            return None
+        return await support_case_service.close(
+            session,
+            case,
+            author_kind=SupportCaseMessageAuthorKind.system,
+            body="Organization deleted.",
+            audience=[],
+        )
+
     async def get_case(
         self, session: AsyncSession | AsyncReadSession, review: OrganizationReview
     ) -> ReviewAppealSupportCase | None:

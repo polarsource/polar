@@ -9,6 +9,7 @@ from sqlalchemy import update
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
+from polar.dispute.dispute_case import dispute_case as dispute_case_service
 from polar.enums import (
     InvoiceNumbering,
     PayoutAccountType,
@@ -52,8 +53,10 @@ from polar.organization.schemas import (
 )
 from polar.organization.service import OrganizationError
 from polar.organization.service import organization as organization_service
+from polar.organization_review.appeal_case import appeal_case as appeal_case_service
 from polar.organization_review.schemas import ReviewContext, ReviewVerdict
 from polar.postgres import AsyncSession
+from polar.support_case.repository import SupportCaseMessageRepository
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -61,7 +64,9 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
     create_checkout_link,
+    create_dispute,
     create_order,
+    create_payment,
     create_payout_account,
     create_product,
     create_webhook_endpoint,
@@ -3115,6 +3120,65 @@ class TestSoftDeleteOrganization:
         enqueue_delete_customer_mock.assert_called_once_with(
             organization_id=organization.id
         )
+
+    async def test_closes_open_appeal_case(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        mocker.patch("polar.organization.service.polar_self_service")
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=90.0,
+            violated_sections=[],
+            reason="Automated review denied.",
+            model_used="test",
+            appeal_submitted_at=datetime.now(UTC),
+            appeal_reason="Please reconsider.",
+            appeal_reviewed_at=datetime.now(UTC),
+            appeal_decision=OrganizationReview.AppealDecision.REJECTED,
+        )
+        await save_fixture(review)
+        case = await appeal_case_service.request_human_review(
+            session,
+            review,
+            reason="Here is the additional context for the review.",
+            requested_by_user=user,
+            organization=organization,
+        )
+
+        await organization_service.soft_delete_organization(session, organization)
+
+        message_repository = SupportCaseMessageRepository.from_session(session)
+        assert await message_repository.is_open(case.id) is False
+
+    async def test_leaves_dispute_case_open(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Disputes are live financial matters — they must outlive the merchant
+        # deleting their account.
+        mocker.patch("polar.organization.service.polar_self_service")
+        order = await create_order(save_fixture, customer=customer, product=product)
+        payment = await create_payment(save_fixture, organization, order=order)
+        dispute = await create_dispute(save_fixture, order, payment)
+        case = await dispute_case_service.open_case(
+            session, dispute, organization=organization
+        )
+
+        await organization_service.soft_delete_organization(session, organization)
+
+        message_repository = SupportCaseMessageRepository.from_session(session)
+        assert await message_repository.is_open(case.id) is True
 
     async def test_anonymizes_pii_and_releases_slug(
         self,

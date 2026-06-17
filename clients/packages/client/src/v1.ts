@@ -32150,9 +32150,7 @@ export interface components {
     /** UserOrganizationNotificationSettings */
     UserOrganizationNotificationSettings: {
       /** @description The authenticated user's notification preferences for this organization. */
-      notification_settings?:
-        | components['schemas']['OrganizationNotificationSettings']
-        | null
+      notification_settings: components['schemas']['OrganizationNotificationSettings']
     }
     /** UserOrganizationNotificationSettingsUpdate */
     UserOrganizationNotificationSettingsUpdate: {

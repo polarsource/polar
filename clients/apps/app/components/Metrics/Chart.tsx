@@ -12,9 +12,7 @@ interface ChartProps {
   currentPeriodData: ReturnType<typeof useMetrics>['data']
   previousPeriodData: ReturnType<typeof useMetrics>['data']
   title?: string
-  trend?: number
   height?: number
-  showTotal?: boolean
   strokeWidth?: number
   showPreviousPeriodTotal?: boolean
   metric: schemas['Metric'] & {

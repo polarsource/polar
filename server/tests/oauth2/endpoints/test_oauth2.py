@@ -450,6 +450,36 @@ class TestOAuth2Authorize:
         assert json["sub_type"] == expected_sub_type
 
     @pytest.mark.auth
+    async def test_dynamically_registered_client_defaults_to_user(
+        self, client: AsyncClient
+    ) -> None:
+        """`default_sub_type` is not an RFC 7591 registered claim, so it's
+        stripped from the metadata of dynamically-registered clients. The
+        authorize flow must then fall back to a user-scoped grant instead of
+        forcing organization selection."""
+        register_response = await client.post(
+            "/v1/oauth2/register",
+            json={
+                "client_name": "Test DCR Client",
+                "redirect_uris": ["https://example.com/callback"],
+                "scope": "openid profile email",
+            },
+        )
+        assert register_response.status_code == 201
+        client_id = register_response.json()["client_id"]
+
+        params = {
+            "client_id": client_id,
+            "response_type": "code",
+            "redirect_uri": "https://example.com/callback",
+            "scope": "openid profile email",
+        }
+        response = await client.get("/v1/oauth2/authorize", params=params)
+
+        assert response.status_code == 200
+        assert response.json()["sub_type"] == "user"
+
+    @pytest.mark.auth
     async def test_authenticated_prompt_login(
         self, client: AsyncClient, oauth2_client: OAuth2Client
     ) -> None:

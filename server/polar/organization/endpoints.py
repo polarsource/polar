@@ -148,7 +148,7 @@ OrganizationNotFound = {
     "/",
     summary="List Organizations",
     response_model=ListResource[OrganizationSchema],
-    tags=[APITag.public],
+    tags=[APITag.public, APITag.mcp],
     operation_id="organizations:list",
 )
 async def list_organizations(

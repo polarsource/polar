@@ -939,6 +939,36 @@ export interface components {
      * @enum {string}
      */
     BenefitVisibility: 'draft' | 'private' | 'public'
+    /** ChargebackPreventionRefundEmail */
+    ChargebackPreventionRefundEmail: {
+      /**
+       * Template
+       * @default chargeback_prevention_refund
+       * @constant
+       */
+      template: 'chargeback_prevention_refund'
+      props: components['schemas']['ChargebackPreventionRefundProps']
+    }
+    /** ChargebackPreventionRefundProps */
+    ChargebackPreventionRefundProps: {
+      /** Email */
+      email: string
+      /** Order Number */
+      order_number: string
+      /** Customer Name */
+      customer_name: string
+      /** Amount */
+      amount: number
+      /**
+       * Currency
+       * @default usd
+       */
+      currency: string
+      /** Refund Date */
+      refund_date: string
+      /** Formatted Amount */
+      readonly formatted_amount: string
+    }
     /**
      * CustomerCancellationReason
      * @enum {string}

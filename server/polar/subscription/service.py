@@ -2630,6 +2630,9 @@ class SubscriptionService:
         """Mark a subscription as past due. Main use case is to set it when payment fails.
         When this happens the customer will be notified and lose access to the benefits"""
 
+        if subscription.ended_at is not None:
+            return subscription
+
         previous_status = subscription.status
         previous_is_canceled = subscription.canceled
 

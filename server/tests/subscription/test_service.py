@@ -4628,6 +4628,28 @@ class TestMarkPastDue:
         assert result_subscription.status == SubscriptionStatus.past_due
         send_past_due_email_mock.assert_called_once_with(session, subscription)
 
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_mark_past_due_skips_ended_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        # Given
+        subscription.status = SubscriptionStatus.canceled
+        subscription.ended_at = utc_now()
+        await save_fixture(subscription)
+
+        # When
+        result_subscription = await subscription_service.mark_past_due(
+            session, subscription
+        )
+
+        # Then
+        assert result_subscription.status == SubscriptionStatus.canceled
+        enqueue_job_mock.assert_not_called()
+
 
 @pytest.mark.asyncio
 class TestUpdatePaymentMethodFromRetry:

@@ -2903,6 +2903,45 @@ class TestHandlePaymentFailure:
         mock_enqueue_benefits_grants.assert_called_once_with(session, subscription)
 
     @freeze_time("2024-01-01 12:00:00")
+    async def test_first_dunning_attempt_skips_ended_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """A dunning order that fires after the subscription has already
+        ended must not progress dunning or overwrite the terminal status."""
+        # Given
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            revoke=True,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+        order.next_payment_attempt_at = None
+        await save_fixture(order)
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then
+        assert result_order.next_payment_attempt_at is None
+        mock_mark_past_due.assert_not_called()
+
+    @freeze_time("2024-01-01 12:00:00")
     async def test_ignores_payment_failure_for_already_paid_order(
         self,
         session: AsyncSession,

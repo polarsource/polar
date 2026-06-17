@@ -2844,6 +2844,19 @@ class OrderService:
         assert order.subscription is not None
         subscription = order.subscription
 
+        # Subscription already terminated — don't progress dunning or
+        # overwrite its terminal status.
+        if subscription.ended_at is not None:
+            log.info(
+                "Ignoring first dunning attempt for ended subscription",
+                order_id=order.id,
+                subscription_id=subscription.id,
+            )
+            repository = OrderRepository.from_session(session)
+            return await repository.update(
+                order, update_dict={"next_payment_attempt_at": None}
+            )
+
         # Mark subscription as past_due first so past_due_deadline is available
         await subscription_service.mark_past_due(session, subscription)
 

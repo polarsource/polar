@@ -80,14 +80,14 @@ async def list(
                 )
             )
         except ValueError:
-            query_lower = query.lower()
+            ts_query_simple = func.websearch_to_tsquery("simple", query)
+            ilike_term = f"%{query}%"
             statement = statement.where(
                 or_(
-                    func.lower(Customer.email).ilike(f"%{query_lower}%"),
-                    func.lower(Customer.name).ilike(f"%{query_lower}%"),
-                    func.lower(Customer.external_id).ilike(f"%{query_lower}%"),
-                    func.lower(Organization.slug).ilike(f"%{query_lower}%"),
-                    func.lower(Organization.name).ilike(f"%{query_lower}%"),
+                    Customer.search_vector.op("@@")(ts_query_simple),
+                    Customer.external_id.ilike(ilike_term),
+                    Organization.slug.ilike(ilike_term),
+                    Organization.name.ilike(ilike_term),
                 )
             )
 

@@ -36,13 +36,13 @@ The parameters are the one described in the [OpenID Connect specification](https
   of the scopes you declared when creating the OAuth2 client.
 </ParamField>
 
-If you redirect the user to this URL, they'll see a page asking them to grant access to their data, corresponding to the scopes you asked for. By default, the user will also be prompted to select one of their organizations that they have management permissions for, as Polar generates organization-level access tokens by default.
+If you redirect the user to this URL, they'll see a page asking them to grant access to their data, corresponding to the scopes you asked for. By default, Polar generates user-scoped access tokens, so the token will be tied to the user granting access.
 
 <img src="/assets/integrate/oauth2/connect.png" />
 
-If they allow it and select an organization, they'll be redirected to your `redirect_uri` with a `code` parameter in the query string. This code is a one-time code that you can exchange for an access token.
+If they allow it, they'll be redirected to your `redirect_uri` with a `code` parameter in the query string. This code is a one-time code that you can exchange for an access token.
 
-To skip the organization selection and get a user-scoped token instead, you can add `sub_type=user` to the authorization URL:
+To get an organization-scoped token instead, you can add `sub_type=organization` to the authorization URL. The user will then be prompted to select one of the organizations they have management permissions for:
 
 ```
 https://polar.sh/oauth2/authorize?
@@ -50,7 +50,7 @@ https://polar.sh/oauth2/authorize?
   &client_id=CLIENT_ID
   &redirect_uri=https%3A%2F%2Fexample.com%2Fcallback
   &scope=openid%20email
-  &sub_type=user
+  &sub_type=organization
 ```
 
 #### Exchange code token
@@ -82,21 +82,19 @@ The `access_token` will allow you to make authenticated API requests on behalf o
 
 #### Organization vs User Access Tokens
 
-By default, Polar OAuth2 flow generates **organization-level** access tokens. These tokens are tied to a specific organization rather than a user, allowing requests to operate only on that organization's data, which improves privacy and security.
-
-When using the default flow, the user will be prompted to select one of their organizations that they have management permissions for before allowing access to their data:
+By default, Polar OAuth2 flow generates **user-scoped** access tokens. These tokens are tied to the user granting access, allowing requests to operate on the data of the organizations they are a member of.
 
 ```
 https://polar.sh/oauth2/authorize?response_type=code&client_id=polar_ci_j3X95_MgfdSCeCd2qkFnUw&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&scope=openid%20email
 ```
 
-To request a **user-scoped** access token instead, you need to explicitly add the parameter `sub_type=user` to the authorization URL:
+To request an **organization-scoped** access token instead, you need to explicitly add the parameter `sub_type=organization` to the authorization URL. These tokens are tied to a specific organization rather than a user, allowing requests to operate only on that organization's data. The user will be prompted to select one of the organizations they have management permissions for:
 
 ```
-https://polar.sh/oauth2/authorize?response_type=code&client_id=polar_ci_j3X95_MgfdSCeCd2qkFnUw&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&scope=openid%20email&sub_type=user
+https://polar.sh/oauth2/authorize?response_type=code&client_id=polar_ci_j3X95_MgfdSCeCd2qkFnUw&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&scope=openid%20email&sub_type=organization
 ```
 
-The rest of the flow remains unchanged. The access token you'll get will be tied to either the selected organization (default) or the user (when explicitly requested).
+The rest of the flow remains unchanged. The access token you'll get will be tied to either the user (default) or the selected organization (when explicitly requested).
 
 #### Public Clients
 

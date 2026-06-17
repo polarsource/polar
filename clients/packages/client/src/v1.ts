@@ -22602,7 +22602,7 @@ export interface components {
       tos_uri?: string | null
       /** Policy Uri */
       policy_uri?: string | null
-      /** @default organization */
+      /** @default user */
       default_sub_type: components['schemas']['SubType']
       /**
        * Created At
@@ -22667,7 +22667,7 @@ export interface components {
       tos_uri?: string | null
       /** Policy Uri */
       policy_uri?: string | null
-      /** @default organization */
+      /** @default user */
       default_sub_type: components['schemas']['SubType']
     }
     /** OAuth2ClientConfigurationUpdate */
@@ -22713,7 +22713,7 @@ export interface components {
       tos_uri?: string | null
       /** Policy Uri */
       policy_uri?: string | null
-      /** @default organization */
+      /** @default user */
       default_sub_type: components['schemas']['SubType']
       /** Client Id */
       client_id: string

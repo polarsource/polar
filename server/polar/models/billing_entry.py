@@ -7,7 +7,7 @@ from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, Index, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy.types import StrEnumType
+from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
     from polar.models import (
@@ -59,10 +59,10 @@ class BillingEntry(RecordModel):
         TIMESTAMP(timezone=True), nullable=False, index=True
     )
     type: Mapped[BillingEntryType] = mapped_column(
-        StrEnumType(BillingEntryType), nullable=False, index=True
+        StringEnum(BillingEntryType), nullable=False, index=True
     )
     direction: Mapped[BillingEntryDirection] = mapped_column(
-        StrEnumType(BillingEntryDirection), nullable=False
+        StringEnum(BillingEntryDirection), nullable=False
     )
     amount: Mapped[int | None] = mapped_column(
         "amount_v2", BigInteger, nullable=True, default=None

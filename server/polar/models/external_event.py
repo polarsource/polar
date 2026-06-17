@@ -16,7 +16,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.kit.db.models.base import RecordModel
-from polar.kit.extensions.sqlalchemy.types import StrEnumType
+from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 
 class ExternalEventSource(StrEnum):
@@ -30,7 +30,7 @@ class ExternalEvent(RecordModel):
     __table_args__ = (UniqueConstraint("source", "external_id"),)
 
     source: Mapped[ExternalEventSource] = mapped_column(
-        StrEnumType(ExternalEventSource), nullable=False, index=True
+        StringEnum(ExternalEventSource), nullable=False, index=True
     )
     handled_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True

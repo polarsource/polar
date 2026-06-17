@@ -247,6 +247,28 @@ class Customer(MetadataMixin, RecordModel):
             cascade="all, delete-orphan",
         )
 
+    @declared_attr
+    def owner(cls) -> Mapped["Member | None"]:
+        # Always loaded: the owner member is needed wherever we resolve a team
+        # customer's billing identity. `viewonly` + `overlaps="members"` because
+        # this re-maps the same `Member.customer_id` rows the writable `members`
+        # relationship owns (which carries the delete-orphan cascade — `owner`
+        # must never touch it). Filtered to a single active owner via `uselist`.
+        return relationship(
+            "Member",
+            lazy="selectin",
+            viewonly=True,
+            uselist=False,
+            primaryjoin=(
+                "and_("
+                "Customer.id == Member.customer_id, "
+                "Member.role == 'owner', "
+                "Member.deleted_at.is_(None)"
+                ")"
+            ),
+            overlaps="members",
+        )
+
     default_payment_method_id: Mapped[UUID | None] = mapped_column(
         "default_payment_method_id",
         Uuid,

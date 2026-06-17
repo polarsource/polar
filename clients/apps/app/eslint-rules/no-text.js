@@ -48,10 +48,6 @@ module.exports = {
           })
         }
       },
-
-      'Program:exit'() {
-        textImportedFromReactNative = false
-      },
     }
   },
 }

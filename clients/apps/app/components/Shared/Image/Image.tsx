@@ -57,4 +57,3 @@ export const Image = ({ onLoad, onLayout, style, ...props }: ImageProps) => {
     </>
   )
 }
-

@@ -14,7 +14,7 @@ import { useSubscription } from '@/hooks/polar/subscriptions'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import * as Clipboard from 'expo-clipboard'
 import { Link, Stack, useLocalSearchParams } from 'expo-router'
-import React, { useContext, useMemo } from 'react'
+import { useContext, useMemo } from 'react'
 import { RefreshControl, ScrollView } from 'react-native'
 
 const statusColors = {

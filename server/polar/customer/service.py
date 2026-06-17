@@ -333,7 +333,6 @@ class CustomerService:
                         owner_name=owner_name,
                         owner_external_id=owner_external_id,
                     )
-                    return created
             else:
                 created = await repository.create(customer, flush=True)
                 await member_service.create_owner_member(
@@ -344,7 +343,6 @@ class CustomerService:
                     owner_name=owner_name,
                     owner_external_id=owner_external_id,
                 )
-                return created
         except IntegrityError as e:
             error_str = str(e)
             if "ix_customers_organization_id_email_not_null" in error_str:
@@ -370,6 +368,16 @@ class CustomerService:
                     ]
                 ) from e
             raise
+
+        # When the customer has no email of its own, `Customer.avatar_url` falls
+        # back to the owner member's email. `owner` is eager-loaded
+        # (lazy="selectin") on queries, but `created` is a freshly built object
+        # whose relationship was never loaded — so we load it here, otherwise
+        # response serialization would emit IO mid-render (raising MissingGreenlet).
+        if created.email is None:
+            await session.flush()
+            await session.refresh(created, attribute_names=["owner"])
+        return created
 
     async def update(
         self,

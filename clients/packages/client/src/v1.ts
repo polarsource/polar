@@ -15725,7 +15725,7 @@ export interface components {
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
-      readonly avatar_url: string
+      avatar_url: string | null
     }
     /** CustomerIndividualCreate */
     CustomerIndividualCreate: {
@@ -17286,6 +17286,11 @@ export interface components {
        */
       deleted_at: string | null
       /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
+      avatar_url: string | null
+      /**
        * Active Subscriptions
        * @description The customer's active subscriptions.
        */
@@ -17300,11 +17305,6 @@ export interface components {
        * @description The customer's active meters.
        */
       active_meters: components['schemas']['CustomerStateMeter'][]
-      /**
-       * Avatar Url
-       * @example https://www.gravatar.com/avatar/xxx?d=404
-       */
-      readonly avatar_url: string
     }
     /**
      * CustomerStateMeter
@@ -17609,6 +17609,11 @@ export interface components {
        */
       deleted_at: string | null
       /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
+      avatar_url: string | null
+      /**
        * Active Subscriptions
        * @description The customer's active subscriptions.
        */
@@ -17623,11 +17628,6 @@ export interface components {
        * @description The customer's active meters.
        */
       active_meters: components['schemas']['CustomerStateMeter'][]
-      /**
-       * Avatar Url
-       * @example https://www.gravatar.com/avatar/xxx?d=404
-       */
-      readonly avatar_url: string
     }
     /** CustomerSubscription */
     CustomerSubscription: {
@@ -18086,7 +18086,7 @@ export interface components {
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
-      readonly avatar_url: string
+      avatar_url: string | null
     }
     /** CustomerTeamCreate */
     CustomerTeamCreate: {
@@ -20768,7 +20768,7 @@ export interface components {
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
-      readonly avatar_url: string
+      avatar_url: string | null
     }
     /** LicenseKeyDeactivate */
     LicenseKeyDeactivate: {
@@ -23130,7 +23130,7 @@ export interface components {
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
-      readonly avatar_url: string
+      avatar_url: string | null
     }
     /**
      * OrderFinalize
@@ -30208,7 +30208,7 @@ export interface components {
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
-      readonly avatar_url: string
+      avatar_url: string | null
     }
     /**
      * SubscriptionCycledEvent

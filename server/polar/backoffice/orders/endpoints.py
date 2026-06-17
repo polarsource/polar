@@ -155,7 +155,6 @@ async def list(
                     Order.search_vector.op("@@")(ts_query_simple),
                     Customer.search_vector.op("@@")(ts_query_simple),
                     Product.search_vector.op("@@")(ts_query_english),
-                    Customer.email.ilike(f"%{query}%"),
                 )
             )
 

@@ -116,7 +116,6 @@ async def list(
             statement = statement.where(
                 or_(
                     Customer.search_vector.op("@@")(ts_query_simple),
-                    Customer.email.ilike(ilike_term),
                     Organization.slug.ilike(ilike_term),
                     Organization.name.ilike(ilike_term),
                 )

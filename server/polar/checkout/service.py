@@ -63,7 +63,6 @@ from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.logging import Logger
-from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import (
     Checkout,
@@ -582,10 +581,7 @@ class CheckoutService:
                 and checkout.customer.email is None
                 and checkout.customer.type == CustomerType.team
             ):
-                member_repository = MemberRepository.from_session(session)
-                owner_member = await member_repository.get_owner_by_customer_id(
-                    checkout.customer.id
-                )
+                owner_member = checkout.customer.owner
                 if owner_member is not None and owner_member.email is not None:
                     checkout.customer_email = owner_member.email
 

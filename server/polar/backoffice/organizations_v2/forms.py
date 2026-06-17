@@ -236,7 +236,7 @@ class UpdateOrganizationSocialsForm(forms.BaseForm):
 class OrganizationOrdersImportForm(forms.BaseForm):
     invoice_number_prefix: Annotated[
         str,
-        StringConstraints(min_length=3, pattern=r"^[a-zA-Z0-9\-]+\-"),
+        StringConstraints(min_length=3, pattern=r"^[a-zA-Z0-9\-]+\-$"),
         Field(
             title="Invoice Number Prefix",
             description="Prefix to use for imported orders' invoice numbers",

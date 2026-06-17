@@ -136,6 +136,12 @@ export const EditMemberModal = ({
               )}
             />
           </Box>
+          <Box flexDirection="column" gap="m">
+            <Text variant="body" as="h3">
+              Assigned Seats
+            </Text>
+            <MemberSeats seats={seats} organizationSlug={organizationSlug} />
+          </Box>
           <Box justifyContent="end">
             <Button type="submit" loading={updateMember.isPending}>
               Update Member
@@ -143,12 +149,6 @@ export const EditMemberModal = ({
           </Box>
         </Box>
       </Form>
-      <Box flexDirection="column" gap="l">
-        <Text as="h3" variant="heading-xxs">
-          Seats
-        </Text>
-        <MemberSeats seats={seats} organizationSlug={organizationSlug} />
-      </Box>
     </Box>
   )
 }

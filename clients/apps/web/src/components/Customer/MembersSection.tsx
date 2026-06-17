@@ -2,7 +2,6 @@
 
 import { useModal } from '@/components/Modal/useModal'
 import { useMembers } from '@/hooks/queries/members'
-import { useOrganization } from '@/hooks/queries/org'
 import { useMultipleSubscriptionSeats } from '@/hooks/queries/seats'
 import { schemas } from '@polar-sh/client'
 import {
@@ -36,23 +35,17 @@ const seatStatusPriority: schemas['SeatStatus'][] = [
 ]
 
 interface MembersSectionProps {
-  customerId: string
-  organizationId: string
-  customerType?: 'individual' | 'team'
+  organization: schemas['Organization']
+  customer: schemas['Customer']
   subscriptionIds?: string[]
 }
 
 export const MembersSection = ({
-  customerId,
-  organizationId,
-  customerType,
+  organization,
+  customer,
   subscriptionIds,
 }: MembersSectionProps) => {
-  const { data: organization } = useOrganization(
-    organizationId,
-    !!organizationId,
-  )
-  const { data: membersData, isLoading } = useMembers(customerId)
+  const { data: membersData, isLoading } = useMembers(customer.id)
   const { seats } = useMultipleSubscriptionSeats(subscriptionIds ?? [])
 
   const [selectedMember, setSelectedMember] = useState<
@@ -68,7 +61,7 @@ export const MembersSection = ({
   const isEnabled =
     organization?.feature_settings?.member_model_enabled &&
     organization?.feature_settings?.seat_based_pricing_enabled &&
-    customerType === 'team'
+    customer.type === 'team'
 
   const members = useMemo(
     () => membersData?.pages.flatMap((page) => page.items) ?? [],
@@ -88,7 +81,7 @@ export const MembersSection = ({
     return map
   }, [seats])
 
-  if (!isEnabled || !organization) {
+  if (!isEnabled) {
     return null
   }
 
@@ -167,7 +160,7 @@ export const MembersSection = ({
         isLoading={isLoading}
         className="text-sm"
         onRowClick={({ original }) => {
-          if (customerType !== 'team') {
+          if (customer.type !== 'team') {
             return
           }
           setSelectedMember(original)
@@ -181,10 +174,10 @@ export const MembersSection = ({
           selectedMember ? (
             <EditMemberModal
               member={selectedMember}
-              customerId={customerId}
+              customerId={customer.id}
               seats={seatsByMemberId.get(selectedMember.id) ?? []}
               organizationSlug={organization.slug}
-              customerType={customerType}
+              customerType={customer.type}
               onClose={hideEditMemberModal}
             />
           ) : null

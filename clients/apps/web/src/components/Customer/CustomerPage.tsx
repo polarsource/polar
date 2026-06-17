@@ -657,9 +657,8 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       {showMembersTab && (
         <TabsContent value="members" className="flex flex-col gap-y-8">
           <MembersSection
-            customerId={customer.id}
-            organizationId={organization.id}
-            customerType={customer.type ?? undefined}
+            customer={customer}
+            organization={organization}
             subscriptionIds={subscriptions?.items?.map(
               (subscription) => subscription.id,
             )}

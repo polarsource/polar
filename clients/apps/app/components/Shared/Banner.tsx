@@ -5,7 +5,6 @@ import { Text } from './Text'
 export interface BannerProps extends PropsWithChildren {
   title: string
   description: string
-  cta?: boolean
 }
 
 export const Banner = ({ title, description, children }: BannerProps) => {

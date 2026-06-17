@@ -1,4 +1,4 @@
-const ORBIT_TEXT_SOURCES = new Set(['@polar-sh/orbit', '@polar-sh/orbit/Text'])
+const ORBIT_TEXT_SOURCES = new Set(['@polar-sh/orbit'])
 
 /** @type {import('eslint').Rule.RuleModule} */
 const noClassnameText = {

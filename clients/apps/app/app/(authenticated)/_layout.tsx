@@ -12,7 +12,7 @@ import { UserProvider } from '@/providers/UserProvider'
 import { DarkTheme, ThemeProvider } from '@react-navigation/native'
 import { useQueryClient } from '@tanstack/react-query'
 import { Redirect, Stack, useRouter } from 'expo-router'
-import React, { PropsWithChildren } from 'react'
+import { PropsWithChildren } from 'react'
 import { ErrorBoundary as ErrorBoundaryComponent } from 'react-error-boundary'
 import { StatusBar } from 'react-native'
 

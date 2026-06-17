@@ -33,38 +33,6 @@ function collectExpressions(node) {
   return [node]
 }
 
-function containsDetailAccess(node) {
-  if (!node) return false
-  if (
-    node.type === 'MemberExpression' &&
-    !node.computed &&
-    node.property.type === 'Identifier' &&
-    node.property.name === 'detail'
-  ) {
-    return true
-  }
-  if (node.type === 'TemplateLiteral') {
-    return node.expressions.some((expr) => containsDetailAccess(expr))
-  }
-  if (node.type === 'BinaryExpression' && node.operator === '+') {
-    return containsDetailAccess(node.left) || containsDetailAccess(node.right)
-  }
-  if (node.type === 'ChainExpression') {
-    return containsDetailAccess(node.expression)
-  }
-  if (node.type === 'LogicalExpression') {
-    return containsDetailAccess(node.left) || containsDetailAccess(node.right)
-  }
-  if (node.type === 'ConditionalExpression') {
-    return (
-      containsDetailAccess(node.test) ||
-      containsDetailAccess(node.consequent) ||
-      containsDetailAccess(node.alternate)
-    )
-  }
-  return false
-}
-
 /** @type {import('eslint').Rule.RuleModule} */
 const noToastErrorDetail = {
   meta: {
@@ -78,8 +46,6 @@ const noToastErrorDetail = {
     messages: {
       nonStringInToast:
         'Expression of type `{{ type }}` in toast {{ property }} may render as [object Object]. Use extractApiErrorMessage(error) from @/utils/api/errors for error objects, or ensure the value is a string.',
-      noDetailInToast:
-        'This shape is unpredictable and may render as [object Object]. Use extractApiErrorMessage(error) from @/utils/api/errors instead.',
     },
   },
   create(context) {
@@ -126,13 +92,6 @@ const noToastErrorDetail = {
                   },
                 })
               }
-            }
-          } else {
-            if (containsDetailAccess(prop.value)) {
-              context.report({
-                node: prop.value,
-                messageId: 'noDetailInToast',
-              })
             }
           }
         }

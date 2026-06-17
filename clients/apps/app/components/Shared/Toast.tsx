@@ -37,7 +37,6 @@ const springConfig = {
 
 interface TypeConfig {
   backgroundColor: string
-  iconColor: string
   textColorKey: ColorToken
 }
 
@@ -49,26 +48,22 @@ const getTypeConfig = (
     case 'success':
       return {
         backgroundColor: colors.statusGreen,
-        iconColor: colors.monochrome,
         textColorKey: 'monochrome',
       }
     case 'error':
       return {
         backgroundColor: colors.statusRed,
-        iconColor: colors.monochrome,
         textColorKey: 'monochrome',
       }
     case 'warning':
       return {
         backgroundColor: colors.statusYellow,
-        iconColor: colors.monochrome,
         textColorKey: 'monochrome',
       }
     case 'info':
     default:
       return {
         backgroundColor: colors.card,
-        iconColor: colors.text,
         textColorKey: 'text',
       }
   }

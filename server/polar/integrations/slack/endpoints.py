@@ -261,14 +261,19 @@ async def events(
     x_slack_request_timestamp: Annotated[str | None, Header()] = None,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    if x_slack_signature is None or x_slack_request_timestamp is None:
-        raise Unauthorized()
-
     body = await request.body()
     try:
         payload = json.loads(body)
     except json.JSONDecodeError as e:
         raise BadRequest("Invalid JSON.") from e
+
+    payload_type = payload.get("type")
+    if payload_type == "url_verification":
+        challenge = payload.get("challenge", "")
+        return JSONResponse({"challenge": challenge})
+
+    if x_slack_signature is None or x_slack_request_timestamp is None:
+        raise Unauthorized()
 
     api_app_id = payload.get("api_app_id")
     if not isinstance(api_app_id, str):
@@ -286,11 +291,6 @@ async def events(
         timestamp_header=x_slack_request_timestamp,
     ):
         raise Unauthorized()
-
-    payload_type = payload.get("type")
-    if payload_type == "url_verification":
-        challenge = payload.get("challenge", "")
-        return JSONResponse({"challenge": challenge})
 
     if payload_type == "event_callback":
         event = payload.get("event") or {}

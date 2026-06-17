@@ -496,6 +496,102 @@ class TestHandleEvent:
         assert refreshed is not None
         assert "connected_team_id" not in (refreshed.properties or {})
 
+    async def test_channel_id_changed_remaps_grants(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        benefit = await _create_benefit(save_fixture, organization)
+        other_benefit = await _create_benefit(save_fixture, organization)
+        await _create_integration(save_fixture, organization, benefit=benefit)
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit,
+            properties={"invited_email": "a@example.com", "channel_id": "G123"},
+        )
+        untouched = await create_benefit_grant(
+            save_fixture,
+            customer,
+            other_benefit,
+            properties={"invited_email": "a@example.com", "channel_id": "G999"},
+        )
+        await session.flush()
+        service, _client = _service_with_mock(mocker)
+
+        await service.handle_event(
+            session,
+            api_app_id="A0TESTAPPID",
+            event={
+                "type": "channel_id_changed",
+                "old_channel_id": "G123",
+                "new_channel_id": "C123",
+            },
+        )
+
+        repo = BenefitGrantRepository.from_session(session)
+        refreshed = await repo.get_by_id(grant.id)
+        assert refreshed is not None
+        assert (refreshed.properties or {}).get("channel_id") == "C123"
+        refreshed_untouched = await repo.get_by_id(untouched.id)
+        assert refreshed_untouched is not None
+        assert (refreshed_untouched.properties or {}).get("channel_id") == "G999"
+
+    async def test_channel_id_changed_scopes_to_integration(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        benefit = await _create_benefit(save_fixture, organization)
+        other_benefit = await _create_benefit(save_fixture, organization)
+        await _create_integration(
+            save_fixture, organization, benefit=benefit, slack_app_id="A0TESTAPPID"
+        )
+        await _create_integration(
+            save_fixture,
+            organization,
+            benefit=other_benefit,
+            slack_app_id="A0OTHERAPP",
+        )
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit,
+            properties={"invited_email": "a@example.com", "channel_id": "G123"},
+        )
+        other_grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            other_benefit,
+            properties={"invited_email": "a@example.com", "channel_id": "G123"},
+        )
+        await session.flush()
+        service, _client = _service_with_mock(mocker)
+
+        await service.handle_event(
+            session,
+            api_app_id="A0TESTAPPID",
+            event={
+                "type": "channel_id_changed",
+                "old_channel_id": "G123",
+                "new_channel_id": "C123",
+            },
+        )
+
+        repo = BenefitGrantRepository.from_session(session)
+        refreshed = await repo.get_by_id(grant.id)
+        assert refreshed is not None
+        assert (refreshed.properties or {}).get("channel_id") == "C123"
+        refreshed_other = await repo.get_by_id(other_grant.id)
+        assert refreshed_other is not None
+        assert (refreshed_other.properties or {}).get("channel_id") == "G123"
+
 
 @pytest.mark.asyncio
 class TestDelete:

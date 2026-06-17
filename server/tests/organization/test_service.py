@@ -23,7 +23,6 @@ from polar.models.benefit import BenefitType
 from polar.models.organization import (
     STATUS_CAPABILITIES,
     InvalidStatusTransitionError,
-    OrganizationNotificationSettings,
     OrganizationStatus,
     OrganizationSubscriptionSettings,
     SnoozeType,
@@ -224,28 +223,6 @@ class TestCreate:
             "checkout_localization_enabled": True,
             "member_model_enabled": True,
             "seat_based_pricing_enabled": True,
-        }
-
-    @pytest.mark.auth
-    async def test_valid_with_notification_settings(
-        self, auth_subject: AuthSubject[User], session: AsyncSession
-    ) -> None:
-        organization = await organization_service.create(
-            session,
-            OrganizationCreate(
-                name="My New Organization",
-                slug="my-new-organization",
-                notification_settings=OrganizationNotificationSettings(
-                    new_order=False,
-                    new_subscription=False,
-                ),
-            ),
-            auth_subject,
-        )
-
-        assert organization.notification_settings == {
-            "new_order": False,
-            "new_subscription": False,
         }
 
     @pytest.mark.auth

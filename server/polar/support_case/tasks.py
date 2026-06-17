@@ -1,7 +1,5 @@
 from uuid import UUID
 
-from sqlalchemy.orm import joinedload
-
 from polar.config import settings
 from polar.email.schemas import (
     SupportCaseOrganizationNewMessageEmail,
@@ -9,14 +7,14 @@ from polar.email.schemas import (
 )
 from polar.email.sender import enqueue_email_template
 from polar.models.support_case import (
-    ReviewAppealSupportCase,
     SupportCaseMessageAuthorKind,
     SupportCaseType,
 )
 from polar.support_case.repository import (
-    ReviewAppealSupportCaseRepository,
     SupportCaseMessageRepository,
+    SupportCaseRepository,
 )
+from polar.support_case.service import support_case as support_case_service
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -49,16 +47,22 @@ async def notify_organization_of_new_message(message_id: UUID) -> None:
         if message.author_kind != SupportCaseMessageAuthorKind.platform:
             return
 
-        case = await ReviewAppealSupportCaseRepository.from_session(session).get_by_id(
-            message.case_id,
-            options=(joinedload(ReviewAppealSupportCase.organization_review),),
+        case = await SupportCaseRepository.from_session(session).get_by_id(
+            message.case_id
         )
         if case is None:
             return
+        # Dispute cases have no merchant-facing thread yet, so an email would
+        # point to a page with nothing to act on. Suppress it until that UI
+        # exists; the message is still recorded on the case. Remove this guard
+        # when the merchant dispute view ships.
+        if case.type == SupportCaseType.dispute:
+            return
+        organization_id = await support_case_service.get_organization_id(session, case)
+        if organization_id is None:
+            return
 
-        members = await user_organization_service.list_by_org(
-            session, case.organization_review.organization_id
-        )
+        members = await user_organization_service.list_by_org(session, organization_id)
         if not members:
             return
         organization = members[0].organization

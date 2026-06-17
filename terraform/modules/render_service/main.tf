@@ -242,9 +242,9 @@ resource "render_env_group" "memory_profile" {
   }
 }
 
-resource "render_env_group" "base" {
+resource "render_env_group" "database" {
   environment_id = var.render_environment_id
-  name           = "base-${var.environment}"
+  name           = "database-${var.environment}"
   env_vars = {
     POLAR_POSTGRES_DATABASE      = { value = var.api_service_config.postgres_database }
     POLAR_POSTGRES_HOST          = { value = var.postgres_config.host }
@@ -256,9 +256,16 @@ resource "render_env_group" "base" {
     POLAR_POSTGRES_READ_PORT     = { value = var.postgres_config.read_port }
     POLAR_POSTGRES_READ_USER     = { value = var.postgres_config.read_user }
     POLAR_POSTGRES_READ_PWD      = { value = var.postgres_config.read_password }
-    POLAR_REDIS_HOST             = { value = var.redis_config.host }
-    POLAR_REDIS_PORT             = { value = var.redis_config.port }
-    POLAR_REDIS_DB               = { value = var.api_service_config.redis_db }
+  }
+}
+
+resource "render_env_group" "redis" {
+  environment_id = var.render_environment_id
+  name           = "redis-${var.environment}"
+  env_vars = {
+    POLAR_REDIS_HOST = { value = var.redis_config.host }
+    POLAR_REDIS_PORT = { value = var.redis_config.port }
+    POLAR_REDIS_DB   = { value = var.api_service_config.redis_db }
   }
 }
 
@@ -321,25 +328,12 @@ resource "render_web_service" "api" {
   custom_domains = var.api_service_config.custom_domains
 
   env_vars = {
-    SERVICE_NAME                 = { value = "api${local.env_suffix}" }
-    WEB_CONCURRENCY              = { value = var.api_service_config.web_concurrency }
-    FORWARDED_ALLOW_IPS          = { value = var.api_service_config.forwarded_allow_ips }
-    POLAR_ALLOWED_HOSTS          = { value = var.api_service_config.allowed_hosts }
-    POLAR_CORS_ORIGINS           = { value = var.api_service_config.cors_origins }
-    POLAR_DATABASE_POOL_SIZE     = { value = var.api_service_config.database_pool_size }
-    POLAR_POSTGRES_DATABASE      = { value = var.api_service_config.postgres_database }
-    POLAR_POSTGRES_HOST          = { value = var.postgres_config.host }
-    POLAR_POSTGRES_PORT          = { value = var.postgres_config.port }
-    POLAR_POSTGRES_USER          = { value = var.postgres_config.user }
-    POLAR_POSTGRES_PWD           = { value = var.postgres_config.password }
-    POLAR_POSTGRES_READ_DATABASE = { value = var.api_service_config.postgres_read_database }
-    POLAR_POSTGRES_READ_HOST     = { value = var.postgres_config.read_host }
-    POLAR_POSTGRES_READ_PORT     = { value = var.postgres_config.read_port }
-    POLAR_POSTGRES_READ_USER     = { value = var.postgres_config.read_user }
-    POLAR_POSTGRES_READ_PWD      = { value = var.postgres_config.read_password }
-    POLAR_REDIS_HOST             = { value = var.redis_config.host }
-    POLAR_REDIS_PORT             = { value = var.redis_config.port }
-    POLAR_REDIS_DB               = { value = var.api_service_config.redis_db }
+    SERVICE_NAME             = { value = "api${local.env_suffix}" }
+    WEB_CONCURRENCY          = { value = var.api_service_config.web_concurrency }
+    FORWARDED_ALLOW_IPS      = { value = var.api_service_config.forwarded_allow_ips }
+    POLAR_ALLOWED_HOSTS      = { value = var.api_service_config.allowed_hosts }
+    POLAR_CORS_ORIGINS       = { value = var.api_service_config.cors_origins }
+    POLAR_DATABASE_POOL_SIZE = { value = var.api_service_config.database_pool_size }
   }
 }
 
@@ -372,22 +366,9 @@ resource "render_web_service" "worker" {
   custom_domains = length(each.value.custom_domains) > 0 ? each.value.custom_domains : null
 
   env_vars = {
-    SERVICE_NAME                 = { value = each.key }
-    dramatiq_prom_port           = { value = each.value.dramatiq_prom_port }
-    POLAR_DATABASE_POOL_SIZE     = { value = each.value.database_pool_size }
-    POLAR_POSTGRES_DATABASE      = { value = var.api_service_config.postgres_database }
-    POLAR_POSTGRES_HOST          = { value = var.postgres_config.host }
-    POLAR_POSTGRES_PORT          = { value = var.postgres_config.port }
-    POLAR_POSTGRES_USER          = { value = var.postgres_config.user }
-    POLAR_POSTGRES_PWD           = { value = var.postgres_config.password }
-    POLAR_POSTGRES_READ_DATABASE = { value = var.api_service_config.postgres_read_database }
-    POLAR_POSTGRES_READ_HOST     = { value = var.postgres_config.read_host }
-    POLAR_POSTGRES_READ_PORT     = { value = var.postgres_config.read_port }
-    POLAR_POSTGRES_READ_USER     = { value = var.postgres_config.read_user }
-    POLAR_POSTGRES_READ_PWD      = { value = var.postgres_config.read_password }
-    POLAR_REDIS_HOST             = { value = var.redis_config.host }
-    POLAR_REDIS_PORT             = { value = var.redis_config.port }
-    POLAR_REDIS_DB               = { value = var.api_service_config.redis_db }
+    SERVICE_NAME             = { value = each.key }
+    dramatiq_prom_port       = { value = each.value.dramatiq_prom_port }
+    POLAR_DATABASE_POOL_SIZE = { value = each.value.database_pool_size }
   }
 }
 
@@ -415,23 +396,10 @@ resource "render_cron_job" "cron" {
   # and write it to a temp file in the start command. POLAR_JWKS is set here
   # to override the env group value (/etc/secrets/jwks.json) which doesn't exist.
   env_vars = {
-    SERVICE_NAME                 = { value = each.key }
-    POLAR_DATABASE_POOL_SIZE     = { value = each.value.database_pool_size }
-    POLAR_JWKS                   = { value = "/tmp/jwks.json" }
-    POLAR_JWKS_CONTENT           = { value = var.backend_secrets.jwks }
-    POLAR_POSTGRES_DATABASE      = { value = var.api_service_config.postgres_database }
-    POLAR_POSTGRES_HOST          = { value = var.postgres_config.host }
-    POLAR_POSTGRES_PORT          = { value = var.postgres_config.port }
-    POLAR_POSTGRES_USER          = { value = var.postgres_config.user }
-    POLAR_POSTGRES_PWD           = { value = var.postgres_config.password }
-    POLAR_POSTGRES_READ_DATABASE = { value = var.api_service_config.postgres_read_database }
-    POLAR_POSTGRES_READ_HOST     = { value = var.postgres_config.read_host }
-    POLAR_POSTGRES_READ_PORT     = { value = var.postgres_config.read_port }
-    POLAR_POSTGRES_READ_USER     = { value = var.postgres_config.read_user }
-    POLAR_POSTGRES_READ_PWD      = { value = var.postgres_config.read_password }
-    POLAR_REDIS_HOST             = { value = var.redis_config.host }
-    POLAR_REDIS_PORT             = { value = var.redis_config.port }
-    POLAR_REDIS_DB               = { value = var.api_service_config.redis_db }
+    SERVICE_NAME             = { value = each.key }
+    POLAR_DATABASE_POOL_SIZE = { value = each.value.database_pool_size }
+    POLAR_JWKS               = { value = "/tmp/jwks.json" }
+    POLAR_JWKS_CONTENT       = { value = var.backend_secrets.jwks }
   }
 }
 
@@ -443,8 +411,13 @@ locals {
 }
 
 # Env group links
-resource "render_env_group_link" "base" {
-  env_group_id = render_env_group.base.id
+resource "render_env_group_link" "database" {
+  env_group_id = render_env_group.database.id
+  service_ids  = local.all_service_ids
+}
+
+resource "render_env_group_link" "redis" {
+  env_group_id = render_env_group.redis.id
   service_ids  = local.all_service_ids
 }
 

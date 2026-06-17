@@ -16,24 +16,30 @@ import { useForm } from 'react-hook-form'
 import { MemberSeats } from './MemberSeats'
 import { toast } from '../Toast/use-toast'
 
-type MemberUpdateForm = Pick<schemas['MemberUpdate'], 'name'>
+type MemberUpdateForm = Pick<schemas['MemberUpdate'], 'name' | 'email'>
 
 export const EditMemberModal = ({
   member,
   customerId,
   seats,
   organizationSlug,
+  customerType,
   onClose,
 }: {
   member: schemas['Member']
   customerId: string
   seats: schemas['CustomerSeat'][]
   organizationSlug: string
+  customerType?: 'individual' | 'team'
   onClose: () => void
 }) => {
+  // Defensive block for individual customer type
+  const isEmailLocked = member.role === 'owner' && customerType === 'individual'
+
   const form = useForm<MemberUpdateForm>({
     defaultValues: {
       name: member.name ?? '',
+      email: member.email,
     },
   })
 
@@ -92,15 +98,30 @@ export const EditMemberModal = ({
           gap="2xl"
         >
           <Box flexDirection="column" gap="l">
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormDescription>
-                A member&apos;s email can&apos;t be changed.
-              </FormDescription>
-              <FormControl>
-                <Input value={member.email} disabled />
-              </FormControl>
-            </FormItem>
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  {isEmailLocked && (
+                    <FormDescription>
+                      The owner&apos;s email follows the customer&apos;s email
+                      and can&apos;t be changed here.
+                    </FormDescription>
+                  )}
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="email"
+                      value={field.value || ''}
+                      disabled={isEmailLocked}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="name"
@@ -115,13 +136,11 @@ export const EditMemberModal = ({
               )}
             />
           </Box>
-          <Button
-            type="submit"
-            className="self-end"
-            loading={updateMember.isPending}
-          >
-            Save Member
-          </Button>
+          <Box justifyContent="end">
+            <Button type="submit" loading={updateMember.isPending}>
+              Update Member
+            </Button>
+          </Box>
         </Box>
       </Form>
       <Box flexDirection="column" gap="l">

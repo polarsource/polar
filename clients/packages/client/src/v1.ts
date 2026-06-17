@@ -3576,7 +3576,7 @@ export interface paths {
      * Update Member
      * @description Update a member.
      *
-     *     Only name and role can be updated.
+     *     Only name, email and role can be updated.
      *     The authenticated user or organization must have access to the member's organization.
      *
      *     **Scopes**: `members:write`
@@ -21592,6 +21592,8 @@ export interface components {
     MemberUpdate: {
       /** Name */
       name?: string | null
+      /** Email */
+      email?: string | null
       /**
        * @description The role of the member within the customer.
        * @example member
@@ -23839,8 +23841,6 @@ export interface components {
         | null
       /** @description Settings related to subscriptions management */
       subscription_settings: components['schemas']['OrganizationSubscriptionSettings']
-      /** @description Settings related to notifications */
-      notification_settings: components['schemas']['OrganizationNotificationSettings']
       /** @description Settings related to customer emails */
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
@@ -24715,9 +24715,6 @@ export interface components {
       subscription_settings?:
         | components['schemas']['OrganizationSubscriptionSettings']
         | null
-      notification_settings?:
-        | components['schemas']['OrganizationNotificationSettings']
-        | null
       customer_email_settings?:
         | components['schemas']['OrganizationCustomerEmailSettings']
         | null
@@ -25046,8 +25043,6 @@ export interface components {
         | null
       /** @description Settings related to subscriptions management */
       subscription_settings: components['schemas']['OrganizationSubscriptionSettings']
-      /** @description Settings related to notifications */
-      notification_settings: components['schemas']['OrganizationNotificationSettings']
       /** @description Settings related to customer emails */
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
@@ -26213,9 +26208,6 @@ export interface components {
       subscription_settings?:
         | components['schemas']['OrganizationSubscriptionSettings']
         | null
-      notification_settings?:
-        | components['schemas']['OrganizationNotificationSettings']
-        | null
       customer_email_settings?:
         | components['schemas']['OrganizationCustomerEmailSettings']
         | null
@@ -26336,8 +26328,6 @@ export interface components {
         | null
       /** @description Settings related to subscriptions management */
       subscription_settings: components['schemas']['OrganizationSubscriptionSettings']
-      /** @description Settings related to notifications */
-      notification_settings: components['schemas']['OrganizationNotificationSettings']
       /** @description Settings related to customer emails */
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
@@ -32159,9 +32149,7 @@ export interface components {
     /** UserOrganizationNotificationSettings */
     UserOrganizationNotificationSettings: {
       /** @description The authenticated user's notification preferences for this organization. */
-      notification_settings?:
-        | components['schemas']['OrganizationNotificationSettings']
-        | null
+      notification_settings: components['schemas']['OrganizationNotificationSettings']
     }
     /** UserOrganizationNotificationSettingsUpdate */
     UserOrganizationNotificationSettingsUpdate: {

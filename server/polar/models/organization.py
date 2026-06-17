@@ -71,17 +71,6 @@ class OrganizationDetails(TypedDict, total=False):
     previous_annual_revenue: int
 
 
-class OrganizationNotificationSettings(TypedDict):
-    new_order: bool
-    new_subscription: bool
-
-
-_default_notification_settings: OrganizationNotificationSettings = {
-    "new_order": True,
-    "new_subscription": True,
-}
-
-
 class OrganizationSubscriptionSettings(TypedDict):
     allow_multiple_subscriptions: bool
     proration_behavior: Annotated[
@@ -587,10 +576,6 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     order_settings: Mapped[OrganizationOrderSettings] = mapped_column(
         JSONB, nullable=False, default=_default_order_settings
-    )
-
-    notification_settings: Mapped[OrganizationNotificationSettings] = mapped_column(
-        JSONB, nullable=False, default=_default_notification_settings
     )
 
     customer_email_settings: Mapped[OrganizationCustomerEmailSettings] = mapped_column(

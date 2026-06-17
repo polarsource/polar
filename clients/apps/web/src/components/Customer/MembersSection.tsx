@@ -167,6 +167,9 @@ export const MembersSection = ({
         isLoading={isLoading}
         className="text-sm"
         onRowClick={({ original }) => {
+          if (customerType !== 'team') {
+            return
+          }
           setSelectedMember(original)
           showEditMemberModal()
         }}
@@ -181,6 +184,7 @@ export const MembersSection = ({
               customerId={customerId}
               seats={seatsByMemberId.get(selectedMember.id) ?? []}
               organizationSlug={organization.slug}
+              customerType={customerType}
               onClose={hideEditMemberModal}
             />
           ) : null

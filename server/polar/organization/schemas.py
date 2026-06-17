@@ -10,6 +10,7 @@ from pydantic import (
     BeforeValidator,
     Field,
     StringConstraints,
+    computed_field,
     model_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
@@ -34,12 +35,14 @@ from polar.kit.schemas import (
 from polar.models.organization import (
     OrganizationCustomerEmailSettings,
     OrganizationCustomerPortalSettings,
-    OrganizationNotificationSettings,
     OrganizationStatus,
     OrganizationSubscriptionSettings,
 )
 from polar.models.organization_review import OrganizationReview
-from polar.models.user_organization import OrganizationRole
+from polar.models.user_organization import (
+    OrganizationNotificationSettings,
+    OrganizationRole,
+)
 
 OrganizationID = Annotated[
     UUID4,
@@ -389,7 +392,6 @@ class OrganizationPublicBase(OrganizationBase):
 
     feature_settings: SkipJsonSchema[OrganizationFeatureSettings | None]
     subscription_settings: SkipJsonSchema[OrganizationSubscriptionSettings]
-    notification_settings: SkipJsonSchema[OrganizationNotificationSettings]
     customer_email_settings: SkipJsonSchema[OrganizationCustomerEmailSettings]
 
 
@@ -420,9 +422,6 @@ class Organization(OrganizationBase):
     subscription_settings: OrganizationSubscriptionSettings = Field(
         description="Settings related to subscriptions management",
     )
-    notification_settings: OrganizationNotificationSettings = Field(
-        description="Settings related to notifications",
-    )
     customer_email_settings: OrganizationCustomerEmailSettings = Field(
         description="Settings related to customer emails",
     )
@@ -439,6 +438,17 @@ class Organization(OrganizationBase):
     capabilities: OrganizationCapabilities = Field(
         description="Capabilities currently granted to the organization.",
     )
+
+    @computed_field(  # type: ignore[prop-decorator]
+        deprecated="Notification preferences are now configured per member."
+    )
+    @property
+    def notification_settings(self) -> SkipJsonSchema[OrganizationNotificationSettings]:
+        """Deprecated. Notification preferences are now configured per member,
+        not at the organization level. Still serialized with a static default for
+        backward compatibility with older SDK versions that require the field, but
+        hidden from the schema so it's dropped from future SDK versions."""
+        return OrganizationNotificationSettings(new_order=True, new_subscription=True)
 
 
 class OrganizationWithRole(Organization):
@@ -512,7 +522,6 @@ class OrganizationCreate(Schema):
     )
     feature_settings: OrganizationFeatureSettingsUpdate | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
-    notification_settings: OrganizationNotificationSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
     customer_portal_settings: OrganizationCustomerPortalSettings | None = None
     default_presentment_currency: PresentmentCurrency = Field(
@@ -546,7 +555,6 @@ class OrganizationUpdate(Schema):
 
     feature_settings: OrganizationFeatureSettingsUpdate | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
-    notification_settings: OrganizationNotificationSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
     customer_portal_settings: OrganizationCustomerPortalSettings | None = None
     default_presentment_currency: PresentmentCurrency | None = Field(

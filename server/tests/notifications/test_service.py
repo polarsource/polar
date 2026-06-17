@@ -126,77 +126,6 @@ class TestSendToOrgMembers:
         notified = {c.kwargs["user_id"] for c in send_to_user_mock.call_args_list}
         assert notified == {member_on.id}
 
-    # TODO (maxime): default to organization settings is temporary while user level is Nullable.
-    # once backfill script ran and user level is non-nullable, we can remove the fallback to organization settings.
-    async def test_unset_member_inherits_enabled_org_setting(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        """No-downtime bridge: a NULL per-user value falls back to the org's
-        setting, so members keep receiving notifications before the backfill runs.
-        """
-        organization.notification_settings = {
-            "new_order": True,
-            "new_subscription": True,
-        }
-        await save_fixture(organization)
-
-        member = await create_user(save_fixture)
-        await save_fixture(
-            UserOrganization(
-                user=member,
-                organization=organization,
-                notification_settings=None,
-            )
-        )
-
-        send_to_user_mock = mocker.patch(
-            "polar.notifications.service.NotificationsService.send_to_user"
-        )
-        await notifications_service.send_to_org_members(
-            session, org_id=organization.id, notif=_new_order_notif()
-        )
-
-        notified = {c.kwargs["user_id"] for c in send_to_user_mock.call_args_list}
-        assert notified == {member.id}
-
-    async def test_unset_member_inherits_disabled_org_setting(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        """The flip side: if the org had opted out, a NULL per-user value must NOT
-        silently resurrect notifications during the migration window.
-        """
-        organization.notification_settings = {
-            "new_order": False,
-            "new_subscription": True,
-        }
-        await save_fixture(organization)
-
-        member = await create_user(save_fixture)
-        await save_fixture(
-            UserOrganization(
-                user=member,
-                organization=organization,
-                notification_settings=None,
-            )
-        )
-
-        send_to_user_mock = mocker.patch(
-            "polar.notifications.service.NotificationsService.send_to_user"
-        )
-        await notifications_service.send_to_org_members(
-            session, org_id=organization.id, notif=_new_order_notif()
-        )
-
-        send_to_user_mock.assert_not_called()
-
     async def test_unmapped_notification_goes_to_all_members(
         self,
         mocker: MockerFixture,
@@ -225,7 +154,7 @@ class TestSendToOrgMembers:
             UserOrganization(
                 user=member_b,
                 organization=organization,
-                notification_settings=None,
+                # default settings — still notified, because the type isn't mapped
             )
         )
 

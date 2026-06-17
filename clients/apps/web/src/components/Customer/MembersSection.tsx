@@ -2,10 +2,7 @@
 
 import { useModal } from '@/components/Modal/useModal'
 import { useMembers } from '@/hooks/queries/members'
-import {
-  type SeatContainerRef,
-  useMultipleSeatContainerSeats,
-} from '@/hooks/queries/seats'
+import { useMultipleCustomerSeats } from '@/hooks/queries/seats'
 import { schemas } from '@polar-sh/client'
 import {
   Avatar,
@@ -53,8 +50,8 @@ export const MembersSection = ({
   const { data: membersData, isLoading } = useMembers(customer.id)
 
   // Filters out non-seat subscriptions and orders to minimize no. requests.
-  // Could in future be replaced with one endpoint
-  const seatContainers = useMemo<SeatContainerRef[]>(
+  // Could in future be replaced with an endpoint
+  const seatContainers = useMemo(
     () => [
       ...(subscriptions ?? [])
         .filter((subscription) => typeof subscription.seats === 'number')
@@ -65,7 +62,7 @@ export const MembersSection = ({
     ],
     [subscriptions, orders],
   )
-  const { seats } = useMultipleSeatContainerSeats(seatContainers)
+  const { seats } = useMultipleCustomerSeats(seatContainers)
 
   const [selectedMember, setSelectedMember] = useState<
     schemas['Member'] | null

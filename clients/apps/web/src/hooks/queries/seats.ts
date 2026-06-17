@@ -86,17 +86,13 @@ const combineSeatsResults = (
   seats: results.flatMap((result) => result.data?.seats ?? []),
 })
 
-// Seats live on either a subscription (recurring) or an order (one-time).
-export type SeatContainerRef = {
-  subscriptionId?: string
-  orderId?: string
-}
-
 /**
- * Dashboard hook to fetch and merge seats across multiple seat containers
+ * Dashboard hook to fetch and merge seats across multiple sources
  * (subscriptions and/or one-time orders).
  */
-export const useMultipleSeatContainerSeats = (containers: SeatContainerRef[]) =>
+export const useMultipleCustomerSeats = (
+  containers: { subscriptionId?: string; orderId?: string }[],
+) =>
   useQueries({
     queries: containers.map((container) => ({
       queryKey: ['organization_seats', container],

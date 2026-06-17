@@ -6,16 +6,13 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { schemas } from '@polar-sh/client'
 import { Link } from 'expo-router'
 import React from 'react'
-import { StyleProp, TextStyle } from 'react-native'
 
 export interface CheckoutLinkRowProps {
   checkoutLink: schemas['CheckoutLink']
-  style?: StyleProp<TextStyle>
 }
 
 export const CheckoutLinkRow = ({
   checkoutLink,
-  style,
 }: CheckoutLinkRowProps) => {
   const theme = useTheme()
 
@@ -27,17 +24,14 @@ export const CheckoutLinkRow = ({
   return (
     <Link
       href={`/checkout-links/${checkoutLink.id}`}
-      style={[
-        {
-          padding: theme.spacing['spacing-16'],
-          flexDirection: 'row',
-          alignItems: 'center',
-          borderRadius: theme.borderRadii['border-radius-12'],
-          gap: theme.spacing['spacing-12'],
-          backgroundColor: theme.colors.card,
-        },
-        style,
-      ]}
+      style={{
+        padding: theme.spacing['spacing-16'],
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: theme.borderRadii['border-radius-12'],
+        gap: theme.spacing['spacing-12'],
+        backgroundColor: theme.colors.card,
+      }}
       asChild
     >
       <Touchable>

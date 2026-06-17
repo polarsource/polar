@@ -4,6 +4,7 @@ import pytest
 from httpx import AsyncClient
 
 from polar.models import Account, Member, Organization, User, UserOrganization
+from polar.models.customer import CustomerType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -327,8 +328,6 @@ class TestCreateMember:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        from polar.models.customer import CustomerType
-
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
 
@@ -694,6 +693,8 @@ class TestUpdateMemberByExternalID:
             organization=organization,
             email="customer@example.com",
         )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
 
         member = Member(
             customer_id=customer.id,
@@ -1104,6 +1105,9 @@ class TestUpdateMember:
             organization=organization,
             email="customer@example.com",
         )
+
+        customer.type = CustomerType.team
+        await save_fixture(customer)
 
         member = Member(
             customer_id=customer.id,

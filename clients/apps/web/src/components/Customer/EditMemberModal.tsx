@@ -6,6 +6,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -19,12 +20,17 @@ type MemberUpdateForm = Pick<schemas['MemberUpdate'], 'name' | 'email'>
 export const EditMemberModal = ({
   member,
   customerId,
+  customerType,
   onClose,
 }: {
   member: schemas['Member']
   customerId: string
+  customerType?: 'individual' | 'team'
   onClose: () => void
 }) => {
+  // Defensive block for individual customer type
+  const isEmailLocked = member.role === 'owner' && customerType === 'individual'
+
   const form = useForm<MemberUpdateForm>({
     defaultValues: {
       name: member.name ?? '',
@@ -93,8 +99,19 @@ export const EditMemberModal = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Email</FormLabel>
+                  {isEmailLocked && (
+                    <FormDescription>
+                      The owner&apos;s email follows the customer&apos;s email
+                      and can&apos;t be changed here.
+                    </FormDescription>
+                  )}
                   <FormControl>
-                    <Input {...field} type="email" value={field.value || ''} />
+                    <Input
+                      {...field}
+                      type="email"
+                      value={field.value || ''}
+                      disabled={isEmailLocked}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -114,13 +131,11 @@ export const EditMemberModal = ({
               )}
             />
           </Box>
-          <Button
-            type="submit"
-            className="self-end"
-            loading={updateMember.isPending}
-          >
-            Save Member
-          </Button>
+          <Box justifyContent="end">
+            <Button type="submit" loading={updateMember.isPending}>
+              Save Member
+            </Button>
+          </Box>
         </Box>
       </Form>
     </Box>

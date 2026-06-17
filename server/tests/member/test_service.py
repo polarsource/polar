@@ -820,6 +820,8 @@ class TestUpdateEmail:
             organization=organization,
             email="customer@example.com",
         )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
         member = await create_member(
             save_fixture,
             customer=customer,
@@ -849,6 +851,8 @@ class TestUpdateEmail:
             organization=organization,
             email="customer@example.com",
         )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
         await create_member(
             save_fixture,
             customer=customer,
@@ -944,6 +948,8 @@ class TestUpdateEmail:
             organization=organization,
             email="customer@example.com",
         )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
         member = await create_member(
             save_fixture,
             customer=customer,

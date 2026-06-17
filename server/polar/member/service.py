@@ -648,26 +648,26 @@ class MemberService:
         member: Member,
         new_email: str,
     ) -> None:
-        # The owner's email on an individual customer is auto-synced from
-        # customer.email (see sync_owner_email). A direct edit would be silently
-        # reverted and could spawn a duplicate owner on portal sign-in.
-        if member.role == MemberRole.owner:
-            customer_repository = CustomerRepository.from_session(session)
-            customer = await customer_repository.get_by_id(member.customer_id)
-            if customer is None or customer.type == CustomerType.individual:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "email"),
-                            "msg": (
-                                "Cannot change the email of an individual customer's "
-                                "owner. Update the customer's email instead."
-                            ),
-                            "input": new_email,
-                        }
-                    ]
-                )
+        # An individual customer's only member is its owner, whose email is
+        # auto-synced from customer.email (see sync_owner_email). A direct edit
+        # would be silently reverted and could spawn a duplicate owner on portal
+        # sign-in.
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(member.customer_id)
+        if customer is not None and customer.type == CustomerType.individual:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "email"),
+                        "msg": (
+                            "Cannot change the email of an individual customer's "
+                            "owner. Update the customer's email instead."
+                        ),
+                        "input": new_email,
+                    }
+                ]
+            )
 
         repository = MemberRepository.from_session(session)
         existing = await repository.get_by_customer_id_and_email(

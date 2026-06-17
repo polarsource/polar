@@ -10,6 +10,7 @@ from pydantic import (
     BeforeValidator,
     Field,
     StringConstraints,
+    computed_field,
     model_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
@@ -389,7 +390,6 @@ class OrganizationPublicBase(OrganizationBase):
 
     feature_settings: SkipJsonSchema[OrganizationFeatureSettings | None]
     subscription_settings: SkipJsonSchema[OrganizationSubscriptionSettings]
-    notification_settings: SkipJsonSchema[OrganizationNotificationSettings]
     customer_email_settings: SkipJsonSchema[OrganizationCustomerEmailSettings]
 
 
@@ -420,9 +420,6 @@ class Organization(OrganizationBase):
     subscription_settings: OrganizationSubscriptionSettings = Field(
         description="Settings related to subscriptions management",
     )
-    notification_settings: OrganizationNotificationSettings = Field(
-        description="Settings related to notifications",
-    )
     customer_email_settings: OrganizationCustomerEmailSettings = Field(
         description="Settings related to customer emails",
     )
@@ -439,6 +436,13 @@ class Organization(OrganizationBase):
     capabilities: OrganizationCapabilities = Field(
         description="Capabilities currently granted to the organization.",
     )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def notification_settings(self) -> SkipJsonSchema[OrganizationNotificationSettings]:
+        """Kept for backward compatibility. Notification preferences are now
+        configured per member, not at the organization level."""
+        return OrganizationNotificationSettings(new_order=True, new_subscription=True)
 
 
 class OrganizationWithRole(Organization):
@@ -546,7 +550,6 @@ class OrganizationUpdate(Schema):
 
     feature_settings: OrganizationFeatureSettingsUpdate | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
-    notification_settings: OrganizationNotificationSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
     customer_portal_settings: OrganizationCustomerPortalSettings | None = None
     default_presentment_currency: PresentmentCurrency | None = Field(

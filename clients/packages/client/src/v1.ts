@@ -23839,8 +23839,6 @@ export interface components {
         | null
       /** @description Settings related to subscriptions management */
       subscription_settings: components['schemas']['OrganizationSubscriptionSettings']
-      /** @description Settings related to notifications */
-      notification_settings: components['schemas']['OrganizationNotificationSettings']
       /** @description Settings related to customer emails */
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
@@ -25046,8 +25044,6 @@ export interface components {
         | null
       /** @description Settings related to subscriptions management */
       subscription_settings: components['schemas']['OrganizationSubscriptionSettings']
-      /** @description Settings related to notifications */
-      notification_settings: components['schemas']['OrganizationNotificationSettings']
       /** @description Settings related to customer emails */
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
@@ -26213,9 +26209,6 @@ export interface components {
       subscription_settings?:
         | components['schemas']['OrganizationSubscriptionSettings']
         | null
-      notification_settings?:
-        | components['schemas']['OrganizationNotificationSettings']
-        | null
       customer_email_settings?:
         | components['schemas']['OrganizationCustomerEmailSettings']
         | null
@@ -26336,8 +26329,6 @@ export interface components {
         | null
       /** @description Settings related to subscriptions management */
       subscription_settings: components['schemas']['OrganizationSubscriptionSettings']
-      /** @description Settings related to notifications */
-      notification_settings: components['schemas']['OrganizationNotificationSettings']
       /** @description Settings related to customer emails */
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
@@ -32159,9 +32150,7 @@ export interface components {
     /** UserOrganizationNotificationSettings */
     UserOrganizationNotificationSettings: {
       /** @description The authenticated user's notification preferences for this organization. */
-      notification_settings?:
-        | components['schemas']['OrganizationNotificationSettings']
-        | null
+      notification_settings: components['schemas']['OrganizationNotificationSettings']
     }
     /** UserOrganizationNotificationSettingsUpdate */
     UserOrganizationNotificationSettingsUpdate: {

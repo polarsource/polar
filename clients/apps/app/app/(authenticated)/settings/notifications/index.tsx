@@ -41,11 +41,7 @@ export default function NotificationsPage() {
   const { mutateAsync: updateNotificationSettings } =
     useUpdateUserOrganizationNotificationSettings()
 
-  // TODO (maxime): default to organization settings is temporary while user level is Nullable.
-  // once backfill script ran and user level is non-nullable, we can remove the fallback to organization settings.
-  const notificationSettings =
-    userNotificationSettings?.notification_settings ??
-    organization?.notification_settings
+  const notificationSettings = userNotificationSettings?.notification_settings
 
   const createNotificationSettingHandler = useCallback(
     (key: keyof schemas['OrganizationNotificationSettings']) =>

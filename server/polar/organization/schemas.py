@@ -439,11 +439,15 @@ class Organization(OrganizationBase):
         description="Capabilities currently granted to the organization.",
     )
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field(  # type: ignore[prop-decorator]
+        deprecated="Notification preferences are now configured per member."
+    )
     @property
     def notification_settings(self) -> SkipJsonSchema[OrganizationNotificationSettings]:
-        """Kept for backward compatibility. Notification preferences are now
-        configured per member, not at the organization level."""
+        """Deprecated. Notification preferences are now configured per member,
+        not at the organization level. Still serialized with a static default for
+        backward compatibility with older SDK versions that require the field, but
+        hidden from the schema so it's dropped from future SDK versions."""
         return OrganizationNotificationSettings(new_order=True, new_subscription=True)
 
 

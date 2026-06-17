@@ -35,12 +35,14 @@ from polar.kit.schemas import (
 from polar.models.organization import (
     OrganizationCustomerEmailSettings,
     OrganizationCustomerPortalSettings,
-    OrganizationNotificationSettings,
     OrganizationStatus,
     OrganizationSubscriptionSettings,
 )
 from polar.models.organization_review import OrganizationReview
-from polar.models.user_organization import OrganizationRole
+from polar.models.user_organization import (
+    OrganizationNotificationSettings,
+    OrganizationRole,
+)
 
 OrganizationID = Annotated[
     UUID4,
@@ -516,7 +518,6 @@ class OrganizationCreate(Schema):
     )
     feature_settings: OrganizationFeatureSettingsUpdate | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
-    notification_settings: OrganizationNotificationSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
     customer_portal_settings: OrganizationCustomerPortalSettings | None = None
     default_presentment_currency: PresentmentCurrency = Field(

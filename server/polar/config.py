@@ -327,7 +327,7 @@ class Settings(BaseSettings):
     # When enabled, jobs enqueued for an allowlisted actor are routed to a
     # per-actor SQS queue (consumed by a Lambda) instead of the Redis broker.
     WORKER_SQS_ENABLED: bool = False
-    WORKER_SQS_ACTORS: set[str] = set()
+    WORKER_SQS_ACTORS: set[str] = {"dummy"}
     WORKER_SQS_QUEUE_PREFIX: str = "polar-tasks"
     # Override to http://127.0.0.1:4566 in .env to target LocalStack
     SQS_ENDPOINT_URL: str | None = None

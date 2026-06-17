@@ -11,6 +11,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject, Organization, User
 from polar.authz.service import get_accessible_org_ids
 from polar.customer.repository import CustomerRepository
+from polar.customer_seat.repository import CustomerSeatRepository
 from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -796,6 +797,12 @@ class MemberService:
             if update_dict
             else member
         )
+
+        if "email" in update_dict:
+            seat_repository = CustomerSeatRepository.from_session(session)
+            await seat_repository.update_email_by_member_id(
+                member.id, update_dict["email"]
+            )
 
         log.info(
             "member.update.success",

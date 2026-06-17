@@ -6,18 +6,21 @@ from pytest_mock import MockerFixture
 from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject
+from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import (
     Customer,
+    CustomerSeat,
     Member,
     Organization,
     User,
     UserOrganization,
 )
 from polar.models.customer import CustomerType
+from polar.models.customer_seat import SeatStatus
 from polar.models.member import MemberRole
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
@@ -27,6 +30,8 @@ from tests.fixtures.random_objects import (
     create_customer,
     create_member,
     create_organization,
+    create_product,
+    create_subscription_with_seats,
 )
 
 
@@ -953,6 +958,110 @@ class TestUpdateEmail:
 
         assert updated_member.id == member.id
         assert updated_member.email == "Member@example.com"
+
+    @pytest.mark.auth
+    async def test_update_email_syncs_connected_seats(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Active seats connected to the member (member_id set) mirror the new
+        email; revoked seats are not."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="member@example.com",
+            role=MemberRole.member,
+        )
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=customer, seats=5
+        )
+        pending_seat = CustomerSeat(
+            subscription_id=subscription.id,
+            customer_id=customer.id,
+            member_id=member.id,
+            email="member@example.com",
+            status=SeatStatus.pending,
+        )
+        await save_fixture(pending_seat)
+        claimed_seat = CustomerSeat(
+            subscription_id=subscription.id,
+            customer_id=customer.id,
+            member_id=member.id,
+            email="member@example.com",
+            status=SeatStatus.claimed,
+        )
+        await save_fixture(claimed_seat)
+
+        await member_service.update(session, member, email="new@example.com")
+
+        await session.refresh(pending_seat)
+        await session.refresh(claimed_seat)
+        assert pending_seat.email == "new@example.com"
+        assert claimed_seat.email == "new@example.com"
+
+    @pytest.mark.auth
+    async def test_update_email_leaves_seats_without_member_untouched(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """A seat with no member connected (member_id NULL, e.g. a legacy seat)
+        is never touched when a member's email changes."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="member@example.com",
+            role=MemberRole.member,
+        )
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=customer, seats=5
+        )
+        unconnected_seat = CustomerSeat(
+            subscription_id=subscription.id,
+            customer_id=customer.id,
+            member_id=None,
+            email="member@example.com",
+            status=SeatStatus.claimed,
+        )
+        await save_fixture(unconnected_seat)
+
+        await member_service.update(session, member, email="new@example.com")
+
+        await session.refresh(unconnected_seat)
+        assert unconnected_seat.email == "member@example.com"
 
 
 @pytest.mark.asyncio

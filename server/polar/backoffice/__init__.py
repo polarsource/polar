@@ -15,7 +15,6 @@ from .impersonation.endpoints import router as impersonation_router
 from .layout import layout
 from .middlewares import SecurityHeadersMiddleware, TagflowMiddleware
 from .orders.endpoints import router as orders_router
-from .organizations.endpoints import router as organizations_router
 from .organizations_v2.endpoints import router as organizations_v2_router
 from .payouts.endpoints import router as payouts_router
 from .products.endpoints import router as products_router
@@ -48,7 +47,6 @@ app.mount(
 )
 app.include_router(users_router, prefix="/users")
 app.include_router(organizations_v2_router)  # Primary organizations interface
-app.include_router(organizations_router, prefix="/organizations-classic")
 app.include_router(customers_router, prefix="/customers")
 app.include_router(benefits_router, prefix="/benefits")
 app.include_router(products_router, prefix="/products")

@@ -22,7 +22,6 @@ from polar.postgres import AsyncSession
 from ... import formatters
 from ...components import (
     Tab,
-    action_bar,
     empty_state,
     status_badge,
     support_tier_badge,
@@ -369,12 +368,6 @@ class OrganizationListView:
         with tag.div(classes="flex items-center justify-between mb-8"):
             with tag.h1(classes="text-3xl font-bold"):
                 text("Organizations")
-            with action_bar(position="right"):
-                with tag.a(
-                    href=str(request.url_for("organizations-classic:list")),
-                    classes="btn btn-ghost btn-sm",
-                ):
-                    text("Switch to Classic View")
 
         # Status tabs
         tabs = [

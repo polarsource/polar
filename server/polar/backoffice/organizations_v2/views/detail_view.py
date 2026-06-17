@@ -769,14 +769,6 @@ class OrganizationDetailView:
                             pass
 
                 with tag.div(classes="flex items-center gap-2"):
-                    with tag.a(
-                        href=str(
-                            request.url_for("organizations-classic:get", id=self.org.id)
-                        ),
-                        classes="btn btn-ghost btn-sm",
-                    ):
-                        text("Switch to Classic View")
-
                     # Top-right menu
                     with tag.div(classes="dropdown dropdown-end"):
                         with tag.button(

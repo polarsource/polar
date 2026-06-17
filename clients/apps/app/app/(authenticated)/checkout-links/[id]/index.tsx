@@ -17,7 +17,6 @@ import {
   useCheckoutLink,
   useCheckoutLinkUpdate,
 } from '@/hooks/polar/checkout_links'
-import { useInfiniteDiscounts } from '@/hooks/polar/discounts'
 import { useInfiniteProducts } from '@/hooks/polar/products'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useToast } from '@/providers/ToastProvider'
@@ -64,10 +63,6 @@ export default function CheckoutLinkDetails() {
     () => productsData?.pages.flatMap((page) => page.items) ?? [],
     [productsData],
   )
-
-  useInfiniteDiscounts(organization?.id, {
-    sorting: ['name'],
-  })
 
   const defaultValues = useMemo<CheckoutLinkUpdateForm>(
     () => ({

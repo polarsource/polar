@@ -1,6 +1,7 @@
 'use client'
 
 import { BenefitPage } from '@/components/Benefit/BenefitPage'
+import { BenefitProducts } from '@/components/Benefit/BenefitProducts'
 import { LicenseKeysPage } from '@/components/Benefit/LicenseKeysPage'
 import UpdateBenefitModalContent from '@/components/Benefit/UpdateBenefitModalContent'
 import {
@@ -148,7 +149,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                   }
                 />
               </div>
-              <div className="dark:text-polar-500 flex flex-row items-center gap-2 font-mono text-sm text-gray-500">
+              <div className="dark:text-polar-500 flex flex-row items-center gap-2 text-gray-500">
                 <span>{benefitsDisplayNames[benefit.type]}</span>
               </div>
             </div>
@@ -185,6 +186,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     >
       <div className="flex h-full w-full flex-col">
         <div className="flex w-full flex-col gap-8 pb-8">
+          <BenefitProducts benefit={benefit} organization={organization} />
           {benefit.type === 'license_keys' ? (
             <LicenseKeysPage organization={organization} benefit={benefit} />
           ) : (

@@ -73,7 +73,7 @@ const OrganizationNotificationSettings: React.FC<
           description="Receive a notification when a refund is issued to prevent a chargeback"
         >
           <Switch
-            checked={settings.chargeback_prevention}
+            checked={settings.chargeback_prevention ?? true}
             onCheckedChange={(checked) =>
               update((previous) => ({
                 ...previous,

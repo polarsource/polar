@@ -25373,7 +25373,7 @@ export interface components {
       /** New Subscription */
       new_subscription: boolean
       /** Chargeback Prevention */
-      chargeback_prevention: boolean
+      chargeback_prevention?: boolean
     }
     /** OrganizationOrder */
     OrganizationOrder: {

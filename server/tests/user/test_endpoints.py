@@ -190,7 +190,6 @@ class TestGetMyNotificationSettings:
         user_organization.notification_settings = {
             "new_order": True,
             "new_subscription": False,
-            "chargeback_prevention": True,
         }
         await save_fixture(user_organization)
 
@@ -202,7 +201,6 @@ class TestGetMyNotificationSettings:
         assert response.json()["notification_settings"] == {
             "new_order": True,
             "new_subscription": False,
-            "chargeback_prevention": True,
         }
 
     @pytest.mark.auth
@@ -228,7 +226,6 @@ class TestUpdateMyNotificationSettings:
                 "notification_settings": {
                     "new_order": True,
                     "new_subscription": True,
-                    "chargeback_prevention": True,
                 }
             },
         )
@@ -248,7 +245,6 @@ class TestUpdateMyNotificationSettings:
                 "notification_settings": {
                     "new_order": False,
                     "new_subscription": True,
-                    "chargeback_prevention": False,
                 }
             },
         )
@@ -257,13 +253,44 @@ class TestUpdateMyNotificationSettings:
         assert response.json()["notification_settings"] == {
             "new_order": False,
             "new_subscription": True,
-            "chargeback_prevention": False,
         }
 
         # Persisted: a subsequent read returns the new value.
         get_response = await client.get(url)
         assert get_response.json()["notification_settings"] == {
             "new_order": False,
+            "new_subscription": True,
+        }
+
+    @pytest.mark.auth
+    async def test_chargeback_prevention_round_trips(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        url = f"/v1/users/me/organizations/{organization.id}/notification-settings"
+        response = await client.patch(
+            url,
+            json={
+                "notification_settings": {
+                    "new_order": True,
+                    "new_subscription": True,
+                    "chargeback_prevention": False,
+                }
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["notification_settings"] == {
+            "new_order": True,
+            "new_subscription": True,
+            "chargeback_prevention": False,
+        }
+
+        get_response = await client.get(url)
+        assert get_response.json()["notification_settings"] == {
+            "new_order": True,
             "new_subscription": True,
             "chargeback_prevention": False,
         }
@@ -278,7 +305,6 @@ class TestUpdateMyNotificationSettings:
                 "notification_settings": {
                     "new_order": True,
                     "new_subscription": True,
-                    "chargeback_prevention": True,
                 }
             },
         )

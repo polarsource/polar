@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Index, Uuid
@@ -21,7 +21,9 @@ class OrganizationRole(StrEnum):
 class OrganizationNotificationSettings(TypedDict):
     new_order: bool
     new_subscription: bool
-    chargeback_prevention: bool
+    # NotRequired so rows written before the backfill (lacking the key) still
+    # serialize; reads default it to True.
+    chargeback_prevention: NotRequired[bool]
 
 
 _default_notification_settings: OrganizationNotificationSettings = {

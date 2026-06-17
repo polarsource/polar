@@ -63116,8 +63116,7 @@
         "type": "object",
         "required": [
           "new_order",
-          "new_subscription",
-          "chargeback_prevention"
+          "new_subscription"
         ],
         "title": "OrganizationNotificationSettings"
       },

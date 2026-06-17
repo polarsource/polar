@@ -448,9 +448,7 @@ class Organization(OrganizationBase):
         not at the organization level. Still serialized with a static default for
         backward compatibility with older SDK versions that require the field, but
         hidden from the schema so it's dropped from future SDK versions."""
-        return OrganizationNotificationSettings(
-            new_order=True, new_subscription=True, chargeback_prevention=True
-        )
+        return OrganizationNotificationSettings(new_order=True, new_subscription=True)
 
 
 class OrganizationWithRole(Organization):

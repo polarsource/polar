@@ -306,3 +306,48 @@ class TestSendChargebackPreventionNotice:
         }
         assert recipients == {opted_in_admin.email}
         assert opted_out_owner.email not in recipients
+
+    async def test_sends_when_key_absent(
+        self,
+        save_fixture: SaveFixture,
+        enqueue_email_template_mock: MagicMock,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # A row written before the backfill lacks the key; the gate defaults
+        # it to True, so the notice is still sent.
+        owner = await create_user(save_fixture)
+        await _add_member(
+            save_fixture,
+            organization,
+            owner,
+            OrganizationRole.owner,
+            notification_settings=OrganizationNotificationSettings(
+                new_order=True,
+                new_subscription=True,
+            ),
+        )
+
+        order, payment, _ = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=250,
+        )
+        refund = await create_refund(
+            save_fixture,
+            order,
+            payment,
+            amount=1000,
+            tax_amount=250,
+            reason=RefundReason.dispute_prevention,
+        )
+
+        await send_chargeback_prevention_notice(refund.id)
+
+        enqueue_email_template_mock.assert_called_once()
+        assert enqueue_email_template_mock.call_args.kwargs["to_email_addr"] == (
+            owner.email
+        )

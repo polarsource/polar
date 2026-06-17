@@ -1213,7 +1213,7 @@ class OrganizationService:
         *,
         reason: str,
         internal_note: str | None = None,
-        staff_user: User | None = None,
+        staff_user: User,
     ) -> Organization:
         """Backoffice override to re-activate a DENIED or BLOCKED organization.
 
@@ -1222,11 +1222,9 @@ class OrganizationService:
         an appeal). Synchronously transitions to ACTIVE if onboarding is
         complete, otherwise to CREATED.
 
-        If a review with a submitted appeal exists, the appeal is recorded as
-        APPROVED so the merchant's frontend reflects the approval. When
-        ``staff_user`` is given, any open appeal support case is also closed as
-        approved (decision message + merchant notification) — so every approval
-        entry point keeps the case in sync, not just the dedicated one.
+        If a review with a submitted appeal exists, the appeal is recorded
+        as APPROVED so the merchant's frontend reflects it, and any open appeal
+        support case is closed as approved
 
         ``internal_note`` overrides the default reactivation note (and omits the
         reason line) so callers can record a context-specific note instead — the
@@ -1253,10 +1251,9 @@ class OrganizationService:
                 review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
                 review.appeal_reviewed_at = datetime.now(UTC)
                 session.add(review)
-            if staff_user is not None:
-                await appeal_case_service.approve_open_case(
-                    session, review, staff_user=staff_user, reason=reason
-                )
+            await appeal_case_service.approve_open_case(
+                session, review, staff_user=staff_user, reason=reason
+            )
 
         note = (
             internal_note if internal_note is not None else notes[organization.status]
@@ -1962,9 +1959,11 @@ class OrganizationService:
     ) -> OrganizationReview:
         """Deny an organization's appeal and keep payment access blocked.
 
-        When ``staff_user`` is given, any open appeal support case is also
-        closed as denied — the denial twin of ``backoffice_approve``, so no
-        deny path can resolve the appeal while leaving the case open.
+        With ``staff_user`` (the backoffice deny dialog), any open appeal
+        support case is also closed as denied — the denial twin of
+        ``backoffice_approve``, so no deny path resolves the appeal while
+        leaving the case open. The automated AI appeal task calls this without
+        a ``staff_user`` (no human actor, and no case exists at that point).
         """
 
         repository = OrganizationReviewRepository.from_session(session)

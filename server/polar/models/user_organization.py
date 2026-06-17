@@ -18,7 +18,6 @@ class OrganizationRole(StrEnum):
     member = "member"
 
 
-# duplicated from Organization.notification_settings, (will be cleaned up in a future PR)
 class OrganizationNotificationSettings(TypedDict):
     new_order: bool
     new_subscription: bool
@@ -62,7 +61,7 @@ class UserOrganization(TimestampedModel):
     )
 
     notification_settings: Mapped[OrganizationNotificationSettings] = mapped_column(
-        JSONB, nullable=True, default=_default_notification_settings
+        JSONB, nullable=False, default=_default_notification_settings
     )
 
     @declared_attr

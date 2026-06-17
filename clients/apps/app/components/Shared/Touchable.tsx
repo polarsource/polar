@@ -1,5 +1,3 @@
-import { Theme } from '@/design-system/theme'
-import { BoxProps } from '@shopify/restyle'
 import * as Haptics from 'expo-haptics'
 import { useCallback } from 'react'
 import type {
@@ -19,7 +17,6 @@ interface TouchableProps extends TouchableWithoutFeedbackProps {
   feedback?: Feedback
   activeOpacity?: number
   isListItem?: boolean
-  boxProps?: BoxProps<Theme>
 }
 
 export const Touchable = ({
@@ -29,7 +26,6 @@ export const Touchable = ({
   isListItem,
   children,
   activeOpacity = 0.6,
-  boxProps,
   style,
   ...props
 }: TouchableProps) => {

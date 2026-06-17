@@ -1,0 +1,26 @@
+server/tests/integrations/plain/test_service.py
+  s_981ab6902b48ca::t_0e355f82fedd3b 368-369
+  s_981ab6902b48ca::t_c037c786b2da34 3,9,16,20,22
+  s_981ab6902b48ca::t_f73712e2bcc03c 335-367,370-373
+server/polar/integrations/plain/service.py
+  s_981ab6902b48ca::t_949be6149bf9e9 619
+  s_981ab6902b48ca::t_c76e85a109affc 86-89
+  s_981ab6902b48ca::t_4cd7bb3164ca9b 608-618,620-621
+  s_981ab6902b48ca::t_1ee9a11a29c1ea 504,559,890,1163,1305
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "63aea73dcc2ce5245211e6f2046e43bc4f3d3316",
+  "prompts": {},
+  "sessions": {
+    "s_981ab6902b48ca": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5177151b-93fa-4a17-8cc2-8fbbc98fecec",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

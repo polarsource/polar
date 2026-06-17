@@ -3,7 +3,6 @@ import theme from '@/design-system/theme'
 import { SessionProvider } from '@/providers/SessionProvider'
 import { ExtensionStorage } from '@bacons/apple-targets'
 import { InstrumentSerif_400Regular } from '@expo-google-fonts/instrument-serif/400Regular'
-import { InstrumentSerif_400Regular_Italic } from '@expo-google-fonts/instrument-serif/400Regular_Italic'
 import { useFonts } from '@expo-google-fonts/instrument-serif/useFonts'
 import NetInfo from '@react-native-community/netinfo'
 import * as Sentry from '@sentry/react-native'
@@ -68,7 +67,6 @@ onlineManager.setEventListener((setOnline) => {
 export default Sentry.wrap(function RootLayout() {
   const [fontsLoaded] = useFonts({
     InstrumentSerif_400Regular,
-    InstrumentSerif_400Regular_Italic,
   })
 
   useEffect(() => {

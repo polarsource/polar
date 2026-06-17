@@ -1953,9 +1953,19 @@ class OrganizationService:
         return review
 
     async def deny_appeal(
-        self, session: AsyncSession, organization: Organization
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        *,
+        staff_user: User | None = None,
+        reason: str | None = None,
     ) -> OrganizationReview:
-        """Deny an organization's appeal and keep payment access blocked."""
+        """Deny an organization's appeal and keep payment access blocked.
+
+        When ``staff_user`` is given, any open appeal support case is also
+        closed as denied — the denial twin of ``backoffice_approve``, so no
+        deny path can resolve the appeal while leaving the case open.
+        """
 
         repository = OrganizationReviewRepository.from_session(session)
         review = await repository.get_by_organization(organization.id)
@@ -1973,6 +1983,11 @@ class OrganizationService:
         review.appeal_reviewed_at = datetime.now(UTC)
 
         session.add(review)
+
+        if staff_user is not None:
+            await appeal_case_service.deny_open_case(
+                session, review, staff_user=staff_user, reason=reason
+            )
 
         return review
 

@@ -1534,8 +1534,10 @@ async def deny_appeal_dialog(
             reason=reason,
         )
 
-        # Deny the appeal
-        await organization_service.deny_appeal(session, organization)
+        # Deny the appeal (also closes any open appeal case as denied)
+        await organization_service.deny_appeal(
+            session, organization, staff_user=user_session.user, reason=reason
+        )
 
         return HXRedirectResponse(
             request,

@@ -158,10 +158,36 @@ class AppealCaseService:
         staff_user: User,
         reason: str | None = None,
     ) -> SupportCaseMessage | None:
-        """Close the review's appeal case as approved, if one is open.
+        """Close the review's appeal case as approved, if one is open."""
+        return await self._decide_open_case(
+            session, review, approved=True, staff_user=staff_user, reason=reason
+        )
 
-        No-op when there's no case or it is already closed, so any approval
-        path can call it idempotently to keep the case in sync with the org.
+    async def deny_open_case(
+        self,
+        session: AsyncSession,
+        review: OrganizationReview,
+        *,
+        staff_user: User,
+        reason: str | None = None,
+    ) -> SupportCaseMessage | None:
+        """Close the review's appeal case as denied, if one is open."""
+        return await self._decide_open_case(
+            session, review, approved=False, staff_user=staff_user, reason=reason
+        )
+
+    async def _decide_open_case(
+        self,
+        session: AsyncSession,
+        review: OrganizationReview,
+        *,
+        approved: bool,
+        staff_user: User,
+        reason: str | None = None,
+    ) -> SupportCaseMessage | None:
+        """Record an appeal decision on the review's case and close it, if a
+        case is open. No-op when there's no case or it is already closed, so any
+        approve/deny path can call it idempotently to keep the case in sync.
         """
         case = await self.get_case(session, review)
         if case is None:
@@ -170,7 +196,7 @@ class AppealCaseService:
         if not await message_repository.is_open(case.id):
             return None
         return await self.record_decision(
-            session, case, approved=True, staff_user=staff_user, reason=reason
+            session, case, approved=approved, staff_user=staff_user, reason=reason
         )
 
     async def get_case(

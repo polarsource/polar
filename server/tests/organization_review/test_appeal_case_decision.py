@@ -208,3 +208,28 @@ class TestDenyDecision:
             await appeal_case_service.record_decision(
                 session, case, approved=True, staff_user=user, reason="oops"
             )
+
+    async def test_deny_open_case_closes_open_case(
+        self,
+        session: AsyncSession,
+        denied_review_with_case: tuple[
+            Organization, OrganizationReview, ReviewAppealSupportCase
+        ],
+        user: User,
+    ) -> None:
+        # The deny twin of approve_open_case: keeps the case in sync on any
+        # deny path, like backoffice_approve does for approval.
+        _organization, review, case = denied_review_with_case
+
+        await appeal_case_service.deny_open_case(
+            session, review, staff_user=user, reason="Still doesn't meet policy."
+        )
+
+        message_repository = SupportCaseMessageRepository.from_session(session)
+        assert await message_repository.is_open(case.id) is False
+        merchant_messages = await message_repository.list_by_case(
+            case.id, visible_to=SupportCaseAudience.merchant
+        )
+        assert any(
+            m.type == SupportCaseMessageType.appeal_denied for m in merchant_messages
+        )

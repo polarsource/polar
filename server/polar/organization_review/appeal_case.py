@@ -39,6 +39,15 @@ class CaseClosedError(AppealCaseError):
         super().__init__(f"Case {case_id} is closed.", 409)
 
 
+class AppealNotRejectedError(AppealCaseError):
+    def __init__(self, organization_review_id: UUID) -> None:
+        super().__init__(
+            f"Review {organization_review_id} has no rejected appeal to escalate "
+            "to human review.",
+            409,
+        )
+
+
 class AppealCaseService:
     async def request_human_review(
         self,
@@ -49,6 +58,11 @@ class AppealCaseService:
         reason: str,
         requested_by_user: User,
     ) -> ReviewAppealSupportCase:
+        # A human-review case only makes sense once the AI rejected the appeal.
+        # The frontend gates on this; enforce it here too so a direct API call
+        # can't open a case while the appeal is pending or approved.
+        if review.appeal_decision != OrganizationReview.AppealDecision.REJECTED:
+            raise AppealNotRejectedError(review.id)
         if await self.get_case(session, review) is not None:
             raise CaseAlreadyExistsError(review.id)
 

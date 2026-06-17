@@ -35798,7 +35798,7 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description A human-review case already exists for this review. */
+      /** @description The appeal has not been rejected, or a human-review case already exists for this review. */
       409: {
         headers: {
           [name: string]: unknown

@@ -754,7 +754,10 @@ async def submit_appeal(
         200: {"description": "Human review case opened."},
         404: SupportCaseNotFound,
         409: {
-            "description": "A human-review case already exists for this review.",
+            "description": (
+                "The appeal has not been rejected, or a human-review case "
+                "already exists for this review."
+            ),
             "model": CaseAlreadyExistsError.schema(),
         },
     },

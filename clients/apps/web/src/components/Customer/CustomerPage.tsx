@@ -660,6 +660,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             customer={customer}
             organization={organization}
             subscriptions={subscriptions?.items}
+            orders={orders?.items}
           />
         </TabsContent>
       )}

@@ -5,13 +5,18 @@ import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Link from 'next/link'
 import { seatStatusDisplayConfig } from '../Seats/seatStatus'
 
-const seatSubscriptionHref = (
+const seatSourceHref = (
   seat: schemas['CustomerSeat'],
   organizationSlug: string,
-): string | null =>
-  seat.subscription_id
-    ? `/dashboard/${organizationSlug}/sales/subscriptions/${seat.subscription_id}`
-    : null
+): string | null => {
+  if (seat.subscription_id) {
+    return `/dashboard/${organizationSlug}/sales/subscriptions/${seat.subscription_id}`
+  }
+  if (seat.order_id) {
+    return `/dashboard/${organizationSlug}/sales/${seat.order_id}`
+  }
+  return null
+}
 
 export const MemberSeats = ({
   seats,
@@ -56,7 +61,7 @@ export const MemberSeats = ({
           header: '',
           id: 'action',
           cell: ({ row: { original } }) => {
-            const href = seatSubscriptionHref(original, organizationSlug)
+            const href = seatSourceHref(original, organizationSlug)
             if (!href) {
               return null
             }

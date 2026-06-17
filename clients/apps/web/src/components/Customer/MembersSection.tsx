@@ -2,7 +2,10 @@
 
 import { useModal } from '@/components/Modal/useModal'
 import { useMembers } from '@/hooks/queries/members'
-import { useMultipleSubscriptionSeats } from '@/hooks/queries/seats'
+import {
+  type SeatContainerRef,
+  useMultipleSeatContainerSeats,
+} from '@/hooks/queries/seats'
 import { schemas } from '@polar-sh/client'
 import {
   Avatar,
@@ -38,23 +41,31 @@ interface MembersSectionProps {
   organization: schemas['Organization']
   customer: schemas['Customer']
   subscriptions?: schemas['Subscription'][]
+  orders?: schemas['Order'][]
 }
 
 export const MembersSection = ({
   organization,
   customer,
   subscriptions,
+  orders,
 }: MembersSectionProps) => {
   const { data: membersData, isLoading } = useMembers(customer.id)
 
-  const seatSubscriptionIds = useMemo(
-    () =>
-      (subscriptions ?? [])
+  // Filters out non-seat subscriptions and orders to minimize no. requests.
+  // Could in future be replaced with one endpoint
+  const seatContainers = useMemo<SeatContainerRef[]>(
+    () => [
+      ...(subscriptions ?? [])
         .filter((subscription) => typeof subscription.seats === 'number')
-        .map((subscription) => subscription.id),
-    [subscriptions],
+        .map((subscription) => ({ subscriptionId: subscription.id })),
+      ...(orders ?? [])
+        .filter((order) => typeof order.seats === 'number')
+        .map((order) => ({ orderId: order.id })),
+    ],
+    [subscriptions, orders],
   )
-  const { seats } = useMultipleSubscriptionSeats(seatSubscriptionIds)
+  const { seats } = useMultipleSeatContainerSeats(seatContainers)
 
   const [selectedMember, setSelectedMember] = useState<
     schemas['Member'] | null

@@ -5,7 +5,6 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { schemas } from '@polar-sh/client'
 import { Link } from 'expo-router'
 import React from 'react'
-import { StyleProp, TextStyle } from 'react-native'
 import { Pill } from '../Shared/Pill'
 import { Text } from '../Shared/Text'
 import { Touchable } from '../Shared/Touchable'
@@ -17,7 +16,6 @@ export interface ProductRowProps {
   currency: string
   amount?: number
   interval?: schemas['SubscriptionRecurringInterval']
-  style?: StyleProp<TextStyle>
 }
 
 export const ProductRow = ({
@@ -25,7 +23,6 @@ export const ProductRow = ({
   currency,
   amount,
   interval,
-  style,
 }: ProductRowProps) => {
   const theme = useTheme()
 
@@ -41,7 +38,6 @@ export const ProductRow = ({
           gap: theme.spacing['spacing-12'],
           backgroundColor: theme.colors.card,
         },
-        style,
       ]}
       asChild
     >

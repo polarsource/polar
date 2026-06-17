@@ -86,13 +86,16 @@ const combineSeatsResults = (
   seats: results.flatMap((result) => result.data?.seats ?? []),
 })
 
+// A seat source is identified by exactly one of a subscription or an order
+type SeatContainer =
+  | { subscriptionId: string; orderId?: never }
+  | { orderId: string; subscriptionId?: never }
+
 /**
  * Dashboard hook to fetch and merge seats across multiple sources
  * (subscriptions and/or one-time orders).
  */
-export const useMultipleCustomerSeats = (
-  containers: { subscriptionId?: string; orderId?: string }[],
-) =>
+export const useMultipleCustomerSeats = (containers: SeatContainer[]) =>
   useQueries({
     queries: containers.map((container) => ({
       queryKey: ['organization_seats', container],

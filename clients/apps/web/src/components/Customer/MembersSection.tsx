@@ -49,18 +49,26 @@ export const MembersSection = ({
 }: MembersSectionProps) => {
   const { data: membersData, isLoading } = useMembers(customer.id)
 
+  const isEnabled =
+    organization?.feature_settings?.member_model_enabled &&
+    organization?.feature_settings?.seat_based_pricing_enabled &&
+    customer.type === 'team'
+
   // Filters out non-seat subscriptions and orders to minimize no. requests.
   // Could in future be replaced with an endpoint
   const seatContainers = useMemo(
-    () => [
-      ...(subscriptions ?? [])
-        .filter((subscription) => typeof subscription.seats === 'number')
-        .map((subscription) => ({ subscriptionId: subscription.id })),
-      ...(orders ?? [])
-        .filter((order) => typeof order.seats === 'number')
-        .map((order) => ({ orderId: order.id })),
-    ],
-    [subscriptions, orders],
+    () =>
+      isEnabled
+        ? [
+            ...(subscriptions ?? [])
+              .filter((subscription) => typeof subscription.seats === 'number')
+              .map((subscription) => ({ subscriptionId: subscription.id })),
+            ...(orders ?? [])
+              .filter((order) => typeof order.seats === 'number')
+              .map((order) => ({ orderId: order.id })),
+          ]
+        : [],
+    [isEnabled, subscriptions, orders],
   )
   const { seats } = useMultipleCustomerSeats(seatContainers)
 
@@ -72,12 +80,6 @@ export const MembersSection = ({
     hide: hideEditMemberModal,
     isShown: isEditMemberModalShown,
   } = useModal()
-
-  // Only show Members section for team customers when member model is enabled
-  const isEnabled =
-    organization?.feature_settings?.member_model_enabled &&
-    organization?.feature_settings?.seat_based_pricing_enabled &&
-    customer.type === 'team'
 
   const members = useMemo(
     () => membersData?.pages.flatMap((page) => page.items) ?? [],

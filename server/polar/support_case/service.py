@@ -1,7 +1,12 @@
 from collections.abc import Sequence
+from uuid import UUID
 
-from polar.models import Customer, File, Organization, User
+from sqlalchemy.orm import joinedload
+
+from polar.models import Customer, Dispute, File, Organization, User
 from polar.models.support_case import (
+    DisputeSupportCase,
+    ReviewAppealSupportCase,
     SupportCase,
     SupportCaseAttachment,
     SupportCaseAudience,
@@ -10,10 +15,13 @@ from polar.models.support_case import (
     SupportCaseMessageType,
     SupportCaseParticipant,
     SupportCaseParticipantKind,
+    SupportCaseType,
 )
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import (
+    DisputeSupportCaseRepository,
+    ReviewAppealSupportCaseRepository,
     SupportCaseAttachmentRepository,
     SupportCaseMessageRepository,
     SupportCaseParticipantRepository,
@@ -43,6 +51,30 @@ class SupportCaseService:
             audience=audience,
         )
         return case
+
+    async def get_organization_id(
+        self, session: AsyncSession | AsyncReadSession, case: SupportCase
+    ) -> UUID | None:
+        """The organization that owns a case, resolved through its domain object."""
+        if case.type == SupportCaseType.review_appeal:
+            appeal = await ReviewAppealSupportCaseRepository.from_session(
+                session
+            ).get_by_id(
+                case.id,
+                options=(joinedload(ReviewAppealSupportCase.organization_review),),
+            )
+            return appeal.organization_review.organization_id if appeal else None
+        if case.type == SupportCaseType.dispute:
+            dispute_case = await DisputeSupportCaseRepository.from_session(
+                session
+            ).get_by_id(
+                case.id,
+                options=(
+                    joinedload(DisputeSupportCase.dispute).joinedload(Dispute.order),
+                ),
+            )
+            return dispute_case.dispute.order.organization_id if dispute_case else None
+        return None
 
     async def add_participant(
         self,

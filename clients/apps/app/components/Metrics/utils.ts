@@ -65,25 +65,21 @@ export const timeRange = (organization: schemas['Organization']) =>
         startDate: last24hStartDate,
         endDate: last24hEndDate,
         title: '24h',
-        description: 'Last 24 hours',
       },
       '30d': {
         startDate: last30dStartDate,
         endDate: last30dEndDate,
         title: '30d',
-        description: 'Last 30 days',
       },
       '3m': {
         startDate: last3mStartDate,
         endDate: last3mEndDate,
         title: '3m',
-        description: 'Last 3 months',
       },
       all_time: {
         startDate: allTimeStartDate,
         endDate: allTimeEndDate,
         title: 'All Time',
-        description: 'All time',
       },
     } as const
   })()
@@ -96,19 +92,16 @@ export const getPreviousParams = (
       startDate: subHours(startDate, 24),
       endDate: startDate,
       title: '24h',
-      description: 'Last 24 hours',
     },
     '30d': {
       startDate: subDays(startDate, 30),
       endDate: startDate,
       title: '30d',
-      description: 'Last 30 days',
     },
     '3m': {
       startDate: subMonths(startDate, 3),
       endDate: startDate,
       title: '3m',
-      description: 'Last 3 months',
     },
   }
 }

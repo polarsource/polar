@@ -13,7 +13,6 @@ interface Props extends PropsWithChildren {
   style?: ViewStyle
   duration?: number
   maxScale?: number
-  trigger?: number
   fadeInDuration?: number
 }
 
@@ -22,7 +21,6 @@ export function KenBurns({
   style,
   duration = 20000,
   maxScale = 1.08,
-  trigger = 0,
   fadeInDuration = 1200,
 }: Props) {
   const scale = useSharedValue(1)
@@ -50,7 +48,7 @@ export function KenBurns({
       -1,
       false,
     )
-  }, [scale, opacity, duration, maxScale, trigger, fadeInDuration])
+  }, [scale, opacity, duration, maxScale, fadeInDuration])
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,

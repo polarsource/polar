@@ -69,14 +69,22 @@ class TestSendToOrgMembers:
             UserOrganization(
                 user=member_on,
                 organization=organization,
-                notification_settings={"new_order": True, "new_subscription": True},
+                notification_settings={
+                    "new_order": True,
+                    "new_subscription": True,
+                    "chargeback_prevention": True,
+                },
             )
         )
         await save_fixture(
             UserOrganization(
                 user=member_off,
                 organization=organization,
-                notification_settings={"new_order": False, "new_subscription": True},
+                notification_settings={
+                    "new_order": False,
+                    "new_subscription": True,
+                    "chargeback_prevention": True,
+                },
             )
         )
 
@@ -108,14 +116,22 @@ class TestSendToOrgMembers:
                 user=member_on,
                 organization=organization,
                 # new_order off, new_subscription on — proves the keys don't cross
-                notification_settings={"new_order": False, "new_subscription": True},
+                notification_settings={
+                    "new_order": False,
+                    "new_subscription": True,
+                    "chargeback_prevention": True,
+                },
             )
         )
         await save_fixture(
             UserOrganization(
                 user=member_off,
                 organization=organization,
-                notification_settings={"new_order": True, "new_subscription": False},
+                notification_settings={
+                    "new_order": True,
+                    "new_subscription": False,
+                    "chargeback_prevention": True,
+                },
             )
         )
 
@@ -147,7 +163,11 @@ class TestSendToOrgMembers:
                 user=member_a,
                 organization=organization,
                 # everything off — still notified, because the type isn't mapped
-                notification_settings={"new_order": False, "new_subscription": False},
+                notification_settings={
+                    "new_order": False,
+                    "new_subscription": False,
+                    "chargeback_prevention": False,
+                },
             )
         )
         await save_fixture(

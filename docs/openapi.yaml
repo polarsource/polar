@@ -63107,12 +63107,17 @@
           "new_subscription": {
             "type": "boolean",
             "title": "New Subscription"
+          },
+          "chargeback_prevention": {
+            "type": "boolean",
+            "title": "Chargeback Prevention"
           }
         },
         "type": "object",
         "required": [
           "new_order",
-          "new_subscription"
+          "new_subscription",
+          "chargeback_prevention"
         ],
         "title": "OrganizationNotificationSettings"
       },

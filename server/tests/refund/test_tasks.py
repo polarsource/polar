@@ -8,7 +8,11 @@ from polar.email.schemas import ChargebackPreventionRefundEmail
 from polar.kit.currency import format_currency
 from polar.models import Customer, Organization, Product, User
 from polar.models.refund import RefundReason
-from polar.models.user_organization import OrganizationRole, UserOrganization
+from polar.models.user_organization import (
+    OrganizationNotificationSettings,
+    OrganizationRole,
+    UserOrganization,
+)
 from polar.refund.tasks import send_chargeback_prevention_notice
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -28,14 +32,16 @@ async def _add_member(
     organization: Organization,
     user: User,
     role: OrganizationRole,
+    notification_settings: OrganizationNotificationSettings | None = None,
 ) -> None:
-    await save_fixture(
-        UserOrganization(
-            user_id=user.id,
-            organization_id=organization.id,
-            role=role,
-        )
+    user_organization = UserOrganization(
+        user_id=user.id,
+        organization_id=organization.id,
+        role=role,
     )
+    if notification_settings is not None:
+        user_organization.notification_settings = notification_settings
+    await save_fixture(user_organization)
 
 
 @pytest.mark.asyncio
@@ -201,3 +207,102 @@ class TestSendChargebackPreventionNotice:
         call = enqueue_email_template_mock.call_args
         assert call.args[0].props.order_number == str(order.id)
         assert call.kwargs["subject"] == f"Chargeback prevented for order {order.id}"
+
+    async def test_skips_members_who_opted_out(
+        self,
+        save_fixture: SaveFixture,
+        enqueue_email_template_mock: MagicMock,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        owner = await create_user(save_fixture)
+        await _add_member(
+            save_fixture,
+            organization,
+            owner,
+            OrganizationRole.owner,
+            notification_settings=OrganizationNotificationSettings(
+                new_order=True,
+                new_subscription=True,
+                chargeback_prevention=False,
+            ),
+        )
+
+        order, payment, _ = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=250,
+        )
+        refund = await create_refund(
+            save_fixture,
+            order,
+            payment,
+            amount=1000,
+            tax_amount=250,
+            reason=RefundReason.dispute_prevention,
+        )
+
+        await send_chargeback_prevention_notice(refund.id)
+
+        enqueue_email_template_mock.assert_not_called()
+
+    async def test_respects_per_member_opt_out(
+        self,
+        save_fixture: SaveFixture,
+        enqueue_email_template_mock: MagicMock,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        opted_out_owner = await create_user(save_fixture)
+        opted_in_admin = await create_user(save_fixture)
+        await _add_member(
+            save_fixture,
+            organization,
+            opted_out_owner,
+            OrganizationRole.owner,
+            notification_settings=OrganizationNotificationSettings(
+                new_order=True,
+                new_subscription=True,
+                chargeback_prevention=False,
+            ),
+        )
+        await _add_member(
+            save_fixture,
+            organization,
+            opted_in_admin,
+            OrganizationRole.admin,
+            notification_settings=OrganizationNotificationSettings(
+                new_order=True,
+                new_subscription=True,
+                chargeback_prevention=True,
+            ),
+        )
+
+        order, payment, _ = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=250,
+        )
+        refund = await create_refund(
+            save_fixture,
+            order,
+            payment,
+            amount=1000,
+            tax_amount=250,
+            reason=RefundReason.dispute_prevention,
+        )
+
+        await send_chargeback_prevention_notice(refund.id)
+
+        recipients = {
+            call.kwargs["to_email_addr"]
+            for call in enqueue_email_template_mock.call_args_list
+        }
+        assert recipients == {opted_in_admin.email}
+        assert opted_out_owner.email not in recipients

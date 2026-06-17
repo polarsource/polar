@@ -47,6 +47,9 @@ async def send_chargeback_prevention_notice(refund_id: uuid.UUID) -> None:
         for member in members:
             if member.role not in _NOTICE_RECIPIENT_ROLES:
                 continue
+            settings = member.notification_settings or {}
+            if not settings.get("chargeback_prevention", True):
+                continue
             recipient = member.user.email
             if not recipient:
                 continue

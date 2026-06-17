@@ -21,11 +21,13 @@ class OrganizationRole(StrEnum):
 class OrganizationNotificationSettings(TypedDict):
     new_order: bool
     new_subscription: bool
+    chargeback_prevention: bool
 
 
 _default_notification_settings: OrganizationNotificationSettings = {
     "new_order": True,
     "new_subscription": True,
+    "chargeback_prevention": True,
 }
 
 

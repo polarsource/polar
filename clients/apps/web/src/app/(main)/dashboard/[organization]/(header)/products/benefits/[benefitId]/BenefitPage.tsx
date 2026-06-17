@@ -10,7 +10,8 @@ import {
 } from '@/components/Benefit/utils'
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
-import { Button, InlineModal, Status } from '@polar-sh/orbit'
+import { Button, InlineModal, Status, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useModal } from '@/components/Modal/useModal'
 import { useToast } from '@/components/Toast/use-toast'
 import { useDeleteBenefit } from '@/hooks/queries'
@@ -129,17 +130,26 @@ const ClientPage: React.FC<ClientPageProps> = ({
     <MasterDetailLayoutContent
       header={
         <>
-          <div className="flex flex-row items-center gap-6">
-            <span className="dark:bg-polar-700 flex h-12 w-12 shrink-0 flex-row items-center justify-center rounded-full bg-gray-200 text-2xl text-black dark:text-white">
+          <Box alignItems="center" gap="xl">
+            <Box
+              width={48}
+              height={48}
+              flexShrink={0}
+              alignItems="center"
+              justifyContent="center"
+              borderRadius="full"
+              backgroundColor="background-card"
+              color="text-primary"
+            >
               {resolveBenefitIcon(benefit.type, 'h-4 w-4')}
-            </span>
-            <div className="flex flex-col">
-              <div className="flex min-w-0 flex-row items-center gap-4">
-                <p className="truncate text-lg">
+            </Box>
+            <Box flexDirection="column">
+              <Box minWidth={0} alignItems="center" gap="l">
+                <Text variant="heading-xxs" as="p" truncate>
                   {(benefit.description?.length ?? 0) > 0
                     ? benefit.description
                     : '—'}
-                </p>
+                </Text>
                 <Status
                   color="gray"
                   status={
@@ -148,14 +158,12 @@ const ClientPage: React.FC<ClientPageProps> = ({
                       : 'Hidden from customers'
                   }
                 />
-              </div>
-              <div className="dark:text-polar-500 flex flex-row items-center gap-2 text-gray-500">
-                <span>{benefitsDisplayNames[benefit.type]}</span>
-              </div>
-            </div>
-          </div>
+              </Box>
+              <Text color="muted">{benefitsDisplayNames[benefit.type]}</Text>
+            </Box>
+          </Box>
 
-          <div className="flex flex-row items-center gap-4">
+          <Box alignItems="center" gap="l">
             <Button onClick={toggleEdit}>Edit Benefit</Button>
             <DropdownMenu>
               <DropdownMenuTrigger className="focus:outline-none" asChild>
@@ -180,20 +188,20 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
+          </Box>
         </>
       }
     >
-      <div className="flex h-full w-full flex-col">
-        <div className="flex w-full flex-col gap-8 pb-8">
+      <Box flexDirection="column" width="100%" height="100%">
+        <Box flexDirection="column" width="100%" gap="2xl" paddingBottom="2xl">
           <BenefitProducts benefit={benefit} organization={organization} />
           {benefit.type === 'license_keys' ? (
             <LicenseKeysPage organization={organization} benefit={benefit} />
           ) : (
             <BenefitPage benefit={benefit} organization={organization} />
           )}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       <InlineModal
         isShown={isEditShown}

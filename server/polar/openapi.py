@@ -36,7 +36,6 @@ class APITag(StrEnum):
 
     public = "public"
     private = "private"
-    mcp = "mcp"
 
     @classmethod
     def metadata(cls) -> list[OpenAPITag]:
@@ -54,10 +53,6 @@ class APITag(StrEnum):
                     "Endpoints that should appear in the schema only "
                     "in development to generate our internal JS SDK."
                 ),
-            },
-            {
-                "name": cls.mcp,
-                "description": "Endpoints enabled in the MCP server.",
             },
         ]
 

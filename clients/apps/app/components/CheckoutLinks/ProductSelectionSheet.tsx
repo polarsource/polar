@@ -10,7 +10,7 @@ import BottomSheet, {
   BottomSheetFlatList,
 } from '@gorhom/bottom-sheet'
 import { schemas } from '@polar-sh/client'
-import { useCallback, useContext, useMemo, useRef, useState } from 'react'
+import { useCallback, useContext, useMemo, useState } from 'react'
 import { ActivityIndicator, ListRenderItem, StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -26,7 +26,6 @@ export const ProductSelectionSheet = ({
   selectedProductIds,
 }: ProductSelectionSheetProps) => {
   const theme = useTheme()
-  const bottomSheetRef = useRef<BottomSheet>(null)
   const insets = useSafeAreaInsets()
 
   const { organization } = useContext(OrganizationContext)
@@ -93,7 +92,6 @@ export const ProductSelectionSheet = ({
 
   return (
     <BottomSheet
-      ref={bottomSheetRef}
       index={0}
       snapPoints={['80%']}
       onClose={onDismiss}

@@ -7,7 +7,7 @@ import { useHomeHeaderHeight } from '@/hooks/useHomeHeaderHeight'
 import { useAnimatedScroll } from '@/providers/AnimatedScrollProvider'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { Link } from 'expo-router'
-import React, { FC } from 'react'
+import { FC } from 'react'
 import { Platform } from 'react-native'
 import Animated, {
   Extrapolation,

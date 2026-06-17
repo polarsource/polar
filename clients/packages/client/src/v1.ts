@@ -3576,7 +3576,7 @@ export interface paths {
      * Update Member
      * @description Update a member.
      *
-     *     Only name and role can be updated.
+     *     Only name, email and role can be updated.
      *     The authenticated user or organization must have access to the member's organization.
      *
      *     **Scopes**: `members:write`
@@ -21592,6 +21592,8 @@ export interface components {
     MemberUpdate: {
       /** Name */
       name?: string | null
+      /** Email */
+      email?: string | null
       /**
        * @description The role of the member within the customer.
        * @example member

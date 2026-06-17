@@ -6,7 +6,6 @@ import { Box } from '@polar-sh/orbit/Box'
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -15,7 +14,7 @@ import {
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 
-type MemberUpdateForm = Pick<schemas['MemberUpdate'], 'name'>
+type MemberUpdateForm = Pick<schemas['MemberUpdate'], 'name' | 'email'>
 
 export const EditMemberModal = ({
   member,
@@ -29,6 +28,7 @@ export const EditMemberModal = ({
   const form = useForm<MemberUpdateForm>({
     defaultValues: {
       name: member.name ?? '',
+      email: member.email,
     },
   })
 
@@ -87,15 +87,19 @@ export const EditMemberModal = ({
           gap="2xl"
         >
           <Box flexDirection="column" gap="l">
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormDescription>
-                A member&apos;s email can&apos;t be changed.
-              </FormDescription>
-              <FormControl>
-                <Input value={member.email} disabled />
-              </FormControl>
-            </FormItem>
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="email" value={field.value || ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="name"

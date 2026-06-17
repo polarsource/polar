@@ -145,10 +145,33 @@ class AppealCaseService:
             "support_case.notify_organization_of_new_message", message_id=message.id
         )
         # This records the decision on the case only. The caller drives org
-        # state: approve via organization.backoffice_approve (built to override
-        # a denial after the AI rejected the appeal); deny needs no change, as
+        # state: approve goes through organization.backoffice_approve, which
+        # closes the case via approve_open_case; deny needs no org change, as
         # the org is already denied.
         return message
+
+    async def approve_open_case(
+        self,
+        session: AsyncSession,
+        review: OrganizationReview,
+        *,
+        staff_user: User,
+        reason: str | None = None,
+    ) -> SupportCaseMessage | None:
+        """Close the review's appeal case as approved, if one is open.
+
+        No-op when there's no case or it is already closed, so any approval
+        path can call it idempotently to keep the case in sync with the org.
+        """
+        case = await self.get_case(session, review)
+        if case is None:
+            return None
+        message_repository = SupportCaseMessageRepository.from_session(session)
+        if not await message_repository.is_open(case.id):
+            return None
+        return await self.record_decision(
+            session, case, approved=True, staff_user=staff_user, reason=reason
+        )
 
     async def get_case(
         self, session: AsyncSession | AsyncReadSession, review: OrganizationReview

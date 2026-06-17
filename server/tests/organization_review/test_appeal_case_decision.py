@@ -84,16 +84,14 @@ class TestApproveDecision:
     ) -> None:
         organization, review, case = denied_review_with_case
 
-        # Exactly what appeal_case_approve_dialog does on POST.
+        # Every approval entry point funnels through backoffice_approve, which
+        # now closes the open appeal case itself — no path can reactivate the
+        # org while leaving the case open.
         await organization_service.backoffice_approve(
-            session, organization, reason="Looks legitimate after human review."
-        )
-        await appeal_case_service.record_decision(
             session,
-            case,
-            approved=True,
-            staff_user=user,
+            organization,
             reason="Looks legitimate after human review.",
+            staff_user=user,
         )
 
         # Org reactivated (CREATED, since onboarding gates aren't met in tests).
@@ -109,6 +107,39 @@ class TestApproveDecision:
         assert any(
             m.type == SupportCaseMessageType.appeal_approved for m in merchant_messages
         )
+
+    async def test_approve_without_open_case_is_noop(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        # A denied org whose appeal never escalated to a human-review case:
+        # approval still reactivates and records the decision, with no case to
+        # close and no error.
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=90.0,
+            violated_sections=[],
+            reason="Automated review denied.",
+            model_used="test",
+            appeal_submitted_at=datetime.now(UTC),
+            appeal_reason="My appeal text.",
+            appeal_reviewed_at=datetime.now(UTC),
+            appeal_decision=OrganizationReview.AppealDecision.REJECTED,
+        )
+        await save_fixture(review)
+
+        await organization_service.backoffice_approve(
+            session, organization, reason="No case here.", staff_user=user
+        )
+
+        assert organization.status != OrganizationStatus.DENIED
+        assert review.appeal_decision == OrganizationReview.AppealDecision.APPROVED
 
     async def test_approve_appeal_would_reject_already_reviewed(
         self,

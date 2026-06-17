@@ -59,6 +59,9 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization_access_token.repository import (
     OrganizationAccessTokenRepository,
 )
+from polar.organization_review.appeal_case import (
+    appeal_case as appeal_case_service,
+)
 from polar.organization_review.repository import (
     OrganizationReviewRepository as AgentReviewRepository,
 )
@@ -1210,6 +1213,7 @@ class OrganizationService:
         *,
         reason: str,
         internal_note: str | None = None,
+        staff_user: User | None = None,
     ) -> Organization:
         """Backoffice override to re-activate a DENIED or BLOCKED organization.
 
@@ -1219,7 +1223,10 @@ class OrganizationService:
         complete, otherwise to CREATED.
 
         If a review with a submitted appeal exists, the appeal is recorded as
-        APPROVED so the merchant's frontend reflects the approval.
+        APPROVED so the merchant's frontend reflects the approval. When
+        ``staff_user`` is given, any open appeal support case is also closed as
+        approved (decision message + merchant notification) — so every approval
+        entry point keeps the case in sync, not just the dedicated one.
 
         ``internal_note`` overrides the default reactivation note (and omits the
         reason line) so callers can record a context-specific note instead — the
@@ -1238,14 +1245,18 @@ class OrganizationService:
 
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
-        if (
-            review
-            and review.appeal_submitted_at
-            and review.appeal_decision != OrganizationReview.AppealDecision.APPROVED
-        ):
-            review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
-            review.appeal_reviewed_at = datetime.now(UTC)
-            session.add(review)
+        if review is not None:
+            if (
+                review.appeal_submitted_at
+                and review.appeal_decision != OrganizationReview.AppealDecision.APPROVED
+            ):
+                review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
+                review.appeal_reviewed_at = datetime.now(UTC)
+                session.add(review)
+            if staff_user is not None:
+                await appeal_case_service.approve_open_case(
+                    session, review, staff_user=staff_user, reason=reason
+                )
 
         note = (
             internal_note if internal_note is not None else notes[organization.status]

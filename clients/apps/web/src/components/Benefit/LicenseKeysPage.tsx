@@ -20,6 +20,8 @@ import {
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import { RowSelectionState } from '@tanstack/react-table'
@@ -191,9 +193,11 @@ export const LicenseKeysPage = ({
   )
 
   const LicenseKeyContextView = selectedLicenseKey ? (
-    <div className="flex flex-col gap-y-8 p-8">
-      <h1 className="text-xl">License Key</h1>
-      <div className="flex flex-row items-center gap-x-3">
+    <Box flexDirection="column" rowGap="2xl" padding="2xl">
+      <Text variant="heading-xxs" as="h1">
+        License Key
+      </Text>
+      <Box alignItems="center" columnGap="m">
         <Avatar
           className="h-10 w-10"
           avatar_url={selectedLicenseKey.customer.avatar_url}
@@ -203,11 +207,11 @@ export const LicenseKeysPage = ({
             '—'
           }
         />
-        <div className="flex flex-col">
-          <span>{selectedLicenseKey.customer.email ?? '—'}</span>
-        </div>
-      </div>
-      <div className="flex flex-col gap-y-6">
+        <Box flexDirection="column">
+          <Text>{selectedLicenseKey.customer.email ?? '—'}</Text>
+        </Box>
+      </Box>
+      <Box flexDirection="column" rowGap="xl">
         <CopyToClipboardInput
           value={selectedLicenseKey.key}
           onCopy={() => {
@@ -218,8 +222,8 @@ export const LicenseKeysPage = ({
           }}
         />
         <LicenseKeyDetails licenseKey={selectedLicenseKey} />
-      </div>
-      <div className="flex flex-row gap-x-4">
+      </Box>
+      <Box columnGap="l">
         {['disabled', 'revoked'].includes(selectedLicenseKey.status) && (
           <Button
             onClick={() => handleToggleLicenseKeyStatus('granted')}
@@ -246,8 +250,8 @@ export const LicenseKeysPage = ({
             Revoke
           </Button>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   ) : undefined
 
   return (
@@ -257,17 +261,19 @@ export const LicenseKeysPage = ({
         <TabsTrigger value="grants">Grants</TabsTrigger>
       </TabsList>
       <TabsContent value="license-keys">
-        <div className="flex flex-col gap-y-6">
-          <div className="flex flex-row items-center justify-between gap-4">
-            <h2 className="text-xl">License Keys</h2>
-            <div className="w-auto">
+        <Box flexDirection="column" rowGap="xl">
+          <Box alignItems="center" justifyContent="between" gap="l">
+            <Text variant="heading-xxs" as="h2">
+              License Keys
+            </Text>
+            <Box width="auto">
               <LicenseKeyStatusSelect
                 statuses={['granted', 'disabled', 'revoked']}
                 value={status}
                 onChange={setStatus}
               />
-            </div>
-          </div>
+            </Box>
+          </Box>
           <LicenseKeysList
             isLoading={isLoading}
             rowCount={licenseKeys?.pagination.total_count ?? 0}
@@ -300,7 +306,7 @@ export const LicenseKeysPage = ({
               setDeepLinkParam(null)
             }}
           />
-        </div>
+        </Box>
       </TabsContent>
       <TabsContent value="grants">
         <BenefitPage benefit={benefit} organization={organization} />

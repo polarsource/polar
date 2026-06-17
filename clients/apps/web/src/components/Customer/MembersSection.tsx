@@ -110,6 +110,9 @@ export const MembersSection = ({
         isLoading={isLoading}
         className="text-sm"
         onRowClick={({ original }) => {
+          if (customerType !== 'team') {
+            return
+          }
           setSelectedMember(original)
           showEditMemberModal()
         }}
@@ -122,6 +125,7 @@ export const MembersSection = ({
             <EditMemberModal
               member={selectedMember}
               customerId={customerId}
+              customerType={customerType}
               onClose={hideEditMemberModal}
             />
           ) : null

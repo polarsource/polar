@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, func, select, update
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -219,6 +219,22 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
             .options(*options)
         )
         return await self.get_all(statement)
+
+    async def update_email_by_member_id(self, member_id: UUID, email: str) -> None:
+        """Sync the email snapshot on the active seats connected to a member.
+
+        Only seats with this member_id are touched, so seats with no member
+        connected (member_id NULL) are left intact. Revoked seats already clear
+        their member link so should not need to be altered.
+        """
+        await self.session.execute(
+            update(CustomerSeat)
+            .where(
+                CustomerSeat.member_id == member_id,
+                CustomerSeat.status.in_([SeatStatus.pending, SeatStatus.claimed]),
+            )
+            .values(email=email)
+        )
 
     async def get_by_subscription_and_customer(
         self,

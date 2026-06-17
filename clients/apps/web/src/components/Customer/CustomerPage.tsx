@@ -660,6 +660,9 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             customerId={customer.id}
             organizationId={organization.id}
             customerType={customer.type ?? undefined}
+            subscriptionIds={subscriptions?.items?.map(
+              (subscription) => subscription.id,
+            )}
           />
         </TabsContent>
       )}

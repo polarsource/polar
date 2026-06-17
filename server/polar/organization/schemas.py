@@ -10,6 +10,7 @@ from pydantic import (
     BeforeValidator,
     Field,
     StringConstraints,
+    computed_field,
     model_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
@@ -419,12 +420,6 @@ class Organization(OrganizationBase):
     subscription_settings: OrganizationSubscriptionSettings = Field(
         description="Settings related to subscriptions management",
     )
-    notification_settings: SkipJsonSchema[OrganizationNotificationSettings] = Field(
-        description="Settings related to notifications",
-        default_factory=lambda: OrganizationNotificationSettings(
-            new_order=True, new_subscription=True
-        ),
-    )
     customer_email_settings: OrganizationCustomerEmailSettings = Field(
         description="Settings related to customer emails",
     )
@@ -441,6 +436,13 @@ class Organization(OrganizationBase):
     capabilities: OrganizationCapabilities = Field(
         description="Capabilities currently granted to the organization.",
     )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def notification_settings(self) -> SkipJsonSchema[OrganizationNotificationSettings]:
+        """Kept for backward compatibility. Notification preferences are now
+        configured per member, not at the organization level."""
+        return OrganizationNotificationSettings(new_order=True, new_subscription=True)
 
 
 class OrganizationWithRole(Organization):

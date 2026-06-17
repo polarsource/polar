@@ -109,7 +109,8 @@ The idea is to create a new `migration` module (I'm up for new name suggestions)
 2. Should we get notified when a migration is triggered?
 3. How do we trigger the cutover on live — polling, a manual action, or a Polar webhook? To check on a test.
 4. What happens with subscriptions we can't migrate? Should we ping the team?
-5. Should we store the old billing id (customer, subscription) in `user_metadata`?
+
+(Decided: store the source subscription id in `user_metadata`; the customer keeps its Stripe id in `stripe_customer_id`.)
 
 ## Appendix A: Pre-checks
 
@@ -150,7 +151,7 @@ Moving cards can take weeks, so it's tracked as a checklist. Each migration has 
 
 Some notes:
 - Stripe Customer Ids are kept between Stripe accounts.
-- Payment Method Ids are not kept.
+- Payment Method Ids are not kept (new `pm_…` id, same underlying card).
 
 ### PAN import (non-Stripe vault → Stripe)
 
@@ -159,7 +160,7 @@ Some notes:
 | 1   | Exchange PCI information                             | Polar Ops                 |
 | 2   | Request the data export from the old provider        | Merchant                  |
 | 3   | File the Stripe migration request                    | Polar Ops                 |
-| 4   | Send the encrypted vault to Stripe over SFTP         | Billing provider          |
+| 4   | Send the PGP-encrypted vault to Stripe (transport TBC) | Billing provider        |
 | 5   | Magic import happening                               | Stripe + Billing provider |
 | 6   | Verify cards landed; link them back to subscriptions | Polar App                 |
 | 7   | Trigger cutover                                      | Merchant                  |
@@ -196,31 +197,33 @@ Card move (PAN copy) and the subscription migration are described under *Moving 
 
 ### Mapping
 
-| Stripe                                                                   | Polar                                 | Notes                                 |
-| ------------------------------------------------------------------------ | ------------------------------------- | ------------------------------------- |
-| `cus_…`                                                                  | new `Customer` + `stripe_customer_id` | the PAN copy preserves the id `cus_…` |
-| email / name / address / tax id                                          | `Customer` fields                     | should be unique per org              |
-| Product + Price (`unit_amount`, `currency`)                              | `Product` + `ProductPriceFixed`       |                                       |
-| `recurring.interval[_count]`                                             | interval on the **`Product`**         | recurrence lives on the product       |
-| `sub_…`                                                                  | `user_metadata`                       | Stripe marker (pending to decide)     |
-| `current_period_end` / `billing_cycle_anchor`                            | period / anchor                       |                                       |
-| `trial_*`, `cancel_at_period_end`, `discounts`, `default_payment_method` | same fields                           |                                       |
-| Coupon                                                                   | `Discount`                            |                                       |
-| `pm_…` (card)                                                            | `PaymentMethod`                       | copied via PAN copy                   |
-| Link / wallet / SEPA / Bacs / ACH                                        | —                                     | can't move!                           |
-| Charges / refunds / disputes, Stripe Tax history                         | —                                     | can't move!                           |
+| Stripe | Polar | Notes |
+|---|---|---|
+| `cus_…` | new `Customer` + `stripe_customer_id` | PAN copy preserves `cus_…` (confirmed); `stripe_customer_id` is not DB-unique. |
+| email / name / address / tax id | `Customer` fields | unique per org by lower-cased email. |
+| Product + Price (`unit_amount`, `currency`) | `Product` + `ProductPriceFixed` | |
+| `recurring.interval[_count]` | interval on the **`Product`** | recurrence lives on the product. |
+| `sub_…` | `user_metadata['stripe_subscription_id']` | a `legacy_stripe_subscription_id` column exists, but we're not using it. |
+| `items.data[].current_period_end`, `billing_cycle_anchor` | `current_period_end`, `anchor_day` | period moved onto the subscription **item** (API `2025-03-31.basil`); read it per item. `anchor_day` is day-of-month, so reduce the anchor timestamp. |
+| `trial_*`, `cancel_at_period_end`, `default_payment_method` | same fields | |
+| `discounts[]` (Coupon) | single `Discount` | Polar holds **one** discount per sub; Stripe dropped the singular `discount`, so read `discounts[]` and flag if there's more than one. |
+| `pm_…` (card) | `PaymentMethod` (`processor_id`) | copied via PAN copy; new `pm_…` id, same underlying card. |
+| Cards, ACH, SEPA `PaymentMethod` | `PaymentMethod` | copyable by PAN copy. |
+| Link / wallets / Bacs / legacy SEPA `source` | — | not copyable → customer re-enters (Link/wallets: to confirm with Stripe). |
+| Charges / refunds / disputes, Stripe Tax history | — | not copied; stay on Stripe. |
 
 ### Stripe-specific prechecks
 
 On top of the generic ones in Appendix A. What's unique to Stripe:
 
-- **Manual:** source account is a Connect platform (cards/subs may live on sub-accounts, not the platform).
-- **Blocker:** India / RBI account — card data can't cross the border, so the PAN copy can't run.
+- **Manual:** source account is a Connect platform — only platform-account customers/PMs are copyable; anything on connected accounts is excluded.
+- **Blocker:** India / RBI account — card data can't cross the border, so the PAN copy can't run (bidirectional).
 - **Blocker:** tiered/graduated pricing (`billing_scheme=tiered`) can't be represented.
-- **Blocker:** metered pricing (`usage_type=metered`) — to be implemented later.
+- **Blocker:** metered pricing (`usage_type=metered`) — to be implemented later (Stripe now requires a Billing Meter; legacy usage records are gone).
 - **Blocker:** subscription with multiple line items — can't be represented.
 - **Blocker:** `collection_method=send_invoice` — can't be handled.
-- **Warning:** PMs that can't copy, like Link, wallet, SEPA, Bacs, ACH — customer needs to re-enter.
+- **Warning:** PMs that can't copy: Link, wallets, Bacs, legacy SEPA `source` objects — customer re-enters. (Cards, ACH, and SEPA `PaymentMethod`s copy fine; Link/wallets to confirm with Stripe.)
+- **Warning:** multiple discounts on a subscription — Polar supports one; keep one and flag the rest.
 - **Warning:** `pause_collection` — no Polar paused subscriptions, don't import.
 - **Warning:** `past_due` / `unpaid` — don't import.
 - **Warning:** in-flight refunds / open disputes on an invoice — don't import, the money is still moving on Stripe.

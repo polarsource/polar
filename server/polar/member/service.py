@@ -775,19 +775,18 @@ class MemberService:
                     ]
                 )
 
-        normalized_email: str | None = None
-        if email is not None:
-            normalized_email = email.strip()
-            if normalized_email != member.email:
-                await self._validate_email_change(session, member, normalized_email)
+        new_email: str | None = None
+        if email is not None and email.strip() != member.email:
+            new_email = email.strip()
+            await self._validate_email_change(session, member, new_email)
 
         update_dict = {}
         if name is not None:
             update_dict["name"] = name
         if role is not None and not transferred:
             update_dict["role"] = role
-        if normalized_email is not None and normalized_email != member.email:
-            update_dict["email"] = normalized_email
+        if new_email is not None:
+            update_dict["email"] = new_email
 
         if not update_dict and not transferred:
             return member
@@ -798,11 +797,9 @@ class MemberService:
             else member
         )
 
-        if "email" in update_dict:
+        if new_email is not None:
             seat_repository = CustomerSeatRepository.from_session(session)
-            await seat_repository.update_email_by_member_id(
-                member.id, update_dict["email"]
-            )
+            await seat_repository.update_email_by_member_id(member.id, new_email)
 
         log.info(
             "member.update.success",

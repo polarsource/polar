@@ -130,14 +130,14 @@ export const EditMemberModal = ({
                 </FormItem>
               )}
             />
-          </Box>
+          </Box >
           <Box justifyContent="end">
             <Button type="submit" loading={updateMember.isPending}>
               Save Member
             </Button>
           </Box>
-        </Box>
-      </Form>
-    </Box>
+        </Box >
+      </Form >
+    </Box >
   )
 }

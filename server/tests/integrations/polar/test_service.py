@@ -32,7 +32,7 @@ from polar.integrations.polar.exceptions import (
     TransactionFeeBenefitError,
 )
 from polar.integrations.polar.service import polar_self
-from polar.models.organization import Organization
+from polar.models.organization import Organization, SupportTier
 from polar.postgres import AsyncReadSession, AsyncSession
 
 SELF_ORG_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
@@ -650,6 +650,7 @@ class TestApplySupport:
     async def test_active_grant(
         self,
         session_mock: AsyncSession,
+        organization_repository_mock: MagicMock,
         plain_update_tenant_tier_mock: AsyncMock,
     ) -> None:
         grant = _make_support_grant()
@@ -658,11 +659,17 @@ class TestApplySupport:
 
         plain_update_tenant_tier_mock.assert_awaited_once_with(
             tenant_external_id=str(ORG_A), tier_external_id=None
+        )
+
+        assert (
+            organization_repository_mock.get_by_id.return_value.support_tier
+            == SupportTier.pro
         )
 
     async def test_active_grant_with_plain_tier(
         self,
         session_mock: AsyncSession,
+        organization_repository_mock: MagicMock,
         plain_update_tenant_tier_mock: AsyncMock,
     ) -> None:
         grant = _make_grant(
@@ -680,10 +687,15 @@ class TestApplySupport:
         plain_update_tenant_tier_mock.assert_awaited_once_with(
             tenant_external_id=str(ORG_A), tier_external_id="pro"
         )
+        assert (
+            organization_repository_mock.get_by_id.return_value.support_tier
+            == SupportTier.pro
+        )
 
     async def test_no_grant_unsets_tier(
         self,
         session_mock: AsyncSession,
+        organization_repository_mock: MagicMock,
         plain_update_tenant_tier_mock: AsyncMock,
     ) -> None:
         await polar_self._apply_support(session_mock, ORG_A, None)
@@ -691,10 +703,13 @@ class TestApplySupport:
         plain_update_tenant_tier_mock.assert_awaited_once_with(
             tenant_external_id=str(ORG_A), tier_external_id=None
         )
+        # Revocation resets the org tier to NULL (free).
+        assert organization_repository_mock.get_by_id.return_value.support_tier is None
 
     async def test_no_grant_falls_back_to_default_tier(
         self,
         session_mock: AsyncSession,
+        organization_repository_mock: MagicMock,
         plain_update_tenant_tier_mock: AsyncMock,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
@@ -702,28 +717,16 @@ class TestApplySupport:
 
         await polar_self._apply_support(session_mock, ORG_A, None)
 
+        # Plain gets the default tier; the org stays NULL (the two agree).
         plain_update_tenant_tier_mock.assert_awaited_once_with(
             tenant_external_id=str(ORG_A), tier_external_id="free"
         )
-
-    async def test_grant_without_tier_falls_back_to_default(
-        self,
-        session_mock: AsyncSession,
-        plain_update_tenant_tier_mock: AsyncMock,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        monkeypatch.setattr(settings, "PLAIN_DEFAULT_TIER_EXTERNAL_ID", "free")
-        grant = _make_support_grant()
-
-        await polar_self._apply_support(session_mock, ORG_A, grant)
-
-        plain_update_tenant_tier_mock.assert_awaited_once_with(
-            tenant_external_id=str(ORG_A), tier_external_id="free"
-        )
+        assert organization_repository_mock.get_by_id.return_value.support_tier is None
 
     async def test_grant_tier_overrides_default(
         self,
         session_mock: AsyncSession,
+        organization_repository_mock: MagicMock,
         plain_update_tenant_tier_mock: AsyncMock,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
@@ -742,6 +745,10 @@ class TestApplySupport:
 
         plain_update_tenant_tier_mock.assert_awaited_once_with(
             tenant_external_id=str(ORG_A), tier_external_id="pro"
+        )
+        assert (
+            organization_repository_mock.get_by_id.return_value.support_tier
+            == SupportTier.pro
         )
 
     async def test_invalid_metadata_raises(self, session_mock: AsyncSession) -> None:
@@ -749,6 +756,17 @@ class TestApplySupport:
 
         with pytest.raises(SupportBenefitError):
             await polar_self._apply_support(session_mock, ORG_A, grant)
+
+
+class TestSupportTier:
+    def test_from_level_known(self) -> None:
+        assert SupportTier.from_level(2) == SupportTier.pro
+        assert SupportTier.from_level(3) == SupportTier.growth
+        assert SupportTier.from_level(4) == SupportTier.scale
+
+    @pytest.mark.parametrize("level", [None, 0, 1, 5, 99])
+    def test_from_level_unknown_or_none_is_none(self, level: int | None) -> None:
+        assert SupportTier.from_level(level) is None
 
 
 @pytest.mark.asyncio

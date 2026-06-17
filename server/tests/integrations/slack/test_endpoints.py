@@ -648,27 +648,17 @@ class TestEvents:
         assert response.status_code == 401
 
     async def test_url_verification_returns_challenge(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
+        self, client: AsyncClient
     ) -> None:
-        await _create_integration(save_fixture, organization)
         payload = {
+            "token": "Jhj5dZrVaK7ZwHHjRyZWjbDl",
             "type": "url_verification",
-            "api_app_id": "A0TESTAPPID",
             "challenge": "abc123",
         }
-        body = json.dumps(payload).encode()
-        ts, sig = _slack_signature(signing_secret="ss-test-secret", body=body)
         response = await client.post(
             "/v1/integrations/slack/events",
-            content=body,
-            headers={
-                "x-slack-signature": sig,
-                "x-slack-request-timestamp": ts,
-                "content-type": "application/json",
-            },
+            content=json.dumps(payload).encode(),
+            headers={"content-type": "application/json"},
         )
         assert response.status_code == 200
         assert response.json() == {"challenge": "abc123"}

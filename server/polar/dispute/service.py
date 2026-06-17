@@ -10,6 +10,7 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.customer.repository import CustomerRepository
+from polar.dispute.dispute_case import dispute_case as dispute_case_service
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
 from polar.integrations.chargeback_stop.types import ChargebackStopAlert
@@ -140,6 +141,7 @@ class DisputeService:
             )
 
         was_closed = dispute.closed
+        previous_status = dispute.status
         dispute.payment_processor = PaymentProcessor.stripe
         dispute.payment_processor_id = stripe_dispute.id
 
@@ -192,7 +194,50 @@ class DisputeService:
                 )
                 await self._revoke(session, dispute)
 
-        return await repository.update(dispute)
+        dispute = await repository.update(dispute)
+        await self._sync_support_case(session, dispute, previous_status=previous_status)
+        return dispute
+
+    async def _sync_support_case(
+        self,
+        session: AsyncSession,
+        dispute: Dispute,
+        *,
+        previous_status: DisputeStatus | None,
+    ) -> None:
+        """Reconcile the merchant support case with the dispute's status.
+
+        Opens the case the first time the dispute needs a response, posts the
+        milestone updates (under review, won, lost) and closes it on resolution.
+        Idempotent: opening is guarded by the existing case, the closing
+        milestones by the case being open, and the (non-closing) under-review
+        milestone by an actual status change — so retried webhooks are no-ops.
+        """
+        case = await dispute_case_service.get_case(session, dispute)
+
+        if dispute.status == DisputeStatus.needs_response:
+            if case is None:
+                await dispute_case_service.open_case(
+                    session, dispute, organization=dispute.payment.organization
+                )
+            elif not await dispute_case_service.is_open(session, case):
+                # Dispute reopened after we'd closed the case (e.g. a prevented
+                # dispute that Stripe escalated back to needs_response).
+                await dispute_case_service.reopen(session, case)
+            return
+
+        if case is None or not await dispute_case_service.is_open(session, case):
+            return
+
+        if dispute.status == DisputeStatus.under_review:
+            if dispute.status != previous_status:
+                await dispute_case_service.mark_under_review(session, case)
+        elif dispute.status in (DisputeStatus.won, DisputeStatus.lost):
+            await dispute_case_service.resolve(
+                session, case, won=dispute.status == DisputeStatus.won
+            )
+        elif dispute.closed:  # prevented: silent close, the merchant never acted
+            await dispute_case_service.close(session, case)
 
     async def upsert_from_chargeback_stop(
         self, session: AsyncSession, alert: ChargebackStopAlert
@@ -258,7 +303,9 @@ class DisputeService:
     ) -> tuple[Payment, Order]:
         payment_repository = PaymentRepository.from_session(session)
         payment = await payment_repository.get_by_processor_id(
-            PaymentProcessor.stripe, processor_id, options=(joinedload(Payment.order),)
+            PaymentProcessor.stripe,
+            processor_id,
+            options=(joinedload(Payment.order), joinedload(Payment.organization)),
         )
         if payment is None or payment.order is None:
             raise DisputePaymentNotFoundError(processor, processor_id)

@@ -22604,7 +22604,7 @@ export interface components {
       tos_uri?: string | null
       /** Policy Uri */
       policy_uri?: string | null
-      /** @default organization */
+      /** @default user */
       default_sub_type: components['schemas']['SubType']
       /**
        * Created At
@@ -22669,7 +22669,7 @@ export interface components {
       tos_uri?: string | null
       /** Policy Uri */
       policy_uri?: string | null
-      /** @default organization */
+      /** @default user */
       default_sub_type: components['schemas']['SubType']
     }
     /** OAuth2ClientConfigurationUpdate */
@@ -22715,7 +22715,7 @@ export interface components {
       tos_uri?: string | null
       /** Policy Uri */
       policy_uri?: string | null
-      /** @default organization */
+      /** @default user */
       default_sub_type: components['schemas']['SubType']
       /** Client Id */
       client_id: string
@@ -31439,6 +31439,9 @@ export interface components {
       | 'appeal_approved'
       | 'appeal_denied'
       | 'info_requested'
+      | 'dispute_under_review'
+      | 'dispute_won'
+      | 'dispute_lost'
     /** SupportCaseThread */
     SupportCaseThread: {
       case: components['schemas']['SupportCase']
@@ -59833,6 +59836,9 @@ export const supportCaseMessageTypeValues: ReadonlyArray<
   'appeal_approved',
   'appeal_denied',
   'info_requested',
+  'dispute_under_review',
+  'dispute_won',
+  'dispute_lost',
 ]
 export const supportCaseTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SupportCaseType']

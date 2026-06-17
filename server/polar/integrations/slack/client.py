@@ -143,6 +143,18 @@ class SlackClient:
             json={"channel": channel},
         )
 
+    async def conversations_unarchive(
+        self,
+        *,
+        bot_token: str,
+        channel: str,
+    ) -> dict[str, Any]:
+        return await self._post_authed(
+            "/conversations.unarchive",
+            bot_token=bot_token,
+            json={"channel": channel},
+        )
+
     async def chat_post_message(
         self,
         *,

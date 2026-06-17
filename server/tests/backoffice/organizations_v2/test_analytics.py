@@ -6,7 +6,7 @@ amounts directly from Payment, Refund, or Dispute records.
 
 import pytest
 
-from polar.backoffice.organizations.analytics import PaymentAnalyticsService
+from polar.backoffice.organizations_v2.analytics import PaymentAnalyticsService
 from polar.models import Account
 from polar.models.dispute import DisputeStatus
 from polar.models.payment import PaymentStatus

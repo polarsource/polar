@@ -230,7 +230,7 @@ async def get_partial(...) -> str:
 
 ## Reference Files
 
-- Organizations backoffice: `polar/backoffice/organizations/`
+- Organizations backoffice: `polar/backoffice/organizations_v2/`
 - Customers backoffice: `polar/backoffice/customers/`
 - Components: `polar/backoffice/components/`
 - Base templates: `polar/backoffice/templates/`

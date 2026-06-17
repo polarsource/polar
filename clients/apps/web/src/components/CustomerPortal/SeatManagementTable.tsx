@@ -17,19 +17,11 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/atoms/DropdownMenu'
 import { Input } from '@polar-sh/orbit'
-import { Status, type StatusColor } from '@polar-sh/orbit'
+import { Status } from '@polar-sh/orbit'
 import { useState } from 'react'
 import { toast } from '../Toast/use-toast'
+import { seatStatusDisplayConfig } from '../Seats/seatStatus'
 import { CustomerSeatQuantityManager } from './CustomerSeatQuantityManager'
-
-const seatStatusToDisplayName: Record<
-  'pending' | 'claimed' | 'revoked',
-  [string, StatusColor]
-> = {
-  pending: ['Pending', 'yellow'],
-  claimed: ['Claimed', 'green'],
-  revoked: ['Revoked', 'gray'],
-}
 
 interface CustomerSeat {
   id: string
@@ -209,7 +201,7 @@ export const SeatManagementTable = ({
                   return order.indexOf(a.status) - order.indexOf(b.status)
                 })
                 .map((seat) => {
-                  const [label, color] = seatStatusToDisplayName[seat.status]
+                  const [label, color] = seatStatusDisplayConfig[seat.status]
                   const isSeatLoading = loadingSeats.has(seat.id)
 
                   return (

@@ -90,9 +90,7 @@ const combineSeatsResults = (
 /**
  * Dashboard hook to fetch and merge seats across multiple subscriptions.
  */
-export const useOrganizationSeatsForSubscriptions = (
-  subscriptionIds: string[],
-) =>
+export const useMultipleSubscriptionSeats = (subscriptionIds: string[]) =>
   useQueries({
     queries: subscriptionIds.map((subscriptionId) => ({
       queryKey: ['organization_seats', { subscriptionId }],

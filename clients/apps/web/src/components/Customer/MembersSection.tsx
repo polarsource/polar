@@ -3,7 +3,7 @@
 import { useModal } from '@/components/Modal/useModal'
 import { useMembers } from '@/hooks/queries/members'
 import { useOrganization } from '@/hooks/queries/org'
-import { useOrganizationSeatsForSubscriptions } from '@/hooks/queries'
+import { useMultipleSubscriptionSeats } from '@/hooks/queries/seats'
 import { schemas } from '@polar-sh/client'
 import {
   Avatar,
@@ -17,6 +17,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { useMemo, useState } from 'react'
 import { EditMemberModal } from './EditMemberModal'
+import { seatStatusDisplayConfig } from '../Seats/seatStatus'
 
 const roleDisplayConfig: Record<
   'owner' | 'billing_manager' | 'member',
@@ -27,16 +28,12 @@ const roleDisplayConfig: Record<
   member: ['Member', 'gray'],
 }
 
-type SeatStatus = 'pending' | 'claimed' | 'revoked'
-
-const seatStatusDisplayConfig: Record<SeatStatus, [string, StatusColor]> = {
-  pending: ['Pending', 'yellow'],
-  claimed: ['Claimed', 'green'],
-  revoked: ['Revoked', 'gray'],
-}
-
-// Highest-priority status wins when a member holds multiple seats.
-const seatStatusPriority: SeatStatus[] = ['pending', 'claimed', 'revoked']
+// Which status to surface when a member holds multiple seats (highest first).
+const seatStatusPriority: schemas['SeatStatus'][] = [
+  'pending',
+  'claimed',
+  'revoked',
+]
 
 interface MembersSectionProps {
   customerId: string
@@ -56,7 +53,7 @@ export const MembersSection = ({
     !!organizationId,
   )
   const { data: membersData, isLoading } = useMembers(customerId)
-  const { seats } = useOrganizationSeatsForSubscriptions(subscriptionIds ?? [])
+  const { seats } = useMultipleSubscriptionSeats(subscriptionIds ?? [])
 
   const [selectedMember, setSelectedMember] = useState<
     schemas['Member'] | null
@@ -91,7 +88,7 @@ export const MembersSection = ({
     return map
   }, [seats])
 
-  if (!isEnabled) {
+  if (!isEnabled || !organization) {
     return null
   }
 
@@ -115,9 +112,7 @@ export const MembersSection = ({
                 />
                 <Box flexDirection="column">
                   <Text>{original.name ?? original.email}</Text>
-                  {original.name && (
-                    <Text color="muted">{original.email}</Text>
-                  )}
+                  {original.name && <Text color="muted">{original.email}</Text>}
                 </Box>
               </Box>
             ),
@@ -135,9 +130,6 @@ export const MembersSection = ({
             id: 'seat',
             cell: ({ row: { original } }) => {
               const memberSeats = seatsByMemberId.get(original.id) ?? []
-              if (memberSeats.length === 0) {
-                return <Text>—</Text>
-              }
               const status = seatStatusPriority.find((candidate) =>
                 memberSeats.some((seat) => seat.status === candidate),
               )
@@ -187,6 +179,8 @@ export const MembersSection = ({
             <EditMemberModal
               member={selectedMember}
               customerId={customerId}
+              seats={seatsByMemberId.get(selectedMember.id) ?? []}
+              organizationSlug={organization.slug}
               onClose={hideEditMemberModal}
             />
           ) : null

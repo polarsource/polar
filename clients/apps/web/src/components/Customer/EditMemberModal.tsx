@@ -13,6 +13,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useForm } from 'react-hook-form'
+import { MemberSeats } from './MemberSeats'
 import { toast } from '../Toast/use-toast'
 
 type MemberUpdateForm = Pick<schemas['MemberUpdate'], 'name'>
@@ -20,10 +21,14 @@ type MemberUpdateForm = Pick<schemas['MemberUpdate'], 'name'>
 export const EditMemberModal = ({
   member,
   customerId,
+  seats,
+  organizationSlug,
   onClose,
 }: {
   member: schemas['Member']
   customerId: string
+  seats: schemas['CustomerSeat'][]
+  organizationSlug: string
   onClose: () => void
 }) => {
   const form = useForm<MemberUpdateForm>({
@@ -119,6 +124,12 @@ export const EditMemberModal = ({
           </Button>
         </Box>
       </Form>
+      <Box flexDirection="column" gap="l">
+        <Text as="h3" variant="heading-xxs">
+          Seats
+        </Text>
+        <MemberSeats seats={seats} organizationSlug={organizationSlug} />
+      </Box>
     </Box>
   )
 }

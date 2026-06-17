@@ -1,6 +1,12 @@
 import { api, createClientSideAPI } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  type UseQueryResult,
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { defaultRetry } from './retry'
 
@@ -71,4 +77,33 @@ export const useOrganizationSeats = (parameters?: {
       ),
     retry: defaultRetry,
     enabled: !!parameters?.subscriptionId || !!parameters?.orderId,
+  })
+
+// Stable reference so useQueries' combine doesn't re-run on every render.
+const combineSeatsResults = (
+  results: UseQueryResult<schemas['SeatsList']>[],
+) => ({
+  seats: results.flatMap((result) => result.data?.seats ?? []),
+  isLoading: results.some((result) => result.isLoading),
+})
+
+/**
+ * Dashboard hook to fetch and merge seats across multiple subscriptions.
+ */
+export const useOrganizationSeatsForSubscriptions = (
+  subscriptionIds: string[],
+) =>
+  useQueries({
+    queries: subscriptionIds.map((subscriptionId) => ({
+      queryKey: ['organization_seats', { subscriptionId }],
+      queryFn: () =>
+        unwrap(
+          api.GET('/v1/customer-seats', {
+            params: { query: { subscription_id: subscriptionId } },
+          }),
+        ),
+      retry: defaultRetry,
+      enabled: !!subscriptionId,
+    })),
+    combine: combineSeatsResults,
   })

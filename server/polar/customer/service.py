@@ -325,7 +325,7 @@ class CustomerService:
         try:
             if send_webhooks:
                 async with repository.create_context(customer) as created:
-                    await member_service.create_owner_member(
+                    owner = await member_service.create_owner_member(
                         session,
                         created,
                         organization,
@@ -335,7 +335,7 @@ class CustomerService:
                     )
             else:
                 created = await repository.create(customer, flush=True)
-                await member_service.create_owner_member(
+                owner = await member_service.create_owner_member(
                     session,
                     created,
                     organization,
@@ -369,14 +369,12 @@ class CustomerService:
                 ) from e
             raise
 
-        # When the customer has no email of its own, `Customer.avatar_url` falls
-        # back to the owner member's email. `owner` is eager-loaded
-        # (lazy="selectin") on queries, but `created` is a freshly built object
-        # whose relationship was never loaded — so we load it here, otherwise
-        # response serialization would emit IO mid-render (raising MissingGreenlet).
-        if created.email is None:
-            await session.flush()
-            await session.refresh(created, attribute_names=["owner"])
+        # `create_owner_member` fills `created.owner` in-memory when it resolves a
+        # member; if none was created (member model feature disabled), mark the
+        # relationship as loaded-and-empty here.
+        # Without this, response serialization would emit IO mid-render
+        if created.email is None and owner is None:
+            created.owner = None
         return created
 
     async def update(

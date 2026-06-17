@@ -642,6 +642,32 @@ class TestCreateCustomer:
         assert json["email"] is None
         assert json["avatar_url"] == _avatar_url_for_email("owner@polar.sh")
 
+    @pytest.mark.auth
+    async def test_team_without_email_or_owner_member_serializes_null_avatar(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # With the member model disabled, no owner member is created, so the
+        # customer's `owner` relationship stays empty. Serialization must not
+        # lazy-load it (MissingGreenlet) when resolving `avatar_url`.
+        response = await client.post(
+            "/v1/customers/",
+            json={
+                "type": "team",
+                "name": "Acme Inc.",
+                "organization_id": str(organization.id),
+                "owner": {"email": "owner@polar.sh"},
+            },
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["email"] is None
+        assert json["avatar_url"] is None
+
 
 @pytest.mark.asyncio
 class TestUpdateCustomer:

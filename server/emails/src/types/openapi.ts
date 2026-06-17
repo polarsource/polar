@@ -1602,8 +1602,6 @@ export interface components {
         | null
       /** @description Settings related to subscriptions management */
       subscription_settings: components['schemas']['OrganizationSubscriptionSettings']
-      /** @description Settings related to notifications */
-      notification_settings: components['schemas']['OrganizationNotificationSettings']
       /** @description Settings related to customer emails */
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
@@ -2065,13 +2063,6 @@ export interface components {
       inviter_email: string
       /** Invite Url */
       invite_url: string
-    }
-    /** OrganizationNotificationSettings */
-    OrganizationNotificationSettings: {
-      /** New Order */
-      new_order: boolean
-      /** New Subscription */
-      new_subscription: boolean
     }
     /** OrganizationSocialLink */
     OrganizationSocialLink: {

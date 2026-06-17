@@ -590,7 +590,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
     )
 
     notification_settings: Mapped[OrganizationNotificationSettings] = mapped_column(
-        JSONB, nullable=False, default=_default_notification_settings
+        JSONB, nullable=False, default=_default_notification_settings, deferred=True
     )
 
     customer_email_settings: Mapped[OrganizationCustomerEmailSettings] = mapped_column(

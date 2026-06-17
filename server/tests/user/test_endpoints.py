@@ -203,29 +203,6 @@ class TestGetMyNotificationSettings:
             "new_subscription": False,
         }
 
-    # TODO (maxime): default to organization settings is temporary while user level is Nullable.
-    # once backfill script ran and user level is non-nullable, we can remove the fallback to organization settings.
-    @pytest.mark.auth
-    async def test_member_without_settings_returns_null(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        # Mirrors the migration window: rows added by the column migration
-        # are NULL until the backfill runs. The frontend relies on this to
-        # fall back to the org-level default.
-        user_organization.notification_settings = None  # type: ignore[assignment]
-        await save_fixture(user_organization)
-
-        response = await client.get(
-            f"/v1/users/me/organizations/{organization.id}/notification-settings"
-        )
-
-        assert response.status_code == 200
-        assert response.json()["notification_settings"] is None
-
     @pytest.mark.auth
     async def test_non_member_returns_404(
         self, client: AsyncClient, organization: Organization

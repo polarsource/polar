@@ -1661,8 +1661,11 @@ async def appeal_case_approve_dialog(
     if request.method == "POST":
         form_data = await request.form()
         reason = str(form_data.get("reason", "")).strip() or None
+        message_repository = SupportCaseMessageRepository.from_session(session)
         if not reason:
             error_message = "A reason is required to approve the appeal."
+        elif not await message_repository.is_open(case.id):
+            error_message = "This appeal case is already closed."
         else:
             review_repo = OrganizationReviewRepository.from_session(session)
             try:

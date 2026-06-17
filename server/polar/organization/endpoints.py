@@ -66,6 +66,7 @@ from polar.organization.repository import (
     OrganizationReviewRepository,
 )
 from polar.organization_review.appeal_case import (
+    AppealNotRejectedError,
     CaseAlreadyExistsError,
     CaseClosedError,
 )
@@ -758,7 +759,7 @@ async def submit_appeal(
                 "The appeal has not been rejected, or a human-review case "
                 "already exists for this review."
             ),
-            "model": CaseAlreadyExistsError.schema(),
+            "model": AppealNotRejectedError.schema() | CaseAlreadyExistsError.schema(),
         },
     },
     tags=[APITag.private],

@@ -141,6 +141,36 @@ class TestApproveDecision:
         assert organization.status != OrganizationStatus.DENIED
         assert review.appeal_decision == OrganizationReview.AppealDecision.APPROVED
 
+    async def test_approve_open_case_is_noop_on_closed_case(
+        self,
+        session: AsyncSession,
+        denied_review_with_case: tuple[
+            Organization, OrganizationReview, ReviewAppealSupportCase
+        ],
+        user: User,
+    ) -> None:
+        # Once the case is closed (here, denied), approving must not write a
+        # conflicting decision onto it — it's a no-op, so no inconsistent
+        # approved-message-on-a-denied-case record is created.
+        _organization, review, case = denied_review_with_case
+        await appeal_case_service.deny_open_case(
+            session, review, staff_user=user, reason="Denied."
+        )
+        message_repository = SupportCaseMessageRepository.from_session(session)
+        assert await message_repository.is_open(case.id) is False
+
+        result = await appeal_case_service.approve_open_case(
+            session, review, staff_user=user, reason="Override."
+        )
+
+        assert result is None
+        messages = await message_repository.list_by_case(
+            case.id, visible_to=SupportCaseAudience.merchant
+        )
+        assert not [
+            m for m in messages if m.type == SupportCaseMessageType.appeal_approved
+        ]
+
     async def test_approve_appeal_would_reject_already_reviewed(
         self,
         session: AsyncSession,

@@ -6943,6 +6943,17 @@ export interface components {
      * @enum {string}
      */
     AppealDecision: 'approved' | 'rejected'
+    /** AppealNotRejectedError */
+    AppealNotRejectedError: {
+      /**
+       * Error
+       * @example AppealNotRejectedError
+       * @constant
+       */
+      error: 'AppealNotRejectedError'
+      /** Detail */
+      detail: string
+    }
     /**
      * AttachedCustomField
      * @description Schema of a custom field attached to a resource.
@@ -35804,7 +35815,9 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CaseAlreadyExistsError']
+          'application/json':
+            | components['schemas']['AppealNotRejectedError']
+            | components['schemas']['CaseAlreadyExistsError']
         }
       }
       /** @description Validation Error */

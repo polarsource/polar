@@ -11,7 +11,6 @@ import { Touchable } from '../Shared/Touchable'
 
 export interface PayoutRowProps {
   payout: schemas['Payout']
-  showTimestamp?: boolean
   style?: StyleProp<TextStyle>
 }
 

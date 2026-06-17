@@ -5,7 +5,7 @@ import GorhomBottomSheet, {
   BottomSheetScrollView as GorhomBottomSheetScrollView,
   BottomSheetView as GorhomBottomSheetView,
 } from '@gorhom/bottom-sheet'
-import React, { useRef } from 'react'
+import React from 'react'
 import { StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -21,14 +21,12 @@ export const BottomSheet = ({
   scrollable = false,
   ...props
 }: BottomSheetProps) => {
-  const bottomSheetRef = useRef<GorhomBottomSheet>(null)
   const theme = useTheme()
 
   const safeViewInsets = useSafeAreaInsets()
 
   return (
     <GorhomBottomSheet
-      ref={bottomSheetRef}
       onClose={onDismiss}
       enablePanDownToClose
       backgroundStyle={{

@@ -24715,9 +24715,6 @@ export interface components {
       subscription_settings?:
         | components['schemas']['OrganizationSubscriptionSettings']
         | null
-      notification_settings?:
-        | components['schemas']['OrganizationNotificationSettings']
-        | null
       customer_email_settings?:
         | components['schemas']['OrganizationCustomerEmailSettings']
         | null

@@ -7,7 +7,6 @@ import { useTheme } from '@/design-system/useTheme'
 import { useOrganizations } from '@/hooks/polar/organizations'
 import { useSettingsActions } from '@/hooks/useSettingsActions'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
-import { useUser } from '@/providers/UserProvider'
 import Constants from 'expo-constants'
 import { useUpdates } from 'expo-updates'
 import { Stack, useRouter } from 'expo-router'
@@ -40,14 +39,11 @@ export default function Index() {
 
   const theme = useTheme()
   const { refetch, isRefetching } = useOrganizations()
-  const { user } = useUser()
-
   const { logout } = useSettingsActions({
     selectedOrganization,
     organizations,
     setOrganization,
     refetch,
-    userEmail: user?.email,
   })
 
   const safeAreaInsets = useSafeAreaInsets()

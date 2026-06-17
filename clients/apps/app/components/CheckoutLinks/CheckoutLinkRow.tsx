@@ -11,9 +11,7 @@ export interface CheckoutLinkRowProps {
   checkoutLink: schemas['CheckoutLink']
 }
 
-export const CheckoutLinkRow = ({
-  checkoutLink,
-}: CheckoutLinkRowProps) => {
+export const CheckoutLinkRow = ({ checkoutLink }: CheckoutLinkRowProps) => {
   const theme = useTheme()
 
   const productLabel =

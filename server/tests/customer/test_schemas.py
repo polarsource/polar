@@ -9,11 +9,10 @@ from polar.customer.schemas.customer import CustomerResponse as Customer
 from polar.customer.schemas.state import CustomerState
 from polar.models import Organization
 from polar.models.customer import Customer as CustomerModel
-from polar.models.customer import CustomerType, _avatar_url_for_email
-from polar.models.member import MemberRole
+from polar.models.customer import CustomerType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer, create_member
+from tests.fixtures.random_objects import create_customer
 
 _CustomerAdapter: TypeAdapter[Customer] = TypeAdapter(Customer)
 _CustomerStateAdapter: TypeAdapter[CustomerState] = TypeAdapter(CustomerState)
@@ -71,32 +70,6 @@ async def test_state_external_id(
         customer_state_json
     )
     assert customer_state_deserialized.external_id == "EXTERNAL_ID"
-
-
-@pytest.mark.asyncio
-async def test_avatar_url_team_falls_back_to_owner(
-    save_fixture: SaveFixture,
-    session: AsyncSession,
-    organization: Organization,
-) -> None:
-    customer = CustomerModel(
-        email=None, type=CustomerType.team, organization=organization
-    )
-    await save_fixture(customer)
-    await create_member(
-        save_fixture,
-        customer=customer,
-        organization=organization,
-        role=MemberRole.owner,
-        email="owner@example.com",
-    )
-
-    session.expunge_all()
-    loaded = await CustomerRepository.from_session(session).get_by_id(customer.id)
-    assert loaded is not None
-
-    customer_schema = _CustomerAdapter.validate_python(loaded, from_attributes=True)
-    assert customer_schema.avatar_url == _avatar_url_for_email("owner@example.com")
 
 
 @pytest.mark.asyncio

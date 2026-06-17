@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.enums import PaymentProcessor
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy.types import StrEnumType
+from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
     from .customer import Customer
@@ -18,7 +18,7 @@ class PaymentMethod(RecordModel):
     __table_args__ = (UniqueConstraint("processor", "processor_id", "customer_id"),)
 
     processor: Mapped[PaymentProcessor] = mapped_column(
-        StrEnumType(PaymentProcessor), index=True, nullable=False
+        StringEnum(PaymentProcessor), index=True, nullable=False
     )
     processor_id: Mapped[str] = mapped_column(String, index=True, nullable=False)
     type: Mapped[str] = mapped_column(String, index=True, nullable=False)

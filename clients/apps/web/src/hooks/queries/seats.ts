@@ -84,7 +84,6 @@ const combineSeatsResults = (
   results: UseQueryResult<schemas['SeatsList']>[],
 ) => ({
   seats: results.flatMap((result) => result.data?.seats ?? []),
-  isLoading: results.some((result) => result.isLoading),
 })
 
 /**

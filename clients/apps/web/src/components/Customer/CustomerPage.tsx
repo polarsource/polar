@@ -659,9 +659,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           <MembersSection
             customer={customer}
             organization={organization}
-            subscriptionIds={subscriptions?.items?.map(
-              (subscription) => subscription.id,
-            )}
+            subscriptions={subscriptions?.items}
           />
         </TabsContent>
       )}

@@ -34,7 +34,11 @@ export const MemberSeats = ({
           header: 'Status',
           accessorKey: 'status',
           cell: ({ row: { original } }) => {
-            const [label, color] = seatStatusDisplayConfig[original.status]
+            const config = seatStatusDisplayConfig[original.status]
+            if (!config) {
+              return null
+            }
+            const [label, color] = config
             return <Status color={color} status={label} size="small" />
           },
         },

@@ -37,16 +37,24 @@ const seatStatusPriority: schemas['SeatStatus'][] = [
 interface MembersSectionProps {
   organization: schemas['Organization']
   customer: schemas['Customer']
-  subscriptionIds?: string[]
+  subscriptions?: schemas['Subscription'][]
 }
 
 export const MembersSection = ({
   organization,
   customer,
-  subscriptionIds,
+  subscriptions,
 }: MembersSectionProps) => {
   const { data: membersData, isLoading } = useMembers(customer.id)
-  const { seats } = useMultipleSubscriptionSeats(subscriptionIds ?? [])
+
+  const seatSubscriptionIds = useMemo(
+    () =>
+      (subscriptions ?? [])
+        .filter((subscription) => typeof subscription.seats === 'number')
+        .map((subscription) => subscription.id),
+    [subscriptions],
+  )
+  const { seats } = useMultipleSubscriptionSeats(seatSubscriptionIds)
 
   const [selectedMember, setSelectedMember] = useState<
     schemas['Member'] | null
@@ -126,10 +134,13 @@ export const MembersSection = ({
               const status = seatStatusPriority.find((candidate) =>
                 memberSeats.some((seat) => seat.status === candidate),
               )
-              if (!status) {
+              const config = status
+                ? seatStatusDisplayConfig[status]
+                : undefined
+              if (!config) {
                 return <Text>—</Text>
               }
-              const [label, color] = seatStatusDisplayConfig[status]
+              const [label, color] = config
               return (
                 <Box alignItems="center" gap="s">
                   <Status color={color} status={label} size="small" />

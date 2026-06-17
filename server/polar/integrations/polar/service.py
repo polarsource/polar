@@ -27,6 +27,7 @@ from polar.email.schemas import (
 )
 from polar.email.sender import Attachment, enqueue_email_template
 from polar.integrations.plain.service import plain as plain_service
+from polar.models.organization import SupportTier
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.startup_program.service import (
@@ -963,6 +964,13 @@ class PolarSelfService:
             plain_tier_external_id=plain_tier_external_id,
             effective_tier_external_id=effective_tier_external_id,
         ):
+            organization_repository = OrganizationRepository.from_session(session)
+            organization = await organization_repository.get_by_id(
+                organization_id, include_blocked=True
+            )
+            if organization is not None:
+                organization.support_tier = SupportTier.from_level(level)
+
             await plain_service.update_tenant_tier(
                 tenant_external_id=str(organization_id),
                 tier_external_id=effective_tier_external_id,

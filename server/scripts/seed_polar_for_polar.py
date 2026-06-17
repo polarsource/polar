@@ -100,7 +100,7 @@ BENEFITS: list[dict[str, object]] = [
         "description": "Support (Tier 4)",
         "metadata": {
             "type": "support",
-            "level": 3,
+            "level": 4,
             "slack": True,
             "prioritized": True,
             "plain_tier_external_id": "scale",

@@ -31437,6 +31437,9 @@ export interface components {
       | 'appeal_approved'
       | 'appeal_denied'
       | 'info_requested'
+      | 'dispute_under_review'
+      | 'dispute_won'
+      | 'dispute_lost'
     /** SupportCaseThread */
     SupportCaseThread: {
       case: components['schemas']['SupportCase']
@@ -31600,6 +31603,7 @@ export interface components {
       | 've_rif'
       | 'vn_tin'
       | 'za_vat'
+      | 'mu_tan'
     /**
      * TaxJurisdiction
      * @description Aggregated tax remitted by Polar for a single jurisdiction.
@@ -59830,6 +59834,9 @@ export const supportCaseMessageTypeValues: ReadonlyArray<
   'appeal_approved',
   'appeal_denied',
   'info_requested',
+  'dispute_under_review',
+  'dispute_won',
+  'dispute_lost',
 ]
 export const supportCaseTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SupportCaseType']
@@ -59918,6 +59925,7 @@ export const taxIDFormatValues: ReadonlyArray<
   've_rif',
   'vn_tin',
   'za_vat',
+  'mu_tan',
 ]
 export const taxJurisdictionSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TaxJurisdictionSortProperty']

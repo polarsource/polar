@@ -7,6 +7,7 @@ from polar.models.support_case import (
     SupportCaseAudience,
     SupportCaseMessage,
     SupportCaseMessageAuthorKind,
+    SupportCaseMessageType,
     SupportCaseParticipantKind,
 )
 from polar.postgres import AsyncReadSession, AsyncSession
@@ -71,6 +72,52 @@ class DisputeCaseService:
         repository = DisputeSupportCaseRepository.from_session(session)
         return await repository.get_by_dispute(dispute.id)
 
+    async def is_open(
+        self, session: AsyncSession | AsyncReadSession, case: DisputeSupportCase
+    ) -> bool:
+        repository = SupportCaseMessageRepository.from_session(session)
+        return await repository.is_open(case.id)
+
+    async def reopen(
+        self, session: AsyncSession, case: DisputeSupportCase
+    ) -> SupportCaseMessage:
+        """Reopen a closed case when its dispute needs a response again."""
+        return await support_case_service.post_message(
+            session,
+            case,
+            type=SupportCaseMessageType.opened,
+            author_kind=SupportCaseMessageAuthorKind.system,
+            audience=[SupportCaseAudience.merchant],
+        )
+
+    async def mark_under_review(
+        self, session: AsyncSession, case: DisputeSupportCase
+    ) -> SupportCaseMessage:
+        """Record that the dispute's evidence is now under review by the bank."""
+        return await support_case_service.post_message(
+            session,
+            case,
+            type=SupportCaseMessageType.dispute_under_review,
+            author_kind=SupportCaseMessageAuthorKind.system,
+            audience=[SupportCaseAudience.merchant],
+        )
+
+    async def resolve(
+        self, session: AsyncSession, case: DisputeSupportCase, *, won: bool
+    ) -> SupportCaseMessage:
+        """Record the dispute outcome, then close the case."""
+        await self._assert_open(session, case)
+        await support_case_service.post_message(
+            session,
+            case,
+            type=SupportCaseMessageType.dispute_won
+            if won
+            else SupportCaseMessageType.dispute_lost,
+            author_kind=SupportCaseMessageAuthorKind.system,
+            audience=[SupportCaseAudience.merchant],
+        )
+        return await self.close(session, case)
+
     async def close(
         self,
         session: AsyncSession,
@@ -78,7 +125,7 @@ class DisputeCaseService:
         *,
         body: str | None = None,
     ) -> SupportCaseMessage:
-        """Close the case once the dispute is resolved (won/lost)."""
+        """Close the case once the dispute is resolved (won/lost/prevented)."""
         await self._assert_open(session, case)
         return await support_case_service.close(
             session,
@@ -91,8 +138,7 @@ class DisputeCaseService:
     async def _assert_open(
         self, session: AsyncSession, case: DisputeSupportCase
     ) -> None:
-        repository = SupportCaseMessageRepository.from_session(session)
-        if not await repository.is_open(case.id):
+        if not await self.is_open(session, case):
             raise CaseClosedError(case.id)
 
 

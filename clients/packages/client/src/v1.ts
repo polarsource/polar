@@ -1493,6 +1493,75 @@ export interface paths {
     patch: operations['organizations:update_benefit_grant']
     trace?: never
   }
+  '/v1/cases/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Case
+     * @description Get a support case and its merchant-visible timeline.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['cases:get_case']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/cases/{id}/messages': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Reply to Case
+     * @description Post a merchant reply (text, attachments, or both) to a support case.
+     *
+     *     Attachments must first be uploaded through the files API with service
+     *     ``support_case_attachment``.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['cases:reply_to_case']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/cases/{id}/attachments/{attachment_id}/download': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Download Case Attachment
+     * @description Redirect to a short-lived presigned URL for a merchant-visible attachment.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['cases:download_case_attachment']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/subscriptions/': {
     parameters: {
       query?: never
@@ -19418,6 +19487,22 @@ export interface components {
        */
       currency: string
       /**
+       * Reason
+       * @description The reason for the dispute as reported by the card network.
+       * @example fraudulent
+       */
+      reason: string | null
+      /**
+       * Evidence Due By
+       * @description Deadline to submit evidence in response to the dispute.
+       */
+      evidence_due_by: string | null
+      /**
+       * Past Due
+       * @description Whether the evidence submission deadline has passed.
+       */
+      past_due: boolean
+      /**
        * Order Id
        * Format: uuid4
        * @description The ID of the order associated with the dispute.
@@ -19431,6 +19516,11 @@ export interface components {
        * @example 42b94870-36b9-4573-96b6-b90b1c99a353
        */
       payment_id: string
+      /**
+       * Support Case Id
+       * @description The ID of the support case for this dispute, if one was opened. Use it to read or reply to the case thread.
+       */
+      support_case_id: string | null
     }
     /**
      * DisputeSortProperty
@@ -28771,6 +28861,22 @@ export interface components {
        */
       currency: string
       /**
+       * Reason
+       * @description The reason for the dispute as reported by the card network.
+       * @example fraudulent
+       */
+      reason: string | null
+      /**
+       * Evidence Due By
+       * @description Deadline to submit evidence in response to the dispute.
+       */
+      evidence_due_by: string | null
+      /**
+       * Past Due
+       * @description Whether the evidence submission deadline has passed.
+       */
+      past_due: boolean
+      /**
        * Order Id
        * Format: uuid4
        * @description The ID of the order associated with the dispute.
@@ -28784,6 +28890,11 @@ export interface components {
        * @example 42b94870-36b9-4573-96b6-b90b1c99a353
        */
       payment_id: string
+      /**
+       * Support Case Id
+       * @description The ID of the support case for this dispute, if one was opened. Use it to read or reply to the case thread.
+       */
+      support_case_id: string | null
     }
     /**
      * RefundReason
@@ -31367,6 +31478,17 @@ export interface components {
       created_at: string
       /** Size Readable */
       readonly size_readable: string
+    }
+    /** SupportCaseClosedError */
+    SupportCaseClosedError: {
+      /**
+       * Error
+       * @example SupportCaseClosedError
+       * @constant
+       */
+      error: 'SupportCaseClosedError'
+      /** Detail */
+      detail: string
     }
     /** SupportCaseMessage */
     SupportCaseMessage: {
@@ -36778,6 +36900,147 @@ export interface operations {
         }
       }
       /** @description Organization or benefit grant not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'cases:get_case': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SupportCaseThread']
+        }
+      }
+      /** @description Support case not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'cases:reply_to_case': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SupportCaseMessageCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SupportCaseMessage']
+        }
+      }
+      /** @description Support case not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The case is closed. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SupportCaseClosedError']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'cases:download_case_attachment': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        attachment_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Redirect to a presigned download URL. */
+      302: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Support case not found. */
       404: {
         headers: {
           [name: string]: unknown

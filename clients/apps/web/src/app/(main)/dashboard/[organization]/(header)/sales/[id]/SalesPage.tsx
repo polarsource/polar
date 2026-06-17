@@ -5,6 +5,7 @@ import CustomFieldValue from '@/components/CustomFields/CustomFieldValue'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
+import { DisputeCard } from '@/components/Orders/DisputeCard'
 import { DownloadInvoiceDashboard } from '@/components/Orders/DownloadInvoice'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
 import PaymentMethod from '@/components/PaymentMethod/PaymentMethod'
@@ -23,10 +24,6 @@ import { useOrder } from '@/hooks/queries/orders'
 import { usePayments } from '@/hooks/queries/payments'
 import { useRefunds } from '@/hooks/queries/refunds'
 import { useOrganizationSeats } from '@/hooks/queries/seats'
-import {
-  DisputeStatusDisplayColor,
-  DisputeStatusDisplayTitle,
-} from '@/utils/dispute'
 import { formatCountry } from '@/utils/formatters'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { ArrowUpRightIcon } from 'lucide-react'
@@ -59,10 +56,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
     { order_id: _order.id },
   )
   const { data: refunds, isLoading: refundsLoading } = useRefunds(_order.id)
-  const { data: disputes, isLoading: disputesLoading } = useDisputes(
-    organization.id,
-    { order_id: _order.id },
-  )
+  const { data: disputes } = useDisputes(organization.id, {
+    order_id: _order.id,
+  })
 
   const {
     isShown: isRefundModalShown,
@@ -117,6 +113,20 @@ const ClientPage: React.FC<ClientPageProps> = ({
       }
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:shadow-none"
     >
+      {disputes && disputes.items.length > 0 && (
+        <div className="flex flex-col gap-6">
+          <h3 className="text-lg">Disputes</h3>
+
+          {disputes.items.map((dispute) => (
+            <DisputeCard
+              key={dispute.id}
+              organization={organization}
+              dispute={dispute}
+            />
+          ))}
+        </div>
+      )}
+
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
         <div className="flex flex-col gap-6 p-4 md:p-8">
           <div className="flex flex-col gap-1">
@@ -479,48 +489,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
               },
             ]}
             data={refunds?.items ?? []}
-          />
-        </div>
-      )}
-
-      {disputes && disputes.items.length > 0 && (
-        <div className="flex flex-col gap-6">
-          <h3 className="text-lg">Disputes</h3>
-
-          <DataTable
-            isLoading={disputesLoading}
-            columns={[
-              {
-                accessorKey: 'created_at',
-                header: 'Created At',
-                cell: ({ row }) => (
-                  <FormattedDateTime
-                    dateStyle="long"
-                    datetime={row.original.created_at}
-                  />
-                ),
-              },
-              {
-                accessorKey: 'amount',
-                header: 'Amount',
-                cell: ({ row }) =>
-                  formatCurrency('standard')(
-                    row.original.amount,
-                    row.original.currency,
-                  ),
-              },
-              {
-                accessorKey: 'status',
-                header: 'Status',
-                cell: ({ row }) => (
-                  <Status
-                    color={DisputeStatusDisplayColor[row.original.status]}
-                    status={DisputeStatusDisplayTitle[row.original.status]}
-                  />
-                ),
-              },
-            ]}
-            data={disputes?.items ?? []}
           />
         </div>
       )}

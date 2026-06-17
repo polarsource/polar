@@ -3,6 +3,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import joinedload
 
+from polar.exceptions import PolarError
 from polar.models import Customer, Dispute, File, Organization, User
 from polar.models.support_case import (
     DisputeSupportCase,
@@ -18,6 +19,7 @@ from polar.models.support_case import (
     SupportCaseType,
 )
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.worker import enqueue_job
 
 from .repository import (
     DisputeSupportCaseRepository,
@@ -27,6 +29,11 @@ from .repository import (
     SupportCaseParticipantRepository,
     SupportCaseRepository,
 )
+
+
+class SupportCaseClosedError(PolarError):
+    def __init__(self, case_id: UUID) -> None:
+        super().__init__(f"Case {case_id} is closed.", 409)
 
 
 class SupportCaseService:
@@ -209,6 +216,86 @@ class SupportCaseService:
             ),
             flush=True,
         )
+
+    # --- Merchant-facing, type-agnostic case access (keyed by case id) ---
+
+    async def get(
+        self, session: AsyncSession | AsyncReadSession, case_id: UUID
+    ) -> SupportCase | None:
+        """A case by id, as its concrete (polymorphic) type."""
+        repository = SupportCaseRepository.from_session(session)
+        return await repository.get_by_id(case_id)
+
+    async def get_thread(
+        self,
+        session: AsyncSession | AsyncReadSession,
+        case: SupportCase,
+        *,
+        visible_to: SupportCaseAudience | None,
+    ) -> tuple[bool, Sequence[SupportCaseMessage], Sequence[SupportCaseAttachment]]:
+        """A case's open state, messages and attachments, audience-filtered."""
+        message_repository = SupportCaseMessageRepository.from_session(session)
+        attachment_repository = SupportCaseAttachmentRepository.from_session(session)
+        is_open = await message_repository.is_open(case.id)
+        messages = await message_repository.list_by_case(case.id, visible_to=visible_to)
+        attachments = await attachment_repository.list_by_case(
+            case.id, visible_to=visible_to
+        )
+        return is_open, messages, attachments
+
+    async def add_reply(
+        self,
+        session: AsyncSession,
+        case: SupportCase,
+        *,
+        author_kind: SupportCaseMessageAuthorKind,
+        author_user: User | None = None,
+        body: str | None = None,
+        files: Sequence[File] = (),
+        internal: bool = False,
+    ) -> SupportCaseMessage:
+        """Post a reply (text + attachments) to an open case."""
+        await self._assert_open(session, case)
+        audience = [] if internal else [SupportCaseAudience.merchant]
+        message = await self.post_message(
+            session,
+            case,
+            author_kind=author_kind,
+            author_user=author_user,
+            body=body,
+            audience=audience,
+        )
+        for file in files:
+            await self.add_attachment(
+                session, case, file=file, message=message, audience=audience
+            )
+        if not internal:
+            enqueue_job(
+                "support_case.notify_organization_of_new_message",
+                message_id=message.id,
+            )
+        return message
+
+    async def get_attachment(
+        self,
+        session: AsyncSession | AsyncReadSession,
+        case: SupportCase,
+        attachment_id: UUID,
+        *,
+        visible_to: SupportCaseAudience | None,
+    ) -> SupportCaseAttachment | None:
+        repository = SupportCaseAttachmentRepository.from_session(session)
+        attachment = await repository.get_by_id_for_case(attachment_id, case.id)
+        if attachment is None:
+            return None
+        if visible_to is not None and visible_to not in attachment.audience:
+            return None
+        return attachment
+
+    async def _assert_open(self, session: AsyncSession, case: SupportCase) -> None:
+        repository = SupportCaseMessageRepository.from_session(session)
+        if not await repository.is_open(case.id):
+            raise SupportCaseClosedError(case.id)
 
 
 support_case = SupportCaseService()

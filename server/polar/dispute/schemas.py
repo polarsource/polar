@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import Path
@@ -55,6 +56,25 @@ class DisputeBase(IDSchema, TimestampedSchema):
     currency: Annotated[
         str, Field(description="Currency code of the dispute.", examples=["usd"])
     ]
+    reason: Annotated[
+        str | None,
+        Field(
+            description=(
+                "The reason for the dispute as reported by the card network."
+            ),
+            examples=["fraudulent"],
+        ),
+    ]
+    evidence_due_by: Annotated[
+        datetime | None,
+        Field(
+            description="Deadline to submit evidence in response to the dispute."
+        ),
+    ]
+    past_due: Annotated[
+        bool,
+        Field(description="Whether the evidence submission deadline has passed."),
+    ]
     order_id: Annotated[
         UUID4,
         Field(
@@ -67,6 +87,15 @@ class DisputeBase(IDSchema, TimestampedSchema):
         Field(
             description="The ID of the payment associated with the dispute.",
             examples=[PAYMENT_ID_EXAMPLE],
+        ),
+    ]
+    support_case_id: Annotated[
+        UUID4 | None,
+        Field(
+            description=(
+                "The ID of the support case for this dispute, if one was "
+                "opened. Use it to read or reply to the case thread."
+            ),
         ),
     ]
 

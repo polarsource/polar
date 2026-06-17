@@ -1445,23 +1445,25 @@ class TestBackofficeApprove:
         self,
         session: AsyncSession,
         organization: Organization,
+        user: User,
     ) -> None:
         organization.status = OrganizationStatus.REVIEW
 
         with pytest.raises(OrganizationError, match="DENIED or BLOCKED"):
             await organization_service.backoffice_approve(
-                session, organization, reason="Test"
+                session, organization, reason="Test", staff_user=user
             )
 
     async def test_reverts_to_created_when_not_activation_ready(
         self,
         session: AsyncSession,
         organization: Organization,
+        user: User,
     ) -> None:
         organization.status = OrganizationStatus.DENIED
 
         await organization_service.backoffice_approve(
-            session, organization, reason="Support escalation"
+            session, organization, reason="Support escalation", staff_user=user
         )
 
         assert organization.status == OrganizationStatus.CREATED
@@ -1470,6 +1472,7 @@ class TestBackofficeApprove:
         self,
         session: AsyncSession,
         organization: Organization,
+        user: User,
     ) -> None:
         """Support-contact escalation: AI rejected the appeal, admin overrides."""
         organization.status = OrganizationStatus.DENIED
@@ -1491,7 +1494,7 @@ class TestBackofficeApprove:
         await session.flush()
 
         await organization_service.backoffice_approve(
-            session, organization, 15000, reason="Appeal re-examined"
+            session, organization, 15000, reason="Appeal re-examined", staff_user=user
         )
 
         assert organization.status == OrganizationStatus.CREATED
@@ -4048,13 +4051,18 @@ class TestStatusTransitions:
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
+        user: User,
     ) -> None:
         organization.status = current
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
         mocker.patch("polar.organization.service.enqueue_job")
 
         result = await organization_service.backoffice_approve(
-            session, organization, 15000, reason="Merchant provided additional docs"
+            session,
+            organization,
+            15000,
+            reason="Merchant provided additional docs",
+            staff_user=user,
         )
 
         assert result.status == OrganizationStatus.CREATED
@@ -4068,6 +4076,7 @@ class TestStatusTransitions:
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
+        user: User,
     ) -> None:
         organization.status = OrganizationStatus.DENIED
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
@@ -4078,6 +4087,7 @@ class TestStatusTransitions:
             organization,
             reason="Lives on the support case, not the note",
             internal_note="Appeal approved — see support case.",
+            staff_user=user,
         )
 
         assert result.internal_notes is not None
@@ -4120,7 +4130,11 @@ class TestStatusTransitions:
         mocker.patch("polar.organization.service.enqueue_job")
 
         result = await organization_service.backoffice_approve(
-            session, organization, 15000, reason="Merchant provided additional docs"
+            session,
+            organization,
+            15000,
+            reason="Merchant provided additional docs",
+            staff_user=user,
         )
 
         assert result.status == OrganizationStatus.ACTIVE

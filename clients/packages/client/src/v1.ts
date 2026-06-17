@@ -6943,6 +6943,17 @@ export interface components {
      * @enum {string}
      */
     AppealDecision: 'approved' | 'rejected'
+    /** AppealNotRejectedError */
+    AppealNotRejectedError: {
+      /**
+       * Error
+       * @example AppealNotRejectedError
+       * @constant
+       */
+      error: 'AppealNotRejectedError'
+      /** Detail */
+      detail: string
+    }
     /**
      * AttachedCustomField
      * @description Schema of a custom field attached to a resource.
@@ -35798,13 +35809,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description A human-review case already exists for this review. */
+      /** @description The appeal has not been rejected, or a human-review case already exists for this review. */
       409: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CaseAlreadyExistsError']
+          'application/json':
+            | components['schemas']['AppealNotRejectedError']
+            | components['schemas']['CaseAlreadyExistsError']
         }
       }
       /** @description Validation Error */

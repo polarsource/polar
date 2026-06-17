@@ -1395,7 +1395,11 @@ async def approve_denied_dialog(
 
             # Approve the organization
             await organization_service.backoffice_approve(
-                session, organization, threshold, reason=override_reason
+                session,
+                organization,
+                threshold,
+                reason=override_reason,
+                staff_user=user_session.user,
             )
 
             return HXRedirectResponse(
@@ -1530,8 +1534,10 @@ async def deny_appeal_dialog(
             reason=reason,
         )
 
-        # Deny the appeal
-        await organization_service.deny_appeal(session, organization)
+        # Deny the appeal (also closes any open appeal case as denied)
+        await organization_service.deny_appeal(
+            session, organization, staff_user=user_session.user, reason=reason
+        )
 
         return HXRedirectResponse(
             request,
@@ -1655,8 +1661,11 @@ async def appeal_case_approve_dialog(
     if request.method == "POST":
         form_data = await request.form()
         reason = str(form_data.get("reason", "")).strip() or None
+        message_repository = SupportCaseMessageRepository.from_session(session)
         if not reason:
             error_message = "A reason is required to approve the appeal."
+        elif not await message_repository.is_open(case.id):
+            error_message = "This appeal case is already closed."
         else:
             review_repo = OrganizationReviewRepository.from_session(session)
             try:
@@ -1672,13 +1681,7 @@ async def appeal_case_approve_dialog(
                     organization,
                     reason=reason,
                     internal_note="Appeal approved — see support case.",
-                )
-                await appeal_case_service.record_decision(
-                    session,
-                    case,
-                    approved=True,
                     staff_user=user_session.user,
-                    reason=reason,
                 )
             except (OrganizationError, AppealCaseError) as e:
                 # Discard the recorded decision so a failure can't commit
@@ -1874,7 +1877,11 @@ async def unblock_approve_dialog(
 
             # Approve the organization
             await organization_service.backoffice_approve(
-                session, organization, threshold, reason=override_reason
+                session,
+                organization,
+                threshold,
+                reason=override_reason,
+                staff_user=user_session.user,
             )
 
             return HXRedirectResponse(

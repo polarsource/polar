@@ -59,6 +59,9 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization_access_token.repository import (
     OrganizationAccessTokenRepository,
 )
+from polar.organization_review.appeal_case import (
+    appeal_case as appeal_case_service,
+)
 from polar.organization_review.repository import (
     OrganizationReviewRepository as AgentReviewRepository,
 )
@@ -1210,6 +1213,7 @@ class OrganizationService:
         *,
         reason: str,
         internal_note: str | None = None,
+        staff_user: User,
     ) -> Organization:
         """Backoffice override to re-activate a DENIED or BLOCKED organization.
 
@@ -1218,8 +1222,9 @@ class OrganizationService:
         an appeal). Synchronously transitions to ACTIVE if onboarding is
         complete, otherwise to CREATED.
 
-        If a review with a submitted appeal exists, the appeal is recorded as
-        APPROVED so the merchant's frontend reflects the approval.
+        If a review with a submitted appeal exists, the appeal is recorded
+        as APPROVED so the merchant's frontend reflects it, and any open appeal
+        support case is closed as approved
 
         ``internal_note`` overrides the default reactivation note (and omits the
         reason line) so callers can record a context-specific note instead — the
@@ -1238,14 +1243,17 @@ class OrganizationService:
 
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
-        if (
-            review
-            and review.appeal_submitted_at
-            and review.appeal_decision != OrganizationReview.AppealDecision.APPROVED
-        ):
-            review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
-            review.appeal_reviewed_at = datetime.now(UTC)
-            session.add(review)
+        if review is not None:
+            if (
+                review.appeal_submitted_at
+                and review.appeal_decision != OrganizationReview.AppealDecision.APPROVED
+            ):
+                review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
+                review.appeal_reviewed_at = datetime.now(UTC)
+                session.add(review)
+            await appeal_case_service.approve_open_case(
+                session, review, staff_user=staff_user, reason=reason
+            )
 
         note = (
             internal_note if internal_note is not None else notes[organization.status]
@@ -1942,9 +1950,21 @@ class OrganizationService:
         return review
 
     async def deny_appeal(
-        self, session: AsyncSession, organization: Organization
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        *,
+        staff_user: User | None = None,
+        reason: str | None = None,
     ) -> OrganizationReview:
-        """Deny an organization's appeal and keep payment access blocked."""
+        """Deny an organization's appeal and keep payment access blocked.
+
+        With ``staff_user`` (the backoffice deny dialog), any open appeal
+        support case is also closed as denied — the denial twin of
+        ``backoffice_approve``, so no deny path resolves the appeal while
+        leaving the case open. The automated AI appeal task calls this without
+        a ``staff_user`` (no human actor, and no case exists at that point).
+        """
 
         repository = OrganizationReviewRepository.from_session(session)
         review = await repository.get_by_organization(organization.id)
@@ -1962,6 +1982,11 @@ class OrganizationService:
         review.appeal_reviewed_at = datetime.now(UTC)
 
         session.add(review)
+
+        if staff_user is not None:
+            await appeal_case_service.deny_open_case(
+                session, review, staff_user=staff_user, reason=reason
+            )
 
         return review
 

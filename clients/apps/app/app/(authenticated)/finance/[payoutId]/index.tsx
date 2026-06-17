@@ -3,7 +3,6 @@ import { useTheme } from '@/design-system/useTheme'
 import { usePayout } from '@/hooks/polar/finance'
 import { formatCurrency } from '@polar-sh/currency'
 import { Stack, useLocalSearchParams } from 'expo-router'
-import React from 'react'
 import { SafeAreaView } from 'react-native'
 
 export default function Index() {

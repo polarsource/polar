@@ -16,7 +16,6 @@ import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useToast } from '@/providers/ToastProvider'
 import { schemas } from '@polar-sh/client'
 import * as Notifications from 'expo-notifications'
-import { getPermissionsAsync } from 'expo-notifications'
 import { Stack } from 'expo-router'
 import { useCallback, useContext, useEffect, useState } from 'react'
 import { RefreshControl, ScrollView, Switch } from 'react-native'
@@ -142,7 +141,7 @@ const usePushNotifications = () => {
     useCreateNotificationRecipient()
 
   useEffect(() => {
-    getPermissionsAsync().then((status) => {
+    Notifications.getPermissionsAsync().then((status) => {
       setPushNotificationsEnabled(status.granted && !!notificationRecipient?.id)
     })
   }, [notificationRecipient])

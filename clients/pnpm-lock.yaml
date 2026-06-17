@@ -395,9 +395,6 @@ importers:
       '@polar-sh/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
-      '@polar-sh/mdx':
-        specifier: workspace:*
-        version: link:../../packages/mdx
       '@polar-sh/orbit':
         specifier: workspace:*
         version: link:../../packages/orbit

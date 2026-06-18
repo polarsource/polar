@@ -13,11 +13,6 @@ export default async function CheckoutLayout({
     <div translate="no">
       <link
         rel="preload"
-        href="https://js.stripe.com/clover/stripe.js"
-        as="script"
-      />
-      <link
-        rel="preload"
         href="/fonts/Inter-Regular.woff2"
         as="font"
         type="font/woff2"

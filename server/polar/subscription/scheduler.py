@@ -5,7 +5,7 @@ import structlog
 from apscheduler.job import Job
 from apscheduler.jobstores.base import BaseJobStore
 from apscheduler.triggers.date import DateTrigger
-from sqlalchemy import Select, select, update
+from sqlalchemy import ColumnElement, Select, func, select, update
 from sqlalchemy.orm import Session
 
 from polar.kit.utils import utc_now
@@ -14,6 +14,17 @@ from polar.models import Customer, Organization, Subscription
 from polar.postgres import create_sync_engine
 
 log: Logger = structlog.get_logger()
+
+
+def _next_run_time() -> ColumnElement[datetime.datetime]:
+    """
+    The earliest pending boundary for a subscription: the billing period end, or
+    the meter period end when it fires first. Postgres ``LEAST`` ignores NULLs, so
+    when no meter cycle is set this collapses to ``current_period_end``.
+    """
+    return func.least(
+        Subscription.current_period_end, Subscription.current_meter_period_end
+    )
 
 
 class SubscriptionJobStore(BaseJobStore):
@@ -35,7 +46,7 @@ class SubscriptionJobStore(BaseJobStore):
 
     def get_due_jobs(self, now: datetime.datetime) -> list[Job]:
         statement = self.scheduling_statement().where(
-            Subscription.current_period_end <= now,
+            _next_run_time() <= now,
         )
         jobs = self._list_jobs_from_statement(statement)
         log.debug("Due jobs", count=len(jobs))
@@ -43,9 +54,7 @@ class SubscriptionJobStore(BaseJobStore):
 
     def get_next_run_time(self) -> datetime.datetime | None:
         statement = (
-            self.scheduling_statement()
-            .with_only_columns(Subscription.current_period_end)
-            .limit(1)
+            self.scheduling_statement().with_only_columns(_next_run_time()).limit(1)
         )
         with self.engine.connect() as connection:
             result = connection.execute(statement)
@@ -92,12 +101,12 @@ class SubscriptionJobStore(BaseJobStore):
         with Session(self.engine) as session:
             results = session.execute(
                 statement.with_only_columns(
-                    Subscription.id, Subscription.current_period_end
+                    Subscription.id, _next_run_time()
                 ).execution_options(stream_results=True, max_row_buffer=250)
             )
             for result in results.yield_per(250):
-                subscription_id, current_period_end = result._tuple()
-                trigger = DateTrigger(current_period_end, datetime.UTC)
+                subscription_id, next_run_time = result._tuple()
+                trigger = DateTrigger(next_run_time, datetime.UTC)
                 job_kwargs = {
                     **(self._scheduler._job_defaults if self._scheduler else {}),
                     "trigger": trigger,
@@ -133,5 +142,5 @@ class SubscriptionJobStore(BaseJobStore):
                 Subscription.active.is_(True),
                 Subscription.current_period_end.is_not(None),
             )
-            .order_by(Subscription.current_period_end.asc())
+            .order_by(_next_run_time().asc())
         )

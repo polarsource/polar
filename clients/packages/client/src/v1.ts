@@ -31443,6 +31443,7 @@ export interface components {
       | 'dispute_under_review'
       | 'dispute_won'
       | 'dispute_lost'
+      | 'dispute_prevented'
     /** SupportCaseThread */
     SupportCaseThread: {
       case: components['schemas']['SupportCase']
@@ -59840,6 +59841,7 @@ export const supportCaseMessageTypeValues: ReadonlyArray<
   'dispute_under_review',
   'dispute_won',
   'dispute_lost',
+  'dispute_prevented',
 ]
 export const supportCaseTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SupportCaseType']

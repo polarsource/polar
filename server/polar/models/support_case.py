@@ -80,6 +80,7 @@ class SupportCaseMessageType(StrEnum):
     dispute_under_review = "dispute_under_review"
     dispute_won = "dispute_won"
     dispute_lost = "dispute_lost"
+    dispute_prevented = "dispute_prevented"
 
 
 class SupportCase(RecordModel):

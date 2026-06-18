@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from typing import assert_never
 
 import stripe as stripe_lib
 from sqlalchemy.orm import joinedload
@@ -208,13 +209,15 @@ class DisputeService:
         """Reconcile the merchant support case with the dispute's status.
 
         Opens the case the first time the dispute needs a response, posts the
-        milestone updates (under review, won, lost) and closes it on resolution.
-        Idempotent: opening is guarded by the existing case, the closing
-        milestones by the case being open, and the (non-closing) under-review
-        milestone by an actual status change — so retried webhooks are no-ops.
+        milestone for each terminal status (under review, won, lost, prevented)
+        and closes it on resolution. Idempotent: opening is guarded by the
+        existing case, the terminal milestones by the case being open, and the
+        (non-closing) under-review milestone by an actual status change — so
+        retried webhooks are no-ops.
         """
         case = await dispute_case_service.get_case(session, dispute)
 
+        # Open (or reopen) the case the first time the dispute needs a response.
         if dispute.status == DisputeStatus.needs_response:
             if case is None:
                 await dispute_case_service.open_case(
@@ -226,18 +229,26 @@ class DisputeService:
                 await dispute_case_service.reopen(session, case)
             return
 
+        # Every other transition only acts on an already-open case.
         if case is None or not await dispute_case_service.is_open(session, case):
             return
 
-        if dispute.status == DisputeStatus.under_review:
-            if dispute.status != previous_status:
-                await dispute_case_service.mark_under_review(session, case)
-        elif dispute.status in (DisputeStatus.won, DisputeStatus.lost):
-            await dispute_case_service.resolve(
-                session, case, won=dispute.status == DisputeStatus.won
-            )
-        elif dispute.closed:  # prevented: silent close, the merchant never acted
-            await dispute_case_service.close(session, case)
+        match dispute.status:
+            case DisputeStatus.under_review:
+                # Skip the no-op repost when a retried webhook doesn't change it.
+                if dispute.status != previous_status:
+                    await dispute_case_service.mark_under_review(session, case)
+            case DisputeStatus.won | DisputeStatus.lost:
+                await dispute_case_service.resolve(
+                    session, case, won=dispute.status == DisputeStatus.won
+                )
+            case DisputeStatus.prevented:
+                await dispute_case_service.prevent(session, case)
+            case DisputeStatus.needs_response | DisputeStatus.early_warning:
+                # needs_response is handled above; early_warning never has a case.
+                pass
+            case _:
+                assert_never(dispute.status)
 
     async def upsert_from_chargeback_stop(
         self, session: AsyncSession, alert: ChargebackStopAlert

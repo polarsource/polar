@@ -52,6 +52,11 @@ _OUTCOMES: dict[SupportCaseMessageType, tuple[str, str, str]] = {
     SupportCaseMessageType.appeal_denied: ("badge-error", "icon-x", "Appeal denied"),
     SupportCaseMessageType.dispute_won: ("badge-success", "icon-check", "Dispute won"),
     SupportCaseMessageType.dispute_lost: ("badge-error", "icon-x", "Dispute lost"),
+    SupportCaseMessageType.dispute_prevented: (
+        "badge-success",
+        "icon-shield-check",
+        "Dispute prevented",
+    ),
 }
 
 # Milestone events: title + (lucide icon, node circle classes). These render as
@@ -65,6 +70,7 @@ _EVENT_TITLES: dict[SupportCaseMessageType, str] = {
     SupportCaseMessageType.dispute_under_review: "Dispute under review",
     SupportCaseMessageType.dispute_won: "Dispute won",
     SupportCaseMessageType.dispute_lost: "Dispute lost",
+    SupportCaseMessageType.dispute_prevented: "Dispute prevented",
     SupportCaseMessageType.assigned: "Case assigned",
     SupportCaseMessageType.released: "Case unassigned",
 }
@@ -92,6 +98,10 @@ _EVENT_NODES: dict[SupportCaseMessageType, tuple[str, str]] = {
         "bg-success text-success-content",
     ),
     SupportCaseMessageType.dispute_lost: ("icon-x", "bg-error text-error-content"),
+    SupportCaseMessageType.dispute_prevented: (
+        "icon-shield-check",
+        "bg-success text-success-content",
+    ),
     SupportCaseMessageType.assigned: ("icon-user-check", _MUTED_NODE),
     SupportCaseMessageType.released: ("icon-user-x", _MUTED_NODE),
 }

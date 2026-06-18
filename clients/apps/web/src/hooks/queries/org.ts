@@ -108,8 +108,8 @@ export const useCreateOrganization = () =>
       getQueryClient().invalidateQueries({
         queryKey: ['organizations', data.id],
       })
-      await revalidate(`organizations:${data.id}`)
-      await revalidate(`organizations:${data.slug}`)
+      await revalidate(`organizations:${data.id}`, { expire: 0 })
+      await revalidate(`organizations:${data.slug}`, { expire: 0 })
     },
   })
 
@@ -158,8 +158,8 @@ export const useEnableOrganizationPreviewAccess = (organizationId: string) =>
       getQueryClient().invalidateQueries({
         queryKey: ['organizations', data.id],
       })
-      await revalidate(`organizations:${data.id}`)
-      await revalidate(`organizations:${data.slug}`)
+      await revalidate(`organizations:${data.id}`, { expire: 0 })
+      await revalidate(`organizations:${data.slug}`, { expire: 0 })
     },
   })
 
@@ -365,7 +365,7 @@ export const useSubmitOrganizationReview = (id: string) =>
       getQueryClient().invalidateQueries({
         queryKey: ['organizationReviewStatus', id],
       })
-      await revalidate(`organizations:${id}`)
+      await revalidate(`organizations:${id}`, { expire: 0 })
     },
   })
 

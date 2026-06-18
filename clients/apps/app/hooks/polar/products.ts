@@ -69,5 +69,3 @@ export const useInfiniteProducts = (
     },
   })
 }
-
-

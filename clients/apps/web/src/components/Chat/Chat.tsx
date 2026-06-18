@@ -31,13 +31,14 @@ interface Props {
   attachments?: ChatAttachment[]
   isOpen: boolean
   composer: ComposerConfig
-  title?: string
+  title?: string | null
   description?: React.ReactNode
   selfAvatar?: React.ReactNode
   otherAvatar?: React.ReactNode
   renderMessage?: RenderChatMessage
   emptyState?: React.ReactNode
   closedNotice?: string
+  autoHeight?: boolean
 
   scrollIntoViewOnMount?: boolean
   className?: string
@@ -55,6 +56,7 @@ export const Chat = ({
   renderMessage,
   emptyState,
   closedNotice = 'Chat ended',
+  autoHeight = false,
   scrollIntoViewOnMount = false,
   className,
 }: Props) => {
@@ -90,14 +92,16 @@ export const Chat = ({
         </div>
       )}
       <Box display="flex" flexDirection="column" rowGap="l">
-        <Box display="flex" flexDirection="column" rowGap="xs">
-          <h4 className="font-medium">{title}</h4>
-          {description && (
-            <Text variant="caption" color="muted">
-              {description}
-            </Text>
-          )}
-        </Box>
+        {(title !== null || description) && (
+          <Box display="flex" flexDirection="column" rowGap="xs">
+            {title !== null && <h4 className="font-medium">{title}</h4>}
+            {description && (
+              <Text variant="caption" color="muted">
+                {description}
+              </Text>
+            )}
+          </Box>
+        )}
         <MessageThread
           messages={messages}
           attachments={attachments}
@@ -108,6 +112,7 @@ export const Chat = ({
           scrollToBottomSignal={sendSignal}
           scrollFadeRef={scrollFadeRef}
           suppressSelfAnimation={suppressSelfAnimation}
+          autoHeight={autoHeight}
         />
         {isOpen ? (
           <Composer

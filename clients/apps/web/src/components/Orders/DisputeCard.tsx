@@ -12,15 +12,12 @@ import {
 } from '@/components/Organization/HumanReviewCase/chatAdapter'
 import { useCase, useReplyToCase } from '@/hooks/queries/cases'
 import { CONFIG } from '@/utils/config'
-import {
-  DisputeStatusDisplayColor,
-  DisputeStatusDisplayTitle,
-} from '@/utils/dispute'
+import { getDisputeReasonDescription } from '@/utils/dispute'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Status, Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Loader2 } from 'lucide-react'
+import { Flag, Loader2 } from 'lucide-react'
 import React, { useCallback, useMemo } from 'react'
 
 // System milestones shown as a centered caption rather than a chat bubble.
@@ -32,12 +29,78 @@ const EVENT_CAPTIONS: Record<string, string> = {
 }
 const HIDDEN_EVENTS = new Set(['opened', 'closed', 'assigned', 'released'])
 
-// 'product_not_received' -> 'Product not received'
-const humanizeReason = (reason: string): string =>
-  reason.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase())
-
 const formatDate = (iso: string): string =>
-  new Date(iso).toLocaleDateString(undefined, { dateStyle: 'long' })
+  new Date(iso).toLocaleDateString(undefined, { dateStyle: 'medium' })
+
+const renderDisputeExplanation = (
+  dispute: schemas['Dispute'],
+): React.ReactNode => {
+  const reason = dispute.reason ? (
+    <Text as="span" variant="label" color="default">
+      {getDisputeReasonDescription(dispute.reason)}
+    </Text>
+  ) : null
+
+  switch (dispute.status) {
+    case 'needs_response':
+      return reason ? (
+        <>
+          The customer disputed this payment with their bank, citing {reason}.
+          Reply with evidence to contest the dispute.
+        </>
+      ) : (
+        <>
+          The customer disputed this payment with their bank. Reply with
+          evidence to contest the dispute.
+        </>
+      )
+    case 'under_review':
+      return reason ? (
+        <>
+          The customer disputed this payment, citing {reason}. The bank is now
+          reviewing the evidence and will decide the outcome.
+        </>
+      ) : (
+        <>
+          The bank is reviewing the evidence and will decide the outcome of this
+          dispute.
+        </>
+      )
+    case 'won':
+      return (
+        <>
+          This dispute was resolved in your favor — the funds were returned to
+          your balance.
+        </>
+      )
+    case 'lost':
+      return (
+        <>
+          This dispute was resolved in the customer&apos;s favor — the amount
+          and any fees were deducted from your balance.
+        </>
+      )
+    case 'prevented':
+      return (
+        <>
+          This payment was refunded before the dispute escalated, so no dispute
+          fees applied.
+        </>
+      )
+    case 'early_warning':
+      return reason ? (
+        <>
+          The card network flagged a possible dispute, citing {reason}. No
+          action is required yet.
+        </>
+      ) : (
+        <>
+          The card network flagged a possible dispute on this payment. No action
+          is required yet.
+        </>
+      )
+  }
+}
 
 const toCaseAttachments = (
   caseId: string,
@@ -103,22 +166,29 @@ export const DisputeCard = ({ organization, dispute }: Props) => {
       borderWidth={1}
       borderStyle="solid"
       borderColor="border-primary"
+      backgroundColor="background-primary"
       overflow="hidden"
     >
-      <Box
-        alignItems="center"
-        justifyContent="between"
-        columnGap="l"
-        padding="l"
-      >
+      <Box alignItems="start" columnGap="m" padding="l">
+        <Box
+          width={36}
+          height={36}
+          borderRadius="full"
+          backgroundColor="background-secondary"
+          color="text-primary"
+          alignItems="center"
+          justifyContent="center"
+          flexShrink={0}
+        >
+          <Flag className="h-[18px] w-[18px]" />
+        </Box>
         <Box flexDirection="column" rowGap="xs" minWidth={0}>
           <Text>
-            {formatCurrency('standard')(dispute.amount, dispute.currency)}{' '}
-            dispute
+            Dispute ·{' '}
+            {formatCurrency('standard')(dispute.amount, dispute.currency)}
           </Text>
           <Box alignItems="center" columnGap="xs" flexWrap="wrap">
             <Text variant="caption" color="muted" as="span">
-              {dispute.reason ? `${humanizeReason(dispute.reason)} · ` : ''}
               Opened {formatDate(dispute.created_at)}
             </Text>
             {dispute.status === 'needs_response' && dispute.evidence_due_by && (
@@ -137,11 +207,10 @@ export const DisputeCard = ({ organization, dispute }: Props) => {
               </>
             )}
           </Box>
+          <Text variant="caption" color="muted">
+            {renderDisputeExplanation(dispute)}
+          </Text>
         </Box>
-        <Status
-          color={DisputeStatusDisplayColor[dispute.status]}
-          status={DisputeStatusDisplayTitle[dispute.status]}
-        />
       </Box>
 
       {dispute.support_case_id && (
@@ -160,8 +229,8 @@ export const DisputeCard = ({ organization, dispute }: Props) => {
               messages={chatMessages}
               attachments={chatAttachments}
               isOpen={thread.is_open}
-              title="Messages"
-              description="Message Polar's support team about this dispute. Attach any evidence here."
+              title={null}
+              autoHeight
               selfAvatar={
                 <MessageAvatar organization={organization} fromMerchant />
               }
@@ -172,7 +241,12 @@ export const DisputeCard = ({ organization, dispute }: Props) => {
                 />
               }
               renderMessage={renderMessage}
-              emptyState={<Text color="muted">No messages yet.</Text>}
+              emptyState={
+                <Text color="muted" align="center">
+                  No messages yet — message Polar&apos;s support team and attach
+                  any evidence here.
+                </Text>
+              }
               className="w-full"
               composer={{
                 uploader,

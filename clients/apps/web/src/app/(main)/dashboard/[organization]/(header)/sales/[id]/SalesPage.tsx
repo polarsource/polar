@@ -115,8 +115,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
     >
       {disputes && disputes.items.length > 0 && (
         <div className="flex flex-col gap-6">
-          <h3 className="text-lg">Disputes</h3>
-
           {disputes.items.map((dispute) => (
             <DisputeCard
               key={dispute.id}

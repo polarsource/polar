@@ -21,6 +21,56 @@ import {
   id = "polar-sandbox-files"
 }
 
+module "lambda_worker_ecr" {
+  source = "../modules/ecr_repository"
+
+  name = "polar-sandbox-lambda-worker"
+}
+
+module "dummy_lambda_worker" {
+  source = "../modules/aws_task_worker"
+
+  environment = "sandbox"
+  name        = "dummy"
+  queue_name  = "polar-sandbox-tasks-dummy"
+  image_uri   = "${module.lambda_worker_ecr.repository_url}:latest"
+  enabled     = false
+
+  environment_variables = {
+    POLAR_ENV                     = "sandbox"
+    POLAR_BASE_URL                = "https://sandbox-api.polar.sh"
+    POLAR_FRONTEND_BASE_URL       = "https://sandbox.polar.sh"
+    POLAR_CHECKOUT_BASE_URL       = "https://sandbox-api.polar.sh/v1/checkout-links/{client_secret}/redirect"
+    POLAR_JWKS                    = "/tmp/jwks.json"
+    POLAR_LOG_LEVEL               = "INFO"
+    POLAR_TESTING                 = "0"
+    POLAR_POSTGRES_DATABASE       = "polar_sandbox"
+    POLAR_POSTGRES_HOST           = local.db_internal_host
+    POLAR_POSTGRES_PORT           = local.db_port
+    POLAR_POSTGRES_USER           = local.db_user
+    POLAR_POSTGRES_READ_DATABASE  = "polar_sandbox"
+    POLAR_POSTGRES_READ_HOST      = local.read_replica.id
+    POLAR_POSTGRES_READ_PORT      = local.db_port
+    POLAR_POSTGRES_READ_USER      = local.db_user
+    POLAR_REDIS_HOST              = local.redis_host
+    POLAR_REDIS_PORT              = local.redis_port
+    POLAR_REDIS_DB                = "1"
+    POLAR_AWS_REGION              = "us-east-2"
+    POLAR_WORKER_SQS_ENABLED      = "true"
+    POLAR_WORKER_SQS_QUEUE_PREFIX = "polar-sandbox-tasks"
+  }
+
+  secret_environment_variables = {
+    POLAR_CURRENT_JWK_KID   = var.backend_current_jwk_kid_sandbox
+    POLAR_JWKS_CONTENT      = var.backend_jwks_sandbox
+    POLAR_LOGFIRE_TOKEN     = var.logfire_token
+    POLAR_POSTGRES_PWD      = local.db_password
+    POLAR_POSTGRES_READ_PWD = local.db_password
+    POLAR_SECRET            = var.backend_secret_sandbox
+    POLAR_SENTRY_DSN        = var.backend_sentry_dsn_sandbox
+  }
+}
+
 # =============================================================================
 # Image Resizer Lambda@Edge
 # =============================================================================

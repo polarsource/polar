@@ -189,6 +189,7 @@ data "aws_iam_policy_document" "lambda_worker_ecr_push" {
       "ecr:UploadLayerPart",
     ]
     resources = [
+      "arn:aws:ecr:us-east-2:${data.aws_caller_identity.current.account_id}:repository/polar-sandbox-lambda-worker",
       "arn:aws:ecr:us-east-2:${data.aws_caller_identity.current.account_id}:repository/polar-test-lambda-worker",
     ]
   }

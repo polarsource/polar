@@ -310,6 +310,7 @@ class MemberService:
         # customer) produces a duplicate owner on the next sign-in.
         existing_owner = await repository.get_owner_by_customer_id(customer.id)
         if existing_owner is not None:
+            customer.owner = existing_owner
             log.debug(
                 "member.create_owner_member.skipped",
                 reason="owner_already_exists",
@@ -330,6 +331,7 @@ class MemberService:
 
         try:
             created_member = await repository.create(member, flush=True)
+            customer.owner = created_member
             log.info(
                 "member.create_owner_member.success",
                 customer_id=customer.id,
@@ -354,6 +356,7 @@ class MemberService:
             )
             existing_owner = await repository.get_owner_by_customer_id(customer.id)
             if existing_owner is not None:
+                customer.owner = existing_owner
                 log.info(
                     "member.create_owner_member.found_existing",
                     customer_id=customer.id,

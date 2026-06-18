@@ -1,4 +1,3 @@
-import hashlib
 from datetime import datetime
 from typing import Annotated, Literal
 
@@ -10,12 +9,10 @@ from pydantic import (
     Field,
     Tag,
     TypeAdapter,
-    computed_field,
     model_validator,
 )
 from pydantic.aliases import AliasChoices
 
-from polar.config import settings
 from polar.kit.address import Address, AddressInput
 from polar.kit.email import EmailStrDNS
 from polar.kit.locale import Locale
@@ -172,19 +169,6 @@ class CustomerUpdateExternalID(CustomerUpdateBase): ...
 # --- Read schemas ---
 
 
-def _avatar_url_for_email(email: str) -> str:
-    domain = email.split("@")[-1].lower()
-
-    if (
-        not settings.LOGO_DEV_PUBLISHABLE_KEY
-        or domain in settings.PERSONAL_EMAIL_DOMAINS
-    ):
-        email_hash = hashlib.sha256(email.lower().encode()).hexdigest()
-        return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
-
-    return f"https://img.logo.dev/{domain}?size=64&retina=true&token={settings.LOGO_DEV_PUBLISHABLE_KEY}&fallback=404"
-
-
 class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
     id: UUID4 = Field(
         description="The ID of the customer.", examples=[CUSTOMER_ID_EXAMPLE]
@@ -245,14 +229,9 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         description="Timestamp for when the customer was soft deleted."
     )
 
-    @computed_field(examples=["https://www.gravatar.com/avatar/xxx?d=404"])  # type: ignore[prop-decorator]
-    @property
-    def avatar_url(self) -> str:
-        if self.email is not None:
-            return _avatar_url_for_email(self.email)
-        identifier = self.name or str(self.id)
-        email_hash = hashlib.sha256(identifier.lower().encode()).hexdigest()
-        return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
+    avatar_url: str | None = Field(
+        examples=["https://www.gravatar.com/avatar/xxx?d=404"],
+    )
 
 
 class CustomerIndividual(CustomerBase):

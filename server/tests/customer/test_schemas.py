@@ -4,9 +4,13 @@ from typing import Any
 import pytest
 from pydantic import TypeAdapter
 
+from polar.customer.repository import CustomerRepository
 from polar.customer.schemas.customer import CustomerResponse as Customer
 from polar.customer.schemas.state import CustomerState
 from polar.models import Organization
+from polar.models.customer import Customer as CustomerModel
+from polar.models.customer import CustomerType
+from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
 
@@ -66,3 +70,25 @@ async def test_state_external_id(
         customer_state_json
     )
     assert customer_state_deserialized.external_id == "EXTERNAL_ID"
+
+
+@pytest.mark.asyncio
+async def test_avatar_url_serializes_null_without_email(
+    save_fixture: SaveFixture,
+    session: AsyncSession,
+    organization: Organization,
+) -> None:
+    customer = CustomerModel(
+        email=None, type=CustomerType.team, organization=organization
+    )
+    await save_fixture(customer)
+
+    session.expunge_all()
+    loaded = await CustomerRepository.from_session(session).get_by_id(customer.id)
+    assert loaded is not None
+
+    customer_schema = _CustomerAdapter.validate_python(loaded, from_attributes=True)
+    assert customer_schema.avatar_url is None
+
+    serialized = json.loads(customer_schema.model_dump_json())
+    assert serialized["avatar_url"] is None

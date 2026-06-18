@@ -2,6 +2,7 @@ from pydantic import Field
 
 from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.member.schemas import MemberNameInput
 from polar.models.member import MemberRole
 
 
@@ -29,8 +30,12 @@ class CustomerPortalMemberCreate(Schema):
 
 
 class CustomerPortalMemberUpdate(Schema):
-    """Schema for updating a member's role in the customer portal."""
+    """Schema for updating a member in the customer portal."""
 
+    name: MemberNameInput | None = Field(
+        default=None,
+        description="The new name for the member.",
+    )
     role: MemberRole | None = Field(
         default=None,
         description="The new role for the member.",

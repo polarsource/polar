@@ -786,7 +786,7 @@ class MemberService:
         update_dict = {}
         if name is not None:
             update_dict["name"] = name
-        if role is not None and not transferred:
+        if role is not None and role != member.role and not transferred:
             update_dict["role"] = role
         if new_email is not None:
             update_dict["email"] = new_email

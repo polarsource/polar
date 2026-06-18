@@ -4250,7 +4250,7 @@ export interface paths {
     head?: never
     /**
      * Update Member
-     * @description Update a member's role.
+     * @description Update a member's name or role.
      *
      *     Only available to owners and billing managers of team customers.
      *
@@ -16663,9 +16663,14 @@ export interface components {
     }
     /**
      * CustomerPortalMemberUpdate
-     * @description Schema for updating a member's role in the customer portal.
+     * @description Schema for updating a member in the customer portal.
      */
     CustomerPortalMemberUpdate: {
+      /**
+       * Name
+       * @description The new name for the member.
+       */
+      name?: string | null
       /**
        * @description The new role for the member.
        * @example billing_manager

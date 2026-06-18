@@ -151,7 +151,7 @@ async def update_member(
     session: AsyncSession = Depends(get_db_session),
 ) -> Member:
     """
-    Update a member's role.
+    Update a member's name or role.
 
     Only available to owners and billing managers of team customers.
 
@@ -168,12 +168,13 @@ async def update_member(
     if member is None:
         raise ResourceNotFound("Member not found")
 
-    # If no role provided, return member unchanged
-    if member_update.role is None:
-        return member
-
-    # Prevent self-modification
-    if member.id == actor_member.id:
+    # Prevent changing your own role (self-demotion). A no-op role value and
+    # name changes are allowed.
+    if (
+        member_update.role is not None
+        and member_update.role != member.role
+        and member.id == actor_member.id
+    ):
         raise PolarRequestValidationError(
             [
                 {
@@ -186,7 +187,11 @@ async def update_member(
         )
 
     return await member_service.update(
-        session, member, role=member_update.role, caller_member=actor_member
+        session,
+        member,
+        name=member_update.name,
+        role=member_update.role,
+        caller_member=actor_member,
     )
 
 

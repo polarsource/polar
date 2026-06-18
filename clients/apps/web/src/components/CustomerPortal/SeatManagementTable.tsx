@@ -5,6 +5,7 @@ import {
   useCustomerSeats,
   useResendSeatInvitation,
   useRevokeSeat,
+  useUpdateCustomerPortalMember,
 } from '@/hooks/queries/customerPortal'
 import { validateEmail } from '@/utils/validation'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
@@ -16,25 +17,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/atoms/DropdownMenu'
-import { Input } from '@polar-sh/orbit'
 import { Status } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
 import { toast } from '../Toast/use-toast'
 import { seatStatusDisplayConfig } from '../Seats/seatStatus'
 import { CustomerSeatQuantityManager } from './CustomerSeatQuantityManager'
+import { InlineEditTableRow } from './InlineEditTableRow'
 
-interface CustomerSeat {
-  id: string
-  subscription_id?: string | null
-  order_id?: string | null
-  status: 'pending' | 'claimed' | 'revoked'
-  customer_id?: string | null
-  customer_email?: string | null
-  claimed_at?: string | null
-  revoked_at?: string | null
-  created_at: string
-  seat_metadata?: Record<string, unknown> | null
-}
+type CustomerSeat = schemas['CustomerSeat']
 
 type SeatBasedSubscription = { subscriptionId: string }
 type SeatBasedOrder = { orderId: string }
@@ -65,12 +57,15 @@ export const SeatManagementTable = ({
   const assignSeat = useAssignSeat(api)
   const revokeSeat = useRevokeSeat(api)
   const resendInvitation = useResendSeatInvitation(api)
+  const updateMember = useUpdateCustomerPortalMember(api)
 
   const [email, setEmail] = useState('')
   const [error, setError] = useState<string>()
-  const [isSending, setIsSending] = useState(false)
   const [isInviting, setIsInviting] = useState(false)
   const [loadingSeats, setLoadingSeats] = useState<Set<string>>(new Set())
+  const [editingSeatId, setEditingSeatId] = useState<string>()
+  const [editName, setEditName] = useState('')
+  const [editError, setEditError] = useState<string>()
 
   const totalSeats = seatsData?.total_seats || 0
   const availableSeats = seatsData?.available_seats || 0
@@ -86,7 +81,6 @@ export const SeatManagementTable = ({
       return
     }
 
-    setIsSending(true)
     setError(undefined)
 
     try {
@@ -109,8 +103,6 @@ export const SeatManagementTable = ({
       }
     } catch {
       setError('Failed to send invitation')
-    } finally {
-      setIsSending(false)
     }
   }
 
@@ -162,6 +154,41 @@ export const SeatManagementTable = ({
     }
   }
 
+  const startEditingName = (seat: CustomerSeat) => {
+    setEditingSeatId(seat.id)
+    setEditName(seat.member?.name ?? '')
+    setEditError(undefined)
+  }
+
+  const cancelEditingName = () => {
+    setEditingSeatId(undefined)
+    setEditName('')
+    setEditError(undefined)
+  }
+
+  const handleSaveName = async (seat: CustomerSeat) => {
+    if (!seat.member?.id) {
+      return
+    }
+
+    setEditError(undefined)
+    try {
+      await updateMember.mutateAsync({
+        id: seat.member.id,
+        body: { name: editName.trim() || null },
+      })
+      cancelEditingName()
+      toast({
+        title: 'Name updated',
+        description: "The member's name has been updated.",
+      })
+    } catch (error) {
+      setEditError(
+        error instanceof Error ? error.message : 'Failed to update name',
+      )
+    }
+  }
+
   const isSubscription = isSeatBasedSubscription(identifier)
 
   return (
@@ -186,7 +213,7 @@ export const SeatManagementTable = ({
             <thead className="[&_tr]:border-b">
               <tr className="dark:bg-polar-800 border-b bg-gray-50">
                 <th className="text-muted-foreground h-12 px-4 text-left align-middle font-medium">
-                  Email
+                  Member
                 </th>
                 <th className="text-muted-foreground h-12 px-4 text-left align-middle font-medium">
                   Status
@@ -204,12 +231,38 @@ export const SeatManagementTable = ({
                   const [label, color] = seatStatusDisplayConfig[seat.status]
                   const isSeatLoading = loadingSeats.has(seat.id)
 
+                  const isEditingName = editingSeatId === seat.id
+                  const memberName = seat.member?.name
+                  const memberEmail =
+                    seat.member?.email || seat.customer_email || '—'
+
+                  if (isEditingName) {
+                    return (
+                      <InlineEditTableRow
+                        key={seat.id}
+                        value={editName}
+                        placeholder="Member name"
+                        loading={updateMember.isPending}
+                        error={editError}
+                        onChange={(value) => {
+                          setEditName(value)
+                          setEditError(undefined)
+                        }}
+                        onSave={() => handleSaveName(seat)}
+                        onCancel={cancelEditingName}
+                      />
+                    )
+                  }
+
                   return (
                     <tr key={seat.id} className="border-b transition-colors">
                       <td className="p-4 align-middle">
-                        <span className="text-sm">
-                          {seat.customer_email || '—'}
-                        </span>
+                        <Box flexDirection="column">
+                          {memberName && <Text>{memberName}</Text>}
+                          <Text color={memberName ? 'muted' : undefined}>
+                            {memberEmail}
+                          </Text>
+                        </Box>
                       </td>
                       <td className="p-4 align-middle">
                         <Status color={color} status={label} />
@@ -227,6 +280,14 @@ export const SeatManagementTable = ({
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                {seat.member?.id && (
+                                  <DropdownMenuItem
+                                    onClick={() => startEditingName(seat)}
+                                    disabled={isSeatLoading}
+                                  >
+                                    Edit name
+                                  </DropdownMenuItem>
+                                )}
                                 {seat.status === 'pending' && (
                                   <DropdownMenuItem
                                     onClick={() =>
@@ -251,76 +312,45 @@ export const SeatManagementTable = ({
                     </tr>
                   )
                 })}
-              {availableSeats > 0 && (
-                <tr className="border-b transition-colors">
-                  <td colSpan={3} className="p-0">
-                    {isInviting ? (
-                      <div className="flex items-start gap-4 p-4">
-                        <div className="flex-1">
-                          <Input
-                            type="email"
-                            placeholder="email@example.com"
-                            value={email}
-                            autoFocus
-                            onChange={(e) => {
-                              setEmail(e.target.value)
-                              setError(undefined)
-                            }}
-                            disabled={isSending}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                handleAssignSeat()
-                              }
-                              if (e.key === 'Escape') {
-                                setIsInviting(false)
-                                setEmail('')
-                                setError(undefined)
-                              }
-                            }}
-                          />
-                          {error && (
-                            <p className="dark:text-polar-400 mt-1 text-xs text-gray-500">
-                              {error}
-                            </p>
-                          )}
-                        </div>
-                        <Button
-                          onClick={handleAssignSeat}
-                          disabled={!email.trim() || isSending}
-                          loading={isSending}
-                        >
-                          Invite
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => {
-                            setIsInviting(false)
-                            setEmail('')
-                            setError(undefined)
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        className="flex w-full items-center justify-between px-4 py-4 text-left transition-colors"
-                        onClick={() => setIsInviting(true)}
-                      >
-                        <span className="dark:text-polar-400 text-gray-500">
+              {availableSeats > 0 &&
+                (isInviting ? (
+                  <InlineEditTableRow
+                    type="email"
+                    value={email}
+                    placeholder="email@example.com"
+                    submitLabel="Invite"
+                    loading={assignSeat.isPending}
+                    error={error}
+                    onChange={(value) => {
+                      setEmail(value)
+                      setError(undefined)
+                    }}
+                    onSave={handleAssignSeat}
+                    onCancel={() => {
+                      setIsInviting(false)
+                      setEmail('')
+                      setError(undefined)
+                    }}
+                  />
+                ) : (
+                  <tr className="border-b transition-colors">
+                    <td colSpan={3} className="p-0">
+                      <Box alignItems="center" justifyContent="between" p="l">
+                        <Text color="muted">
                           {availableSeats === 1
                             ? 'One more seat available'
                             : `${availableSeats} more seats available`}
-                        </span>
-                        <span className="dark:bg-polar-700 dark:hover:bg-polar-600 flex h-10 cursor-pointer items-center rounded-xl border border-black/4 bg-gray-100 px-3 text-sm font-medium text-black hover:bg-gray-200 dark:border-white/5 dark:text-white">
+                        </Text>
+                        <Button
+                          variant="secondary"
+                          onClick={() => setIsInviting(true)}
+                        >
                           Invite member
-                        </span>
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              )}
+                        </Button>
+                      </Box>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>

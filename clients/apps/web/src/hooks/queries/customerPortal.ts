@@ -574,8 +574,12 @@ export const useUpdateCustomerPortalMember = (api: Client) =>
       return result
     },
     onSuccess: async () => {
-      getQueryClient().invalidateQueries({
+      const queryClient = getQueryClient()
+      queryClient.invalidateQueries({
         queryKey: ['customer_portal_members'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_seats'],
       })
     },
   })

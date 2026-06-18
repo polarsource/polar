@@ -386,6 +386,62 @@ class TestUpdateMember:
 
     @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
     @pytest.mark.keep_session_state
+    async def test_owner_can_update_member_name(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        """Owner can update another member's name without touching the role."""
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        member2 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Regular Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(member2)
+
+        response = await client.patch(
+            f"/v1/customer-portal/members/{member2.id}",
+            json={"name": "Renamed Member"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "Renamed Member"
+        assert data["role"] == "member"
+
+    @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_can_update_own_name(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        """Editing your own name is allowed (unlike role)."""
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        response = await client.patch(
+            f"/v1/customer-portal/members/{member_owner.id}",
+            json={"name": "My New Name"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "My New Name"
+
+    @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
     async def test_owner_can_transfer_ownership(
         self,
         client: AsyncClient,

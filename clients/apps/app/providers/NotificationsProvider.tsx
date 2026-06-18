@@ -67,10 +67,8 @@ async function registerForPushNotificationsAsync() {
 
 const NotificationsContext = createContext<{
   expoPushToken: string
-  notification: Notifications.Notification | undefined
 }>({
   expoPushToken: '',
-  notification: undefined,
 })
 
 export const useNotifications = () => useContext(NotificationsContext)
@@ -81,10 +79,6 @@ export default function NotificationsProvider({
   children: React.ReactNode
 }) {
   const [expoPushToken, setExpoPushToken] = useState('')
-  const [notification, setNotification] = useState<
-    Notifications.Notification | undefined
-  >(undefined)
-  const notificationListener = useRef<Notifications.EventSubscription>(null)
   const responseListener = useRef<Notifications.EventSubscription>(null)
 
   const { session } = useSession()
@@ -98,11 +92,6 @@ export default function NotificationsProvider({
       setExpoPushToken(token ?? ''),
     )
 
-    notificationListener.current =
-      Notifications.addNotificationReceivedListener((notification) => {
-        setNotification(notification)
-      })
-
     responseListener.current =
       Notifications.addNotificationResponseReceivedListener((response) => {
         const data = response.notification.request.content.data
@@ -112,13 +101,12 @@ export default function NotificationsProvider({
       })
 
     return () => {
-      notificationListener.current && notificationListener.current.remove()
       responseListener.current && responseListener.current.remove()
     }
   }, [session])
 
   return (
-    <NotificationsContext.Provider value={{ expoPushToken, notification }}>
+    <NotificationsContext.Provider value={{ expoPushToken }}>
       {children}
     </NotificationsContext.Provider>
   )

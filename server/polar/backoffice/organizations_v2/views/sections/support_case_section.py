@@ -223,9 +223,10 @@ class SupportCaseSection:
                                 text("Awaiting decision")
                         if is_open:
                             self._render_assignment_chip(case)
-            # Appeals carry a staff decision; disputes are bank-decided.
-            if is_open and is_appeal:
-                self._render_decision_actions(request, case)
+            # Assignment is advisory and available on any open case; the
+            # approve/deny decision is appeal-only (disputes are bank-decided).
+            if is_open:
+                self._render_actions(request, case, is_appeal=is_appeal)
 
     def _render_assignment_chip(self, case: SupportCase) -> None:
         assignee_id = case.assigned_user_id
@@ -253,7 +254,25 @@ class SupportCaseSection:
         release_url = f"{request.url_for('support_cases:release', case_id=case.id)}?{urlencode({'return_to': detail_path})}"
         return take_url, release_url
 
-    def _render_decision_actions(self, request: Request, case: SupportCase) -> None:
+    def _render_actions(
+        self, request: Request, case: SupportCase, *, is_appeal: bool
+    ) -> None:
+        with tag.div(classes="flex-none flex items-center gap-2"):
+            self._render_assignment_button(request, case)
+            if is_appeal:
+                self._render_appeal_decision_buttons(request)
+
+    def _render_assignment_button(self, request: Request, case: SupportCase) -> None:
+        take_url, release_url = self._assignment_urls(request, case)
+        if case.assigned_user_id == self.current_user_id:
+            with button(size="sm", outline=True, hx_post=release_url):
+                text("Release")
+        else:
+            label = "Take over" if case.assigned_user_id is not None else "Take case"
+            with button(variant="neutral", size="sm", hx_post=take_url):
+                text(label)
+
+    def _render_appeal_decision_buttons(self, request: Request) -> None:
         approve_url = self._with_return_to(
             str(
                 request.url_for(
@@ -270,28 +289,18 @@ class SupportCaseSection:
                 )
             )
         )
-        take_url, release_url = self._assignment_urls(request, case)
-        assignee_id = case.assigned_user_id
-        with tag.div(classes="flex-none flex items-center gap-2"):
-            if assignee_id == self.current_user_id:
-                with button(size="sm", outline=True, hx_post=release_url):
-                    text("Release")
-            else:
-                label = "Take over" if assignee_id is not None else "Take case"
-                with button(variant="neutral", size="sm", hx_post=take_url):
-                    text(label)
-            with button(
-                variant="error",
-                size="sm",
-                outline=True,
-                hx_get=deny_url,
-                hx_target="#modal",
-            ):
-                text("Deny appeal")
-            with button(
-                variant="primary", size="sm", hx_get=approve_url, hx_target="#modal"
-            ):
-                text("Approve appeal")
+        with button(
+            variant="error",
+            size="sm",
+            outline=True,
+            hx_get=deny_url,
+            hx_target="#modal",
+        ):
+            text("Deny appeal")
+        with button(
+            variant="primary", size="sm", hx_get=approve_url, hx_target="#modal"
+        ):
+            text("Approve appeal")
 
     # -- Dispute details ----------------------------------------------------
 

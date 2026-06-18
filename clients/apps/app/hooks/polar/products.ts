@@ -1,7 +1,6 @@
 import { usePolarClient } from '@/providers/PolarClientProvider'
-import { queryClient } from '@/utils/query'
-import { operations, schemas, unwrap } from '@polar-sh/client'
-import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
+import { operations, unwrap } from '@polar-sh/client'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 
 export const useProduct = (
   organizationId: string | undefined,
@@ -67,34 +66,6 @@ export const useInfiniteProducts = (
     getNextPageParam: (lastPage, pages) => {
       if (lastPage.items.length === 0) return undefined
       return pages.length + 1
-    },
-  })
-}
-
-export const useProductUpdate = (
-  organizationId: string | undefined,
-  id: string,
-) => {
-  const { polar } = usePolarClient()
-
-  return useMutation({
-    mutationFn: (data: schemas['ProductUpdate']) =>
-      unwrap(
-        polar.PATCH('/v1/products/{id}', {
-          params: { path: { id } },
-          body: data,
-        }),
-      ),
-    onSuccess: (data, variables) => {
-      queryClient.setQueryData(['product', organizationId, { id }], data)
-
-      queryClient.invalidateQueries({
-        queryKey: ['products', organizationId],
-      })
-
-      queryClient.invalidateQueries({
-        queryKey: ['infinite', 'products', organizationId],
-      })
     },
   })
 }

@@ -130,9 +130,86 @@ FROM production AS playwright
 RUN uv run playwright install --with-deps chromium
 
 # Stage 7: AWS Lambda image (SQS-driven background tasks, POC)
-FROM production AS lambda
+FROM public.ecr.aws/lambda/python:3.14 AS lambda-build
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-RUN uv pip install awslambdaric
+ENV PYTHONUNBUFFERED=1
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
+ENV UV_NO_CACHE=1
+ENV UV_NO_SYNC=1
 
-ENTRYPOINT ["uv", "run", "python", "-m", "awslambdaric"]
+WORKDIR /app/server
+
+RUN --mount=type=bind,source=uv.lock,target=uv.lock \
+  --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+  dnf install -y gcc gcc-c++ git make \
+  && uv sync --no-group dev --frozen \
+  && dnf clean all
+
+ADD . /app/server/
+
+COPY --from=build-emails-bin /app/bin/react-email-pkg /app/server/
+ENV POLAR_EMAIL_RENDERER_BINARY_PATH=/app/server/react-email-pkg
+
+COPY --from=build-backoffice /app/static /app/server/polar/backoffice/static
+COPY --from=download-ipinfo /data /data
+COPY --from=download-cjk-fonts /fonts/ /app/server/polar/invoice/fonts/
+
+ARG RELEASE_VERSION
+ENV RELEASE_VERSION=${RELEASE_VERSION}
+
+FROM public.ecr.aws/lambda/python:3.14 AS lambda
+
+ARG RELEASE_VERSION
+ENV RELEASE_VERSION=${RELEASE_VERSION}
+
+COPY --from=lambda-build /app /app
+COPY --from=lambda-build /data /data
+COPY --from=docker.io/tailscale/tailscale:stable /usr/local/bin/tailscaled /var/runtime/tailscaled
+COPY --from=docker.io/tailscale/tailscale:stable /usr/local/bin/tailscale /var/runtime/tailscale
+
+ENV LAMBDA_TASK_ROOT=/app/server
+ENV PATH="/app/server/.venv/bin:$PATH"
+ENV PYTHONPATH="/app/server/.venv/lib/python3.14/site-packages:/app/server"
+ENV POLAR_EMAIL_RENDERER_BINARY_PATH=/app/server/react-email-pkg
+ENV POLAR_IP_GEOLOCATION_DATABASE_DIRECTORY_PATH=/data
+ENV POLAR_IP_GEOLOCATION_DATABASE_NAME=country_asn.mmdb
+
+WORKDIR /app/server
+
+RUN mkdir -p /var/run /var/cache /var/lib /var/task \
+  && rm -rf /var/run/tailscale /var/cache/tailscale /var/lib/tailscale /var/task/tailscale \
+  && ln -s /tmp/tailscale /var/run/tailscale \
+  && ln -s /tmp/tailscale /var/cache/tailscale \
+  && ln -s /tmp/tailscale /var/lib/tailscale \
+  && ln -s /tmp/tailscale /var/task/tailscale
+
+RUN <<'EOF'
+cat > /var/runtime/polar-bootstrap <<'BOOTSTRAP'
+#!/bin/sh
+set -eu
+
+if [ -n "${POLAR_JWKS_CONTENT:-}" ] && [ -n "${POLAR_JWKS:-}" ]; then
+  mkdir -p "$(dirname "$POLAR_JWKS")"
+  printf "%s" "$POLAR_JWKS_CONTENT" > "$POLAR_JWKS"
+fi
+
+if [ -n "${TAILSCALE_AUTHKEY:-}" ]; then
+  mkdir -p /tmp/tailscale
+  /var/runtime/tailscaled --tun=userspace-networking --socks5-server=localhost:1055 &
+  tailscale_hostname="${TAILSCALE_HOSTNAME:-polar-${POLAR_ENV:-unknown}-worker-lambda}"
+  tailscale_tags="tag:${POLAR_ENV:-unknown},tag:worker-lambda,tag:aws"
+  until /var/runtime/tailscale up --authkey="${TAILSCALE_AUTHKEY}?ephemeral=true&preauthorized=true" --hostname="${tailscale_hostname}" --advertise-tags="${tailscale_tags}"; do
+    sleep 0.1
+  done
+  export ALL_PROXY="${ALL_PROXY:-socks5://localhost:1055/}"
+fi
+
+exec /lambda-entrypoint.sh "$@"
+BOOTSTRAP
+chmod +x /var/runtime/polar-bootstrap
+EOF
+
+ENTRYPOINT ["/var/runtime/polar-bootstrap"]
 CMD ["polar.worker.aws_lambda.handler"]

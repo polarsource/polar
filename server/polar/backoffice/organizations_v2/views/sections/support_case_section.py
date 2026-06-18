@@ -1,6 +1,7 @@
 """Support case section: a support-case thread (appeal or dispute) and staff
 actions. Appeals carry an approve/deny decision; disputes are bank-decided and
-read-only beyond the staff ↔ merchant conversation."""
+read-only beyond the staff ↔ merchant conversation, with a facts panel for the
+chargeback itself (amount, reason, evidence deadline)."""
 
 import contextlib
 from collections.abc import Generator, Sequence
@@ -8,9 +9,11 @@ from urllib.parse import urlencode
 from uuid import UUID
 
 from fastapi import Request
-from tagflow import tag, text
+from tagflow import attr, tag, text
 
-from polar.models import Organization
+from polar.enums import PaymentProcessor
+from polar.models import Dispute, Organization
+from polar.models.dispute import DisputeStatus
 from polar.models.support_case import (
     SupportCase,
     SupportCaseAttachment,
@@ -20,6 +23,7 @@ from polar.models.support_case import (
     SupportCaseType,
 )
 
+from .... import formatters
 from ....components import button, card
 from ....support_cases.urls import append_return_to
 
@@ -106,6 +110,17 @@ _EVENT_NODES: dict[SupportCaseMessageType, tuple[str, str]] = {
     SupportCaseMessageType.released: ("icon-user-x", _MUTED_NODE),
 }
 
+# Dispute lifecycle status surfaced in the details panel: (badge classes, label).
+# A dispute case only exists from `needs_response` onward — `early_warning`
+# never has a case (see DisputeService._sync_support_case).
+_DISPUTE_STATUS_BADGES: dict[DisputeStatus, tuple[str, str]] = {
+    DisputeStatus.needs_response: ("badge-warning", "Needs response"),
+    DisputeStatus.under_review: ("badge-info", "Under review"),
+    DisputeStatus.prevented: ("badge-success", "Prevented"),
+    DisputeStatus.won: ("badge-success", "Won"),
+    DisputeStatus.lost: ("badge-error", "Lost"),
+}
+
 Thread = tuple[SupportCase, bool, Sequence[SupportCaseMessage]]
 
 
@@ -119,6 +134,7 @@ class SupportCaseSection:
         author_emails: dict[UUID, str] | None = None,
         current_user_id: UUID | None = None,
         attachments_by_message: dict[UUID, list[SupportCaseAttachment]] | None = None,
+        dispute: Dispute | None = None,
         return_to: str | None = None,
     ) -> None:
         self.org = organization
@@ -126,6 +142,8 @@ class SupportCaseSection:
         self.author_emails = author_emails or {}
         self.current_user_id = current_user_id
         self.attachments_by_message = attachments_by_message or {}
+        # The dispute behind a dispute case, surfaced as a read-only facts panel.
+        self.dispute = dispute
         # Origin to come back to after an action (e.g. the org page), threaded
         # through every action URL so the flow stays anchored to it.
         self.return_to = return_to
@@ -151,6 +169,8 @@ class SupportCaseSection:
             self._case_type = case.type
             with card(bordered=True):
                 self._render_header(request, case, is_open, messages)
+                if self.dispute is not None:
+                    self._render_dispute_details(request, self.dispute)
                 self._render_timeline(request, messages)
                 if is_open:
                     self._render_composer(request, case)
@@ -203,9 +223,10 @@ class SupportCaseSection:
                                 text("Awaiting decision")
                         if is_open:
                             self._render_assignment_chip(case)
-            # Appeals carry a staff decision; disputes are bank-decided.
-            if is_open and is_appeal:
-                self._render_decision_actions(request, case)
+            # Assignment is advisory and available on any open case; the
+            # approve/deny decision is appeal-only (disputes are bank-decided).
+            if is_open:
+                self._render_actions(request, case, is_appeal=is_appeal)
 
     def _render_assignment_chip(self, case: SupportCase) -> None:
         assignee_id = case.assigned_user_id
@@ -233,7 +254,25 @@ class SupportCaseSection:
         release_url = f"{request.url_for('support_cases:release', case_id=case.id)}?{urlencode({'return_to': detail_path})}"
         return take_url, release_url
 
-    def _render_decision_actions(self, request: Request, case: SupportCase) -> None:
+    def _render_actions(
+        self, request: Request, case: SupportCase, *, is_appeal: bool
+    ) -> None:
+        with tag.div(classes="flex-none flex items-center gap-2"):
+            self._render_assignment_button(request, case)
+            if is_appeal:
+                self._render_appeal_decision_buttons(request)
+
+    def _render_assignment_button(self, request: Request, case: SupportCase) -> None:
+        take_url, release_url = self._assignment_urls(request, case)
+        if case.assigned_user_id == self.current_user_id:
+            with button(size="sm", outline=True, hx_post=release_url):
+                text("Release")
+        else:
+            label = "Take over" if case.assigned_user_id is not None else "Take case"
+            with button(variant="neutral", size="sm", hx_post=take_url):
+                text(label)
+
+    def _render_appeal_decision_buttons(self, request: Request) -> None:
         approve_url = self._with_return_to(
             str(
                 request.url_for(
@@ -250,28 +289,111 @@ class SupportCaseSection:
                 )
             )
         )
-        take_url, release_url = self._assignment_urls(request, case)
-        assignee_id = case.assigned_user_id
-        with tag.div(classes="flex-none flex items-center gap-2"):
-            if assignee_id == self.current_user_id:
-                with button(size="sm", outline=True, hx_post=release_url):
-                    text("Release")
-            else:
-                label = "Take over" if assignee_id is not None else "Take case"
-                with button(variant="neutral", size="sm", hx_post=take_url):
+        with button(
+            variant="error",
+            size="sm",
+            outline=True,
+            hx_get=deny_url,
+            hx_target="#modal",
+        ):
+            text("Deny appeal")
+        with button(
+            variant="primary", size="sm", hx_get=approve_url, hx_target="#modal"
+        ):
+            text("Approve appeal")
+
+    # -- Dispute details ----------------------------------------------------
+
+    def _render_dispute_details(self, request: Request, dispute: Dispute) -> None:
+        """Read-only facts about the chargeback: what is owed, why, and by when."""
+        order_url = str(request.url_for("orders:get", id=dispute.order_id))
+        with tag.div(classes="mb-8 rounded-xl border border-base-200"):
+            with tag.div(
+                classes="flex items-center justify-between gap-2 px-4 py-3 "
+                "border-b border-base-200"
+            ):
+                with tag.div(classes="flex items-center gap-2"):
+                    with tag.span(classes="icon-gavel text-base-content/60"):
+                        pass
+                    with tag.span(classes="text-sm font-medium"):
+                        text("Dispute details")
+                badge, label = _DISPUTE_STATUS_BADGES[dispute.status]
+                with tag.div(classes=f"badge {badge} badge-sm"):
                     text(label)
-            with button(
-                variant="error",
-                size="sm",
-                outline=True,
-                hx_get=deny_url,
-                hx_target="#modal",
+            with tag.div(
+                classes="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 px-4 py-4"
             ):
-                text("Deny appeal")
-            with button(
-                variant="primary", size="sm", hx_get=approve_url, hx_target="#modal"
+                with self._fact("Amount at risk"):
+                    text(
+                        formatters.currency(
+                            dispute.amount + dispute.tax_amount, dispute.currency
+                        )
+                    )
+                with self._fact("Reason"):
+                    text(self._dispute_reason(dispute))
+                with self._fact("Evidence due"):
+                    self._render_evidence_due(dispute)
+                with self._fact("Evidence"):
+                    if dispute.has_evidence:
+                        text(f"Submitted ({dispute.submission_count})")
+                    else:
+                        with tag.span(classes="text-base-content/50"):
+                            text("Not submitted")
+                with self._fact("Order"):
+                    with tag.a(href=order_url, classes="link"):
+                        text("View order")
+                if dispute.payment_processor_id:
+                    with self._fact("Processor dispute ID"):
+                        self._render_processor_id(dispute)
+
+    @contextlib.contextmanager
+    def _fact(self, label: str) -> Generator[None]:
+        with tag.div(classes="flex flex-col gap-1 min-w-0"):
+            with tag.div(
+                classes="text-xs uppercase tracking-wide text-base-content/40"
             ):
-                text("Approve appeal")
+                text(label)
+            with tag.div(classes="text-sm"):
+                yield
+
+    def _render_processor_id(self, dispute: Dispute) -> None:
+        processor_id = dispute.payment_processor_id
+        assert processor_id is not None
+        if dispute.payment_processor == PaymentProcessor.stripe:
+            with tag.a(
+                href=f"https://dashboard.stripe.com/disputes/{processor_id}",
+                classes="link inline-flex items-center gap-1 font-mono text-xs "
+                "break-all",
+            ):
+                attr("target", "_blank")
+                attr("rel", "noopener noreferrer")
+                text(processor_id)
+                with tag.div(classes="icon-external-link flex-none not-italic"):
+                    pass
+        else:
+            with tag.span(classes="font-mono text-xs break-all"):
+                text(processor_id)
+
+    def _render_evidence_due(self, dispute: Dispute) -> None:
+        if dispute.evidence_due_by is None:
+            with tag.span(classes="text-base-content/50"):
+                text("—")
+            return
+        when = dispute.evidence_due_by.strftime("%b %-d, %Y %H:%M UTC")
+        if dispute.past_due:
+            with tag.span(classes="text-error font-medium"):
+                text(f"{when} · Past due")
+        else:
+            text(when)
+
+    @staticmethod
+    def _dispute_reason(dispute: Dispute) -> str:
+        if dispute.reason is None:
+            return "—"
+        label = dispute.reason.replace("_", " ").capitalize()
+        if dispute.network_reason_code:
+            return f"{label} ({dispute.network_reason_code})"
+        return label
 
     # -- Timeline -----------------------------------------------------------
 
@@ -432,31 +554,45 @@ class SupportCaseSection:
         reply_url = self._with_return_to(
             str(request.url_for("support_cases:reply", case_id=case.id))
         )
+        # Disputes don't have a staff ↔ merchant reply channel yet, so the
+        # composer is internal-notes-only (the endpoint enforces this too).
+        internal_only = self._case_type == SupportCaseType.dispute
         with tag.div(classes="mt-8 pt-6 border-t border-base-200"):
             with tag.form(hx_post=reply_url, classes="flex flex-col gap-3"):
                 with tag.textarea(
                     name="body",
                     classes="textarea textarea-bordered w-full rounded-lg",
-                    placeholder="Write a reply to the merchant…",
+                    placeholder="Add an internal note…"
+                    if internal_only
+                    else "Write a reply to the merchant…",
                     rows="3",
                     required=True,
                 ):
                     pass
                 with tag.div(classes="flex items-center justify-between"):
-                    with tag.label(
-                        classes="flex items-center gap-2 cursor-pointer "
-                        "text-sm text-base-content/60"
-                    ):
-                        with tag.input(
-                            type="checkbox",
-                            name="internal",
-                            value="1",
-                            classes="checkbox checkbox-sm",
+                    if internal_only:
+                        with tag.span(
+                            classes="flex items-center gap-2 text-sm "
+                            "text-base-content/60"
                         ):
-                            pass
-                        text("Internal note — not visible to the merchant")
+                            with tag.span(classes="icon-lock"):
+                                pass
+                            text("Internal note — not visible to the merchant")
+                    else:
+                        with tag.label(
+                            classes="flex items-center gap-2 cursor-pointer "
+                            "text-sm text-base-content/60"
+                        ):
+                            with tag.input(
+                                type="checkbox",
+                                name="internal",
+                                value="1",
+                                classes="checkbox checkbox-sm",
+                            ):
+                                pass
+                            text("Internal note — not visible to the merchant")
                     with button(variant="primary", size="sm", type="submit"):
-                        text("Send")
+                        text("Add note" if internal_only else "Send")
 
 
 __all__ = ["SupportCaseSection"]

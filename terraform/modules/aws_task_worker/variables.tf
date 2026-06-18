@@ -1,10 +1,30 @@
-variable "queue_name" {
-  description = "Full task SQS queue name. The producer addresses this queue by name, so the caller must match it."
+variable "environment" {
+  description = "Environment name used in the Lambda function name."
   type        = string
+
+  validation {
+    condition     = contains(["test", "sandbox", "production"], var.environment)
+    error_message = "Environment must be one of: test, sandbox, production."
+  }
 }
 
-variable "function_name" {
-  description = "Lambda function name. Also bases the role, policy and log group names."
+variable "name" {
+  description = "Short task name used in the Lambda function name: polar-{environment}-worker-{name}."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[a-zA-Z0-9-_]+$", var.name))
+    error_message = "Name must contain only letters, numbers, hyphens, and underscores."
+  }
+
+  validation {
+    condition     = length("polar-production-worker-${var.name}") <= 64
+    error_message = "Name is too long. polar-production-worker-{name} must be 64 characters or fewer."
+  }
+}
+
+variable "queue_name" {
+  description = "Full task SQS queue name. The producer addresses this queue by name, so the caller must match it."
   type        = string
 }
 

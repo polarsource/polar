@@ -68,7 +68,7 @@ In this phase, some actions are done by the merchant, their billing provider, St
 
 ## Switching subscriptions
 
-Once we have the catalog and payment methods, we should be able to start moving subscriptions.
+Once we have the catalog and payment methods, we should be able to start moving subscriptions. Cutover only becomes available once the PAN checklist prep steps are complete; triggering it runs the final steps below.
 
 Subscriptions keep their real status (`active`/`trialing`) but are held from billing with a `migration_billing_paused` flag, so the renewal scheduler skips them. The org must be in a renewal-enabled status (REVIEW or ACTIVE). Before activating each subscription we run some checks to prevent double charging the customer:
 
@@ -79,6 +79,8 @@ Subscriptions keep their real status (`active`/`trialing`) but are held from bil
 5. Clear the `migration_billing_paused` flag (the status stays as-is).
 
 Polar will bill the next billing cycle. If for some reason the payment fails on the next billing cycle, the subscription will enter the normal dunning state where we send an email to the customer.
+
+We import each subscription as tax-inclusive by setting its own `tax_behavior = inclusive`, leaving the org's `default_tax_behavior` untouched — renewal billing reads the per-subscription value and only falls back to the org default when it's null. Caveat: the POC leaves `net_amount = gross`; the real tax split is recomputed at billing.
 
 ## The sources
 
@@ -98,17 +100,17 @@ The idea is to create a new `migration` module (I'm up for new name suggestions)
 
 ### Main classes
 - **`MigrationJob`** one row per migration run for an org. The root: source platform and current step.
-- **`MigrationRecord`** one row per imported thing (customer, product, subscription, order, …), mapping `source_id → target_id` with a status. We use this as an idempotency layer.
-- **`SourceAdapter`** we will have one for every billing provider (e.g. `StripeAdapter`). Its main responsibility is to read the current billing provider API and provide a generic representation the migration service can work with.
-- **`PanTransferStep`** the checklist for moving cards (step, owner, status — see Appendix B). Stored as a JSONB column on `MigrationJob`: a list of step objects.
+- **`MigrationRecord`** one row per imported thing (customer, product, subscription, order, …), mapping `source_id → target_id` with a status. It's our idempotency layer, scoped per org, so we can trigger multiple migrations safely.
+- **`SourceAdapter`** we will have one for every billing provider (e.g. `StripeAdapter`). Its main responsibility is to read the current billing provider API and provide a generic representation the migration service can work with. `extract()` must be incremental as customer data can be huge.
+- **`PanTransferStep`** the checklist for moving cards (step, owner, status, kind, inputs — see Appendix B). Stored as a JSONB column on `MigrationJob`: a list of step objects.
 - **`MigrationService`** the main orchestrator.
 - **`CanonicalRecord`** to have everything normalized in memory first (variants: `CanonicalProduct` / `Customer` / `Subscription`). The precheck engine reads these and returns a `PrecheckReport` (Appendix A); Appendix C shows the flow end to end.
 
 ## Open questions
 1. Where and how should we store the API keys of Stripe, LS, Paddle? Do we have a convention to encrypt them?
 2. Should we get notified when a migration is triggered?
-3. How do we trigger the cutover on live — polling, a manual action, or a Polar webhook? To check on a test.
-4. What happens with subscriptions we can't migrate? Should we ping the team?
+3. How do we trigger the cutover on live? Resolved: a manual action via the checklist's cutover step (merchant; Ops can too), gated on checklist completion.
+4. What happens with subscriptions we can't migrate? Resolved: the precheck flags them (`past_due`/`unpaid`/paused, uncopyable PMs); they stay on the old provider, staged as skipped, not imported.
 
 (Decided: store the source subscription id in `user_metadata`; the customer keeps its Stripe id in `stripe_customer_id`.)
 
@@ -126,6 +128,7 @@ Before importing, we should run the following checks.
 	- Blocker: duplicate product names (in case of manual creation).
 - **Customers**
 	- Warning: duplicate emails (in case of manual creation), we will reuse the existing ones.
+	- Warning: if we reuse a Polar customer by email but PAN copy preserves the source `cus_…`, the copied card lands under a different customer. We should reconcile `stripe_customer_id` on reuse.
 - **Subscriptions**
 	- Warning: mention subscriptions that are on trial.
 - **Payments**
@@ -135,7 +138,7 @@ Before importing, we should run the following checks.
 
 ## Appendix B: The PAN transfer process
 
-Moving cards can take weeks, so it's tracked as a checklist. Each migration has one or more `PanTransferSteps` showing what's done, in progress, and pending. Each step has an **owner** (merchant, Polar Ops, Polar App, Stripe, or the billing provider) and a **status**. The steps depend on the transfer method:
+Moving cards can take weeks, so it's tracked as a checklist. Each migration has one or more `PanTransferSteps` showing what's done, in progress, and pending. Each step has an **owner** (merchant, Polar Ops, Polar App, Stripe, or the billing provider), a **status**, a **kind** (input / confirm / cutover / polar), a description, and typed **inputs**. Inputs we collect: source Stripe account ID (merchant), destination Stripe account ID (Polar/Ops; hardcoded in config for now), and maybe a csv files for PAN Imports. The steps depend on the transfer method:
 
 ### PAN copy (Stripe → Stripe)
 
@@ -172,6 +175,8 @@ Steps will advance depending on the owner:
 3. Polar Ops: manually from the backoffice.
 4. Stripe / Billing Provider: by Polar Ops from the backoffice.
 
+The merchant walks the checklist as a guided, one-step-at-a-time wizard and can only complete merchant-owned steps; Polar Ops-owned steps are completed by Ops in the backoffice. Values entered on one side are visible to the other.
+
 ## Appendix C: An implementation example
 
 This shows how the classes communicate.
@@ -204,13 +209,17 @@ Card move (PAN copy) and the subscription migration are described under *Moving 
 | Product + Price (`unit_amount`, `currency`) | `Product` + `ProductPriceFixed` | |
 | `recurring.interval[_count]` | interval on the **`Product`** | recurrence lives on the product. |
 | `sub_…` | `user_metadata['stripe_subscription_id']` | a `legacy_stripe_subscription_id` column exists, but we're not using it. |
-| `items.data[].current_period_end`, `billing_cycle_anchor` | `current_period_end`, `anchor_day` | period moved onto the subscription **item** (API `2025-03-31.basil`); read it per item. `anchor_day` is day-of-month, so reduce the anchor timestamp. |
+| `items.data[].current_period_end`, `billing_cycle_anchor` | `current_period_end`, `anchor_day` | period moved onto the subscription **item** (API `2026-01-28.clover`); read it per item. `anchor_day` is day-of-month, so reduce the anchor timestamp. |
 | `trial_*`, `cancel_at_period_end`, `default_payment_method` | same fields | |
-| `discounts[]` (Coupon) | single `Discount` | Polar holds **one** discount per sub; Stripe dropped the singular `discount`, so read `discounts[]` and flag if there's more than one. |
+| `discounts[]` (Coupon) | single `Discount` | not reliably on the sub object (came back empty on clover even when expanded). To be confirmed during implementation. |
 | `pm_…` (card) | `PaymentMethod` (`processor_id`) | copied via PAN copy; new `pm_…` id, same underlying card. |
 | Cards, ACH, SEPA `PaymentMethod` | `PaymentMethod` | copyable by PAN copy. |
 | Link / wallets / Bacs / legacy SEPA `source` | — | not copyable → customer re-enters (Link/wallets: to confirm with Stripe). |
 | Charges / refunds / disputes, Stripe Tax history | — | not copied; stay on Stripe. |
+
+### Reading the account
+
+We can't reuse Polar's platform Stripe service (it's bound to the global platform key). Read the merchant account with a dedicated `StripeClient(api_key="rk_…")`. Required restricted-key read and write scopes: Customers, Payment Methods, Products, Prices, (read and write)Subscriptions, Coupons (and Invoices / Charges for the refund/dispute precheck). Mention those scopes in the merchant UI.
 
 ### Stripe-specific prechecks
 

@@ -1,5 +1,6 @@
 locals {
-  in_vpc = length(var.subnet_ids) > 0
+  function_name = "polar-${var.environment}-worker-${var.name}"
+  in_vpc        = length(var.subnet_ids) > 0
 }
 
 resource "aws_sqs_queue" "dlq" {
@@ -34,7 +35,7 @@ data "aws_iam_policy_document" "lambda_assume" {
 }
 
 resource "aws_iam_role" "lambda" {
-  name               = var.function_name
+  name               = local.function_name
   assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
   tags               = var.tags
 }
@@ -71,7 +72,7 @@ data "aws_iam_policy_document" "lambda" {
 }
 
 resource "aws_iam_role_policy" "lambda" {
-  name   = var.function_name
+  name   = local.function_name
   role   = aws_iam_role.lambda.id
   policy = data.aws_iam_policy_document.lambda.json
 }
@@ -83,14 +84,14 @@ resource "aws_iam_role_policy_attachment" "vpc_access" {
 }
 
 resource "aws_cloudwatch_log_group" "task" {
-  name              = "/aws/lambda/${var.function_name}"
+  name              = "/aws/lambda/${local.function_name}"
   retention_in_days = var.log_retention_days
 
   tags = var.tags
 }
 
 resource "aws_lambda_function" "task" {
-  function_name = var.function_name
+  function_name = local.function_name
   role          = aws_iam_role.lambda.arn
   package_type  = "Image"
   image_uri     = var.image_uri
@@ -119,6 +120,13 @@ resource "aws_lambda_function" "task" {
   depends_on = [aws_cloudwatch_log_group.task]
 
   tags = var.tags
+
+  lifecycle {
+    precondition {
+      condition     = length(local.function_name) <= 64
+      error_message = "Lambda function name must be 64 characters or fewer: ${local.function_name}"
+    }
+  }
 }
 
 resource "aws_lambda_event_source_mapping" "task" {

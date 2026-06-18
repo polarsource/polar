@@ -9,10 +9,12 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 from tagflow import tag, text
 
+from polar.dispute.repository import DisputeRepository
 from polar.file.service import file as file_service
 from polar.kit.pagination import PaginationParamsQuery, count_subquery
 from polar.models import Organization, User
 from polar.models.support_case import (
+    DisputeSupportCase,
     SupportCase,
     SupportCaseAttachment,
     SupportCaseAudience,
@@ -355,12 +357,19 @@ async def case_detail(
                 attachment
             )
 
+    dispute = None
+    if isinstance(case, DisputeSupportCase):
+        dispute = await DisputeRepository.from_session(session).get_by_id(
+            case.dispute_id
+        )
+
     section = SupportCaseSection(
         organization,
         thread=(case, is_open, messages),
         author_emails=author_emails,
         current_user_id=user_session.user_id,
         attachments_by_message=attachments_by_message,
+        dispute=dispute,
         return_to=return_to if is_safe_return_to(return_to) else None,
     )
 

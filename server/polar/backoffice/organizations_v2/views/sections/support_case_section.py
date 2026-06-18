@@ -554,31 +554,45 @@ class SupportCaseSection:
         reply_url = self._with_return_to(
             str(request.url_for("support_cases:reply", case_id=case.id))
         )
+        # Disputes don't have a staff ↔ merchant reply channel yet, so the
+        # composer is internal-notes-only (the endpoint enforces this too).
+        internal_only = self._case_type == SupportCaseType.dispute
         with tag.div(classes="mt-8 pt-6 border-t border-base-200"):
             with tag.form(hx_post=reply_url, classes="flex flex-col gap-3"):
                 with tag.textarea(
                     name="body",
                     classes="textarea textarea-bordered w-full rounded-lg",
-                    placeholder="Write a reply to the merchant…",
+                    placeholder="Add an internal note…"
+                    if internal_only
+                    else "Write a reply to the merchant…",
                     rows="3",
                     required=True,
                 ):
                     pass
                 with tag.div(classes="flex items-center justify-between"):
-                    with tag.label(
-                        classes="flex items-center gap-2 cursor-pointer "
-                        "text-sm text-base-content/60"
-                    ):
-                        with tag.input(
-                            type="checkbox",
-                            name="internal",
-                            value="1",
-                            classes="checkbox checkbox-sm",
+                    if internal_only:
+                        with tag.span(
+                            classes="flex items-center gap-2 text-sm "
+                            "text-base-content/60"
                         ):
-                            pass
-                        text("Internal note — not visible to the merchant")
+                            with tag.span(classes="icon-lock"):
+                                pass
+                            text("Internal note — not visible to the merchant")
+                    else:
+                        with tag.label(
+                            classes="flex items-center gap-2 cursor-pointer "
+                            "text-sm text-base-content/60"
+                        ):
+                            with tag.input(
+                                type="checkbox",
+                                name="internal",
+                                value="1",
+                                classes="checkbox checkbox-sm",
+                            ):
+                                pass
+                            text("Internal note — not visible to the merchant")
                     with button(variant="primary", size="sm", type="submit"):
-                        text("Send")
+                        text("Add note" if internal_only else "Send")
 
 
 __all__ = ["SupportCaseSection"]

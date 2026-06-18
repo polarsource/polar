@@ -281,7 +281,9 @@ async def reply_case(
 
     form_data = await request.form()
     body = str(form_data.get("body", "")).strip()
-    internal = bool(form_data.get("internal"))
+    # Disputes have no staff ↔ merchant reply channel yet: staff messages are
+    # always internal notes, regardless of the (absent) composer toggle.
+    internal = bool(form_data.get("internal")) or case.type == SupportCaseType.dispute
 
     if body:
         audience = [] if internal else [SupportCaseAudience.merchant]

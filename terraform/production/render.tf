@@ -195,11 +195,11 @@ module "production" {
       dramatiq_prom_port = "10001"
       database_pool_size = "16"
     }
-    worker-tinybird = {
-      start_command      = "uv run dramatiq polar.worker.run_without_db -p 4 -t 32 --queues tinybird"
+    "worker-tinybird" = {
+      start_command      = "uv run dramatiq polar.worker.run -p 4 -t 32 --queues tinybird"
       dramatiq_prom_port = "10002"
     }
-    worker-invoices-receipts = {
+    "worker-invoices-receipts" = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 3 --queues invoices_and_receipts"
       plan               = "standard"
       dramatiq_prom_port = "10003"

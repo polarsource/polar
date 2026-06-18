@@ -1,6 +1,4 @@
-import { Button } from '@polar-sh/orbit'
-import { Input } from '@polar-sh/orbit'
-import { Text } from '@polar-sh/orbit'
+import { Button, Input, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 
 interface InlineEditTableRowProps {
@@ -13,7 +11,6 @@ interface InlineEditTableRowProps {
   type?: 'text' | 'email'
   loading?: boolean
   error?: string
-  saveDisabled?: boolean
   colSpan?: number
 }
 
@@ -27,9 +24,9 @@ export const InlineEditTableRow = ({
   type = 'text',
   loading = false,
   error,
-  saveDisabled = false,
   colSpan = 3,
 }: InlineEditTableRowProps) => {
+  const saveDisabled = value.trim().length === 0
   return (
     <tr className="border-b transition-colors">
       <td colSpan={colSpan} className="p-0">

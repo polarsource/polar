@@ -61,7 +61,6 @@ export const SeatManagementTable = ({
 
   const [email, setEmail] = useState('')
   const [error, setError] = useState<string>()
-  const [isSending, setIsSending] = useState(false)
   const [isInviting, setIsInviting] = useState(false)
   const [loadingSeats, setLoadingSeats] = useState<Set<string>>(new Set())
   const [editingSeatId, setEditingSeatId] = useState<string>()
@@ -82,7 +81,6 @@ export const SeatManagementTable = ({
       return
     }
 
-    setIsSending(true)
     setError(undefined)
 
     try {
@@ -105,8 +103,6 @@ export const SeatManagementTable = ({
       }
     } catch {
       setError('Failed to send invitation')
-    } finally {
-      setIsSending(false)
     }
   }
 
@@ -323,9 +319,8 @@ export const SeatManagementTable = ({
                     value={email}
                     placeholder="email@example.com"
                     submitLabel="Invite"
-                    loading={isSending}
+                    loading={assignSeat.isPending}
                     error={error}
-                    saveDisabled={!email.trim()}
                     onChange={(value) => {
                       setEmail(value)
                       setError(undefined)
@@ -340,20 +335,19 @@ export const SeatManagementTable = ({
                 ) : (
                   <tr className="border-b transition-colors">
                     <td colSpan={3} className="p-0">
-                      <button
-                        type="button"
-                        className="flex w-full items-center justify-between px-4 py-4 text-left transition-colors"
-                        onClick={() => setIsInviting(true)}
-                      >
-                        <span className="dark:text-polar-400 text-gray-500">
+                      <Box alignItems="center" justifyContent="between" p="l">
+                        <Text color="muted">
                           {availableSeats === 1
                             ? 'One more seat available'
                             : `${availableSeats} more seats available`}
-                        </span>
-                        <span className="dark:bg-polar-700 dark:hover:bg-polar-600 flex h-10 cursor-pointer items-center rounded-xl border border-black/4 bg-gray-100 px-3 text-sm font-medium text-black hover:bg-gray-200 dark:border-white/5 dark:text-white">
+                        </Text>
+                        <Button
+                          variant="secondary"
+                          onClick={() => setIsInviting(true)}
+                        >
                           Invite member
-                        </span>
-                      </button>
+                        </Button>
+                      </Box>
                     </td>
                   </tr>
                 ))}

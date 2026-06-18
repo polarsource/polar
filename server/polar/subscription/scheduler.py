@@ -9,7 +9,7 @@ import structlog
 from apscheduler.job import Job
 from apscheduler.jobstores.base import BaseJobStore
 from apscheduler.triggers.date import DateTrigger
-from sqlalchemy import ColumnElement, Select, select, update
+from sqlalchemy import ColumnElement, Select, func, select, update
 from sqlalchemy.orm import Session
 
 from polar.kit.utils import utc_now
@@ -19,6 +19,17 @@ from polar.models.subscription import SubscriptionStatus
 from polar.postgres import create_sync_engine
 
 log: Logger = structlog.get_logger()
+
+
+def _next_run_time() -> ColumnElement[datetime.datetime]:
+    """
+    The earliest pending boundary for a subscription: the billing period end, or
+    the meter period end when it fires first. Postgres ``LEAST`` ignores NULLs, so
+    when no meter cycle is set this collapses to ``current_period_end``.
+    """
+    return func.least(
+        Subscription.current_period_end, Subscription.current_meter_period_end
+    )
 
 
 def _report_failures[**P, R](method: Callable[P, R]) -> Callable[P, R]:
@@ -157,9 +168,9 @@ class SubscriptionJobStore(_SubscriptionScheduleJobStore):
 
     @property
     def trigger_column(self) -> ColumnElement[datetime.datetime | None]:
-        return cast(
-            ColumnElement[datetime.datetime | None], Subscription.current_period_end
-        )
+        # Wake on whichever fires first: the billing period end or the meter period
+        # end (LEAST ignores NULLs, so no meter cycle → current_period_end).
+        return cast(ColumnElement[datetime.datetime | None], _next_run_time())
 
     @staticmethod
     def scheduling_statement() -> Select[tuple[Subscription]]:
@@ -181,7 +192,7 @@ class SubscriptionJobStore(_SubscriptionScheduleJobStore):
                 Subscription.active.is_(True),
                 Subscription.current_period_end.is_not(None),
             )
-            .order_by(Subscription.current_period_end.asc())
+            .order_by(_next_run_time().asc())
         )
 
 

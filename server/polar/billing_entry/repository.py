@@ -121,13 +121,19 @@ class BillingEntryRepository(
         return results.scalars().unique().all()
 
     async def get_pending_ids_by_subscription_and_meter(
-        self, subscription_id: UUID, meter_id: UUID
+        self,
+        subscription_id: UUID,
+        meter_id: UUID,
+        *,
+        settle_through: datetime | None = None,
     ) -> Sequence[UUID]:
         """
         Get all pending billing entry IDs for a subscription and meter across all prices.
         """
         statement = (
-            self.get_pending_by_subscription_statement(subscription_id)
+            self.get_pending_by_subscription_statement(
+                subscription_id, settle_through=settle_through
+            )
             .join(
                 ProductPriceMeteredUnit,
                 BillingEntry.product_price_id == ProductPriceMeteredUnit.id,
@@ -138,7 +144,9 @@ class BillingEntryRepository(
         results = await self.session.execute(statement)
         return results.scalars().unique().all()
 
-    async def lock_pending_by_subscription(self, subscription_id: UUID) -> None:
+    async def lock_pending_by_subscription(
+        self, subscription_id: UUID, *, settle_through: datetime | None = None
+    ) -> None:
         """
         Acquire FOR UPDATE locks on all pending billing entries for a subscription.
 
@@ -148,16 +156,22 @@ class BillingEntryRepository(
         the entries are no longer pending.
         """
         statement = (
-            self.get_pending_by_subscription_statement(subscription_id)
+            self.get_pending_by_subscription_statement(
+                subscription_id, settle_through=settle_through
+            )
             .with_only_columns(BillingEntry.id)
             .with_for_update()
         )
         await self.session.execute(statement)
 
     def get_pending_by_subscription_statement(
-        self, subscription_id: UUID, *, options: Options = ()
+        self,
+        subscription_id: UUID,
+        *,
+        options: Options = (),
+        settle_through: datetime | None = None,
     ) -> Select[tuple["BillingEntry"]]:
-        return (
+        statement = (
             self.get_base_statement()
             .where(
                 BillingEntry.order_item_id.is_(None),
@@ -166,3 +180,9 @@ class BillingEntryRepository(
             .order_by(BillingEntry.product_price_id.asc())
             .options(*options)
         )
+        # Partition settlement by period: only entries whose window has closed by
+        # ``settle_through`` are billed. Used by meter-cycle settlement to bill one
+        # meter period at a time; unbounded (None) for full billing-cycle settlement.
+        if settle_through is not None:
+            statement = statement.where(BillingEntry.end_timestamp <= settle_through)
+        return statement

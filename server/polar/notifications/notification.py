@@ -142,6 +142,8 @@ class MaintainerNewProductSaleNotificationPayload(NotificationPayloadBase):
                 return "Subscription cancellation"
             case OrderBillingReasonInternal.subscription_update:
                 return "Subscription update"
+            case OrderBillingReasonInternal.subscription_meter_cycle:
+                return "Usage charge"
 
     @computed_field
     def formatted_address_country(self) -> str | None:

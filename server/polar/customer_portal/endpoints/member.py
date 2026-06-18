@@ -168,8 +168,13 @@ async def update_member(
     if member is None:
         raise ResourceNotFound("Member not found")
 
-    # Prevent changing your own role (self-demotion). Name changes are allowed.
-    if member_update.role is not None and member.id == actor_member.id:
+    # Prevent changing your own role (self-demotion). A no-op role value and
+    # name changes are allowed.
+    if (
+        member_update.role is not None
+        and member_update.role != member.role
+        and member.id == actor_member.id
+    ):
         raise PolarRequestValidationError(
             [
                 {

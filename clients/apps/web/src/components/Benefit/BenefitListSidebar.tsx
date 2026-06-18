@@ -1,15 +1,13 @@
 'use client'
 
-import { BenefitListEmptyState } from '@/components/Benefit/BenefitListEmptyState'
+import { BenefitListFilterEmptyState } from '@/components/Benefit/BenefitListFilterEmptyState'
 import { BenefitTypeFilter } from '@/components/Benefit/BenefitTypeFilter'
 import CreateBenefitModalContent from '@/components/Benefit/CreateBenefitModalContent'
 import {
   benefitsDisplayNames,
   resolveBenefitIcon,
 } from '@/components/Benefit/utils'
-import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
-import { Spinner } from '@polar-sh/orbit'
 import { useInfiniteBenefits } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
 import { usePushRouteWithoutCache } from '@/utils/router'
@@ -18,8 +16,7 @@ import ArrowDownward from '@mui/icons-material/ArrowDownward'
 import ArrowUpward from '@mui/icons-material/ArrowUpward'
 import Search from '@mui/icons-material/Search'
 import { enums, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
-import { Input } from '@polar-sh/orbit'
+import { Input, Button, Spinner, InlineModal } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import {
@@ -174,10 +171,8 @@ export const BenefitListSidebar = ({
           />
         </div>
         <div className="dark:divide-polar-800 flex h-full grow flex-col divide-y divide-gray-50 overflow-y-auto">
-          {!isLoading && benefits.length === 0 && (
-            <BenefitListEmptyState
-              hasFilters={!!query || !!typeFilter}
-              onCreate={showCreateBenefitModal}
+          {!isLoading && benefits.length === 0 && (!!query || !!typeFilter) && (
+            <BenefitListFilterEmptyState
               onClearFilters={() => {
                 setQuery(null)
                 setTypeFilter(null)

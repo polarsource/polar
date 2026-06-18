@@ -10,6 +10,7 @@ from uuid import UUID
 import dramatiq
 import typer
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload, selectinload
 
 import polar.tasks  # noqa: F401
 from polar.auth.models import AuthSubject
@@ -34,6 +35,7 @@ from polar.customer.schemas.customer import (
 from polar.customer.service import customer as customer_service
 from polar.discount.schemas import DiscountPercentageCreate
 from polar.discount.service import discount as discount_service
+from polar.dispute.dispute_case import dispute_case as dispute_case_service
 from polar.enums import (
     PaymentProcessor,
     PayoutAccountType,
@@ -57,6 +59,7 @@ from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOp
 from polar.meter.schemas import MeterCreate
 from polar.meter.service import meter as meter_service
 from polar.models.benefit import BenefitType
+from polar.models.customer import Customer
 from polar.models.customer_seat import CustomerSeat, SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.event import Event as EventModel
@@ -79,6 +82,10 @@ from polar.models.product_price import (
 )
 from polar.models.subscription import Subscription, SubscriptionStatus
 from polar.models.subscription_product_price import SubscriptionProductPrice
+from polar.models.support_case import (
+    SupportCaseAudience,
+    SupportCaseMessageAuthorKind,
+)
 from polar.models.user import IdentityVerificationStatus, User
 from polar.models.user_organization import UserOrganization
 from polar.models.webhook_endpoint import (
@@ -89,6 +96,7 @@ from polar.models.webhook_endpoint import (
 from polar.oauth2.constants import WEBHOOK_SECRET_PREFIX
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
+from polar.organization_review.appeal_case import appeal_case as appeal_case_service
 from polar.postgres import AsyncSession, create_async_engine
 from polar.product.schemas import (
     ProductCreate,
@@ -102,6 +110,7 @@ from polar.product.schemas import (
 )
 from polar.product.service import product as product_service
 from polar.redis import Redis, create_redis
+from polar.support_case.service import support_case as support_case_service
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 from polar.worker import JobQueueManager
@@ -110,6 +119,12 @@ from scripts.seed_polar_for_polar import (
 )
 from scripts.seed_polar_for_polar import (
     PRODUCTS as POLAR_SELF_PRODUCTS,
+)
+from tests.fixtures.database import save_fixture_factory
+from tests.fixtures.random_objects import (
+    create_dispute,
+    create_order,
+    create_payment,
 )
 
 cli = typer.Typer(invoke_without_command=True)
@@ -1061,6 +1076,144 @@ async def _subscribe_seeded_orgs_to_polar_self(
         subscribed += 1
 
     return subscribed
+
+
+async def create_support_cases_seed(session: AsyncSession) -> None:
+    """Seed one open review-appeal case and one open dispute case, so the
+    backoffice Support Cases views have data to look at in development.
+
+    Reuses the test fixtures to mint the order/payment/dispute the dispute case
+    needs — the seed otherwise creates no orders.
+    """
+    save = save_fixture_factory(session)
+
+    # -- Review appeal case --------------------------------------------------
+    # Deny a seeded org and open a human-review appeal case, as if the AI had
+    # rejected the appeal and the merchant escalated to a human.
+    appeal_org = (
+        (
+            await session.execute(
+                select(Organization).where(Organization.slug == "widget-industries")
+            )
+        )
+        .unique()
+        .scalar_one_or_none()
+    )
+    appeal_user = None
+    if appeal_org is not None:
+        appeal_user = (
+            (
+                await session.execute(
+                    select(User)
+                    .join(UserOrganization, UserOrganization.user_id == User.id)
+                    .where(
+                        UserOrganization.organization_id == appeal_org.id,
+                        UserOrganization.deleted_at.is_(None),
+                    )
+                    .order_by(UserOrganization.created_at)
+                    .limit(1)
+                )
+            )
+            .unique()
+            .scalar_one_or_none()
+        )
+
+    if appeal_org is not None and appeal_user is not None:
+        reason = "We are a legitimate SaaS business — please review our appeal."
+        appeal_org.set_status(OrganizationStatus.DENIED)
+        session.add(appeal_org)
+        # Repurpose the org's review if it already has one (one review per org).
+        review = (
+            await session.execute(
+                select(OrganizationReview).where(
+                    OrganizationReview.organization_id == appeal_org.id,
+                    OrganizationReview.deleted_at.is_(None),
+                )
+            )
+        ).unique().scalar_one_or_none() or OrganizationReview(
+            organization_id=appeal_org.id
+        )
+        review.verdict = OrganizationReview.Verdict.FAIL
+        review.risk_score = 88.0
+        review.violated_sections = ["acceptable_use"]
+        review.reason = "Automated review flagged the business for verification."
+        review.timed_out = False
+        review.model_used = "seed"
+        review.validated_at = utc_now()
+        review.organization_details_snapshot = {}
+        review.appeal_submitted_at = utc_now()
+        review.appeal_reason = reason
+        review.appeal_reviewed_at = utc_now()
+        review.appeal_decision = OrganizationReview.AppealDecision.REJECTED
+        await save(review)
+        if await appeal_case_service.get_case(session, review) is None:
+            appeal_case = await appeal_case_service.request_human_review(
+                session,
+                review,
+                organization=appeal_org,
+                reason=reason,
+                requested_by_user=appeal_user,
+            )
+            await support_case_service.post_message(
+                session,
+                appeal_case,
+                author_kind=SupportCaseMessageAuthorKind.platform,
+                body="Thanks for reaching out. Could you share your website and what you sell?",
+                audience=[SupportCaseAudience.merchant],
+            )
+            await support_case_service.post_message(
+                session,
+                appeal_case,
+                author_kind=SupportCaseMessageAuthorKind.merchant,
+                author_user=appeal_user,
+                body="Sure — https://example.com. We sell developer tooling subscriptions.",
+                audience=[SupportCaseAudience.merchant],
+            )
+            print(f"Seeded review-appeal case on org '{appeal_org.slug}'")
+
+    # -- Dispute case --------------------------------------------------------
+    # Mint an order/payment/dispute from a seeded customer + product, then open
+    # a dispute case awaiting the merchant's response.
+    row = (
+        (
+            await session.execute(
+                select(Customer, Product)
+                .join(Product, Product.organization_id == Customer.organization_id)
+                .options(
+                    joinedload(Customer.organization),
+                    selectinload(Product.all_prices),
+                )
+                .limit(1)
+            )
+        )
+        .unique()
+        .first()
+    )
+    if row is not None:
+        customer, product = row
+        dispute_org = customer.organization
+        order = await create_order(save, customer=customer, product=product)
+        payment = await create_payment(save, dispute_org, order=order)
+        dispute = await create_dispute(save, order, payment)
+        dispute_case = await dispute_case_service.open_case(
+            session, dispute, organization=dispute_org
+        )
+        await support_case_service.post_message(
+            session,
+            dispute_case,
+            author_kind=SupportCaseMessageAuthorKind.merchant,
+            body="This was a legitimate purchase — receipt and delivery attached.",
+            audience=[SupportCaseAudience.merchant],
+        )
+        await support_case_service.post_message(
+            session,
+            dispute_case,
+            author_kind=SupportCaseMessageAuthorKind.platform,
+            body="Thanks — strong evidence. We've submitted it to the bank for you.",
+            audience=[SupportCaseAudience.merchant],
+        )
+        await dispute_case_service.mark_under_review(session, dispute_case)
+        print(f"Seeded dispute case on org '{dispute_org.slug}'")
 
 
 async def create_seed_data(
@@ -2119,6 +2272,8 @@ async def create_seed_data(
     subscribed = await _subscribe_seeded_orgs_to_polar_self(session)
     if subscribed:
         print(f"Subscribed {subscribed} organization(s) to the Polar self free plan")
+
+    await create_support_cases_seed(session)
 
     await session.commit()
     print("✅ Sample data created successfully!")

@@ -286,6 +286,7 @@ handle_failure(payment)  # Update order status
 ```python
 create(order, amount, reason, revoke_benefits)
 upsert_from_stripe(stripe_refund)
+# Also enqueues chargeback prevention notice for dispute_prevention refunds
 ```
 
 ### BenefitGrantService
@@ -363,6 +364,13 @@ revoke_benefit(customer, benefit)
 | `payout.release_held_payouts` | Org approved | Move held → pending, enqueue transfers |
 | `payout.cancel_account_payouts` | Org denied/blocked | Cancel held+pending payouts |
 | `payout.cancel_held_payouts` | Payout account swap | Cancel only held payouts on old account |
+
+### Refund Tasks
+**File:** `server/polar/refund/tasks.py`
+
+| Task | Trigger | Action |
+|------|---------|--------|
+| `refund.send_chargeback_prevention_notice` | Dispute prevention refund created | Email org owners/admins about refund |
 
 ---
 
@@ -763,6 +771,7 @@ server/polar/
 ├── checkout/tasks.py
 ├── benefit/tasks.py
 ├── payout/tasks.py
+├── refund/tasks.py
 └── integrations/stripe/tasks.py
 ```
 

@@ -16,7 +16,7 @@ import {
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
-import type { ValidationStatus } from '@/app/(main)/feedback/question/validation'
+import type { ValidationStatus } from '@/app/api/feedback/question/validation'
 
 import { collectClientContext } from './clientContext'
 import {
@@ -76,7 +76,7 @@ export const FeedbackForm = ({
       setValidationOutcome(null)
       setIsValidating(true)
       try {
-        const response = await fetch('/feedback/question/validate', {
+        const response = await fetch('/api/feedback/question/validate', {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },

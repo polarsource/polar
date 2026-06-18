@@ -23,6 +23,7 @@ BILLING_REASON_SERIALIZATION_MAP = {
     OrderBillingReasonInternal.subscription_cycle_after_trial: OrderBillingReason.subscription_cycle,
     OrderBillingReasonInternal.subscription_cancel: OrderBillingReason.subscription_cycle,
     OrderBillingReasonInternal.subscription_update: OrderBillingReason.subscription_update,
+    OrderBillingReasonInternal.subscription_meter_cycle: OrderBillingReason.subscription_meter_cycle,
 }
 
 # Ensure the mapping is exhaustive for all internal billing reasons

@@ -9,6 +9,7 @@ const BILLING_REASON_LABELS: Record<schemas['OrderBillingReason'], string> = {
   subscription_create: 'New Subscription',
   subscription_cycle: 'Renewal',
   subscription_update: 'Plan Change',
+  subscription_meter_cycle: 'Meter',
 }
 import { formatCurrency } from '@polar-sh/currency'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'

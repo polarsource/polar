@@ -1,16 +1,8 @@
 'use client'
 
-import { DataTable, type StatusColor } from '@polar-sh/orbit'
+import { DataTable } from '@polar-sh/orbit'
 import { Status } from '@polar-sh/orbit'
-
-const seatStatusToDisplayName: Record<
-  'pending' | 'claimed' | 'revoked',
-  [string, StatusColor]
-> = {
-  pending: ['Pending', 'yellow'],
-  claimed: ['Claimed', 'green'],
-  revoked: ['Revoked', 'gray'],
-}
+import { seatStatusDisplayConfig } from './seatStatus'
 
 interface CustomerSeat {
   id: string
@@ -52,7 +44,7 @@ export const SeatViewOnlyTable = ({ seats }: SeatViewOnlyTableProps) => {
           header: 'Status',
           cell: ({ row }) => {
             const status = row.original.status
-            const [label, color] = seatStatusToDisplayName[status]
+            const [label, color] = seatStatusDisplayConfig[status]
             return <Status color={color} status={label} size="small" />
           },
         },

@@ -120,7 +120,7 @@ module "sandbox" {
       database_pool_size = "16"
     }
     worker-sandbox-tinybird = {
-      start_command      = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues tinybird"
+      start_command      = "uv run dramatiq polar.worker.run_without_db -p 1 -t 16 --queues tinybird"
       dramatiq_prom_port = "10002"
     }
     worker-sandbox-invoices-receipts = {

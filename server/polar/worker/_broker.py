@@ -175,7 +175,7 @@ class LogfireMiddleware(dramatiq.Middleware):
         return self.after_process_message(broker, message)
 
 
-def get_broker() -> dramatiq.Broker:
+def get_broker(*, database: bool = True) -> dramatiq.Broker:
     redis_pool = redis.ConnectionPool.from_url(
         settings.redis_url,
         client_name=f"{settings.ENV.value}.worker.dramatiq",
@@ -193,7 +193,7 @@ def get_broker() -> dramatiq.Broker:
         # Group completion callbacks for orchestrating task sequences
         GroupCallbacks(rate_limiter_backend),
         # Resource lifecycle (worker boot/shutdown)
-        SQLAlchemyMiddleware(),
+        *([SQLAlchemyMiddleware()] if database else []),
         RedisMiddleware(),
         HTTPXMiddleware(),
         HealthMiddleware(),

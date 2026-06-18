@@ -1,3 +1,4 @@
+import { useHasPermission } from '@/hooks/permissions'
 import { useOptimisticSave } from '@/hooks/useOptimisticSave'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
@@ -17,6 +18,8 @@ const OrganizationNotificationSettings: React.FC<
 > = ({ organization, userNotificationSettings }) => {
   const updateUserOrganizationNotificationSettings =
     useUpdateUserOrganizationNotificationSettings(organization.id)
+
+  const canManage = useHasPermission(organization.id, 'organization:manage')
 
   const { value: settings, update } = useOptimisticSave(
     userNotificationSettings.notification_settings,
@@ -63,6 +66,23 @@ const OrganizationNotificationSettings: React.FC<
           }
         />
       </SettingsGroupItem>
+
+      {canManage === true && (
+        <SettingsGroupItem
+          title="Prevented Chargebacks"
+          description="Receive a notification when a refund is issued to prevent a chargeback"
+        >
+          <Switch
+            checked={settings.chargeback_prevention ?? true}
+            onCheckedChange={(checked) =>
+              update((previous) => ({
+                ...previous,
+                chargeback_prevention: checked,
+              }))
+            }
+          />
+        </SettingsGroupItem>
+      )}
     </SettingsGroup>
   )
 }

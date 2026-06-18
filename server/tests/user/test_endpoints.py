@@ -263,6 +263,39 @@ class TestUpdateMyNotificationSettings:
         }
 
     @pytest.mark.auth
+    async def test_chargeback_prevention_round_trips(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        url = f"/v1/users/me/organizations/{organization.id}/notification-settings"
+        response = await client.patch(
+            url,
+            json={
+                "notification_settings": {
+                    "new_order": True,
+                    "new_subscription": True,
+                    "chargeback_prevention": False,
+                }
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["notification_settings"] == {
+            "new_order": True,
+            "new_subscription": True,
+            "chargeback_prevention": False,
+        }
+
+        get_response = await client.get(url)
+        assert get_response.json()["notification_settings"] == {
+            "new_order": True,
+            "new_subscription": True,
+            "chargeback_prevention": False,
+        }
+
+    @pytest.mark.auth
     async def test_non_member_returns_404(
         self, client: AsyncClient, organization: Organization
     ) -> None:

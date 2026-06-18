@@ -25383,6 +25383,8 @@ export interface components {
       new_order: boolean
       /** New Subscription */
       new_subscription: boolean
+      /** Chargeback Prevention */
+      chargeback_prevention?: boolean
     }
     /** OrganizationOrder */
     OrganizationOrder: {

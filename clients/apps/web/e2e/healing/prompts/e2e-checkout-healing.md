@@ -16,11 +16,11 @@ You are analyzing a failed E2E test to determine if it's a flaky test, a real re
 
 ### Step 1: Read the failing test
 
-Use the `Read` tool to read the failing test spec file(s) in `clients/apps/web/e2e/` and any Page Object Model files in `clients/apps/web/e2e/pages/`. Understand what the test does step by step.
+Use the `Read` tool to read the failing test spec file(s) in `clients/apps/web/e2e/`. Understand what the test does step by step.
 
 ### Step 2: Reproduce the test manually
 
-Using Chrome DevTools MCP, follow the exact same steps as the E2E test **at least 2 times** to determine consistency. The checkout URL is `${ENVIRONMENT_URL}/v1/checkout-links/${CHECKOUT_LINK}/redirect`. Read the test spec and page object model from Step 1 and replicate each action (navigation, clicks, fills, assertions) using the corresponding MCP tools (`navigate_page`, `click`, `fill`, `wait_for`, `take_snapshot`, `take_screenshot`, etc.).
+Using Chrome DevTools MCP, follow the exact same steps as the E2E test **at least 2 times** to determine consistency. The checkout URL is `${ENVIRONMENT_URL}/v1/checkout-links/${CHECKOUT_LINK}/redirect`. Read the test spec from Step 1 and replicate each action (navigation, clicks, fills, assertions) using the corresponding MCP tools (`navigate_page`, `click`, `fill`, `wait_for`, `take_snapshot`, `take_screenshot`, etc.).
 
 Use `take_snapshot` after each step to verify the DOM state. Use `take_screenshot` to visually inspect the page as needed.
 

@@ -609,12 +609,6 @@ import { DataTable, Select } from '@polar-sh/orbit'
 // Legacy @polar-sh/ui (use only when an Orbit equivalent doesn't exist)
 import { Card } from '@polar-sh/ui/components/atoms/Card'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from '@polar-sh/ui/components/atoms/Tabs'
 import { Banner } from '@polar-sh/ui/components/molecules/Banner'
 ```
 

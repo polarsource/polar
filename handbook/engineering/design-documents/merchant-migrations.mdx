@@ -106,6 +106,14 @@ The idea is to create a new `migration` module (I'm up for new name suggestions)
 - **`MigrationService`** the main orchestrator.
 - **`CanonicalRecord`** to have everything normalized in memory first (variants: `CanonicalProduct` / `Customer` / `Subscription`). The precheck engine reads these and returns a `PrecheckReport` (Appendix A); Appendix C shows the flow end to end.
 
+## Testing and rollout
+
+We can't test this on sandbox: PAN Copy and PAN Import only run on Stripe live, so we validate against live production. (love the YOLO mode with money)
+
+- Start with PAN Copy in live, using my own Stripe account (pepy.tech) as the source and migrating a small, real subscription set.
+- Then add one more friendly merchant as a second case.
+- Keep everything behind a feature flag, enabled only for those orgs during the testing phase and removed once we're confident.
+
 ## Open questions
 1. Where and how should we store the API keys of Stripe, LS, Paddle? Do we have a convention to encrypt them?
 2. Should we get notified when a migration is triggered?

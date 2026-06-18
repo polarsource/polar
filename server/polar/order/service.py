@@ -1,6 +1,8 @@
 import uuid
 from collections.abc import AsyncIterator, Iterable, Sequence
 from contextlib import asynccontextmanager
+from datetime import datetime
+from decimal import Decimal
 from enum import StrEnum
 from typing import Any, Literal
 from urllib.parse import urlencode
@@ -14,6 +16,7 @@ from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
+from polar.billing_entry.repository import BillingEntryRepository
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.guard import has_product_checkout
@@ -21,6 +24,7 @@ from polar.config import settings
 from polar.custom_field.data import validate_custom_field_data
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
+from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.customer_portal.schemas.order import (
     CustomerOrderPaymentConfirmation,
     CustomerOrderUpdate,
@@ -75,10 +79,12 @@ from polar.models import (
     Product,
     ProductPrice,
     Subscription,
+    SubscriptionMeter,
     Transaction,
     User,
     WalletTransaction,
 )
+from polar.models.discount import DiscountType
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.payment import PaymentTrigger
 from polar.models.product import ProductBillingType
@@ -98,8 +104,10 @@ from polar.payment.service import payment as payment_service
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.product.guard import (
+    MeteredPrice,
     is_custom_price,
     is_fixed_price,
+    is_metered_price,
     is_static_price,
 )
 from polar.product.price_set import (
@@ -1340,6 +1348,16 @@ class OrderService:
         subtotal_amount = sum(item.amount for item in items)
 
         discount = subscription.discount
+        # Fixed discounts are per-order, so applying one to every meter-cycle settlement
+        # would multiply the giveaway by the settlement frequency (e.g. $10 off ×12
+        # monthly meter-cycle orders on an annual plan). Percentage discounts are
+        # settlement-cadence-invariant and still apply. See issue #154.
+        if (
+            billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
+            and discount is not None
+            and discount.type != DiscountType.percentage
+        ):
+            discount = None
         discount_amount = 0
         if discount is not None:
             # Discount only applies to cycle and meter items, as prorations
@@ -1505,6 +1523,101 @@ class OrderService:
                 )
 
         await self._on_order_created(session, order)
+
+        return order
+
+    def _active_metered_price(
+        self, subscription: Subscription, meter_id: uuid.UUID
+    ) -> MeteredPrice | None:
+        for spp in subscription.subscription_product_prices:
+            price = spp.product_price
+            if is_metered_price(price) and price.meter_id == meter_id:
+                return price
+        return None
+
+    async def settle_meter_cycle_order(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        settle_through: datetime,
+        *,
+        force: bool = False,
+    ) -> Order | None:
+        """
+        Settle carried overage at a meter-period boundary.
+
+        Accumulates each meter's closing-window overage (units consumed beyond
+        credits) into ``SubscriptionMeter.carried_units``, then bills the carried
+        units as a single ``subscription_meter_cycle`` order once their value clears
+        the minimum charge — or always when ``force`` (billing boundary /
+        cancellation sweep). Sub-minimum totals stay carried.
+
+        The amount comes from the carried accumulator, never the re-priced pending
+        entries, so future credits can't re-absorb past overage. The pending metered
+        entries are consumed for audit. Returns the order, or None when nothing is
+        billed.
+        """
+        customer = subscription.customer
+
+        items: list[OrderItem] = []
+        meter_items: list[tuple[SubscriptionMeter, OrderItem]] = []
+        for subscription_meter in subscription.meters:
+            price = self._active_metered_price(
+                subscription, subscription_meter.meter_id
+            )
+            # Without an active metered price there's nothing to bill against, so
+            # don't accumulate overage we could never charge — it would grow
+            # unbounded and surface as a surprise lump charge if a price reappears.
+            if price is None:
+                continue
+            overage = await customer_meter_service.get_overage_units(
+                session, customer, subscription_meter.meter
+            )
+            subscription_meter.carried_units += overage
+            if subscription_meter.carried_units <= 0:
+                continue
+            amount, label = price.get_amount_and_label(
+                float(subscription_meter.carried_units)
+            )
+            if amount <= 0:
+                continue
+            item = OrderItem.from_price(
+                price,
+                0,
+                amount=amount,
+                label=f"{subscription_meter.meter.name} — {label}",
+            )
+            items.append(item)
+            meter_items.append((subscription_meter, item))
+
+        total = sum(item.amount for item in items)
+        if total <= 0:
+            return None
+        if not force and total < get_minimum_currency_amount(subscription.currency):
+            # Below the minimum charge — keep carrying to a later boundary.
+            return None
+
+        # Consume the period's pending metered entries — audit only, since the
+        # amount is billed from the carried accumulator.
+        repository = BillingEntryRepository.from_session(session)
+        await repository.lock_pending_by_subscription(
+            subscription.id, settle_through=settle_through
+        )
+        order = await self._create_order(
+            session,
+            subscription,
+            items,
+            OrderBillingReasonInternal.subscription_meter_cycle,
+        )
+
+        for subscription_meter, item in meter_items:
+            entry_ids = await repository.get_pending_ids_by_subscription_and_meter(
+                subscription.id,
+                subscription_meter.meter_id,
+                settle_through=settle_through,
+            )
+            await repository.update_order_item_id(entry_ids, item.id)
+            subscription_meter.carried_units = Decimal(0)
 
         return order
 
@@ -2336,6 +2449,15 @@ class OrderService:
                     "id": "{subscription}",
                     "email": "{email}",
                 }
+            case OrderBillingReasonInternal.subscription_meter_cycle:
+                template_name = "subscription_cycled"
+                subject_template = "Your {description} usage invoice"
+                url_path_template = "/{organization}/portal"
+                url_params = {
+                    "customer_session_token": "{token}",
+                    "id": "{subscription}",
+                    "email": "{email}",
+                }
 
         # Final invoice uses the same email setting as subscription_cycled
         email_setting_name = (
@@ -2853,6 +2975,14 @@ class OrderService:
             )
             return order
 
+        # Meter-cycle settlement failures retry the payment but never escalate the
+        # subscription: a small mid-term overage charge must not drive a prepaid
+        # plan to past_due or revoke it. We still dun the order on the standard
+        # retry schedule, capping at `void` once retries are exhausted so it never
+        # lingers pending.
+        if order.billing_reason == OrderBillingReasonInternal.subscription_meter_cycle:
+            return await self._handle_meter_cycle_dunning_attempt(session, order)
+
         if order.subscription is None:
             return order
 
@@ -2981,6 +3111,41 @@ class OrderService:
             await subscription_service.enqueue_benefits_grants(session, subscription)
 
         return order
+
+    async def _handle_meter_cycle_dunning_attempt(
+        self, session: AsyncSession, order: Order
+    ) -> Order:
+        """Retry-only dunning for meter-cycle orders.
+
+        Reschedules payment on the standard dunning intervals without touching
+        the subscription (no past_due, no revoke) — overage debt can't cancel a
+        prepaid plan. Once retries are exhausted the order is voided so it never
+        lingers pending.
+        """
+        repository = OrderRepository.from_session(session)
+
+        if order.is_void:
+            return await repository.update(
+                order, update_dict={"next_payment_attempt_at": None}
+            )
+
+        payment_repository = PaymentRepository.from_session(session)
+        failed_attempts = await payment_repository.count_failed_payments_for_order(
+            order.id
+        )
+
+        # failed_attempts counts every failure so far, including this one; once it
+        # exceeds the configured intervals there are no retries left. Void through
+        # the canonical path so the merchant is notified that we've stopped trying
+        # to collect this overage (order.updated webhook + order_voided event).
+        if failed_attempts > len(settings.DUNNING_RETRY_INTERVALS):
+            return await self.void(session, order)
+
+        next_interval = settings.DUNNING_RETRY_INTERVALS[max(failed_attempts - 1, 0)]
+        return await repository.update(
+            order,
+            update_dict={"next_payment_attempt_at": utc_now() + next_interval},
+        )
 
     async def _calculate_tax(
         self,

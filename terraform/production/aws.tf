@@ -168,6 +168,37 @@ data "aws_iam_policy_document" "cloudfront_admin_sso" {
   }
 }
 
+data "aws_iam_policy_document" "lambda_worker_ecr_push" {
+  statement {
+    sid = "GetAuthorizationToken"
+    actions = [
+      "ecr:GetAuthorizationToken",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "PushLambdaWorkerImage"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:CompleteLayerUpload",
+      "ecr:DescribeImages",
+      "ecr:DescribeRepositories",
+      "ecr:InitiateLayerUpload",
+      "ecr:PutImage",
+      "ecr:UploadLayerPart",
+    ]
+    resources = [
+      "arn:aws:ecr:us-east-2:${data.aws_caller_identity.current.account_id}:repository/polar-test-lambda-worker",
+    ]
+  }
+}
+
+resource "aws_iam_policy" "lambda_worker_ecr_push" {
+  name   = "lambda-worker-ecr-push"
+  policy = data.aws_iam_policy_document.lambda_worker_ecr_push.json
+}
+
 # -----------------------------------------------------------------------------
 # Account Assignments (Dynamic)
 # -----------------------------------------------------------------------------
@@ -353,6 +384,7 @@ module "github_oidc_backup" {
   ]
   policy_arns = {
     backups          = aws_iam_policy.polar_sh_backups.arn
+    lambda_ecr       = aws_iam_policy.lambda_worker_ecr_push.arn
     lambda_artifacts = aws_iam_policy.lambda_artifacts_upload.arn
     e2e_reports      = aws_iam_policy.e2e_reports_upload.arn
   }

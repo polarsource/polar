@@ -30,8 +30,6 @@ interface CustomerSelectionOption {
 }
 
 interface CustomerSelectionRequiredResponse {
-  error: string
-  detail: string
   customers: CustomerSelectionOption[]
 }
 const ClientPage = ({

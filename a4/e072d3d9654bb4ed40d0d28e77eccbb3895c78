@@ -1,0 +1,60 @@
+server/tests/e2e/lifecycle/test_usage_cycle.py
+  s_055272d137234c::t_03714b182e5504 1-140
+server/polar/billing_entry/repository.py
+  s_055272d137234c::t_03714b182e5504 110-112,123-127,133-135,146-148,158-160,167-171,173,182-187
+server/polar/order/service.py
+  s_055272d137234c::t_20270736667e34 1541-1542,1558-1560,1563-1567,1569-1570,1572,1592
+  s_055272d137234c::t_03714b182e5504 4-5,19,27,82,106,109,1311-1317,1319-1335,1337,1339-1346,1348-1415,1417-1426,1428-1437,1439-1446,1449-1463,1465-1466,1468-1495,1497-1502,1504-1540,1543-1557,1561-1562,1573-1577,1581-1590,1593-1599,1601,2428-2438,2955-2961
+  s_055272d137234c::t_0d39a85445ef3a 1579-1580
+server/migrations/versions/2026-06-17-2114_add_carried_units_to_subscription_meter.py
+  s_055272d137234c::t_03714b182e5504 1-44
+server/polar/notifications/notification.py
+  s_055272d137234c::t_03714b182e5504 145-146
+server/polar/billing_entry/service.py
+  s_055272d137234c::t_03714b182e5504 57-59,86-88,154-158,182-186
+server/tests/subscription/test_service.py
+  s_055272d137234c::t_03714b182e5504 1942-1988,2015
+  s_055272d137234c::t_b9861ffa082073 1989-2014
+server/polar/customer_meter/service.py
+  s_055272d137234c::t_3eed800589934e 247,249-255,260,275,277-284,296-297,299
+  s_055272d137234c::t_03714b182e5504 287-295,298,305-306
+  s_055272d137234c::t_046f6280cc112d 300-304
+server/tests/e2e/infra/scheduler_simulator.py
+  s_055272d137234c::t_03714b182e5504 33,56,87
+server/polar/subscription/service.py
+  s_055272d137234c::t_be14133ac4ec3c 1456-1462
+  s_055272d137234c::t_29ed5b26283e9e 1028-1030
+  s_055272d137234c::t_c7ecb73029a12a 2004
+  s_055272d137234c::t_03714b182e5504 878,882,885-886,1001-1019,1027,1031-1060,1432-1438,1440-1442,2000-2003,2005-2006
+  s_055272d137234c::t_06f9b1e754da11 981-1000
+  s_055272d137234c::t_d09349066c56cd 1439
+  s_055272d137234c::t_5b0c4d4014c6f4 879-881,883-884
+  s_055272d137234c::t_984f2bac7e2455 1020-1026
+server/polar/models/subscription_meter.py
+  s_055272d137234c::t_03714b182e5504 23-30
+server/tests/order/test_service.py
+  s_055272d137234c::t_03714b182e5504 3,123,2138-2269,2998-3090
+server/polar/subscription/tasks.py
+  s_055272d137234c::t_03714b182e5504 70-80,90-98
+server/polar/subscription/scheduler.py
+  s_055272d137234c::t_9fbd94617adad1 22-23,26
+  s_055272d137234c::t_03714b182e5504 8,19-21,24-25,27-29,49,58,106,110-111,147
+server/polar/models/order.py
+  s_055272d137234c::t_03714b182e5504 60,68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "a4e072d3d9654bb4ed40d0d28e77eccbb3895c78",
+  "prompts": {},
+  "sessions": {
+    "s_055272d137234c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee94dbe5-c15a-44e2-9fb8-aed3888c188f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

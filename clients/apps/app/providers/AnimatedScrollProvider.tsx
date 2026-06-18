@@ -24,7 +24,6 @@ type ContextValue = {
   headerTop: SharedValue<number>
   isHeaderVisible: DerivedValue<boolean>
   scrollViewRef: RefObject<AnimatedScrollView | null>
-  listPointerEvents: SharedValue<boolean>
   offsetY: SharedValue<number>
   velocityOnEndDrag: SharedValue<number>
   scrollHandler: ScrollHandlerProcessed<Record<string, unknown>>
@@ -104,7 +103,6 @@ export const AnimatedScrollProvider: FC<PropsWithChildren> = ({ children }) => {
     headerTop,
     isHeaderVisible,
     scrollViewRef,
-    listPointerEvents,
     offsetY,
     velocityOnEndDrag,
     scrollHandler,

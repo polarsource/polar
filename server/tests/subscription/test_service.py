@@ -68,7 +68,6 @@ from polar.postgres import AsyncSession
 from polar.product.guard import (
     MeteredPrice,
     is_fixed_price,
-    is_free_price,
     is_metered_price,
     is_seat_price,
     is_static_price,
@@ -1059,7 +1058,7 @@ class TestCycle:
             await subscription_service.cycle(session, ctx, subscription)
 
         price = product_recurring_free_price.prices[0]
-        assert is_free_price(price)
+        assert price.is_free
         billing_entry_repository = BillingEntryRepository.from_session(session)
         billing_entries = await billing_entry_repository.get_pending_by_subscription(
             subscription.id
@@ -2911,6 +2910,13 @@ class TestUpdate:
             updated,
         )
 
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(updated.id)
+        assert event.user_metadata["product_id"] == str(new_product.id)
+        assert event.user_metadata["discount_id"] == str(discount_percentage_50.id)
+
     async def test_combined_update_product_discount_next_period(
         self,
         session: AsyncSession,
@@ -4621,6 +4627,28 @@ class TestMarkPastDue:
         # Then
         assert result_subscription.status == SubscriptionStatus.past_due
         send_past_due_email_mock.assert_called_once_with(session, subscription)
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_mark_past_due_skips_ended_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        # Given
+        subscription.status = SubscriptionStatus.canceled
+        subscription.ended_at = utc_now()
+        await save_fixture(subscription)
+
+        # When
+        result_subscription = await subscription_service.mark_past_due(
+            session, subscription
+        )
+
+        # Then
+        assert result_subscription.status == SubscriptionStatus.canceled
+        enqueue_job_mock.assert_not_called()
 
 
 @pytest.mark.asyncio

@@ -106,6 +106,13 @@ async def test_billing_address_fields(
             ),
             id="none_url",
         ),
+        pytest.param(
+            "https://example.com/success?checkout_id={CHECKOUT_ID.__class__.__init__.__globals__[os].environ}",
+            lambda checkout: (
+                "https://example.com/success?checkout_id={CHECKOUT_ID.__class__.__init__.__globals__[os].environ}"
+            ),
+            id="internal Python attribute traversal should not be allowed",
+        ),
     ],
 )
 async def test_success_url(

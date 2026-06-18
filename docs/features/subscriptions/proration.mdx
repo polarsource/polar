@@ -10,7 +10,7 @@ You pick the proration behavior either at the organization level (as the default
 
 ## Proration behaviors
 
-Polar supports three proration behaviors:
+Polar supports three standard proration behaviors:
 
 ### Invoice Immediately (`invoice`)
 
@@ -25,15 +25,14 @@ The subscription is updated **immediately**, but the prorated difference is carr
 This is typically the smoothest experience for the customer: their plan changes instantly, and they see the adjustment on their regular renewal invoice.
 
 <Note>
-  If the billing interval changes (for example, monthly to yearly), `prorate`
-  is promoted to `invoice` automatically — there's no "next invoice" on the
-  old cycle to defer the difference to.
+  If the billing interval changes (for example, monthly to yearly), `prorate` is promoted to
+  `invoice` automatically — there's no "next invoice" on the old cycle to defer the difference to.
 </Note>
 
 <Warning>
-  For `invoice` and `prorate`, the subscription update is applied only if the
-  immediate payment (if any) succeeds. If the payment fails, the API returns
-  an error and the subscription stays unchanged.
+  For `invoice` and `prorate`, the subscription update is applied only if the immediate payment (if
+  any) succeeds. If the payment fails, the API returns an error and the subscription stays
+  unchanged.
 </Warning>
 
 ### Next Period (`next_period`)
@@ -43,6 +42,19 @@ The change is **not applied immediately**. It's scheduled as a pending update an
 While a `next_period` update is pending, the subscription's `pending_update` field describes the scheduled change. Submitting a new update always supersedes the pending one: if you scheduled a `next_period` change and then make another update with `invoice` or `prorate`, the pending update is discarded and the new change is applied right away.
 
 This behavior is the safer default for downgrades where you don't want to issue credits, and for any case where you want the current period's terms to stay intact.
+
+### Opting out of proration (`reset`)
+
+The subscription switches to the new plan **immediately**, Polar invoices the **full price of the new plan** right away, and the **billing cycle is reset** to start now. No proration is applied: the customer isn't credited for the unused portion of the old period, and they aren't charged a prorated amount — they pay the full new price and begin a fresh billing period.
+
+Because the cycle restarts, the new period's anchor day becomes the day the change was made, and all future renewals follow the new schedule.
+
+Use this when a plan change should behave like a brand-new subscription — for example, when an upgrade should restart the commitment period rather than carry over the current one.
+
+<Note>
+  The `reset` proration behavior is currently in preview. You'll only be able to use the `reset`
+  proration behavior if you are on a paid plan.
+</Note>
 
 ## Setting the default behavior
 
@@ -82,7 +94,7 @@ with Polar(access_token="<YOUR_BEARER_TOKEN_HERE>") as polar:
 
 </CodeGroup>
 
-Valid values are `invoice`, `prorate`, and `next_period`.
+Valid values are `invoice`, `prorate`, and `next_period`. If your organization has access to the preview `reset` behavior, you can pass `reset` here as well.
 
 ## How the prorated amount is calculated
 
@@ -115,8 +127,8 @@ A customer subscribed to a \$20/month plan on a 30-day month (2,592,000 seconds 
 With `invoice`, a credit invoice for $14.50 is issued immediately. With `prorate`, the credit is applied on the next invoice.
 
 <Note>
-  Because proration is computed from the exact number of seconds remaining,
-  the change time-of-day matters: upgrading at noon credits a different amount
-  than upgrading at midnight. Polar always uses the real length of the current
-  billing period (so 28-, 29-, 30-, and 31-day months are all handled exactly).
+  Because proration is computed from the exact number of seconds remaining, the change time-of-day
+  matters: upgrading at noon credits a different amount than upgrading at midnight. Polar always
+  uses the real length of the current billing period (so 28-, 29-, 30-, and 31-day months are all
+  handled exactly).
 </Note>

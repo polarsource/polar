@@ -11,6 +11,7 @@ from polar.models import (
     Product,
     UserOrganization,
 )
+from polar.models.customer import _avatar_url_for_email
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.tax.tax_id import TaxIDFormat
@@ -613,6 +614,59 @@ class TestCreateCustomer:
         assert owner.name == "Owner Name"
         assert owner.external_id == "owner_ext_456"
         assert owner.role == "owner"
+
+    @pytest.mark.auth
+    async def test_team_without_email_uses_owner_avatar(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        response = await client.post(
+            "/v1/customers/",
+            json={
+                "type": "team",
+                "name": "Acme Inc.",
+                "organization_id": str(organization.id),
+                "owner": {"email": "owner@polar.sh", "name": "Owner Name"},
+            },
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["email"] is None
+        assert json["avatar_url"] == _avatar_url_for_email("owner@polar.sh")
+
+    @pytest.mark.auth
+    async def test_team_without_email_or_owner_member_serializes_null_avatar(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # With the member model disabled, no owner member is created, so the
+        # customer's `owner` relationship stays empty. Serialization must not
+        # lazy-load it (MissingGreenlet) when resolving `avatar_url`.
+        response = await client.post(
+            "/v1/customers/",
+            json={
+                "type": "team",
+                "name": "Acme Inc.",
+                "organization_id": str(organization.id),
+                "owner": {"email": "owner@polar.sh"},
+            },
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["email"] is None
+        assert json["avatar_url"] is None
 
 
 @pytest.mark.asyncio

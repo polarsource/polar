@@ -162,12 +162,32 @@ class BenefitService:
             organization,
             create_schema.properties.model_dump(mode="json", by_alias=True),
         )
+        if (
+            not create_schema.type.is_visibility_configurable()
+            and create_schema.visibility is not None
+            and create_schema.visibility != Visibility.public
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "visibility"),
+                        "msg": (
+                            "Visibility is not configurable for this benefit type "
+                            "and must be public."
+                        ),
+                        "input": create_schema.visibility,
+                    }
+                ]
+            )
+
+        visibility = create_schema.type.resolve_visibility(create_schema.visibility)
 
         benefit = Benefit(
             organization=organization,
             is_tax_applicable=is_tax_applicable,
             properties=properties,
-            visibility=create_schema.type.resolve_visibility(create_schema.visibility),
+            visibility=visibility,
             **create_schema.model_dump(
                 by_alias=True,
                 exclude={
@@ -214,6 +234,28 @@ class BenefitService:
         update_dict = benefit_update.model_dump(
             by_alias=True, exclude_unset=True, exclude={"type", "properties"}
         )
+
+        if "visibility" in update_dict:
+            visibility: Visibility | None = update_dict["visibility"]
+            if (
+                not benefit.type.is_visibility_configurable()
+                and visibility is not None
+                and visibility != Visibility.public
+            ):
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "visibility"),
+                            "msg": (
+                                "Visibility is not configurable for this benefit "
+                                "type and must be public."
+                            ),
+                            "input": visibility,
+                        }
+                    ]
+                )
+            update_dict["visibility"] = benefit.type.resolve_visibility(visibility)
 
         properties_update: BaseModel | None = getattr(
             benefit_update, "properties", None

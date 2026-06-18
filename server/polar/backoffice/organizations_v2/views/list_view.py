@@ -22,9 +22,9 @@ from polar.postgres import AsyncSession
 from ... import formatters
 from ...components import (
     Tab,
-    action_bar,
     empty_state,
     status_badge,
+    support_tier_badge,
     tab_nav,
 )
 from ..priority import Signals
@@ -266,6 +266,8 @@ class OrganizationListView:
                                     data_tip="Awaiting reply",
                                 ):
                                     text("●")
+                    # Support tier (SLA priority) — paid tiers only
+                    support_tier_badge(org.support_tier, size="badge-xs")
 
             # Priority — Review tab only, sits next to Organization
             if signals is not None:
@@ -274,7 +276,8 @@ class OrganizationListView:
                     f"Risk {signals.risk_pts:.0f} + "
                     f"Payments {signals.payment_pts:.0f} + "
                     f"Fast Mover {signals.fast_mover_pts:.0f} + "
-                    f"Held Payouts {signals.held_payout_pts:.0f}"
+                    f"Held Payouts {signals.held_payout_pts:.0f} + "
+                    f"Support Tier {signals.support_tier_pts:.0f}"
                 )
                 with tag.td(classes="text-sm font-bold text-center"):
                     with tag.span(title=tooltip):
@@ -365,12 +368,6 @@ class OrganizationListView:
         with tag.div(classes="flex items-center justify-between mb-8"):
             with tag.h1(classes="text-3xl font-bold"):
                 text("Organizations")
-            with action_bar(position="right"):
-                with tag.a(
-                    href=str(request.url_for("organizations-classic:list")),
-                    classes="btn btn-ghost btn-sm",
-                ):
-                    text("Switch to Classic View")
 
         # Status tabs
         tabs = [

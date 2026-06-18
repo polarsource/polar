@@ -10,7 +10,7 @@ import BottomSheet, {
   BottomSheetScrollView,
 } from '@gorhom/bottom-sheet'
 import { schemas } from '@polar-sh/client'
-import { useCallback, useContext, useMemo, useRef } from 'react'
+import { useCallback, useContext, useMemo } from 'react'
 import { ActivityIndicator, StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -38,7 +38,6 @@ export const DiscountSelectionSheet = ({
   selectedDiscountId,
 }: DiscountSelectionSheetProps) => {
   const theme = useTheme()
-  const bottomSheetRef = useRef<BottomSheet>(null)
   const insets = useSafeAreaInsets()
   const { organization } = useContext(OrganizationContext)
 
@@ -132,7 +131,6 @@ export const DiscountSelectionSheet = ({
 
   return (
     <BottomSheet
-      ref={bottomSheetRef}
       enableDynamicSizing
       maxDynamicContentSize={600}
       onClose={onDismiss}

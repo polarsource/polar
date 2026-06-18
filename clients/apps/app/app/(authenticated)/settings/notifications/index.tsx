@@ -16,7 +16,6 @@ import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useToast } from '@/providers/ToastProvider'
 import { schemas } from '@polar-sh/client'
 import * as Notifications from 'expo-notifications'
-import { getPermissionsAsync } from 'expo-notifications'
 import { Stack } from 'expo-router'
 import { useCallback, useContext, useEffect, useState } from 'react'
 import { RefreshControl, ScrollView, Switch } from 'react-native'
@@ -41,11 +40,7 @@ export default function NotificationsPage() {
   const { mutateAsync: updateNotificationSettings } =
     useUpdateUserOrganizationNotificationSettings()
 
-  // TODO (maxime): default to organization settings is temporary while user level is Nullable.
-  // once backfill script ran and user level is non-nullable, we can remove the fallback to organization settings.
-  const notificationSettings =
-    userNotificationSettings?.notification_settings ??
-    organization?.notification_settings
+  const notificationSettings = userNotificationSettings?.notification_settings
 
   const createNotificationSettingHandler = useCallback(
     (key: keyof schemas['OrganizationNotificationSettings']) =>
@@ -146,7 +141,7 @@ const usePushNotifications = () => {
     useCreateNotificationRecipient()
 
   useEffect(() => {
-    getPermissionsAsync().then((status) => {
+    Notifications.getPermissionsAsync().then((status) => {
       setPushNotificationsEnabled(status.granted && !!notificationRecipient?.id)
     })
   }, [notificationRecipient])

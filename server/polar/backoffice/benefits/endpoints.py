@@ -4,7 +4,7 @@ from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
 from tagflow import tag, text
 
@@ -71,7 +71,10 @@ async def list(
                 or_(Benefit.id == query_uuid, Benefit.organization_id == query_uuid)
             )
         except ValueError:
-            statement = statement.where(Benefit.description.ilike(f"%{query}%"))
+            ts_query_english = func.websearch_to_tsquery("english", query)
+            statement = statement.where(
+                Benefit.search_vector.op("@@")(ts_query_english)
+            )
 
     if benefit_type:
         statement = statement.where(Benefit.type == benefit_type)

@@ -1351,6 +1351,12 @@ class SubscriptionService:
                     session, subscription, product, proration_behavior
                 )
 
+            if resolved_discount is not None:
+                ctx.add_event_metadata(
+                    discount_id=None
+                    if resolved_discount == "unset"
+                    else str(resolved_discount.id),
+                )
             ctx.add_event_metadata(
                 product_id=str(product.id),
                 proration_behavior=proration_behavior,
@@ -2623,6 +2629,9 @@ class SubscriptionService:
     ) -> Subscription:
         """Mark a subscription as past due. Main use case is to set it when payment fails.
         When this happens the customer will be notified and lose access to the benefits"""
+
+        if subscription.ended_at is not None:
+            return subscription
 
         previous_status = subscription.status
         previous_is_canceled = subscription.canceled

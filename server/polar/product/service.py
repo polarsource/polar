@@ -39,14 +39,13 @@ from polar.models import (
     User,
 )
 from polar.models.product_custom_field import ProductCustomField
-from polar.models.product_price import ProductPriceFixed, ProductPriceSource
+from polar.models.product_price import ProductPriceSource
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
 from polar.product.guard import (
     is_custom_price,
     is_fixed_price,
-    is_free_price,
     is_legacy_price,
     is_metered_price,
     is_seat_price,
@@ -60,7 +59,6 @@ from .schemas import (
     ExistingProductPrice,
     ProductCreate,
     ProductPriceCreate,
-    ProductPriceFreeCreate,
     ProductPriceMeteredCreateBase,
     ProductPriceSeatBasedCreate,
     ProductUpdate,
@@ -578,17 +576,6 @@ class ProductService:
             else:
                 model_class = price_schema.get_model_class()
                 price_kwargs = price_schema.model_dump()
-                # We no longer create `free` prices: we're dropping the free price
-                # type in favor of a fixed price with an amount of 0. Incoming `free`
-                # prices are still accepted for backward compatibility, but persisted
-                # as a fixed price with an amount of 0.
-                if isinstance(price_schema, ProductPriceFreeCreate):
-                    model_class = ProductPriceFixed
-                    price_kwargs = {
-                        "price_currency": price_schema.price_currency,
-                        "tax_behavior": price_schema.tax_behavior,
-                        "price_amount": 0,
-                    }
                 price = model_class(product=product, source=source, **price_kwargs)
                 if isinstance(price_schema, ProductPriceSeatBasedCreate):
                     if not organization.feature_settings.get(
@@ -645,15 +632,14 @@ class ProductService:
             )
 
         # Track price structure per currency for cross-currency validation
-        price_structure_per_currency: dict[str, tuple[bool, bool, bool, bool, int]] = {}
+        price_structure_per_currency: dict[str, tuple[bool, bool, bool, int]] = {}
 
         for currency, currency_prices in prices_per_currency.items():
             # Classify the static prices in this currency. A product may compose
             # one fixed price with one seat-based price (billed `fixed + seat_charge`),
-            # plus any number of metered prices. Custom and free prices stand alone.
+            # plus any number of metered prices. Custom prices stand alone.
             static_prices = [p for p, _ in currency_prices if is_static_price(p)]
             fixed_prices = [p for p in static_prices if is_fixed_price(p)]
-            free_prices = [p for p in static_prices if is_free_price(p)]
             custom_prices = [p for p in static_prices if is_custom_price(p)]
             seat_prices = [p for p in static_prices if is_seat_price(p)]
 
@@ -684,15 +670,6 @@ class ProductService:
                             "type": "value_error",
                             "loc": error_prefix,
                             "msg": "Only one custom price is allowed.",
-                            "input": prices_schema,
-                        }
-                    )
-                if free_prices and len(static_prices) > 1:
-                    errors.append(
-                        {
-                            "type": "value_error",
-                            "loc": error_prefix,
-                            "msg": "A free price cannot be combined with other prices.",
                             "input": prices_schema,
                         }
                     )
@@ -739,12 +716,11 @@ class ProductService:
                 )
 
             # Record the structure:
-            # (has_fixed, has_seat, has_custom, has_free, metered_count)
+            # (has_fixed, has_seat, has_custom, metered_count)
             price_structure_per_currency[currency] = (
                 len(fixed_prices) > 0,
                 len(seat_prices) > 0,
                 len(custom_prices) > 0,
-                len(free_prices) > 0,
                 len(currency_meters),
             )
 

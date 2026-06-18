@@ -3,7 +3,6 @@ import { schemas } from '@polar-sh/client'
 type ProductPrice =
   | schemas['ProductPriceFixed']
   | schemas['ProductPriceCustom']
-  | schemas['ProductPriceFree']
   | schemas['ProductPriceMeteredUnit']
 
 export const isLegacyRecurringPrice = (
@@ -18,12 +17,9 @@ export const hasLegacyRecurringPrices = (
 
 export const isStaticPrice = (
   price: ProductPrice,
-): price is
-  | schemas['ProductPriceFixed']
-  | schemas['ProductPriceCustom']
-  | schemas['ProductPriceFree'] =>
+): price is schemas['ProductPriceFixed'] | schemas['ProductPriceCustom'] =>
   price.amount_type !== undefined &&
-  ['fixed', 'custom', 'free'].includes(price.amount_type)
+  ['fixed', 'custom'].includes(price.amount_type)
 
 export const isMeteredPrice = (
   price: ProductPrice,

@@ -45,7 +45,7 @@ from .service import metrics as metrics_service
 
 VALID_METRIC_SLUGS = {m.slug for m in METRICS}
 
-router = APIRouter(prefix="/metrics", tags=["metrics", APITag.public, APITag.mcp])
+router = APIRouter(prefix="/metrics", tags=["metrics", APITag.public])
 
 MetricDashboardID = Annotated[UUID4, Path(description="The metric dashboard ID.")]
 

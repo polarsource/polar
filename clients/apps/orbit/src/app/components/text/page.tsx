@@ -7,12 +7,30 @@ import {
   Section,
   type PropRow,
 } from '@/components/docs'
-import { ColorSamples, StateSamples, VariantSamples } from './examples'
+import {
+  BestPractices,
+  ColorSamples,
+  MonospaceSamples,
+  NumberSamples,
+  StateSamples,
+  TruncateSamples,
+  VariantSamples,
+} from './examples'
 
-const variantCode = `<Text variant="heading-l" as="h1">Page title</Text>
+const variantCode = `<Text variant="heading-l">Page title</Text>
 <Text variant="body">Comfortable reading copy.</Text>
-<Text variant="label">Field label</Text>
-<Text variant="mono">npm install</Text>`
+<Text variant="label">Field label</Text>`
+
+const monospaceCode = `<Text variant="heading-s" monospace>404</Text>
+<Text variant="body" monospace>npm install @polar-sh/orbit</Text>
+<Text variant="label" monospace>POLAR_TOKEN</Text>`
+
+const numberCode = `<Text variant="heading-s" formatter="number">{3290033}</Text>
+<Text variant="body" formatter="compact">{3290033}</Text>
+<Text formatter={(v) => \`$\${v}\`}>{42}</Text>`
+
+const truncateCode = `<Text variant="body" truncate>One line, then an ellipsis…</Text>
+<Text variant="body" truncate={2}>Clamped to two lines…</Text>`
 
 const colorCode = `<Text color="default">De-emphasised copy</Text>
 <Text color="accent">Accent</Text>
@@ -29,7 +47,34 @@ const textProps: PropRow[] = [
     type: 'TextVariant',
     default: "'default'",
     description:
-      'default | body | label | caption | mono | heading-2xl | heading-xl | heading-l | heading-m | heading-s | heading-xs | heading-xxs.',
+      'default | body | label | caption | heading-2xl | heading-xl | heading-l | heading-m | heading-s | heading-xs | heading-xxs.',
+  },
+  {
+    name: 'monospace',
+    type: 'boolean',
+    default: 'false',
+    description:
+      'Renders the text in the monospace font family while keeping the size and weight from variant. Pair with any variant.',
+  },
+  {
+    name: 'formatter',
+    type: "'number' | 'compact' | ((value) => string)",
+    description:
+      "Formats the children value for display. 'number' adds grouping separators (3,290,033), 'compact' shortens (3.3M), or pass a function for full control. Pass the raw value as children.",
+  },
+  {
+    name: 'tabularNums',
+    type: 'boolean',
+    default: 'false',
+    description:
+      'Uses tabular (monospaced) figures so numbers line up in columns. Ideal for tables and stat readouts.',
+  },
+  {
+    name: 'truncate',
+    type: 'boolean | number',
+    default: 'false',
+    description:
+      'true clamps to a single line with an ellipsis; a number clamps to that many lines.',
   },
   {
     name: 'color',
@@ -41,8 +86,9 @@ const textProps: PropRow[] = [
   {
     name: 'as',
     type: "'p' | 'span' | 'label' | 'strong' | 'code' | 'h1'..'h6' | …",
-    default: "'p'",
-    description: 'Underlying element. DOM props for the element are forwarded.',
+    default: 'inferred from variant',
+    description:
+      'Underlying element. Defaults to a sensible element per variant (heading variants render h1 to h6, everything else p). Override for the correct document outline. DOM props are forwarded.',
   },
   {
     name: 'align',
@@ -78,11 +124,6 @@ const textProps: PropRow[] = [
     default: 'false',
     description: 'Applies a line-through text decoration.',
   },
-  {
-    name: 'className',
-    type: 'string',
-    description: 'Merged after the variant classes via tailwind-merge.',
-  },
 ]
 
 export default function TextPage() {
@@ -90,28 +131,63 @@ export default function TextPage() {
     <>
       <PageHeader
         title="Text"
-        description="Variant-driven typography for every text node. Pick a variant for the role, an optional color token and a semantic element via as. Colors resolve light and dark automatically."
+        description="Variant-driven typography for anything text-related."
       />
 
       <Section
         title="Overview"
-        description="Use Text for any text node rather than tailwind text classes. The variant sets size, weight and font family; color and alignment layer on top."
+        description="Use Text for any text node, never a div with tailwind text classes. You choose what the text is; the component decides how it looks."
       >
         <Prose>
           <Text variant="body" color="default">
-            Headings use the display scale and respond to viewport width. Body,
-            label, caption and mono cover supporting copy. Built-in loading and
-            lineThrough states cover common UI affordances without extra markup.
+            Each prop sits on one axis. variant is the role (size, weight and
+            font family), color is the tone, and as is the element. Orthogonal
+            modifiers layer on without touching the role: monospace,
+            tabularNums, truncate, lineThrough and a formatter for numbers.
+            Colors resolve light and dark automatically, and loading renders a
+            skeleton with no extra markup.
+          </Text>
+          <Text variant="body" color="muted">
+            Text has no className. Size, weight, color and leading are owned by
+            the props above, so compose layout and spacing with Box around Text
+            rather than reaching for utility classes.
           </Text>
         </Prose>
       </Section>
 
       <Section
         title="Variants"
-        description="Each variant maps to a typographic role. The token name is shown in mono above each sample."
+        description="Each variant maps to a typographic role. The token name is shown in monospace above each sample."
       >
         <Example code={variantCode} align="stretch">
           <VariantSamples />
+        </Example>
+      </Section>
+
+      <Section
+        title="Monospace"
+        description="monospace is a boolean prop, not a variant. It swaps in the mono font family while keeping the size and weight from variant, so any text (a heading, body copy or a label) can be monospaced."
+      >
+        <Example code={monospaceCode} align="stretch">
+          <MonospaceSamples />
+        </Example>
+      </Section>
+
+      <Section
+        title="Formatting"
+        description="Pass a raw value as children and a formatter to render it: 'number' for grouping separators, 'compact' for short magnitudes, or a function for anything else. Formatting lives in the component, so call sites never hand-roll toLocaleString. Add tabularNums to align figures in columns."
+      >
+        <Example code={numberCode} align="stretch">
+          <NumberSamples />
+        </Example>
+      </Section>
+
+      <Section
+        title="Truncation"
+        description="truncate owns the overflow CSS: true clamps to one line, a number clamps to that many lines."
+      >
+        <Example code={truncateCode} align="stretch">
+          <TruncateSamples />
         </Example>
       </Section>
 
@@ -131,6 +207,13 @@ export default function TextPage() {
         <Example code={stateCode} align="stretch">
           <StateSamples />
         </Example>
+      </Section>
+
+      <Section
+        title="Best practices"
+        description="Keep typographic decisions inside Text. Choose the role and tone; let the component own the rest."
+      >
+        <BestPractices />
       </Section>
 
       <Section title="Props">

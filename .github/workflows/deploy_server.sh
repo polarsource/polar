@@ -2,14 +2,14 @@
 
 set -euo pipefail
 
-# Usage: ./deploy_server.sh <docker_digest> <has_migrations> <api_service_id> <worker_service_ids> [playwright_digest] [playwright_worker_service_ids]
+# Usage: ./deploy_server.sh <docker_tag> <has_migrations> <api_service_id> <worker_service_ids> [playwright_tag] [playwright_worker_service_ids]
 if [ $# -lt 4 ]; then
-  echo "Usage: $0 <docker_digest> <has_migrations> <api_service_id> <worker_service_ids> [playwright_digest] [playwright_worker_service_ids]"
-  echo "Example: $0 sha256:abc123... true srv-123 srv-456,srv-789 sha256:def456... srv-999"
+  echo "Usage: $0 <docker_tag> <has_migrations> <api_service_id> <worker_service_ids> [playwright_tag] [playwright_worker_service_ids]"
+  echo "Example: $0 sha-abc1234 true srv-123 srv-456,srv-789 sha-def5678 srv-999"
   exit 1
 fi
 
-IMG="ghcr.io/polarsource/polar@${1}"
+IMG="ghcr.io/polarsource/polar:${1}"
 HAS_MIGRATIONS="${2}"
 API_SERVICE_ID="${3}"
 WORKER_SERVICE_IDS="${4}"
@@ -127,12 +127,12 @@ deploy_servers() {
 }
 
 # Parse playwright configuration
-PLAYWRIGHT_DIGEST="${5:-}"
+PLAYWRIGHT_TAG="${5:-}"
 PLAYWRIGHT_WORKER_IDS="${6:-}"
 PLAYWRIGHT_SERVERS=()
 PLAYWRIGHT_IMG=""
-if [[ -n "$PLAYWRIGHT_DIGEST" && -n "$PLAYWRIGHT_WORKER_IDS" ]]; then
-  PLAYWRIGHT_IMG="ghcr.io/polarsource/polar-playwright@${PLAYWRIGHT_DIGEST}"
+if [[ -n "$PLAYWRIGHT_TAG" && -n "$PLAYWRIGHT_WORKER_IDS" ]]; then
+  PLAYWRIGHT_IMG="ghcr.io/polarsource/polar-playwright:${PLAYWRIGHT_TAG}"
   IFS=',' read -ra PLAYWRIGHT_SERVERS <<< "$PLAYWRIGHT_WORKER_IDS"
 fi
 

@@ -78,7 +78,8 @@
                   "features/benefits/feature-flags",
                   "features/benefits/file-downloads",
                   "features/benefits/github-access",
-                  "features/benefits/license-keys"
+                  "features/benefits/license-keys",
+                  "features/benefits/slack-shared-channel"
                 ]
               },
               {
@@ -204,7 +205,8 @@
               "merchant-of-record/fees",
               "merchant-of-record/supported-countries",
               "merchant-of-record/acceptable-use",
-              "merchant-of-record/account-reviews"
+              "merchant-of-record/account-reviews",
+              "migrate-away"
             ]
           }
         ]

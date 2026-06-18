@@ -3,8 +3,17 @@ import sys
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Discriminator, TypeAdapter
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    Discriminator,
+    TypeAdapter,
+    computed_field,
+)
 
+from polar.benefit.schemas import Benefit
+from polar.kit.currency import format_currency
+from polar.kit.visibility import Visibility
 from polar.notifications.notification import (
     MaintainerAccountCreditsGrantedNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
@@ -46,6 +55,7 @@ class EmailTemplate(StrEnum):
     notification_new_sale = "notification_new_sale"
     notification_new_subscription = "notification_new_subscription"
     notification_credits_granted = "notification_credits_granted"
+    chargeback_prevention_refund = "chargeback_prevention_refund"
     polar_self_subscription_confirmation = "polar_self_subscription_confirmation"
     polar_self_subscription_cycled = "polar_self_subscription_cycled"
     polar_self_startup_program_welcome = "polar_self_startup_program_welcome"
@@ -54,8 +64,18 @@ class EmailTemplate(StrEnum):
 class SubscriptionEmail(SubscriptionBase): ...
 
 
+def _filter_email_benefit_list(benefits: list[Benefit]) -> list[Benefit]:
+    return [benefit for benefit in benefits if benefit.visibility == Visibility.public]
+
+
+EmailBenefitList = Annotated[
+    BenefitList,
+    AfterValidator(_filter_email_benefit_list),
+]
+
+
 class ProductEmail(ProductBase):
-    benefits: BenefitList
+    benefits: EmailBenefitList
 
 
 class OrderEmail(OrderBase):
@@ -394,6 +414,26 @@ class NotificationCreditsGrantedEmail(BaseModel):
     props: MaintainerAccountCreditsGrantedNotificationPayload
 
 
+class ChargebackPreventionRefundProps(EmailProps):
+    order_number: str
+    customer_name: str
+    amount: int
+    currency: str = "usd"
+    refund_date: str
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def formatted_amount(self) -> str:
+        return format_currency(self.amount, self.currency)
+
+
+class ChargebackPreventionRefundEmail(BaseModel):
+    template: Literal[EmailTemplate.chargeback_prevention_refund] = (
+        EmailTemplate.chargeback_prevention_refund
+    )
+    props: ChargebackPreventionRefundProps
+
+
 class PolarSelfSubscriptionConfirmationProps(EmailProps):
     product_name: str
 
@@ -470,6 +510,7 @@ Email = Annotated[
     | NotificationNewSaleEmail
     | NotificationNewSubscriptionEmail
     | NotificationCreditsGrantedEmail
+    | ChargebackPreventionRefundEmail
     | PolarSelfSubscriptionConfirmationEmail
     | PolarSelfSubscriptionCycledEmail
     | PolarSelfStartupProgramWelcomeEmail,

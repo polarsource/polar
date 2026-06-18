@@ -567,7 +567,8 @@ async def get(
                         "Delete Organization",
                         lambda r, i: str(
                             r.url_for(
-                                "organizations-classic:delete", id=i.organization_id
+                                "organizations:delete_dialog",
+                                organization_id=i.organization_id,
                             )
                         ),
                         target="#modal",

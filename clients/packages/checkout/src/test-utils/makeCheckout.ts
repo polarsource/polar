@@ -26,11 +26,12 @@ export function createFixedPrice(
 }
 
 export function createFreePrice(
-  overrides: Partial<schemas['ProductPriceFree']> = {},
-): schemas['ProductPriceFree'] {
+  overrides: Partial<schemas['ProductPriceFixed']> = {},
+): schemas['ProductPriceFixed'] {
   return {
     ...priceDefaults,
-    amount_type: 'free',
+    amount_type: 'fixed',
+    price_amount: 0,
     ...overrides,
   }
 }

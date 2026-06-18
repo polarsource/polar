@@ -100,7 +100,6 @@ from polar.payment_method.service import payment_method as payment_method_servic
 from polar.product.guard import (
     is_custom_price,
     is_fixed_price,
-    is_free_price,
     is_seat_price,
     is_static_price,
 )
@@ -943,19 +942,13 @@ class OrderService:
                     }
                 ]
             )
-        if any(
-            not (is_fixed_price(price) or is_free_price(price))
-            for price in static_prices
-        ):
+        if any(not is_fixed_price(price) for price in static_prices):
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
                         "loc": ("body", "product_id"),
-                        "msg": (
-                            "Off-session charges only support fixed-price and "
-                            "free products."
-                        ),
+                        "msg": "Off-session charges only support fixed-price products.",
                         "input": payload.product_id,
                     }
                 ]
@@ -2850,6 +2843,19 @@ class OrderService:
 
         assert order.subscription is not None
         subscription = order.subscription
+
+        # Subscription already terminated — don't progress dunning or
+        # overwrite its terminal status.
+        if subscription.ended_at is not None:
+            log.info(
+                "Ignoring first dunning attempt for ended subscription",
+                order_id=order.id,
+                subscription_id=subscription.id,
+            )
+            repository = OrderRepository.from_session(session)
+            return await repository.update(
+                order, update_dict={"next_payment_attempt_at": None}
+            )
 
         # Mark subscription as past_due first so past_due_deadline is available
         await subscription_service.mark_past_due(session, subscription)

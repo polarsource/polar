@@ -109,24 +109,16 @@ class ProductRepository(
             case ProductSortProperty.price_amount_type:
                 return case(
                     (
-                        ProductPrice.amount_type == ProductPriceAmountType.free,
+                        ProductPrice.amount_type == ProductPriceAmountType.custom,
                         1,
                     ),
                     (
-                        ProductPrice.amount_type == ProductPriceAmountType.custom,
-                        2,
-                    ),
-                    (
                         ProductPrice.amount_type == ProductPriceAmountType.fixed,
-                        3,
+                        2,
                     ),
                 )
             case ProductSortProperty.price_amount:
                 return case(
-                    (
-                        ProductPrice.amount_type == ProductPriceAmountType.free,
-                        -2,
-                    ),
                     (
                         ProductPrice.amount_type == ProductPriceAmountType.custom,
                         func.coalesce(ProductPriceCustom.minimum_amount, -1),

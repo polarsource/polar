@@ -28,7 +28,6 @@ from polar.product.guard import (
     StaticPrice,
     is_custom_price,
     is_fixed_price,
-    is_free_price,
     is_metered_price,
     is_seat_price,
 )
@@ -195,8 +194,6 @@ async def create_static_price_billing_entry(
     amount = 0
     if is_fixed_price(price):
         amount = price.price_amount
-    elif is_free_price(price):
-        amount = 0
     elif is_seat_price(price):
         assert subscription.seats is not None
         amount = price.calculate_amount(subscription.seats)
@@ -489,6 +486,11 @@ class TestCreateOrderItemsFromPending:
             order_item = order_items[0]
             assert order_item.amount == 50_00
             assert order_item.proration is True
+
+            # Seat-change prorations charge a delta, not the full seat amount,
+            # so the label must not imply a total seat count (which wouldn't
+            # reconcile with the prorated amount).
+            assert "seat" not in order_item.label
 
             await create_order(
                 save_fixture,

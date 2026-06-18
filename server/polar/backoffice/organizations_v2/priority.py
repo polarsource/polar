@@ -43,6 +43,11 @@ FAST_MOVER_MIN_PAYMENTS = 25
 # A flat boost for having any held payout, regardless of how many.
 HELD_PAYOUT_PTS = 25.0
 
+# Support tier (SLA): a paying merchant shouldn't languish in review. A modest
+# nudge keyed off the benefit level (pro=2, growth=3, scale=4)
+# NULL/free=0, pro=5, growth=10, scale=15.
+SUPPORT_TIER_PTS_PER_LEVEL = 5.0
+
 
 @dataclass
 class Signals:
@@ -51,6 +56,7 @@ class Signals:
     payment_pts: float = 0.0
     fast_mover_pts: float = 0.0
     held_payout_pts: float = 0.0
+    support_tier_pts: float = 0.0
 
     @property
     def priority(self) -> float:
@@ -60,6 +66,7 @@ class Signals:
             + self.payment_pts
             + self.fast_mover_pts
             + self.held_payout_pts
+            + self.support_tier_pts
         )
 
 
@@ -131,6 +138,14 @@ def _held_payout_component(held_payout_count: int) -> float:
     return HELD_PAYOUT_PTS if held_payout_count > 0 else 0.0
 
 
+def _support_tier_component(org: Organization) -> float:
+    # SLA nudge scaled by levels above the free floor; NULL (free) adds nothing.
+    level = org.support_tier
+    if level is None:
+        return 0.0
+    return (level - 1) * SUPPORT_TIER_PTS_PER_LEVEL
+
+
 def compute(
     org: Organization,
     *,
@@ -149,4 +164,5 @@ def compute(
         payment_pts=_payment_component(metrics),
         fast_mover_pts=_fast_mover_component(org, metrics, now),
         held_payout_pts=_held_payout_component(held_payout_count),
+        support_tier_pts=_support_tier_component(org),
     )

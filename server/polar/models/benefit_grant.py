@@ -7,9 +7,11 @@ from sqlalchemy import (
     Boolean,
     ColumnElement,
     ForeignKey,
+    Index,
     UniqueConstraint,
     Uuid,
     and_,
+    text,
     type_coerce,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -93,6 +95,17 @@ class BenefitGrant(RecordModel):
             "member_id",
             "benefit_id",
             name="benefit_grants_smb_key",
+        ),
+        Index(
+            "ix_benefit_grants_scope_unique",
+            "customer_id",
+            "benefit_id",
+            "member_id",
+            "subscription_id",
+            "order_id",
+            unique=True,
+            postgresql_nulls_not_distinct=True,
+            postgresql_where=text("deleted_at IS NULL"),
         ),
     )
 

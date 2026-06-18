@@ -277,7 +277,7 @@ async def totp_delete(
     backup_codes_factor: BackupCodesFactor = Depends(get_backup_codes_factor),
 ) -> None:
     user = auth_subject.subject
-    enrollment = await totp_factor.get_enrollment(user.id)
+    enrollment = await totp_factor.get_by_identity_id(user.id)
     if enrollment is None:
         raise ResourceNotFound()
     await totp_factor.delete(enrollment)

@@ -31,7 +31,6 @@ from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     is_fixed_price,
-    is_free_price,
     is_seat_price,
 )
 from polar.subscription.repository import SubscriptionUpdateRepository
@@ -498,7 +497,7 @@ class TestUpdateProductProrations:
             old_price = old_product.prices[0]
             new_price = new_product.prices[0]
             assert is_fixed_price(old_price)
-            assert is_free_price(new_price)
+            assert new_price.is_free
             billing_entry_repository = BillingEntryRepository.from_session(session)
             billing_entries = (
                 await billing_entry_repository.get_pending_by_subscription(
@@ -559,7 +558,7 @@ class TestUpdateProductProrations:
 
             old_price = old_product.prices[0]
             new_price = new_product.prices[0]
-            assert is_free_price(old_price)
+            assert old_price.is_free
             assert is_fixed_price(new_price)
             billing_entry_repository = BillingEntryRepository.from_session(session)
             billing_entries = (

@@ -2,7 +2,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from tagflow import tag, text
 
@@ -93,11 +93,13 @@ async def list(
                 or_(Product.id == query_uuid, Product.organization_id == query_uuid)
             )
         except ValueError:
+            ts_query_english = func.websearch_to_tsquery("english", query)
+            ilike_term = f"%{query}%"
             statement = statement.where(
                 or_(
-                    Product.name.ilike(f"%{query}%"),
-                    Organization.slug.ilike(f"%{query}%"),
-                    Organization.name.ilike(f"%{query}%"),
+                    Product.search_vector.op("@@")(ts_query_english),
+                    Organization.slug.ilike(ilike_term),
+                    Organization.name.ilike(ilike_term),
                 )
             )
 

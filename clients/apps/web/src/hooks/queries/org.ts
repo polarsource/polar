@@ -144,6 +144,25 @@ export const useUpdateOrganization = () =>
     },
   })
 
+export const useEnableOrganizationPreviewAccess = (organizationId: string) =>
+  useMutation({
+    mutationFn: () =>
+      api.POST('/v1/organizations/{id}/enable-preview-access', {
+        params: { path: { id: organizationId } },
+      }),
+    onSuccess: async (result) => {
+      const { data, error } = result
+      if (error) {
+        return
+      }
+      getQueryClient().invalidateQueries({
+        queryKey: ['organizations', data.id],
+      })
+      await revalidate(`organizations:${data.id}`)
+      await revalidate(`organizations:${data.slug}`)
+    },
+  })
+
 export const useOrganization = (
   id: string,
   enabled: boolean = true,

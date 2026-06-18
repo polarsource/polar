@@ -200,7 +200,20 @@ class BillingEntryService:
         end = format_date(entry.end_timestamp.date(), locale="en_US")
         amount = entry.amount
 
-        price_label = OrderItem.format_price_label(product, price, seats=seats)
+        # Appending the current total seat count implies an amount that doesn't
+        # reconcile with the charge, so omit it for those types to avoid confusion
+        seats_for_label = (
+            None
+            if entry.type
+            in (
+                BillingEntryType.subscription_seats_increase,
+                BillingEntryType.subscription_seats_decrease,
+            )
+            else seats
+        )
+        price_label = OrderItem.format_price_label(
+            product, price, seats=seats_for_label
+        )
 
         match entry.direction:
             case BillingEntryDirection.credit:

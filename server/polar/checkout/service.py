@@ -63,7 +63,6 @@ from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.logging import Logger
-from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import (
     Checkout,
@@ -113,7 +112,13 @@ from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import TaxCode
 from polar.tax.calculation import tax_calculation as tax_calculation_service
 from polar.tax.calculation.base import TaxCalculationLogicalError
-from polar.tax.tax_id import InvalidTaxID, TaxID, to_stripe_tax_id, validate_tax_id
+from polar.tax.tax_id import (
+    IncompatibleTaxIDFormat,
+    InvalidTaxID,
+    TaxID,
+    to_stripe_tax_id,
+    validate_tax_id,
+)
 from polar.trial_redemption.service import trial_redemption as trial_redemption_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
@@ -126,6 +131,7 @@ from .sorting import CheckoutSortProperty
 if typing.TYPE_CHECKING:
     from stripe.params._customer_create_params import (
         CustomerCreateParams,
+        CustomerCreateParamsTaxIdDatum,
     )
     from stripe.params._customer_modify_params import CustomerModifyParams
     from stripe.params._payment_intent_create_params import PaymentIntentCreateParams
@@ -575,10 +581,7 @@ class CheckoutService:
                 and checkout.customer.email is None
                 and checkout.customer.type == CustomerType.team
             ):
-                member_repository = MemberRepository.from_session(session)
-                owner_member = await member_repository.get_owner_by_customer_id(
-                    checkout.customer.id
-                )
+                owner_member = checkout.customer.owner
                 if owner_member is not None and owner_member.email is not None:
                     checkout.customer_email = owner_member.email
 
@@ -2601,9 +2604,12 @@ class CheckoutService:
             if checkout.customer_billing_address is not None:
                 create_params["address"] = checkout.customer_billing_address.to_dict()  # type: ignore
             if checkout.customer_tax_id is not None:
-                create_params["tax_id_data"] = [
-                    to_stripe_tax_id(checkout.customer_tax_id)
-                ]
+                try:
+                    create_params["tax_id_data"] = [
+                        to_stripe_tax_id(checkout.customer_tax_id)
+                    ]
+                except IncompatibleTaxIDFormat:
+                    pass
             stripe_customer = await stripe_service.create_customer(**create_params)
             stripe_customer_id = stripe_customer.id
         else:
@@ -2614,14 +2620,14 @@ class CheckoutService:
                 update_params["name"] = customer_name
             if checkout.customer_billing_address is not None:
                 update_params["address"] = checkout.customer_billing_address.to_dict()  # type: ignore
+            tax_id: CustomerCreateParamsTaxIdDatum | None = None
+            if checkout.customer_tax_id is not None:
+                try:
+                    tax_id = to_stripe_tax_id(checkout.customer_tax_id)
+                except IncompatibleTaxIDFormat:
+                    pass
             await stripe_service.update_customer(
-                stripe_customer_id,
-                tax_id=(
-                    to_stripe_tax_id(checkout.customer_tax_id)
-                    if checkout.customer_tax_id is not None
-                    else None
-                ),
-                **update_params,
+                stripe_customer_id, tax_id=tax_id, **update_params
             )
 
         # Only populate customer.name when creating a new customer. For existing

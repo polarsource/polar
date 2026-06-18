@@ -280,6 +280,7 @@ async def _create_payment_transaction_with_fx(
         order=order,
         amount=amount,
         currency="usd",
+        charge_id=f"ch_{order.id}",
     )
     transaction.presentment_amount = presentment_amount
     transaction.presentment_currency = presentment_currency

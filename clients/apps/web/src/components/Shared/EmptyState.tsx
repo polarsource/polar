@@ -22,11 +22,13 @@ export const EmptyState = ({
         <h3 className="dark:text-polar-50 text-lg text-gray-900">{title}</h3>
         <p className="dark:text-polar-500 text-gray-500">{description}</p>
       </div>
-      <div className="mt-4 flex flex-row gap-x-4">
-        {actions?.map((action, index) => (
-          <Button key={index} {...action} />
-        ))}
-      </div>
+      {(actions?.length ?? 0) > 0 ? (
+        <div className="mt-4 flex flex-row gap-x-4">
+          {actions?.map((action, index) => (
+            <Button key={index} {...action} />
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }

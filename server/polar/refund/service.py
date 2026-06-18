@@ -465,6 +465,9 @@ class RefundService:
         session: AsyncSession,
         refund: Refund,
     ) -> None:
+        if refund.reason == RefundReason.dispute_prevention:
+            enqueue_job("refund.send_chargeback_prevention_notice", refund.id)
+
         try:
             await refund_transaction_service.create(session, refund=refund)
         except RefundTransactionAlreadyExistsError:

@@ -325,7 +325,7 @@ class CustomerService:
         try:
             if send_webhooks:
                 async with repository.create_context(customer) as created:
-                    await member_service.create_owner_member(
+                    owner = await member_service.create_owner_member(
                         session,
                         created,
                         organization,
@@ -333,10 +333,9 @@ class CustomerService:
                         owner_name=owner_name,
                         owner_external_id=owner_external_id,
                     )
-                    return created
             else:
                 created = await repository.create(customer, flush=True)
-                await member_service.create_owner_member(
+                owner = await member_service.create_owner_member(
                     session,
                     created,
                     organization,
@@ -344,7 +343,6 @@ class CustomerService:
                     owner_name=owner_name,
                     owner_external_id=owner_external_id,
                 )
-                return created
         except IntegrityError as e:
             error_str = str(e)
             if "ix_customers_organization_id_email_not_null" in error_str:
@@ -370,6 +368,14 @@ class CustomerService:
                     ]
                 ) from e
             raise
+
+        # `create_owner_member` fills `created.owner` in-memory when it resolves a
+        # member; if none was created (member model feature disabled), mark the
+        # relationship as loaded-and-empty here.
+        # Without this, response serialization would emit IO mid-render
+        if created.email is None and owner is None:
+            created.owner = None
+        return created
 
     async def update(
         self,
@@ -880,7 +886,7 @@ class CustomerService:
     ) -> CustomerState:
         # 👋 Whenever you change the state schema,
         # please also update the cache key with a version number.
-        cache_key = f"polar:customer_state:v5:{customer.id}"
+        cache_key = f"polar:customer_state:v6:{customer.id}"
 
         if cache:
             raw_state = await redis.get(cache_key)

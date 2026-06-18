@@ -16,8 +16,7 @@ export const ProductPriceLabel = ({
 }: ProductPriceLabelProps) => {
   const staticPrice = product?.prices.find(
     ({ price_currency, amount_type }) =>
-      price_currency === currency &&
-      ['fixed', 'custom', 'free'].includes(amount_type),
+      price_currency === currency && ['fixed', 'custom'].includes(amount_type),
   )
 
   if (!staticPrice) {

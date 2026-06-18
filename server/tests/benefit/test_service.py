@@ -20,7 +20,11 @@ from polar.benefit.strategies.custom.schemas import (
     BenefitCustomUpdate,
 )
 from polar.benefit.strategies.discord.schemas import BenefitDiscordUpdate
-from polar.benefit.strategies.downloadables.schemas import BenefitDownloadablesUpdate
+from polar.benefit.strategies.downloadables.schemas import (
+    BenefitDownloadablesCreate,
+    BenefitDownloadablesCreateProperties,
+    BenefitDownloadablesUpdate,
+)
 from polar.benefit.strategies.feature_flag.schemas import BenefitFeatureFlagUpdate
 from polar.benefit.strategies.github_repository.schemas import (
     BenefitGitHubRepositoryUpdate,
@@ -520,6 +524,72 @@ class TestUserCreate:
         )
 
         assert benefit.visibility == Visibility.private
+
+    @pytest.mark.parametrize("visibility", [Visibility.private, Visibility.draft])
+    @pytest.mark.auth
+    async def test_rejects_non_public_visibility_for_non_configurable_benefit(
+        self,
+        visibility: Visibility,
+        mocker: MockerFixture,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        service_mock = MagicMock(spec=BenefitServiceProtocol)
+        service_mock.validate_properties.return_value = {}
+        mocker.patch(
+            "polar.benefit.service.get_benefit_strategy", return_value=service_mock
+        )
+
+        create_schema = BenefitDownloadablesCreate(
+            type=BenefitType.downloadables,
+            description="Downloadables benefit",
+            properties=BenefitDownloadablesCreateProperties(files=[uuid.uuid4()]),
+            organization_id=organization.id,
+            visibility=visibility,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await benefit_service.user_create(
+                session, redis, create_schema, auth_subject
+            )
+
+    @pytest.mark.auth
+    async def test_non_configurable_benefit_defaults_to_public(
+        self,
+        mocker: MockerFixture,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        service_mock = MagicMock(spec=BenefitServiceProtocol)
+        service_mock.validate_properties.return_value = {}
+        mocker.patch(
+            "polar.benefit.service.get_benefit_strategy", return_value=service_mock
+        )
+
+        file_id = uuid.uuid4()
+        service_mock.validate_properties.return_value = {
+            "archived": {},
+            "files": [str(file_id)],
+        }
+
+        create_schema = BenefitDownloadablesCreate(
+            type=BenefitType.downloadables,
+            description="Downloadables benefit",
+            properties=BenefitDownloadablesCreateProperties(files=[file_id]),
+            organization_id=organization.id,
+        )
+
+        benefit = await benefit_service.user_create(
+            session, redis, create_schema, auth_subject
+        )
+
+        assert benefit.visibility == Visibility.public
 
 
 @pytest.mark.asyncio

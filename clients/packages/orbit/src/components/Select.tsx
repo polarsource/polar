@@ -19,7 +19,12 @@ const Select = SelectPrimitive
 
 const SelectGroup = SelectGroupPrimitive
 
-const SelectValue = SelectValuePrimitive
+const SelectValue = ({
+  ...props
+}: React.ComponentProps<typeof SelectValuePrimitive>) => (
+  <SelectValuePrimitive translate="no" {...props} />
+)
+SelectValue.displayName = SelectValuePrimitive.displayName
 
 const SelectTrigger = ({
   ref,
@@ -51,6 +56,7 @@ const SelectContent = ({
     ref={ref}
     position={position}
     className={twMerge('dark:bg-polar-800 rounded-xl border-none', className)}
+    translate="no"
     {...props}
   >
     {children}
@@ -78,7 +84,7 @@ const SelectItem = ({
     className={twMerge(className, 'cursor-pointer rounded-lg')}
     {...props}
   >
-    {children}
+    <div>{children}</div>
   </SelectItemPrimitive>
 )
 SelectItem.displayName = SelectItemPrimitive.displayName

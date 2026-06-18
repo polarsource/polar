@@ -14,11 +14,11 @@
   "license": "ISC",
   "packageManager": "pnpm@10.28.1",
   "dependencies": {
-    "mintlify": "^4.2.590"
+    "mintlify": "^4.2.607"
   },
   "devDependencies": {
-    "@scalar/openapi-parser": "^0.28.6",
-    "@types/node": "^24.12.4",
+    "@scalar/openapi-parser": "^0.28.7",
+    "@types/node": "^24.13.1",
     "js-yaml": "^4.2.0",
     "openapi-sampler": "^1.7.4",
     "tsx": "^4.22.4"

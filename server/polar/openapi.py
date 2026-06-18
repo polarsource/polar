@@ -36,7 +36,6 @@ class APITag(StrEnum):
 
     public = "public"
     private = "private"
-    mcp = "mcp"
 
     @classmethod
     def metadata(cls) -> list[OpenAPITag]:
@@ -55,17 +54,12 @@ class APITag(StrEnum):
                     "in development to generate our internal JS SDK."
                 ),
             },
-            {
-                "name": cls.mcp,
-                "description": "Endpoints enabled in the MCP server.",
-            },
         ]
 
 
 class OpenAPIParameters(TypedDict):
     title: str
     summary: str
-    version: str
     description: str
     docs_url: str | None
     redoc_url: str | None
@@ -76,7 +70,6 @@ class OpenAPIParameters(TypedDict):
 OPENAPI_PARAMETERS: OpenAPIParameters = {
     "title": "Polar API",
     "summary": "Polar HTTP and Webhooks API",
-    "version": "0.1.0",
     "description": "Read the docs at https://polar.sh/docs/api-reference",
     "docs_url": None
     if settings.is_environment({Environment.sandbox, Environment.production})

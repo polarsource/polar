@@ -13,6 +13,7 @@ from polar_sdk.models import (
     SubscriptionProrationBehavior,
     WebhookBenefitGrantCreatedPayload,
     WebhookBenefitGrantRevokedPayload,
+    WebhookBenefitGrantUpdatedPayload,
     WebhookOrderCreatedPayload,
 )
 from pytest_mock import MockerFixture
@@ -31,7 +32,7 @@ from polar.integrations.polar.exceptions import (
     TransactionFeeBenefitError,
 )
 from polar.integrations.polar.service import polar_self
-from polar.models.organization import Organization
+from polar.models.organization import Organization, SupportTier
 from polar.postgres import AsyncReadSession, AsyncSession
 
 SELF_ORG_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
@@ -56,6 +57,13 @@ _CUSTOMER_DICT: dict[str, Any] = {
 }
 
 _BENEFIT_ID = "00000000-0000-0000-0000-0000000000b1"
+_PREVIEW_FLAGS_ENABLED = {
+    "reset_proration_behavior_enabled": True,
+    "off_session_charges_enabled": True,
+    "slack_benefit_enabled": True,
+    "preview_access_enabled": True,
+}
+_PREVIEW_FLAGS_DISABLED = {flag: False for flag in _PREVIEW_FLAGS_ENABLED}
 _CUSTOMER_ID = _CUSTOMER_DICT["id"]
 
 
@@ -99,7 +107,7 @@ def _make_grant(
                 "deletable": True,
                 "is_deleted": False,
                 "visibility": "public",
-                "visibility_configurable": False,
+                "visibility_configurable": True,
                 "organization_id": _CUSTOMER_DICT["organization_id"],
                 "metadata": metadata or {},
                 "properties": {"note": None},
@@ -145,6 +153,10 @@ def _make_support_grant(
     )
 
 
+def _make_preview_grant(*, benefit_id: str = _BENEFIT_ID) -> BenefitGrant:
+    return _make_grant(benefit_id=benefit_id, metadata={"type": "preview_access"})
+
+
 def _make_payload(
     event_type: str,
     *,
@@ -176,7 +188,7 @@ def _make_payload(
                 "deletable": True,
                 "is_deleted": False,
                 "visibility": "public",
-                "visibility_configurable": False,
+                "visibility_configurable": True,
                 "organization_id": _CUSTOMER_DICT["organization_id"],
                 "metadata": metadata or {},
                 "properties": {"note": None},
@@ -210,6 +222,25 @@ def organization_repository_mock(mocker: MockerFixture) -> MagicMock:
     active_organization = MagicMock(spec=Organization)
     active_organization.is_active.return_value = True
     repository.get_by_id = AsyncMock(return_value=active_organization)
+    mocker.patch(
+        "polar.integrations.polar.service.OrganizationRepository.from_session",
+        return_value=repository,
+    )
+    return repository
+
+
+@pytest.fixture
+def preview_access_org_repository_mock(mocker: MockerFixture) -> MagicMock:
+    """Repository whose loaded organization carries a real feature_settings dict.
+
+    ``organization_repository_mock`` returns a bare ``MagicMock`` whose
+    ``feature_settings`` is itself a mock, which can't be dict-unpacked. The
+    preview-access path reassigns that dict, so it needs a real one.
+    """
+    repository = MagicMock()
+    organization = MagicMock(spec=Organization)
+    organization.feature_settings = {}
+    repository.get_by_id = AsyncMock(return_value=organization)
     mocker.patch(
         "polar.integrations.polar.service.OrganizationRepository.from_session",
         return_value=repository,
@@ -619,6 +650,7 @@ class TestApplySupport:
     async def test_active_grant(
         self,
         session_mock: AsyncSession,
+        organization_repository_mock: MagicMock,
         plain_update_tenant_tier_mock: AsyncMock,
     ) -> None:
         grant = _make_support_grant()
@@ -627,11 +659,17 @@ class TestApplySupport:
 
         plain_update_tenant_tier_mock.assert_awaited_once_with(
             tenant_external_id=str(ORG_A), tier_external_id=None
+        )
+
+        assert (
+            organization_repository_mock.get_by_id.return_value.support_tier
+            == SupportTier.pro
         )
 
     async def test_active_grant_with_plain_tier(
         self,
         session_mock: AsyncSession,
+        organization_repository_mock: MagicMock,
         plain_update_tenant_tier_mock: AsyncMock,
     ) -> None:
         grant = _make_grant(
@@ -649,10 +687,15 @@ class TestApplySupport:
         plain_update_tenant_tier_mock.assert_awaited_once_with(
             tenant_external_id=str(ORG_A), tier_external_id="pro"
         )
+        assert (
+            organization_repository_mock.get_by_id.return_value.support_tier
+            == SupportTier.pro
+        )
 
     async def test_no_grant_unsets_tier(
         self,
         session_mock: AsyncSession,
+        organization_repository_mock: MagicMock,
         plain_update_tenant_tier_mock: AsyncMock,
     ) -> None:
         await polar_self._apply_support(session_mock, ORG_A, None)
@@ -660,10 +703,13 @@ class TestApplySupport:
         plain_update_tenant_tier_mock.assert_awaited_once_with(
             tenant_external_id=str(ORG_A), tier_external_id=None
         )
+        # Revocation resets the org tier to NULL (free).
+        assert organization_repository_mock.get_by_id.return_value.support_tier is None
 
     async def test_no_grant_falls_back_to_default_tier(
         self,
         session_mock: AsyncSession,
+        organization_repository_mock: MagicMock,
         plain_update_tenant_tier_mock: AsyncMock,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
@@ -671,28 +717,16 @@ class TestApplySupport:
 
         await polar_self._apply_support(session_mock, ORG_A, None)
 
+        # Plain gets the default tier; the org stays NULL (the two agree).
         plain_update_tenant_tier_mock.assert_awaited_once_with(
             tenant_external_id=str(ORG_A), tier_external_id="free"
         )
-
-    async def test_grant_without_tier_falls_back_to_default(
-        self,
-        session_mock: AsyncSession,
-        plain_update_tenant_tier_mock: AsyncMock,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        monkeypatch.setattr(settings, "PLAIN_DEFAULT_TIER_EXTERNAL_ID", "free")
-        grant = _make_support_grant()
-
-        await polar_self._apply_support(session_mock, ORG_A, grant)
-
-        plain_update_tenant_tier_mock.assert_awaited_once_with(
-            tenant_external_id=str(ORG_A), tier_external_id="free"
-        )
+        assert organization_repository_mock.get_by_id.return_value.support_tier is None
 
     async def test_grant_tier_overrides_default(
         self,
         session_mock: AsyncSession,
+        organization_repository_mock: MagicMock,
         plain_update_tenant_tier_mock: AsyncMock,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
@@ -711,6 +745,10 @@ class TestApplySupport:
 
         plain_update_tenant_tier_mock.assert_awaited_once_with(
             tenant_external_id=str(ORG_A), tier_external_id="pro"
+        )
+        assert (
+            organization_repository_mock.get_by_id.return_value.support_tier
+            == SupportTier.pro
         )
 
     async def test_invalid_metadata_raises(self, session_mock: AsyncSession) -> None:
@@ -718,6 +756,17 @@ class TestApplySupport:
 
         with pytest.raises(SupportBenefitError):
             await polar_self._apply_support(session_mock, ORG_A, grant)
+
+
+class TestSupportTier:
+    def test_from_level_known(self) -> None:
+        assert SupportTier.from_level(2) == SupportTier.pro
+        assert SupportTier.from_level(3) == SupportTier.growth
+        assert SupportTier.from_level(4) == SupportTier.scale
+
+    @pytest.mark.parametrize("level", [None, 0, 1, 5, 99])
+    def test_from_level_unknown_or_none_is_none(self, level: int | None) -> None:
+        assert SupportTier.from_level(level) is None
 
 
 @pytest.mark.asyncio
@@ -853,6 +902,118 @@ class TestHandleBenefitGrantEvent:
 
         list_grants_mock.assert_not_awaited()
         set_platform_fee_mock.assert_not_awaited()
+
+    async def test_preview_access_created_enables_flags(
+        self,
+        session_mock: AsyncSession,
+        preview_access_org_repository_mock: MagicMock,
+        list_grants_mock: AsyncMock,
+    ) -> None:
+        list_grants_mock.return_value = [_make_preview_grant()]
+        payload = WebhookBenefitGrantCreatedPayload.model_validate(
+            _make_payload("benefit_grant.created", metadata={"type": "preview_access"})
+        )
+
+        await polar_self.handle_benefit_grant_event(session_mock, payload)
+
+        list_grants_mock.assert_awaited_once_with(customer_id=_CUSTOMER_ID)
+        organization = preview_access_org_repository_mock.get_by_id.return_value
+        assert organization.feature_settings == _PREVIEW_FLAGS_ENABLED
+
+    async def test_preview_access_updated_enables_flags(
+        self,
+        session_mock: AsyncSession,
+        preview_access_org_repository_mock: MagicMock,
+        list_grants_mock: AsyncMock,
+    ) -> None:
+        list_grants_mock.return_value = [_make_preview_grant()]
+        payload = WebhookBenefitGrantUpdatedPayload.model_validate(
+            _make_payload("benefit_grant.updated", metadata={"type": "preview_access"})
+        )
+
+        await polar_self.handle_benefit_grant_event(session_mock, payload)
+
+        organization = preview_access_org_repository_mock.get_by_id.return_value
+        assert organization.feature_settings == _PREVIEW_FLAGS_ENABLED
+
+    async def test_preview_access_revoked_disables_flags(
+        self,
+        session_mock: AsyncSession,
+        preview_access_org_repository_mock: MagicMock,
+        list_grants_mock: AsyncMock,
+    ) -> None:
+        list_grants_mock.return_value = []
+        payload = WebhookBenefitGrantRevokedPayload.model_validate(
+            _make_payload("benefit_grant.revoked", metadata={"type": "preview_access"})
+        )
+
+        await polar_self.handle_benefit_grant_event(session_mock, payload)
+
+        organization = preview_access_org_repository_mock.get_by_id.return_value
+        assert organization.feature_settings == _PREVIEW_FLAGS_DISABLED
+
+    async def test_preview_access_revoked_with_remaining_grant_keeps_flags(
+        self,
+        session_mock: AsyncSession,
+        preview_access_org_repository_mock: MagicMock,
+        list_grants_mock: AsyncMock,
+    ) -> None:
+        # Overlapping grant still active when the revoke event arrives.
+        list_grants_mock.return_value = [_make_preview_grant(benefit_id="other")]
+        payload = WebhookBenefitGrantRevokedPayload.model_validate(
+            _make_payload("benefit_grant.revoked", metadata={"type": "preview_access"})
+        )
+
+        await polar_self.handle_benefit_grant_event(session_mock, payload)
+
+        organization = preview_access_org_repository_mock.get_by_id.return_value
+        assert organization.feature_settings == _PREVIEW_FLAGS_ENABLED
+
+
+@pytest.mark.asyncio
+class TestApplyPreviewAccess:
+    async def test_active_grant_enables_and_preserves_other_flags(
+        self,
+        session_mock: AsyncSession,
+        preview_access_org_repository_mock: MagicMock,
+    ) -> None:
+        organization = preview_access_org_repository_mock.get_by_id.return_value
+        organization.feature_settings = {"member_model_enabled": True}
+
+        await polar_self._apply_preview_access(
+            session_mock, ORG_A, _make_preview_grant()
+        )
+
+        preview_access_org_repository_mock.get_by_id.assert_awaited_once_with(
+            ORG_A, include_blocked=True
+        )
+        assert organization.feature_settings == {
+            "member_model_enabled": True,
+            **_PREVIEW_FLAGS_ENABLED,
+        }
+
+    async def test_no_grant_disables_flags(
+        self,
+        session_mock: AsyncSession,
+        preview_access_org_repository_mock: MagicMock,
+    ) -> None:
+        organization = preview_access_org_repository_mock.get_by_id.return_value
+        organization.feature_settings = {**_PREVIEW_FLAGS_ENABLED}
+
+        await polar_self._apply_preview_access(session_mock, ORG_A, None)
+
+        assert organization.feature_settings == _PREVIEW_FLAGS_DISABLED
+
+    async def test_missing_organization_is_silent_noop(
+        self,
+        session_mock: AsyncSession,
+        preview_access_org_repository_mock: MagicMock,
+    ) -> None:
+        preview_access_org_repository_mock.get_by_id.return_value = None
+
+        await polar_self._apply_preview_access(
+            session_mock, ORG_A, _make_preview_grant()
+        )
 
 
 def _make_product(

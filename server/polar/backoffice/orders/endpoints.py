@@ -6,7 +6,7 @@ import pycountry
 from babel.numbers import format_percent
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import attr, tag, text
 
@@ -148,12 +148,13 @@ async def list(
                 )
             )
         except ValueError:
+            ts_query_simple = func.websearch_to_tsquery("simple", query)
+            ts_query_english = func.websearch_to_tsquery("english", query)
             statement = statement.where(
                 or_(
-                    Customer.email.ilike(f"%{query}%"),
-                    Customer.name.ilike(f"%{query}%"),
-                    Product.name.ilike(f"%{query}%"),
-                    Order.invoice_number.ilike(f"%{query}%"),
+                    Order.search_vector.op("@@")(ts_query_simple),
+                    Customer.search_vector.op("@@")(ts_query_simple),
+                    Product.search_vector.op("@@")(ts_query_english),
                 )
             )
 

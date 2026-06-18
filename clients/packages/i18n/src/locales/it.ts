@@ -300,7 +300,7 @@ export default {
     downloadables: 'File scaricabili',
     meter_credit: 'Crediti a consumo',
     feature_flag: 'Feature flag',
-    slack_shared_channel: 'canale condiviso di Slack',
+    slack_shared_channel: 'Canale Slack condiviso',
   },
   ordinal: {
     zero: '°',

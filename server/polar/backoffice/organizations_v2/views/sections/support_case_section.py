@@ -1,4 +1,6 @@
-"""Support case section: the appeal human-review thread and staff actions."""
+"""Support case section: a support-case thread (appeal or dispute) and staff
+actions. Appeals carry an approve/deny decision; disputes are bank-decided and
+read-only beyond the staff ↔ merchant conversation."""
 
 import contextlib
 from collections.abc import Generator, Sequence
@@ -10,14 +12,16 @@ from tagflow import tag, text
 
 from polar.models import Organization
 from polar.models.support_case import (
-    ReviewAppealSupportCase,
+    SupportCase,
     SupportCaseAttachment,
     SupportCaseMessage,
     SupportCaseMessageAuthorKind,
     SupportCaseMessageType,
+    SupportCaseType,
 )
 
 from ....components import button, card
+from ....support_cases.urls import append_return_to
 
 _AUTHOR_LABELS: dict[SupportCaseMessageAuthorKind, str] = {
     SupportCaseMessageAuthorKind.platform: "Support",
@@ -26,14 +30,41 @@ _AUTHOR_LABELS: dict[SupportCaseMessageAuthorKind, str] = {
     SupportCaseMessageAuthorKind.system: "System",
 }
 
+_CASE_TITLES: dict[SupportCaseType, str] = {
+    SupportCaseType.review_appeal: "Appeal Support Case",
+    SupportCaseType.dispute: "Dispute Support Case",
+}
+
+# The "opened" milestone reads differently per case type (a merchant-requested
+# appeal vs. a system-opened dispute).
+_OPENED_TITLES: dict[SupportCaseType, str] = {
+    SupportCaseType.review_appeal: "Human review requested",
+    SupportCaseType.dispute: "Dispute opened",
+}
+
+# Outcome milestones surfaced as header badges: (badge classes, icon, label).
+_OUTCOMES: dict[SupportCaseMessageType, tuple[str, str, str]] = {
+    SupportCaseMessageType.appeal_approved: (
+        "badge-success",
+        "icon-check",
+        "Appeal approved",
+    ),
+    SupportCaseMessageType.appeal_denied: ("badge-error", "icon-x", "Appeal denied"),
+    SupportCaseMessageType.dispute_won: ("badge-success", "icon-check", "Dispute won"),
+    SupportCaseMessageType.dispute_lost: ("badge-error", "icon-x", "Dispute lost"),
+}
+
 # Milestone events: title + (lucide icon, node circle classes). These render as
 # timeline milestones, visually distinct from conversation messages.
 _EVENT_TITLES: dict[SupportCaseMessageType, str] = {
-    SupportCaseMessageType.opened: "Human review requested",
+    SupportCaseMessageType.opened: "Case opened",
     SupportCaseMessageType.closed: "Case closed",
     SupportCaseMessageType.appeal_approved: "Appeal approved",
     SupportCaseMessageType.appeal_denied: "Appeal denied",
     SupportCaseMessageType.info_requested: "Information requested",
+    SupportCaseMessageType.dispute_under_review: "Dispute under review",
+    SupportCaseMessageType.dispute_won: "Dispute won",
+    SupportCaseMessageType.dispute_lost: "Dispute lost",
     SupportCaseMessageType.assigned: "Case assigned",
     SupportCaseMessageType.released: "Case unassigned",
 }
@@ -52,15 +83,24 @@ _EVENT_NODES: dict[SupportCaseMessageType, tuple[str, str]] = {
         "icon-message-square-text",
         "bg-info text-info-content",
     ),
+    SupportCaseMessageType.dispute_under_review: (
+        "icon-gavel",
+        "bg-info text-info-content",
+    ),
+    SupportCaseMessageType.dispute_won: (
+        "icon-check",
+        "bg-success text-success-content",
+    ),
+    SupportCaseMessageType.dispute_lost: ("icon-x", "bg-error text-error-content"),
     SupportCaseMessageType.assigned: ("icon-user-check", _MUTED_NODE),
     SupportCaseMessageType.released: ("icon-user-x", _MUTED_NODE),
 }
 
-Thread = tuple[ReviewAppealSupportCase, bool, Sequence[SupportCaseMessage]]
+Thread = tuple[SupportCase, bool, Sequence[SupportCaseMessage]]
 
 
 class SupportCaseSection:
-    """Render the appeal support case: status header, timeline and actions."""
+    """Render a support case: status header, timeline and actions."""
 
     def __init__(
         self,
@@ -69,12 +109,21 @@ class SupportCaseSection:
         author_emails: dict[UUID, str] | None = None,
         current_user_id: UUID | None = None,
         attachments_by_message: dict[UUID, list[SupportCaseAttachment]] | None = None,
+        return_to: str | None = None,
     ) -> None:
         self.org = organization
         self.thread = thread
         self.author_emails = author_emails or {}
         self.current_user_id = current_user_id
         self.attachments_by_message = attachments_by_message or {}
+        # Origin to come back to after an action (e.g. the org page), threaded
+        # through every action URL so the flow stays anchored to it.
+        self.return_to = return_to
+        # Set from the thread's case at render time; drives type-aware labels.
+        self._case_type: SupportCaseType = SupportCaseType.review_appeal
+
+    def _with_return_to(self, url: str) -> str:
+        return append_return_to(url, self.return_to)
 
     @contextlib.contextmanager
     def render(self, request: Request) -> Generator[None]:
@@ -82,18 +131,19 @@ class SupportCaseSection:
             if self.thread is None:
                 with card(bordered=True):
                     with tag.h2(classes="text-lg font-semibold mb-1"):
-                        text("Appeal Support Case")
+                        text("Support Case")
                     with tag.p(classes="text-sm text-base-content/50"):
                         text("No support case for this organization.")
                 yield
                 return
 
             case, is_open, messages = self.thread
+            self._case_type = case.type
             with card(bordered=True):
                 self._render_header(request, case, is_open, messages)
                 self._render_timeline(request, messages)
                 if is_open:
-                    self._render_composer(request)
+                    self._render_composer(request, case)
             yield
 
     # -- Header -------------------------------------------------------------
@@ -102,21 +152,19 @@ class SupportCaseSection:
         self, messages: Sequence[SupportCaseMessage]
     ) -> SupportCaseMessageType | None:
         for message in messages:
-            if message.type in (
-                SupportCaseMessageType.appeal_approved,
-                SupportCaseMessageType.appeal_denied,
-            ):
+            if message.type in _OUTCOMES:
                 return message.type
         return None
 
     def _render_header(
         self,
         request: Request,
-        case: ReviewAppealSupportCase,
+        case: SupportCase,
         is_open: bool,
         messages: Sequence[SupportCaseMessage],
     ) -> None:
         outcome = self._outcome(messages)
+        is_appeal = self._case_type == SupportCaseType.review_appeal
         with tag.div(classes="flex items-start justify-between gap-4 mb-8"):
             with tag.div(classes="flex items-start gap-4"):
                 with tag.div(
@@ -129,30 +177,27 @@ class SupportCaseSection:
                         pass
                 with tag.div(classes="flex flex-col gap-2"):
                     with tag.h2(classes="text-xl font-semibold leading-none"):
-                        text("Appeal Support Case")
+                        text(_CASE_TITLES.get(self._case_type, "Support Case"))
                     with tag.div(classes="flex items-center gap-2"):
                         status = "badge-success" if is_open else "badge-neutral"
                         with tag.div(classes=f"badge {status} badge-sm"):
                             text("Open" if is_open else "Closed")
-                        if outcome == SupportCaseMessageType.appeal_approved:
-                            with tag.div(classes="badge badge-success badge-sm gap-1"):
-                                with tag.span(classes="icon-check"):
+                        if outcome is not None:
+                            badge, icon, label = _OUTCOMES[outcome]
+                            with tag.div(classes=f"badge {badge} badge-sm gap-1"):
+                                with tag.span(classes=icon):
                                     pass
-                                text("Appeal approved")
-                        elif outcome == SupportCaseMessageType.appeal_denied:
-                            with tag.div(classes="badge badge-error badge-sm gap-1"):
-                                with tag.span(classes="icon-x"):
-                                    pass
-                                text("Appeal denied")
-                        elif is_open:
+                                text(label)
+                        elif is_open and is_appeal:
                             with tag.div(classes="badge badge-ghost badge-sm"):
                                 text("Awaiting decision")
                         if is_open:
                             self._render_assignment_chip(case)
-            if is_open:
+            # Appeals carry a staff decision; disputes are bank-decided.
+            if is_open and is_appeal:
                 self._render_decision_actions(request, case)
 
-    def _render_assignment_chip(self, case: ReviewAppealSupportCase) -> None:
+    def _render_assignment_chip(self, case: SupportCase) -> None:
         assignee_id = case.assigned_user_id
         if assignee_id is None:
             icon, label = "icon-user", "Unassigned"
@@ -166,29 +211,33 @@ class SupportCaseSection:
                 pass
             text(label)
 
-    def _assignment_urls(
-        self, request: Request, case: ReviewAppealSupportCase
-    ) -> tuple[str, str]:
+    def _assignment_urls(self, request: Request, case: SupportCase) -> tuple[str, str]:
         # Assignment is advisory and generic to any case type, so it posts to
-        # the case-keyed support_cases endpoints and returns here afterwards.
-        detail = request.url_for("organizations:detail", organization_id=self.org.id)
-        return_to = f"{detail.path}?section=support_case"
-        take_url = f"{request.url_for('support_cases:take', case_id=case.id)}?{urlencode({'return_to': return_to})}"
-        release_url = f"{request.url_for('support_cases:release', case_id=case.id)}?{urlencode({'return_to': return_to})}"
+        # the case-keyed support_cases endpoints and returns to the case detail
+        # page afterwards — keeping the original origin so the back link holds.
+        detail_path = append_return_to(
+            request.url_for("support_cases:detail", case_id=case.id).path,
+            self.return_to,
+        )
+        take_url = f"{request.url_for('support_cases:take', case_id=case.id)}?{urlencode({'return_to': detail_path})}"
+        release_url = f"{request.url_for('support_cases:release', case_id=case.id)}?{urlencode({'return_to': detail_path})}"
         return take_url, release_url
 
-    def _render_decision_actions(
-        self, request: Request, case: ReviewAppealSupportCase
-    ) -> None:
-        approve_url = str(
-            request.url_for(
-                "organizations:appeal_case_approve_dialog",
-                organization_id=self.org.id,
+    def _render_decision_actions(self, request: Request, case: SupportCase) -> None:
+        approve_url = self._with_return_to(
+            str(
+                request.url_for(
+                    "organizations:appeal_case_approve_dialog",
+                    organization_id=self.org.id,
+                )
             )
         )
-        deny_url = str(
-            request.url_for(
-                "organizations:appeal_case_deny_dialog", organization_id=self.org.id
+        deny_url = self._with_return_to(
+            str(
+                request.url_for(
+                    "organizations:appeal_case_deny_dialog",
+                    organization_id=self.org.id,
+                )
             )
         )
         take_url, release_url = self._assignment_urls(request, case)
@@ -199,9 +248,7 @@ class SupportCaseSection:
                     text("Release")
             else:
                 label = "Take over" if assignee_id is not None else "Take case"
-                with button(
-                    variant="neutral", size="sm", outline=True, hx_post=take_url
-                ):
+                with button(variant="neutral", size="sm", hx_post=take_url):
                     text(label)
             with button(
                 variant="error",
@@ -270,6 +317,8 @@ class SupportCaseSection:
         return "icon-headset", "bg-info/15 text-info"
 
     def _title(self, message: SupportCaseMessage, internal: bool) -> str:
+        if message.type == SupportCaseMessageType.opened:
+            return _OPENED_TITLES.get(self._case_type, "Case opened")
         if message.type != SupportCaseMessageType.chat:
             return _EVENT_TITLES[message.type]
         if internal:
@@ -369,11 +418,9 @@ class SupportCaseSection:
 
     # -- Composer -----------------------------------------------------------
 
-    def _render_composer(self, request: Request) -> None:
-        reply_url = str(
-            request.url_for(
-                "organizations:appeal_case_reply", organization_id=self.org.id
-            )
+    def _render_composer(self, request: Request, case: SupportCase) -> None:
+        reply_url = self._with_return_to(
+            str(request.url_for("support_cases:reply", case_id=case.id))
         )
         with tag.div(classes="mt-8 pt-6 border-t border-base-200"):
             with tag.form(hx_post=reply_url, classes="flex flex-col gap-3"):

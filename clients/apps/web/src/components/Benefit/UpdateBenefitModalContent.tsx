@@ -1,19 +1,19 @@
 import { useUpdateBenefit } from '@/hooks/queries'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
-import { isValidationError, schemas } from '@polar-sh/client'
+import { isValidationError, operations, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
-import { MouseEvent, useCallback, useEffect, useState } from 'react'
+import { MouseEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { UpdateBenefitForm } from '../Benefit/BenefitForm'
-import {
-  BenefitUpdate,
-  prepareBenefitUpdatePayload,
-} from '../Benefit/updateBenefitPayload'
+import { isBenefitVisibilityConfigurable } from '../Benefit/utils'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { useModal } from '../Modal/useModal'
 import { toast } from '../Toast/use-toast'
+
+type BenefitUpdate =
+  operations['benefits:update']['requestBody']['content']['application/json']
 
 interface UpdateBenefitModalContentProps {
   organization: schemas['Organization']
@@ -33,8 +33,16 @@ const UpdateBenefitModalContent = ({
   confirmOnUpdate = false,
 }: UpdateBenefitModalContentProps) => {
   const router = useRouter()
+  const defaultValues = useMemo((): BenefitUpdate => {
+    if (!isBenefitVisibilityConfigurable(benefit.type)) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { visibility, ...values } = benefit
+      return values
+    }
+    return benefit
+  }, [benefit])
   const form = useForm<BenefitUpdate>({
-    defaultValues: benefit,
+    defaultValues,
   })
   const { setError } = form
 
@@ -56,10 +64,9 @@ const UpdateBenefitModalContent = ({
 
   const handleUpdateNewBenefit = useCallback(
     async (benefitUpdate: BenefitUpdate) => {
-      const payload = prepareBenefitUpdatePayload(benefit, benefitUpdate)
       const { error } = await updateSubscriptionBenefit.mutateAsync({
         id: benefit.id,
-        body: payload,
+        body: benefitUpdate,
       })
       if (error) {
         if (isValidationError(error.detail)) {

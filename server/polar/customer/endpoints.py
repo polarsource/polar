@@ -49,7 +49,7 @@ _CustomerAdapter: TypeAdapter[CustomerSchema] = TypeAdapter(CustomerSchema)
 
 router = APIRouter(
     prefix="/customers",
-    tags=["customers", APITag.public, APITag.mcp],
+    tags=["customers", APITag.public],
 )
 
 

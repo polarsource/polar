@@ -21,7 +21,7 @@ from .service import member_service
 
 router = APIRouter(
     prefix="/members",
-    tags=["members", APITag.public, APITag.mcp],
+    tags=["members", APITag.public],
 )
 
 MemberNotFound = {

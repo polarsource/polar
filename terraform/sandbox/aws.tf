@@ -68,6 +68,7 @@ module "dummy_lambda_worker" {
     POLAR_POSTGRES_READ_PWD = local.db_password
     POLAR_SECRET            = var.backend_secret_sandbox
     POLAR_SENTRY_DSN        = var.backend_sentry_dsn_sandbox
+    TAILSCALE_AUTHKEY       = var.lambda_worker_tailscale_token
   }
 }
 

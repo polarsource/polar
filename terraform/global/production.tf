@@ -435,6 +435,14 @@ resource "tfe_variable" "tailscale_advertise_routes_production" {
   variable_set_id = tfe_variable_set.production.id
 }
 
+resource "tfe_variable" "lambda_worker_tailscale_token_production" {
+  key             = "lambda_worker_tailscale_token"
+  category        = "terraform"
+  description     = "Tailscale auth token for production Lambda workers"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
 resource "tfe_variable" "plain_default_tier_external_id_production" {
   key             = "plain_default_tier_external_id"
   category        = "terraform"

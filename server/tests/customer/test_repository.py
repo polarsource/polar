@@ -4,9 +4,12 @@ from pytest_mock import MockerFixture
 from polar.customer.repository import CustomerRepository
 from polar.event.system import SystemEvent
 from polar.models import Customer, Organization
+from polar.models.customer import CustomerType, _avatar_url_for_email
+from polar.models.member import MemberRole
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_member
 
 
 @pytest.fixture
@@ -96,3 +99,131 @@ async def test_update_without_changes_emits_empty_updated_fields(
         SystemEvent.customer_updated,
         {},
     )
+
+
+@pytest.mark.asyncio
+class TestOwnerRelationship:
+    """The `owner` relationship is eager-loaded (`lazy="selectin"`) on every
+    customer query, so accessing it never raises and always reflects the single
+    active owner member."""
+
+    async def test_loaded_on_fetch(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        repository: CustomerRepository,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        owner = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+        )
+        await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.member,
+            email="member@example.com",
+        )
+
+        session.expunge_all()
+        result = await repository.get_by_id(customer.id)
+
+        assert result is not None
+        assert result.owner is not None
+        assert result.owner.id == owner.id
+
+    async def test_none_without_owner(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        repository: CustomerRepository,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.billing_manager,
+        )
+
+        session.expunge_all()
+        result = await repository.get_by_id(customer.id)
+
+        assert result is not None
+        assert result.owner is None
+
+    async def test_ignores_soft_deleted_owner(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        repository: CustomerRepository,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        owner = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+        )
+        owner.set_deleted_at()
+        await save_fixture(owner)
+
+        session.expunge_all()
+        result = await repository.get_by_id(customer.id)
+
+        assert result is not None
+        assert result.owner is None
+
+
+@pytest.mark.asyncio
+class TestAvatarUrl:
+    """`avatar_url` uses the customer's own email, falls back to the owner
+    member's email when the customer has none, and is `None` otherwise."""
+
+    @pytest.mark.parametrize(
+        ("customer_email", "owner_email", "expected_email"),
+        [
+            ("individual@example.com", None, "individual@example.com"),
+            ("team@example.com", "owner@example.com", "team@example.com"),
+            (None, "owner@example.com", "owner@example.com"),
+            (None, None, None),
+        ],
+    )
+    async def test_avatar_url(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        repository: CustomerRepository,
+        organization: Organization,
+        customer_email: str | None,
+        owner_email: str | None,
+        expected_email: str | None,
+    ) -> None:
+        customer = Customer(
+            email=customer_email,
+            type=CustomerType.team,
+            organization=organization,
+        )
+        await save_fixture(customer)
+        if owner_email is not None:
+            await create_member(
+                save_fixture,
+                customer=customer,
+                organization=organization,
+                role=MemberRole.owner,
+                email=owner_email,
+            )
+
+        session.expunge_all()
+        result = await repository.get_by_id(customer.id)
+
+        assert result is not None
+        assert result.avatar_url == (
+            _avatar_url_for_email(expected_email) if expected_email else None
+        )

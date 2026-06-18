@@ -318,6 +318,12 @@ class SlackAppService:
             )
             return
 
+        if event_type == "channel_id_changed":
+            await self._handle_channel_id_changed(
+                session, integration=integration, event=event
+            )
+            return
+
         log.debug(
             "slack.events.unhandled",
             api_app_id=api_app_id,
@@ -356,6 +362,39 @@ class SlackAppService:
             properties = dict(grant.properties or {})
             if isinstance(connected_team_id, str):
                 properties["connected_team_id"] = connected_team_id
+            await grant_repository.update(grant, update_dict={"properties": properties})
+
+    async def _handle_channel_id_changed(
+        self,
+        session: AsyncSession,
+        *,
+        integration: SlackApp,
+        event: dict[str, Any],
+    ) -> None:
+        old_channel_id = event.get("old_channel_id")
+        new_channel_id = event.get("new_channel_id")
+        if not isinstance(old_channel_id, str) or not isinstance(new_channel_id, str):
+            return
+
+        benefit_repository = BenefitRepository.from_session(session)
+        benefits = await benefit_repository.list_by_slack_integration_id(
+            integration.organization_id, integration.id
+        )
+
+        grant_repository = BenefitGrantRepository.from_session(session)
+        for benefit in benefits:
+            grant = await grant_repository.get_by_property_and_organization(
+                integration.organization_id,
+                "channel_id",
+                old_channel_id,
+                benefit_id=benefit.id,
+                for_update=True,
+            )
+            if grant is None:
+                continue
+
+            properties = dict(grant.properties or {})
+            properties["channel_id"] = new_channel_id
             await grant_repository.update(grant, update_dict={"properties": properties})
 
     async def _validate_credentials(

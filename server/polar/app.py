@@ -66,6 +66,7 @@ from polar.posthog import configure_posthog
 from polar.redis import Redis, create_redis
 from polar.search.endpoints import router as search_router
 from polar.sentry import configure_sentry
+from polar.version import CURRENT_API_VERSION, APIVersionMiddleware
 from polar.webhook.webhooks import document_webhooks
 
 from . import rate_limit
@@ -202,12 +203,14 @@ def create_app() -> FastAPI:
     app = FastAPI(
         generate_unique_id_function=generate_unique_openapi_id,
         lifespan=lifespan,
+        version=str(CURRENT_API_VERSION),
         **OPENAPI_PARAMETERS,
     )
 
     app.add_middleware(OperationalErrorMiddleware)
     if settings.is_sandbox():
         app.add_middleware(SandboxResponseHeaderMiddleware)
+    app.add_middleware(APIVersionMiddleware, current=CURRENT_API_VERSION)
     if not settings.is_testing():
         rate_limit_redis = create_redis("rate-limit")
         app.state.rate_limit_redis = rate_limit_redis

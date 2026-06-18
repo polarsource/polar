@@ -4,7 +4,6 @@ from polar.kit.routing import (
     IncludedInSchemaAPIRoute,
     SpeakeasyGroupAPIRoute,
     SpeakeasyIgnoreAPIRoute,
-    SpeakeasyMCPAPIRoute,
     SpeakeasyNameOverrideAPIRoute,
     SpeakeasyPaginationAPIRoute,
     get_api_router_class,
@@ -18,7 +17,6 @@ class APIRoute(
     SpeakeasyIgnoreAPIRoute,
     SpeakeasyNameOverrideAPIRoute,
     SpeakeasyGroupAPIRoute,
-    SpeakeasyMCPAPIRoute,
     SpeakeasyPaginationAPIRoute,
 ):
     pass

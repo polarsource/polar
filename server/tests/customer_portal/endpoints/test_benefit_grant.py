@@ -1,6 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
+from polar.kit.visibility import Visibility
 from polar.models import Benefit, Customer, Member, Organization, Subscription
 from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
@@ -42,6 +43,82 @@ class TestListBenefitGrants:
         json = response.json()
 
         assert json["pagination"]["total_count"] == 1
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_excludes_non_public_benefits(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        benefit_organization_second: Benefit,
+        customer: Customer,
+    ) -> None:
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+        )
+
+        benefit_organization_second.visibility = Visibility.private
+        await save_fixture(benefit_organization_second)
+
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization_second,
+            granted=True,
+            subscription=subscription,
+        )
+
+        response = await client.get("/v1/customer-portal/benefit-grants/")
+
+        assert response.status_code == 200
+        json = response.json()
+
+        assert json["pagination"]["total_count"] == 1
+        assert len(json["items"]) == 1
+        assert json["items"][0]["benefit_id"] == str(benefit_organization.id)
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_excludes_draft_benefits(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        benefit_organization_second: Benefit,
+        customer: Customer,
+    ) -> None:
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+        )
+
+        benefit_organization_second.visibility = Visibility.draft
+        await save_fixture(benefit_organization_second)
+
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization_second,
+            granted=True,
+            subscription=subscription,
+        )
+
+        response = await client.get("/v1/customer-portal/benefit-grants/")
+
+        assert response.status_code == 200
+        json = response.json()
+
+        assert json["pagination"]["total_count"] == 1
+        assert len(json["items"]) == 1
+        assert json["items"][0]["benefit_id"] == str(benefit_organization.id)
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_filter_by_member_id(
@@ -137,3 +214,106 @@ class TestListBenefitGrants:
         assert json["pagination"]["total_count"] == 1
         assert json["items"][0]["id"] == str(grant_with_member.id)
         assert json["items"][0]["member_id"] == str(member.id)
+
+
+@pytest.mark.asyncio
+class TestGetBenefitGrant:
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_public_benefit(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        customer: Customer,
+    ) -> None:
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+        )
+
+        response = await client.get(f"/v1/customer-portal/benefit-grants/{grant.id}")
+
+        assert response.status_code == 200
+        assert response.json()["id"] == str(grant.id)
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_private_benefit_not_found(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        customer: Customer,
+    ) -> None:
+        benefit_organization.visibility = Visibility.private
+        await save_fixture(benefit_organization)
+
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+        )
+
+        response = await client.get(f"/v1/customer-portal/benefit-grants/{grant.id}")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_draft_benefit_not_found(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        customer: Customer,
+    ) -> None:
+        benefit_organization.visibility = Visibility.draft
+        await save_fixture(benefit_organization)
+
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+        )
+
+        response = await client.get(f"/v1/customer-portal/benefit-grants/{grant.id}")
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestUpdateBenefitGrant:
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_private_benefit_not_found(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        customer: Customer,
+    ) -> None:
+        benefit_organization.visibility = Visibility.private
+        await save_fixture(benefit_organization)
+
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+        )
+
+        response = await client.patch(
+            f"/v1/customer-portal/benefit-grants/{grant.id}",
+            json={"benefit_type": "custom"},
+        )
+
+        assert response.status_code == 404

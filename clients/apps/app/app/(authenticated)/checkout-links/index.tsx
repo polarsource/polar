@@ -9,7 +9,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { schemas } from '@polar-sh/client'
 import { FlashList } from '@shopify/flash-list'
 import { Stack, useRouter } from 'expo-router'
-import React, { useContext, useMemo } from 'react'
+import { useContext, useMemo } from 'react'
 import { RefreshControl } from 'react-native'
 
 function CheckoutLinksList() {

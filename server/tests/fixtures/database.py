@@ -1,19 +1,19 @@
+import asyncio
+import pathlib
 from collections.abc import AsyncIterator, Callable, Coroutine
 
 import pytest
 import pytest_asyncio
-from alembic_utils.pg_trigger import PGTrigger
-from alembic_utils.replaceable_entity import registry as entities_registry
+from alembic import command
+from alembic.config import Config
 from pydantic_core import Url
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.schema import CreateSequence
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from polar.config import settings
 from polar.kit.db.postgres import create_async_engine
 from polar.models import Model
-from polar.models.customer import Customer
 
 
 def get_database_url(worker_id: str, driver: str = "asyncpg") -> str:
@@ -29,6 +29,15 @@ def get_database_url(worker_id: str, driver: str = "asyncpg") -> str:
     )
 
 
+ALEMBIC_CONFIG_FILE = pathlib.Path(__file__).parent.parent.parent / "alembic.ini"
+
+
+def apply_migrations(asyncpg_database_url: str) -> None:
+    alembic_cfg = Config(ALEMBIC_CONFIG_FILE)
+    alembic_cfg.attributes["sqlalchemy.url"] = asyncpg_database_url
+    command.upgrade(alembic_cfg, "head")
+
+
 @pytest_asyncio.fixture(scope="session", loop_scope="session", autouse=True)
 async def initialize_test_database(worker_id: str) -> AsyncIterator[None]:
     sync_database_url = get_database_url(worker_id, "psycopg2")
@@ -37,26 +46,7 @@ async def initialize_test_database(worker_id: str) -> AsyncIterator[None]:
         drop_database(sync_database_url)
 
     create_database(sync_database_url)
-
-    engine = create_async_engine(
-        dsn=get_database_url(worker_id),
-        application_name=f"test_{worker_id}",
-        pool_size=settings.DATABASE_POOL_SIZE,
-        pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
-    )
-
-    async with engine.begin() as conn:
-        await conn.execute(CreateSequence(Customer.short_id_sequence))
-        for entity in entities_registry.entities():
-            if isinstance(entity, PGTrigger):
-                continue
-            await conn.execute(entity.to_sql_statement_create())
-        await conn.run_sync(Model.metadata.create_all)
-        for entity in entities_registry.entities():
-            if not isinstance(entity, PGTrigger):
-                continue
-            await conn.execute(entity.to_sql_statement_create())
-    await engine.dispose()
+    await asyncio.to_thread(apply_migrations, get_database_url(worker_id))
 
     yield
 

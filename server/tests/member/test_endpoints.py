@@ -4,6 +4,7 @@ import pytest
 from httpx import AsyncClient
 
 from polar.models import Account, Member, Organization, User, UserOrganization
+from polar.models.customer import CustomerType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -327,8 +328,6 @@ class TestCreateMember:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        from polar.models.customer import CustomerType
-
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
 
@@ -680,6 +679,43 @@ class TestUpdateMemberByExternalID:
         assert json["name"] == "Updated Name"
         assert json["role"] == "billing_manager"
         assert json["external_id"] == "ext_456"
+
+    @pytest.mark.auth
+    async def test_update_email(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Test Member",
+            external_id="ext_email",
+            role="member",
+        )
+        await save_fixture(member)
+
+        response = await client.patch(
+            "/v1/members/external/ext_email",
+            params={"customer_id": str(customer.id)},
+            json={"email": "new@example.com"},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["id"] == str(member.id)
+        assert json["email"] == "new@example.com"
 
     @pytest.mark.auth
     async def test_different_organization(
@@ -1055,6 +1091,42 @@ class TestUpdateMember:
         assert json["id"] == str(member.id)
         assert json["name"] == "Updated Name"
         assert json["role"] == "billing_manager"
+
+    @pytest.mark.auth
+    async def test_update_member_email(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Test Member",
+            role="member",
+        )
+        await save_fixture(member)
+
+        response = await client.patch(
+            f"/v1/members/{member.id}",
+            json={"email": "new@example.com"},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["id"] == str(member.id)
+        assert json["email"] == "new@example.com"
 
     @pytest.mark.auth
     async def test_update_member_cannot_remove_last_owner(

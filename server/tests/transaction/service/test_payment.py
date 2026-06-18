@@ -65,6 +65,51 @@ class TestCreatePayment:
         assert transaction.id == existing_transaction.id
         enqueue_job_mock.assert_not_called()
 
+    async def test_existing_transaction_race(
+        self,
+        mocker: MockerFixture,
+        stripe_service_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+    ) -> None:
+        stripe_balance_transaction = build_stripe_balance_transaction()
+        stripe_charge = build_stripe_charge(
+            customer=customer.stripe_customer_id,
+            payment_intent="STRIPE_PAYMENT_ID",
+            balance_transaction=stripe_balance_transaction.id,
+        )
+        stripe_service_mock.get_balance_transaction.return_value = (
+            stripe_balance_transaction
+        )
+
+        existing_transaction = Transaction(
+            type=TransactionType.payment,
+            processor=Processor.stripe,
+            currency=stripe_charge.currency,
+            amount=stripe_charge.amount,
+            account_currency=stripe_charge.currency,
+            account_amount=stripe_charge.amount,
+            tax_amount=0,
+            charge_id=stripe_charge.id,
+        )
+        await save_fixture(existing_transaction)
+
+        # Simulate a race condition where the transaction is not found on the first check
+        mocker.patch.object(
+            payment_transaction_service,
+            "get_by_charge_id",
+            side_effect=[None, existing_transaction],
+        )
+
+        transaction = await payment_transaction_service.create_payment(
+            session, charge=stripe_charge
+        )
+
+        assert transaction.id == existing_transaction.id
+        enqueue_job_mock.assert_not_called()
+
     @pytest.mark.parametrize(
         ("risk_level", "risk_score"),
         [

@@ -148,18 +148,35 @@ def build_stripe_dispute(
     amount: int = 1000,
     currency: str = "usd",
     balance_transactions: list[stripe_lib.BalanceTransaction],
+    reason: str = "fraudulent",
+    network_reason_code: str | None = None,
+    evidence_due_by: int | None = None,
+    has_evidence: bool = False,
+    past_due: bool = False,
+    submission_count: int = 0,
 ) -> stripe_lib.Dispute:
-    return stripe_lib.Dispute.construct_from(
-        {
-            "id": id,
-            "status": status,
-            "charge": charge_id,
-            "currency": currency,
-            "amount": amount,
-            "balance_transactions": balance_transactions,
-        },
-        None,
-    )
+    evidence_details: dict[str, Any] = {
+        "has_evidence": has_evidence,
+        "past_due": past_due,
+        "submission_count": submission_count,
+    }
+    obj: dict[str, Any] = {
+        "id": id,
+        "status": status,
+        "charge": charge_id,
+        "currency": currency,
+        "amount": amount,
+        "balance_transactions": balance_transactions,
+        "reason": reason,
+        "evidence_details": evidence_details,
+    }
+    # Stripe omits null optional fields from the payload entirely; mirror that
+    # so tests exercise the real "key absent" behaviour (the SDK raises on it).
+    if network_reason_code is not None:
+        obj["network_reason_code"] = network_reason_code
+    if evidence_due_by is not None:
+        evidence_details["due_by"] = evidence_due_by
+    return stripe_lib.Dispute.construct_from(obj, None)
 
 
 def build_stripe_payment_intent(

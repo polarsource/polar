@@ -48,7 +48,7 @@ export default function SpacingPage() {
           {SCALE.map(({ token, px }) => (
             <Box key={token} alignItems="center" columnGap="l">
               <Box width={64} flexShrink={0}>
-                <Text variant="mono" color="inherit">
+                <Text monospace color="inherit">
                   {token}
                 </Text>
               </Box>

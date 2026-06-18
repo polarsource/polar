@@ -41,8 +41,7 @@ class OrganizationMemberRoleUpdate(Schema):
 
 
 class UserOrganizationNotificationSettings(Schema):
-    notification_settings: OrganizationNotificationSettings | None = Field(
-        default=None,
+    notification_settings: OrganizationNotificationSettings = Field(
         description="The authenticated user's notification preferences for this organization.",
     )
 

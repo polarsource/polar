@@ -7,7 +7,7 @@ import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { NewBenefitForm } from '../Benefit/BenefitForm'
-import { CreatableBenefit } from '../Benefit/utils'
+import { CreatableBenefit, getDefaultBenefitVisibility } from '../Benefit/utils'
 import { useToast } from '../Toast/use-toast'
 
 export type CreateBenefitModalParams = {
@@ -46,11 +46,14 @@ const CreateBenefitModalContent = ({
 
   const createSubscriptionBenefit = useCreateBenefit(organization.id)
 
+  const benefitType = type ? type : 'feature_flag'
+
   const form = useForm<schemas['BenefitCreate']>({
     defaultValues: {
       organization_id: organization.id,
-      type: type ? type : 'feature_flag',
+      type: benefitType,
       description: description ? description : undefined,
+      visibility: getDefaultBenefitVisibility(benefitType),
       properties: {
         ...properties,
         ...(slack_integration_id ? { slack_integration_id } : {}),

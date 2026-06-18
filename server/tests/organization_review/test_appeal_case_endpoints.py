@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
@@ -115,6 +117,34 @@ class TestRequestHumanReview:
             organization=organization,
         )
         await session.flush()
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/appeal/human-review",
+            json={"reason": REASON},
+        )
+        assert response.status_code == 409
+
+    @pytest.mark.auth
+    async def test_rejects_when_appeal_not_rejected(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Appeal still pending (AI hasn't decided): a human-review case cannot
+        # be opened yet — the frontend gate is enforced server-side too.
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=90.0,
+            violated_sections=[],
+            reason="Automated review denied.",
+            model_used="test",
+            appeal_submitted_at=datetime.now(UTC),
+            appeal_reason="My pending appeal.",
+        )
+        await save_fixture(review)
+
         response = await client.post(
             f"/v1/organizations/{organization.id}/appeal/human-review",
             json={"reason": REASON},

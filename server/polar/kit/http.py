@@ -99,7 +99,13 @@ async def check_url_reachable(
             # `Location` may be a relative reference (RFC 7231). Resolve it
             # against the current URL — the same resolution httpx uses to
             # follow the redirect — so we validate the URL actually fetched.
-            absolute_location = response.url.join(location)
+            try:
+                absolute_location = response.url.join(location)
+            except httpx.InvalidURL as e:
+                # A malformed `Location` (e.g. an invalid port) can't be
+                # followed. `InvalidURL` isn't an `httpx.HTTPError`, so convert
+                # it to the handled type instead of letting it escape.
+                raise UnsafeCrawlableUrl(f"Invalid redirect URL: {e}") from e
             await validate_crawlable_url(str(absolute_location))
 
     try:

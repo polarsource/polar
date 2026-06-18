@@ -44,7 +44,6 @@ from polar.models import (
     IssueReward,
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
-    LegacyRecurringProductPriceFree,
     Member,
     Meter,
     Order,
@@ -61,7 +60,6 @@ from polar.models import (
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
-    ProductPriceFree,
     ProductPriceMeteredUnit,
     ProductPriceSeatUnit,
     Refund,
@@ -471,7 +469,6 @@ async def create_product(
         product_price: (
             ProductPriceFixed
             | ProductPriceCustom
-            | ProductPriceFree
             | ProductPriceMeteredUnit
             | ProductPriceSeatUnit
         )
@@ -572,9 +569,10 @@ async def create_product_price_free(
     *,
     product: Product,
     currency: str = "usd",
-) -> ProductPriceFree:
-    price = ProductPriceFree(
+) -> ProductPriceFixed:
+    price = ProductPriceFixed(
         product=product,
+        price_amount=0,
         price_currency=currency,
         tax_behavior=None,
     )
@@ -715,16 +713,6 @@ async def create_legacy_recurring_product_price(
 ) -> LegacyRecurringProductPriceCustom: ...
 
 
-@typing.overload
-async def create_legacy_recurring_product_price(
-    save_fixture: SaveFixture,
-    *,
-    amount_type: Literal[ProductPriceAmountType.free],
-    product: Product,
-    recurring_interval: SubscriptionRecurringInterval,
-) -> LegacyRecurringProductPriceFree: ...
-
-
 async def create_legacy_recurring_product_price(
     save_fixture: SaveFixture,
     *,
@@ -735,16 +723,8 @@ async def create_legacy_recurring_product_price(
     minimum_amount: int | None = None,
     maximum_amount: int | None = None,
     preset_amount: int | None = None,
-) -> (
-    LegacyRecurringProductPriceFixed
-    | LegacyRecurringProductPriceCustom
-    | LegacyRecurringProductPriceFree
-):
-    product_price: (
-        LegacyRecurringProductPriceFixed
-        | LegacyRecurringProductPriceCustom
-        | LegacyRecurringProductPriceFree
-    )
+) -> LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom:
+    product_price: LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom
     if amount_type == ProductPriceAmountType.fixed:
         product_price = LegacyRecurringProductPriceFixed(
             price_amount=amount,
@@ -761,12 +741,6 @@ async def create_legacy_recurring_product_price(
             maximum_amount=maximum_amount,
             preset_amount=preset_amount,
             product=product,
-            is_archived=False,
-        )
-    elif amount_type == ProductPriceAmountType.free:
-        product_price = LegacyRecurringProductPriceFree(
-            product=product,
-            tax_behavior=None,
             is_archived=False,
         )
     else:

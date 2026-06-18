@@ -70,13 +70,13 @@ from polar.models.custom_field import CustomFieldType
 from polar.models.customer import CustomerType
 from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.member import MemberRole
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceCustom,
     ProductPriceFixed,
-    ProductPriceFree,
     ProductPriceSeatUnit,
 )
 from polar.models.subscription import SubscriptionStatus
@@ -109,6 +109,7 @@ from tests.fixtures.random_objects import (
     create_customer,
     create_customer_seat,
     create_discount,
+    create_member,
     create_order,
     create_product,
     create_product_fixed_and_seat,
@@ -664,7 +665,8 @@ class TestCreate:
         discount_fixed_once: Discount,
     ) -> None:
         price = product_one_time_free_price.prices[0]
-        assert isinstance(price, ProductPriceFree)
+        assert isinstance(price, ProductPriceFixed)
+        assert price.is_free
 
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.create(
@@ -756,7 +758,8 @@ class TestCreate:
         product_one_time_free_price: Product,
     ) -> None:
         price = product_one_time_free_price.prices[0]
-        assert isinstance(price, ProductPriceFree)
+        assert isinstance(price, ProductPriceFixed)
+        assert price.is_free
         mocker.patch.object(
             checkout_service, "_get_ip_country", return_value=ip_country
         )
@@ -1652,6 +1655,51 @@ class TestCreate:
         assert checkout.customer_name is None
         assert checkout.customer_billing_address == customer.billing_address
         assert checkout.customer_tax_id == customer.tax_id
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_team_customer_without_email_uses_owner_email(
+        self,
+        stripe_service_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        stripe_service_mock.create_customer_session.return_value = SimpleNamespace(
+            client_secret="STRIPE_CUSTOMER_SESSION_SECRET",
+        )
+
+        customer.type = CustomerType.team
+        customer.email = None
+        await save_fixture(customer)
+        owner = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+            email="owner@example.com",
+        )
+
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutPriceCreate(
+                product_price_id=price.id,
+                customer_id=customer.id,
+            ),
+            auth_subject,
+        )
+
+        assert checkout.customer == customer
+        assert checkout.customer_email == owner.email
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -3212,7 +3260,8 @@ class TestUpdate:
         )
 
         price = checkout_one_time_free.product_price
-        assert isinstance(price, ProductPriceFree)
+        assert isinstance(price, ProductPriceFixed)
+        assert price.is_free
         assert checkout.amount == 0
         assert checkout.currency == "usd"
 

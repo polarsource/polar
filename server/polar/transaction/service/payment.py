@@ -1,17 +1,22 @@
 from uuid import UUID
 
 import stripe as stripe_lib
+import structlog
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.math import polar_round
+from polar.logging import Logger
 from polar.models import Transaction
 from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
 from polar.worker import enqueue_job
 
 from .base import BaseTransactionService, BaseTransactionServiceError
+
+log: Logger = structlog.get_logger()
 
 
 class PaymentTransactionError(BaseTransactionServiceError): ...
@@ -103,7 +108,19 @@ class PaymentTransactionService(BaseTransactionService):
         )
 
         session.add(transaction)
-        await session.flush()
+        try:
+            await session.flush()
+        except IntegrityError:
+            # This means another worker has created the transaction after we checked for it
+            existing_transaction = await self.get_by_charge_id(session, charge.id)
+            if existing_transaction is not None:
+                log.warning(
+                    "Transaction already exists for charge, returning existing transaction",
+                    charge_id=charge.id,
+                    transaction_id=existing_transaction.id,
+                )
+                return existing_transaction
+            raise
 
         # Enqueue fees creation
         enqueue_job("processor_fee.create_payment_fees", transaction.id)

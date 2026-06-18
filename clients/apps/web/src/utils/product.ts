@@ -1,4 +1,7 @@
-import { ProductFullMediasMixin } from '@/components/Products/ProductForm/ProductForm'
+import {
+  FreeProductPriceCreate,
+  ProductFullMediasMixin,
+} from '@/components/Products/ProductForm/ProductForm'
 import { Client, schemas, unwrap } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
@@ -18,29 +21,37 @@ export const isStaticPrice = (
 ): price is
   | schemas['ProductPriceFixed']
   | schemas['ProductPriceCustom']
-  | schemas['ProductPriceFree']
   | schemas['ProductPriceSeatBased'] =>
-  ['fixed', 'custom', 'free', 'seat_based'].includes(price.amount_type)
+  ['fixed', 'custom', 'seat_based'].includes(price.amount_type)
 
-// A fixed price of 0 is the free-pricing representation (we're dropping the dedicated
-// `free` price type). When loading a product into the form, surface such prices as the
-// form's `free` price type so they display and edit as "Free".
+// A price is "free" when it's a fixed price of 0.
+export const isFreePrice = (
+  price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice'],
+): boolean => price.amount_type === 'fixed' && price.price_amount === 0
+
+// Surface a fixed price of 0 as the form's UI-only `free` price type so it displays and
+// edits as "Free" when loading a product into the form.
+type FreeFormPrice = Omit<
+  schemas['ProductPriceFixed'],
+  'amount_type' | 'price_amount'
+> & { amount_type: 'free' }
+
 export const productPriceToFormPrice = (
   price: schemas['ProductPrice'],
-): schemas['ProductPrice'] => {
+): schemas['ProductPrice'] | FreeFormPrice => {
   if (price.amount_type === 'fixed' && price.price_amount === 0) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { price_amount, ...rest } = price
-    return { ...rest, amount_type: 'free' } as schemas['ProductPrice']
+    return { ...rest, amount_type: 'free' }
   }
   return price
 }
 
 // Inverse of `productPriceToFormPrice`: the form keeps `free` as a UI-only price type,
-// so convert it back to a fixed price of 0 before sending to the API. We no longer
-// create `free` prices (they're being dropped in favor of a fixed price of 0).
+// so convert it back to a fixed price of 0 before sending to the API. The `free` price
+// type does not exist in the API.
 export const formPriceToApiPrice = (
-  price: schemas['ProductCreate']['prices'][number],
+  price: schemas['ProductCreate']['prices'][number] | FreeProductPriceCreate,
 ): schemas['ProductCreate']['prices'][number] =>
   price.amount_type === 'free'
     ? { ...price, amount_type: 'fixed', price_amount: 0 }
@@ -80,10 +91,14 @@ export const getProductById = cache(_getProductById)
 
 export type ProductEditOrCreateForm = Omit<
   schemas['ProductCreate'],
-  'metadata'
+  'metadata' | 'prices'
 > &
   ProductFullMediasMixin & {
     metadata: { key: string; value: string | number | boolean }[]
+    prices: (
+      | schemas['ProductCreate']['prices'][number]
+      | FreeProductPriceCreate
+    )[]
   }
 
 export const productToCreateForm = (

@@ -110,7 +110,7 @@ const columns: DataTableColumnDef<Order>[] = [
       <DataTableColumnHeader column={column} title="Amount" />
     ),
     cell: ({ row }) => (
-      <Text variant="mono">{formatAmount(row.original.amount)}</Text>
+      <Text monospace>{formatAmount(row.original.amount)}</Text>
     ),
   },
   {

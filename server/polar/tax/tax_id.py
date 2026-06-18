@@ -1,4 +1,3 @@
-import json
 import re
 from collections.abc import Sequence
 from enum import StrEnum
@@ -111,6 +110,18 @@ class TaxIDFormat(StrEnum):
     vn_tin = "vn_tin"
     za_vat = "za_vat"
 
+    # Additional tax ID formats that are not supported by Stripe but are used for validation purposes only.
+    mu_tan = "mu_tan"
+
+    def is_stripe_supported(self) -> bool:
+        """
+        Check if the tax ID format is supported by Stripe.
+
+        Returns:
+            True if the tax ID format is supported by Stripe, False otherwise.
+        """
+        return self not in {self.mu_tan}
+
 
 COUNTRY_TAX_ID_MAP: dict[str, Sequence[TaxIDFormat]] = {
     "AD": (TaxIDFormat.ad_nrt,),
@@ -169,6 +180,7 @@ COUNTRY_TAX_ID_MAP: dict[str, Sequence[TaxIDFormat]] = {
     "LV": (TaxIDFormat.eu_vat,),
     "MT": (TaxIDFormat.eu_vat,),
     "MK": (TaxIDFormat.mk_vat,),
+    "MU": (TaxIDFormat.mu_tan,),
     "MX": (TaxIDFormat.mx_rfc,),
     "MY": (TaxIDFormat.my_frp, TaxIDFormat.my_itn, TaxIDFormat.my_sst),
     "NG": (TaxIDFormat.ng_tin,),
@@ -213,6 +225,14 @@ class UnsupportedTaxIDFormat(TaxIDError):
     def __init__(self, tax_id_type: TaxIDFormat) -> None:
         self.tax_id_type = tax_id_type
         super().__init__(f"Tax ID format {tax_id_type} is not supported.")
+
+
+class IncompatibleTaxIDFormat(TaxIDError):
+    def __init__(self, tax_id_type: TaxIDFormat) -> None:
+        self.tax_id_type = tax_id_type
+        super().__init__(
+            f"Tax ID format {tax_id_type} is not compatible with this tax provider."
+        )
 
 
 class InvalidTaxID(TaxIDError):
@@ -378,6 +398,19 @@ class GEVATValidator(ValidatorProtocol):
         return number
 
 
+class MUTANValidator(ValidatorProtocol):
+    def validate(self, number: str, country: str) -> str:
+        # Remove spaces, dashes, and other common separators
+        number = number.replace(" ", "").replace("-", "").replace(".", "").strip()
+        # Validate: must be exactly 8 digits
+        if len(number) != 8 or not number.isdigit():
+            raise InvalidTaxID(number, country)
+        # First digit must be 2 or 3
+        if number[0] not in ("2", "3"):
+            raise InvalidTaxID(number, country)
+        return number
+
+
 def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
     match tax_id_type:
         case TaxIDFormat.ae_trn:
@@ -402,6 +435,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return INGSTValidator()
         case TaxIDFormat.vn_tin:
             return VNTINValidator()
+        case TaxIDFormat.mu_tan:
+            return MUTANValidator()
         case _:
             return StdNumValidator(tax_id_type)
 
@@ -443,8 +478,15 @@ def to_stripe_tax_id(value: TaxID) -> CustomerCreateParamsTaxIdDatum:
 
     Returns:
         A dictionary containing the tax ID in the format expected by Stripe.
+
+    Raises:
+        IncompatibleTaxIDFormat: The tax ID format is not compatible with Stripe.
     """
     tax_id, tax_id_type = value
+
+    if not tax_id_type.is_stripe_supported():
+        raise IncompatibleTaxIDFormat(tax_id_type)
+
     return {
         "type": str(tax_id_type),  # type: ignore
         "value": tax_id,
@@ -464,10 +506,8 @@ class TaxIDType(TypeDecorator[Any]):
 
     def process_result_value(self, value: Any, dialect: Dialect) -> Any:
         if value is not None:
-            # Handle legacy double-serialized values (stored as JSON strings)
-            if isinstance(value, str):
-                value = json.loads(value)
-            return tuple(value)
+            tax_id, tax_id_type = value
+            return (tax_id, TaxIDFormat(tax_id_type))
         return value
 
 

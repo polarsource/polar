@@ -182,14 +182,11 @@ jobs:
     permissions:
       contents: read
       packages: write
-    outputs:
-      digest: ${{ steps.push.outputs.digest }}
-      digest-playwright: ${{ steps.push-playwright.outputs.digest }}
     steps:
       - uses: actions/checkout@v6.0.3
 
       - name: Set up Docker Buildx
-        uses: useblacksmith/setup-docker-builder@v1.8.0
+        uses: useblacksmith/setup-docker-builder@v1.9.0
 
       - name: Log in to the Container registry
         uses: docker/login-action@v4.2.0
@@ -257,15 +254,13 @@ jobs:
     # `!failure() && !cancelled()` mirrors deploy-production: if the `changes`
     # job fails, `build` is skipped (no `if: always()`), and on a
     # workflow_dispatch the OR-clause below would otherwise let this job run
-    # with an EMPTY docker-digest. Guarding on !failure() blocks that path.
+    # against an image that was never built. Guarding on !failure() blocks that path.
     if: always() && !failure() && !cancelled() && (needs.build.result == 'success' || needs.build.result == 'skipped') && (needs.changes.outputs.backend-sandbox == 'true' || needs.changes.outputs.frontend-sandbox == 'true' || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/deploy-environment.yml
     with:
       environment: sandbox
-      docker-digest: ${{ needs.build.outputs.digest }}
       render-api-service-id: "srv-crkocgbtq21c73ddsdbg"
       render-worker-service-ids: "srv-d62q7vh4tr6s73fk44ng,srv-d733cp15pdvs73f6vqng,srv-d7unnjhj2pic73c2vr60"
-      docker-digest-playwright: ${{ needs.build.outputs.digest-playwright }}
       render-playwright-worker-service-ids: "srv-d089jj7diees73934kgg"
       has-migrations: ${{ needs.changes.outputs.migrations-sandbox == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
@@ -285,10 +280,8 @@ jobs:
     uses: ./.github/workflows/deploy-environment.yml
     with:
       environment: production
-      docker-digest: ${{ needs.build.outputs.digest }}
       render-api-service-id: "srv-ci4r87h8g3ne0dmvvl60"
       render-worker-service-ids: "srv-d4k62svpm1nc73af5e3g,srv-d3hrh1j3fgac73a1t4r0,srv-d4uto5ili9vc73dd37tg,srv-d5l0oekhg0os73clofm0,srv-d733djuuk2gs73e98h1g,srv-d7us9je7r5hc73be5ieg"
-      docker-digest-playwright: ${{ needs.build.outputs.digest-playwright }}
       render-playwright-worker-service-ids: "srv-d4k6otfgi27c73cicnpg"
       has-migrations: ${{ needs.changes.outputs.migrations-production == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend-production != 'true' && github.event_name != 'workflow_dispatch' }}

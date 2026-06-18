@@ -59,6 +59,9 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization_access_token.repository import (
     OrganizationAccessTokenRepository,
 )
+from polar.organization_review.appeal_case import (
+    appeal_case as appeal_case_service,
+)
 from polar.organization_review.repository import (
     OrganizationReviewRepository as AgentReviewRepository,
 )
@@ -498,9 +501,6 @@ class OrganizationService:
                 )
             organization.subscription_settings = update_schema.subscription_settings
 
-        if update_schema.notification_settings is not None:
-            organization.notification_settings = update_schema.notification_settings
-
         if update_schema.default_presentment_currency is not None:
             await self._validate_currency_change(
                 session, organization, update_schema.default_presentment_currency
@@ -751,6 +751,16 @@ class OrganizationService:
 
         organization = await repository.update(organization, update_dict=update_dict)
         await repository.soft_delete(organization)
+
+        # Close an open *appeal* support case — it's moot once the org is gone.
+        # Only appeals: dispute and refund cases are deliberately left open, as
+        # they're financial matters (chargebacks, refunds) that outlive the
+        # merchant deleting their account.
+        review_repository = OrganizationReviewRepository.from_session(session)
+        review = await review_repository.get_by_organization(organization.id)
+        if review is not None:
+            await appeal_case_service.close_for_organization_deletion(session, review)
+
         polar_self_service.enqueue_delete_customer(organization_id=organization.id)
 
         log.info(
@@ -1212,6 +1222,8 @@ class OrganizationService:
         next_review_threshold: int | None = None,
         *,
         reason: str,
+        internal_note: str | None = None,
+        staff_user: User,
     ) -> Organization:
         """Backoffice override to re-activate a DENIED or BLOCKED organization.
 
@@ -1220,8 +1232,13 @@ class OrganizationService:
         an appeal). Synchronously transitions to ACTIVE if onboarding is
         complete, otherwise to CREATED.
 
-        If a review with a submitted appeal exists, the appeal is recorded as
-        APPROVED so the merchant's frontend reflects the approval.
+        If a review with a submitted appeal exists, the appeal is recorded
+        as APPROVED so the merchant's frontend reflects it, and any open appeal
+        support case is closed as approved
+
+        ``internal_note`` overrides the default reactivation note (and omits the
+        reason line) so callers can record a context-specific note instead — the
+        appeal flow points to the support case rather than repeating its reason.
         """
         notes = {
             OrganizationStatus.DENIED: "Organization reactivated from denied.",
@@ -1236,20 +1253,26 @@ class OrganizationService:
 
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
-        if (
-            review
-            and review.appeal_submitted_at
-            and review.appeal_decision != OrganizationReview.AppealDecision.APPROVED
-        ):
-            review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
-            review.appeal_reviewed_at = datetime.now(UTC)
-            session.add(review)
+        if review is not None:
+            if (
+                review.appeal_submitted_at
+                and review.appeal_decision != OrganizationReview.AppealDecision.APPROVED
+            ):
+                review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
+                review.appeal_reviewed_at = datetime.now(UTC)
+                session.add(review)
+            await appeal_case_service.approve_open_case(
+                session, review, staff_user=staff_user, reason=reason
+            )
 
+        note = (
+            internal_note if internal_note is not None else notes[organization.status]
+        )
         target_status = await self._reactivate_organization(
             session,
             organization,
-            note=notes[organization.status],
-            reason=reason,
+            note=note,
+            reason=None if internal_note is not None else reason,
             next_review_threshold=next_review_threshold,
         )
         log.info(
@@ -1260,6 +1283,13 @@ class OrganizationService:
             slug=organization.slug,
         )
         return organization
+
+    async def add_internal_note(
+        self, session: AsyncSession, organization: Organization, message: str
+    ) -> None:
+        """Append a timestamped, admin-only internal note (append-only)."""
+        _append_internal_note(organization, message)
+        session.add(organization)
 
     async def handle_ongoing_review_verdict(
         self,
@@ -1930,9 +1960,21 @@ class OrganizationService:
         return review
 
     async def deny_appeal(
-        self, session: AsyncSession, organization: Organization
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        *,
+        staff_user: User | None = None,
+        reason: str | None = None,
     ) -> OrganizationReview:
-        """Deny an organization's appeal and keep payment access blocked."""
+        """Deny an organization's appeal and keep payment access blocked.
+
+        With ``staff_user`` (the backoffice deny dialog), any open appeal
+        support case is also closed as denied — the denial twin of
+        ``backoffice_approve``, so no deny path resolves the appeal while
+        leaving the case open. The automated AI appeal task calls this without
+        a ``staff_user`` (no human actor, and no case exists at that point).
+        """
 
         repository = OrganizationReviewRepository.from_session(session)
         review = await repository.get_by_organization(organization.id)
@@ -1950,6 +1992,11 @@ class OrganizationService:
         review.appeal_reviewed_at = datetime.now(UTC)
 
         session.add(review)
+
+        if staff_user is not None:
+            await appeal_case_service.deny_open_case(
+                session, review, staff_user=staff_user, reason=reason
+            )
 
         return review
 
@@ -1969,6 +2016,32 @@ class OrganizationService:
             update_dict={
                 "onboarded_at": datetime.now(UTC),
                 "ai_onboarding_completed_at": datetime.now(UTC),
+            },
+        )
+        return organization
+
+    async def enable_preview_access(
+        self, session: AsyncSession, organization: Organization
+    ) -> Organization:
+        """Enable preview access to in-preview features for this organization.
+
+        Mirrors the paid-plan benefit webhook
+        (`PolarSelfService._apply_preview_access`) by flipping on every
+        `PREVIEW_ACCESS_FEATURE_FLAGS` flag, so Sandbox testing matches the real
+        paid-plan behavior. Intended for Sandbox only: the endpoint guards on
+        `settings.is_sandbox()`.
+        """
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.update(
+            organization,
+            update_dict={
+                "feature_settings": {
+                    **organization.feature_settings,
+                    **{
+                        flag: True
+                        for flag in polar_self_service.PREVIEW_ACCESS_FEATURE_FLAGS
+                    },
+                }
             },
         )
         return organization

@@ -39,6 +39,15 @@ class CaseClosedError(AppealCaseError):
         super().__init__(f"Case {case_id} is closed.", 409)
 
 
+class AppealNotRejectedError(AppealCaseError):
+    def __init__(self, organization_review_id: UUID) -> None:
+        super().__init__(
+            f"Review {organization_review_id} has no rejected appeal to escalate "
+            "to human review.",
+            409,
+        )
+
+
 class AppealCaseService:
     async def request_human_review(
         self,
@@ -49,6 +58,11 @@ class AppealCaseService:
         reason: str,
         requested_by_user: User,
     ) -> ReviewAppealSupportCase:
+        # A human-review case only makes sense once the AI rejected the appeal.
+        # The frontend gates on this; enforce it here too so a direct API call
+        # can't open a case while the appeal is pending or approved.
+        if review.appeal_decision != OrganizationReview.AppealDecision.REJECTED:
+            raise AppealNotRejectedError(review.id)
         if await self.get_case(session, review) is not None:
             raise CaseAlreadyExistsError(review.id)
 
@@ -145,10 +159,83 @@ class AppealCaseService:
             "support_case.notify_organization_of_new_message", message_id=message.id
         )
         # This records the decision on the case only. The caller drives org
-        # state: approve via organization.backoffice_approve (built to override
-        # a denial after the AI rejected the appeal); deny needs no change, as
+        # state: approve goes through organization.backoffice_approve, which
+        # closes the case via approve_open_case; deny needs no org change, as
         # the org is already denied.
         return message
+
+    async def approve_open_case(
+        self,
+        session: AsyncSession,
+        review: OrganizationReview,
+        *,
+        staff_user: User,
+        reason: str | None = None,
+    ) -> SupportCaseMessage | None:
+        """Close the review's appeal case as approved, if one is open."""
+        return await self._decide_open_case(
+            session, review, approved=True, staff_user=staff_user, reason=reason
+        )
+
+    async def deny_open_case(
+        self,
+        session: AsyncSession,
+        review: OrganizationReview,
+        *,
+        staff_user: User,
+        reason: str | None = None,
+    ) -> SupportCaseMessage | None:
+        """Close the review's appeal case as denied, if one is open."""
+        return await self._decide_open_case(
+            session, review, approved=False, staff_user=staff_user, reason=reason
+        )
+
+    async def _decide_open_case(
+        self,
+        session: AsyncSession,
+        review: OrganizationReview,
+        *,
+        approved: bool,
+        staff_user: User,
+        reason: str | None = None,
+    ) -> SupportCaseMessage | None:
+        """Record an appeal decision on the review's case and close it, if a
+        case is open. No-op when there's no case or it is already closed, so any
+        approve/deny path can call it idempotently to keep the case in sync.
+        """
+        case = await self.get_case(session, review)
+        if case is None:
+            return None
+        message_repository = SupportCaseMessageRepository.from_session(session)
+        if not await message_repository.is_open(case.id):
+            return None
+        return await self.record_decision(
+            session, case, approved=approved, staff_user=staff_user, reason=reason
+        )
+
+    async def close_for_organization_deletion(
+        self, session: AsyncSession, review: OrganizationReview
+    ) -> SupportCaseMessage | None:
+        """Close the review's appeal case when its organization is deleted.
+
+        A silent, internal lifecycle close (system author, no decision, no
+        merchant email) — the merchant is gone, so the case should stop sitting
+        open in the backoffice. No-op when there's no case or it's already
+        closed.
+        """
+        case = await self.get_case(session, review)
+        if case is None:
+            return None
+        message_repository = SupportCaseMessageRepository.from_session(session)
+        if not await message_repository.is_open(case.id):
+            return None
+        return await support_case_service.close(
+            session,
+            case,
+            author_kind=SupportCaseMessageAuthorKind.system,
+            body="Organization deleted.",
+            audience=[],
+        )
 
     async def get_case(
         self, session: AsyncSession | AsyncReadSession, review: OrganizationReview

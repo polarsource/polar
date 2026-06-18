@@ -1,4 +1,5 @@
 import { useCustomerSubscriptionChargePreview } from '@/hooks/queries/customerPortal'
+import { isFreePrice } from '@/utils/product'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { useMemo } from 'react'
@@ -43,9 +44,7 @@ export const CurrentPeriodOverview = ({
   const hasDiscount =
     subscriptionPreview && subscriptionPreview.discount_amount > 0
 
-  const isFreeProduct = subscription.prices.some(
-    (price) => price.amount_type === 'free',
-  )
+  const isFreeProduct = subscription.prices.some(isFreePrice)
 
   // For subscriptions set to cancel, only show if there are meters
   if (isCancelingAtPeriodEnd && !hasMeters) {

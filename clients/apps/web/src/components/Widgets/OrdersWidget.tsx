@@ -61,7 +61,7 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
       <div className="flex flex-row justify-between gap-x-4">
         <h3 className="min-w-0 truncate">{order.description}</h3>
         <span>
-          {formatCurrency('compact')(order.net_amount, order.currency)}
+          {formatCurrency('standard')(order.net_amount, order.currency)}
         </span>
       </div>
     </Card>

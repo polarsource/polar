@@ -7,17 +7,12 @@ import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import { useMetrics } from '@/hooks/polar/metrics'
 import { useOrders } from '@/hooks/polar/orders'
-import { useProduct, useProductUpdate } from '@/hooks/polar/products'
+import { useProduct } from '@/hooks/polar/products'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
-import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { useContext, useMemo } from 'react'
 import { RefreshControl, ScrollView } from 'react-native'
-
-export interface ProductFullMediasMixin {
-  full_medias: schemas['ProductMediaFileRead'][]
-}
 
 export default function Index() {
   const { id } = useLocalSearchParams()
@@ -50,14 +45,6 @@ export default function Index() {
   const flatLatestProductOrders = latestProductOrders?.pages.flatMap(
     (page) => page.items,
   )
-
-  const updateProduct = useProductUpdate(organization?.id, id as string)
-
-  const { error: mutationError } = updateProduct
-
-  if (mutationError) {
-    throw mutationError
-  }
 
   if (!product) {
     return (

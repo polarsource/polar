@@ -144,15 +144,11 @@ class SeatAssignmentTarget:
 
 
 class SeatService:
-    async def _resolve_billing_manager_display(
-        self, session: AsyncSession, customer: Customer
-    ) -> str:
+    def _resolve_billing_manager_display(self, customer: Customer) -> str:
         """Resolve billing manager display string for invitation emails."""
         if customer.email is not None:
             return customer.email
-        owner = await MemberRepository.from_session(session).get_owner_by_customer_id(
-            customer.id
-        )
+        owner = customer.owner
         return (owner.email if owner else None) or customer.display_name
 
     def _get_product(self, container: SeatContainer) -> Product | None:
@@ -402,10 +398,8 @@ class SeatService:
             )
             if organization:
                 if target.seat_member_email is not None:
-                    billing_manager_display = (
-                        await self._resolve_billing_manager_display(
-                            session, billing_manager_customer
-                        )
+                    billing_manager_display = self._resolve_billing_manager_display(
+                        billing_manager_customer
                     )
                     send_seat_invitation_email(
                         customer_email=target.seat_member_email,
@@ -728,8 +722,8 @@ class SeatService:
             order_id=seat.order_id,
         )
 
-        billing_manager_display = await self._resolve_billing_manager_display(
-            session, billing_customer
+        billing_manager_display = self._resolve_billing_manager_display(
+            billing_customer
         )
 
         send_seat_invitation_email(

@@ -11,6 +11,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject, Organization, User
 from polar.authz.service import get_accessible_org_ids
 from polar.customer.repository import CustomerRepository
+from polar.customer_seat.repository import CustomerSeatRepository
 from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -309,6 +310,7 @@ class MemberService:
         # customer) produces a duplicate owner on the next sign-in.
         existing_owner = await repository.get_owner_by_customer_id(customer.id)
         if existing_owner is not None:
+            customer.owner = existing_owner
             log.debug(
                 "member.create_owner_member.skipped",
                 reason="owner_already_exists",
@@ -329,6 +331,7 @@ class MemberService:
 
         try:
             created_member = await repository.create(member, flush=True)
+            customer.owner = created_member
             log.info(
                 "member.create_owner_member.success",
                 customer_id=customer.id,
@@ -353,6 +356,7 @@ class MemberService:
             )
             existing_owner = await repository.get_owner_by_customer_id(customer.id)
             if existing_owner is not None:
+                customer.owner = existing_owner
                 log.info(
                     "member.create_owner_member.found_existing",
                     customer_id=customer.id,
@@ -641,6 +645,49 @@ class MemberService:
                 return existing_member
             raise
 
+    async def _validate_email_change(
+        self,
+        session: AsyncSession,
+        member: Member,
+        new_email: str,
+    ) -> None:
+        # An individual customer's only member is its owner, whose email is
+        # auto-synced from customer.email (see sync_owner_email). A direct edit
+        # would be silently reverted and could spawn a duplicate owner on portal
+        # sign-in.
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(member.customer_id)
+        if customer is not None and customer.type == CustomerType.individual:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "email"),
+                        "msg": (
+                            "Cannot change the email of an individual customer's "
+                            "owner. Update the customer's email instead."
+                        ),
+                        "input": new_email,
+                    }
+                ]
+            )
+
+        repository = MemberRepository.from_session(session)
+        existing = await repository.get_by_customer_id_and_email(
+            member.customer_id, new_email
+        )
+        if existing is not None and existing.id != member.id:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "email"),
+                        "msg": "A member with this email already exists for this customer.",
+                        "input": new_email,
+                    }
+                ]
+            )
+
     async def update(
         self,
         session: AsyncSession,
@@ -650,6 +697,7 @@ class MemberService:
         role: MemberRole | None = None,
         caller_member: Member | None = None,
         allow_ownership_transfer: bool = False,
+        email: str | None = None,
     ) -> Member:
         """
         Update a member.
@@ -659,6 +707,8 @@ class MemberService:
             member: Member to update
             name: Optional new name
             role: Optional new role
+            email: Optional new email. Cannot be changed for the owner of an
+                   individual customer.
             caller_member: The member making the request (for customer portal ownership transfer)
             allow_ownership_transfer: If True, allows ownership transfer without caller_member
                                       (for admin API). The existing owner will be demoted.
@@ -728,11 +778,18 @@ class MemberService:
                     ]
                 )
 
+        new_email: str | None = None
+        if email is not None and email.strip() != member.email:
+            new_email = email.strip()
+            await self._validate_email_change(session, member, new_email)
+
         update_dict = {}
         if name is not None:
             update_dict["name"] = name
         if role is not None and not transferred:
             update_dict["role"] = role
+        if new_email is not None:
+            update_dict["email"] = new_email
 
         if not update_dict and not transferred:
             return member
@@ -742,6 +799,11 @@ class MemberService:
             if update_dict
             else member
         )
+
+        if new_email is not None:
+            seat_repository = CustomerSeatRepository.from_session(session)
+            await seat_repository.update_email_by_member_id(member.id, new_email)
+
         log.info(
             "member.update.success",
             member_id=member.id,

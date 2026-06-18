@@ -5,7 +5,7 @@ import {
   useCustomerPaymentMethods,
   useCustomerUpdateSubscription,
 } from '@/hooks/queries/customerPortal'
-import { hasLegacyRecurringPrices } from '@/utils/product'
+import { hasLegacyRecurringPrices, isFreePrice } from '@/utils/product'
 import { formatTrialEnd, useTrialChangeOutcome } from '@/utils/trial-change'
 import { Client, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
@@ -78,9 +78,7 @@ const CustomerChangePlanModal = ({
   const needToAddPaymentMethod = useMemo(() => {
     if (!selectedProduct) return false
 
-    const selectedPlanIsFree = selectedProduct?.prices.some(
-      (p) => p.amount_type === 'free',
-    )
+    const selectedPlanIsFree = selectedProduct?.prices.some(isFreePrice)
 
     if (selectedPlanIsFree) return false
 
@@ -189,9 +187,7 @@ const CustomerChangePlanModal = ({
 
     if (willIssueInvoice && !approveImmediateInvoice) return false
 
-    const selectedPlanIsFree = selectedProduct?.prices.some(
-      (p) => p.amount_type === 'free',
-    )
+    const selectedPlanIsFree = selectedProduct?.prices.some(isFreePrice)
 
     if (selectedPlanIsFree) return true
 

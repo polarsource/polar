@@ -1,3 +1,4 @@
+import { useHasPermission } from '@/hooks/permissions'
 import { useOptimisticSave } from '@/hooks/useOptimisticSave'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
@@ -18,11 +19,10 @@ const OrganizationNotificationSettings: React.FC<
   const updateUserOrganizationNotificationSettings =
     useUpdateUserOrganizationNotificationSettings(organization.id)
 
+  const canManage = useHasPermission(organization.id, 'organization:manage')
+
   const { value: settings, update } = useOptimisticSave(
-    // TODO (maxime): default to organization settings is temporary while user level is Nullable.
-    // once backfill script ran and user level is non-nullable, we can remove the fallback to organization settings.
-    userNotificationSettings.notification_settings ??
-      organization.notification_settings,
+    userNotificationSettings.notification_settings,
     async (notification_settings) => {
       const { error } =
         await updateUserOrganizationNotificationSettings.mutateAsync({
@@ -66,6 +66,23 @@ const OrganizationNotificationSettings: React.FC<
           }
         />
       </SettingsGroupItem>
+
+      {canManage === true && (
+        <SettingsGroupItem
+          title="Prevented Chargebacks"
+          description="Receive a notification when a refund is issued to prevent a chargeback"
+        >
+          <Switch
+            checked={settings.chargeback_prevention ?? true}
+            onCheckedChange={(checked) =>
+              update((previous) => ({
+                ...previous,
+                chargeback_prevention: checked,
+              }))
+            }
+          />
+        </SettingsGroupItem>
+      )}
     </SettingsGroup>
   )
 }

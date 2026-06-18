@@ -70,11 +70,9 @@ from .product_media import ProductMedia
 from .product_price import (
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
-    LegacyRecurringProductPriceFree,
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
-    ProductPriceFree,
     ProductPriceMeteredUnit,
     ProductPriceSeatUnit,
 )
@@ -85,6 +83,7 @@ from .subscription_meter import SubscriptionMeter
 from .subscription_product_price import SubscriptionProductPrice
 from .subscription_update import SubscriptionUpdate
 from .support_case import (
+    DisputeSupportCase,
     ReviewAppealSupportCase,
     SupportCase,
     SupportCaseAttachment,
@@ -129,6 +128,7 @@ __all__ = [
     "DiscountProduct",
     "DiscountRedemption",
     "Dispute",
+    "DisputeSupportCase",
     "Downloadable",
     "EmailLog",
     "EmailOTP",
@@ -143,7 +143,6 @@ __all__ = [
     "IssueReward",
     "LegacyRecurringProductPriceCustom",
     "LegacyRecurringProductPriceFixed",
-    "LegacyRecurringProductPriceFree",
     "LicenseKey",
     "LicenseKeyActivation",
     "LoginCode",
@@ -185,7 +184,6 @@ __all__ = [
     "ProductPrice",
     "ProductPriceCustom",
     "ProductPriceFixed",
-    "ProductPriceFree",
     "ProductPriceMeteredUnit",
     "ProductPriceSeatUnit",
     "ProductVisibility",

@@ -759,6 +759,31 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/enable-preview-access': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Enable Preview Access
+     * @description Enable preview access to in-preview features for an organization.
+     *
+     *     On the Sandbox environment, organizations can opt into the features that
+     *     are otherwise only available to paid plans in production.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['organizations:enable_preview_access']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organizations/{id}/submit-review': {
     parameters: {
       query?: never
@@ -3551,7 +3576,7 @@ export interface paths {
      * Update Member
      * @description Update a member.
      *
-     *     Only name and role can be updated.
+     *     Only name, email and role can be updated.
      *     The authenticated user or organization must have access to the member's organization.
      *
      *     **Scopes**: `members:write`
@@ -6918,6 +6943,17 @@ export interface components {
      * @enum {string}
      */
     AppealDecision: 'approved' | 'rejected'
+    /** AppealNotRejectedError */
+    AppealNotRejectedError: {
+      /**
+       * Error
+       * @example AppealNotRejectedError
+       * @constant
+       */
+      error: 'AppealNotRejectedError'
+      /** Detail */
+      detail: string
+    }
     /**
      * AttachedCustomField
      * @description Schema of a custom field attached to a resource.
@@ -12799,7 +12835,6 @@ export interface components {
         [key: string]: (
           | components['schemas']['ProductPriceFixedCreate']
           | components['schemas']['ProductPriceCustomCreate']
-          | components['schemas']['ProductPriceFreeCreate']
           | components['schemas']['ProductPriceSeatBasedCreate']
           | components['schemas']['ProductPriceMeteredUnitCreate']
         )[]
@@ -15701,7 +15736,7 @@ export interface components {
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
-      readonly avatar_url: string
+      avatar_url: string | null
     }
     /** CustomerIndividualCreate */
     CustomerIndividualCreate: {
@@ -16733,7 +16768,7 @@ export interface components {
       )[]
       /**
        * BenefitPublic
-       * @description The benefits granted by the product.
+       * @description List of benefits granted by the product.
        */
       benefits: components['schemas']['BenefitPublic'][]
       /**
@@ -17262,6 +17297,11 @@ export interface components {
        */
       deleted_at: string | null
       /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
+      avatar_url: string | null
+      /**
        * Active Subscriptions
        * @description The customer's active subscriptions.
        */
@@ -17276,11 +17316,6 @@ export interface components {
        * @description The customer's active meters.
        */
       active_meters: components['schemas']['CustomerStateMeter'][]
-      /**
-       * Avatar Url
-       * @example https://www.gravatar.com/avatar/xxx?d=404
-       */
-      readonly avatar_url: string
     }
     /**
      * CustomerStateMeter
@@ -17585,6 +17620,11 @@ export interface components {
        */
       deleted_at: string | null
       /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
+      avatar_url: string | null
+      /**
        * Active Subscriptions
        * @description The customer's active subscriptions.
        */
@@ -17599,11 +17639,6 @@ export interface components {
        * @description The customer's active meters.
        */
       active_meters: components['schemas']['CustomerStateMeter'][]
-      /**
-       * Avatar Url
-       * @example https://www.gravatar.com/avatar/xxx?d=404
-       */
-      readonly avatar_url: string
     }
     /** CustomerSubscription */
     CustomerSubscription: {
@@ -18062,7 +18097,7 @@ export interface components {
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
-      readonly avatar_url: string
+      avatar_url: string | null
     }
     /** CustomerTeamCreate */
     CustomerTeamCreate: {
@@ -20417,7 +20452,6 @@ export interface components {
     LegacyRecurringProductPrice:
       | components['schemas']['LegacyRecurringProductPriceFixed']
       | components['schemas']['LegacyRecurringProductPriceCustom']
-      | components['schemas']['LegacyRecurringProductPriceFree']
     /**
      * LegacyRecurringProductPriceCustom
      * @description A pay-what-you-want recurring price for a product, i.e. a subscription.
@@ -20558,69 +20592,6 @@ export interface components {
        * @description The price in cents.
        */
       price_amount: number
-      /**
-       * Legacy
-       * @constant
-       */
-      readonly legacy: true
-    }
-    /**
-     * LegacyRecurringProductPriceFree
-     * @description A free recurring price for a product, i.e. a subscription.
-     *
-     *     **Deprecated**: The recurring interval should be set on the product itself.
-     */
-    LegacyRecurringProductPriceFree: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the price.
-       */
-      id: string
-      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
-      source: components['schemas']['ProductPriceSource']
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      amount_type: 'free'
-      /**
-       * Price Currency
-       * @description The currency in which the customer will be charged.
-       */
-      price_currency: string
-      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
-      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
-      /**
-       * Is Archived
-       * @description Whether the price is archived and no longer available.
-       */
-      is_archived: boolean
-      /**
-       * Product Id
-       * Format: uuid4
-       * @description The ID of the product owning the price.
-       */
-      product_id: string
-      /**
-       * Type
-       * @description The type of the price.
-       * @constant
-       */
-      type: 'recurring'
-      /** @description The recurring interval of the price. */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
        * Legacy
        * @constant
@@ -20808,7 +20779,7 @@ export interface components {
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
-      readonly avatar_url: string
+      avatar_url: string | null
     }
     /** LicenseKeyDeactivate */
     LicenseKeyDeactivate: {
@@ -21632,6 +21603,8 @@ export interface components {
     MemberUpdate: {
       /** Name */
       name?: string | null
+      /** Email */
+      email?: string | null
       /**
        * @description The role of the member within the customer.
        * @example member
@@ -22642,7 +22615,7 @@ export interface components {
       tos_uri?: string | null
       /** Policy Uri */
       policy_uri?: string | null
-      /** @default organization */
+      /** @default user */
       default_sub_type: components['schemas']['SubType']
       /**
        * Created At
@@ -22707,7 +22680,7 @@ export interface components {
       tos_uri?: string | null
       /** Policy Uri */
       policy_uri?: string | null
-      /** @default organization */
+      /** @default user */
       default_sub_type: components['schemas']['SubType']
     }
     /** OAuth2ClientConfigurationUpdate */
@@ -22753,7 +22726,7 @@ export interface components {
       tos_uri?: string | null
       /** Policy Uri */
       policy_uri?: string | null
-      /** @default organization */
+      /** @default user */
       default_sub_type: components['schemas']['SubType']
       /** Client Id */
       client_id: string
@@ -23168,7 +23141,7 @@ export interface components {
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
-      readonly avatar_url: string
+      avatar_url: string | null
     }
     /**
      * OrderFinalize
@@ -23879,8 +23852,6 @@ export interface components {
         | null
       /** @description Settings related to subscriptions management */
       subscription_settings: components['schemas']['OrganizationSubscriptionSettings']
-      /** @description Settings related to notifications */
-      notification_settings: components['schemas']['OrganizationNotificationSettings']
       /** @description Settings related to customer emails */
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
@@ -24755,9 +24726,6 @@ export interface components {
       subscription_settings?:
         | components['schemas']['OrganizationSubscriptionSettings']
         | null
-      notification_settings?:
-        | components['schemas']['OrganizationNotificationSettings']
-        | null
       customer_email_settings?:
         | components['schemas']['OrganizationCustomerEmailSettings']
         | null
@@ -24955,17 +24923,17 @@ export interface components {
        */
       off_session_charges_enabled: boolean
       /**
-       * Billing Enabled
-       * @description If this organization has billing enabled
-       * @default false
-       */
-      billing_enabled: boolean
-      /**
        * Slack Benefit Enabled
        * @description Enables the slack shared channel benefit
        * @default false
        */
       slack_benefit_enabled: boolean
+      /**
+       * Preview Access Enabled
+       * @description If this organization has preview access to new features enabled
+       * @default false
+       */
+      preview_access_enabled: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate
@@ -25086,8 +25054,6 @@ export interface components {
         | null
       /** @description Settings related to subscriptions management */
       subscription_settings: components['schemas']['OrganizationSubscriptionSettings']
-      /** @description Settings related to notifications */
-      notification_settings: components['schemas']['OrganizationNotificationSettings']
       /** @description Settings related to customer emails */
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
@@ -25417,6 +25383,8 @@ export interface components {
       new_order: boolean
       /** New Subscription */
       new_subscription: boolean
+      /** Chargeback Prevention */
+      chargeback_prevention?: boolean
     }
     /** OrganizationOrder */
     OrganizationOrder: {
@@ -26253,9 +26221,6 @@ export interface components {
       subscription_settings?:
         | components['schemas']['OrganizationSubscriptionSettings']
         | null
-      notification_settings?:
-        | components['schemas']['OrganizationNotificationSettings']
-        | null
       customer_email_settings?:
         | components['schemas']['OrganizationCustomerEmailSettings']
         | null
@@ -26376,8 +26341,6 @@ export interface components {
         | null
       /** @description Settings related to subscriptions management */
       subscription_settings: components['schemas']['OrganizationSubscriptionSettings']
-      /** @description Settings related to notifications */
-      notification_settings: components['schemas']['OrganizationNotificationSettings']
       /** @description Settings related to customer emails */
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
@@ -27489,7 +27452,6 @@ export interface components {
       prices: (
         | components['schemas']['ProductPriceFixedCreate']
         | components['schemas']['ProductPriceCustomCreate']
-        | components['schemas']['ProductPriceFreeCreate']
         | components['schemas']['ProductPriceSeatBasedCreate']
         | components['schemas']['ProductPriceMeteredUnitCreate']
       )[]
@@ -27560,7 +27522,6 @@ export interface components {
       prices: (
         | components['schemas']['ProductPriceFixedCreate']
         | components['schemas']['ProductPriceCustomCreate']
-        | components['schemas']['ProductPriceFreeCreate']
         | components['schemas']['ProductPriceSeatBasedCreate']
         | components['schemas']['ProductPriceMeteredUnitCreate']
       )[]
@@ -27681,7 +27642,6 @@ export interface components {
     ProductPrice:
       | components['schemas']['ProductPriceFixed']
       | components['schemas']['ProductPriceCustom']
-      | components['schemas']['ProductPriceFree']
       | components['schemas']['ProductPriceSeatBased']
       | components['schemas']['ProductPriceMeteredUnit']
     /**
@@ -28256,72 +28216,6 @@ export interface components {
       price_amount: number
     }
     /**
-     * ProductPriceFree
-     * @description A free price for a product.
-     */
-    ProductPriceFree: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the price.
-       */
-      id: string
-      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
-      source: components['schemas']['ProductPriceSource']
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      amount_type: 'free'
-      /**
-       * Price Currency
-       * @description The currency in which the customer will be charged.
-       */
-      price_currency: string
-      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
-      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
-      /**
-       * Is Archived
-       * @description Whether the price is archived and no longer available.
-       */
-      is_archived: boolean
-      /**
-       * Product Id
-       * Format: uuid4
-       * @description The ID of the product owning the price.
-       */
-      product_id: string
-    }
-    /**
-     * ProductPriceFreeCreate
-     * @description Schema to create a free price.
-     */
-    ProductPriceFreeCreate: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      amount_type: 'free'
-      /**
-       * @description The currency in which the customer will be charged.
-       * @default usd
-       */
-      price_currency: components['schemas']['PresentmentCurrency']
-      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
-      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
-    }
-    /**
      * ProductPriceMeter
      * @description A meter associated to a metered price.
      */
@@ -28676,7 +28570,6 @@ export interface components {
             | (
                 | components['schemas']['ProductPriceFixedCreate']
                 | components['schemas']['ProductPriceCustomCreate']
-                | components['schemas']['ProductPriceFreeCreate']
                 | components['schemas']['ProductPriceSeatBasedCreate']
                 | components['schemas']['ProductPriceMeteredUnitCreate']
               )
@@ -30328,7 +30221,7 @@ export interface components {
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
-      readonly avatar_url: string
+      avatar_url: string | null
     }
     /**
      * SubscriptionCycledEvent
@@ -31547,6 +31440,9 @@ export interface components {
       | 'appeal_approved'
       | 'appeal_denied'
       | 'info_requested'
+      | 'dispute_under_review'
+      | 'dispute_won'
+      | 'dispute_lost'
     /** SupportCaseThread */
     SupportCaseThread: {
       case: components['schemas']['SupportCase']
@@ -31561,7 +31457,7 @@ export interface components {
      * SupportCaseType
      * @enum {string}
      */
-    SupportCaseType: 'review_appeal'
+    SupportCaseType: 'review_appeal' | 'dispute'
     SystemEvent:
       | components['schemas']['MeterCreditEvent']
       | components['schemas']['MeterResetEvent']
@@ -31710,6 +31606,7 @@ export interface components {
       | 've_rif'
       | 'vn_tin'
       | 'za_vat'
+      | 'mu_tan'
     /**
      * TaxJurisdiction
      * @description Aggregated tax remitted by Polar for a single jurisdiction.
@@ -32265,9 +32162,7 @@ export interface components {
     /** UserOrganizationNotificationSettings */
     UserOrganizationNotificationSettings: {
       /** @description The authenticated user's notification preferences for this organization. */
-      notification_settings?:
-        | components['schemas']['OrganizationNotificationSettings']
-        | null
+      notification_settings: components['schemas']['OrganizationNotificationSettings']
     }
     /** UserOrganizationNotificationSettingsUpdate */
     UserOrganizationNotificationSettingsUpdate: {
@@ -35408,6 +35303,55 @@ export interface operations {
       }
     }
   }
+  'organizations:enable_preview_access': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Preview access enabled. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Organization']
+        }
+      }
+      /** @description Preview access can only be enabled on the Sandbox environment. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'organizations:submit_review': {
     parameters: {
       query?: never
@@ -35867,13 +35811,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description A human-review case already exists for this review. */
+      /** @description The appeal has not been rejected, or a human-review case already exists for this review. */
       409: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CaseAlreadyExistsError']
+          'application/json':
+            | components['schemas']['AppealNotRejectedError']
+            | components['schemas']['CaseAlreadyExistsError']
         }
       }
       /** @description Validation Error */
@@ -57805,9 +57751,6 @@ export const legacyRecurringProductPriceCustomAmount_typeValues: ReadonlyArray<
 export const legacyRecurringProductPriceFixedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['LegacyRecurringProductPriceFixed']['amount_type']
 > = ['fixed']
-export const legacyRecurringProductPriceFreeAmount_typeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['LegacyRecurringProductPriceFree']['amount_type']
-> = ['free']
 export const licenseKeyStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['LicenseKeyStatus']
 > = ['granted', 'revoked', 'disabled']
@@ -59536,12 +59479,6 @@ export const productPriceFixedAmount_typeValues: ReadonlyArray<
 export const productPriceFixedCreateAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductPriceFixedCreate']['amount_type']
 > = ['fixed']
-export const productPriceFreeAmount_typeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ProductPriceFree']['amount_type']
-> = ['free']
-export const productPriceFreeCreateAmount_typeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ProductPriceFreeCreate']['amount_type']
-> = ['free']
 export const productPriceMeteredUnitAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductPriceMeteredUnit']['amount_type']
 > = ['metered_unit']
@@ -59900,10 +59837,13 @@ export const supportCaseMessageTypeValues: ReadonlyArray<
   'appeal_approved',
   'appeal_denied',
   'info_requested',
+  'dispute_under_review',
+  'dispute_won',
+  'dispute_lost',
 ]
 export const supportCaseTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SupportCaseType']
-> = ['review_appeal']
+> = ['review_appeal', 'dispute']
 export const taxBehaviorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TaxBehavior']
 > = ['inclusive', 'exclusive']
@@ -59988,6 +59928,7 @@ export const taxIDFormatValues: ReadonlyArray<
   've_rif',
   'vn_tin',
   'za_vat',
+  'mu_tan',
 ]
 export const taxJurisdictionSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TaxJurisdictionSortProperty']

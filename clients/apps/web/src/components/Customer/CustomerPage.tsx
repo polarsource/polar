@@ -4,6 +4,7 @@ import { BenefitGrantStatus } from '@/components/Benefit/BenefitGrantStatus'
 import { CustomerEventsView } from '@/components/Customer/CustomerEventsView'
 import { CustomerUsageView } from '@/components/Customer/CustomerUsageView'
 import { MembersSection } from '@/components/Customer/MembersSection'
+import { OrderStatus } from '@/components/Orders/OrderStatus'
 import CostsPage from '@/app/(main)/dashboard/[organization]/(header)/analytics/costs/CostsPage'
 import PaymentMethod from '@/components/PaymentMethod/PaymentMethod'
 import PaymentStatus from '@/components/PaymentStatus/PaymentStatus'
@@ -367,12 +368,10 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 ),
               },
               {
-                header: 'Created At',
-                accessorKey: 'created_at',
+                header: 'Status',
+                accessorKey: 'status',
                 cell: ({ row: { original } }) => (
-                  <span className="dark:text-polar-500 text-sm text-gray-500">
-                    <FormattedDateTime datetime={original.created_at} />
-                  </span>
+                  <OrderStatus status={original.status} />
                 ),
               },
               {
@@ -383,6 +382,13 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                     original.net_amount,
                     original.currency,
                   ),
+              },
+              {
+                header: 'Date',
+                accessorKey: 'created_at',
+                cell: ({ row: { original } }) => (
+                  <FormattedDateTime datetime={original.created_at} />
+                ),
               },
               {
                 header: '',
@@ -414,13 +420,11 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 header: 'Created At',
                 accessorKey: 'created_at',
                 cell: ({ row: { original } }) => (
-                  <span className="dark:text-polar-500 text-sm text-gray-500">
-                    <FormattedDateTime
-                      dateStyle="medium"
-                      resolution="time"
-                      datetime={original.created_at}
-                    />
-                  </span>
+                  <FormattedDateTime
+                    dateStyle="medium"
+                    resolution="time"
+                    datetime={original.created_at}
+                  />
                 ),
               },
               {
@@ -495,9 +499,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 accessorKey: 'granted_at',
                 cell: ({ row: { original } }) =>
                   original.granted_at ? (
-                    <span className="dark:text-polar-500 text-sm text-gray-500">
-                      <FormattedDateTime datetime={original.granted_at} />
-                    </span>
+                    <FormattedDateTime datetime={original.granted_at} />
                   ) : (
                     <span>—</span>
                   ),
@@ -507,9 +509,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 accessorKey: 'revoked_at',
                 cell: ({ row: { original } }) =>
                   original.revoked_at ? (
-                    <span className="dark:text-polar-500 text-sm text-gray-500">
-                      <FormattedDateTime datetime={original.revoked_at} />
-                    </span>
+                    <FormattedDateTime datetime={original.revoked_at} />
                   ) : (
                     <span className="dark:text-polar-800 text-gray-400">—</span>
                   ),
@@ -657,9 +657,10 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       {showMembersTab && (
         <TabsContent value="members" className="flex flex-col gap-y-8">
           <MembersSection
-            customerId={customer.id}
-            organizationId={organization.id}
-            customerType={customer.type ?? undefined}
+            customer={customer}
+            organization={organization}
+            subscriptions={subscriptions?.items}
+            orders={orders?.items}
           />
         </TabsContent>
       )}

@@ -11,11 +11,9 @@ from polar.kit.db.models import RecordModel
 from polar.models.product_price import (
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
-    LegacyRecurringProductPriceFree,
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
-    ProductPriceFree,
     ProductPriceSeatUnit,
 )
 
@@ -87,8 +85,6 @@ class OrderItem(RecordModel):
             amount = price.price_amount
         elif isinstance(price, ProductPriceCustom | LegacyRecurringProductPriceCustom):
             assert amount is not None, "amount must be provided for custom prices"
-        elif isinstance(price, ProductPriceFree | LegacyRecurringProductPriceFree):
-            amount = 0
         elif isinstance(price, ProductPriceSeatUnit):
             assert seats is not None, "seats must be provided for seat-based prices"
             amount = price.calculate_amount(seats)

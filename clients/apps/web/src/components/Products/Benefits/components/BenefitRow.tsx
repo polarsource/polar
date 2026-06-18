@@ -105,6 +105,8 @@ export const BenefitRow = ({
     })
   }, [deleteBenefit, benefit])
 
+  const isPublic = benefit.visibility === 'public'
+
   return (
     <>
       <div
@@ -130,9 +132,16 @@ export const BenefitRow = ({
             <span className={twMerge('text-sm', selected ? 'font-medium' : '')}>
               {benefit.description}
             </span>
-            <span className="dark:text-polar-500 text-xs text-gray-500">
-              {benefitsDisplayNames[benefit.type]}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="dark:text-polar-500 text-xs text-gray-500">
+                {benefitsDisplayNames[benefit.type]}
+              </span>
+              {selected && !isPublic ? (
+                <span className="dark:bg-polar-700 dark:text-polar-500 inline-flex items-center rounded-full bg-gray-100 px-2 text-xs text-gray-500">
+                  Hidden from customers
+                </span>
+              ) : null}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">

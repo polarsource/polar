@@ -66,6 +66,7 @@ from polar.organization.repository import (
     OrganizationReviewRepository,
 )
 from polar.organization_review.appeal_case import (
+    AppealNotRejectedError,
     CaseAlreadyExistsError,
     CaseClosedError,
 )
@@ -323,6 +324,38 @@ async def update(
     return await organization_service.update(
         session, authz.organization, organization_update
     )
+
+
+@router.post(
+    "/{id}/enable-preview-access",
+    response_model=OrganizationSchema,
+    summary="Enable Preview Access",
+    responses={
+        200: {"description": "Preview access enabled."},
+        403: {
+            "description": (
+                "Preview access can only be enabled on the Sandbox environment."
+            ),
+            "model": NotPermitted.schema(),
+        },
+        404: OrganizationNotFound,
+    },
+    tags=[APITag.private],
+)
+async def enable_preview_access(
+    authz: AuthorizeOrgManage,
+    session: AsyncSession = Depends(get_db_session),
+) -> Organization:
+    """Enable preview access to in-preview features for an organization.
+
+    On the Sandbox environment, organizations can opt into the features that
+    are otherwise only available to paid plans in production.
+    """
+    if not settings.is_sandbox():
+        raise NotPermitted(
+            "Preview access can only be enabled on the Sandbox environment."
+        )
+    return await organization_service.enable_preview_access(session, authz.organization)
 
 
 @router.post(
@@ -722,8 +755,11 @@ async def submit_appeal(
         200: {"description": "Human review case opened."},
         404: SupportCaseNotFound,
         409: {
-            "description": "A human-review case already exists for this review.",
-            "model": CaseAlreadyExistsError.schema(),
+            "description": (
+                "The appeal has not been rejected, or a human-review case "
+                "already exists for this review."
+            ),
+            "model": AppealNotRejectedError.schema() | CaseAlreadyExistsError.schema(),
         },
     },
     tags=[APITag.private],

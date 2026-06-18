@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Index, Uuid
@@ -18,15 +18,18 @@ class OrganizationRole(StrEnum):
     member = "member"
 
 
-# duplicated from Organization.notification_settings, (will be cleaned up in a future PR)
 class OrganizationNotificationSettings(TypedDict):
     new_order: bool
     new_subscription: bool
+    # NotRequired so rows written before the backfill (lacking the key) still
+    # serialize; reads default it to True.
+    chargeback_prevention: NotRequired[bool]
 
 
 _default_notification_settings: OrganizationNotificationSettings = {
     "new_order": True,
     "new_subscription": True,
+    "chargeback_prevention": True,
 }
 
 
@@ -62,7 +65,7 @@ class UserOrganization(TimestampedModel):
     )
 
     notification_settings: Mapped[OrganizationNotificationSettings] = mapped_column(
-        JSONB, nullable=True, default=_default_notification_settings
+        JSONB, nullable=False, default=_default_notification_settings
     )
 
     @declared_attr

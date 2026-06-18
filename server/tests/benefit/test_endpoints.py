@@ -353,7 +353,6 @@ class TestCreateBenefit:
 
         json = response.json()
         assert json["visibility"] == Visibility.private
-        assert json["visibility_configurable"] is True
 
 
 @pytest.mark.asyncio

@@ -1,0 +1,187 @@
+---
+title: Building an LLM safe design system
+slug: orbit-llm-safe-design-system
+description: Our quest to build a scalable, LLM-safe design system
+created_at: 2026-06-16T12:00:00.000000+00:00
+---
+
+<BlogHero
+  title="Building an LLM safe design system"
+  description="Our quest to build a scalable, LLM-safe design system"
+  publishDate="2026-06-16"
+/>
+
+![Orbit design system](/posts/blog/orbit-llm-safe-design-system/cover.jpg)
+
+<InnerWrapper>
+
+Most of the UI code shipped at Polar today is written with an LLM in the loop. That is great for speed. It is harder on consistency, unless your design system is built for it.
+
+We're early on a new one, called Orbit, and still figuring a lot of it out. We are probably right about a few things, and wrong about other. This post is about the thinking behind it, written down while it's fresh, so we can argue with it later.
+
+The starting observation is simple. The problem is not that LLMs can't write CSS or Tailwind classes. They write it fluently. The problem is that they write it without being aware of the underlying decisions.
+
+Ask an LLM to build a card and it will reach for `p-4`, `rounded-lg`, `bg-gray-100`, `dark:bg-zinc-900`, `text-gray-500`. Every value is reasonable. None of them is necessarily yours. Multiply that across hundreds of components and thousands of generations, and your interface slowly drifts into a thousand slightly different grays. Even though you've tried to prevent it in CLAUDE.md
+
+So the bet we're making with Orbit is this: make it hard to express an off-brand decision in code in the first place. Ideally close to impossible. If a value isn't a design decision we've actually made, it should not pass our CI.
+
+### Before we begin
+
+We want to make something very clear, this is not a knock on Tailwind. We think it's outstanding. It's the most ergonomic utility CSS has ever had, it's what a lot of Polar was built with, and we'd reach for it again on a project where humans type most of the markup. Its openness is a genuine feature when a person is at the keyboard.
+
+The catch is narrow and specific: that same openness is exactly what works against us once an LLM is doing the typing. We're not steering away from Tailwind because it's bad. We're constraining it because our author changed.
+
+We believe that Tailwind is the styling-approach to pick if you want to move fast & iterate. This post is however about the changes we’ve had to make to future-proof our codebase for a growing team and ensuring consistency in an era of agentic LLMs.
+
+### The problem with strings
+
+Tailwind classes are strings. Classes like `className="flex p-4 bg-blue-500"` are just text until it hits the compiler. That is exactly what makes it fast to write, and exactly what makes it risky for generated code.
+
+A string surface gives an LLM infinite room to be slightly wrong:
+
+- `p-4`, `p-5`, `p-[17px]`, `px-4 py-3`, all valid, all different spacing
+- `bg-gray-100`, `bg-zinc-100`, `bg-neutral-100`, all valid, none canonical
+- `dark:` variants the LLM has to remember to add, and gets wrong half the time
+- arbitrary values like `text-[#3b82f6]` that bypass your palette entirely
+- None of these are syntax errors. They all pass lint. They all render. They are wrong in the one way static analysis can't catch: they are off-system. An LLM has no way to know that your gray is `oklch(0.96 0.003 264)` and not `bg-gray-100`, because nothing in the type system tells it.
+- Strings are complex to write lint-rules for. A never-ending chase which usually ends up in special-cases your regex didn’t account for. Props on the other hand are not.
+
+The escape hatches are the part we keep coming back to. The moment an LLM can drop to a raw className or an inline style, every guarantee you built around it gets weaker. And LLMs love escape hatches, because their training data is full of them.
+
+### A class is a value, not a decision
+
+Step back from the LLM angle for a second, because there's a more basic problem with `p-4` and `--color-gray-100`, and it's true no matter who is typing.
+
+A design system is not a pile of values. It's a set of decisions. Cards sit on this surface. De-emphasised text uses this color. The gap between stacked elements is this. The value is the consequence of the decision, never the decision itself.
+
+`p-4` is a value. It says "16 pixels of padding." It does not say why, or where it's allowed, or what it should match. `bg-gray-100` is a value: one specific gray, carrying no idea of whether that gray is a card, a hover state, a disabled control, or a coincidence. A CSS variable doesn't fix this. `--color-gray-100: #f3f4f6` is still a value with a nicer name. It tells you what the color is, never what it's for.
+
+When you author in values, the decision evaporates at the point of use. Six months later you have 40 places using `bg-gray-100` and no way to know which of them meant "card." Change your mind about card backgrounds and you're grepping a color, not editing a decision. The intent was never written down anywhere a tool, a teammate, or a model could read it back.
+
+This is why Orbit's tokens are named for intent, not for value. `background-card` is a decision: this is the surface a card sits on. Which hex it resolves to in light or dark mode is an implementation detail living behind the name. Spacing works the same way. `m`, `l`, `xl` are roles on a scale, not pixel counts you happened to like. Two elements that both use `padding="l"` are declaring they made the same decision, not that they coincidentally both wanted 16px.
+
+When an LLM handed `bg-gray-100` it chose a value off a shelf with hundreds of plausible neighbours, and it needs taste to choose well. When an LLM handed `background-card` it chose a decision off a list of decisions we've already made. We're not asking it to have taste. We're asking it to name what it's building.
+
+### Docs are a suggestion. CI is a contract.
+
+The obvious first move is to just write the rules down. Put "use our gray, not bg-gray-100" in CLAUDE.md, in a style guide, in the system prompt. We have versions of all of those. They don't hold.
+
+Anything you put in a doc is a probability, not a guarantee. The LLM reads it, weighs it against everything else in its context, and follows it most of the time. Most of the time it is not a design system. Across thousands of generations the misses pile up, and you are back to reviewing every diff by hand for drift.
+
+So we drew a harder line, and it's the line the rest of Orbit hangs off: the rules that actually matter aren't written in English, they're encoded as ESLint rules that run in CI. That gives us one deterministic contract. If a PR is green, it is safe to merge. And the contrapositive is the part we've made peace with: if something is off and no rule catches it, that's a gap in our rules, not a failure of the author.
+
+We either write the rule or we live with the output. There is no "but the guidelines said not to."
+
+This flips who has to be careful. Instead of trusting every author, human or LLM, to remember an opinionated convention on every prompt, we move the opinion into a check that can't be forgotten, skipped, or talked out of. The LLM is free to write anything it wants. We just make sure the only things that pass CI are things we'd be happy to ship.
+
+### The bet: make tokens the only vocabulary
+
+We're trying out StyleX, Meta's compile-time, type-safe styling library, in place of Tailwind. But StyleX is the mechanism, not the point. The point is what it lets us build on top: a single primitive, `<Box />`, that accepts design tokens as typed props and not much else.
+
+Our styling API is heavily inspired by Shopify’s [Restyle](https://shopify.github.io/restyle/) system.
+
+Here’s the Orbit way:
+
+```tsx
+<Box
+  flexDirection="column"
+  gap="l"
+  padding="m"
+  backgroundColor="background-card"
+  borderRadius="m"
+  borderColor="border-primary"
+  boxShadow="m"
+>
+  <Text variant="heading-xs" color="text-primary">
+    Card title
+  </Text>
+  <Text color="text-secondary">Description</Text>
+</Box>
+```
+
+Every value here is derived from a decision. “padding” does not take “16px”, it takes a set of predefined sizes. backgroundColor does not take a hex code, it takes the names of colors we have actually defined. The types come straight from the token definitions:
+
+```ts
+export const spacing = stylex.defineVars({
+  none: '0',
+  xs: '4px',
+  s: '8px',
+  m: '12px',
+  l: '16px',
+  xl: '24px',
+  '2xl': '32px',
+  '3xl': '48px',
+  '4xl': '64px',
+  '5xl': '96px',
+})
+
+export const backgroundColors = stylex.defineVars({
+  'background-primary': 'light-dark(hsl(233, 4%, 81%), hsl(233, 4%, 3.5%))',
+  'background-card': 'light-dark(hsl(240, 2.90%, 72.50%), hsl(233, 4%, 9.5%))',
+  // ...
+})
+```
+
+This is the core idea. The design decisions live in one place, and they are the only thing the prop types will accept. An LLM generating Orbit code is not choosing from the entire space of CSS. It is choosing from a short menu we wrote. Autocomplete shows it the valid tokens. A typo is a type error, not a visual regression discovered three weeks later.
+
+### Why we're banning the bare \<div\>
+
+Here is the part of the thinking we've gone back and forth on the most, and the part we're most convinced by now.
+
+Constraining the props on Box does nothing if the unconstrained thing is still sitting right next to it. A raw \<div\> accepts any className, any inline style, any attribute. It is a blank canvas. And a blank canvas is precisely what makes off-system code possible. Tokens only constrain you if there is no way around them, and a \<div\> is the way around them.
+
+So the bet isn't only "make the props typed." It's "remove the untyped container entirely." Box becomes the thing you reach for in the exact place you used to reach for \<div\>. There is no parallel, unconstrained path sitting beside it that happens to be one keystroke shorter.
+
+This matters more for an LLM than for a person. A human reads the contribution guide once and internalizes "we don't write raw divs here." An LLM rediscovers the codebase on every prompt, and it defaults to the path of least resistance.
+
+If \<div className="..."\> is available, that is what decades of training data teached it, and that is what it will most likely resort to. The only way to actually move the default is to make the raw element unavailable, not just discouraged.
+
+The obvious objection is semantics. If you ban \<div\>, \<section\>, \<nav\>, \<ul\>, do you lose meaningful, accessible HTML? No, and this is the part that makes the trade worth it. Box is polymorphic. The list of elements we ban is exactly the list Box can render through its as-prop:
+
+```tsx
+<Box as="nav" alignItems="center" columnGap="m">…</Box>
+<Box as="ul" flexDirection="column" rowGap="s">
+  <Box as="li">Item</Box>
+</Box>
+```
+
+You still get a real \<nav\> and a real \<ul\> in the DOM, with the right DOM props typed and forwarded. What you lose is the open string surface, not the semantics. as is a closed set of allowed elements; a bare \<nav\> is an open door. We're trying to keep the meaning and close the door.
+
+And we enforce it using ESLint rules.
+
+```js
+'polar/no-raw-html-layout': 'error',
+```
+
+```
+Use <Box /> from @polar-sh/orbit instead of <div />.
+This ensures we follow the Orbit design system.
+```
+
+Making the wrong thing fail to compile is, so far, the only instruction we've found that survives an LLM’s fresh context window.
+
+If you need a value the design system doesn't have, we'd rather that be a signal to add a token than to bypass the system. We're still drawing the line on where legitimate escape hatches end and laziness begins, and we expect to keep moving it as we learn.
+
+### Dark mode the LLM can't forget
+
+Look closely at the token values: `light-dark(hsl(233, 4%, 81%), hsl(233, 4%, 3.5%))`. Each color carries both its light and dark value, resolved by the browser's native light-dark() CSS function.
+
+That means there is no dark: variant to remember, because there is no second styling pass at all. You write backgroundColor="background-card" once, and the correct value renders in both themes. An LLM can't ship a component that looks right in light mode and broken in dark mode, because there is no separate dark-mode code for it to get wrong. The most common class of theming bug is simply not expressible.
+
+### What we're seeing so far
+
+It's early, so take this as a direction rather than a verdict. But the reviews are already starting to feel different. We used to review generated UI for style drift: wrong gray, wrong spacing, forgotten dark mode, a stray arbitrary value.
+
+Not every developer at Polar is familiar with the design system and UX standards, and neither should they be. More of that is now correct by construction, so the conversation shifts toward behavior and layout.
+
+The LLM isn't being trusted to know our palette. It is being handed a vocabulary where most of the words it can say are the right ones.
+
+We still have real problems to solve. Our closed token sets are too small for some of the UI we actually build, so we're adding tokens weekly and watching for the point where the constraint starts costing us more than it saves.
+
+Most of the app is still legacy Tailwind, and we're migrating it file by file as we touch things, not in one big rewrite. And every escape hatch we allow is a crack in the guarantee, so we audit the eslint-disable lines and treat a growing list as a bug in the design system.
+
+The underlying idea, though, is the one we keep coming back to. A design system used to be a set of decisions you hoped people would follow. When most of your code is written by LLMs, hoping isn't a strategy. A design system has to become a set of decisions that are the only ones expressible.
+
+That is the bet Orbit is built on.
+
+</InnerWrapper>

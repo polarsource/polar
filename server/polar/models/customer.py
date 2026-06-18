@@ -1,4 +1,5 @@
 import dataclasses
+import hashlib
 import string
 import time
 from collections.abc import Sequence
@@ -29,6 +30,7 @@ from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
+from polar.config import settings
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
@@ -98,6 +100,19 @@ class CustomerOAuthAccount:
 class CustomerType(StrEnum):
     individual = "individual"
     team = "team"
+
+
+def _avatar_url_for_email(email: str) -> str:
+    domain = email.split("@")[-1].lower()
+
+    if (
+        not settings.LOGO_DEV_PUBLISHABLE_KEY
+        or domain in settings.PERSONAL_EMAIL_DOMAINS
+    ):
+        email_hash = hashlib.sha256(email.lower().encode()).hexdigest()
+        return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
+
+    return f"https://img.logo.dev/{domain}?size=64&retina=true&token={settings.LOGO_DEV_PUBLISHABLE_KEY}&fallback=404"
 
 
 class Customer(MetadataMixin, RecordModel):
@@ -247,6 +262,28 @@ class Customer(MetadataMixin, RecordModel):
             cascade="all, delete-orphan",
         )
 
+    @declared_attr
+    def owner(cls) -> Mapped["Member | None"]:
+        # Always loaded: the owner member is needed wherever we resolve a team
+        # customer's billing identity. `viewonly` + `overlaps="members"` because
+        # this re-maps the same `Member.customer_id` rows the writable `members`
+        # relationship owns (which carries the delete-orphan cascade — `owner`
+        # must never touch it). Filtered to a single active owner via `uselist`.
+        return relationship(
+            "Member",
+            lazy="selectin",
+            viewonly=True,
+            uselist=False,
+            primaryjoin=(
+                "and_("
+                "Customer.id == Member.customer_id, "
+                "Member.role == 'owner', "
+                "Member.deleted_at.is_(None)"
+                ")"
+            ),
+            overlaps="members",
+        )
+
     default_payment_method_id: Mapped[UUID | None] = mapped_column(
         "default_payment_method_id",
         Uuid,
@@ -313,6 +350,11 @@ class Customer(MetadataMixin, RecordModel):
     @property
     def legacy_user_id(self) -> UUID:
         return self._legacy_user_id or self.id
+
+    @property
+    def avatar_url(self) -> str | None:
+        email = self.email or (self.owner.email if self.owner else None)
+        return _avatar_url_for_email(email) if email else None
 
     @property
     def display_name(self) -> str:
@@ -414,7 +456,9 @@ customers_search_vector_update_function = PGFunction(
     definition="""
     RETURNS trigger AS $$
     BEGIN
-        NEW.search_vector := to_tsvector('simple', coalesce(NEW.name, ''));
+        NEW.search_vector :=
+            setweight(to_tsvector('simple', coalesce(NEW.name, '')), 'A') ||
+            setweight(to_tsvector('simple', coalesce(NEW.email, '')), 'A');
         RETURN NEW;
     END
     $$ LANGUAGE plpgsql;

@@ -49,7 +49,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           flexDirection="column"
           width="100%"
           minWidth={0}
-          maxWidth={940}
+          maxWidth={840}
           marginHorizontal="auto"
           paddingHorizontal={{ base: 'l', md: '3xl' }}
           paddingVertical={{ base: 'xl', md: '3xl' }}

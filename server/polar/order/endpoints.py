@@ -52,7 +52,7 @@ from .service import (
 )
 from .service import order as order_service
 
-router = APIRouter(prefix="/orders", tags=["orders", APITag.public, APITag.mcp])
+router = APIRouter(prefix="/orders", tags=["orders", APITag.public])
 
 
 @router.get(

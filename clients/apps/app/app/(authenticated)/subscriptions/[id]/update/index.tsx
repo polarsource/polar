@@ -186,7 +186,7 @@ export default function Index() {
           )}
         </Box>
       </Box>
-      {selectedProduct && selectedProduct.id !== subscription.product.id ? (
+      {selectedProduct ? (
         <Box
           backgroundColor="card"
           padding="spacing-16"

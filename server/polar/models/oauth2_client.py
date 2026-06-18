@@ -36,4 +36,4 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
         try:
             return SubType(self.client_metadata["default_sub_type"])
         except KeyError:
-            return SubType.organization
+            return SubType.user

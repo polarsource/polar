@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from enum import StrEnum
+from enum import IntEnum, StrEnum
 from typing import TYPE_CHECKING, Annotated, Any, Literal, NotRequired, Self, TypedDict
 from urllib.parse import urlparse
 from uuid import UUID
@@ -69,17 +69,6 @@ class OrganizationDetails(TypedDict, total=False):
     switching: bool
     switching_from: str | None
     previous_annual_revenue: int
-
-
-class OrganizationNotificationSettings(TypedDict):
-    new_order: bool
-    new_subscription: bool
-
-
-_default_notification_settings: OrganizationNotificationSettings = {
-    "new_order": True,
-    "new_subscription": True,
-}
 
 
 class OrganizationSubscriptionSettings(TypedDict):
@@ -235,6 +224,30 @@ class SnoozeType(StrEnum):
             SnoozeType.TIME_BASED: "Auto re-review after X days",
             SnoozeType.NEXT_SALE: "Re-review on next sale after X days",
         }[self]
+
+
+class SupportTier(IntEnum):
+    """Named support tiers, keyed by the benefit's metadata ``level``."""
+
+    pro = 2
+    growth = 3
+    scale = 4
+
+    def get_display_name(self) -> str:
+        return self.name.capitalize()
+
+    @classmethod
+    def from_level(cls, level: int | None) -> "SupportTier | None":
+        """Map a benefit's metadata ``level`` to a known tier, or ``None``.
+
+        Only the self-serve tiers are recognized.
+        """
+        if level is None:
+            return None
+        try:
+            return cls(level)
+        except ValueError:
+            return None
 
 
 class OrganizationCapabilities(TypedDict):
@@ -504,6 +517,13 @@ class Organization(RateLimitGroupMixin, RecordModel):
         StringEnum(SnoozeType), nullable=True, default=None
     )
 
+    # Support priority tier — the benefit's metadata ``level``, denormalized
+    # from the active Polar support grant (see SupportTier). NULL = free; only
+    # paid tiers are persisted, higher level = higher priority.
+    support_tier: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=None
+    )
+
     total_balance: Mapped[int | None] = mapped_column(
         BigInteger, nullable=True, server_default="0"
     )
@@ -556,10 +576,6 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     order_settings: Mapped[OrganizationOrderSettings] = mapped_column(
         JSONB, nullable=False, default=_default_order_settings
-    )
-
-    notification_settings: Mapped[OrganizationNotificationSettings] = mapped_column(
-        JSONB, nullable=False, default=_default_notification_settings
     )
 
     customer_email_settings: Mapped[OrganizationCustomerEmailSettings] = mapped_column(

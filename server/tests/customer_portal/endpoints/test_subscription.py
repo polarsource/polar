@@ -17,9 +17,49 @@ from tests.fixtures.auth import (
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_benefit,
     create_canceled_subscription,
     create_product,
+    set_product_benefits,
 )
+
+
+@pytest.mark.asyncio
+class TestGetSubscription:
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_excludes_non_public_benefits(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        subscription: Subscription,
+        customer: Customer,
+    ) -> None:
+        public_benefit = await create_benefit(
+            save_fixture, organization=organization, description="Public benefit"
+        )
+        private_benefit = await create_benefit(
+            save_fixture, organization=organization, description="Private benefit"
+        )
+        private_benefit.visibility = Visibility.private
+        await save_fixture(private_benefit)
+        await set_product_benefits(
+            save_fixture,
+            product=product,
+            benefits=[public_benefit, private_benefit],
+        )
+
+        response = await client.get(
+            f"/v1/customer-portal/subscriptions/{subscription.id}"
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        benefit_ids = {benefit["id"] for benefit in json["product"]["benefits"]}
+        assert str(public_benefit.id) in benefit_ids
+        assert str(private_benefit.id) not in benefit_ids
 
 
 @pytest.mark.asyncio

@@ -10,6 +10,8 @@ import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
 import { DataTable } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { ColumnDef } from '@tanstack/react-table'
 import { ExternalLink } from 'lucide-react'
@@ -119,21 +121,19 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
           <Link
             href={`/dashboard/${organization.slug}/customers/${grant.customer.id}`}
           >
-            <div className="flex items-center gap-3">
+            <Box alignItems="center" gap="m">
               <Avatar
                 className="h-10 w-10"
                 avatar_url={grant.customer.avatar_url}
                 name={grant.customer.email ?? grant.customer.name ?? '—'}
               />
-              <div className="flex min-w-0 flex-col">
-                <div className="w-full truncate text-sm">
-                  {grant.customer.name ?? '—'}
-                </div>
-                <div className="dark:text-polar-500 w-full truncate text-xs text-gray-500">
+              <Box minWidth={0} flexDirection="column">
+                <Text truncate>{grant.customer.name ?? '—'}</Text>
+                <Text variant="caption" color="muted" truncate>
                   {grant.customer.email ?? '—'}
-                </div>
-              </div>
-            </div>
+                </Text>
+              </Box>
+            </Box>
           </Link>
         ),
       },
@@ -187,7 +187,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
           }
 
           return (
-            <div className="flex gap-2">
+            <Box gap="s">
               {hasOrder && (
                 <Link
                   href={`/dashboard/${organization.slug}/sales/${grant.order_id}`}
@@ -206,7 +206,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
                   </Button>
                 </Link>
               )}
-            </div>
+            </Box>
           )
         },
       },
@@ -216,17 +216,19 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
   }, [benefit.type, memberColumnEnabled, organization.slug])
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-row items-center justify-between gap-4">
-        <h2 className="text-xl">Benefit Grants</h2>
-        <div className="w-auto">
+    <Box flexDirection="column" gap="xl">
+      <Box alignItems="center" justifyContent="between" gap="l">
+        <Text variant="heading-xxs" as="h2">
+          Benefit Grants
+        </Text>
+        <Box width="auto">
           <BenefitGrantStatusSelect
             statuses={['granted', 'revoked']}
             value={grantStatus}
             onChange={setGrantStatus}
           />
-        </div>
-      </div>
+        </Box>
+      </Box>
       <DataTable
         data={benefitGrants?.items || []}
         isLoading={isLoading}
@@ -238,7 +240,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
         onPaginationChange={setPagination}
         columns={columns}
       />
-    </div>
+    </Box>
   )
 }
 
@@ -254,16 +256,16 @@ const SlackGrantDetails = ({ grant }: { grant: schemas['BenefitGrant'] }) => {
         : 'Waiting for email'
 
   return (
-    <div className="flex min-w-0 flex-col gap-2">
-      <div className="flex min-w-0 flex-col">
-        <span className="truncate font-mono text-sm">
+    <Box minWidth={0} flexDirection="column" gap="s">
+      <Box minWidth={0} flexDirection="column">
+        <Text monospace truncate>
           {properties.channel_name ? `#${properties.channel_name}` : '—'}
-        </span>
-        <span className="dark:text-polar-500 truncate text-xs text-gray-500">
+        </Text>
+        <Text variant="caption" color="muted" truncate>
           {status}
           {properties.invited_email ? ` · ${properties.invited_email}` : ''}
-        </span>
-      </div>
+        </Text>
+      </Box>
       {properties.invite_url && (
         <a
           href={properties.invite_url}
@@ -277,6 +279,6 @@ const SlackGrantDetails = ({ grant }: { grant: schemas['BenefitGrant'] }) => {
           </Button>
         </a>
       )}
-    </div>
+    </Box>
   )
 }

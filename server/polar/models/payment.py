@@ -9,7 +9,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.enums import PaymentProcessor
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy.types import StrEnumType
+from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 # Stripe decline codes that indicate the payment method is permanently unusable
 # and should not be retried automatically via the dunning process.
@@ -100,10 +100,10 @@ class Payment(RecordModel):
     __tablename__ = "payments"
 
     processor: Mapped[PaymentProcessor] = mapped_column(
-        StrEnumType(PaymentProcessor), index=True, nullable=False
+        StringEnum(PaymentProcessor), index=True, nullable=False
     )
     status: Mapped[PaymentStatus] = mapped_column(
-        StrEnumType(PaymentStatus), index=True, nullable=False
+        StringEnum(PaymentStatus), index=True, nullable=False
     )
     amount: Mapped[int] = mapped_column("amount_v2", BigInteger, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
@@ -126,7 +126,7 @@ class Payment(RecordModel):
     decline_message: Mapped[str | None] = mapped_column(String, nullable=True)
 
     trigger: Mapped[PaymentTrigger | None] = mapped_column(
-        StrEnumType(PaymentTrigger), nullable=True
+        StringEnum(PaymentTrigger), nullable=True
     )
 
     risk_level: Mapped[str | None] = mapped_column(String, nullable=True)

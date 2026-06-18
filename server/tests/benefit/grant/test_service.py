@@ -1073,11 +1073,13 @@ class TestEnqueueCustomerGrantDeletions:
 
         await benefit_grant_service.enqueue_customer_grant_deletions(session, customer)
 
+        # The deletion order is irrelevant, so don't assert on it.
         enqueue_job_mock.assert_has_calls(
             [
                 call("benefit.delete_grant", benefit_grant_id=grant1.id),
                 call("benefit.delete_grant", benefit_grant_id=grant2.id),
-            ]
+            ],
+            any_order=True,
         )
 
 

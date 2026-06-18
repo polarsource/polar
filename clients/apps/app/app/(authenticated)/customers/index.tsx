@@ -7,7 +7,7 @@ import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { schemas } from '@polar-sh/client'
 import { FlashList } from '@shopify/flash-list'
 import { Stack } from 'expo-router'
-import React, { useContext, useMemo, useState } from 'react'
+import { useContext, useMemo, useState } from 'react'
 import { RefreshControl } from 'react-native'
 
 export default function Index() {

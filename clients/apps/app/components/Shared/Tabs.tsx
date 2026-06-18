@@ -7,7 +7,6 @@ import {
   useContext,
   useState,
 } from 'react'
-import { StyleProp, ViewStyle } from 'react-native'
 import { Text } from './Text'
 import { Touchable } from './Touchable'
 
@@ -48,22 +47,6 @@ export const Tabs = ({
       {children}
     </TabsContext.Provider>
   )
-}
-
-export const TabsContent = ({
-  children,
-  style,
-  value,
-}: {
-  children: React.ReactNode
-  style?: StyleProp<ViewStyle>
-  value: string
-}) => {
-  const { activeValue } = useContext(TabsContext)
-
-  if (activeValue !== value) return null
-
-  return <Box style={style}>{children}</Box>
 }
 
 export const TabsList = ({ children }: PropsWithChildren) => {

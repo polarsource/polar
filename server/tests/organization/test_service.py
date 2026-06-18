@@ -9,6 +9,7 @@ from sqlalchemy import update
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
+from polar.dispute.dispute_case import dispute_case as dispute_case_service
 from polar.enums import (
     InvoiceNumbering,
     PayoutAccountType,
@@ -23,7 +24,6 @@ from polar.models.benefit import BenefitType
 from polar.models.organization import (
     STATUS_CAPABILITIES,
     InvalidStatusTransitionError,
-    OrganizationNotificationSettings,
     OrganizationStatus,
     OrganizationSubscriptionSettings,
     SnoozeType,
@@ -53,8 +53,10 @@ from polar.organization.schemas import (
 )
 from polar.organization.service import OrganizationError
 from polar.organization.service import organization as organization_service
+from polar.organization_review.appeal_case import appeal_case as appeal_case_service
 from polar.organization_review.schemas import ReviewContext, ReviewVerdict
 from polar.postgres import AsyncSession
+from polar.support_case.repository import SupportCaseMessageRepository
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -62,7 +64,9 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
     create_checkout_link,
+    create_dispute,
     create_order,
+    create_payment,
     create_payout_account,
     create_product,
     create_webhook_endpoint,
@@ -211,7 +215,6 @@ class TestCreate:
                     "slug": "my-new-organization",
                     "feature_settings": {
                         "checkout_localization_enabled": True,
-                        "billing_enabled": True,
                         "off_session_charges_enabled": True,
                     },
                 }
@@ -225,28 +228,6 @@ class TestCreate:
             "checkout_localization_enabled": True,
             "member_model_enabled": True,
             "seat_based_pricing_enabled": True,
-        }
-
-    @pytest.mark.auth
-    async def test_valid_with_notification_settings(
-        self, auth_subject: AuthSubject[User], session: AsyncSession
-    ) -> None:
-        organization = await organization_service.create(
-            session,
-            OrganizationCreate(
-                name="My New Organization",
-                slug="my-new-organization",
-                notification_settings=OrganizationNotificationSettings(
-                    new_order=False,
-                    new_subscription=False,
-                ),
-            ),
-            auth_subject,
-        )
-
-        assert organization.notification_settings == {
-            "new_order": False,
-            "new_subscription": False,
         }
 
     @pytest.mark.auth
@@ -1469,23 +1450,25 @@ class TestBackofficeApprove:
         self,
         session: AsyncSession,
         organization: Organization,
+        user: User,
     ) -> None:
         organization.status = OrganizationStatus.REVIEW
 
         with pytest.raises(OrganizationError, match="DENIED or BLOCKED"):
             await organization_service.backoffice_approve(
-                session, organization, reason="Test"
+                session, organization, reason="Test", staff_user=user
             )
 
     async def test_reverts_to_created_when_not_activation_ready(
         self,
         session: AsyncSession,
         organization: Organization,
+        user: User,
     ) -> None:
         organization.status = OrganizationStatus.DENIED
 
         await organization_service.backoffice_approve(
-            session, organization, reason="Support escalation"
+            session, organization, reason="Support escalation", staff_user=user
         )
 
         assert organization.status == OrganizationStatus.CREATED
@@ -1494,6 +1477,7 @@ class TestBackofficeApprove:
         self,
         session: AsyncSession,
         organization: Organization,
+        user: User,
     ) -> None:
         """Support-contact escalation: AI rejected the appeal, admin overrides."""
         organization.status = OrganizationStatus.DENIED
@@ -1515,7 +1499,7 @@ class TestBackofficeApprove:
         await session.flush()
 
         await organization_service.backoffice_approve(
-            session, organization, 15000, reason="Appeal re-examined"
+            session, organization, 15000, reason="Appeal re-examined", staff_user=user
         )
 
         assert organization.status == OrganizationStatus.CREATED
@@ -3137,6 +3121,65 @@ class TestSoftDeleteOrganization:
             organization_id=organization.id
         )
 
+    async def test_closes_open_appeal_case(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        mocker.patch("polar.organization.service.polar_self_service")
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=90.0,
+            violated_sections=[],
+            reason="Automated review denied.",
+            model_used="test",
+            appeal_submitted_at=datetime.now(UTC),
+            appeal_reason="Please reconsider.",
+            appeal_reviewed_at=datetime.now(UTC),
+            appeal_decision=OrganizationReview.AppealDecision.REJECTED,
+        )
+        await save_fixture(review)
+        case = await appeal_case_service.request_human_review(
+            session,
+            review,
+            reason="Here is the additional context for the review.",
+            requested_by_user=user,
+            organization=organization,
+        )
+
+        await organization_service.soft_delete_organization(session, organization)
+
+        message_repository = SupportCaseMessageRepository.from_session(session)
+        assert await message_repository.is_open(case.id) is False
+
+    async def test_leaves_dispute_case_open(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Disputes are live financial matters — they must outlive the merchant
+        # deleting their account.
+        mocker.patch("polar.organization.service.polar_self_service")
+        order = await create_order(save_fixture, customer=customer, product=product)
+        payment = await create_payment(save_fixture, organization, order=order)
+        dispute = await create_dispute(save_fixture, order, payment)
+        case = await dispute_case_service.open_case(
+            session, dispute, organization=organization
+        )
+
+        await organization_service.soft_delete_organization(session, organization)
+
+        message_repository = SupportCaseMessageRepository.from_session(session)
+        assert await message_repository.is_open(case.id) is True
+
     async def test_anonymizes_pii_and_releases_slug(
         self,
         session: AsyncSession,
@@ -3430,7 +3473,7 @@ class TestUpdateFeatureSettings:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        organization.feature_settings = {"billing_enabled": True}
+        organization.feature_settings = {"preview_access_enabled": True}
         await save_fixture(organization)
 
         result = await organization_service.update(
@@ -3439,14 +3482,14 @@ class TestUpdateFeatureSettings:
             OrganizationUpdate.model_validate(
                 {
                     "feature_settings": {
-                        "billing_enabled": False,
+                        "preview_access_enabled": False,
                         "checkout_localization_enabled": True,
                     }
                 }
             ),
         )
 
-        assert result.feature_settings["billing_enabled"] is True
+        assert result.feature_settings["preview_access_enabled"] is True
         assert result.feature_settings["checkout_localization_enabled"] is True
 
     async def test_enable_member_model_enqueues_backfill(
@@ -4072,13 +4115,18 @@ class TestStatusTransitions:
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
+        user: User,
     ) -> None:
         organization.status = current
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
         mocker.patch("polar.organization.service.enqueue_job")
 
         result = await organization_service.backoffice_approve(
-            session, organization, 15000, reason="Merchant provided additional docs"
+            session,
+            organization,
+            15000,
+            reason="Merchant provided additional docs",
+            staff_user=user,
         )
 
         assert result.status == OrganizationStatus.CREATED
@@ -4086,6 +4134,31 @@ class TestStatusTransitions:
         assert expected_note_fragment in result.internal_notes
         assert "Merchant provided additional docs" in result.internal_notes
         assert "pending Stripe Identity" in result.internal_notes
+
+    async def test_internal_note_overrides_default_note_and_omits_reason(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.backoffice_approve(
+            session,
+            organization,
+            reason="Lives on the support case, not the note",
+            internal_note="Appeal approved — see support case.",
+            staff_user=user,
+        )
+
+        assert result.internal_notes is not None
+        assert "Appeal approved — see support case." in result.internal_notes
+        # The default reactivation wording and the reason are both dropped.
+        assert "reactivated from denied" not in result.internal_notes
+        assert "Lives on the support case" not in result.internal_notes
 
     @pytest.mark.parametrize(
         "current",
@@ -4121,7 +4194,11 @@ class TestStatusTransitions:
         mocker.patch("polar.organization.service.enqueue_job")
 
         result = await organization_service.backoffice_approve(
-            session, organization, 15000, reason="Merchant provided additional docs"
+            session,
+            organization,
+            15000,
+            reason="Merchant provided additional docs",
+            staff_user=user,
         )
 
         assert result.status == OrganizationStatus.ACTIVE

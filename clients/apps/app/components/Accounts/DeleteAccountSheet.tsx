@@ -31,7 +31,6 @@ export const DeleteAccountSheet = ({ onDismiss }: DeleteAccountSheetProps) => {
     organizations,
     setOrganization,
     refetch,
-    userEmail: user?.email,
   })
 
   return (

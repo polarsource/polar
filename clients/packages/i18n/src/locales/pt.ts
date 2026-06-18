@@ -298,7 +298,7 @@ export default {
     downloadables: 'Download de arquivos',
     meter_credit: 'Créditos de uso',
     feature_flag: 'Feature flag',
-    slack_shared_channel: 'canal compartilhado do Slack',
+    slack_shared_channel: 'Canal compartilhado do Slack',
   },
   ordinal: {
     zero: 'º',

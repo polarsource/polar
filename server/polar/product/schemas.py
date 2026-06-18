@@ -1,9 +1,11 @@
 import builtins
+from collections.abc import Sequence
 from decimal import Decimal
 from typing import Annotated, Any, Literal
 
 from pydantic import (
     UUID4,
+    BeforeValidator,
     Discriminator,
     Field,
     Tag,
@@ -48,6 +50,7 @@ from polar.kit.schemas import (
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
 from polar.kit.visibility import Visibility
 from polar.meter.unit import MeterUnit
+from polar.models import Benefit as BenefitModel
 from polar.models.product import ProductVisibility
 from polar.models.product_price import (
     ProductPriceAmountType,
@@ -60,9 +63,6 @@ from polar.models.product_price import (
 )
 from polar.models.product_price import (
     ProductPriceFixed as ProductPriceFixedModel,
-)
-from polar.models.product_price import (
-    ProductPriceFree as ProductPriceFreeModel,
 )
 from polar.models.product_price import (
     ProductPriceMeteredUnit as ProductPriceMeteredUnitModel,
@@ -239,17 +239,6 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
         return ProductPriceCustomModel
 
 
-class ProductPriceFreeCreate(ProductPriceCreateBase):
-    """
-    Schema to create a free price.
-    """
-
-    amount_type: Literal[ProductPriceAmountType.free]
-
-    def get_model_class(self) -> builtins.type[ProductPriceFreeModel]:
-        return ProductPriceFreeModel
-
-
 class ProductPriceSeatTier(Schema):
     """
     A pricing tier for seat-based pricing.
@@ -386,13 +375,38 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
         return ProductPriceMeteredUnitModel
 
 
+def _coerce_legacy_free_price(value: Any) -> Any:
+    """
+    Backward compatibility for the removed `free` price type.
+
+    `free` prices are no longer a distinct type: a free price is now a `fixed` price
+    with an amount of `0`. Some integrations still send `amount_type: "free"` on
+    input, so we keep accepting it and rewrite it to a `fixed` price of `0`. This is
+    deliberately not exposed in the OpenAPI schema (no `free` member in the union),
+    so it's dropped from future SDK versions.
+    """
+    if isinstance(value, dict) and value.get("amount_type") == "free":
+        return {
+            "amount_type": ProductPriceAmountType.fixed.value,
+            "price_amount": 0,
+            **{
+                key: value[key]
+                for key in ("price_currency", "tax_behavior")
+                if key in value
+            },
+        }
+    return value
+
+
 ProductPriceCreate = Annotated[
-    ProductPriceFixedCreate
-    | ProductPriceCustomCreate
-    | ProductPriceFreeCreate
-    | ProductPriceSeatBasedCreate
-    | ProductPriceMeteredUnitCreate,
-    Discriminator("amount_type"),
+    Annotated[
+        ProductPriceFixedCreate
+        | ProductPriceCustomCreate
+        | ProductPriceSeatBasedCreate
+        | ProductPriceMeteredUnitCreate,
+        Discriminator("amount_type"),
+    ],
+    BeforeValidator(_coerce_legacy_free_price),
 ]
 
 
@@ -405,10 +419,9 @@ ProductPriceCreateList = Annotated[
             "description": (
                 "List of prices for the product. "
                 "At most one fixed price and one seat-based price may be combined "
-                "(billed as `fixed + seat_charge`), or a single custom or free "
+                "(billed as `fixed + seat_charge`), or a single custom "
                 "price may stand alone, plus any number of metered prices. "
-                "A free price cannot be combined with other prices, and a custom "
-                "price cannot be combined with a fixed or seat-based price."
+                "A custom price cannot be combined with a fixed or seat-based price."
             ),
         }
     ),
@@ -644,10 +657,6 @@ class ProductPriceCustomBase(ProductPriceBase):
     )
 
 
-class ProductPriceFreeBase(ProductPriceBase):
-    amount_type: Literal[ProductPriceAmountType.free]
-
-
 class ProductPriceSeatBasedBase(ProductPriceBase):
     amount_type: Literal[ProductPriceAmountType.seat_based]
     seat_tiers: ProductPriceSeatTiers = Field(
@@ -710,27 +719,8 @@ class LegacyRecurringProductPriceCustom(
     )
 
 
-class LegacyRecurringProductPriceFree(
-    ProductPriceFreeBase, LegacyRecurringProductPriceMixin
-):
-    """
-    A free recurring price for a product, i.e. a subscription.
-
-    **Deprecated**: The recurring interval should be set on the product itself.
-    """
-
-    type: Literal[ProductPriceType.recurring] = Field(
-        description="The type of the price."
-    )
-    recurring_interval: SubscriptionRecurringInterval = Field(
-        description="The recurring interval of the price."
-    )
-
-
 LegacyRecurringProductPrice = Annotated[
-    LegacyRecurringProductPriceFixed
-    | LegacyRecurringProductPriceCustom
-    | LegacyRecurringProductPriceFree,
+    LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom,
     Discriminator("amount_type"),
     SetSchemaReference("LegacyRecurringProductPrice"),
 ]
@@ -745,12 +735,6 @@ class ProductPriceFixed(ProductPriceFixedBase):
 class ProductPriceCustom(ProductPriceCustomBase):
     """
     A pay-what-you-want price for a product.
-    """
-
-
-class ProductPriceFree(ProductPriceFreeBase):
-    """
-    A free price for a product.
     """
 
 
@@ -793,7 +777,6 @@ class ProductPriceMeteredUnit(ProductPriceBase):
 NewProductPrice = Annotated[
     ProductPriceFixed
     | ProductPriceCustom
-    | ProductPriceFree
     | ProductPriceSeatBased
     | ProductPriceMeteredUnit,
     Discriminator("amount_type"),
@@ -875,8 +858,25 @@ class Product(MetadataOutputMixin, ProductBase):
     )
 
 
+BenefitPublicListInput = BenefitModel | BenefitPublic
+
+
+# Filter out hidden benefits before they're serialized to BenefitPublic, which
+# doesn't expose visibility. Already-serialized items have no visibility to check.
+def _filter_benefit_public_list(
+    benefits: Sequence[BenefitPublicListInput],
+) -> list[BenefitPublicListInput]:
+    return [
+        benefit
+        for benefit in benefits
+        if not isinstance(benefit, BenefitModel)
+        or benefit.visibility == Visibility.public
+    ]
+
+
 BenefitPublicList = Annotated[
     list[BenefitPublic],
+    BeforeValidator(_filter_benefit_public_list),
     Field(
         title="BenefitPublic",
         description="List of benefits granted by the product.",

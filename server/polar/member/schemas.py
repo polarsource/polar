@@ -77,6 +77,7 @@ class MemberUpdate(Schema):
     """Schema for updating a member."""
 
     name: MemberNameInput | None = None
+    email: EmailStrDNS | None = None
     role: MemberRole | None = Field(
         default=None,
         description="The role of the member within the customer.",

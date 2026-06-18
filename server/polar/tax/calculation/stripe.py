@@ -1,7 +1,7 @@
 import hashlib
 import uuid
 from datetime import datetime
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import stripe as stripe_lib
 import structlog
@@ -12,7 +12,7 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.address import Address
 from polar.logging import Logger
 
-from ..tax_id import TaxID, to_stripe_tax_id
+from ..tax_id import IncompatibleTaxIDFormat, TaxID, to_stripe_tax_id
 from .base import (
     AlreadyRevertedError,
     TaxabilityReason,
@@ -24,6 +24,11 @@ from .base import (
     TaxRevertError,
     TaxServiceProtocol,
 )
+
+if TYPE_CHECKING:
+    from stripe.params.tax._calculation_create_params import (
+        CalculationCreateParamsCustomerDetailsTaxId,
+    )
 
 log: Logger = structlog.get_logger()
 
@@ -119,6 +124,13 @@ class StripeTaxService(TaxServiceProtocol):
         idempotency_key_str = f"{identifier}:{currency}:{amount}:{tax_code}:{address_str}:{tax_ids_str}:{taxability_override}:{tax_behavior}"
         idempotency_key = hashlib.sha256(idempotency_key_str.encode()).hexdigest()
 
+        stripe_tax_ids: list[CalculationCreateParamsCustomerDetailsTaxId] = []
+        for tax_id in tax_ids:
+            try:
+                stripe_tax_ids.append(to_stripe_tax_id(tax_id))
+            except IncompatibleTaxIDFormat:
+                pass
+
         try:
             calculation = await stripe_service.create_tax_calculation(
                 currency=currency,
@@ -134,7 +146,7 @@ class StripeTaxService(TaxServiceProtocol):
                 customer_details={
                     "address": address.to_dict(),
                     "address_source": "billing",
-                    "tax_ids": [to_stripe_tax_id(tax_id) for tax_id in tax_ids],
+                    "tax_ids": stripe_tax_ids,
                     "taxability_override": taxability_override,
                 },
                 idempotency_key=idempotency_key,

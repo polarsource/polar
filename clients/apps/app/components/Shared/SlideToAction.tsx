@@ -67,7 +67,6 @@ export const SlideToAction = ({
   const [phase, setPhase] = useState<Phase>('idle')
 
   const progress = useSharedValue(0)
-  const atThreshold = useSharedValue(false)
   const loadingProgress = useSharedValue(0)
   const successProgress = useSharedValue(0)
   const thumbScale = useSharedValue(1)
@@ -106,7 +105,6 @@ export const SlideToAction = ({
     () => progress.value >= COMPLETION_THRESHOLD,
     (isAtThreshold, prev) => {
       if (isAtThreshold !== prev) {
-        atThreshold.value = isAtThreshold
         if (isAtThreshold) {
           thumbScale.value = withSequence(
             withTiming(1.25, { duration: 100 }),

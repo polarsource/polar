@@ -87,13 +87,7 @@ class NotificationsService:
 
         for member in members:
             if key is not None:
-                # TODO (maxime): default to organization settings is temporary while user level is Nullable.
-                # once backfill script ran and user level is non-nullable, we can remove the fallback to organization settings.
-                settings = (
-                    member.notification_settings
-                    or member.organization.notification_settings
-                )
-                if not settings[key]:
+                if not member.notification_settings[key]:
                     continue
 
             await self.send_to_user(

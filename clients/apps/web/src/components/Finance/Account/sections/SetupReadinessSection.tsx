@@ -142,13 +142,8 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
             borderStyle="solid"
             borderColor="border-primary"
           />
-          <Text
-            variant="caption"
-            color="muted"
-            // eslint-disable-next-line polar/no-classname-text
-            className="text-[11px] font-semibold tracking-wider uppercase"
-          >
-            or
+          <Text variant="caption" color="muted">
+            OR
           </Text>
           <Box
             display="block"

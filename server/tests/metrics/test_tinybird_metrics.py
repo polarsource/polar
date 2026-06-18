@@ -1142,6 +1142,7 @@ async def _create_paid_order_events(
         order=order,
         amount=order.net_amount,
         tax_amount=order.tax_amount,
+        charge_id=f"ch_{order.id}",
     )
 
     common_metadata: dict[str, Any] = {

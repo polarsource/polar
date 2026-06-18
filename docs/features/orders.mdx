@@ -5,7 +5,7 @@ description: "Every paid transaction on Polar is an order."
 
 An **order** is the record of a single paid transaction on Polar. Every successful checkout, subscription cycle, and subscription change generates an order — it's where the money, the tax, the invoice, and the link back to the [product](/features/products) and [customer](/features/customer-management) live.
 
-If [subscriptions](/features/subscriptions/introduction) are the *relationship* with a customer, orders are the *individual payments* inside that relationship.
+If [subscriptions](/features/subscriptions/introduction) are the _relationship_ with a customer, orders are the _individual payments_ inside that relationship.
 
 ## When orders are created
 
@@ -18,16 +18,79 @@ Polar creates an order in all of these cases:
 
 Each order carries a `billing_reason` that tells you which of these it is: `purchase`, `subscription_create`, `subscription_cycle`, or `subscription_update`.
 
+## Arbitrary charges
+
+Sometimes you need to charge a customer an amount that doesn't originate from a checkout or a subscription renewal — a usage overage, a one-off professional-services fee, or a manual top-up. Polar lets you run these **off-session charges** against a customer's saved payment method, without the customer being present.
+
+<Note>
+  Off-session charges are currently in preview. You'll only be able to run off-session charges if
+  you are on a paid plan.
+</Note>
+
+An off-session charge is a two-step flow: you create a **draft order**, then **finalize** it to attempt the charge. Both endpoints require the `orders:write` scope and the sales-management permission on the organization.
+
+### 1. Create a draft order
+
+`POST /v1/orders/` creates an order in `draft` status with no invoice number — nothing is charged yet. You reference an existing customer and a one-time product, and optionally override the amount and description:
+
+| Field             | Required | Description                                                                                                            |
+| ----------------- | -------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `customer_id`     | Yes      | The customer to charge. Must belong to the organization.                                                               |
+| `product_id`      | Yes      | A one-time product to charge for. Only fixed-price and free products are supported.                                    |
+| `amount`          | No       | A custom amount in the smallest currency unit (e.g. `2500` for $25.00). Overrides the product's price; defaults to it. |
+| `currency`        | No       | ISO 4217, lowercase (e.g. `usd`). Defaults to the organization's currency.                                             |
+| `description`     | No       | The line-item text shown on the invoice and receipt. Defaults to the product name.                                     |
+| `organization_id` | No       | Required unless you authenticate with an organization token.                                                           |
+
+The customer must have a complete billing address (so Polar can calculate tax) and at least one saved payment method.
+
+```bash cURL
+curl --request POST \
+  --url https://api.polar.sh/v1/orders/ \
+  --header 'Authorization: Bearer <YOUR_BEARER_TOKEN_HERE>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "customer_id": "<customer_id>",
+    "product_id": "<product_id>",
+    "amount": 2500,
+    "description": "5,000 extra tokens"
+  }'
+```
+
+The response is the draft order, including its `id`. Creating a draft fires the `order.created` webhook but does not yet email the customer.
+
+### 2. Finalize and charge
+
+`POST /v1/orders/{id}/finalize` synchronously attempts the off-session charge. By default it uses the customer's default payment method; pass `payment_method_id` to charge a specific one.
+
+```bash cURL
+curl --request POST \
+  --url https://api.polar.sh/v1/orders/<order_id>/finalize \
+  --header 'Authorization: Bearer <YOUR_BEARER_TOKEN_HERE>' \
+  --header 'Content-Type: application/json' \
+  --data '{}'
+```
+
+On success, the order transitions to `paid`, an invoice number is assigned, any [benefits](/features/benefits/introduction) attached to the product are granted, the customer is emailed their confirmation, and the [`order.paid`](/api-reference/webhooks/order.paid) webhook fires.
+
+If the charge fails, the API returns an error and the order is reverted to `draft` so you can fix the problem and finalize the same order again — no invoice number is consumed by a failed attempt:
+
+| Status | When                                                                                                                                      |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `402`  | The card was declined, the customer has no payment method, or the charge needs a 3DS / SCA challenge that can't be completed off-session. |
+| `403`  | Off-session charges aren't enabled for the organization, or its account can't currently accept payments.                                  |
+| `412`  | The order is no longer in `draft` status (for example, it was already finalized).                                                         |
+
 ## Order status
 
 An order moves through a small set of statuses over its lifetime:
 
-| Status               | Meaning                                                                                   |
-| -------------------- | ----------------------------------------------------------------------------------------- |
-| `pending`            | The order has been created and Polar is attempting to collect payment.                    |
-| `paid`               | The payment succeeded.                                                                    |
-| `refunded`           | The order has been fully refunded.                                                        |
-| `partially_refunded` | Part of the order has been refunded. See [Refunds](/features/refunds).                    |
+| Status               | Meaning                                                                                  |
+| -------------------- | ---------------------------------------------------------------------------------------- |
+| `pending`            | The order has been created and Polar is attempting to collect payment.                   |
+| `paid`               | The payment succeeded.                                                                   |
+| `refunded`           | The order has been fully refunded.                                                       |
+| `partially_refunded` | Part of the order has been refunded. See [Refunds](/features/refunds).                   |
 | `void`               | The order will not be collected (for example, it's been voided after repeated failures). |
 
 Free orders — those with a total of zero, typically from a $0 subscription or a 100% discount — are marked `paid` immediately with no payment step.
@@ -53,9 +116,9 @@ Polar generates a PDF invoice for every paid order. You can:
 Customers can download and edit their own invoices — adding a company name, VAT number, or billing address — from the [Customer Portal](/features/customer-portal/introduction), without pulling you into a support thread.
 
 <Note>
-  Once an invoice has been generated, its billing details are frozen. If you
-  need to correct a name or address after the fact, the customer should edit
-  their invoice from the Customer Portal, which regenerates it.
+  Once an invoice has been generated, its billing details are frozen. If you need to correct a name
+  or address after the fact, the customer should edit their invoice from the Customer Portal, which
+  regenerates it.
 </Note>
 
 ## Receipts

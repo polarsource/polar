@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 
 import { Box } from '@/components/Shared/Box'
 import PolarLogo from '@/components/Shared/PolarLogo'

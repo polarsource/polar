@@ -3,6 +3,7 @@
 import { DetailRow } from '@/components/Shared/DetailRow'
 import { useProduct } from '@/hooks/queries'
 import { useSubscriptionChargePreview } from '@/hooks/queries/subscriptions'
+import { isFreePrice } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -34,9 +35,7 @@ const UpcomingChargeCard = ({
     return null
   }
 
-  const isFreeProduct = subscription.prices.some(
-    (price) => price.amount_type === 'free',
-  )
+  const isFreeProduct = subscription.prices.some(isFreePrice)
 
   const hasMeters = subscription.meters.length > 0
   const hasTaxes = chargePreview && chargePreview.tax_amount > 0

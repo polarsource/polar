@@ -1,11 +1,22 @@
 'use client'
 
+import { useModal } from '@/components/Modal/useModal'
 import { useMembers } from '@/hooks/queries/members'
-import { useOrganization } from '@/hooks/queries/org'
-import { DataTable, type StatusColor } from '@polar-sh/orbit'
+import { useMultipleCustomerSeats } from '@/hooks/queries/seats'
+import { schemas } from '@polar-sh/client'
+import {
+  Avatar,
+  DataTable,
+  InlineModal,
+  Status,
+  type StatusColor,
+  Text,
+} from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { Status } from '@polar-sh/orbit'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { EditMemberModal } from './EditMemberModal'
+import { seatStatusDisplayConfig } from '../Seats/seatStatus'
 
 const roleDisplayConfig: Record<
   'owner' | 'billing_manager' | 'member',
@@ -16,56 +27,105 @@ const roleDisplayConfig: Record<
   member: ['Member', 'gray'],
 }
 
+// Which status to surface when a member holds multiple seats (highest first).
+const seatStatusPriority: schemas['SeatStatus'][] = [
+  'pending',
+  'claimed',
+  'revoked',
+]
+
 interface MembersSectionProps {
-  customerId: string
-  organizationId: string
-  customerType?: 'individual' | 'team'
+  organization: schemas['Organization']
+  customer: schemas['Customer']
+  subscriptions?: schemas['Subscription'][]
+  orders?: schemas['Order'][]
 }
 
 export const MembersSection = ({
-  customerId,
-  organizationId,
-  customerType,
+  organization,
+  customer,
+  subscriptions,
+  orders,
 }: MembersSectionProps) => {
-  const { data: organization } = useOrganization(
-    organizationId,
-    !!organizationId,
-  )
-  const { data: membersData, isLoading } = useMembers(customerId)
+  const { data: membersData, isLoading } = useMembers(customer.id)
 
-  // Only show Members section for team customers when member model is enabled
   const isEnabled =
     organization?.feature_settings?.member_model_enabled &&
     organization?.feature_settings?.seat_based_pricing_enabled &&
-    customerType === 'team'
+    customer.type === 'team'
+
+  // Filters out non-seat subscriptions and orders to minimize no. requests.
+  // Could in future be replaced with an endpoint
+  const seatContainers = useMemo(
+    () =>
+      isEnabled
+        ? [
+            ...(subscriptions ?? [])
+              .filter((subscription) => typeof subscription.seats === 'number')
+              .map((subscription) => ({ subscriptionId: subscription.id })),
+            ...(orders ?? [])
+              .filter((order) => typeof order.seats === 'number')
+              .map((order) => ({ orderId: order.id })),
+          ]
+        : [],
+    [isEnabled, subscriptions, orders],
+  )
+  const { seats } = useMultipleCustomerSeats(seatContainers)
+
+  const [selectedMember, setSelectedMember] = useState<
+    schemas['Member'] | null
+  >(null)
+  const {
+    show: showEditMemberModal,
+    hide: hideEditMemberModal,
+    isShown: isEditMemberModalShown,
+  } = useModal()
 
   const members = useMemo(
     () => membersData?.pages.flatMap((page) => page.items) ?? [],
     [membersData],
   )
 
+  const seatsByMemberId = useMemo(() => {
+    const map = new Map<string, schemas['CustomerSeat'][]>()
+    seats.forEach((seat) => {
+      if (!seat.member_id) {
+        return
+      }
+      const existing = map.get(seat.member_id) ?? []
+      existing.push(seat)
+      map.set(seat.member_id, existing)
+    })
+    return map
+  }, [seats])
+
   if (!isEnabled) {
     return null
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <h3 className="text-lg">Members</h3>
+    <Box flexDirection="column" gap="l">
+      <Text variant="heading-xxs" as="h3">
+        Members
+      </Text>
       <DataTable
         data={members}
         columns={[
           {
-            header: 'Email',
+            header: 'Member',
             accessorKey: 'email',
             cell: ({ row: { original } }) => (
-              <span className="text-sm">{original.email}</span>
-            ),
-          },
-          {
-            header: 'Name',
-            accessorKey: 'name',
-            cell: ({ row: { original } }) => (
-              <span className="text-sm">{original.name ?? '—'}</span>
+              <Box alignItems="center" gap="m">
+                <Avatar
+                  className="h-8 w-8"
+                  name={original.name ?? original.email}
+                  avatar_url={null}
+                />
+                <Box flexDirection="column">
+                  <Text>{original.name ?? original.email}</Text>
+                  {original.name && <Text color="muted">{original.email}</Text>}
+                </Box>
+              </Box>
             ),
           },
           {
@@ -77,27 +137,73 @@ export const MembersSection = ({
             },
           },
           {
+            header: 'Seat',
+            id: 'seat',
+            cell: ({ row: { original } }) => {
+              const memberSeats = seatsByMemberId.get(original.id) ?? []
+              const status = seatStatusPriority.find((candidate) =>
+                memberSeats.some((seat) => seat.status === candidate),
+              )
+              const config = status
+                ? seatStatusDisplayConfig[status]
+                : undefined
+              if (!config) {
+                return <Text>—</Text>
+              }
+              const [label, color] = config
+              return (
+                <Box alignItems="center" gap="s">
+                  <Status color={color} status={label} size="small" />
+                  {memberSeats.length > 1 && (
+                    <Text variant="caption" color="muted">
+                      {memberSeats.length} seats
+                    </Text>
+                  )}
+                </Box>
+              )
+            },
+          },
+          {
             header: 'External ID',
             accessorKey: 'external_id',
             cell: ({ row: { original } }) => (
-              <span className="dark:text-polar-500 text-sm text-gray-500">
-                {original.external_id ?? '—'}
-              </span>
+              <Text>{original.external_id ?? '—'}</Text>
             ),
           },
           {
             header: 'Created',
             accessorKey: 'created_at',
             cell: ({ row: { original } }) => (
-              <span className="dark:text-polar-500 text-sm text-gray-500">
-                <FormattedDateTime datetime={original.created_at} />
-              </span>
+              <FormattedDateTime datetime={original.created_at} />
             ),
           },
         ]}
         isLoading={isLoading}
         className="text-sm"
+        onRowClick={({ original }) => {
+          if (customer.type !== 'team') {
+            return
+          }
+          setSelectedMember(original)
+          showEditMemberModal()
+        }}
       />
-    </div>
+      <InlineModal
+        isShown={isEditMemberModalShown}
+        hide={hideEditMemberModal}
+        modalContent={
+          selectedMember ? (
+            <EditMemberModal
+              member={selectedMember}
+              customerId={customer.id}
+              seats={seatsByMemberId.get(selectedMember.id) ?? []}
+              organizationSlug={organization.slug}
+              customerType={customer.type}
+              onClose={hideEditMemberModal}
+            />
+          ) : null
+        }
+      />
+    </Box>
   )
 }

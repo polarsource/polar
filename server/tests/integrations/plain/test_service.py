@@ -1,21 +1,25 @@
 import contextlib
 import uuid
+from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from plain_client import (
+    ComponentTextInput,
     CustomerByEmailCustomerByEmail,
     UpsertCustomerUpsertCustomer,
 )
 from pytest_mock import MockerFixture
 
 from polar.integrations.plain.service import (
+    CUSTOMER_CARD_TTL_SECONDS,
     PlainCustomerError,
     PlainService,
 )
-from polar.models import Feedback, User
+from polar.models import Feedback, Organization, User
 from polar.models.feedback import FeedbackType
+from polar.models.organization import OrganizationStatus
 
 
 @contextlib.asynccontextmanager
@@ -328,3 +332,42 @@ class TestUpsertCustomer:
             await plain_service.upsert_customer(
                 external_id=external_id, email="user@example.com"
             )
+
+
+def _organization(status: OrganizationStatus) -> Organization:
+    return Organization(
+        id=uuid.uuid4(),
+        name="Acme",
+        slug="acme",
+        email=None,
+        status=status,
+        created_at=datetime(2025, 1, 1, tzinfo=UTC),
+    )
+
+
+def _status_value(organization: Organization) -> ComponentTextInput | None:
+    container = PlainService()._get_organization_component_container(organization)
+    for content in container.container_content:
+        row = content.component_row
+        if row is None:
+            continue
+        main = row.row_main_content
+        if (
+            main
+            and main[0].component_text is not None
+            and main[0].component_text.text == "Status"
+        ):
+            return main[1].component_text
+    return None
+
+
+class TestOrganizationCard:
+    def test_ttl_is_one_hour(self) -> None:
+        assert CUSTOMER_CARD_TTL_SECONDS == 60 * 60
+
+    @pytest.mark.parametrize("status", list(OrganizationStatus))
+    def test_renders_status_display_name(self, status: OrganizationStatus) -> None:
+        value = _status_value(_organization(status))
+
+        assert value is not None
+        assert value.text == status.get_display_name()

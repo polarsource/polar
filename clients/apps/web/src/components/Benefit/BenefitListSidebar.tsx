@@ -109,6 +109,7 @@ export const BenefitListSidebar = ({
 
       const params = new URLSearchParams(searchParams.toString())
       params.delete('query')
+      params.delete('type')
       params.delete('create_benefit')
       const queryString = params.toString()
 

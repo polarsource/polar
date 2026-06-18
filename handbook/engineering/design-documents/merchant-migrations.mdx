@@ -62,7 +62,7 @@ A saved card on the current billing provider needs to land on Polar's Stripe acc
 1. PAN Copy: the card already lives in the merchant's Stripe account, and Stripe provides a feature to copy Customers and Payment Methods from one Stripe account to another. This is self-served by the merchant and "fast", from a couple of hours to a few days depending on volume.
 2. PAN Import: the card lives in another billing provider. The merchant, their current provider, Stripe, and us need to sync on what data moves and how. The copy is done between the provider and our Stripe; we don't see the data in flight. This usually takes weeks.
 
-Some payment methods can't be moved, like **wallet payments**, Bacs, or legacy SEPA `source` objects — but cards, ACH, and SEPA `PaymentMethod`s do copy (see Appendix D). For the ones that can't, we may need customers to re-enter their billing details (to discuss).
+Most saved cards move, including Apple Pay. The exceptions: Google Pay can't be imported from a non-Stripe vault, and Bacs / legacy SEPA `source` objects don't copy (see Appendix D). For the ones that can't, we need customers to re-enter their billing details.
 
 In this phase, some actions are done by the merchant, their billing provider, Stripe, or Polar. We should show the current status and where we're pending information.
 
@@ -80,7 +80,7 @@ Subscriptions keep their real status (`active`/`trialing`) but are held from bil
 
 Polar will bill the next billing cycle. If for some reason the payment fails on the next billing cycle, the subscription will enter the normal dunning state where we send an email to the customer.
 
-We import each subscription as tax-inclusive by setting its own `tax_behavior = inclusive`, leaving the org's `default_tax_behavior` untouched — renewal billing reads the per-subscription value and only falls back to the org default when it's null. Caveat: the POC leaves `net_amount = gross`; the real tax split is recomputed at billing.
+We import each subscription as tax-inclusive by setting its own `tax_behavior = inclusive`, leaving the org's `default_tax_behavior` untouched - renewal billing reads the per-subscription value and only falls back to the org default when it's null.
 
 ## The sources
 
@@ -102,7 +102,7 @@ The idea is to create a new `migration` module (I'm up for new name suggestions)
 - **`MigrationJob`** one row per migration run for an org. The root: source platform and current step.
 - **`MigrationRecord`** one row per imported thing (customer, product, subscription, order, …), mapping `source_id → target_id` with a status. It's our idempotency layer, scoped per org, so we can trigger multiple migrations safely.
 - **`SourceAdapter`** we will have one for every billing provider (e.g. `StripeAdapter`). Its main responsibility is to read the current billing provider API and provide a generic representation the migration service can work with. `extract()` must be incremental as customer data can be huge.
-- **`PanTransferStep`** the checklist for moving cards (step, owner, status, kind, inputs — see Appendix B). Stored as a JSONB column on `MigrationJob`: a list of step objects.
+- **`PanTransferStep`** the checklist for moving cards (step, owner, status, kind, inputs - see Appendix B). Stored as a JSONB column on `MigrationJob`: a list of step objects.
 - **`MigrationService`** the main orchestrator.
 - **`CanonicalRecord`** to have everything normalized in memory first (variants: `CanonicalProduct` / `Customer` / `Subscription`). The precheck engine reads these and returns a `PrecheckReport` (Appendix A); Appendix C shows the flow end to end.
 
@@ -123,7 +123,7 @@ Before importing, we should run the following checks.
 - **Currency**
 	- Blocker: there must be only one presentment currency. Multiple currencies can't be onboarded for now.
 - **Pricing**
-	- Blocker: only fixed prices are supported for now (tiered/dynamic pricing isn't — we can still import the rest).
+	- Blocker: only fixed prices are supported for now (tiered/dynamic pricing isn't - we can still import the rest).
 - **Catalog**
 	- Blocker: duplicate product names (in case of manual creation).
 - **Customers**
@@ -132,7 +132,7 @@ Before importing, we should run the following checks.
 - **Subscriptions**
 	- Warning: mention subscriptions that are on trial.
 - **Payments**
-	- Warning: flag subscriptions with wallet, Bacs, or legacy SEPA `source` payments, where we may ask the customer to re-enter the details (cards, ACH, and SEPA `PaymentMethod`s copy fine).
+	- Warning: flag subscriptions with wallet, Bacs, or legacy SEPA `source` payments we need to ask the customer to re-enter the details.
 - **Organization**
 	- Blocker: organization must be in a renewal-enabled status (REVIEW or ACTIVE).
 
@@ -214,8 +214,9 @@ Card move (PAN copy) and the subscription migration are described under *Moving 
 | `discounts[]` (Coupon) | single `Discount` | not reliably on the sub object (came back empty on clover even when expanded). To be confirmed during implementation. |
 | `pm_…` (card) | `PaymentMethod` (`processor_id`) | copied via PAN copy; new `pm_…` id, same underlying card. |
 | Cards, ACH, SEPA `PaymentMethod` | `PaymentMethod` | copyable by PAN copy. |
-| Link / wallets / Bacs / legacy SEPA `source` | — | not copyable → customer re-enters (Link/wallets: to confirm with Stripe). |
-| Charges / refunds / disputes, Stripe Tax history | — | not copied; stay on Stripe. |
+| Apple Pay / Google Pay | `PaymentMethod` (`card`) | PAN copy: wallet-origin cards are `card` PMs and copy. PAN import: Apple Pay migrates can migrate as DPAN (but we need to ask Stripe and origin billing provider); Google Pay can't be imported. |
+| Link / Bacs / legacy SEPA `source` | - | type `link`, Bacs, and legacy `src_` don't copy; Link-origin `card` PMs do. |
+| Charges / refunds / disputes, Stripe Tax history | - | not copied; stay on Stripe. |
 
 ### Reading the account
 
@@ -225,14 +226,13 @@ We can't reuse Polar's platform Stripe service (it's bound to the global platfor
 
 On top of the generic ones in Appendix A. What's unique to Stripe:
 
-- **Manual:** source account is a Connect platform — only platform-account customers/PMs are copyable; anything on connected accounts is excluded.
-- **Blocker:** India / RBI account — card data can't cross the border, so the PAN copy can't run (bidirectional).
+- **Manual:** source account is a Connect platform - only platform-account customers/PMs are copyable; anything on connected accounts is excluded.
+- **Blocker:** India / RBI account - card data can't cross the border, so the PAN copy can't run (bidirectional).
 - **Blocker:** tiered/graduated pricing (`billing_scheme=tiered`) can't be represented.
-- **Blocker:** metered pricing (`usage_type=metered`) — to be implemented later (Stripe now requires a Billing Meter; legacy usage records are gone).
-- **Blocker:** subscription with multiple line items — can't be represented.
-- **Blocker:** `collection_method=send_invoice` — can't be handled.
-- **Warning:** PMs that can't copy: Link, wallets, Bacs, legacy SEPA `source` objects — customer re-enters. (Cards, ACH, and SEPA `PaymentMethod`s copy fine; Link/wallets to confirm with Stripe.)
-- **Warning:** multiple discounts on a subscription — Polar supports one; keep one and flag the rest.
-- **Warning:** `pause_collection` — no Polar paused subscriptions, don't import.
-- **Warning:** `past_due` / `unpaid` — don't import.
-- **Warning:** in-flight refunds / open disputes on an invoice — don't import, the money is still moving on Stripe.
+- **Blocker:** metered pricing (`usage_type=metered`) - to be implemented later (Stripe now requires a Billing Meter; legacy usage records are gone).
+- **Blocker:** subscription with multiple line items - can't be represented.
+- **Blocker:** `collection_method=send_invoice` - can't be handled.
+- **Warning:** multiple discounts on a subscription - Polar supports one; keep one and flag the rest.
+- **Warning:** `pause_collection` - no Polar paused subscriptions, don't import.
+- **Warning:** `past_due` / `unpaid` - don't import.
+- **Warning:** in-flight refunds / open disputes on an invoice - don't import, the money is still moving on Stripe.

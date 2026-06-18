@@ -63,10 +63,9 @@ export function ChargebackPreventionRefund({
         networks.
       </Text>
       <Text>
-        Our early warning system indicated a high likelihood that this
-        transaction would result in a formal chargeback. To help you avoid
-        possible losses and fees, we refunded the payment before a dispute was
-        officially filed.
+        Our early warning system indicated the customer started to file a
+        chargeback for this transaction. To help you avoid possible losses and
+        fees, we refunded the payment before a dispute was officially filed.
       </Text>
       <Text>
         Although a refund is not ideal, it is often the least expensive option.

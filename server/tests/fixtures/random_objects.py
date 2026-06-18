@@ -442,6 +442,8 @@ async def create_product(
     organization: Organization,
     recurring_interval: SubscriptionRecurringInterval | None,
     recurring_interval_count: int | None = 1,
+    meter_interval: SubscriptionRecurringInterval | None = None,
+    meter_interval_count: int | None = None,
     name: str = "Product",
     is_archived: bool = False,
     visibility: Visibility = Visibility.public,
@@ -454,12 +456,17 @@ async def create_product(
     recurring_interval_count = (
         None if recurring_interval is None else recurring_interval_count
     )
+    meter_interval_count = (
+        None if meter_interval is None else (meter_interval_count or 1)
+    )
     product = Product(
         name=name,
         description="Description",
         is_tax_applicable=is_tax_applicable,
         recurring_interval=recurring_interval,
         recurring_interval_count=recurring_interval_count,
+        meter_interval=meter_interval,
+        meter_interval_count=meter_interval_count,
         is_archived=is_archived,
         visibility=visibility,
         organization=organization,

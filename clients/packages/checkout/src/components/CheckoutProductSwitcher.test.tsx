@@ -136,6 +136,8 @@ describe('CheckoutProductSwitcher', () => {
         recurring_interval: 'month' as const,
         recurring_interval_count: 1,
         is_recurring: true,
+        meter_interval: null,
+        meter_interval_count: null,
       }
       const product2 = {
         ...createCheckout().product,
@@ -144,6 +146,8 @@ describe('CheckoutProductSwitcher', () => {
         recurring_interval: 'year' as const,
         recurring_interval_count: 1,
         is_recurring: true,
+        meter_interval: null,
+        meter_interval_count: null,
       }
       const price1 = createFixedPrice({
         id: 'price_1',

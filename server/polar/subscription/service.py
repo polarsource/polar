@@ -567,6 +567,8 @@ class SubscriptionService:
             cancel_at_period_end=False,
             recurring_interval=recurring_interval,
             recurring_interval_count=recurring_interval_count,
+            meter_interval=product.meter_interval,
+            meter_interval_count=product.meter_interval_count,
             organization=product.organization,
             product=product,
             customer=customer,
@@ -576,6 +578,7 @@ class SubscriptionService:
             user_metadata=subscription_create.metadata,
             pending_update=None,
         )
+        subscription.initialize_meter_period(current_period_start)
         if created_at is not None:
             subscription.created_at = created_at
 
@@ -677,6 +680,11 @@ class SubscriptionService:
 
         subscription.recurring_interval = recurring_interval
         subscription.recurring_interval_count = recurring_interval_count
+        subscription.meter_interval = product.meter_interval
+        subscription.meter_interval_count = product.meter_interval_count
+        subscription.initialize_meter_period(
+            None if trial_end is not None else current_period_start
+        )
         subscription.status = status
         subscription.payment_method = payment_method
         subscription.organization = checkout.organization
@@ -873,6 +881,13 @@ class SubscriptionService:
 
         if previous_status == SubscriptionStatus.trialing:
             subscription.status = SubscriptionStatus.active
+
+        # Re-arm the meter clock off the new billing period. At the billing boundary
+        # both clocks coincide, so the full cycle settles the final meter period and
+        # the meter clock simply restarts. Also covers trial conversion, where the
+        # meter clock starts for the first time.
+        if not revoke:
+            subscription.initialize_meter_period(subscription.current_period_start)
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(

@@ -118,6 +118,22 @@ class DisputeCaseService:
         )
         return await self.close(session, case)
 
+    async def prevent(
+        self, session: AsyncSession, case: DisputeSupportCase
+    ) -> SupportCaseMessage:
+        """Record that the chargeback was prevented (refunded before it went
+        through), then close the case — the merchant outcome, kept on the
+        timeline instead of a silent close."""
+        await self._assert_open(session, case)
+        await support_case_service.post_message(
+            session,
+            case,
+            type=SupportCaseMessageType.dispute_prevented,
+            author_kind=SupportCaseMessageAuthorKind.system,
+            audience=[SupportCaseAudience.merchant],
+        )
+        return await self.close(session, case)
+
     async def close(
         self,
         session: AsyncSession,

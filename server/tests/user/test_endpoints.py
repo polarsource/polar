@@ -190,6 +190,7 @@ class TestGetMyNotificationSettings:
         user_organization.notification_settings = {
             "new_order": True,
             "new_subscription": False,
+            "chargeback_prevention": True,
         }
         await save_fixture(user_organization)
 
@@ -201,6 +202,7 @@ class TestGetMyNotificationSettings:
         assert response.json()["notification_settings"] == {
             "new_order": True,
             "new_subscription": False,
+            "chargeback_prevention": True,
         }
 
     @pytest.mark.auth
@@ -245,6 +247,7 @@ class TestUpdateMyNotificationSettings:
                 "notification_settings": {
                     "new_order": False,
                     "new_subscription": True,
+                    "chargeback_prevention": True,
                 }
             },
         )
@@ -253,6 +256,7 @@ class TestUpdateMyNotificationSettings:
         assert response.json()["notification_settings"] == {
             "new_order": False,
             "new_subscription": True,
+            "chargeback_prevention": True,
         }
 
         # Persisted: a subsequent read returns the new value.
@@ -260,6 +264,7 @@ class TestUpdateMyNotificationSettings:
         assert get_response.json()["notification_settings"] == {
             "new_order": False,
             "new_subscription": True,
+            "chargeback_prevention": True,
         }
 
     @pytest.mark.auth
@@ -305,6 +310,7 @@ class TestUpdateMyNotificationSettings:
                 "notification_settings": {
                     "new_order": True,
                     "new_subscription": True,
+                    "chargeback_prevention": True,
                 }
             },
         )

@@ -199,6 +199,27 @@ resource "aws_iam_policy" "lambda_worker_ecr_push" {
   policy = data.aws_iam_policy_document.lambda_worker_ecr_push.json
 }
 
+data "aws_iam_policy_document" "lambda_worker_deploy" {
+  statement {
+    sid = "DeployLambdaWorker"
+    actions = [
+      "lambda:GetFunction",
+      "lambda:PublishVersion",
+      "lambda:UpdateFunctionCode",
+    ]
+    resources = [
+      "arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:polar-test-lambda-worker*",
+      "arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:polar-sandbox-lambda-worker*",
+      "arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:polar-production-lambda-worker*",
+    ]
+  }
+}
+
+resource "aws_iam_policy" "lambda_worker_deploy" {
+  name   = "lambda-worker-deploy"
+  policy = data.aws_iam_policy_document.lambda_worker_deploy.json
+}
+
 # -----------------------------------------------------------------------------
 # Account Assignments (Dynamic)
 # -----------------------------------------------------------------------------
@@ -384,6 +405,7 @@ module "github_oidc_backup" {
   ]
   policy_arns = {
     backups          = aws_iam_policy.polar_sh_backups.arn
+    lambda_deploy    = aws_iam_policy.lambda_worker_deploy.arn
     lambda_ecr       = aws_iam_policy.lambda_worker_ecr_push.arn
     lambda_artifacts = aws_iam_policy.lambda_artifacts_upload.arn
     e2e_reports      = aws_iam_policy.e2e_reports_upload.arn

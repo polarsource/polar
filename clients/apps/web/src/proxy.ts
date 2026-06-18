@@ -31,6 +31,7 @@ const SANDBOX_ALLOWED_PATHS: (string | RegExp)[] = [
   '/embed',
   '/verify-email',
   '/api',
+  '/feedback',
   '/to',
   /^\/favicon[\w-]*\.\w+$/, // /favicon.png, /favicon-dark.png, etc.
   /^\/[^/]+\/portal(\/|$)/, // /:organization/portal

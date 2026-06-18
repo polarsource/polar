@@ -1,0 +1,23 @@
+server/tests/e2e/lifecycle/test_usage_cycle.py
+  s_055272d137234c::t_1f630cfb93d39a 1-19,21-140
+  s_055272d137234c::t_ab95e5d6dd1572 20
+server/tests/e2e/infra/scheduler_simulator.py
+  s_055272d137234c::t_b40f382891a13c 56,87
+  s_055272d137234c::t_57861a90a23439 33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "24974e8f490ca7ab8bebbed907cf502d9cd8ecdb",
+  "prompts": {},
+  "sessions": {
+    "s_055272d137234c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee94dbe5-c15a-44e2-9fb8-aed3888c188f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

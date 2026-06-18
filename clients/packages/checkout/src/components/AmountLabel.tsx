@@ -9,7 +9,7 @@ interface AmountLabelProps {
   amount: number
   currency: string
   mode: 'compact' | 'standard'
-  interval?: schemas['SubscriptionRecurringInterval'] | null
+  interval?: schemas['RecurringInterval'] | null
   intervalCount?: number | null
   locale?: AcceptedLocale
 }

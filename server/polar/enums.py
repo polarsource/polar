@@ -55,7 +55,7 @@ class PayoutAccountType(StrEnum):
         }[self]
 
 
-class SubscriptionRecurringInterval(StrEnum):
+class RecurringInterval(StrEnum):
     day = "day"
     week = "week"
     month = "month"
@@ -66,22 +66,32 @@ class SubscriptionRecurringInterval(StrEnum):
 
     def get_next_period(self, d: datetime, anchor_day: int, leap: int = 1) -> datetime:
         match self:
-            case SubscriptionRecurringInterval.day:
+            case RecurringInterval.day:
                 return d + relativedelta(days=leap)
-            case SubscriptionRecurringInterval.week:
+            case RecurringInterval.week:
                 return d + relativedelta(weeks=leap)
-            case SubscriptionRecurringInterval.month:
+            case RecurringInterval.month:
                 next = d + relativedelta(months=leap)
                 if next.day != anchor_day:
                     _, max_month_day = calendar.monthrange(next.year, next.month)
                     next = next.replace(day=min(anchor_day, max_month_day))
                 return next
-            case SubscriptionRecurringInterval.year:
+            case RecurringInterval.year:
                 next = d + relativedelta(years=leap)
                 if next.day != anchor_day:
                     _, max_month_day = calendar.monthrange(next.year, next.month)
                     next = next.replace(day=min(anchor_day, max_month_day))
                 return next
+
+
+# `RecurringInterval` is the canonical interval-unit enum (day/week/month/year),
+# shared by the billing interval and the meter interval.
+#
+# Backwards-compatible alias: the historical name stays valid for existing imports.
+SubscriptionRecurringInterval = RecurringInterval
+# Semantic alias for the product/subscription meter cycle. Same underlying values;
+# the distinct name documents intent at call sites.
+MeterInterval = RecurringInterval
 
 
 class SubscriptionProrationBehavior(StrEnum):

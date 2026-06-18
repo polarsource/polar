@@ -15,7 +15,7 @@ export interface ProductRowProps {
   product: schemas['Product']
   currency: string
   amount?: number
-  interval?: schemas['SubscriptionRecurringInterval']
+  interval?: schemas['RecurringInterval']
 }
 
 export const ProductRow = ({

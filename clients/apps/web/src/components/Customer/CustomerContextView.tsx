@@ -182,18 +182,22 @@ const STATUS_ORDER: Record<schemas['SubscriptionStatus'], number> = {
   incomplete_expired: 6,
 }
 
-const INTERVAL_LABELS: Record<
-  schemas['SubscriptionRecurringInterval'],
-  string
-> = { day: 'Daily', week: 'Weekly', month: 'Monthly', year: 'Yearly' }
+const INTERVAL_LABELS: Record<schemas['RecurringInterval'], string> = {
+  day: 'Daily',
+  week: 'Weekly',
+  month: 'Monthly',
+  year: 'Yearly',
+}
 
-const INTERVAL_PLURAL: Record<
-  schemas['SubscriptionRecurringInterval'],
-  string
-> = { day: 'days', week: 'weeks', month: 'months', year: 'years' }
+const INTERVAL_PLURAL: Record<schemas['RecurringInterval'], string> = {
+  day: 'days',
+  week: 'weeks',
+  month: 'months',
+  year: 'years',
+}
 
 const formatInterval = (
-  interval: schemas['SubscriptionRecurringInterval'],
+  interval: schemas['RecurringInterval'],
   count: number,
 ): string =>
   count === 1

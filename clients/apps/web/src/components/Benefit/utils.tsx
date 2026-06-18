@@ -1,7 +1,8 @@
 import { enums, schemas } from '@polar-sh/client'
-import { Download, Flag, Gauge, Hash, Key, Loader } from 'lucide-react'
+import { Download, Flag, Gauge, Key, Loader } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 import GitHubIcon from '../Icons/GitHubIcon'
+import SlackIcon from '../Icons/SlackIcon'
 
 export type CreatableBenefit = schemas['BenefitType']
 
@@ -24,7 +25,7 @@ const resolveBenefitCategoryIcon = (
     case 'feature_flag':
       return <Flag className={cn} />
     case 'slack_shared_channel':
-      return <Hash className={cn} />
+      return <SlackIcon className={cn} />
     default:
       return <Loader className={cn} />
   }

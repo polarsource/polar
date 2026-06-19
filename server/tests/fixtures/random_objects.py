@@ -9,6 +9,7 @@ from decimal import Decimal
 from typing import Any, Literal, Unpack
 
 import pytest_asyncio
+from pydantic import TypeAdapter
 from typing_extensions import TypeIs
 
 from polar.enums import (
@@ -87,6 +88,7 @@ from polar.models.checkout import (
 from polar.models.custom_field import (
     CustomFieldCheckbox,
     CustomFieldCheckboxProperties,
+    CustomFieldDateProperties,
     CustomFieldNumber,
     CustomFieldNumberProperties,
     CustomFieldProperties,
@@ -383,6 +385,17 @@ async def create_custom_field(
     name: str = "Custom Field",
     properties: CustomFieldSelectProperties | None = None,
 ) -> CustomFieldSelect: ...
+
+
+_CUSTOM_FIELD_PROPERTIES_ADAPTERS: dict[CustomFieldType, TypeAdapter[Any]] = {
+    CustomFieldType.text: TypeAdapter(CustomFieldTextProperties),
+    CustomFieldType.number: TypeAdapter(CustomFieldNumberProperties),
+    CustomFieldType.date: TypeAdapter(CustomFieldDateProperties),
+    CustomFieldType.checkbox: TypeAdapter(CustomFieldCheckboxProperties),
+    CustomFieldType.select: TypeAdapter(CustomFieldSelectProperties),
+}
+
+
 async def create_custom_field(
     save_fixture: SaveFixture,
     *,
@@ -392,12 +405,14 @@ async def create_custom_field(
     name: str = "Custom Field",
     properties: CustomFieldProperties | None = None,
 ) -> CustomField:
+    properties_adapter = _CUSTOM_FIELD_PROPERTIES_ADAPTERS[type]
+    validated_properties = properties_adapter.validate_python(properties or {})
     model = type.get_model()
     custom_field = model(
         type=type,
         slug=slug,
         name=name,
-        properties=properties or {},
+        properties=validated_properties,
         organization=organization,
     )
     await save_fixture(custom_field)

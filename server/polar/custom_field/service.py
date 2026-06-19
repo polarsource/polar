@@ -2,6 +2,7 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
+from pydantic import TypeAdapter, ValidationError
 from sqlalchemy import (
     Select,
     UnaryExpression,
@@ -28,13 +29,31 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.models import CustomField, Organization, User
-from polar.models.custom_field import CustomFieldType
+from polar.models.custom_field import CustomFieldNumberProperties, CustomFieldType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .attachment import attached_custom_fields_models
 from .data import custom_field_data_models
 from .schemas import CustomFieldCreate, CustomFieldUpdate
+
+_NumberPropertiesAdapter: TypeAdapter[CustomFieldNumberProperties] = TypeAdapter(
+    CustomFieldNumberProperties
+)
+
+
+def _validate_number_properties(properties: dict[str, Any] | None) -> None:
+    if not properties:
+        return
+    try:
+        _NumberPropertiesAdapter.validate_python(properties)
+    except ValidationError as e:
+        raise PolarRequestValidationError(
+            [
+                {**err, "loc": ("body", "properties", *err["loc"])}  # pyright: ignore
+                for err in e.errors()
+            ]
+        )
 
 
 class CustomFieldService(ResourceServiceReader[CustomField]):
@@ -131,6 +150,9 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
                 ]
             )
 
+        if custom_field_create.type == CustomFieldType.number:
+            _validate_number_properties(dict(custom_field_create.properties))
+
         custom_field = CustomField(
             **custom_field_create.model_dump(
                 exclude={"organization_id"}, by_alias=True
@@ -185,6 +207,12 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
                         }
                     ]
                 )
+
+        if (
+            custom_field_update.type == CustomFieldType.number
+            and custom_field_update.properties is not None
+        ):
+            _validate_number_properties(dict(custom_field_update.properties))
 
         previous_slug = custom_field.slug
         for attr, value in custom_field_update.model_dump(

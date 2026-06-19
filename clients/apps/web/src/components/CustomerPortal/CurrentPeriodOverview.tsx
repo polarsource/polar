@@ -1,5 +1,5 @@
 import { useCustomerSubscriptionChargePreview } from '@/hooks/queries/customerPortal'
-import { isFreePrice } from '@/utils/product'
+import { isFreePrice, isSeatBasedPrice } from '@/utils/product'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { useMemo } from 'react'
@@ -29,6 +29,18 @@ export const CurrentPeriodOverview = ({
   }, [subscription])
   const product = products.find((product) => product.id === productId)
 
+  // For seat-based subscriptions, surface the number of seats we'll charge for
+  // next, preferring a pending update if one is scheduled.
+  const seats = useMemo(() => {
+    if (
+      subscription.pending_update &&
+      subscription.pending_update.seats != null
+    ) {
+      return subscription.pending_update.seats
+    }
+    return subscription.seats
+  }, [subscription])
+
   const isTrialing = subscription.status === 'trialing'
   const isActive = subscription.status === 'active'
   const isCancelingAtPeriodEnd =
@@ -47,6 +59,11 @@ export const CurrentPeriodOverview = ({
     subscriptionPreview && subscriptionPreview.discount_amount > 0
 
   const isFreeProduct = subscription.prices.some(isFreePrice)
+
+  const isSeatBasedProduct = product?.prices.some(
+    (price) =>
+      price.price_currency === subscription.currency && isSeatBasedPrice(price),
+  )
 
   // For subscriptions set to cancel, only show if there's still something to
   // bill: metered usage or pending prorations.
@@ -89,7 +106,9 @@ export const CurrentPeriodOverview = ({
       {product && subscriptionPreview && (
         <div className="flex items-center justify-between">
           <span className="dark:text-polar-400 text-gray-600">
-            {product.name}
+            {isSeatBasedProduct && seats != null
+              ? `${product.name} (${seats} ${seats === 1 ? 'seat' : 'seats'})`
+              : product.name}
           </span>
           <span
             className={isCancelingAtPeriodEnd ? 'text-gray-500' : 'font-medium'}

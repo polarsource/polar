@@ -29955,8 +29955,18 @@ export interface components {
        */
       metered_amount: number
       /**
+       * Proration Amount
+       * @description Net pending proration adjustments in cents from mid-period changes (seat or product changes), to be billed on the next invoice.
+       */
+      proration_amount: number
+      /**
+       * Prorations
+       * @description Itemized pending proration adjustments to be billed on the next invoice.
+       */
+      prorations: components['schemas']['SubscriptionChargePreviewProration'][]
+      /**
        * Subtotal Amount
-       * @description Subtotal amount in cents (base + metered, before discount and tax)
+       * @description Subtotal amount in cents (base + metered + prorations, before discount and tax)
        */
       subtotal_amount: number
       /**
@@ -29979,6 +29989,22 @@ export interface components {
        * @description Total amount in cents (final charge amount)
        */
       total_amount: number
+    }
+    /**
+     * SubscriptionChargePreviewProration
+     * @description A pending proration adjustment to be billed on the next invoice.
+     */
+    SubscriptionChargePreviewProration: {
+      /**
+       * Label
+       * @description Human-readable description of the proration.
+       */
+      label: string
+      /**
+       * Amount
+       * @description Signed amount in cents: positive to charge, negative to credit.
+       */
+      amount: number
     }
     /**
      * SubscriptionCreateCustomer

@@ -294,6 +294,7 @@ class DisputeService:
                     payment_processor_id=None,  # We don't know the dispute ID yet
                     order=order,
                     payment=payment,
+                    status=DisputeStatus.early_warning,
                 )
             )
 
@@ -303,9 +304,6 @@ class DisputeService:
         # We refunded the transaction before the dispute could be escalated
         if alert["transaction_refund_outcome"] == "REFUNDED":
             dispute.status = DisputeStatus.prevented
-        # We didn't take action: the dispute will be escalated, we'll get news from Stripe later
-        elif not dispute.closed:
-            dispute.status = DisputeStatus.early_warning
 
         return await repository.update(dispute)
 

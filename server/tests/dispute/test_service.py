@@ -1029,6 +1029,65 @@ class TestUpsertFromChargebackStop:
         with pytest.raises(DisputePaymentNotFoundError):
             await dispute_service.upsert_from_chargeback_stop(session, alert)
 
+    async def test_late_alert_does_not_downgrade_escalated_dispute(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        """A ChargebackStop alert that lags behind Stripe must not de-escalate a
+        dispute Stripe has already opened: it's no longer an early warning."""
+        order = await create_order(
+            save_fixture, customer=customer, subtotal_amount=1000, tax_amount=200
+        )
+        charge_id = "STRIPE_CHARGE_ID"
+        payment_intent_id = "STRIPE_PAYMENT_INTENT_ID"
+        payment = await create_payment(
+            save_fixture, organization, amount=1200, order=order, processor_id=charge_id
+        )
+        # Stripe already opened the dispute, so it carries a processor id and a
+        # live (non-early) status before the alert arrives.
+        dispute = await create_dispute(
+            save_fixture,
+            order,
+            payment,
+            status=DisputeStatus.needs_response,
+            amount=1000,
+            tax_amount=200,
+            currency="usd",
+            payment_processor_id="STRIPE_DISPUTE_ID",
+        )
+        payment_intent = build_stripe_payment_intent(
+            id=payment_intent_id, latest_charge=charge_id
+        )
+        mocker.patch(
+            "polar.dispute.service.stripe_service.get_payment_intent",
+            return_value=payment_intent,
+        )
+
+        alert = build_chargeback_stop_alert(
+            integration_transaction_id=payment_intent_id,
+            transaction_refund_outcome="NOT_REFUNDED",
+            transaction_amount_in_cents=1200,
+            transaction_currency_code="usd",
+        )
+
+        updated_dispute = await dispute_service.upsert_from_chargeback_stop(
+            session, alert
+        )
+
+        assert updated_dispute.id == dispute.id
+        assert updated_dispute.status == DisputeStatus.needs_response
+        assert updated_dispute.payment_processor_id == "STRIPE_DISPUTE_ID"
+        # The alert is still recorded against the existing dispute.
+        assert (
+            updated_dispute.dispute_alert_processor
+            == DisputeAlertProcessor.chargeback_stop
+        )
+        assert updated_dispute.dispute_alert_processor_id == alert["id"]
+
     async def test_new_not_refunded(
         self,
         save_fixture: SaveFixture,

@@ -1047,6 +1047,15 @@ class TestCreateSubscriptionOrder:
         assert order.billing_reason == OrderBillingReasonInternal.subscription_cycle
         assert order.subscription == subscription
 
+        if tax_behavior == TaxBehavior.inclusive:
+            assert subscription.net_amount == round(
+                subscription.amount
+                * order.net_amount
+                / (order.net_amount + order.tax_amount)
+            )
+        else:
+            assert subscription.net_amount == subscription.amount
+
         calculate_tax_mock.assert_called_once_with(
             str(order.id),
             subscription.currency,

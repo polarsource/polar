@@ -717,6 +717,17 @@ class OrganizationDetailView:
                             ):
                                 text("Deny")
 
+                    elif self.org.status == OrganizationStatus.OFFBOARDED:
+                        with tag.div(
+                            classes="bg-base-200 border border-base-300 p-3 rounded-lg text-xs"
+                        ):
+                            with tag.p(classes="text-base-content/70"):
+                                text(
+                                    "Terminal state. New payments are blocked and "
+                                    "payouts are released so the merchant can "
+                                    "withdraw their remaining balance."
+                                )
+
                     # Always available actions
                     with tag.div(classes="divider my-2"):
                         pass

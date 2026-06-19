@@ -2094,6 +2094,25 @@ export interface components {
       /** Invite Url */
       invite_url: string
     }
+    /** OrganizationOffboardedEmail */
+    OrganizationOffboardedEmail: {
+      /**
+       * Template
+       * @default organization_offboarded
+       * @constant
+       */
+      template: 'organization_offboarded'
+      props: components['schemas']['OrganizationOffboardedProps']
+    }
+    /** OrganizationOffboardedProps */
+    OrganizationOffboardedProps: {
+      /** Email */
+      email: string
+      /** Organization Name */
+      organization_name: string
+      /** Account Url */
+      account_url: string
+    }
     /** OrganizationSocialLink */
     OrganizationSocialLink: {
       /** @description The social platform of the URL */
@@ -2132,6 +2151,7 @@ export interface components {
       | 'active'
       | 'blocked'
       | 'offboarding'
+      | 'offboarded'
     /** OrganizationSubscriptionSettings */
     OrganizationSubscriptionSettings: {
       /** Allow Multiple Subscriptions */

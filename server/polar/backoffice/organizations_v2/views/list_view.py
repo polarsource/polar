@@ -375,13 +375,18 @@ class OrganizationListView:
                 label="All",
                 url=str(request.url_for("organizations:list")),
                 active=status_filter is None and not selected_open_cases,
-                # Mirror the default list, which hides denied/blocked orgs (they
-                # have their own tabs) — otherwise the count overstates the rows.
+                # Mirror the default list, which hides denied/blocked/offboarded
+                # orgs (they have their own tabs) — otherwise the count overstates
+                # the rows.
                 count=sum(
                     count
                     for status, count in status_counts.items()
                     if status
-                    not in (OrganizationStatus.DENIED, OrganizationStatus.BLOCKED)
+                    not in (
+                        OrganizationStatus.DENIED,
+                        OrganizationStatus.BLOCKED,
+                        OrganizationStatus.OFFBOARDED,
+                    )
                 ),
             ),
             Tab(
@@ -425,6 +430,12 @@ class OrganizationListView:
                 active=status_filter == OrganizationStatus.OFFBOARDING,
                 count=status_counts.get(OrganizationStatus.OFFBOARDING, 0),
                 badge_variant="warning",
+            ),
+            Tab(
+                label="Offboarded",
+                url=str(request.url_for("organizations:list")) + "?status=offboarded",
+                active=status_filter == OrganizationStatus.OFFBOARDED,
+                count=status_counts.get(OrganizationStatus.OFFBOARDED, 0),
             ),
             # Pushed to the right — a separate dimension from the status tabs.
             Tab(

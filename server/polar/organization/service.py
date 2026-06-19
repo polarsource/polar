@@ -1417,6 +1417,34 @@ class OrganizationService:
             transitioned.append(organization)
         return transitioned
 
+    async def offboard_expired_organizations(
+        self, session: AsyncSession
+    ) -> Sequence[Organization]:
+        """Auto-transition offboarding orgs to the terminal offboarded state.
+
+        Run periodically by a worker once the offboarding period has elapsed
+        since the org's last paid order. Returns the orgs transitioned.
+        """
+        repository = OrganizationRepository.from_session(session)
+        cutoff = datetime.now(UTC) - settings.ORGANIZATION_OFFBOARDING_PERIOD
+        candidates = await repository.get_offboarding_past_period(cutoff)
+        transitioned: list[Organization] = []
+        for organization in candidates:
+            # Skip if a concurrent admin action already moved the org out of
+            # OFFBOARDING — set_status would raise InvalidStatusTransitionError
+            # and abort the whole batch otherwise.
+            if organization.status != OrganizationStatus.OFFBOARDING:
+                continue
+            organization.set_status(OrganizationStatus.OFFBOARDED)
+            _append_internal_note(
+                organization,
+                "Automatically offboarded after the offboarding period elapsed.",
+            )
+            session.add(organization)
+            enqueue_job("organization.offboarded", organization_id=organization.id)
+            transitioned.append(organization)
+        return transitioned
+
     async def _exit_snooze_to_review(
         self, session: AsyncSession, organization: Organization
     ) -> None:

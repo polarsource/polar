@@ -5,6 +5,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from polar.customer.repository import CustomerRepository
+from polar.email.schemas import (
+    OrganizationOffboardedEmail,
+    OrganizationOffboardedProps,
+)
+from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarTaskError
 from polar.integrations.plain.service import plain as plain_service
 from polar.member.repository import MemberRepository
@@ -16,6 +21,9 @@ from polar.models.member import Member, MemberRole
 from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
@@ -75,6 +83,45 @@ async def organization_unsnooze_expired() -> None:
     """Auto-unsnooze TIME_BASED snoozed orgs whose deadline has passed."""
     async with AsyncSessionMaker() as session:
         await organization_service.unsnooze_expired_organizations(session)
+
+
+@actor(
+    actor_name="organization.offboard_expired",
+    cron_trigger=CronTrigger.from_crontab("0 4 * * *"),
+    priority=TaskPriority.LOW,
+    max_retries=0,
+)
+async def organization_offboard_expired() -> None:
+    """Auto-transition offboarding orgs to offboarded once the period elapses."""
+    async with AsyncSessionMaker() as session:
+        await organization_service.offboard_expired_organizations(session)
+
+
+@actor(actor_name="organization.offboarded", priority=TaskPriority.LOW)
+async def organization_offboarded(organization_id: uuid.UUID) -> None:
+    """Notify an organization's members that it has been offboarded."""
+    async with AsyncSessionMaker() as session:
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.get_by_id(organization_id)
+        if organization is None:
+            raise OrganizationDoesNotExist(organization_id)
+
+        members = await user_organization_service.list_by_org(session, organization.id)
+        for member in members:
+            email = member.user.email
+            if not email:
+                continue
+            enqueue_email_template(
+                OrganizationOffboardedEmail(
+                    props=OrganizationOffboardedProps(
+                        email=email,
+                        organization_name=organization.name,
+                        account_url=organization.account_url,
+                    )
+                ),
+                to_email_addr=email,
+                subject=f"{organization.name} has been offboarded from Polar",
+            )
 
 
 def _check_threshold_debounce_key(account_id: uuid.UUID) -> str:

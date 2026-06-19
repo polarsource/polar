@@ -42,7 +42,11 @@ export const AccountPageRouter = ({
     reviewStatus?.verdict === 'PASS' &&
     reviewStatus?.reason === 'Grandfathered organization'
   const isDenied = organization.status === 'denied'
-  const isActive = ['active', 'review', 'snoozed'].includes(organization.status)
+  // `offboarded` is terminal but must keep payout access so the merchant can
+  // withdraw their remaining balance.
+  const isActive = ['active', 'review', 'snoozed', 'offboarded'].includes(
+    organization.status,
+  )
   const hasSubmittedDetails = !!organization.details_submitted_at
 
   const requireDetails =

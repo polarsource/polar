@@ -29,6 +29,7 @@ from polar.models.discount import (
     DiscountPercentage,
     DiscountType,
 )
+from polar.models.order import OrderStatus
 from polar.models.organization import (
     OrganizationCapabilities,
     OrganizationStatus,
@@ -43,6 +44,9 @@ from .sorting import OrganizationSortProperty
 # Maximum orgs the unsnooze cron processes per run. Bounds worst-case
 # transaction size when many time-based snoozes expire in the same window.
 UNSNOOZE_EXPIRED_BATCH_SIZE = 500
+
+# Maximum orgs the auto-offboard cron processes per run.
+OFFBOARD_EXPIRED_BATCH_SIZE = 500
 
 
 class OrganizationRepository(
@@ -178,6 +182,37 @@ class OrganizationRepository(
                 Organization.snoozed_until <= now,
             )
             .order_by(Organization.snoozed_until.asc())
+            .limit(limit)
+        )
+        return await self.get_all(statement)
+
+    async def get_offboarding_past_period(
+        self, cutoff: datetime, *, limit: int = OFFBOARD_EXPIRED_BATCH_SIZE
+    ) -> Sequence[Organization]:
+        """Offboarding orgs whose offboarding period has elapsed.
+
+        The period is measured from the most recent paid order that hasn't been
+        fully refunded (the post-chargeback-risk window). Orgs without such an
+        order fall back to when they entered offboarding (``status_updated_at``).
+        """
+        last_paid_order_at = (
+            select(func.max(Order.created_at))
+            .where(
+                Order.organization_id == Organization.id,
+                Order.status.in_((OrderStatus.paid, OrderStatus.partially_refunded)),
+                Order.deleted_at.is_(None),
+            )
+            .correlate(Organization)
+            .scalar_subquery()
+        )
+        anchor = func.coalesce(last_paid_order_at, Organization.status_updated_at)
+        statement = (
+            self.get_base_statement()
+            .where(
+                Organization.status == OrganizationStatus.OFFBOARDING,
+                anchor <= cutoff,
+            )
+            .order_by(anchor.asc())
             .limit(limit)
         )
         return await self.get_all(statement)

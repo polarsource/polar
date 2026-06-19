@@ -198,6 +198,7 @@ class OrganizationStatus(StrEnum):
     ACTIVE = "active"
     BLOCKED = "blocked"
     OFFBOARDING = "offboarding"
+    OFFBOARDED = "offboarded"
 
     def get_display_name(self) -> str:
         return {
@@ -208,6 +209,7 @@ class OrganizationStatus(StrEnum):
             OrganizationStatus.ACTIVE: "Active",
             OrganizationStatus.BLOCKED: "Blocked",
             OrganizationStatus.OFFBOARDING: "Offboarding",
+            OrganizationStatus.OFFBOARDED: "Offboarded",
         }[self]
 
     @classmethod
@@ -333,6 +335,16 @@ STATUS_CAPABILITIES: dict[OrganizationStatus, OrganizationCapabilities] = {
         "api_access": True,
         "dashboard_access": True,
     },
+    # Terminal wind-down: new payments are blocked, but payouts are released so
+    # the merchant can withdraw their remaining balance (auto-processed, not held).
+    OrganizationStatus.OFFBOARDED: {
+        "checkout_payments": False,
+        "subscription_renewals": False,
+        "payouts": True,
+        "refunds": False,
+        "api_access": True,
+        "dashboard_access": True,
+    },
     OrganizationStatus.BLOCKED: {
         "checkout_payments": False,
         "subscription_renewals": False,
@@ -420,6 +432,13 @@ ALLOWED_STATUS_TRANSITIONS: dict[OrganizationStatus, frozenset[OrganizationStatu
         {
             OrganizationStatus.REVIEW,
             OrganizationStatus.DENIED,
+            OrganizationStatus.BLOCKED,
+            OrganizationStatus.OFFBOARDED,
+        }
+    ),
+    # Terminal state: only a block escape hatch remains.
+    OrganizationStatus.OFFBOARDED: frozenset(
+        {
             OrganizationStatus.BLOCKED,
         }
     ),

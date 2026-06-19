@@ -262,6 +262,43 @@ class TestCreate:
         enqueue_job_mock.assert_any_call("payout.created", payout_id=payout.id)
         enqueue_job_mock.assert_any_call("payout.transfer", payout_id=payout.id)
 
+    async def test_offboarded_enqueues_created_and_transfer(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        organization: Organization,
+        account: Account,
+        user: User,
+        payout_transaction_service_mock: MagicMock,
+    ) -> None:
+        # An offboarded org's payout is auto-processed (pending, not held): both
+        # the created event and the Stripe transfer are enqueued.
+        enqueue_job_mock = mocker.patch("polar.payout.service.enqueue_job")
+
+        organization.status = OrganizationStatus.OFFBOARDING
+        organization.set_status(OrganizationStatus.OFFBOARDED)
+        await save_fixture(organization)
+
+        await create_payout_account(save_fixture, organization, user)
+
+        payment_transaction_1 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_1"
+        )
+        await create_balance_transaction(
+            save_fixture, account=account, payment_transaction=payment_transaction_1
+        )
+
+        payout_transaction_service_mock.create.return_value = Transaction()
+
+        payout = await payout_service.create(session, locker, organization)
+
+        assert payout.status == PayoutStatus.pending
+        assert enqueue_job_mock.call_count == 2
+        enqueue_job_mock.assert_any_call("payout.created", payout_id=payout.id)
+        enqueue_job_mock.assert_any_call("payout.transfer", payout_id=payout.id)
+
     async def test_valid(
         self,
         save_fixture: SaveFixture,

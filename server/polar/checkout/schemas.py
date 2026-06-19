@@ -199,16 +199,19 @@ class CheckoutCreateBase(
     seats: int | None = Field(
         default=None,
         ge=1,
+        le=10000,
         description="Predefined number of seats (works with seat-based pricing only)",
     )
     min_seats: int | None = Field(
         default=None,
         ge=1,
+        le=10000,
         description=("Minimum number of seats (works with seat-based pricing only)"),
     )
     max_seats: int | None = Field(
         default=None,
         ge=1,
+        le=10000,
         description=("Maximum number of seats (works with seat-based pricing only)"),
     )
 
@@ -361,6 +364,7 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     seats: int | None = Field(
         default=None,
         ge=1,
+        le=10000,
         description="Number of seats for seat-based pricing.",
     )
     is_business_customer: bool | None = None

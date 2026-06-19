@@ -33,6 +33,7 @@ class ReviewContext(StrEnum):
     THRESHOLD = "threshold"  # Following reviews when payment threshold hit
     MANUAL = "manual"  # Full manual review triggered from backoffice
     APPEAL = "appeal"  # Appeal of a previous denial
+    PRODUCT_CREATED = "product_created"  # Review when an active org creates a product
 
 
 # --- Shared utility schemas ---

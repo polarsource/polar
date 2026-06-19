@@ -680,6 +680,9 @@ class ReviewAnalyzer:
             ReviewContext.THRESHOLD: THRESHOLD_PREAMBLE,
             ReviewContext.MANUAL: MANUAL_PREAMBLE,
             ReviewContext.APPEAL: APPEAL_PREAMBLE,
+            # A product-created review is a comprehensive re-review of an
+            # active org, same as a threshold review.
+            ReviewContext.PRODUCT_CREATED: THRESHOLD_PREAMBLE,
         }.get(context)
 
         policy_block = f"## Acceptable Use Policy\n\n{policy_content}"
@@ -783,9 +786,13 @@ class ReviewAnalyzer:
                     f"(overriding the catalog price): {products.adhoc_prices_count}"
                 )
 
-        # Setup & Integration Signals (only for threshold/manual reviews)
+        # Setup & Integration Signals (only for threshold/manual/product-created reviews)
         setup = snapshot.setup
-        if snapshot.context in (ReviewContext.THRESHOLD, ReviewContext.MANUAL):
+        if snapshot.context in (
+            ReviewContext.THRESHOLD,
+            ReviewContext.MANUAL,
+            ReviewContext.PRODUCT_CREATED,
+        ):
             parts.append("\n## Setup & Integration Signals")
 
             if setup.checkout_success_urls.unique_urls:

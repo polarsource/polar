@@ -24,10 +24,12 @@ from polar.models import (
 )
 from polar.models.benefit import BenefitType
 from polar.models.file import FileServiceTypes, ProductMediaFile
+from polar.models.organization import OrganizationStatus
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceFixed,
 )
+from polar.organization_review.schemas import ReviewContext
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     is_fixed_price,
@@ -405,6 +407,73 @@ class TestCreate:
         assert len(product.prices) == 1
         price = product.prices[0]
         assert is_static_price(price)
+
+    @pytest.mark.auth
+    async def test_active_organization_enqueues_review(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: AsyncMock,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        assert organization.status == OrganizationStatus.ACTIVE
+
+        create_schema = ProductCreateRecurring(
+            name="Product",
+            organization_id=organization.id,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[
+                ProductPriceFixedCreate(
+                    amount_type=ProductPriceAmountType.fixed,
+                    price_amount=1000,
+                    price_currency=PresentmentCurrency.usd,
+                )
+            ],
+        )
+
+        await product_service.create(session, create_schema, auth_subject)
+
+        enqueue_job_mock.assert_any_call(
+            "organization_review.run_agent",
+            organization_id=organization.id,
+            context=ReviewContext.PRODUCT_CREATED,
+        )
+
+    @pytest.mark.auth
+    async def test_non_active_organization_does_not_enqueue_review(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        enqueue_job_mock: AsyncMock,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.set_status(OrganizationStatus.REVIEW)
+        await save_fixture(organization)
+
+        create_schema = ProductCreateRecurring(
+            name="Product",
+            organization_id=organization.id,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[
+                ProductPriceFixedCreate(
+                    amount_type=ProductPriceAmountType.fixed,
+                    price_amount=1000,
+                    price_currency=PresentmentCurrency.usd,
+                )
+            ],
+        )
+
+        await product_service.create(session, create_schema, auth_subject)
+
+        review_calls = [
+            c
+            for c in enqueue_job_mock.call_args_list
+            if c.args and c.args[0] == "organization_review.run_agent"
+        ]
+        assert review_calls == []
 
     @pytest.mark.auth
     async def test_user_empty_description(

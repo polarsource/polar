@@ -40,14 +40,17 @@ export const CurrentPeriodOverview = ({
   }
 
   const hasMeters = subscription.meters.length > 0
+  const hasProrations =
+    subscriptionPreview && subscriptionPreview.prorations.length > 0
   const hasTaxes = subscriptionPreview && subscriptionPreview.tax_amount > 0
   const hasDiscount =
     subscriptionPreview && subscriptionPreview.discount_amount > 0
 
   const isFreeProduct = subscription.prices.some(isFreePrice)
 
-  // For subscriptions set to cancel, only show if there are meters
-  if (isCancelingAtPeriodEnd && !hasMeters) {
+  // For subscriptions set to cancel, only show if there's still something to
+  // bill: metered usage or pending prorations.
+  if (isCancelingAtPeriodEnd && !hasMeters && !hasProrations) {
     return null
   }
 
@@ -101,6 +104,26 @@ export const CurrentPeriodOverview = ({
             )}
           </span>
         </div>
+      )}
+
+      {hasProrations && (
+        <>
+          <span className="font-medium">Prorations</span>
+
+          {subscriptionPreview.prorations.map((proration, index) => (
+            <div key={index} className="flex items-center justify-between">
+              <span className="dark:text-polar-400 text-gray-600">
+                {proration.label}
+              </span>
+              <span className="font-medium">
+                {formatCurrency('compact')(
+                  proration.amount,
+                  subscription.currency,
+                )}
+              </span>
+            </div>
+          ))}
+        </>
       )}
 
       {hasMeters && (

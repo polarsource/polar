@@ -436,6 +436,15 @@ SubscriptionUpdate = Annotated[
 ]
 
 
+class SubscriptionChargePreviewProration(Schema):
+    """A pending proration adjustment to be billed on the next invoice."""
+
+    label: str = Field(description="Human-readable description of the proration.")
+    amount: int = Field(
+        description=("Signed amount in cents: positive to charge, negative to credit.")
+    )
+
+
 class SubscriptionChargePreview(Schema):
     """Preview of the next charge for a subscription."""
 
@@ -445,8 +454,17 @@ class SubscriptionChargePreview(Schema):
     metered_amount: int = Field(
         description="Total metered usage charges in cents (sum of all meter charges)"
     )
+    proration_amount: int = Field(
+        description=(
+            "Net pending proration adjustments in cents from mid-period changes "
+            "(seat or product changes), to be billed on the next invoice."
+        )
+    )
+    prorations: list[SubscriptionChargePreviewProration] = Field(
+        description="Itemized pending proration adjustments to be billed on the next invoice."
+    )
     subtotal_amount: int = Field(
-        description="Subtotal amount in cents (base + metered, before discount and tax)"
+        description="Subtotal amount in cents (base + metered + prorations, before discount and tax)"
     )
     discount_amount: int = Field(description="Discount amount in cents")
     net_amount: int = Field(description="Net amount in cents before taxes")

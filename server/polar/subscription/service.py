@@ -110,6 +110,7 @@ from .repository import SubscriptionRepository, SubscriptionUpdateRepository
 from .schemas import (
     SubscriptionCancel,
     SubscriptionChargePreview,
+    SubscriptionChargePreviewProration,
     SubscriptionCreate,
     SubscriptionCreateCustomer,
     SubscriptionRevoke,
@@ -1944,7 +1945,27 @@ class SubscriptionService:
 
         metered_amount = sum(meter.amount for meter in subscription.meters)
 
-        subtotal_amount = base_price + metered_amount
+        # Pending mid-period prorations (seat/product changes) already exist as
+        # billing entries; surface them so the preview matches the next invoice.
+        prorations: list[SubscriptionChargePreviewProration] = []
+        proration_amount = 0
+        async for (
+            line_item,
+            _,
+        ) in billing_entry_service.compute_pending_subscription_line_items(
+            session, subscription
+        ):
+            if not line_item.proration:
+                continue
+            prorations.append(
+                SubscriptionChargePreviewProration(
+                    label=line_item.label, amount=line_item.amount
+                )
+            )
+            proration_amount += line_item.amount
+
+        recurring_amount = base_price + metered_amount
+        subtotal_amount = recurring_amount + proration_amount
 
         discount_amount = 0
 
@@ -1964,8 +1985,10 @@ class SubscriptionService:
                 applicable_discount = subscription.discount
 
         if applicable_discount is not None:
+            # Discount applies to the recurring charge only; prorations are billed
+            # net of their own proration at entry-creation time.
             discount_amount = applicable_discount.get_discount_amount(
-                subtotal_amount, subscription.currency
+                recurring_amount, subscription.currency
             )
 
         net_amount = subtotal_amount - discount_amount
@@ -2011,6 +2034,8 @@ class SubscriptionService:
         return SubscriptionChargePreview(
             base_amount=base_price,
             metered_amount=metered_amount,
+            proration_amount=proration_amount,
+            prorations=prorations,
             subtotal_amount=subtotal_amount,
             discount_amount=discount_amount,
             net_amount=net_amount,

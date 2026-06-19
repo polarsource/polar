@@ -21,7 +21,7 @@ CONTEXT_MAP = {
     "setup_complete": ReviewContext.SETUP_COMPLETE,
     "threshold": ReviewContext.THRESHOLD,
     "manual": ReviewContext.MANUAL,
-    "product_created": ReviewContext.PRODUCT_CREATED,
+    "product_changed": ReviewContext.PRODUCT_CHANGED,
     "unknown": ReviewContext.THRESHOLD,
 }
 

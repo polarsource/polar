@@ -1,4 +1,4 @@
-"""Tests for organization_review.tasks – SUBMISSION re-run, PRODUCT_CREATED
+"""Tests for organization_review.tasks – SUBMISSION re-run, PRODUCT_CHANGED
 escalation, and appeal review paths."""
 
 import contextlib
@@ -587,10 +587,10 @@ class TestReviewAppeal:
 
 
 @pytest.mark.asyncio
-class TestRunReviewAgentProductCreated:
-    """PRODUCT_CREATED re-reviews an active org when it adds a product. A bad
-    verdict pulls it back into REVIEW for a human; a clean APPROVE is a no-op.
-    It never auto-denies."""
+class TestRunReviewAgentProductChanged:
+    """PRODUCT_CHANGED re-reviews an active org when it creates or edits a
+    product. A bad verdict pulls it back into REVIEW for a human; a clean
+    APPROVE is a no-op. It never auto-denies."""
 
     async def test_deny_pulls_active_org_into_review(
         self,
@@ -618,7 +618,7 @@ class TestRunReviewAgentProductCreated:
         ):
             await _run_review_agent(
                 organization.id,
-                context=ReviewContext.PRODUCT_CREATED,
+                context=ReviewContext.PRODUCT_CHANGED,
             )
 
         await session.flush()
@@ -630,7 +630,7 @@ class TestRunReviewAgentProductCreated:
         assert decision is not None
         assert decision.actor_type == ActorType.AGENT
         assert decision.decision == DecisionType.ESCALATE
-        assert decision.review_context == ReviewContext.PRODUCT_CREATED
+        assert decision.review_context == ReviewContext.PRODUCT_CHANGED
 
     async def test_approve_keeps_org_active(
         self,
@@ -654,7 +654,7 @@ class TestRunReviewAgentProductCreated:
         ):
             await _run_review_agent(
                 organization.id,
-                context=ReviewContext.PRODUCT_CREATED,
+                context=ReviewContext.PRODUCT_CHANGED,
             )
 
         await session.flush()
@@ -672,7 +672,7 @@ class TestRunReviewAgentProductCreated:
         organization: Organization,
     ) -> None:
         # The org was pulled into REVIEW (e.g. by the threshold flow) between
-        # the product-created enqueue and the debounced execution. There is
+        # the product-changed enqueue and the debounced execution. There is
         # nothing to escalate, so the agent must not even run.
         organization.set_status(OrganizationStatus.REVIEW)
         await save_fixture(organization)
@@ -690,7 +690,7 @@ class TestRunReviewAgentProductCreated:
         ):
             await _run_review_agent(
                 organization.id,
-                context=ReviewContext.PRODUCT_CREATED,
+                context=ReviewContext.PRODUCT_CHANGED,
             )
 
         run_review_mock.assert_not_awaited()
@@ -699,14 +699,14 @@ class TestRunReviewAgentProductCreated:
 
 
 class TestRunAgentDebounceKey:
-    """Only PRODUCT_CREATED reviews are debounced (per organization)."""
+    """Only PRODUCT_CHANGED reviews are debounced (per organization)."""
 
-    def test_product_created_returns_per_org_key(self) -> None:
+    def test_product_changed_returns_per_org_key(self) -> None:
         organization_id = uuid.uuid4()
         key = _run_agent_debounce_key(
-            organization_id, context=ReviewContext.PRODUCT_CREATED
+            organization_id, context=ReviewContext.PRODUCT_CHANGED
         )
-        assert key == f"organization_review.product_created:{organization_id}"
+        assert key == f"organization_review.product_changed:{organization_id}"
 
     def test_other_contexts_are_not_debounced(self) -> None:
         organization_id = uuid.uuid4()

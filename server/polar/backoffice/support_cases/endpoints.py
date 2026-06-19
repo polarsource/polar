@@ -215,14 +215,10 @@ async def _load_case_and_organization(
     case = await SupportCaseRepository.from_session(session).get_by_id(case_id)
     if case is None:
         raise HTTPException(status_code=404, detail="Support case not found")
-    organization_id = await support_case_service.get_organization_id(session, case)
-    organization = None
-    if organization_id is not None:
-        # Soft-deleted orgs keep their cases viewable, matching the
-        # org detail pages
-        organization = await OrganizationRepository.from_session(session).get_by_id(
-            organization_id, include_deleted=True, include_blocked=True
-        )
+    # Soft-deleted orgs keep their cases viewable, matching the org detail pages.
+    organization = await OrganizationRepository.from_session(session).get_by_id(
+        case.organization_id, include_deleted=True, include_blocked=True
+    )
     if organization is None:
         raise HTTPException(status_code=404, detail="Organization not found")
     return case, organization

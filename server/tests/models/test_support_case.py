@@ -57,9 +57,9 @@ class TestReviewAppealRequiresReview:
     async def test_orphan_rejected(
         self, session: AsyncSession, organization: Organization
     ) -> None:
-        # A review_appeal case with no organization_review_id violates the CHECK
-        # (organization_id is set so the NOT NULL isn't what trips first).
-        session.add(ReviewAppealSupportCase(organization_id=organization.id))
+        # A review_appeal case with no organization_review violates the CHECK
+        # (organization is set so the NOT NULL isn't what trips first).
+        session.add(ReviewAppealSupportCase(organization=organization))
         with pytest.raises(IntegrityError):
             await session.flush()
 
@@ -74,22 +74,22 @@ class TestParticipantUniqueness:
     ) -> None:
         review = await _review(save_fixture, organization)
         case = ReviewAppealSupportCase(
-            organization_review_id=review.id, organization_id=organization.id
+            organization_review=review, organization=organization
         )
         await save_fixture(case)
 
         await save_fixture(
             SupportCaseParticipant(
-                case_id=case.id,
+                case=case,
                 kind=SupportCaseParticipantKind.merchant,
-                organization_id=organization.id,
+                organization=organization,
             )
         )
         session.add(
             SupportCaseParticipant(
-                case_id=case.id,
+                case=case,
                 kind=SupportCaseParticipantKind.merchant,
-                organization_id=organization.id,
+                organization=organization,
             )
         )
         with pytest.raises(IntegrityError):
@@ -105,8 +105,8 @@ class TestAddAttachment:
         organization: Organization,
     ) -> None:
         case = ReviewAppealSupportCase(
-            organization_review_id=(await _review(save_fixture, organization)).id,
-            organization_id=organization.id,
+            organization_review=await _review(save_fixture, organization),
+            organization=organization,
         )
         await save_fixture(case)
         message = await support_case_service.post_message(
@@ -135,8 +135,8 @@ class TestAddAttachment:
         organization: Organization,
     ) -> None:
         case = ReviewAppealSupportCase(
-            organization_review_id=(await _review(save_fixture, organization)).id,
-            organization_id=organization.id,
+            organization_review=await _review(save_fixture, organization),
+            organization=organization,
         )
         await save_fixture(case)
         file = await _attachment_file(save_fixture, organization)
@@ -156,20 +156,18 @@ class TestAttachmentCaseConsistency:
         organization_second: Organization,
     ) -> None:
         case_a = ReviewAppealSupportCase(
-            organization_review_id=(await _review(save_fixture, organization)).id,
-            organization_id=organization.id,
+            organization_review=await _review(save_fixture, organization),
+            organization=organization,
         )
         await save_fixture(case_a)
         case_b = ReviewAppealSupportCase(
-            organization_review_id=(
-                await _review(save_fixture, organization_second)
-            ).id,
-            organization_id=organization_second.id,
+            organization_review=await _review(save_fixture, organization_second),
+            organization=organization_second,
         )
         await save_fixture(case_b)
 
         message_a = SupportCaseMessage(
-            case_id=case_a.id,
+            case=case_a,
             type=SupportCaseMessageType.chat,
             author_kind=SupportCaseMessageAuthorKind.merchant,
             audience=[],
@@ -187,11 +185,13 @@ class TestAttachmentCaseConsistency:
         await save_fixture(file)
 
         # An attachment on case_b pointing at a message that lives in case_a.
+        # message_id stays scalar: the composite (case_id, message_id) FK is the
+        # very thing under test, so we set a deliberately mismatched pair.
         session.add(
             SupportCaseAttachment(
-                case_id=case_b.id,
+                case=case_b,
                 message_id=message_a.id,
-                file_id=file.id,
+                file=file,
                 audience=[],
             )
         )
@@ -215,8 +215,8 @@ class TestAwaitingPlatformExpression:
         organization: Organization,
     ) -> None:
         case = ReviewAppealSupportCase(
-            organization_review_id=(await _review(save_fixture, organization)).id,
-            organization_id=organization.id,
+            organization_review=await _review(save_fixture, organization),
+            organization=organization,
         )
         await save_fixture(case)
 

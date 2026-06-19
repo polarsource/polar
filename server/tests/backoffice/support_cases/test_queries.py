@@ -31,7 +31,7 @@ from tests.fixtures.random_objects import (
 async def _opened(save_fixture: SaveFixture, case: SupportCase) -> None:
     await save_fixture(
         SupportCaseMessage(
-            case_id=case.id,
+            case=case,
             type=SupportCaseMessageType.opened,
             author_kind=SupportCaseMessageAuthorKind.system,
             audience=[],
@@ -52,7 +52,7 @@ async def _appeal_case(
     )
     await save_fixture(review)
     case = ReviewAppealSupportCase(
-        organization_review_id=review.id, organization_id=organization.id
+        organization_review=review, organization=organization
     )
     await save_fixture(case)
     await _opened(save_fixture, case)
@@ -68,7 +68,7 @@ async def _dispute_case(
     order = await create_order(save_fixture, customer=customer, product=product)
     payment = await create_payment(save_fixture, organization, order=order)
     dispute = await create_dispute(save_fixture, order, payment)
-    case = DisputeSupportCase(dispute_id=dispute.id, organization_id=organization.id)
+    case = DisputeSupportCase(dispute=dispute, organization=organization)
     await save_fixture(case)
     await _opened(save_fixture, case)
     return case
@@ -134,7 +134,7 @@ class TestCasesStatement:
         dispute = await _dispute_case(save_fixture, organization, customer, product)
         await save_fixture(
             SupportCaseMessage(
-                case_id=dispute.id,
+                case=dispute,
                 type=SupportCaseMessageType.closed,
                 author_kind=SupportCaseMessageAuthorKind.system,
                 audience=[],
@@ -189,7 +189,7 @@ class TestOpenCaseOrganizationIds:
         # A merchant-visible message from the merchant flips it to awaiting.
         await save_fixture(
             SupportCaseMessage(
-                case_id=case.id,
+                case=case,
                 type=SupportCaseMessageType.chat,
                 author_kind=SupportCaseMessageAuthorKind.merchant,
                 body="Here is my evidence.",

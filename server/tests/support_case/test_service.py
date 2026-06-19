@@ -20,7 +20,7 @@ async def _case(
     )
     await save_fixture(review)
     case = ReviewAppealSupportCase(
-        organization_review_id=review.id, organization_id=organization.id
+        organization_review=review, organization=organization
     )
     await save_fixture(case)
     return case

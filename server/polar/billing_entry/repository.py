@@ -4,7 +4,7 @@ from itertools import batched
 from uuid import UUID
 
 from sqlalchemy import Select, func, select, update
-from sqlalchemy.orm.strategy_options import contains_eager
+from sqlalchemy.orm.strategy_options import contains_eager, joinedload
 
 from polar.config import settings
 from polar.kit.repository import (
@@ -61,7 +61,10 @@ class BillingEntryRepository(
             self.get_pending_by_subscription_statement(subscription_id)
             .join(BillingEntry.product_price)
             .where(ProductPrice.is_static.is_(True))
-            .options(contains_eager(BillingEntry.product_price))
+            .options(
+                contains_eager(BillingEntry.product_price),
+                joinedload(BillingEntry.event),
+            )
         )
         async for result in self.stream(statement):
             yield result

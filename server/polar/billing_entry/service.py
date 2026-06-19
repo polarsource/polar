@@ -200,20 +200,24 @@ class BillingEntryService:
         end = format_date(entry.end_timestamp.date(), locale="en_US")
         amount = entry.amount
 
-        # Appending the current total seat count implies an amount that doesn't
-        # reconcile with the charge, so omit it for those types to avoid confusion
-        seats_for_label = (
-            None
-            if entry.type
-            in (
-                BillingEntryType.subscription_seats_increase,
-                BillingEntryType.subscription_seats_decrease,
-            )
-            else seats
+        is_seat_change = entry.type in (
+            BillingEntryType.subscription_seats_increase,
+            BillingEntryType.subscription_seats_decrease,
         )
-        price_label = OrderItem.format_price_label(
-            product, price, seats=seats_for_label
-        )
+
+        if is_seat_change:
+            old_seats = entry.event.user_metadata.get("old_seats")
+            new_seats = entry.event.user_metadata.get("new_seats")
+
+            if old_seats is not None and new_seats is not None:
+                seat_transition = f"{old_seats} → {new_seats} seats"
+                price_label = f"{product.name} ({seat_transition})"
+            else:
+                # This shouldn't happen, but if it does, don't include the full
+                # seat count if we can't show a delta to avoid confusion
+                price_label = OrderItem.format_price_label(product, price, seats=None)
+        else:
+            price_label = OrderItem.format_price_label(product, price, seats=seats)
 
         match entry.direction:
             case BillingEntryDirection.credit:

@@ -443,10 +443,10 @@ class TestCreateOrderItemsFromPending:
             assert entry.order_item_id == order_item_current_price.id
 
     @pytest.mark.parametrize(
-        "entry_type",
+        ("entry_type", "new_seats", "expected_transition"),
         [
-            BillingEntryType.subscription_seats_increase,
-            BillingEntryType.subscription_seats_decrease,
+            (BillingEntryType.subscription_seats_increase, 14, "10 → 14 seats"),
+            (BillingEntryType.subscription_seats_decrease, 6, "10 → 6 seats"),
         ],
     )
     async def test_proration_seat_items(
@@ -456,6 +456,8 @@ class TestCreateOrderItemsFromPending:
         customer: Customer,
         organization: Organization,
         entry_type: BillingEntryType,
+        new_seats: int,
+        expected_transition: str,
     ) -> None:
         product = await create_product(
             save_fixture,
@@ -476,6 +478,7 @@ class TestCreateOrderItemsFromPending:
             price=price,
             subscription=subscription,
             amount=50_00,
+            new_seats=new_seats,
         )
 
         async with billing_entry_service.create_order_items_from_pending(
@@ -487,10 +490,12 @@ class TestCreateOrderItemsFromPending:
             assert order_item.amount == 50_00
             assert order_item.proration is True
 
-            # Seat-change prorations charge a delta, not the full seat amount,
-            # so the label must not imply a total seat count (which wouldn't
-            # reconcile with the prorated amount).
-            assert "seat" not in order_item.label
+            # Seat-change prorations charge a delta, not the full seat amount.
+            # The label shows the seat transition (old → new), read from the
+            # event metadata, so the prorated amount is explained rather than a
+            # single total seat count that wouldn't reconcile with it.
+            assert product.name in order_item.label
+            assert expected_transition in order_item.label
 
             await create_order(
                 save_fixture,

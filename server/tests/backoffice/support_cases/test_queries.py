@@ -51,7 +51,9 @@ async def _appeal_case(
         model_used="test",
     )
     await save_fixture(review)
-    case = ReviewAppealSupportCase(organization_review_id=review.id)
+    case = ReviewAppealSupportCase(
+        organization_review_id=review.id, organization_id=organization.id
+    )
     await save_fixture(case)
     await _opened(save_fixture, case)
     return case
@@ -66,7 +68,7 @@ async def _dispute_case(
     order = await create_order(save_fixture, customer=customer, product=product)
     payment = await create_payment(save_fixture, organization, order=order)
     dispute = await create_dispute(save_fixture, order, payment)
-    case = DisputeSupportCase(dispute_id=dispute.id)
+    case = DisputeSupportCase(dispute_id=dispute.id, organization_id=organization.id)
     await save_fixture(case)
     await _opened(save_fixture, case)
     return case

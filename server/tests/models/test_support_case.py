@@ -54,9 +54,12 @@ async def _review(
 
 @pytest.mark.asyncio
 class TestReviewAppealRequiresReview:
-    async def test_orphan_rejected(self, session: AsyncSession) -> None:
-        # A review_appeal case with no organization_review_id violates the CHECK.
-        session.add(ReviewAppealSupportCase())
+    async def test_orphan_rejected(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        # A review_appeal case with no organization_review_id violates the CHECK
+        # (organization_id is set so the NOT NULL isn't what trips first).
+        session.add(ReviewAppealSupportCase(organization_id=organization.id))
         with pytest.raises(IntegrityError):
             await session.flush()
 
@@ -70,7 +73,9 @@ class TestParticipantUniqueness:
         organization: Organization,
     ) -> None:
         review = await _review(save_fixture, organization)
-        case = ReviewAppealSupportCase(organization_review_id=review.id)
+        case = ReviewAppealSupportCase(
+            organization_review_id=review.id, organization_id=organization.id
+        )
         await save_fixture(case)
 
         await save_fixture(
@@ -100,7 +105,8 @@ class TestAddAttachment:
         organization: Organization,
     ) -> None:
         case = ReviewAppealSupportCase(
-            organization_review_id=(await _review(save_fixture, organization)).id
+            organization_review_id=(await _review(save_fixture, organization)).id,
+            organization_id=organization.id,
         )
         await save_fixture(case)
         message = await support_case_service.post_message(
@@ -129,7 +135,8 @@ class TestAddAttachment:
         organization: Organization,
     ) -> None:
         case = ReviewAppealSupportCase(
-            organization_review_id=(await _review(save_fixture, organization)).id
+            organization_review_id=(await _review(save_fixture, organization)).id,
+            organization_id=organization.id,
         )
         await save_fixture(case)
         file = await _attachment_file(save_fixture, organization)
@@ -149,11 +156,15 @@ class TestAttachmentCaseConsistency:
         organization_second: Organization,
     ) -> None:
         case_a = ReviewAppealSupportCase(
-            organization_review_id=(await _review(save_fixture, organization)).id
+            organization_review_id=(await _review(save_fixture, organization)).id,
+            organization_id=organization.id,
         )
         await save_fixture(case_a)
         case_b = ReviewAppealSupportCase(
-            organization_review_id=(await _review(save_fixture, organization_second)).id
+            organization_review_id=(
+                await _review(save_fixture, organization_second)
+            ).id,
+            organization_id=organization_second.id,
         )
         await save_fixture(case_b)
 
@@ -204,7 +215,8 @@ class TestAwaitingPlatformExpression:
         organization: Organization,
     ) -> None:
         case = ReviewAppealSupportCase(
-            organization_review_id=(await _review(save_fixture, organization)).id
+            organization_review_id=(await _review(save_fixture, organization)).id,
+            organization_id=organization.id,
         )
         await save_fixture(case)
 

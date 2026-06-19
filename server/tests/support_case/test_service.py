@@ -19,7 +19,9 @@ async def _case(
         model_used="test",
     )
     await save_fixture(review)
-    case = ReviewAppealSupportCase(organization_review_id=review.id)
+    case = ReviewAppealSupportCase(
+        organization_review_id=review.id, organization_id=organization.id
+    )
     await save_fixture(case)
     return case
 

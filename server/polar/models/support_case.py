@@ -109,6 +109,20 @@ class SupportCase(RecordModel):
     type: Mapped[SupportCaseType] = mapped_column(
         StringEnum(SupportCaseType, length=32), nullable=False, index=True
     )
+    # Denormalized from the case's domain object (the appeal's review, the
+    # dispute's order) so the owning org is one column read away. Nullable for
+    # now; backfilled and made NOT NULL once writers populate it.
+    organization_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("organizations.id", ondelete="restrict"),
+        nullable=True,
+        index=True,
+    )
+
+    @declared_attr
+    def organization(cls) -> Mapped["Organization | None"]:
+        return relationship("Organization", lazy="raise")
+
     # Staff member currently handling the case (advisory; no exclusivity).
     assigned_user_id: Mapped[UUID | None] = mapped_column(
         Uuid,

@@ -22,7 +22,6 @@ from polar.models.support_case import (
     SupportCaseType,
 )
 from polar.models.user_session import UserSession
-from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.support_case.repository import (
     SupportCaseAttachmentRepository,
@@ -211,17 +210,14 @@ def _detail_redirect(
 async def _load_case_and_organization(
     session: AsyncSession, case_id: uuid.UUID
 ) -> tuple[SupportCase, Organization]:
-    """Load a case and the organization it belongs to, or raise 404."""
-    case = await SupportCaseRepository.from_session(session).get_by_id(case_id)
+    """Load a case and its organization (incl. soft-deleted/blocked), or raise 404."""
+    case = await SupportCaseRepository.from_session(session).get_by_id(
+        case_id, options=(joinedload(SupportCase.organization),)
+    )
     if case is None:
         raise HTTPException(status_code=404, detail="Support case not found")
-    # Soft-deleted orgs keep their cases viewable, matching the org detail pages.
-    organization = await OrganizationRepository.from_session(session).get_by_id(
-        case.organization_id, include_deleted=True, include_blocked=True
-    )
-    if organization is None:
-        raise HTTPException(status_code=404, detail="Organization not found")
-    return case, organization
+
+    return case, case.organization
 
 
 @router.post("/{case_id}/take", name="support_cases:take", response_model=None)

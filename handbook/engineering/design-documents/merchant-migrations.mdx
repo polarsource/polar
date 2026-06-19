@@ -80,7 +80,10 @@ Subscriptions keep their real status (`active`/`trialing`) but are held from bil
 
 Polar will bill the next billing cycle. If for some reason the payment fails on the next billing cycle, the subscription will enter the normal dunning state where we send an email to the customer.
 
-We import each subscription as tax-inclusive by setting its own `tax_behavior = inclusive`, leaving the org's `default_tax_behavior` untouched - renewal billing reads the per-subscription value and only falls back to the org default when it's null.
+On import we mirror the source's tax behavior per subscription:
+
+- Source applies **exclusive** tax: import as exclusive, so Polar adds tax on top.
+- Source is **inclusive**, or applies **no tax**: import as inclusive, keeping the customer's current total. This means that the merchant absorbs the tax on their end.
 
 ## The sources
 

@@ -65,7 +65,7 @@ class TestCreateOrganizationAccessToken:
             },
         )
     )
-    async def test_oat_caller_cannot_mint_broader_scope(
+    async def test_oat_caller_cannot_mint(
         self,
         client: AsyncClient,
     ) -> None:
@@ -77,34 +77,7 @@ class TestCreateOrganizationAccessToken:
             },
         )
 
-        assert response.status_code == 422
-        body = response.json()
-        assert any(
-            err.get("loc") == ["body", "scopes"] for err in body.get("detail", [])
-        )
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(
-            subject="organization",
-            scopes={
-                Scope.organization_access_tokens_write,
-                Scope.metrics_read,
-            },
-        )
-    )
-    async def test_oat_caller_within_scope_ok(
-        self,
-        client: AsyncClient,
-    ) -> None:
-        response = await client.post(
-            "/v1/organization-access-tokens/",
-            json={
-                "comment": "within scope",
-                "scopes": ["metrics:read"],
-            },
-        )
-
-        assert response.status_code == 201
+        assert response.status_code == 401
 
 
 @pytest.mark.asyncio
@@ -117,7 +90,7 @@ class TestUpdateOrganizationAccessToken:
             },
         )
     )
-    async def test_oat_caller_cannot_elevate_scopes(
+    async def test_oat_caller_cannot_update(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -132,33 +105,4 @@ class TestUpdateOrganizationAccessToken:
             json={"scopes": ["orders:write"]},
         )
 
-        assert response.status_code == 422
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(
-            subject="organization",
-            scopes={
-                Scope.organization_access_tokens_write,
-                Scope.metrics_read,
-            },
-        )
-    )
-    async def test_oat_caller_within_scope_ok(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        existing: OrganizationAccessToken = await _build_oat(
-            save_fixture,
-            organization,
-            scopes={Scope.metrics_read},
-            comment="update_within_scope",
-        )
-
-        response = await client.patch(
-            f"/v1/organization-access-tokens/{existing.id}",
-            json={"scopes": ["metrics:read"]},
-        )
-
-        assert response.status_code == 200
+        assert response.status_code == 401

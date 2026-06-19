@@ -3,7 +3,7 @@
 import { DetailRow } from '@/components/Shared/DetailRow'
 import { useProduct } from '@/hooks/queries'
 import { useSubscriptionChargePreview } from '@/hooks/queries/subscriptions'
-import { isFreePrice } from '@/utils/product'
+import { isFreePrice, isSeatBasedPrice } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -25,6 +25,18 @@ const UpcomingChargeCard = ({
   }, [subscription])
   const { data: product } = useProduct(productId)
 
+  // For seat-based subscriptions, surface the number of seats we'll charge for
+  // next, preferring a pending update if one is scheduled.
+  const seats = useMemo(() => {
+    if (
+      subscription.pending_update &&
+      subscription.pending_update.seats != null
+    ) {
+      return subscription.pending_update.seats
+    }
+    return subscription.seats
+  }, [subscription])
+
   const isTrialing = subscription.status === 'trialing'
   const isActive = subscription.status === 'active'
   const isCancelingAtPeriodEnd =
@@ -41,6 +53,11 @@ const UpcomingChargeCard = ({
   const hasProrations = chargePreview && chargePreview.prorations.length > 0
   const hasTaxes = chargePreview && chargePreview.tax_amount > 0
   const hasDiscount = chargePreview && chargePreview.discount_amount > 0
+
+  const isSeatBasedProduct = product?.prices.some(
+    (price) =>
+      price.price_currency === subscription.currency && isSeatBasedPrice(price),
+  )
 
   const chargeDate = isTrialing
     ? subscription.trial_end
@@ -82,7 +99,11 @@ const UpcomingChargeCard = ({
         <div className="flex flex-col gap-2">
           {product && chargePreview && (
             <DetailRow
-              label={product?.name || ''}
+              label={
+                isSeatBasedProduct && seats != null
+                  ? `${product.name} (${seats} ${seats === 1 ? 'seat' : 'seats'})`
+                  : product.name
+              }
               value={
                 isCancelingAtPeriodEnd ? (
                   <span className="text-gray-500">Canceled</span>

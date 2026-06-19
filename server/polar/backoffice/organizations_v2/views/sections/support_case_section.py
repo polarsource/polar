@@ -223,10 +223,18 @@ class SupportCaseSection:
                                 text("Awaiting decision")
                         if is_open:
                             self._render_assignment_chip(case)
-            # Assignment is advisory and available on any open case; the
-            # approve/deny decision is appeal-only (disputes are bank-decided).
-            if is_open:
-                self._render_actions(request, case, is_appeal=is_appeal)
+            # Right-side controls: a link to the org overview (appeals) plus the
+            # actions while the case is open. Assignment is advisory on any open
+            # case; the approve/deny decision is appeal-only (disputes are
+            # bank-decided).
+            if is_appeal or is_open:
+                with tag.div(classes="flex-none flex items-center gap-2"):
+                    if is_appeal:
+                        self._render_org_link(request)
+                    if is_open:
+                        self._render_assignment_button(request, case)
+                        if is_appeal:
+                            self._render_appeal_decision_buttons(request)
 
     def _render_assignment_chip(self, case: SupportCase) -> None:
         assignee_id = case.assigned_user_id
@@ -254,13 +262,14 @@ class SupportCaseSection:
         release_url = f"{request.url_for('support_cases:release', case_id=case.id)}?{urlencode({'return_to': detail_path})}"
         return take_url, release_url
 
-    def _render_actions(
-        self, request: Request, case: SupportCase, *, is_appeal: bool
-    ) -> None:
-        with tag.div(classes="flex-none flex items-center gap-2"):
-            self._render_assignment_button(request, case)
-            if is_appeal:
-                self._render_appeal_decision_buttons(request)
+    def _render_org_link(self, request: Request) -> None:
+        url = str(request.url_for("organizations:detail", organization_id=self.org.id))
+        with tag.a(href=url, classes="btn btn-sm btn-outline gap-1"):
+            attr("target", "_blank")
+            attr("rel", "noopener noreferrer")
+            text("View organization")
+            with tag.div(classes="icon-external-link"):
+                pass
 
     def _render_assignment_button(self, request: Request, case: SupportCase) -> None:
         take_url, release_url = self._assignment_urls(request, case)

@@ -14,7 +14,6 @@ from polar.support_case.repository import (
     SupportCaseMessageRepository,
     SupportCaseRepository,
 )
-from polar.support_case.service import support_case as support_case_service
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -58,11 +57,9 @@ async def notify_organization_of_new_message(message_id: UUID) -> None:
         # when the merchant dispute view ships.
         if case.type == SupportCaseType.dispute:
             return
-        organization_id = await support_case_service.get_organization_id(session, case)
-        if organization_id is None:
-            return
-
-        members = await user_organization_service.list_by_org(session, organization_id)
+        members = await user_organization_service.list_by_org(
+            session, case.organization_id
+        )
         if not members:
             return
         organization = members[0].organization

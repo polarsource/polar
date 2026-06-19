@@ -5,7 +5,6 @@ import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { getUserOrganizations } from '@/utils/user'
 import { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import React from 'react'
 
 export async function generateMetadata(props: {
   params: Promise<{ organization: string }>

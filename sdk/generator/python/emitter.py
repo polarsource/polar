@@ -1,0 +1,260 @@
+import pathlib
+
+from generator.casing import to_snake_case
+from generator.emitter import EmitterBase
+from generator.ir import (
+    ArrayType,
+    ErrorResponse,
+    MapType,
+    ModelRef,
+    NullableType,
+    OpenAPIIR,
+    Service,
+    TypeRef,
+    UnionRef,
+    UnionType,
+)
+from python.types import (
+    collect_model_enum_imports,
+    convert_type_to_annotation,
+    wrap_nullable_type,
+)
+from python.utils import format_default_value, format_default_value_dataclass
+
+EMITTER_DIRECTORY = pathlib.Path(__file__).parent
+
+
+def _collect_type_ref_names(type_ref: TypeRef | None, ir: OpenAPIIR) -> set[str]:
+    """Collect all model names from a TypeRef."""
+    if type_ref is None:
+        return set()
+
+    names: set[str] = set()
+
+    if isinstance(type_ref, ModelRef):
+        names.add(type_ref.name)
+    elif isinstance(type_ref, UnionRef):
+        names.add(type_ref.name)
+        # Also add the union's variants
+        for union in ir.input_unions + ir.output_unions:
+            if union.name == type_ref.name:
+                for variant in union.variants:
+                    if isinstance(variant, ModelRef):
+                        names.add(variant.name)
+    elif isinstance(type_ref, UnionType):
+        for variant in type_ref.variants:
+            names.update(_collect_type_ref_names(variant, ir))
+    elif isinstance(type_ref, (ArrayType, NullableType, MapType)):
+        # Recursively collect from inner types
+        if isinstance(type_ref, ArrayType):
+            names.update(_collect_type_ref_names(type_ref.items, ir))
+        elif isinstance(type_ref, NullableType):
+            names.update(_collect_type_ref_names(type_ref.inner, ir))
+        elif isinstance(type_ref, MapType):
+            names.update(_collect_type_ref_names(type_ref.value_type, ir))
+            if type_ref.key_type is not None:
+                names.update(_collect_type_ref_names(type_ref.key_type, ir))
+
+    return names
+
+
+def _collect_enum_names(type_ref: TypeRef | None, ir: OpenAPIIR) -> set[str]:
+    """Collect all enum names from a TypeRef."""
+    if type_ref is None:
+        return set()
+
+    enum_imports: set[str] = set()
+    collect_model_enum_imports("", type_ref, enum_imports)
+
+    # Also handle UnionRef by looking up the union and collecting from its variants
+    if isinstance(type_ref, UnionRef):
+        for union in ir.input_unions + ir.output_unions:
+            if union.name == type_ref.name:
+                for variant in union.variants:
+                    enum_imports.update(_collect_enum_names(variant, ir))
+
+    return enum_imports
+
+
+class PythonEmitter(EmitterBase):
+    def __init__(self, ir: OpenAPIIR) -> None:
+        super().__init__(ir, EMITTER_DIRECTORY / "template")
+
+    def emit(self, root_directory: pathlib.Path | str) -> None:
+        """Emit the Python SDK files to the specified root directory."""
+        root_directory = self.ensure_directory(root_directory)
+
+        for file in {
+            (".zed", "settings.json"),
+            ("polar", "__init__.py"),
+            ("polar", "base.py"),
+            ("polar", "client.py"),
+            ("polar", "literals.py"),
+            (".python-version",),
+            ("justfile",),
+            ("pyproject.toml",),
+            ("README.md",),
+        }:
+            self.render_file(
+                "/".join(file),
+                root_directory.joinpath(*file),
+                self.get_context(),
+            )
+
+        self.render_file(
+            "polar/inputs.py",
+            root_directory / "polar" / "inputs.py",
+            {
+                **self.get_context(),
+                "input_enum_imports": self._get_input_enum_imports(),
+            },
+        )
+
+        self.render_file(
+            "polar/outputs.py",
+            root_directory / "polar" / "outputs.py",
+            {
+                **self.get_context(),
+                "output_enum_imports": self._get_output_enum_imports(),
+            },
+        )
+
+        errors = self._collect_all_errors()
+        self.render_file(
+            "polar/errors.py",
+            root_directory / "polar" / "errors.py",
+            {
+                **self.get_context(),
+                "errors": errors,
+                "imports": self._get_errors_imports(errors),
+            },
+        )
+
+        for service in self.ir.services:
+            self._emit_service(service, root_directory / "polar")
+
+    def run_post_actions(self, root_directory: pathlib.Path | str) -> None:
+        super().run_post_actions(root_directory)
+        self.run_command("just install", cwd=root_directory)
+        self.run_command("just lint", cwd=root_directory)
+
+    def setup_environment(self) -> None:
+        """Add Python-specific filters to the Jinja2 environment."""
+        super().setup_environment()
+        self.env.filters["type_annotation"] = convert_type_to_annotation
+        self.env.filters["wrap_nullable"] = wrap_nullable_type
+        self.env.filters["snake"] = to_snake_case
+        self.env.filters["format_default"] = format_default_value
+        self.env.filters["format_default_dataclass"] = format_default_value_dataclass
+
+    def _emit_service(self, service: Service, output_path: pathlib.Path) -> None:
+        """Emit a single service file, recursively going to sub-services."""
+        if service.services:
+            sub_service_path = output_path / to_snake_case(service.name)
+            for sub_service in service.services:
+                self._emit_service(sub_service, sub_service_path)
+            service_path = sub_service_path / "__init__.py"
+        else:
+            service_path = output_path / f"{to_snake_case(service.name)}.py"
+
+        self.render_file(
+            "polar/service.py",
+            service_path,
+            {
+                **self.get_context(),
+                "service": service,
+                "imports": self._get_service_imports(service),
+            },
+        )
+
+    def _get_input_enum_imports(self) -> set[str]:
+        enum_imports: set[str] = set()
+        for model in self.ir.input_models:
+            for field in model.fields:
+                collect_model_enum_imports(model.name, field.type, enum_imports)
+        return enum_imports
+
+    def _get_output_enum_imports(self) -> set[str]:
+        enum_imports: set[str] = set()
+        for model in self.ir.output_models:
+            for field in model.fields:
+                collect_model_enum_imports(model.name, field.type, enum_imports)
+        return enum_imports
+
+    def _collect_all_errors(self) -> list[ErrorResponse]:
+        """Collect all unique error responses from all services and methods."""
+        errors: list[ErrorResponse] = []
+        error_names: set[str] = set()
+
+        def _collect_error_names_from_service(service: Service) -> None:
+            for method in service.methods:
+                for error in method.errors:
+                    if error.name not in error_names:
+                        errors.append(error)
+                        error_names.add(error.name)
+
+            # Recursively collect from sub-services
+            for sub_service in service.services:
+                _collect_error_names_from_service(sub_service)
+
+        for service in self.ir.services:
+            _collect_error_names_from_service(service)
+
+        return errors
+
+    def _get_errors_imports(self, errors: list[ErrorResponse]) -> list[str]:
+        """Collect imports for the errors module."""
+        imports: set[str] = set()
+        for error in errors:
+            if error.type is not None:
+                imports |= _collect_type_ref_names(error.type, self.ir)
+        return sorted(imports)
+
+    def _get_service_imports(self, service: Service) -> dict[str, list[str]]:
+        """Collect imports for a single service."""
+
+        imports: dict[str, set[str]] = {
+            "input": set(),
+            "output": set(),
+            "enum": set(),
+            "errors": set(),
+        }
+
+        for method in service.methods:
+            # Collect input imports from body
+            if method.body is not None:
+                imports["input"].update(_collect_type_ref_names(method.body, self.ir))
+                imports["enum"].update(_collect_enum_names(method.body, self.ir))
+
+            # Collect output imports from response
+            if method.response is not None:
+                imports["output"].update(
+                    _collect_type_ref_names(method.response, self.ir)
+                )
+                imports["enum"].update(_collect_enum_names(method.response, self.ir))
+
+            # Collect type names and enum imports from path and query parameters
+            for param in method.path_params + method.query_params:
+                imports["enum"].update(_collect_enum_names(param.type, self.ir))
+                # Also collect model/union names from parameters
+                if isinstance(param.type, (ModelRef, UnionRef)):
+                    imports["input"].add(param.type.name)
+
+            # Also collect union names for union_ref bodies
+            if method.body is not None and isinstance(method.body, UnionRef):
+                imports["input"].add(method.body.name)
+
+            if method.response is not None and isinstance(method.response, UnionRef):
+                imports["output"].add(method.response.name)
+
+            # Collect imports from error responses
+            for error in method.errors:
+                imports["errors"].add(error.name)
+
+        # Convert sets to sorted lists for Jinja compatibility
+        return {
+            "input": sorted(imports["input"]),
+            "output": sorted(imports["output"]),
+            "enum": sorted(imports["enum"]),
+            "errors": sorted(imports["errors"]),
+        }

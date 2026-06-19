@@ -54,7 +54,7 @@ class DisputeCaseService:
 
         case = await support_case_service.create(
             session,
-            DisputeSupportCase(dispute_id=dispute.id),
+            DisputeSupportCase(dispute_id=dispute.id, organization=organization),
             author_kind=SupportCaseMessageAuthorKind.system,
             audience=[SupportCaseAudience.merchant],
         )

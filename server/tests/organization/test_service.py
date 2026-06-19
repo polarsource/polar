@@ -3174,6 +3174,7 @@ class TestSoftDeleteOrganization:
         case = await dispute_case_service.open_case(
             session, dispute, organization=organization
         )
+        assert case.organization_id == organization.id
 
         await organization_service.soft_delete_organization(session, organization)
 

@@ -206,6 +206,7 @@ class TestGetAppealCase:
             requested_by_user=user,
             organization=organization,
         )
+        assert case.organization_id == organization.id
         await appeal_case_service.add_reply(
             session,
             case,

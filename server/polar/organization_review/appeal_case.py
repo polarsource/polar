@@ -68,7 +68,9 @@ class AppealCaseService:
 
         case = await support_case_service.create(
             session,
-            ReviewAppealSupportCase(organization_review_id=review.id),
+            ReviewAppealSupportCase(
+                organization_review_id=review.id, organization=organization
+            ),
             author_kind=SupportCaseMessageAuthorKind.merchant,
             author_user=requested_by_user,
             audience=[SupportCaseAudience.merchant],

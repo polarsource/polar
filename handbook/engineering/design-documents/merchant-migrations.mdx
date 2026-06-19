@@ -38,14 +38,14 @@ The migration is split into 3 phases. The **setup** phase, where the merchant cr
 ```mermaid
 flowchart TB
   subgraph S["Setup phase"]
-    A["Source setup<br/>Choose the source (Stripe, LS, Paddle) and add API keys / data"]
+    A["Source setup<br/>Connect Stripe via the Polar Stripe App (OAuth); LS/Paddle via API key"]
     B["Pre-check<br/>Check products, prices, discounts can be imported into Polar"]
     C["Create catalog & subscriptions<br/>Products, discounts, customers, and subscriptions in a paused state"]
     A --> B --> C
   end
   subgraph M["Migration phase"]
     D["Copy cards data<br/>PAN Import or PAN Copy happens here"]
-    E["Activate subscriptions<br/>Activate Polar subs and cancel the old billing ones"]
+    E["Activate subscriptions<br/>Activate Polar subs and cancel billing on the source"]
     D --> E
   end
   subgraph CL["Cleanup phase"]
@@ -88,8 +88,8 @@ We want to start with the following sources, and extend them to more if needed.
 
 |                   | How we read it     | How cards move | Notes                           |
 | ----------------- | ------------------ | -------------- | ------------------------------- |
-| **Stripe**        | Restricted API key | PAN copy       |                                 |
-| **Lemon Squeezy** | API key            | Not documented (likely re-enter) |                                 |
+| **Stripe**        | Stripe App (OAuth) | PAN copy       | Read scopes + `subscription_write` for the cutover pause |
+| **Lemon Squeezy** | API key            | (pending)      |                                 |
 | **Paddle**        | API key            | PAN import     | They use Ixopay as a card vault |
 
 ## Implementation notes
@@ -101,7 +101,7 @@ The idea is to create a new `migration` module (I'm up for new name suggestions)
 ### Main classes
 - **`MigrationJob`** one row per migration run for an org. The root: source platform and current step.
 - **`MigrationRecord`** one row per imported thing (customer, product, subscription, order, …), mapping `source_id → target_id` with a status. It's our idempotency layer, scoped per org, so we can trigger multiple migrations safely.
-- **`SourceAdapter`** we will have one for every billing provider (e.g. `StripeAdapter`). Its main responsibility is to read the current billing provider API and provide a generic representation the migration service can work with. `extract()` must be incremental as customer data can be huge.
+- **`SourceAdapter`** we will have one for every billing provider (e.g. `StripeAdapter`). Its main responsibility is to read the current billing provider API and provide a generic representation the migration service can work with. `extract()` must be incremental as customer data can be huge. It also stops billing on the source at cutover via `stop_source_subscription()`, the adapter's only write.
 - **`PanTransferStep`** the checklist for moving cards (step, owner, status, kind, inputs - see Appendix B). Stored as a JSONB column on `MigrationJob`: a list of step objects.
 - **`MigrationService`** the main orchestrator.
 - **`CanonicalRecord`** to have everything normalized in memory first (variants: `CanonicalProduct` / `Customer` / `Subscription`). The precheck engine reads these and returns a `PrecheckReport` (Appendix A); Appendix C shows the flow end to end.
@@ -191,7 +191,9 @@ This shows how the classes communicate.
 
 ```python
 # 1. read + normalize from the source
-records = [r async for r in StripeAdapter(api_key="rk_live_…").extract()]
+#    Stripe: mint a short-lived access token from the stored OAuth refresh token
+token = await stripe_oauth.refresh(job.source_refresh_token)  # rotates; persist token.refresh_token
+records = [r async for r in StripeAdapter(api_key=token.access_token).extract()]
 # records = [CanonicalProduct(...), CanonicalCustomer(...), CanonicalSubscription(...)]
 
 # 2. precheck (no writes), then stage each record in the ledger
@@ -244,3 +246,13 @@ On top of the generic ones in Appendix A. What's unique to Stripe:
 - **Warning:** `pause_collection` - no Polar paused subscriptions, don't import.
 - **Warning:** `past_due` / `unpaid` - don't import.
 - **Warning:** in-flight refunds / open disputes on an invoice - don't import, the money is still moving on Stripe.
+
+### Connecting the source (Stripe App OAuth)
+
+The merchant connects Stripe by installing the Polar Stripe App (one-click OAuth); we never ask for a pasted API key. The access token Stripe returns is a restricted key bound to the merchant account, so it drops straight into the reader below. App permissions: `customer_read`, `product_read`, `plan_read`, `subscription_read`, `coupon_read`, `promotion_code_read`, `payment_method_read`, plus `subscription_write` for the cutover pause. The refund/dispute precheck additionally needs charge/invoice read (not in the POC app yet).
+
+Notes from building it (POC, validated in test mode):
+- Authorize URL is channel-scoped: `/oauth/v2/{chnlink_…}/authorize?client_id=ca_…&redirect_uri=…&state=…`. Omitting the `chnlink_` segment fails consent with "oauth client is not valid".
+- The token exchange authenticates as the account that owns the app (in prod, Polar's platform account).
+- The callback may arrive without `state` (Stripe-initiated installs); handle it (reconcile by account or require a Polar-initiated install).
+- Refresh tokens rotate on every refresh; persist the new one each time.

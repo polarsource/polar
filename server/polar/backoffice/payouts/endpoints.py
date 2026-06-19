@@ -576,7 +576,7 @@ async def cancel(
             with tag.div(classes="modal-action"):
                 with tag.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        text("Go back")
                 with tag.form(method="dialog"):
                     with button(
                         type="button",
@@ -584,7 +584,7 @@ async def cancel(
                         hx_post=str(request.url_for("payouts:cancel", id=payout.id)),
                         hx_target="#modal",
                     ):
-                        text("Cancel")
+                        text("Cancel Payout")
 
 
 @router.post("/{id}/refresh", name="payouts:refresh")

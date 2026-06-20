@@ -44,7 +44,6 @@ export async function GET(request: Request) {
     >
       {/* Logo */}
       <div
-        className="flex text-white"
         style={{
           display: 'flex',
           color: '#fff',

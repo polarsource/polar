@@ -98,6 +98,10 @@ class OrganizationRepository(
 
         if for_update:
             statement = statement.with_for_update(of=self.model, nowait=nowait)
+            # Avoid stale data when using for_update:
+            # the object might have been loaded without the lock earlier
+            # in the same transaction
+            statement = statement.execution_options(populate_existing=True)
 
         return await self.get_one_or_none(statement)
 

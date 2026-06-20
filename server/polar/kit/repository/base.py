@@ -208,7 +208,7 @@ class RepositoryIDMixin[MODEL_ID: ModelIDProtocol, ID_TYPE]:  # type: ignore[typ
         *,
         options: Options = (),
         for_update: Literal[False] = False,
-    ) -> MODEL_ID: ...
+    ) -> MODEL_ID | None: ...
 
     @overload
     async def get_by_id(
@@ -218,7 +218,7 @@ class RepositoryIDMixin[MODEL_ID: ModelIDProtocol, ID_TYPE]:  # type: ignore[typ
         options: Options = (),
         for_update: Literal[True],
         nowait: bool = False,
-    ) -> MODEL_ID: ...
+    ) -> MODEL_ID | None: ...
 
     async def get_by_id(
         self: RepositoryProtocol[MODEL_ID],
@@ -233,6 +233,10 @@ class RepositoryIDMixin[MODEL_ID: ModelIDProtocol, ID_TYPE]:  # type: ignore[typ
         )
         if for_update:
             statement = statement.with_for_update(of=self.model, nowait=nowait)
+            # Avoid stale data when using for_update:
+            # the object might have been loaded without the lock earlier
+            # in the same transaction
+            statement = statement.execution_options(populate_existing=True)
         return await self.get_one_or_none(statement)
 
 
@@ -277,6 +281,10 @@ class RepositorySoftDeletionIDMixin[
         )
         if for_update:
             statement = statement.with_for_update(of=self.model, nowait=nowait)
+            # Avoid stale data when using for_update:
+            # the object might have been loaded without the lock earlier
+            # in the same transaction
+            statement = statement.execution_options(populate_existing=True)
         return await self.get_one_or_none(statement)
 
 

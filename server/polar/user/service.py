@@ -142,6 +142,11 @@ class UserService:
     async def create_identity_verification(
         self, session: AsyncSession, user: User
     ) -> UserIdentityVerification:
+        repository = UserRepository.from_session(session)
+        user_update = await repository.get_by_id(user.id, for_update=True)
+        assert user_update is not None
+        user = user_update
+
         if user.identity_verified:
             raise IdentityAlreadyVerified(user.id)
 
@@ -162,7 +167,6 @@ class UserService:
                 user
             )
 
-        repository = UserRepository.from_session(session)
         await repository.update(
             user, update_dict={"identity_verification_id": verification_session.id}
         )

@@ -1890,10 +1890,11 @@ class CheckoutService:
         checkout_id = checkout.id
 
         try:
-            locked_checkout = await repository.get_by_id_for_update(
+            locked_checkout = await repository.get_by_id(
                 checkout_id,
-                nowait=True,
                 options=repository.get_eager_options(),
+                for_update=True,
+                nowait=True,
             )
         except DBAPIError as e:
             if is_lock_not_available_error(e):

@@ -10,18 +10,6 @@ from polar.models import Discount, DiscountRedemption
 class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, UUID]):
     model = Discount
 
-    async def get_by_id_for_update(
-        self, discount_id: UUID, *, nowait: bool = True
-    ) -> Discount | None:
-        """Get discount by ID with FOR UPDATE lock."""
-        statement = (
-            select(Discount)
-            .where(Discount.id == discount_id, Discount.is_deleted.is_(False))
-            .with_for_update(nowait=nowait)
-            .options(raiseload(Discount.organization))
-        )
-        return await self.get_one_or_none(statement)
-
     async def get_by_code_and_organization_for_update(
         self,
         code: str,

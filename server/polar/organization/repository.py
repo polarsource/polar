@@ -1,3 +1,4 @@
+import typing
 from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
@@ -53,6 +54,7 @@ class OrganizationRepository(
 ):
     model = Organization
 
+    @typing.overload
     async def get_by_id(
         self,
         id: UUID,
@@ -60,6 +62,30 @@ class OrganizationRepository(
         options: Options = (),
         include_deleted: bool = False,
         include_blocked: bool = False,
+        for_update: typing.Literal[False] = False,
+    ) -> Organization | None: ...
+
+    @typing.overload
+    async def get_by_id(
+        self,
+        id: UUID,
+        *,
+        options: Options = (),
+        include_deleted: bool = False,
+        include_blocked: bool = False,
+        for_update: typing.Literal[True],
+        nowait: bool = False,
+    ) -> Organization | None: ...
+
+    async def get_by_id(
+        self,
+        id: UUID,
+        *,
+        options: Options = (),
+        include_deleted: bool = False,
+        include_blocked: bool = False,
+        for_update: bool = False,
+        nowait: bool = False,
     ) -> Organization | None:
         statement = (
             self.get_base_statement(include_deleted=include_deleted)
@@ -69,6 +95,9 @@ class OrganizationRepository(
 
         if not include_blocked:
             statement = statement.where(self.model.status != OrganizationStatus.BLOCKED)
+
+        if for_update:
+            statement = statement.with_for_update(of=self.model, nowait=nowait)
 
         return await self.get_one_or_none(statement)
 

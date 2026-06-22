@@ -2,6 +2,7 @@
 
 import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { useMetrics } from '@/hooks/queries/metrics'
+import { buildCustomerDashboardPath } from '@/utils/customer'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Avatar } from '@polar-sh/orbit'
@@ -75,7 +76,7 @@ export const CustomerContextView = ({
           </StatisticCard>
         </div>
         <Link
-          href={`/dashboard/${organization.slug}/customers/${customer.id}?query=${customer.email}`}
+          href={buildCustomerDashboardPath(organization.slug, customer)}
           className="flex flex-row items-center gap-4"
         >
           <Button className="w-full" size="lg" variant="secondary">

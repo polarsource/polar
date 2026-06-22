@@ -1,4 +1,5 @@
 import { useInfiniteEvents } from '@/hooks/queries/events'
+import { buildCustomerDashboardPath } from '@/utils/customer'
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined'
 import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOutlined'
 import { schemas } from '@polar-sh/client'
@@ -178,7 +179,10 @@ export const EventRow = ({
               <Tooltip>
                 <TooltipTrigger>
                   <Link
-                    href={`/dashboard/${organization.slug}/customers/${event.customer?.id}?query=${event.customer?.email}`}
+                    href={buildCustomerDashboardPath(
+                      organization.slug,
+                      event.customer,
+                    )}
                     className="flex items-center gap-x-3"
                     onClick={(e) => {
                       e.stopPropagation()

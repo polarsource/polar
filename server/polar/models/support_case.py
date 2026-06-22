@@ -157,7 +157,10 @@ class SupportCase(RecordModel):
 class ReviewAppealSupportCase(SupportCase):
     """A support case handling an organization review appeal."""
 
-    __mapper_args__ = {"polymorphic_identity": SupportCaseType.review_appeal}
+    __mapper_args__ = {
+        "polymorphic_identity": SupportCaseType.review_appeal,
+        "polymorphic_load": "inline",
+    }
 
     organization_review_id: Mapped[UUID] = mapped_column(
         Uuid,
@@ -183,7 +186,10 @@ Index(
 class DisputeSupportCase(SupportCase):
     """A support case handling a payment dispute (chargeback)."""
 
-    __mapper_args__ = {"polymorphic_identity": SupportCaseType.dispute}
+    __mapper_args__ = {
+        "polymorphic_identity": SupportCaseType.dispute,
+        "polymorphic_load": "inline",
+    }
 
     dispute_id: Mapped[UUID] = mapped_column(
         Uuid,

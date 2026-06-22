@@ -181,6 +181,7 @@ data "aws_iam_policy_document" "lambda_worker_ecr_push" {
     sid = "PushLambdaWorkerImage"
     actions = [
       "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage",
       "ecr:CompleteLayerUpload",
       "ecr:DescribeImages",
       "ecr:DescribeRepositories",

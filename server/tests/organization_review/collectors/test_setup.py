@@ -583,7 +583,27 @@ class TestResolveRedirectWithBrowserDispatch:
     """The redirect resolver dispatches to the configured scraper."""
 
     @pytest.mark.asyncio
-    async def test_defaults_to_playwright(self, mocker: MockerFixture) -> None:
+    async def test_defaults_to_firecrawl(self, mocker: MockerFixture) -> None:
+        firecrawl = mocker.patch(
+            "polar.organization_review.collectors.setup._resolve_redirect_firecrawl",
+            new_callable=AsyncMock,
+            return_value=UrlRedirectInfo(original_url="https://example.com/"),
+        )
+        playwright = mocker.patch(
+            "polar.organization_review.collectors.setup._resolve_redirect_playwright",
+            new_callable=AsyncMock,
+        )
+
+        await _resolve_redirect_with_browser("https://example.com/")
+
+        firecrawl.assert_called_once_with("https://example.com/")
+        playwright.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_playwright_toggle_uses_playwright(
+        self, mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "ORGANIZATION_REVIEW_SCRAPER", "playwright")
         playwright = mocker.patch(
             "polar.organization_review.collectors.setup._resolve_redirect_playwright",
             new_callable=AsyncMock,

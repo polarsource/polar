@@ -1,13 +1,13 @@
 'use client'
 
+import { BenefitListFilterEmptyState } from '@/components/Benefit/BenefitListFilterEmptyState'
+import { BenefitTypeFilter } from '@/components/Benefit/BenefitTypeFilter'
 import CreateBenefitModalContent from '@/components/Benefit/CreateBenefitModalContent'
 import {
   benefitsDisplayNames,
   resolveBenefitIcon,
 } from '@/components/Benefit/utils'
-import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
-import { Spinner } from '@polar-sh/orbit'
 import { useInfiniteBenefits } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
 import { usePushRouteWithoutCache } from '@/utils/router'
@@ -15,9 +15,8 @@ import AddOutlined from '@mui/icons-material/AddOutlined'
 import ArrowDownward from '@mui/icons-material/ArrowDownward'
 import ArrowUpward from '@mui/icons-material/ArrowUpward'
 import Search from '@mui/icons-material/Search'
-import { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
-import { Input } from '@polar-sh/orbit'
+import { enums, schemas } from '@polar-sh/client'
+import { Input, Button, Spinner, InlineModal } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import {
@@ -50,15 +49,21 @@ export const BenefitListSidebar = ({
 
   const [query, setQuery] = useQueryState('query', parseAsString)
 
+  const [typeFilter, setTypeFilter] = useQueryState(
+    'type',
+    parseAsStringLiteral(enums.benefitTypeValues),
+  )
+
   const [createBenefitQuerystring, setCreateBenefitQuerystring] = useQueryState(
     'create_benefit',
     parseAsBoolean.withDefault(false),
   )
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
     useInfiniteBenefits(organization.id, {
       query: query ?? undefined,
       sorting: [sorting],
+      type: typeFilter ?? undefined,
     })
 
   const benefits = useMemo(
@@ -104,6 +109,7 @@ export const BenefitListSidebar = ({
 
       const params = new URLSearchParams(searchParams.toString())
       params.delete('query')
+      params.delete('type')
       params.delete('create_benefit')
       const queryString = params.toString()
 
@@ -125,6 +131,7 @@ export const BenefitListSidebar = ({
         <div className="flex flex-row items-center justify-between gap-6 px-4 py-4">
           <div>Benefits</div>
           <div className="flex flex-row items-center gap-4">
+            <BenefitTypeFilter value={typeFilter} onChange={setTypeFilter} />
             <Button
               variant="ghost"
               size="icon"
@@ -165,6 +172,14 @@ export const BenefitListSidebar = ({
           />
         </div>
         <div className="dark:divide-polar-800 flex h-full grow flex-col divide-y divide-gray-50 overflow-y-auto">
+          {!isLoading && benefits.length === 0 && (!!query || !!typeFilter) && (
+            <BenefitListFilterEmptyState
+              onClearFilters={() => {
+                setQuery(null)
+                setTypeFilter(null)
+              }}
+            />
+          )}
           {benefits.map((benefit) => {
             const queryString = searchParams.toString()
             const benefitHref = `/dashboard/${organization.slug}/products/benefits/${benefit.id}${queryString ? `?${queryString}` : ''}`

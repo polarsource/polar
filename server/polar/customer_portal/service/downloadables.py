@@ -92,9 +92,9 @@ class DownloadableService(
             create_schemas=[create_schema],
             constraints=[
                 Downloadable.customer_id,
+                Downloadable.member_id,
                 Downloadable.file_id,
                 Downloadable.benefit_id,
-                Downloadable.member_id,
             ],
             mutable_keys={
                 "status",

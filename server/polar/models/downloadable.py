@@ -36,9 +36,9 @@ class Downloadable(RecordModel):
         Index(
             "ix_downloadables_scope_unique",
             "customer_id",
+            "member_id",
             "file_id",
             "benefit_id",
-            "member_id",
             unique=True,
             postgresql_nulls_not_distinct=True,
             postgresql_where=text("deleted_at IS NULL"),

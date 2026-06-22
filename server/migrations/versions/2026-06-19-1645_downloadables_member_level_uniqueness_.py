@@ -41,7 +41,7 @@ def upgrade() -> None:
         op.create_index(
             NEW_INDEX,
             "downloadables",
-            ["customer_id", "file_id", "benefit_id", "member_id"],
+            ["customer_id", "member_id", "file_id", "benefit_id"],
             unique=True,
             postgresql_concurrently=True,
             postgresql_nulls_not_distinct=True,

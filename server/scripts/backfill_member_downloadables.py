@@ -70,7 +70,7 @@ _INSERT_SQL = text(
         gen_random_uuid(), now(), 'granted',
         t.file_id, t.customer_id, t.member_id, t.benefit_id, 0
     FROM ({_CANDIDATES} LIMIT :batch_size) t
-    ON CONFLICT (customer_id, file_id, benefit_id, member_id)
+    ON CONFLICT (customer_id, member_id, file_id, benefit_id)
         WHERE deleted_at IS NULL
         DO NOTHING
     """

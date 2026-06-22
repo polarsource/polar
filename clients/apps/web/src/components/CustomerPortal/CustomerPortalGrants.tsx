@@ -13,7 +13,6 @@ export interface CustomerPortalGrantsProps {
 }
 
 export const CustomerPortalGrants = ({
-  organization,
   api,
   subscriptionId,
   orderId,

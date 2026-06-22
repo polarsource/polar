@@ -49,6 +49,27 @@ _VERDICT_MAP: dict[ReviewVerdict, OrganizationReview.Verdict] = {
 }
 
 
+def _run_agent_debounce_key(
+    organization_id: uuid.UUID,
+    context: str = ReviewContext.THRESHOLD,
+    auto_approve_eligible: bool = False,
+    plain_thread_id: str | None = None,
+) -> str | None:
+    """Debounce only PRODUCT_CHANGED reviews, per organization.
+
+    A merchant may create or edit many products in quick succession (or in
+    bulk via the API); without debouncing each change would spawn a full
+    agent review. A single per-organization key also collapses a create
+    immediately followed by edits into one review. Other contexts
+    (submission, threshold, manual, appeal) must never be collapsed, so the
+    factory returns ``None`` for them — which disables debouncing for that
+    message.
+    """
+    if context == ReviewContext.PRODUCT_CHANGED:
+        return f"organization_review.product_changed:{organization_id}"
+    return None
+
+
 async def _persist_agent_result(
     session: AsyncSession,
     organization: Organization,
@@ -96,6 +117,8 @@ async def _persist_agent_result(
     time_limit=180_000,  # 3 min timeout
     max_retries=4,
     min_backoff=30_000,
+    debounce_key=_run_agent_debounce_key,
+    debounce_min_threshold=300,
 )
 async def run_review_agent(
     organization_id: uuid.UUID,
@@ -107,6 +130,7 @@ async def run_review_agent(
 
     For SUBMISSION context: creates an OrganizationReview record and auto-denies on DENY.
     For THRESHOLD context: log-only, persists to OrganizationAgentReview table.
+    For PRODUCT_CHANGED context: pulls an active org back into REVIEW on a bad verdict.
     """
     if settings.ENV == Environment.sandbox:
         return
@@ -118,6 +142,22 @@ async def run_review_agent(
         organization = await repository.get_by_id(organization_id, include_blocked=True)
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
+
+        # A product-change review only makes sense for active orgs: it exists
+        # to pull them back into review. Status may have changed between enqueue
+        # and execution (debounce delay), so re-check here before spending an
+        # agent run.
+        if (
+            review_context == ReviewContext.PRODUCT_CHANGED
+            and organization.status != OrganizationStatus.ACTIVE
+        ):
+            log.info(
+                "organization_review.product_changed.skip_non_active",
+                organization_id=str(organization_id),
+                slug=organization.slug,
+                status=organization.status,
+            )
+            return
 
         result = await run_organization_review(
             session, organization, context=review_context
@@ -231,6 +271,30 @@ async def run_review_agent(
                 )
             elif report.verdict == ReviewVerdict.APPROVE:
                 await organization_service.maybe_activate(session, organization)
+
+        # For PRODUCT_CHANGED context: a bad verdict pulls the active org back
+        # into REVIEW for a human to look at. A clean APPROVE is a no-op — the
+        # org keeps operating. We never auto-deny here, only escalate.
+        if review_context == ReviewContext.PRODUCT_CHANGED:
+            if report.verdict != ReviewVerdict.APPROVE:
+                organization.set_status(OrganizationStatus.REVIEW)
+                session.add(organization)
+
+                await review_repository.record_agent_decision(
+                    organization_id=organization_id,
+                    agent_review_id=agent_review_id,
+                    decision=DecisionType.ESCALATE,
+                    review_context=ReviewContext.PRODUCT_CHANGED,
+                    verdict=report.verdict,
+                    risk_score=report.overall_risk_score,
+                )
+
+                log.info(
+                    "organization_review.product_changed.escalated_to_review",
+                    organization_id=str(organization_id),
+                    slug=organization.slug,
+                    verdict=report.verdict.value,
+                )
 
 
 @actor(

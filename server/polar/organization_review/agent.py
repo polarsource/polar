@@ -130,7 +130,11 @@ async def _collect_products(
 
 
 async def _collect_setup(organization_id: UUID, context: ReviewContext) -> SetupData:
-    if context not in (ReviewContext.THRESHOLD, ReviewContext.MANUAL):
+    if context not in (
+        ReviewContext.THRESHOLD,
+        ReviewContext.MANUAL,
+        ReviewContext.PRODUCT_CHANGED,
+    ):
         return SetupData()
 
     async with AsyncReadSessionMaker() as session:
@@ -173,7 +177,11 @@ async def _collect_setup(organization_id: UUID, context: ReviewContext) -> Setup
 async def _collect_metrics(
     organization_id: UUID, context: ReviewContext
 ) -> PaymentMetrics:
-    if context not in (ReviewContext.THRESHOLD, ReviewContext.MANUAL):
+    if context not in (
+        ReviewContext.THRESHOLD,
+        ReviewContext.MANUAL,
+        ReviewContext.PRODUCT_CHANGED,
+    ):
         return PaymentMetrics()
 
     async with AsyncReadSessionMaker() as session:

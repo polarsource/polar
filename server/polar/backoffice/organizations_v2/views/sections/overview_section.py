@@ -58,6 +58,7 @@ class OverviewSection(ChecklistMixin):
         "setup_complete": "Setup Complete",
         "threshold": "Threshold",
         "manual": "Manual",
+        "product_changed": "Product Changed",
     }
 
     def _render_review_context_badge(self, review_type: str | None) -> None:

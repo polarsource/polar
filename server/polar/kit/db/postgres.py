@@ -84,12 +84,15 @@ def create_sync_engine(
     pool_recycle: int | None = None,
     command_timeout: float | None = None,
     debug: bool = False,
+    sslmode: str | None = None,
 ) -> Engine:
     connect_args: dict[str, Any] = {}
     if application_name is not None:
         connect_args["application_name"] = application_name
     if command_timeout is not None:
         connect_args["options"] = f"-c statement_timeout={int(command_timeout * 1000)}"
+    if sslmode is not None:
+        connect_args["sslmode"] = sslmode
     return _create_engine(
         dsn,
         echo=debug,

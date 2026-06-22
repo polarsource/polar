@@ -79,6 +79,9 @@ Publish through `pnpm ota`, **not** raw `eas update`. It runs a preflight guard
 reach devices then forwards to `eas update` for you:
 
 ```bash
+# Make sure you are on the main branch first
+git checkout main
+
 # Test on preview first if it's a larger change
 pnpm ota --channel preview --message "Description of changes"
 

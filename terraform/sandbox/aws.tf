@@ -27,6 +27,15 @@ module "lambda_worker_ecr" {
   name = "polar-sandbox-lambda-worker"
 }
 
+module "redis" {
+  source = "../modules/aws_redis"
+
+  name                       = "polar-sandbox-worker"
+  vpc_id                     = module.vpc.vpc_id
+  subnet_ids                 = module.vpc.private_subnet_ids
+  ingress_security_group_ids = [aws_security_group.lambda.id]
+}
+
 module "dummy_lambda_worker" {
   source = "../modules/aws_task_worker"
 
@@ -52,8 +61,8 @@ module "dummy_lambda_worker" {
     POLAR_POSTGRES_PORT           = local.db_port
     POLAR_POSTGRES_USER           = local.db_user
     POLAR_POSTGRES_SSL            = "true"
-    POLAR_REDIS_HOST              = local.redis_host
-    POLAR_REDIS_PORT              = local.redis_port
+    POLAR_REDIS_HOST              = module.redis.host
+    POLAR_REDIS_PORT              = tostring(module.redis.port)
     POLAR_REDIS_DB                = "1"
     POLAR_AWS_REGION              = "us-east-2"
     POLAR_WORKER_SQS_ENABLED      = "true"

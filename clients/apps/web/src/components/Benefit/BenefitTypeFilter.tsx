@@ -32,14 +32,18 @@ export const BenefitTypeFilter = ({
           <Text as="span">All</Text>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        {enums.benefitTypeValues.map((type) => (
-          <DropdownMenuItem key={type} onClick={() => onChange(type)}>
-            <CheckOutlined
-              className={twMerge('h-4 w-4', value !== type && 'invisible')}
-            />
-            <Text as="span">{benefitsDisplayNames[type]}</Text>
-          </DropdownMenuItem>
-        ))}
+        {[...enums.benefitTypeValues]
+          .sort((a, b) =>
+            benefitsDisplayNames[a].localeCompare(benefitsDisplayNames[b]),
+          )
+          .map((type) => (
+            <DropdownMenuItem key={type} onClick={() => onChange(type)}>
+              <CheckOutlined
+                className={twMerge('h-4 w-4', value !== type && 'invisible')}
+              />
+              <Text as="span">{benefitsDisplayNames[type]}</Text>
+            </DropdownMenuItem>
+          ))}
       </DropdownMenuContent>
     </DropdownMenu>
   )

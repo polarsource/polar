@@ -1,7 +1,7 @@
 import contextlib
 import typing
 import uuid
-from collections.abc import AsyncGenerator, AsyncIterator, Sequence
+from collections.abc import AsyncGenerator, Sequence
 
 import sentry_sdk
 import stripe as stripe_lib
@@ -216,8 +216,20 @@ class TrialAlreadyRedeemed(CheckoutError):
 class CheckoutLocked(CheckoutError):
     """Raised when checkout is locked by another transaction."""
 
-    def __init__(self, checkout_id: uuid.UUID) -> None:
+    @typing.overload
+    def __init__(self, *, checkout_id: uuid.UUID) -> None: ...
+
+    @typing.overload
+    def __init__(self, *, checkout_secret: str) -> None: ...
+
+    def __init__(
+        self,
+        *,
+        checkout_id: uuid.UUID | None = None,
+        checkout_secret: str | None = None,
+    ) -> None:
         self.checkout_id = checkout_id
+        self.checkout_secret = checkout_secret
         message = "Checkout is currently being processed. Please try again."
         super().__init__(message, 409)
 
@@ -297,6 +309,8 @@ class CheckoutService:
         session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
+        *,
+        for_update: bool = False,
     ) -> Checkout | None:
         repository = CheckoutRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
@@ -307,7 +321,15 @@ class CheckoutService:
             .where(Checkout.id == id)
             .options(*repository.get_eager_options())
         )
-        checkout = await repository.get_one_or_none(statement)
+        if for_update:
+            statement = statement.with_for_update(of=Checkout, nowait=True)
+
+        try:
+            checkout = await repository.get_one_or_none(statement)
+        except DBAPIError as e:
+            if is_lock_not_available_error(e):
+                raise CheckoutLocked(checkout_id=id) from e
+            raise
 
         if checkout is None:
             return None
@@ -900,27 +922,26 @@ class CheckoutService:
         checkout_update: CheckoutUpdate | CheckoutUpdatePublic,
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
-        async with self._lock_checkout_update(session, checkout) as checkout:
-            checkout = await self._update_checkout(
-                session, checkout, checkout_update, ip_geolocation_client
-            )
-            try:
-                checkout = await self._update_checkout_tax(session, checkout)
-            # Swallow incomplete tax calculation error: require it only on confirm
-            except TaxCalculationLogicalError:
-                pass
+        checkout = await self._update_checkout(
+            session, checkout, checkout_update, ip_geolocation_client
+        )
+        try:
+            checkout = await self._update_checkout_tax(session, checkout)
+        # Swallow incomplete tax calculation error: require it only on confirm
+        except TaxCalculationLogicalError:
+            pass
 
-            # Reset is_business_customer if payment form is no longer required
-            # This handles the case where a 100% discount is applied and the
-            # billing address section disappears from the frontend
-            if (
-                not checkout.is_payment_form_required
-                and not checkout.require_billing_address
-            ):
-                checkout.is_business_customer = False
+        # Reset is_business_customer if payment form is no longer required
+        # This handles the case where a 100% discount is applied and the
+        # billing address section disappears from the frontend
+        if (
+            not checkout.is_payment_form_required
+            and not checkout.require_billing_address
+        ):
+            checkout.is_business_customer = False
 
-            await self._after_checkout_updated(session, checkout)
-            return checkout
+        await self._after_checkout_updated(session, checkout)
+        return checkout
 
     async def confirm(
         self,
@@ -929,33 +950,32 @@ class CheckoutService:
         checkout: Checkout,
         checkout_confirm: CheckoutConfirm,
     ) -> Checkout:
-        async with self._lock_checkout_update(session, checkout) as checkout:
-            checkout = await self._update_checkout(session, checkout, checkout_confirm)
-            # When redeeming a discount, we need to lock the discount to prevent concurrent redemptions
-            if checkout.discount is not None:
-                try:
-                    async with discount_service.redeem_discount(
-                        session, checkout.discount
-                    ) as discount_redemption:
-                        discount_redemption.checkout = checkout
-                        return await self._confirm_inner(
-                            session, auth_subject, checkout, checkout_confirm
-                        )
-                except DiscountNotRedeemableError as e:
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", "discount_id"),
-                                "msg": "Discount is no longer redeemable.",
-                                "input": checkout.discount.id,
-                            }
-                        ]
-                    ) from e
+        checkout = await self._update_checkout(session, checkout, checkout_confirm)
+        # When redeeming a discount, we need to lock the discount to prevent concurrent redemptions
+        if checkout.discount is not None:
+            try:
+                async with discount_service.redeem_discount(
+                    session, checkout.discount
+                ) as discount_redemption:
+                    discount_redemption.checkout = checkout
+                    return await self._confirm_inner(
+                        session, auth_subject, checkout, checkout_confirm
+                    )
+            except DiscountNotRedeemableError as e:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "discount_id"),
+                            "msg": "Discount is no longer redeemable.",
+                            "input": checkout.discount.id,
+                        }
+                    ]
+                ) from e
 
-            return await self._confirm_inner(
-                session, auth_subject, checkout, checkout_confirm
-            )
+        return await self._confirm_inner(
+            session, auth_subject, checkout, checkout_confirm
+        )
 
     async def _confirm_inner(
         self,
@@ -1433,12 +1453,25 @@ class CheckoutService:
         return checkout
 
     async def get_by_client_secret(
-        self, session: AsyncSession, client_secret: str
+        self, session: AsyncSession, client_secret: str, *, for_update: bool = False
     ) -> Checkout:
         repository = CheckoutRepository.from_session(session)
-        checkout = await repository.get_by_client_secret(
-            client_secret, options=repository.get_eager_options()
-        )
+        if for_update:
+            try:
+                checkout = await repository.get_by_client_secret(
+                    client_secret,
+                    options=repository.get_eager_options(),
+                    for_update=True,
+                    nowait=True,
+                )
+            except DBAPIError as e:
+                if is_lock_not_available_error(e):
+                    raise CheckoutLocked(checkout_secret=client_secret) from e
+                raise
+        else:
+            checkout = await repository.get_by_client_secret(
+                client_secret, options=repository.get_eager_options()
+            )
         if checkout is None:
             raise ResourceNotFound()
 
@@ -1869,41 +1902,6 @@ class CheckoutService:
                 )
 
         return subscription, subscription.customer
-
-    @contextlib.asynccontextmanager
-    async def _lock_checkout_update(
-        self, session: AsyncSession, checkout: Checkout
-    ) -> AsyncIterator[Checkout]:
-        """
-        Lock checkout with FOR UPDATE NOWAIT and reload fresh from database.
-
-        Uses PostgreSQL row-level locking instead of Redis distributed locks.
-        If another transaction holds the lock, immediately raises CheckoutLocked
-        instead of waiting (NOWAIT behavior).
-
-        Uses FOR UPDATE OF checkouts to lock only the checkout row while still
-        allowing eager loading of relationships via LEFT OUTER JOINs.
-
-        See: https://www.postgresql.org/docs/current/explicit-locking.html
-        """
-        repository = CheckoutRepository.from_session(session)
-        checkout_id = checkout.id
-
-        try:
-            locked_checkout = await repository.get_by_id_for_update(
-                checkout_id,
-                nowait=True,
-                options=repository.get_eager_options(),
-            )
-        except DBAPIError as e:
-            if is_lock_not_available_error(e):
-                raise CheckoutLocked(checkout_id) from e
-            raise
-
-        if locked_checkout is None:
-            raise ResourceNotFound()
-
-        yield locked_checkout
 
     async def _update_checkout(
         self,

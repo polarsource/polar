@@ -46,8 +46,8 @@ async def payout_transfer(payout_id: uuid.UUID) -> None:
         # (deny/block/backoffice) and would otherwise pay out a payout the ledger
         # already reversed. FOR UPDATE serializes with cancel(), which locks the
         # same row.
-        payout = await repository.get_by_id_for_update(
-            payout_id, options=repository.get_eager_options()
+        payout = await repository.get_by_id(
+            payout_id, options=repository.get_eager_options(), for_update=True
         )
         if payout is None:
             raise PayoutDoesNotExist(payout_id)

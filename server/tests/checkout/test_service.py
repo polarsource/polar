@@ -3103,7 +3103,7 @@ class TestUpdate:
             prices=[(4242, "usd")],
         )
         checkout_recurring_fixed.checkout_products.append(
-            CheckoutProduct(product=new_product, order=1)
+            CheckoutProduct(product=new_product, order=1, ad_hoc_prices=[])
         )
         await save_fixture(checkout_recurring_fixed)
 
@@ -3149,7 +3149,7 @@ class TestUpdate:
         )
 
         checkout_recurring_fixed.checkout_products.append(
-            CheckoutProduct(product=new_product, order=1)
+            CheckoutProduct(product=new_product, order=1, ad_hoc_prices=[])
         )
         checkout_recurring_fixed.discount = discount
         await save_fixture(checkout_recurring_fixed)
@@ -3193,7 +3193,7 @@ class TestUpdate:
         )
 
         checkout_recurring_fixed.checkout_products.append(
-            CheckoutProduct(product=new_product, order=1)
+            CheckoutProduct(product=new_product, order=1, ad_hoc_prices=[])
         )
         checkout_recurring_fixed.discount = discount
         await save_fixture(checkout_recurring_fixed)

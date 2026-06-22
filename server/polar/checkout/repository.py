@@ -1,3 +1,4 @@
+import typing
 from uuid import UUID
 
 from sqlalchemy import Select, update
@@ -32,33 +33,41 @@ class CheckoutRepository(
 ):
     model = Checkout
 
+    @typing.overload
     async def get_by_client_secret(
-        self, client_secret: str, *, options: Options = ()
+        self,
+        client_secret: str,
+        *,
+        options: Options = (),
+        for_update: typing.Literal[False] = False,
+    ) -> Checkout: ...
+
+    @typing.overload
+    async def get_by_client_secret(
+        self,
+        client_secret: str,
+        *,
+        options: Options = (),
+        for_update: typing.Literal[True],
+        nowait: bool = False,
+    ) -> Checkout | None: ...
+
+    async def get_by_client_secret(
+        self,
+        client_secret: str,
+        *,
+        options: Options = (),
+        for_update: bool = False,
+        nowait: bool = False,
     ) -> Checkout | None:
         statement = (
             self.get_base_statement()
             .where(Checkout.client_secret == client_secret)
             .options(*options)
         )
-        return await self.get_one_or_none(statement)
+        if for_update:
+            statement = statement.with_for_update(of=Checkout, nowait=nowait)
 
-    async def get_by_id_for_update(
-        self, checkout_id: UUID, *, nowait: bool = True, options: Options = ()
-    ) -> Checkout | None:
-        """
-        Get checkout by ID with FOR UPDATE lock.
-
-        Uses FOR UPDATE OF checkouts to lock only the checkout row, allowing
-        LEFT OUTER JOINs for eager loading of relationships.
-
-        See: https://www.postgresql.org/docs/current/explicit-locking.html
-        """
-        statement = (
-            self.get_base_statement()
-            .where(Checkout.id == checkout_id)
-            .options(*options)
-            .with_for_update(nowait=nowait, of=Checkout)
-        )
         return await self.get_one_or_none(statement)
 
     async def expire_open_checkouts(self) -> list[UUID]:
@@ -84,7 +93,7 @@ class CheckoutRepository(
         return (
             joinedload(Checkout.organization).joinedload(Organization.account),
             joinedload(Checkout.customer),
-            joinedload(Checkout.product).options(
+            selectinload(Checkout.product).options(
                 selectinload(Product.product_medias),
                 selectinload(Product.attached_custom_fields),
             ),

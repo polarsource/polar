@@ -440,7 +440,7 @@ class DiscountService(ResourceServiceReader[Discount]):
 
         # Acquire FOR UPDATE lock (we're already inside checkout's transaction)
         try:
-            await repository.get_by_id_for_update(discount.id, nowait=True)
+            await repository.get_by_id(discount.id, for_update=True, nowait=True)
         except DBAPIError as e:
             if is_lock_not_available_error(e):
                 raise DiscountNotRedeemableError(discount) from e

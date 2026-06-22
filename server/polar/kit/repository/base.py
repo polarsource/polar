@@ -1,7 +1,7 @@
 from collections.abc import AsyncGenerator, Sequence
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, Protocol, Self
+from typing import Any, Literal, Protocol, Self, overload
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, select
 from sqlalchemy.orm import Mapped
@@ -201,15 +201,38 @@ class RepositorySoftDeletionMixin[MODEL_DELETED_AT: ModelDeletedAtProtocol]:
 
 
 class RepositoryIDMixin[MODEL_ID: ModelIDProtocol, ID_TYPE]:  # type: ignore[type-arg]
+    @overload
     async def get_by_id(
         self: RepositoryProtocol[MODEL_ID],
         id: ID_TYPE,
         *,
         options: Options = (),
+        for_update: Literal[False] = False,
+    ) -> MODEL_ID | None: ...
+
+    @overload
+    async def get_by_id(
+        self: RepositoryProtocol[MODEL_ID],
+        id: ID_TYPE,
+        *,
+        options: Options = (),
+        for_update: Literal[True],
+        nowait: bool = False,
+    ) -> MODEL_ID | None: ...
+
+    async def get_by_id(
+        self: RepositoryProtocol[MODEL_ID],
+        id: ID_TYPE,
+        *,
+        options: Options = (),
+        for_update: bool = False,
+        nowait: bool = False,
     ) -> MODEL_ID | None:
         statement = (
             self.get_base_statement().where(self.model.id == id).options(*options)
         )
+        if for_update:
+            statement = statement.with_for_update(of=self.model, nowait=nowait)
         return await self.get_one_or_none(statement)
 
 
@@ -217,18 +240,43 @@ class RepositorySoftDeletionIDMixin[
     MODEL_DELETED_AT_ID: ModelDeletedAtIDProtocol,  # type: ignore[type-arg]
     ID_TYPE,
 ]:
+    @overload
     async def get_by_id(
         self: RepositorySoftDeletionProtocol[MODEL_DELETED_AT_ID],
         id: ID_TYPE,
         *,
         options: Options = (),
         include_deleted: bool = False,
+        for_update: Literal[False] = False,
+    ) -> MODEL_DELETED_AT_ID | None: ...
+
+    @overload
+    async def get_by_id(
+        self: RepositorySoftDeletionProtocol[MODEL_DELETED_AT_ID],
+        id: ID_TYPE,
+        *,
+        options: Options = (),
+        include_deleted: bool = False,
+        for_update: Literal[True],
+        nowait: bool = False,
+    ) -> MODEL_DELETED_AT_ID | None: ...
+
+    async def get_by_id(
+        self: RepositorySoftDeletionProtocol[MODEL_DELETED_AT_ID],
+        id: ID_TYPE,
+        *,
+        options: Options = (),
+        include_deleted: bool = False,
+        for_update: bool = False,
+        nowait: bool = False,
     ) -> MODEL_DELETED_AT_ID | None:
         statement = (
             self.get_base_statement(include_deleted=include_deleted)
             .where(self.model.id == id)
             .options(*options)
         )
+        if for_update:
+            statement = statement.with_for_update(of=self.model, nowait=nowait)
         return await self.get_one_or_none(statement)
 
 

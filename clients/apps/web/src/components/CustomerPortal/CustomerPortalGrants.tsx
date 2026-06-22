@@ -44,7 +44,6 @@ export const CustomerPortalGrants = ({
 
   return isSimplifiedView ? (
     <CustomerPortalGrantsSimple
-      organization={organization}
       benefitGrants={initialBenefitGrants}
       api={api}
     />

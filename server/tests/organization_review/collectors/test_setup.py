@@ -3,7 +3,6 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.config import settings
 from polar.organization_review.collectors.firecrawl_client import ScrapeResult
 from polar.organization_review.collectors.setup import (
     _extract_domain,
@@ -579,107 +578,8 @@ class TestResolveUrlRedirects:
         assert results[0].redirected is False
 
 
-class TestResolveRedirectWithBrowserDispatch:
-    """The redirect resolver dispatches to the configured scraper."""
-
-    @pytest.mark.asyncio
-    async def test_defaults_to_firecrawl(self, mocker: MockerFixture) -> None:
-        firecrawl = mocker.patch(
-            "polar.organization_review.collectors.setup._resolve_redirect_firecrawl",
-            new_callable=AsyncMock,
-            return_value=UrlRedirectInfo(original_url="https://example.com/"),
-        )
-        playwright = mocker.patch(
-            "polar.organization_review.collectors.setup._resolve_redirect_playwright",
-            new_callable=AsyncMock,
-        )
-
-        await _resolve_redirect_with_browser("https://example.com/")
-
-        firecrawl.assert_called_once_with("https://example.com/")
-        playwright.assert_not_called()
-
-    @pytest.mark.asyncio
-    async def test_playwright_toggle_uses_playwright(
-        self, mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.setattr(settings, "ORGANIZATION_REVIEW_SCRAPER", "playwright")
-        playwright = mocker.patch(
-            "polar.organization_review.collectors.setup._resolve_redirect_playwright",
-            new_callable=AsyncMock,
-            return_value=UrlRedirectInfo(original_url="https://example.com/"),
-        )
-        firecrawl = mocker.patch(
-            "polar.organization_review.collectors.setup._resolve_redirect_firecrawl",
-            new_callable=AsyncMock,
-        )
-
-        await _resolve_redirect_with_browser("https://example.com/")
-
-        playwright.assert_called_once_with("https://example.com/")
-        firecrawl.assert_not_called()
-
-    @pytest.mark.asyncio
-    async def test_firecrawl_toggle_uses_firecrawl(
-        self, mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.setattr(settings, "ORGANIZATION_REVIEW_SCRAPER", "firecrawl")
-        playwright = mocker.patch(
-            "polar.organization_review.collectors.setup._resolve_redirect_playwright",
-            new_callable=AsyncMock,
-        )
-        firecrawl = mocker.patch(
-            "polar.organization_review.collectors.setup._resolve_redirect_firecrawl",
-            new_callable=AsyncMock,
-            return_value=UrlRedirectInfo(original_url="https://example.com/"),
-        )
-
-        await _resolve_redirect_with_browser("https://example.com/")
-
-        firecrawl.assert_called_once_with("https://example.com/")
-        playwright.assert_not_called()
-
-    @pytest.mark.asyncio
-    async def test_shadow_returns_playwright_runs_both(
-        self, mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.setattr(settings, "ORGANIZATION_REVIEW_SCRAPER", "shadow")
-        playwright_result = UrlRedirectInfo(
-            original_url="https://example.com/",
-            final_url="https://example.com/",
-            final_domain="example.com",
-            redirected=False,
-        )
-        firecrawl_result = UrlRedirectInfo(
-            original_url="https://example.com/",
-            final_url="https://scam.com/",
-            final_domain="scam.com",
-            redirected=True,
-        )
-        playwright = mocker.patch(
-            "polar.organization_review.collectors.setup._resolve_redirect_playwright",
-            new_callable=AsyncMock,
-            return_value=playwright_result,
-        )
-        firecrawl = mocker.patch(
-            "polar.organization_review.collectors.setup._resolve_redirect_firecrawl",
-            new_callable=AsyncMock,
-            return_value=firecrawl_result,
-        )
-
-        result = await _resolve_redirect_with_browser("https://example.com/")
-
-        assert result is playwright_result
-        playwright.assert_called_once()
-        firecrawl.assert_called_once()
-
-
 class TestResolveRedirectFirecrawl:
     """The Firecrawl redirect path compares the post-redirect final domain."""
-
-    @pytest.fixture(autouse=True)
-    def _use_firecrawl(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(settings, "ORGANIZATION_REVIEW_SCRAPER", "firecrawl")
 
     @pytest.mark.asyncio
     async def test_cross_domain_redirect(self, mocker: MockerFixture) -> None:

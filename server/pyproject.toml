@@ -59,7 +59,6 @@ dependencies = [
   "aiocsv>=1.4.1",
   "alembic-utils>=0.8.8",
   "clickhouse-connect[async]>=1.2.0",
-  "playwright>=1.60.0",
   "trafilatura>=2.1.0",
   "firecrawl-py>=4.28.2",
   "polar-sdk==0.31.7",

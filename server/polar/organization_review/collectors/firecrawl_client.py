@@ -1,9 +1,8 @@
 """Thin wrapper around the Firecrawl Cloud `/scrape` endpoint.
 
 Firecrawl renders JavaScript, evades bot/Cloudflare blocks, and uses proxies
-server-side, so it replaces the in-house headless Chromium (Playwright) used by
-the organization-review website collector. The browser egress is now Firecrawl's
-network rather than ours.
+server-side. It backs the JS-render path of the organization-review website
+collector; the browser egress is Firecrawl's network rather than ours.
 """
 
 from __future__ import annotations
@@ -43,9 +42,9 @@ class ScrapeResult:
 def _get_client() -> AsyncFirecrawl:
     """Lazily build a singleton Firecrawl client.
 
-    Imported lazily (and cached) so that importing this module — or running the
-    collector with the Playwright scraper selected — never requires the
-    Firecrawl SDK to be configured. Mirrors the `_get_website_agent` pattern.
+    Imported lazily (and cached) so that importing this module never requires
+    the Firecrawl SDK to be installed until a scrape actually happens. Mirrors
+    the `_get_website_agent` pattern.
     """
     from firecrawl import AsyncFirecrawl
 

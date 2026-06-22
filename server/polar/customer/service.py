@@ -541,6 +541,26 @@ class CustomerService:
 
         return updated_customer
 
+    async def upgrade_to_team(
+        self, session: AsyncSession, customer: Customer
+    ) -> Customer:
+        """Upgrade a customer to the 'team' type for seat-based purchases.
+
+        One-way and idempotent: customers already on 'team' (or any non-individual
+        type) are left untouched. NULL type is treated as 'individual' (legacy
+        customers).
+        """
+        current_type = customer.type or CustomerType.individual
+        if current_type != CustomerType.individual:
+            return customer
+
+        repository = CustomerRepository.from_session(session)
+        return await repository.update(
+            customer,
+            update_dict={"type": CustomerType.team},
+            flush=True,
+        )
+
     async def delete(
         self,
         session: AsyncSession,

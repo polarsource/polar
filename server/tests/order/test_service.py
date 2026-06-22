@@ -59,6 +59,7 @@ from polar.models import (
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
 from polar.models.custom_field import CustomFieldType
+from polar.models.customer import CustomerType
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import Organization, OrganizationStatus
@@ -769,6 +770,60 @@ class TestCreateFromCheckoutOneTime:
         publish_checkout_event_mock.assert_awaited_once_with(
             checkout.client_secret, CheckoutEvent.order_created
         )
+
+    async def test_seat_based_upgrades_customer_to_team(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[("seat", 1000, "usd")],
+        )
+
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+            seats=5,
+        )
+
+        order = await order_service.create_from_checkout_one_time(session, checkout)
+
+        assert order.seats == 5
+        assert order.customer == checkout.customer
+
+        await session.refresh(customer)
+        assert customer.type == CustomerType.team
+
+        # Seat-based orders defer benefit grants until seats are claimed
+        for c in enqueue_job_mock.call_args_list:
+            assert c.args[0] != "benefit.enqueue_benefits_grants"
+
+    async def test_fixed_does_not_upgrade_customer_to_team(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+        )
+
+        await order_service.create_from_checkout_one_time(session, checkout)
+
+        await session.refresh(customer)
+        assert customer.type == CustomerType.individual
 
 
 @pytest.mark.asyncio

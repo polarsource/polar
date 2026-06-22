@@ -626,6 +626,9 @@ class OrderService:
                 product_id=product.id,
                 order_id=order.id,
             )
+        else:
+            # Auto-upgrade customer to 'team' type for seat-based purchases
+            await customer_service.upgrade_to_team(session, order.customer)
 
         # Trigger notifications
         organization = checkout.organization

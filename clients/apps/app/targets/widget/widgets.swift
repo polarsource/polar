@@ -129,8 +129,7 @@ struct Provider: AppIntentTimelineProvider {
         }
         
         let endDate = Date()
-        // days - 1 so the inclusive day range covers exactly `days` days, today included.
-        guard let startDate = Calendar.current.date(byAdding: .day, value: -(days - 1), to: endDate) else {
+        guard let startDate = Calendar.current.date(byAdding: .day, value: -days, to: endDate) else {
             return nil
         }
         
@@ -222,8 +221,7 @@ struct Provider: AppIntentTimelineProvider {
         }
         
         let endDate = Date()
-        // days - 1 so the inclusive day range covers exactly `days` days, today included.
-        guard let startDate = Calendar.current.date(byAdding: .day, value: -(days - 1), to: endDate) else {
+        guard let startDate = Calendar.current.date(byAdding: .day, value: -days, to: endDate) else {
             return nil
         }
         

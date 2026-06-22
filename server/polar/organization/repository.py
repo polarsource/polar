@@ -191,13 +191,18 @@ class OrganizationRepository(
     ) -> Sequence[Organization]:
         """Offboarding orgs whose offboarding period has elapsed.
 
-        The period is measured from the most recent paid order that hasn't been
-        fully refunded (the post-chargeback-risk window). Orgs without such an
-        order fall back to when they entered offboarding (``status_updated_at``).
+        Anchor = the later of (a) the most recent paid order that hasn't been
+        fully refunded — the post-chargeback-risk window, and (b) when the org
+        entered offboarding (``status_updated_at``) — the merchant wind-down
+        floor. Both gates must clear, so a merchant freshly put into
+        offboarding always gets the full wind-down period even if their last
+        payment is already past the chargeback window. Orgs with no paid
+        orders use ``status_updated_at`` alone (PostgreSQL ``GREATEST`` skips
+        NULLs).
 
         ``FOR UPDATE`` on the org row: a concurrent admin status change either
-        commits before our SELECT (and the row falls out of the WHERE clause) or
-        waits behind our lock — eliminating the read/transition race.
+        commits before our SELECT (and the row falls out of the WHERE clause)
+        or waits behind our lock — eliminating the read/transition race.
         """
         last_paid_order_at = (
             select(func.max(Order.created_at))
@@ -209,7 +214,7 @@ class OrganizationRepository(
             .correlate(Organization)
             .scalar_subquery()
         )
-        anchor = func.coalesce(last_paid_order_at, Organization.status_updated_at)
+        anchor = func.greatest(last_paid_order_at, Organization.status_updated_at)
         statement = (
             self.get_base_statement()
             .where(

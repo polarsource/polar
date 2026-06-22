@@ -3921,7 +3921,7 @@ class TestOffboardExpiredOrganizations:
         )
         await save_fixture(organization)
 
-    async def test_old_paid_order_transitions(
+    async def test_both_anchors_old_transitions(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -3929,8 +3929,10 @@ class TestOffboardExpiredOrganizations:
         organization: Organization,
         customer: Customer,
     ) -> None:
+        # Both gates clear: chargeback window expired and merchant has had
+        # their wind-down period in offboarding.
         await self._make_offboarding(
-            save_fixture, organization, status_updated_days_ago=10
+            save_fixture, organization, status_updated_days_ago=121
         )
         await create_order(
             save_fixture,
@@ -3948,6 +3950,31 @@ class TestOffboardExpiredOrganizations:
         enqueue_job_mock.assert_called_once_with(
             "organization.offboarded", organization_id=organization.id
         )
+
+    async def test_old_paid_order_but_recent_offboarding_skipped(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # Regression: an org freshly put into offboarding must still get its
+        # full wind-down period even if its last payment is already past the
+        # chargeback window. Anchor = MAX(last_paid, status_updated_at).
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=4
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.paid,
+            created_at=datetime.now(UTC) - timedelta(days=149),
+        )
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert result == []
+        assert organization.status == OrganizationStatus.OFFBOARDING
 
     async def test_recent_paid_order_skipped(
         self,
@@ -4052,6 +4079,31 @@ class TestOffboardExpiredOrganizations:
     ) -> None:
         await self._make_offboarding(
             save_fixture, organization, status_updated_days_ago=10
+        )
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert result == []
+        assert organization.status == OrganizationStatus.OFFBOARDING
+
+    async def test_old_offboarding_recent_paid_order_skipped(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # Mirror of the resumeset case: chargeback gate clears (offboarding is
+        # ancient) but the merchant just took a payment, so we must wait
+        # another 120 days from that payment before the terminal transition.
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=200
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.paid,
+            created_at=datetime.now(UTC) - timedelta(days=4),
         )
 
         result = await organization_service.offboard_expired_organizations(session)

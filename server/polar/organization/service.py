@@ -1423,7 +1423,9 @@ class OrganizationService:
         """Auto-transition offboarding orgs to the terminal offboarded state.
 
         Run periodically by a worker once the offboarding period has elapsed
-        since the org's last paid order. Returns the orgs transitioned.
+        since both the org's last paid order (chargeback safety) and its
+        entry into offboarding (merchant wind-down floor). Returns the orgs
+        transitioned.
         """
         repository = OrganizationRepository.from_session(session)
         cutoff = datetime.now(UTC) - settings.ORGANIZATION_OFFBOARDING_PERIOD

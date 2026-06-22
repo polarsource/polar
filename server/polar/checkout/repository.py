@@ -1,3 +1,4 @@
+import typing
 from uuid import UUID
 
 from sqlalchemy import Select, update
@@ -32,14 +33,41 @@ class CheckoutRepository(
 ):
     model = Checkout
 
+    @typing.overload
     async def get_by_client_secret(
-        self, client_secret: str, *, options: Options = ()
+        self,
+        client_secret: str,
+        *,
+        options: Options = (),
+        for_update: typing.Literal[False] = False,
+    ) -> Checkout: ...
+
+    @typing.overload
+    async def get_by_client_secret(
+        self,
+        client_secret: str,
+        *,
+        options: Options = (),
+        for_update: typing.Literal[True],
+        nowait: bool = False,
+    ) -> Checkout | None: ...
+
+    async def get_by_client_secret(
+        self,
+        client_secret: str,
+        *,
+        options: Options = (),
+        for_update: bool = False,
+        nowait: bool = False,
     ) -> Checkout | None:
         statement = (
             self.get_base_statement()
             .where(Checkout.client_secret == client_secret)
             .options(*options)
         )
+        if for_update:
+            statement = statement.with_for_update(of=Checkout, nowait=nowait)
+
         return await self.get_one_or_none(statement)
 
     async def expire_open_checkouts(self) -> list[UUID]:
@@ -65,7 +93,7 @@ class CheckoutRepository(
         return (
             joinedload(Checkout.organization).joinedload(Organization.account),
             joinedload(Checkout.customer),
-            joinedload(Checkout.product).options(
+            selectinload(Checkout.product).options(
                 selectinload(Product.product_medias),
                 selectinload(Product.attached_custom_fields),
             ),

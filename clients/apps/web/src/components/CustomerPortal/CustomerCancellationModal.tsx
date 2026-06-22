@@ -47,21 +47,18 @@ interface CustomerCancellationModalProps extends Omit<
 > {
   subscription: schemas['CustomerSubscription']
   cancelSubscription: ReturnType<typeof useCustomerCancelSubscription>
-  onAbort?: () => void
 }
 
 const CustomerCancellationModal = ({
   subscription,
   cancelSubscription,
-  onAbort,
   ...props
 }: CustomerCancellationModalProps) => {
   const router = useRouter()
 
   const handleCancel = useCallback(() => {
-    onAbort?.()
     props.hide()
-  }, [onAbort, props])
+  }, [props])
 
   const form = useForm<schemas['CustomerSubscriptionCancel']>({
     defaultValues: {

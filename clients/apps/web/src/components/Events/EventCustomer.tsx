@@ -1,5 +1,6 @@
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { getAnonymousCustomerName } from '@/utils/anonymous-customer'
+import { buildCustomerDashboardPath } from '@/utils/customer'
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
@@ -111,7 +112,10 @@ export const EventCustomer = ({ event }: { event: schemas['Event'] }) => {
           </div>
           <div className="">
             <Link
-              href={`/dashboard/${organization.slug}/customers/${event.customer.id}?query=${event.customer.email}`}
+              href={buildCustomerDashboardPath(
+                organization.slug,
+                event.customer,
+              )}
             >
               <Button fullWidth variant="secondary" size="sm">
                 View Customer

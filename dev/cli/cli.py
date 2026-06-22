@@ -5,6 +5,9 @@
 #     "typer>=0.12.0",
 #     "rich>=13.0.0",
 #     "python-dotenv>=1.0.0",
+#     "inquirerpy>=0.3.4",
+#     "pillow>=10.0.0",
+#     "numpy>=1.26.0",
 # ]
 # ///
 """

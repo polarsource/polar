@@ -79,6 +79,8 @@ graph LR
 | Subscription | Paid plan on the organization | Created per organization when they pick a plan. The free tier is synthesized client-side, not a real subscription. |
 | Metering event | Batch of ingested events | `external_customer_id = str(organization.id)` |
 
+Org roles map to member roles so that billing permissions align: `owner` and `admin` become `billing_manager`, `member` stays `member`. This ensures org owners/admins can manage billing details in the customer portal.
+
 ## Webhooks
 
 To handle changes for the customer in Polar (e.g. purchase, cancelation, etc), the Polar application will listen to webhooks from Polar.

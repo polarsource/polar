@@ -631,6 +631,10 @@ class TestFetchPageSSRF:
 
 
 class TestBrowsePageSSRF:
+    @pytest.fixture(autouse=True)
+    def _use_playwright(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(settings, "ORGANIZATION_REVIEW_SCRAPER", "playwright")
+
     @pytest.mark.asyncio
     async def test_blocks_initial_ssrf(self) -> None:
         """browse_page should block a URL that resolves to a private IP."""

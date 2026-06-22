@@ -280,12 +280,11 @@ jobs:
         id: push-lambda-worker
         with:
           push: true
-          # Sandbox/prod repos — add into the tags block once they exist:
-          #   ${{ steps.login-ecr.outputs.registry }}/polar-sandbox-lambda-worker:sha-${{ github.sha }}
+          # Prod repo — add into the tags block once it exists:
           #   ${{ steps.login-ecr.outputs.registry }}/polar-production-lambda-worker:sha-${{ github.sha }}
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/polar-test-lambda-worker:sha-${{ github.sha }}
-            ${{ steps.login-ecr.outputs.registry }}/polar-test-lambda-worker:latest
+            ${{ steps.login-ecr.outputs.registry }}/polar-sandbox-lambda-worker:sha-${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/polar-sandbox-lambda-worker:latest
           context: ./server
           target: lambda
           platforms: linux/amd64

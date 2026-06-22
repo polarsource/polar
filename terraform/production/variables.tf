@@ -404,6 +404,12 @@ variable "tailscale_advertise_routes" {
   type        = string
 }
 
+# variable "lambda_worker_tailscale_token" {
+#   description = "Tailscale auth token for production Lambda workers"
+#   type        = string
+#   sensitive   = true
+# }
+
 variable "plain_default_tier_external_id" {
   description = "Default Plain tier external ID used as a fallback for the polar-self support benefit"
   type        = string

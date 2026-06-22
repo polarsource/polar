@@ -106,6 +106,12 @@ variable "backend_jwks_sandbox" {
   sensitive   = true
 }
 
+variable "lambda_worker_tailscale_token" {
+  description = "Tailscale auth token for sandbox Lambda workers"
+  type        = string
+  sensitive   = true
+}
+
 # AWS S3 - Sandbox
 variable "aws_access_key_id_sandbox" {
   description = "AWS Access Key ID for sandbox"

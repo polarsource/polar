@@ -132,6 +132,14 @@ resource "tfe_variable" "backend_jwks_sandbox" {
   variable_set_id = tfe_variable_set.sandbox.id
 }
 
+resource "tfe_variable" "lambda_worker_tailscale_token_sandbox" {
+  key             = "lambda_worker_tailscale_token"
+  category        = "terraform"
+  description     = "Tailscale auth token for sandbox Lambda workers"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
 resource "tfe_variable" "aws_access_key_id_sandbox" {
   key             = "aws_access_key_id_sandbox"
   category        = "terraform"

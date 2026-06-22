@@ -59,9 +59,7 @@ class ResourceRepository(
         if is_user(auth_subject):
             statement = statement.where(
                 Resource.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == auth_subject.subject.id
-                    )
+                    select_user_org_ids(auth_subject.subject.id)
                 )
             )
         elif is_organization(auth_subject):
@@ -75,6 +73,13 @@ class ResourceRepository(
         statement = self.get_base_statement().where(Resource.slug == slug)
         return await self.get_one_or_none(statement)
 ```
+
+**Always resolve a user's organizations via `select_user_org_ids(auth_subject.subject.id)`**
+(`polar.authz.repository`) for subqueries, or `get_accessible_org_ids(...)`
+(`polar.authz.service`) at the service layer. Never inline a
+`UserOrganization.user_id == auth_subject...` filter — those helpers are the
+single point where session/token org-scoping is enforced, so an inline subquery
+silently bypasses it. Enforced by `uv run task lint_org_scope`.
 
 **Key methods from base:**
 - `get_base_statement()` - Returns `select(self.model)`

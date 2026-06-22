@@ -416,11 +416,14 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         if discount is not None:
             amount -= discount.get_discount_amount(amount, self.currency)
 
-        # Preserve the tax ratio implied by the current amount/net_amount pair:
-        # the tax rate for the same customer and product is unchanged, so reapply
-        # the previous fraction to the new amount. With no prior ratio (creation,
-        # or a free subscription becoming paid) we fall back to gross, and the
-        # next order derives the real net.
+        # Preserve the net/gross ratio across the amount change. The customer's
+        # effective tax rate is fixed (single tax code, stable address) and recurring
+        # orders bill against subscription.tax_behavior, which is pinned at creation —
+        # so the ratio the first charge established stays valid even across plan
+        # changes. Cold start (creation, or free becoming paid) has no ratio: fall
+        # back to gross and let the next order derive the real net.
+        # TODO: once a plan change can move subscription.tax_behavior, reset to gross
+        # when the new behavior isn't inclusive instead of carrying the old ratio.
         previous_amount = self.amount
         previous_net_amount = self.net_amount
         self.amount = amount

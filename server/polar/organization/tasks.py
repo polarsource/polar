@@ -102,7 +102,9 @@ async def organization_offboarded(organization_id: uuid.UUID) -> None:
     """Notify an organization's members that it has been offboarded."""
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
-        organization = await repository.get_by_id(organization_id)
+        # include_blocked: an admin may block the org between the offboard
+        # transition and this task running; we still want to send the email.
+        organization = await repository.get_by_id(organization_id, include_blocked=True)
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
 

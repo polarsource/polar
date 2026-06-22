@@ -115,6 +115,8 @@ class TestOrganizationOffboarded:
         await organization_offboarded(organization.id)
 
         enqueue_email_mock.assert_called_once()
-        _, kwargs = enqueue_email_mock.call_args
+        args, kwargs = enqueue_email_mock.call_args
         assert kwargs["to_email_addr"] == user.email
         assert organization.name in kwargs["subject"]
+        email = args[0]
+        assert email.props.account_url == organization.account_url

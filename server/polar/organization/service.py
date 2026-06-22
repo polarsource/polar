@@ -1430,9 +1430,12 @@ class OrganizationService:
         candidates = await repository.get_offboarding_past_period(cutoff)
         transitioned: list[Organization] = []
         for organization in candidates:
-            # Skip if a concurrent admin action already moved the org out of
-            # OFFBOARDING — set_status would raise InvalidStatusTransitionError
-            # and abort the whole batch otherwise.
+            # Lock the row and re-read status so a concurrent admin action that
+            # moved the org out of OFFBOARDING between the candidate query and
+            # here isn't clobbered with the terminal OFFBOARDED state.
+            await session.refresh(
+                organization, attribute_names=["status"], with_for_update=True
+            )
             if organization.status != OrganizationStatus.OFFBOARDING:
                 continue
             organization.set_status(OrganizationStatus.OFFBOARDED)

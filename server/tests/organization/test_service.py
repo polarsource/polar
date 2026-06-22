@@ -4026,6 +4026,7 @@ class TestOffboardExpiredOrganizations:
 
     async def test_no_orders_uses_status_updated_at(
         self,
+        mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -4033,11 +4034,15 @@ class TestOffboardExpiredOrganizations:
         await self._make_offboarding(
             save_fixture, organization, status_updated_days_ago=121
         )
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
 
         result = await organization_service.offboard_expired_organizations(session)
 
         assert len(result) == 1
         assert result[0].status == OrganizationStatus.OFFBOARDED
+        enqueue_job_mock.assert_called_once_with(
+            "organization.offboarded", organization_id=organization.id
+        )
 
     async def test_recent_offboarding_no_orders_skipped(
         self,

@@ -247,6 +247,11 @@ class Settings(BaseSettings):
         "playwright"
     )
 
+    # How long an organization stays in `offboarding` before it automatically
+    # transitions to the terminal `offboarded` state. Measured from the last paid
+    # (not fully refunded) order, i.e. the post-chargeback-risk wind-down window.
+    ORGANIZATION_OFFBOARDING_PERIOD: timedelta = timedelta(days=120)
+
     # Stripe
     STRIPE_SECRET_KEY: str = ""
     STRIPE_PUBLISHABLE_KEY: str = ""

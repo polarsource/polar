@@ -438,6 +438,8 @@ async def list_organizations(
         status_filter = OrganizationStatus.CREATED
     elif status == "offboarding":
         status_filter = OrganizationStatus.OFFBOARDING
+    elif status == "offboarded":
+        status_filter = OrganizationStatus.OFFBOARDED
     elif status == "review":
         status_filter = OrganizationStatus.REVIEW
     elif status == "snoozed":
@@ -467,12 +469,14 @@ async def list_organizations(
         # typically live on denied organizations.
         stmt = stmt.where(Organization.id.in_(open_case_organization_ids()))
     elif not q:
-        # By default, exclude denied and blocked organizations (but not when searching)
+        # By default, exclude denied, blocked, and offboarded organizations
+        # (terminal states with their own tabs) — but not when searching.
         stmt = stmt.where(
             Organization.status.notin_(
                 [
                     OrganizationStatus.DENIED,
                     OrganizationStatus.BLOCKED,
+                    OrganizationStatus.OFFBOARDED,
                 ]
             )
         )

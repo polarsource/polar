@@ -42,18 +42,25 @@ export const AccountPageRouter = ({
     reviewStatus?.verdict === 'PASS' &&
     reviewStatus?.reason === 'Grandfathered organization'
   const isDenied = organization.status === 'denied'
-  const isActive = ['active', 'review', 'snoozed'].includes(organization.status)
+  // Statuses that retain payout/account access. Includes the terminal
+  // `offboarded` state, where the merchant withdraws their remaining balance.
+  const hasAccountAccess = [
+    'active',
+    'review',
+    'snoozed',
+    'offboarded',
+  ].includes(organization.status)
   const hasSubmittedDetails = !!organization.details_submitted_at
 
   const requireDetails =
     !hasSubmittedDetails &&
-    (!isGrandfathered || (isGrandfathered && !isActive && !isDenied))
+    (!isGrandfathered || (isGrandfathered && !hasAccountAccess && !isDenied))
 
   const isApproved = isDenied
     ? false
     : reviewStatus?.verdict === 'PASS' ||
       reviewStatus?.appeal_decision === 'approved' ||
-      isActive
+      hasAccountAccess
 
   if (requireDetails) {
     return <AccountPageDetailsRequired organization={organization} />

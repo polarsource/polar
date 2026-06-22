@@ -1417,6 +1417,34 @@ class OrganizationService:
             transitioned.append(organization)
         return transitioned
 
+    async def offboard_expired_organizations(
+        self, session: AsyncSession
+    ) -> Sequence[Organization]:
+        """Auto-transition offboarding orgs to the terminal offboarded state.
+
+        Run periodically by a worker once the offboarding period has elapsed
+        since both the org's last paid order (chargeback safety) and its
+        entry into offboarding (merchant wind-down floor). Returns the orgs
+        transitioned.
+        """
+        repository = OrganizationRepository.from_session(session)
+        cutoff = datetime.now(UTC) - settings.ORGANIZATION_OFFBOARDING_PERIOD
+        # The candidate query takes FOR UPDATE on each org row, so a concurrent
+        # admin status change either falls out of the WHERE clause or waits
+        # behind our lock — no per-row re-check needed.
+        candidates = await repository.get_offboarding_past_period(cutoff)
+        transitioned: list[Organization] = []
+        for organization in candidates:
+            organization.set_status(OrganizationStatus.OFFBOARDED)
+            _append_internal_note(
+                organization,
+                "Automatically offboarded after the offboarding period elapsed.",
+            )
+            session.add(organization)
+            enqueue_job("organization.offboarded", organization_id=organization.id)
+            transitioned.append(organization)
+        return transitioned
+
     async def _exit_snooze_to_review(
         self, session: AsyncSession, organization: Organization
     ) -> None:

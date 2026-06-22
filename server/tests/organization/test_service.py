@@ -22,6 +22,7 @@ from polar.models import Customer, Organization, Product, User, UserOrganization
 from polar.models.account import Account
 from polar.models.benefit import BenefitType
 from polar.models.member import MemberRole
+from polar.models.order import OrderStatus
 from polar.models.organization import (
     STATUS_CAPABILITIES,
     InvalidStatusTransitionError,
@@ -38,6 +39,7 @@ from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import (
+    LegacyOrganizationStatus,
     OrganizationCreate,
     OrganizationDetails,
     OrganizationFeatureSettingsUpdate,
@@ -3905,6 +3907,212 @@ class TestUnsnoozeExpiredOrganizations:
 
 
 @pytest.mark.asyncio
+class TestOffboardExpiredOrganizations:
+    async def _make_offboarding(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        *,
+        status_updated_days_ago: int,
+    ) -> None:
+        organization.status = OrganizationStatus.OFFBOARDING
+        organization.status_updated_at = datetime.now(UTC) - timedelta(
+            days=status_updated_days_ago
+        )
+        await save_fixture(organization)
+
+    async def test_both_anchors_old_transitions(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # Both gates clear: chargeback window expired and merchant has had
+        # their wind-down period in offboarding.
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=121
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.paid,
+            created_at=datetime.now(UTC) - timedelta(days=121),
+        )
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert len(result) == 1
+        assert result[0].id == organization.id
+        assert result[0].status == OrganizationStatus.OFFBOARDED
+        enqueue_job_mock.assert_called_once_with(
+            "organization.offboarded", organization_id=organization.id
+        )
+
+    async def test_old_paid_order_but_recent_offboarding_skipped(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # Regression: an org freshly put into offboarding must still get its
+        # full wind-down period even if its last payment is already past the
+        # chargeback window. Anchor = MAX(last_paid, status_updated_at).
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=4
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.paid,
+            created_at=datetime.now(UTC) - timedelta(days=149),
+        )
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert result == []
+        assert organization.status == OrganizationStatus.OFFBOARDING
+
+    async def test_recent_paid_order_skipped(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # Old offboarding date, but a recent paid order anchors the window.
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=200
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.paid,
+            created_at=datetime.now(UTC) - timedelta(days=10),
+        )
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert result == []
+        assert organization.status == OrganizationStatus.OFFBOARDING
+
+    async def test_partially_refunded_recent_order_skipped(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # Partially refunded orders still count as paid-and-not-fully-refunded.
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=200
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.partially_refunded,
+            created_at=datetime.now(UTC) - timedelta(days=10),
+        )
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert result == []
+        assert organization.status == OrganizationStatus.OFFBOARDING
+
+    async def test_fully_refunded_order_falls_back_to_status_updated_at(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # A fully refunded order is ignored, so the window falls back to the
+        # offboarding-entry date, which is old enough here.
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=121
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.refunded,
+            created_at=datetime.now(UTC) - timedelta(days=1),
+        )
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert len(result) == 1
+        assert result[0].status == OrganizationStatus.OFFBOARDED
+        enqueue_job_mock.assert_called_once_with(
+            "organization.offboarded", organization_id=organization.id
+        )
+
+    async def test_no_orders_uses_status_updated_at(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=121
+        )
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert len(result) == 1
+        assert result[0].status == OrganizationStatus.OFFBOARDED
+        enqueue_job_mock.assert_called_once_with(
+            "organization.offboarded", organization_id=organization.id
+        )
+
+    async def test_recent_offboarding_no_orders_skipped(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=10
+        )
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert result == []
+        assert organization.status == OrganizationStatus.OFFBOARDING
+
+    async def test_old_offboarding_recent_paid_order_skipped(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # Mirror of the resumeset case: chargeback gate clears (offboarding is
+        # ancient) but the merchant just took a payment, so we must wait
+        # another 120 days from that payment before the terminal transition.
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=200
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.paid,
+            created_at=datetime.now(UTC) - timedelta(days=4),
+        )
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert result == []
+        assert organization.status == OrganizationStatus.OFFBOARDING
+
+
+@pytest.mark.asyncio
 class TestSetPayoutAccount:
     @pytest.mark.auth
     async def test_set_payout_account_on_organization(
@@ -4035,6 +4243,22 @@ class TestSetPayoutAccount:
         assert cancel_calls == []
 
 
+class TestLegacyOrganizationStatus:
+    @pytest.mark.parametrize("status", list(OrganizationStatus))
+    def test_from_status_covers_every_status(self, status: OrganizationStatus) -> None:
+        # Every status must map to a legacy value — a missing entry would 500
+        # when serializing the org through the public schema.
+        assert isinstance(
+            LegacyOrganizationStatus.from_status(status), LegacyOrganizationStatus
+        )
+
+    def test_offboarded_maps_to_denied(self) -> None:
+        assert (
+            LegacyOrganizationStatus.from_status(OrganizationStatus.OFFBOARDED)
+            == LegacyOrganizationStatus.DENIED
+        )
+
+
 @pytest.mark.asyncio
 class TestStatusTransitions:
     """Tests for the organization status transition rules enforced in
@@ -4049,6 +4273,7 @@ class TestStatusTransitions:
             OrganizationStatus.ACTIVE,
             OrganizationStatus.DENIED,
             OrganizationStatus.OFFBOARDING,
+            OrganizationStatus.OFFBOARDED,
         ],
     )
     async def test_every_status_can_go_to_blocked(
@@ -4059,6 +4284,47 @@ class TestStatusTransitions:
         organization.status = current
         organization.set_status(OrganizationStatus.BLOCKED)
         assert organization.status == OrganizationStatus.BLOCKED
+
+    async def test_offboarding_can_go_to_offboarded(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.OFFBOARDING
+        organization.set_status(OrganizationStatus.OFFBOARDED)
+        assert organization.status == OrganizationStatus.OFFBOARDED
+        assert (
+            organization.capabilities
+            == STATUS_CAPABILITIES[OrganizationStatus.OFFBOARDED]
+        )
+
+    async def test_offboarded_enables_payout_blocks_payments(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.OFFBOARDING
+        organization.set_status(OrganizationStatus.OFFBOARDED)
+        assert organization.can_payout is True
+        assert organization.can_accept_payments is False
+        assert organization.can_renew_subscriptions is False
+        assert organization.can_refund is False
+
+    @pytest.mark.parametrize(
+        "target",
+        [
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.OFFBOARDING,
+        ],
+    )
+    async def test_offboarded_is_terminal_except_blocked(
+        self,
+        target: OrganizationStatus,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.OFFBOARDED
+        with pytest.raises(InvalidStatusTransitionError):
+            organization.set_status(target)
 
     async def test_review_can_go_to_offboarding(
         self,

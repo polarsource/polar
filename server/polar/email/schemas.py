@@ -37,6 +37,7 @@ class EmailTemplate(StrEnum):
     organization_access_token_leaked = "organization_access_token_leaked"
     organization_invite = "organization_invite"
     organization_account_unlink = "organization_account_unlink"
+    organization_offboarded = "organization_offboarded"
     support_case_organization_new_message = "support_case_organization_new_message"
     personal_access_token_leaked = "personal_access_token_leaked"
     seat_invitation = "seat_invitation"
@@ -480,6 +481,18 @@ class OrganizationAccountUnlinkEmail(BaseModel):
     props: OrganizationAccountUnlinkProps
 
 
+class OrganizationOffboardedProps(EmailProps):
+    organization_name: str
+    account_url: str
+
+
+class OrganizationOffboardedEmail(BaseModel):
+    template: Literal[EmailTemplate.organization_offboarded] = (
+        EmailTemplate.organization_offboarded
+    )
+    props: OrganizationOffboardedProps
+
+
 Email = Annotated[
     LoginCodeEmail
     | CustomerEmailChangedNotificationEmail
@@ -492,6 +505,7 @@ Email = Annotated[
     | OrganizationAccessTokenLeakedEmail
     | OrganizationInviteEmail
     | OrganizationAccountUnlinkEmail
+    | OrganizationOffboardedEmail
     | SupportCaseOrganizationNewMessageEmail
     | PersonalAccessTokenLeakedEmail
     | SeatInvitationEmail

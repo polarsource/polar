@@ -25807,6 +25807,7 @@ export interface components {
       | 'active'
       | 'blocked'
       | 'offboarding'
+      | 'offboarded'
     /** OrganizationSubscription */
     OrganizationSubscription: {
       /**
@@ -58771,6 +58772,7 @@ export const organizationStatusValues: ReadonlyArray<
   'active',
   'blocked',
   'offboarding',
+  'offboarded',
 ]
 export const organizationSubscriptionSettingsProration_behaviorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationSubscriptionSettings']['proration_behavior']

@@ -29,6 +29,7 @@ from polar.models.discount import (
     DiscountPercentage,
     DiscountType,
 )
+from polar.models.order import OrderStatus
 from polar.models.organization import (
     OrganizationCapabilities,
     OrganizationStatus,
@@ -43,6 +44,9 @@ from .sorting import OrganizationSortProperty
 # Maximum orgs the unsnooze cron processes per run. Bounds worst-case
 # transaction size when many time-based snoozes expire in the same window.
 UNSNOOZE_EXPIRED_BATCH_SIZE = 500
+
+# Maximum orgs the auto-offboard cron processes per run.
+OFFBOARD_EXPIRED_BATCH_SIZE = 500
 
 
 class OrganizationRepository(
@@ -179,6 +183,47 @@ class OrganizationRepository(
             )
             .order_by(Organization.snoozed_until.asc())
             .limit(limit)
+        )
+        return await self.get_all(statement)
+
+    async def get_offboarding_past_period(
+        self, cutoff: datetime, *, limit: int = OFFBOARD_EXPIRED_BATCH_SIZE
+    ) -> Sequence[Organization]:
+        """Offboarding orgs whose offboarding period has elapsed.
+
+        Anchor = the later of (a) the most recent paid order that hasn't been
+        fully refunded — the post-chargeback-risk window, and (b) when the org
+        entered offboarding (``status_updated_at``) — the merchant wind-down
+        floor. Both gates must clear, so a merchant freshly put into
+        offboarding always gets the full wind-down period even if their last
+        payment is already past the chargeback window. Orgs with no paid
+        orders use ``status_updated_at`` alone (PostgreSQL ``GREATEST`` skips
+        NULLs).
+
+        ``FOR UPDATE`` on the org row: a concurrent admin status change either
+        commits before our SELECT (and the row falls out of the WHERE clause)
+        or waits behind our lock — eliminating the read/transition race.
+        """
+        last_paid_order_at = (
+            select(func.max(Order.created_at))
+            .where(
+                Order.organization_id == Organization.id,
+                Order.status.in_((OrderStatus.paid, OrderStatus.partially_refunded)),
+                Order.deleted_at.is_(None),
+            )
+            .correlate(Organization)
+            .scalar_subquery()
+        )
+        anchor = func.greatest(last_paid_order_at, Organization.status_updated_at)
+        statement = (
+            self.get_base_statement()
+            .where(
+                Organization.status == OrganizationStatus.OFFBOARDING,
+                anchor <= cutoff,
+            )
+            .order_by(anchor.asc())
+            .limit(limit)
+            .with_for_update(of=Organization)
         )
         return await self.get_all(statement)
 

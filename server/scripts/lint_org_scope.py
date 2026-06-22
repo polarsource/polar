@@ -23,6 +23,7 @@ Exits 1 on any violation.
 from __future__ import annotations
 
 import ast
+import re
 import sys
 from pathlib import Path
 
@@ -30,14 +31,22 @@ NOQA_MARKER = "org-scope"
 MODEL_NAME = "UserOrganization"
 SUBJECT_NAME = "auth_subject"
 
+# Matches `# noqa` optionally followed by `: code1, code2`. A bare `# noqa`
+# suppresses everything; a coded form only suppresses the listed codes.
+_NOQA_RE = re.compile(r"#\s*noqa(?::\s*(?P<codes>[^#]*))?", re.IGNORECASE)
+
 
 def _is_model_attr(node: ast.AST) -> bool:
-    """True for `UserOrganization.<attr>` (e.g. `UserOrganization.user_id`)."""
-    return (
-        isinstance(node, ast.Attribute)
-        and isinstance(node.value, ast.Name)
-        and node.value.id == MODEL_NAME
-    )
+    """True for `UserOrganization.<attr>`, including a module-qualified base
+    (e.g. `UserOrganization.user_id` or `models.UserOrganization.user_id`)."""
+    if not isinstance(node, ast.Attribute):
+        return False
+    base = node.value
+    if isinstance(base, ast.Name):
+        return base.id == MODEL_NAME
+    if isinstance(base, ast.Attribute):
+        return base.attr == MODEL_NAME
+    return False
 
 
 def _references_subject(node: ast.AST) -> bool:
@@ -50,7 +59,15 @@ def _references_subject(node: ast.AST) -> bool:
 
 def _line_has_noqa(source_lines: list[str], lineno: int) -> bool:
     idx = lineno - 1
-    return 0 <= idx < len(source_lines) and NOQA_MARKER in source_lines[idx]
+    if not (0 <= idx < len(source_lines)):
+        return False
+    match = _NOQA_RE.search(source_lines[idx])
+    if match is None:
+        return False
+    codes = match.group("codes")
+    if codes is None:  # bare `# noqa` suppresses everything
+        return True
+    return NOQA_MARKER in {code.strip() for code in codes.split(",")}
 
 
 def check_file(path: Path) -> list[tuple[Path, int, str]]:

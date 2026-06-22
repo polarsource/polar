@@ -30,13 +30,14 @@ module "lambda_worker_ecr" {
 module "dummy_lambda_worker" {
   source = "../modules/aws_task_worker"
 
-  environment        = "sandbox"
-  name               = "dummy"
-  queue_name         = "polar-sandbox-tasks-dummy"
-  image_uri          = "${module.lambda_worker_ecr.repository_url}:latest"
-  enabled            = false
-  subnet_ids         = local.lambda_subnet_ids
-  security_group_ids = local.lambda_security_group_ids
+  environment          = "sandbox"
+  name                 = "dummy"
+  queue_name           = "polar-sandbox-tasks-dummy"
+  image_uri            = "${module.lambda_worker_ecr.repository_url}:latest"
+  enabled              = false
+  reserved_concurrency = null
+  subnet_ids           = local.lambda_subnet_ids
+  security_group_ids   = local.lambda_security_group_ids
 
   environment_variables = {
     POLAR_ENV                     = "sandbox"

@@ -75,6 +75,12 @@ export const useAupValidation = () => {
         message?: string
       } = await res.json()
 
+      console.log('[AUP validation] response:', data, {
+        product_description,
+        selling_categories,
+        pricing_models,
+      })
+
       if (data.verdict === 'DENY' || data.verdict === 'CLARIFY') {
         setHistory((prev) => [
           ...prev,

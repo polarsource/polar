@@ -20,7 +20,7 @@ export const DisputeStatusDisplayColor: Record<
   prevented: 'green',
   early_warning: 'yellow',
   needs_response: 'yellow',
-  under_review: 'yellow',
+  under_review: 'blue',
   won: 'green',
   lost: 'red',
 }

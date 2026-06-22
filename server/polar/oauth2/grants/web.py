@@ -117,6 +117,7 @@ class WebGrant(BaseGrant, TokenEndpointMixin):
                 select_user_org_ids(
                     user.id,
                     permission=OrganizationPermission.organization_manage,
+                    scoped_to=None,
                 )
             ),
         )

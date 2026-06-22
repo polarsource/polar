@@ -278,6 +278,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
                     select_user_org_ids(
                         auth_subject.subject.id,
                         permission=OrganizationPermission.custom_fields_read,
+                        scoped_to=auth_subject.organization_ids,
                     )
                 )
             )

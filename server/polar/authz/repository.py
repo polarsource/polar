@@ -13,6 +13,7 @@ def select_user_org_ids(
     user_id: UUID,
     *,
     permission: OrganizationPermission | None = None,
+    scoped_to: frozenset[UUID] | None,
 ) -> Select[tuple[UUID]]:
     """SQL `SELECT` of organization IDs the user is a member of.
 
@@ -24,6 +25,12 @@ def select_user_org_ids(
     when building auth-aware repository statements. When ``permission`` is
     provided, results are restricted to organizations where the user's role
     grants that permission.
+
+    ``scoped_to`` is the session/token down-scope (``AuthSubject.organization_ids``)
+    and is **required** — a caller must consciously forward the subject's scope,
+    or pass ``None`` to opt out (unrestricted). When a set is given, results are
+    intersected with it. Making it required keeps the filter fail-closed: a
+    forgotten argument is a type error, not a silent all-orgs leak.
     """
     stmt = (
         select(UserOrganization.organization_id)
@@ -36,6 +43,8 @@ def select_user_org_ids(
     )
     if permission is not None:
         stmt = stmt.where(UserOrganization.role.in_(roles_with_permission(permission)))
+    if scoped_to is not None:
+        stmt = stmt.where(UserOrganization.organization_id.in_(scoped_to))
     return stmt
 
 
@@ -52,14 +61,17 @@ class AuthzRepository:
         user_id: UUID,
         *,
         permission: OrganizationPermission | None = None,
+        scoped_to: frozenset[UUID] | None,
     ) -> set[UUID]:
         """Get accessible organization IDs a user is a member of.
 
         When ``permission`` is provided, results are further restricted to
-        organizations where the user's role grants that permission.
+        organizations where the user's role grants that permission. ``scoped_to``
+        is the required session/token down-scope (pass ``None`` to opt out);
+        results are intersected with it when a set is given.
         """
         result = await self.session.scalars(
-            select_user_org_ids(user_id, permission=permission)
+            select_user_org_ids(user_id, permission=permission, scoped_to=scoped_to)
         )
         return set(result.all())
 
@@ -80,7 +92,12 @@ class AuthzRepository:
 
         if is_user(auth_subject):
             stmt = stmt.where(
-                Organization.id.in_(select_user_org_ids(auth_subject.subject.id))
+                Organization.id.in_(
+                    select_user_org_ids(
+                        auth_subject.subject.id,
+                        scoped_to=auth_subject.organization_ids,
+                    )
+                )
             )
         elif is_organization(auth_subject):
             stmt = stmt.where(Organization.id == auth_subject.subject.id)

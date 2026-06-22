@@ -476,6 +476,7 @@ class DiscountService(ResourceServiceReader[Discount]):
                     select_user_org_ids(
                         auth_subject.subject.id,
                         permission=OrganizationPermission.products_read,
+                        scoped_to=auth_subject.organization_ids,
                     )
                 )
             )

@@ -41,6 +41,7 @@ class TransactionService(BaseTransactionService):
         session: AsyncReadSession,
         user: User,
         *,
+        organization_ids: frozenset[uuid.UUID] | None = None,
         type: TransactionType | None = None,
         account_id: uuid.UUID | None = None,
         payment_customer_id: uuid.UUID | None = None,
@@ -52,7 +53,9 @@ class TransactionService(BaseTransactionService):
             (TransactionSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Transaction], int]:
-        statement = self._get_readable_transactions_statement(user)
+        statement = self._get_readable_transactions_statement(
+            user, organization_ids=organization_ids
+        )
 
         statement = statement.options(
             # Incurred transactions
@@ -100,10 +103,17 @@ class TransactionService(BaseTransactionService):
         return results, count
 
     async def lookup(
-        self, session: AsyncReadSession, id: uuid.UUID, user: User
+        self,
+        session: AsyncReadSession,
+        id: uuid.UUID,
+        user: User,
+        *,
+        organization_ids: frozenset[uuid.UUID] | None = None,
     ) -> Transaction:
         statement = (
-            self._get_readable_transactions_statement(user)
+            self._get_readable_transactions_statement(
+                user, organization_ids=organization_ids
+            )
             .options(
                 # Incurred transactions
                 subqueryload(Transaction.account_incurred_transactions),
@@ -272,9 +282,13 @@ class TransactionService(BaseTransactionService):
         result = await session.execute(statement)
         return int(result.scalar_one())
 
-    def _get_readable_transactions_statement(self, user: User) -> Select[Any]:
+    def _get_readable_transactions_statement(
+        self, user: User, *, organization_ids: frozenset[uuid.UUID] | None = None
+    ) -> Select[Any]:
         readable_org_ids = select_user_org_ids(
-            user.id, permission=OrganizationPermission.finance_read
+            user.id,
+            permission=OrganizationPermission.finance_read,
+            scoped_to=organization_ids,
         )
         statement = (
             select(Transaction)

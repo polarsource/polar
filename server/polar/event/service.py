@@ -14,6 +14,7 @@ from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
+from polar.authz.repository import select_user_org_ids
 from polar.authz.service import get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
 from polar.customer.repository import CustomerRepository
@@ -43,7 +44,6 @@ from polar.models import (
     MeterEvent,
     Organization,
     User,
-    UserOrganization,
 )
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
@@ -1222,10 +1222,7 @@ class EventService:
             if is_user(auth_subject):
                 statement = statement.where(
                     Customer.organization_id.in_(
-                        select(UserOrganization.organization_id).where(
-                            UserOrganization.user_id == auth_subject.subject.id,
-                            UserOrganization.is_deleted.is_(False),
-                        )
+                        select_user_org_ids(auth_subject.subject.id)
                     )
                 )
             else:
@@ -1268,10 +1265,7 @@ class EventService:
             if is_user(auth_subject):
                 statement = statement.where(
                     Member.organization_id.in_(
-                        select(UserOrganization.organization_id).where(
-                            UserOrganization.user_id == auth_subject.subject.id,
-                            UserOrganization.is_deleted.is_(False),
-                        )
+                        select_user_org_ids(auth_subject.subject.id)
                     )
                 )
             else:

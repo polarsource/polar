@@ -22,6 +22,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 
 from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.authz.repository import select_user_org_ids
 from polar.config import settings
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.time_queries import TimeInterval
@@ -36,7 +37,6 @@ from polar.models import (
     Subscription,
     Transaction,
     User,
-    UserOrganization,
 )
 from polar.models.product import ProductBillingType
 from polar.models.transaction import TransactionType
@@ -104,12 +104,7 @@ def _get_readable_orders_statement(
 
     if is_user(auth_subject):
         statement = statement.where(
-            Product.organization_id.in_(
-                select(UserOrganization.organization_id).where(
-                    UserOrganization.user_id == auth_subject.subject.id,
-                    UserOrganization.is_deleted.is_(False),
-                )
-            )
+            Product.organization_id.in_(select_user_org_ids(auth_subject.subject.id))
         )
     elif is_organization(auth_subject):
         statement = statement.where(Product.organization_id == auth_subject.subject.id)
@@ -359,12 +354,7 @@ def _get_readable_subscriptions_statement(
 
     if is_user(auth_subject):
         statement = statement.where(
-            Product.organization_id.in_(
-                select(UserOrganization.organization_id).where(
-                    UserOrganization.user_id == auth_subject.subject.id,
-                    UserOrganization.is_deleted.is_(False),
-                )
-            )
+            Product.organization_id.in_(select_user_org_ids(auth_subject.subject.id))
         )
     elif is_organization(auth_subject):
         statement = statement.where(Product.organization_id == auth_subject.subject.id)
@@ -448,12 +438,7 @@ def get_checkouts_cte(
 
     if is_user(auth_subject):
         readable_checkouts_statement = readable_checkouts_statement.where(
-            Product.organization_id.in_(
-                select(UserOrganization.organization_id).where(
-                    UserOrganization.user_id == auth_subject.subject.id,
-                    UserOrganization.is_deleted.is_(False),
-                )
-            )
+            Product.organization_id.in_(select_user_org_ids(auth_subject.subject.id))
         )
     elif is_organization(auth_subject):
         readable_checkouts_statement = readable_checkouts_statement.where(
@@ -704,12 +689,7 @@ def _get_readable_seats_statement(
 
     if is_user(auth_subject):
         statement = statement.where(
-            Product.organization_id.in_(
-                select(UserOrganization.organization_id).where(
-                    UserOrganization.user_id == auth_subject.subject.id,
-                    UserOrganization.is_deleted.is_(False),
-                )
-            )
+            Product.organization_id.in_(select_user_org_ids(auth_subject.subject.id))
         )
     elif is_organization(auth_subject):
         statement = statement.where(Product.organization_id == auth_subject.subject.id)

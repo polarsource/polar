@@ -337,6 +337,8 @@ class Settings(BaseSettings):
     WORKER_SQS_QUEUE_PREFIX: str = "polar-tasks"
     # Override to http://127.0.0.1:4566 in .env to target LocalStack
     SQS_ENDPOINT_URL: str | None = None
+    WORKER_SQS_AWS_ACCESS_KEY_ID: str | None = None
+    WORKER_SQS_AWS_SECRET_ACCESS_KEY: str | None = None
 
     # Downloadable files
     S3_FILES_BUCKET_NAME: str = "polar-s3"

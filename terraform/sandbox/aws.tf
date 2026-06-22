@@ -72,6 +72,35 @@ module "dummy_lambda_worker" {
 }
 
 # =============================================================================
+# Task producer IAM user (SQS send-only, used by the Render backend)
+# =============================================================================
+
+resource "aws_iam_user" "tasks_producer" {
+  name = "polar-sandbox-tasks-producer"
+}
+
+resource "aws_iam_access_key" "tasks_producer" {
+  user = aws_iam_user.tasks_producer.name
+}
+
+data "aws_iam_policy_document" "tasks_producer" {
+  statement {
+    sid = "SendTasks"
+    actions = [
+      "sqs:SendMessage",
+      "sqs:GetQueueUrl",
+    ]
+    resources = [module.dummy_lambda_worker.queue_arn]
+  }
+}
+
+resource "aws_iam_user_policy" "tasks_producer" {
+  name   = "polar-sandbox-tasks-producer"
+  user   = aws_iam_user.tasks_producer.name
+  policy = data.aws_iam_policy_document.tasks_producer.json
+}
+
+# =============================================================================
 # Image Resizer Lambda@Edge
 # =============================================================================
 

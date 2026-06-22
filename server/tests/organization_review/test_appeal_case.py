@@ -82,6 +82,9 @@ class TestRequestHumanReview:
         enqueue_job_mock = mocker.patch(
             "polar.organization_review.appeal_case.enqueue_job"
         )
+        publish_mock = mocker.patch(
+            "polar.organization_review.appeal_case.publish_appeal_update"
+        )
 
         case = await appeal_case_service.request_human_review(
             session,
@@ -115,6 +118,7 @@ class TestRequestHumanReview:
             case_id=case.id,
             delay=HUMAN_REVIEW_GREETING_DELAY_MS,
         )
+        publish_mock.assert_called_once_with(organization.id)
 
         assert await message_repository.is_open(case.id) is True
 
@@ -242,7 +246,10 @@ class TestReplyNotifiesMerchant:
             requested_by_user=user,
             organization=organization,
         )
-        enqueue.reset_mock()  # ignore the greeting enqueue from case creation
+        enqueue.reset_mock()
+        publish = mocker.patch(
+            "polar.organization_review.appeal_case.publish_appeal_update"
+        )
         message = await appeal_case_service.add_reply(
             session,
             case,
@@ -253,6 +260,7 @@ class TestReplyNotifiesMerchant:
         enqueue.assert_called_once_with(
             "support_case.notify_organization_of_new_message", message_id=message.id
         )
+        publish.assert_called_once_with(case.organization_id)
 
     async def test_internal_note_does_not_enqueue(
         self,
@@ -270,7 +278,10 @@ class TestReplyNotifiesMerchant:
             requested_by_user=user,
             organization=organization,
         )
-        enqueue.reset_mock()  # ignore the greeting enqueue from case creation
+        enqueue.reset_mock()
+        publish = mocker.patch(
+            "polar.organization_review.appeal_case.publish_appeal_update"
+        )
         await appeal_case_service.add_reply(
             session,
             case,
@@ -280,6 +291,7 @@ class TestReplyNotifiesMerchant:
             internal=True,
         )
         enqueue.assert_not_called()
+        publish.assert_not_called()
 
     async def test_decision_enqueues_email(
         self,
@@ -297,13 +309,17 @@ class TestReplyNotifiesMerchant:
             requested_by_user=user,
             organization=organization,
         )
-        enqueue.reset_mock()  # ignore the greeting enqueue from case creation
+        enqueue.reset_mock()
+        publish = mocker.patch(
+            "polar.organization_review.appeal_case.publish_appeal_update"
+        )
         message = await appeal_case_service.record_decision(
             session, case, approved=False, staff_user=user, reason="denied again"
         )
         enqueue.assert_called_once_with(
             "support_case.notify_organization_of_new_message", message_id=message.id
         )
+        publish.assert_called_once_with(case.organization_id)
 
 
 @pytest.mark.asyncio
@@ -317,6 +333,9 @@ class TestPostAppealGreeting:
         user: User,
     ) -> None:
         mocker.patch("polar.organization_review.appeal_case.enqueue_job")
+        publish_mock = mocker.patch(
+            "polar.organization_review.tasks.publish_appeal_update"
+        )
         case = await appeal_case_service.request_human_review(
             session,
             denied_review,
@@ -342,6 +361,7 @@ class TestPostAppealGreeting:
         ]
         assert len(platform) == 1
         assert platform[0].body == HUMAN_REVIEW_GREETING
+        publish_mock.assert_called_once_with(case.organization_id)
 
     async def test_idempotent(
         self,

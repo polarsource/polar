@@ -28,7 +28,7 @@ from polar.support_case.service import support_case as support_case_service
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .agent import run_organization_review
-from .appeal_case import HUMAN_REVIEW_GREETING
+from .appeal_case import HUMAN_REVIEW_GREETING, publish_appeal_update
 from .report import build_agent_report
 from .repository import OrganizationReviewRepository
 from .schemas import (
@@ -406,3 +406,4 @@ async def post_appeal_greeting(case_id: uuid.UUID) -> None:
             body=HUMAN_REVIEW_GREETING,
             audience=[SupportCaseAudience.merchant],
         )
+        await publish_appeal_update(case.organization_id)

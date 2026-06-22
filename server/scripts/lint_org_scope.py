@@ -1,0 +1,124 @@
+"""Flag inline `UserOrganization` membership filters keyed on the auth subject.
+
+Resolving "which organizations can this subject access?" must go through the
+canonical helpers so a single definition stays enforceable — `select_user_org_ids`
+(`polar.authz.repository`) for subquery use, or `get_accessible_org_ids`
+(`polar.authz.service`). This matters ahead of session/token organization
+scoping: those helpers are the one place the down-scope restriction is applied,
+so an inline subquery silently bypasses it.
+
+Rule:
+- Flag a comparison where one operand is `UserOrganization.<col>` and another
+  operand references `auth_subject` — e.g.
+  `UserOrganization.user_id == auth_subject.subject.id`. That is the read-
+  expansion bypass.
+- Membership *management* code (filtering by a plain `user_id`/`user.id`
+  parameter, not `auth_subject`) is NOT flagged — it doesn't reference the
+  auth subject, so it never matches.
+- `# noqa: org-scope` on the comparison line is an explicit escape.
+
+Exits 1 on any violation.
+"""
+
+from __future__ import annotations
+
+import ast
+import sys
+from pathlib import Path
+
+NOQA_MARKER = "org-scope"
+MODEL_NAME = "UserOrganization"
+SUBJECT_NAME = "auth_subject"
+
+
+def _is_model_attr(node: ast.AST) -> bool:
+    """True for `UserOrganization.<attr>` (e.g. `UserOrganization.user_id`)."""
+    return (
+        isinstance(node, ast.Attribute)
+        and isinstance(node.value, ast.Name)
+        and node.value.id == MODEL_NAME
+    )
+
+
+def _references_subject(node: ast.AST) -> bool:
+    """True if the subtree mentions the `auth_subject` name anywhere."""
+    return any(
+        isinstance(child, ast.Name) and child.id == SUBJECT_NAME
+        for child in ast.walk(node)
+    )
+
+
+def _line_has_noqa(source_lines: list[str], lineno: int) -> bool:
+    idx = lineno - 1
+    return 0 <= idx < len(source_lines) and NOQA_MARKER in source_lines[idx]
+
+
+def check_file(path: Path) -> list[tuple[Path, int, str]]:
+    """Return a list of (path, lineno, message) violations."""
+    source = path.read_text()
+    try:
+        tree = ast.parse(source, filename=str(path))
+    except SyntaxError as exc:
+        return [(path, exc.lineno or 0, f"syntax error: {exc.msg}")]
+
+    source_lines = source.splitlines()
+    violations: list[tuple[Path, int, str]] = []
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Compare):
+            continue
+
+        operands = [node.left, *node.comparators]
+        if not any(_is_model_attr(op) for op in operands):
+            continue
+        if not any(_references_subject(op) for op in operands):
+            continue
+
+        if _line_has_noqa(source_lines, node.lineno):
+            continue
+
+        violations.append(
+            (
+                path,
+                node.lineno,
+                "inline UserOrganization filter keyed on auth_subject bypasses "
+                "org-scope enforcement. Use select_user_org_ids("
+                "auth_subject.subject.id) from polar.authz.repository (or "
+                "get_accessible_org_ids). Escape with `# noqa: org-scope` if "
+                "intentional.",
+            )
+        )
+
+    return violations
+
+
+def main() -> int:
+    root = Path(__file__).resolve().parent.parent / "polar"
+    if not root.exists():
+        print(f"error: {root} not found", file=sys.stderr)
+        return 2
+
+    checked = 0
+    violations: list[tuple[Path, int, str]] = []
+    for path in sorted(root.rglob("*.py")):
+        if "migrations" in path.parts:
+            continue
+        checked += 1
+        violations.extend(check_file(path))
+
+    if violations:
+        for path, lineno, message in violations:
+            try:
+                rel = path.relative_to(Path.cwd())
+            except ValueError:
+                rel = path
+            print(f"{rel}:{lineno}: {message}")
+        print(f"\n{len(violations)} violation(s) across {checked} file(s).")
+        return 1
+
+    print(f"OK: {checked} file(s) checked, no org-scope violations.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

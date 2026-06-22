@@ -1,0 +1,181 @@
+import { OpenQuestion } from "/snippets/open-question.jsx";
+
+<Info>
+  **Status**: Draft / Brainstorm
+
+**Created**: June 2026
+
+**Last Updated**: June 22nd, 2026
+
+**Author**: Maxime
+
+</Info>
+
+## Briefing
+
+EU consumer law (Consumer Rights Directive 2011/83/EU) gives B2C buyers a 14-day
+**right of withdrawal** on distance contracts. For digital goods this right can be
+waived — but only under strict conditions. To comply, merchants need a way for
+customers to *request a refund*, and Polar needs to expose a **refund button** to
+EU B2C customers where it's legally mandatory.
+
+The fear is the opposite failure mode: a naive
+"customer clicks → auto-refund" flow lets anyone download the product and then
+claim their money back, getting the digital good for free. So the design has to
+do two things at once: **comply with the law** without **opening a free-product
+loophole**.
+
+This document maps what exists today, the legal principle that resolves the
+tension, and a phased plan.
+
+## Goals
+
+- A customer-initiated **refund request** is recorded as a support case (audit
+  trail), even on the happy path.
+- EU B2C customers see a **refund button** wherever the law makes it mandatory.
+- Merchants are protected from abuse via a **waiver opt-in** captured at checkout
+  ("immediate access ⇒ you waive your 14-day withdrawal right").
+- Refunding pulls back the **specific benefit** that was purchased.
+- Merchants get **signals** (refund history per customer, notes, optional
+  blocklist) to manage repeat abusers.
+
+## Non-goals (for v1)
+
+- Automatic, no-merchant-in-the-loop refunds for arbitrary products.
+- Withdrawal-right handling for benefit types we cannot track or revoke
+  (Discord, custom) beyond requiring an up-front waiver.
+- A full customer reputation/risk-scoring engine.
+
+---
+
+## The legal principle (this is the whole design)
+
+Under the Directive, for digital content the merchant **loses the obligation to
+refund** only if **all three** hold:
+
+1. The consumer gave **prior express consent** to begin access before the 14 days
+   elapse, **and**
+2. The consumer **acknowledged they thereby lose** the right of withdrawal, **and**
+3. The merchant **confirmed** that consent on a durable medium.
+
+That is exactly the "waiver opt-in upon purchase." It produces **two compliant
+regimes**, and the loophole only appears if you mix them:
+
+| Regime | Condition | Refund button | Loophole? |
+| --- | --- | --- | --- |
+| **Waiver path** | Waiver given → immediate access granted | Discretionary once **accessed** | No — they waived |
+| **No-waiver path** | No waiver | **Mandatory** within 14 days, *regardless of access* | Only if you granted access anyway |
+
+> **The one rule that closes the loophole:**
+> **Never grant access without either a recorded waiver or accepting the 14-day refund liability.**
+> i.e. "Have it now if you waive, or wait 14 days."
+
+Everything below exists to make that rule enforceable.
+
+---
+
+## What exists today
+
+| Area | Status | Key location |
+| --- | --- | --- |
+| Refund engine (create, Stripe money movement, partial/full) | ✅ Merchant-only | `server/polar/refund/` |
+| `revoke_benefits` on refund (one-time orders) | ✅ | `refund/service.py:454` |
+| Block refunds on fraud/dispute | ✅ | Order `refunds_blocked_at` |
+| Support-case primitive (polymorphic, threaded, audience-aware) | ✅ | `models/support_case.py` |
+| `refund_request` case type | 🟡 Stubbed (`# future: refund_request`) | `models/support_case.py` |
+| Dispute case (the pattern to copy) | ✅ | `dispute/dispute_case.py` |
+| Customer-facing case UI | ❌ Audience plumbing exists, no UI | — |
+| Customer-facing refund path | ❌ Portal only *shows* refund status | — |
+| Access tracking — downloadables (`downloaded`, `last_downloaded_at`) | ✅ | `customer_portal/service/downloadables.py:147` |
+| Access tracking — license keys (activations) | ✅ | `models/license_key.py` |
+| Access tracking — Discord / GitHub / Slack / custom | ❌ External state only | — |
+| Checkout consent/waiver capture | ❌ Consent is implicit via payment | `MandateText.tsx` |
+| B2C vs B2B signal | ✅ `is_business_customer` | `models/checkout.py:223` |
+| Selective per-benefit revoke (merchant) | ❌ All-or-nothing per customer | `backoffice/customers/endpoints.py` |
+| Customer notes / tags / flags | ❌ | — |
+| Email / card blocklist | ❌ (only Stripe decline codes + `fraudulent` reason) | `models/refund.py` |
+
+**Takeaway:** the refund engine and the case primitive are done. The missing
+pieces are all *upstream of the button* — consent capture, access tracking, and
+selective revocation — which is exactly why they must land first.
+
+---
+
+## Plan
+
+### Phase 0 — Foundations
+
+The button is the *last* thing built. These three remove the loophole and the
+risk before any customer can self-serve a refund.
+
+1. **Consent / waiver capture at checkout.**
+   - Detect EU B2C (`is_business_customer` + billing country).
+   - Waiver opt-in: *"Give me immediate access. I acknowledge I lose my 14-day
+     withdrawal right once I access the content."*
+   - Store the consent **with its text version + timestamp** on the order —
+     durable-medium proof is itself a legal requirement, not just nice-to-have.
+
+2. **Unify an `accessed` predicate per benefit grant.**
+   - Wrap existing signals (download count, license activation).
+   - Explicitly classify benefit types that **cannot** report access
+     (Discord/custom) — the policy engine treats those differently.
+
+3. **Selective benefit revocation** (merchant endpoint, per order/product) so a
+   refund pulls back exactly what was purchased, not everything the customer owns.
+
+### Phase 1 — The refund-request case
+
+4. Implement the `refund_request` case type, mirroring `dispute_case.py`: a
+   `RefundRequestSupportCase` subclass with a FK to `order`, plus a handler service.
+5. Build the **customer-facing case UI** (net-new portal surface). This also
+   unblocks customer-visible disputes later — the `customer` audience already
+   exists in the model.
+
+### Phase 2 — The button + policy engine
+
+6. **Eligibility engine** computing `mandatory` vs `discretionary`:
+   `mandatory = EU_B2C AND within_14_days AND NOT (waived AND accessed)`.
+7. Surface the refund button to the customer **only when eligible**. On click it
+   opens a `refund_request` case, executes the refund, and revokes the
+   specific benefit. Gated behind `org.can_refund()` + Phase 0 in place.
+
+### Phase 3 — Abuse controls
+
+8. **Per-customer refund metrics** — derivable today by filtering the refund
+   table on `customer_id`; surface "N refund requests across your products."
+9. **Customer notes** (net-new field).
+10. **Email / card blocklist** — net-new, or lean on Stripe Radar + the existing
+    `fraudulent` refund reason (which already warns it blocks customers).
+
+---
+
+## Happy-path decision
+
+Record **every** customer-initiated refund as a `refund_request` case, even when/if
+it auto-resolves. It's cheap (the primitive exists) and the case history *is* the
+per-customer abuse signal Phase 3 needs. Auto-close on the happy path; keep the
+trail.
+
+## Open questions
+
+<OpenQuestion>
+  Benefit types we can't track or revoke (Discord, custom): require the waiver
+  **up front** before granting, or accept the refund liability? The waiver-at-access
+  model degrades here.
+</OpenQuestion>
+
+<OpenQuestion>
+  Subscriptions vs one-time: withdrawal applies to both, but the digital-goods
+  nuance is mostly one-time. Subscriptions already revoke on cancellation — does
+  the refund button only target one-time orders in v1?
+</OpenQuestion>
+
+<OpenQuestion>
+  Where does the 14-day clock start — order paid date, or first access? (Legally:
+  conclusion of contract, i.e. order paid.)
+</OpenQuestion>
+
+<OpenQuestion>
+  Is the refund button merchant-toggleable, or always-on for EU B2C where
+  mandatory? (Leaning always-on where mandatory; merchant cannot opt out of the law.)
+</OpenQuestion>

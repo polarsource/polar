@@ -48,6 +48,7 @@ from polar_sdk.models import (
     SubscriptionProrationBehavior,
     SubscriptionUpdateBase,
 )
+from polar_sdk.models.membercreate import Role as MemberCreateRole
 from polar_sdk.models.polarerror import PolarError
 
 from polar.config import settings
@@ -432,12 +433,19 @@ class PolarSelfClient:
             return contacts
 
     async def add_member(
-        self, *, customer_id: str, email: str, name: str, external_id: str
+        self,
+        *,
+        customer_id: str,
+        email: str,
+        name: str,
+        external_id: str,
+        role: str = MemberCreateRole.MEMBER.value,
     ) -> None:
         with logfire.span(
             "polar.add_member",
             customer_id=customer_id,
             external_id=external_id,
+            role=role,
         ) as span:
             try:
                 await self._sdk.members.create_member_async(
@@ -446,6 +454,7 @@ class PolarSelfClient:
                         email=email,
                         name=name,
                         external_id=external_id,
+                        role=MemberCreateRole(role),
                     )
                 )
             except PolarError as e:

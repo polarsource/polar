@@ -21,6 +21,7 @@ from polar.kit.http import UrlReachability
 from polar.models import Customer, Organization, Product, User, UserOrganization
 from polar.models.account import Account
 from polar.models.benefit import BenefitType
+from polar.models.member import MemberRole
 from polar.models.organization import (
     STATUS_CAPABILITIES,
     InvalidStatusTransitionError,
@@ -4503,3 +4504,40 @@ class TestChangeOwnerRoleSwap:
         assert new is not None
         assert previous.role == OrganizationRole.member
         assert new.role == OrganizationRole.owner
+
+
+@pytest.mark.asyncio
+class TestAddUser:
+    @pytest.mark.parametrize(
+        ("organization_role", "expected_member_role"),
+        [
+            (OrganizationRole.owner, MemberRole.billing_manager),
+            (OrganizationRole.admin, MemberRole.billing_manager),
+            (OrganizationRole.member, MemberRole.member),
+        ],
+    )
+    async def test_mirrors_org_role_to_polar_self_member_role(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        organization_role: OrganizationRole,
+        expected_member_role: MemberRole,
+    ) -> None:
+        add_member_mock = mocker.patch(
+            "polar.organization.service.polar_self_service.enqueue_add_member"
+        )
+
+        await organization_service.add_user(
+            session, organization, user, role=organization_role
+        )
+
+        add_member_mock.assert_called_once_with(
+            external_customer_id=str(organization.id),
+            email=user.email,
+            name=user.full_name or user.email.split("@", 1)[0],
+            external_id=str(user.id),
+            role=expected_member_role,
+            delay=None,
+        )

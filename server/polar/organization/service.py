@@ -24,6 +24,7 @@ from polar.exceptions import (
     PolarRequestValidationError,
     ValidationError,
 )
+from polar.integrations.polar.service import billing_member_role
 from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.currency import PresentmentCurrency
@@ -884,6 +885,7 @@ class OrganizationService:
                     email=user.email,
                     name=user.full_name or user.email.split("@", 1)[0],
                     external_id=str(user.id),
+                    role=billing_member_role(role),
                     delay=polar_self_member_delay,
                 )
 

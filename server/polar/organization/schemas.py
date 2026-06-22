@@ -174,6 +174,10 @@ class OrganizationFeatureSettings(Schema):
         False,
         description="If this organization has preview access to new features enabled",
     )
+    disputes_enabled: bool = Field(
+        False,
+        description="If this organization has the disputes dashboard enabled",
+    )
 
 
 class OrganizationFeatureSettingsUpdate(Schema):

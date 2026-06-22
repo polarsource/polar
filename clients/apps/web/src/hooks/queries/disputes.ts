@@ -3,6 +3,15 @@ import { operations, unwrap } from '@polar-sh/client'
 import { useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
+export const useDispute = (id: string) =>
+  useQuery({
+    queryKey: ['disputes', { id }],
+    queryFn: () =>
+      unwrap(api.GET('/v1/disputes/{id}', { params: { path: { id } } })),
+    retry: defaultRetry,
+    enabled: !!id,
+  })
+
 export const useDisputes = (
   organizationId: string,
   parameters?: Omit<
@@ -11,7 +20,7 @@ export const useDisputes = (
   >,
 ) =>
   useQuery({
-    queryKey: ['wallets', { organizationId, parameters }],
+    queryKey: ['disputes', { organizationId, parameters }],
     queryFn: () =>
       unwrap(
         api.GET('/v1/disputes/', {

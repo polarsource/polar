@@ -19446,6 +19446,23 @@ export interface components {
        */
       currency: string
       /**
+       * Reason
+       * @description The reason for the dispute as reported by the card network (e.g. `fraudulent`, `product_not_received`). `null` until the processor reports it.
+       * @example fraudulent
+       */
+      reason: string | null
+      /**
+       * Evidence Due By
+       * @description Deadline to submit evidence in response to the dispute. `null` when no response is required.
+       */
+      evidence_due_by: string | null
+      /**
+       * Past Due
+       * @description Whether the evidence submission deadline has passed.
+       * @example false
+       */
+      past_due: boolean
+      /**
        * Order Id
        * Format: uuid4
        * @description The ID of the order associated with the dispute.
@@ -19459,11 +19476,31 @@ export interface components {
        * @example 42b94870-36b9-4573-96b6-b90b1c99a353
        */
       payment_id: string
+      /** @description The customer who was charged for the disputed payment. */
+      customer: components['schemas']['DisputeCustomer']
       /**
        * Case Id
        * @description The ID of the support case for this dispute, if one was opened.
        */
       case_id: string | null
+    }
+    /** DisputeCustomer */
+    DisputeCustomer: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /**
+       * Email
+       * @description The email of the disputed payment's customer.
+       */
+      email: string
+      /**
+       * Name
+       * @description The name of the disputed payment's customer.
+       */
+      name: string | null
     }
     /**
      * DisputeSortProperty
@@ -24960,6 +24997,12 @@ export interface components {
        * @default false
        */
       preview_access_enabled: boolean
+      /**
+       * Disputes Enabled
+       * @description If this organization has the disputes dashboard enabled
+       * @default false
+       */
+      disputes_enabled: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate
@@ -28828,6 +28871,23 @@ export interface components {
        * @example usd
        */
       currency: string
+      /**
+       * Reason
+       * @description The reason for the dispute as reported by the card network (e.g. `fraudulent`, `product_not_received`). `null` until the processor reports it.
+       * @example fraudulent
+       */
+      reason: string | null
+      /**
+       * Evidence Due By
+       * @description Deadline to submit evidence in response to the dispute. `null` when no response is required.
+       */
+      evidence_due_by: string | null
+      /**
+       * Past Due
+       * @description Whether the evidence submission deadline has passed.
+       * @example false
+       */
+      past_due: boolean
       /**
        * Order Id
        * Format: uuid4

@@ -13,7 +13,7 @@ from polar.kit.repository import (
     RepositorySortingMixin,
     SortingClause,
 )
-from polar.models import Dispute, Payment
+from polar.models import Dispute, Order, Payment
 from polar.models.dispute import DisputeAlertProcessor
 
 from .sorting import DisputeSortProperty
@@ -87,7 +87,10 @@ class DisputeRepository(
         statement = (
             self.get_base_statement()
             .join(Dispute.payment)
-            .options(contains_eager(Dispute.payment))
+            .options(
+                contains_eager(Dispute.payment),
+                joinedload(Dispute.order).joinedload(Order.customer),
+            )
         )
         statement = statement.where(Payment.organization_id.in_(org_ids))
         return statement

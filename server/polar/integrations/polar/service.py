@@ -27,7 +27,9 @@ from polar.email.schemas import (
 )
 from polar.email.sender import Attachment, enqueue_email_template
 from polar.integrations.plain.service import plain as plain_service
+from polar.models.member import MemberRole
 from polar.models.organization import SupportTier
+from polar.models.user_organization import OrganizationRole
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.startup_program.service import (
@@ -79,6 +81,12 @@ BenefitGrantWebhookPayload = (
 )
 
 
+def billing_member_role(organization_role: OrganizationRole) -> MemberRole:
+    if organization_role in (OrganizationRole.owner, OrganizationRole.admin):
+        return MemberRole.billing_manager
+    return MemberRole.member
+
+
 class PolarSelfService:
     INITIAL_MEMBER_DELAY_MS = 1000
 
@@ -122,6 +130,7 @@ class PolarSelfService:
         email: str,
         name: str,
         external_id: str,
+        role: MemberRole = MemberRole.member,
         delay: int | None = None,
     ) -> None:
         if not self.is_configured:
@@ -133,6 +142,7 @@ class PolarSelfService:
             email=email,
             name=name,
             external_id=external_id,
+            role=role.value,
         )
 
     def enqueue_update_member(

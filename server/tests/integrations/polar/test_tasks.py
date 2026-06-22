@@ -118,6 +118,7 @@ class TestAddMember:
             email="user@example.com",
             name="User Example",
             external_id="user-123",
+            role="member",
         )
         plain_service_mock.add_customer_to_tenant.assert_awaited_once_with(
             customer_external_id="user-123",

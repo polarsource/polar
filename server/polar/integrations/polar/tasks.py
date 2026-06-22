@@ -18,6 +18,7 @@ from polar.integrations.plain.service import plain as plain_service
 from polar.integrations.tinybird.service import count_user_events_by_organization
 from polar.kit.utils import utc_now
 from polar.models.external_event import ExternalEventSource
+from polar.models.member import MemberRole
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
@@ -66,7 +67,11 @@ async def create_customer(
 
 @actor(actor_name="polar_self.add_member", priority=TaskPriority.LOW)
 async def add_member(
-    external_customer_id: str, email: str, name: str, external_id: str
+    external_customer_id: str,
+    email: str,
+    name: str,
+    external_id: str,
+    role: str = MemberRole.member.value,
 ) -> None:
     from polar_sdk.models.polarerror import PolarError
 
@@ -83,6 +88,7 @@ async def add_member(
         email=email,
         name=name,
         external_id=external_id,
+        role=role,
     )
     await plain_service.upsert_customer(
         external_id=external_id,

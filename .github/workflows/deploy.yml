@@ -295,29 +295,29 @@ jobs:
           secrets: |
             IPINFO_ACCESS_TOKEN=${{ secrets.IPINFO_ACCESS_TOKEN }}
 
-  # deploy-lambda-sandbox:
-  #   name: "Deploy Lambda Worker to Sandbox 🧪"
-  #   needs: [changes, build-lambda-worker]
-  #   if: always() && !failure() && !cancelled() && needs.build-lambda-worker.result == 'success' && (needs.changes.outputs.backend-sandbox == 'true' || github.event_name == 'workflow_dispatch')
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     id-token: write
-  #   steps:
-  #     - name: Configure AWS credentials
-  #       uses: aws-actions/configure-aws-credentials@v6.2.0
-  #       with:
-  #         role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-  #         aws-region: us-east-2
-  #     - name: Log in to Amazon ECR
-  #       id: login-ecr
-  #       uses: aws-actions/amazon-ecr-login@v2
-  #     - name: Update sandbox Lambda function code
-  #       run: |
-  #         aws lambda update-function-code \
-  #           --function-name polar-sandbox-lambda-worker \
-  #           --image-uri "${{ steps.login-ecr.outputs.registry }}/polar-sandbox-lambda-worker:sha-${{ github.sha }}" \
-  #           --publish
+  deploy-lambda-sandbox:
+    name: "Deploy Lambda Worker to Sandbox 🧪"
+    needs: [changes, build-lambda-worker]
+    if: always() && !failure() && !cancelled() && needs.build-lambda-worker.result == 'success' && (needs.changes.outputs.backend-sandbox == 'true' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.2.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-2
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Update sandbox Lambda function code
+        run: |
+          aws lambda update-function-code \
+            --function-name polar-sandbox-worker-dummy \
+            --image-uri "${{ steps.login-ecr.outputs.registry }}/polar-sandbox-lambda-worker:sha-${{ github.sha }}" \
+            --publish
 
   # deploy-lambda-production:
   #   name: "Deploy Lambda Worker to Production 🚀"

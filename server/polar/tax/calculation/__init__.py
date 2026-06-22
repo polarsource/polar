@@ -216,5 +216,6 @@ __all__ = [
     "TaxCode",
     "TaxRevertError",
     "TaxabilityReason",
+    "get_tax_behavior_from_option",
     "tax_calculation",
 ]

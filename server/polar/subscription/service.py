@@ -34,6 +34,7 @@ from polar.enums import (
     SubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
     TaxBehavior,
+    TaxBehaviorOption,
 )
 from polar.event.service import event as event_service
 from polar.event.system import (
@@ -101,7 +102,10 @@ from polar.product.guard import (
 from polar.product.price_set import NoPricesForCurrencies, PriceSet
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
-from polar.tax.calculation import TaxCalculationLogicalError
+from polar.tax.calculation import (
+    TaxCalculationLogicalError,
+    get_tax_behavior_from_option,
+)
 from polar.tax.calculation import tax_calculation as tax_calculation_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
@@ -226,6 +230,43 @@ def _from_timestamp(t: int | None) -> datetime | None:
     if t is None:
         return None
     return datetime.fromtimestamp(t, UTC)
+
+
+def resolve_subscription_tax_behavior(
+    subscription: Subscription,
+) -> TaxBehavior | None:
+    """Resolve the tax behavior for a subscription from its current product.
+
+    The tax behavior is stored on the subscription so it stays consistent across
+    organization-default and product-config changes. When the product itself
+    changes, though, it must be recomputed from the new product's price (falling
+    back to the organization default), mirroring what the checkout does. Otherwise
+    a cross-tax_behavior product change keeps a stale behavior and the recurring
+    tax is computed wrong.
+
+    Requires `subscription.prices`, `subscription.customer` and
+    `subscription.organization` to be loaded.
+    """
+    tax_behavior_option = subscription.organization.default_tax_behavior
+    # All prices share the same tax behavior for a given currency, so the first
+    # explicitly set one wins; a missing one falls back to the organization default.
+    for price in subscription.prices:
+        if price.tax_behavior is not None:
+            tax_behavior_option = price.tax_behavior
+            break
+
+    billing_address = subscription.customer.billing_address
+    if billing_address is not None:
+        return get_tax_behavior_from_option(tax_behavior_option, billing_address)
+
+    # Without a billing address, location-based resolution can't run, so we defer
+    # it to order time (where it falls back to the organization default). Explicit
+    # behaviors don't depend on the address and can be resolved right away.
+    if tax_behavior_option == TaxBehaviorOption.inclusive:
+        return TaxBehavior.inclusive
+    if tax_behavior_option == TaxBehaviorOption.exclusive:
+        return TaxBehavior.exclusive
+    return None
 
 
 class SubscriptionUpdateContext:
@@ -790,6 +831,12 @@ class SubscriptionService:
                 # Check before apply_update() changes subscription.product
                 pending_update_changed_interval = pending_update.is_interval_changed()
                 pending_update.apply_update()
+                if pending_update.product_id is not None:
+                    # The product changed, so recompute the stored tax behavior from
+                    # the new product; keeping a stale one would tax this new cycle wrong.
+                    subscription.tax_behavior = resolve_subscription_tax_behavior(
+                        subscription
+                    )
                 subscription_update_repository = (
                     SubscriptionUpdateRepository.from_session(session)
                 )
@@ -1300,6 +1347,11 @@ class SubscriptionService:
 
                 interval_changed = subscription_update.is_interval_changed()
                 subscription = subscription_update.apply_update()
+                # The product changed, so recompute the stored tax behavior from
+                # the new product to avoid charging recurring tax with a stale one.
+                subscription.tax_behavior = resolve_subscription_tax_behavior(
+                    subscription
+                )
                 if was_trialing:
                     if ends_trial:
                         # End the trial immediately - cycle() below will transition
@@ -1935,6 +1987,12 @@ class SubscriptionService:
             else:
                 pending_update.discount = None
             pending_update.apply_update()
+            if pending_update.product_id is not None:
+                # The product changed, so recompute the stored tax behavior from
+                # the new product to preview the recurring tax correctly.
+                subscription.tax_behavior = resolve_subscription_tax_behavior(
+                    subscription
+                )
 
         # If subscription is set to cancel at period end, there's no base charge
         # Only metered charges accumulated during the period will be billed

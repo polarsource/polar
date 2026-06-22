@@ -23,6 +23,7 @@ from polar.enums import (
     SubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
     TaxBehavior,
+    TaxBehaviorOption,
 )
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
@@ -31,6 +32,7 @@ from polar.exceptions import (
     PolarRequestValidationError,
     ResourceUnavailable,
 )
+from polar.kit.address import Address, CountryAlpha2
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.pagination import PaginationParams
 from polar.kit.trial import TrialInterval
@@ -1686,6 +1688,63 @@ class TestCycle:
         )
         assert updated_subscription_update is not None
         assert updated_subscription_update.applied_at is not None
+
+    async def test_pending_update_product_updates_tax_behavior(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        customer.billing_address = Address(country=CountryAlpha2("FR"))
+        await save_fixture(customer)
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        product.prices[0].tax_behavior = TaxBehaviorOption.exclusive
+        await save_fixture(product.prices[0])
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        new_product.prices[0].tax_behavior = TaxBehaviorOption.inclusive
+        await save_fixture(new_product.prices[0])
+
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            tax_behavior=TaxBehavior.exclusive,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=new_product,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        # The scheduled change hasn't been applied yet.
+        assert subscription.tax_behavior == TaxBehavior.exclusive
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.product == new_product
+        assert updated_subscription.tax_behavior == TaxBehavior.inclusive
 
     async def test_pending_update_seats(
         self,
@@ -4198,6 +4257,135 @@ class TestUpdateProduct:
             and "next_period" in error["msg"]
             for error in errors
         )
+
+    async def test_cross_tax_behavior_product_change_updates_tax_behavior(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        customer.billing_address = Address(country=CountryAlpha2("FR"))
+        await save_fixture(customer)
+
+        product.prices[0].tax_behavior = TaxBehaviorOption.exclusive
+        await save_fixture(product.prices[0])
+
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            tax_behavior=TaxBehavior.exclusive,
+        )
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        new_product.prices[0].tax_behavior = TaxBehaviorOption.inclusive
+        await save_fixture(new_product.prices[0])
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+
+        assert updated.product == new_product
+        assert updated.tax_behavior == TaxBehavior.inclusive
+
+    async def test_cross_tax_behavior_product_change_inclusive_to_exclusive(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        customer.billing_address = Address(country=CountryAlpha2("FR"))
+        await save_fixture(customer)
+
+        product.prices[0].tax_behavior = TaxBehaviorOption.inclusive
+        await save_fixture(product.prices[0])
+
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            tax_behavior=TaxBehavior.inclusive,
+        )
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        new_product.prices[0].tax_behavior = TaxBehaviorOption.exclusive
+        await save_fixture(new_product.prices[0])
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+
+        assert updated.product == new_product
+        assert updated.tax_behavior == TaxBehavior.exclusive
+
+    async def test_product_change_resolves_location_based_tax_behavior(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        # The organization default is location-based and the products don't
+        # override it, so the behavior must be resolved from the billing address.
+        assert organization.default_tax_behavior == TaxBehaviorOption.location
+        customer.billing_address = Address(country=CountryAlpha2("US"))
+        await save_fixture(customer)
+
+        # Stale behavior, as if it had been resolved under a tax-inclusive address.
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            tax_behavior=TaxBehavior.inclusive,
+        )
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+
+        assert updated.product == new_product
+        # The US is a tax-exclusive country, so location resolves to exclusive.
+        assert updated.tax_behavior == TaxBehavior.exclusive
 
 
 @pytest.mark.asyncio

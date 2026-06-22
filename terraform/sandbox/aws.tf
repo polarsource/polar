@@ -27,33 +27,6 @@ module "lambda_worker_ecr" {
   name = "polar-sandbox-lambda-worker"
 }
 
-module "egress_ip" {
-  source = "../modules/static_egress_ip"
-
-  name = "polar-sandbox-egress"
-}
-
-module "vpc" {
-  source = "../modules/vpc"
-
-  name               = "polar-sandbox"
-  availability_zones = ["us-east-2a", "us-east-2b"]
-  eip_allocation_id  = module.egress_ip.allocation_id
-}
-
-resource "aws_security_group" "dummy_lambda_worker" {
-  name        = "polar-sandbox-worker-dummy"
-  description = "Egress for the sandbox dummy Lambda worker."
-  vpc_id      = module.vpc.vpc_id
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
 module "dummy_lambda_worker" {
   source = "../modules/aws_task_worker"
 
@@ -62,8 +35,8 @@ module "dummy_lambda_worker" {
   queue_name         = "polar-sandbox-tasks-dummy"
   image_uri          = "${module.lambda_worker_ecr.repository_url}:latest"
   enabled            = false
-  subnet_ids         = module.vpc.private_subnet_ids
-  security_group_ids = [aws_security_group.dummy_lambda_worker.id]
+  subnet_ids         = local.lambda_subnet_ids
+  security_group_ids = local.lambda_security_group_ids
 
   environment_variables = {
     POLAR_ENV                     = "sandbox"

@@ -14,7 +14,7 @@ resource "aws_internet_gateway" "this" {
 
 resource "aws_subnet" "public" {
   vpc_id            = aws_vpc.this.id
-  cidr_block        = cidrsubnet(var.cidr_block, 8, 0)
+  cidr_block        = cidrsubnet(var.cidr_block, 4, 0)
   availability_zone = var.availability_zones[0]
 
   tags = merge(var.tags, { Name = "${var.name}-public" })
@@ -24,7 +24,7 @@ resource "aws_subnet" "private" {
   count = length(var.availability_zones)
 
   vpc_id            = aws_vpc.this.id
-  cidr_block        = cidrsubnet(var.cidr_block, 8, count.index + 1)
+  cidr_block        = cidrsubnet(var.cidr_block, 4, count.index + 1)
   availability_zone = var.availability_zones[count.index]
 
   tags = merge(var.tags, { Name = "${var.name}-private-${var.availability_zones[count.index]}" })

@@ -61,6 +61,7 @@ server/tests/organization/test_service.py
   s_7b93f39d2fd53e::t_62e56b1c3b8428 4239,4251-4262,4274-4290
   s_7b93f39d2fd53e::t_64d1a1f47a611c 4263-4273
   s_7b93f39d2fd53e::t_bad3a59fbfd3b7 41
+  s_7b93f39d2fd53e::t_7d0af712c10808 3908
 ---
 {
   "schema_version": "authorship/3.0.0",

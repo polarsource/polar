@@ -188,6 +188,19 @@ variable "aws_s3_secrets" {
   sensitive = true
 }
 
+variable "worker_sqs_config" {
+  description = "Worker SQS execution engine config and producer credentials (optional). null skips the env group."
+  type = object({
+    enabled               = string
+    actors                = string
+    queue_prefix          = string
+    aws_access_key_id     = string
+    aws_secret_access_key = string
+  })
+  default   = null
+  sensitive = true
+}
+
 variable "github_secrets" {
   description = "GitHub secrets (sensitive)"
   type = object({

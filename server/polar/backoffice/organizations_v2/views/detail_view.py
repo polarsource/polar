@@ -670,7 +670,8 @@ class OrganizationDetailView:
                                 text("Deny")
 
                     elif self.org.status == OrganizationStatus.OFFBOARDING:
-                        # Offboarding can be reverted to review or denied
+                        # Offboarding can be reverted to review, denied, or
+                        # completed (moved to the terminal offboarded state).
                         with tag.div(classes="w-full"):
                             with button(
                                 variant="secondary",
@@ -685,6 +686,21 @@ class OrganizationDetailView:
                                 hx_target="#modal",
                             ):
                                 text("Set Under Review")
+
+                        with tag.div(classes="w-full"):
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:offboarded_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Complete Offboarding")
 
                         with tag.div(classes="w-full"):
                             with button(

@@ -48,6 +48,11 @@ UNSNOOZE_EXPIRED_BATCH_SIZE = 500
 # Maximum orgs the auto-offboard cron processes per run.
 OFFBOARD_EXPIRED_BATCH_SIZE = 500
 
+# Order statuses that count as a completed (not fully refunded) payment when
+# anchoring the offboarding chargeback-risk window. Shared so the auto-offboard
+# cron and the backoffice "remaining period" display can't drift.
+PAID_ORDER_STATUSES = (OrderStatus.paid, OrderStatus.partially_refunded)
+
 
 class OrganizationRepository(
     RepositorySortingMixin[Organization, OrganizationSortProperty],
@@ -208,7 +213,7 @@ class OrganizationRepository(
             select(func.max(Order.created_at))
             .where(
                 Order.organization_id == Organization.id,
-                Order.status.in_((OrderStatus.paid, OrderStatus.partially_refunded)),
+                Order.status.in_(PAID_ORDER_STATUSES),
                 Order.deleted_at.is_(None),
             )
             .correlate(Organization)
@@ -226,6 +231,21 @@ class OrganizationRepository(
             .with_for_update(of=Organization)
         )
         return await self.get_all(statement)
+
+    async def get_last_paid_order_at(self, organization_id: UUID) -> datetime | None:
+        """Most recent paid (not fully refunded) order date for an org.
+
+        Same chargeback-risk anchor as ``get_offboarding_past_period``, but for
+        a single organization — lets the backoffice surface how much of the
+        offboarding wind-down period remains before an auto-offboard.
+        """
+        statement = select(func.max(Order.created_at)).where(
+            Order.organization_id == organization_id,
+            Order.status.in_(PAID_ORDER_STATUSES),
+            Order.deleted_at.is_(None),
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none()
 
     def get_sorting_clause(self, property: OrganizationSortProperty) -> SortingClause:
         match property:

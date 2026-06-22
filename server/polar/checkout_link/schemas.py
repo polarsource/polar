@@ -14,6 +14,7 @@ from polar.kit.metadata import (
 from polar.kit.schemas import (
     HttpUrlToStr,
     IDSchema,
+    Int32,
     MergeJSONSchema,
     Schema,
     SetSchemaReference,
@@ -92,7 +93,7 @@ class CheckoutLinkCreateBase(TrialConfigurationInputMixin, MetadataInputMixin, S
     discount_id: UUID4 | None = Field(
         default=None, description=_discount_id_description
     )
-    seats: int | None = Field(
+    seats: Int32 | None = Field(
         default=None, ge=1, le=10000, description=_seats_description
     )
     success_url: SuccessURL = None
@@ -154,7 +155,7 @@ class CheckoutLinkUpdate(MetadataInputMixin, TrialConfigurationInputMixin):
     discount_id: UUID4 | None = Field(
         default=None, description=_discount_id_description
     )
-    seats: int | None = Field(
+    seats: Int32 | None = Field(
         default=None, ge=1, le=10000, description=_seats_description
     )
     success_url: SuccessURL = None

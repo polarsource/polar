@@ -3,7 +3,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Annotated, Any, Literal, NotRequired, TypedDict
 from uuid import UUID
 
-from annotated_types import Ge, Le, Len, MinLen
+from annotated_types import Ge, Len, MinLen
 from pydantic import AfterValidator, Field, ValidationInfo
 from sqlalchemy import ForeignKey, String, UniqueConstraint, Uuid
 from sqlalchemy.dialects.postgresql import CITEXT, JSONB
@@ -11,6 +11,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
+from polar.kit.schemas import Int32
 
 if TYPE_CHECKING:
     from polar.models import Organization
@@ -36,8 +37,8 @@ class CustomFieldType(StrEnum):
         }[self]
 
 
-PositiveBoundedInt = Annotated[int, Ge(0), Le(INT32_MAX)]
-BoundedInt = Annotated[int, Ge(INT32_MIN), Le(INT32_MAX)]
+PositiveBoundedInt = Annotated[Int32, Ge(0)]
+BoundedInt = Int32
 NonEmptyString = Annotated[str, Len(min_length=1)]
 
 

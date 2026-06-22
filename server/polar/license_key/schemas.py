@@ -19,7 +19,7 @@ from polar.kit.metadata import (
     MetadataKey,
     MetadataValue,
 )
-from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.schemas import IDSchema, Int32, Schema, TimestampedSchema
 from polar.kit.utils import generate_uuid, utc_now
 from polar.models.license_key import LicenseKeyStatus
 
@@ -182,9 +182,9 @@ class LicenseKeyActivationRead(LicenseKeyActivationBase):
 
 class LicenseKeyUpdate(Schema):
     status: LicenseKeyStatus | None = None
-    usage: int = 0
-    limit_activations: int | None = Field(gt=0, le=1000, default=None)
-    limit_usage: int | None = Field(gt=0, default=None)
+    usage: Int32 = 0
+    limit_activations: Int32 | None = Field(gt=0, le=1000, default=None)
+    limit_usage: Int32 | None = Field(gt=0, default=None)
     expires_at: datetime | None = None
 
 

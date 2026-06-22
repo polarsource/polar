@@ -40,6 +40,7 @@ from polar.kit.metadata import (
 from polar.kit.schemas import (
     EmptyStrToNoneValidator,
     IDSchema,
+    Int32,
     MergeJSONSchema,
     Schema,
     SelectorWidget,
@@ -74,9 +75,6 @@ from polar.organization.schemas import OrganizationID
 
 PRODUCT_NAME_MIN_LENGTH = 3
 PRODUCT_NAME_MAX_LENGTH = 64
-
-# PostgreSQL int4 range limit
-INT_MAX_VALUE = 2_147_483_647
 
 # Product
 
@@ -361,10 +359,9 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
         decimal_places=12,
         description="The price per unit in cents. Supports up to 12 decimal places.",
     )
-    cap_amount: int | None = Field(
+    cap_amount: Int32 | None = Field(
         default=None,
         ge=0,
-        le=INT_MAX_VALUE,
         description=(
             "Optional maximum amount in cents that can be charged, "
             "regardless of the number of units consumed."

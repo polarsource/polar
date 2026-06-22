@@ -4059,27 +4059,6 @@ class TestOffboardExpiredOrganizations:
         assert result == []
         assert organization.status == OrganizationStatus.OFFBOARDING
 
-    async def test_status_changed_concurrently_is_skipped(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        # The candidate query returned an org whose status has since flipped.
-        organization.status = OrganizationStatus.ACTIVE
-        mocker.patch.object(
-            OrganizationRepository,
-            "get_offboarding_past_period",
-            return_value=[organization],
-        )
-        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
-
-        result = await organization_service.offboard_expired_organizations(session)
-
-        assert result == []
-        assert organization.status == OrganizationStatus.ACTIVE
-        enqueue_job_mock.assert_not_called()
-
 
 @pytest.mark.asyncio
 class TestSetPayoutAccount:

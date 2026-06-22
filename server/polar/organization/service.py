@@ -1427,17 +1427,12 @@ class OrganizationService:
         """
         repository = OrganizationRepository.from_session(session)
         cutoff = datetime.now(UTC) - settings.ORGANIZATION_OFFBOARDING_PERIOD
+        # The candidate query takes FOR UPDATE on each org row, so a concurrent
+        # admin status change either falls out of the WHERE clause or waits
+        # behind our lock — no per-row re-check needed.
         candidates = await repository.get_offboarding_past_period(cutoff)
         transitioned: list[Organization] = []
         for organization in candidates:
-            # Lock the row and re-read status so a concurrent admin action that
-            # moved the org out of OFFBOARDING between the candidate query and
-            # here isn't clobbered with the terminal OFFBOARDED state.
-            await session.refresh(
-                organization, attribute_names=["status"], with_for_update=True
-            )
-            if organization.status != OrganizationStatus.OFFBOARDING:
-                continue
             organization.set_status(OrganizationStatus.OFFBOARDED)
             _append_internal_note(
                 organization,

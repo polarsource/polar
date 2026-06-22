@@ -194,6 +194,10 @@ class OrganizationRepository(
         The period is measured from the most recent paid order that hasn't been
         fully refunded (the post-chargeback-risk window). Orgs without such an
         order fall back to when they entered offboarding (``status_updated_at``).
+
+        ``FOR UPDATE`` on the org row: a concurrent admin status change either
+        commits before our SELECT (and the row falls out of the WHERE clause) or
+        waits behind our lock — eliminating the read/transition race.
         """
         last_paid_order_at = (
             select(func.max(Order.created_at))
@@ -214,6 +218,7 @@ class OrganizationRepository(
             )
             .order_by(anchor.asc())
             .limit(limit)
+            .with_for_update(of=Organization)
         )
         return await self.get_all(statement)
 

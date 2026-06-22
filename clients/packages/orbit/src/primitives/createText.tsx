@@ -6,13 +6,12 @@ import {
 } from 'react'
 import * as stylex from '@stylexjs/stylex'
 
+import { textColorStyles, textRoleStyles } from '../tokens/semantics.stylex'
 import {
   textAlignStyles,
-  textColorStyles,
-  textRoleStyles,
   textUtilityStyles,
   textWrapStyles,
-} from '../tokens/semantics.stylex'
+} from '../utils/text-styles'
 
 type TextTag =
   | 'p'

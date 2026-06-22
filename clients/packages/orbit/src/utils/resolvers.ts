@@ -68,7 +68,6 @@ import {
   pointerEventsStyles,
   positionStyles,
   rowGapStyles,
-  textAlignStyles,
   TRANSITION_PROPERTY_VALUES,
   transitionDelayStyles,
   transitionDurationStyles,
@@ -77,6 +76,7 @@ import {
   userSelectStyles,
   visibilityStyles,
 } from './box-styles'
+import { textAlignStyles } from './text-styles'
 import type { BoxStyleProps, PseudoState, ResponsiveValue } from './types'
 
 const PSEUDO_SELECTOR_MAP: Record<PseudoState, string> = {

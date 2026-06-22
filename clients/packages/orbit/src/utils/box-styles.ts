@@ -504,15 +504,6 @@ export const userSelectStyles = stylex.create({
   auto: { userSelect: 'auto' },
 })
 
-// ── Text Align ──────────────────────────────────────────────────────────────
-
-export const textAlignStyles = stylex.create({
-  left: { textAlign: 'left' },
-  center: { textAlign: 'center' },
-  right: { textAlign: 'right' },
-  justify: { textAlign: 'justify' },
-})
-
 // ── Motion ───────────────────────────────────────────────────────────────────
 
 export const transitionPropertyStyles = stylex.create({

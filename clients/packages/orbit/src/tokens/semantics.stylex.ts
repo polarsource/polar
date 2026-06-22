@@ -129,31 +129,6 @@ export const textColorStyles = stylex.create({
   inherit: {},
 })
 
-export const textAlignStyles = stylex.create({
-  left: { textAlign: 'left' },
-  center: { textAlign: 'center' },
-  right: { textAlign: 'right' },
-  justify: { textAlign: 'justify' },
-})
-
-export const textWrapStyles = stylex.create({
-  wrap: { textWrap: 'wrap' },
-  nowrap: { textWrap: 'nowrap' },
-  balance: { textWrap: 'balance' },
-  pretty: { textWrap: 'pretty' },
-})
-
-export const textUtilityStyles = stylex.create({
-  monospace: { fontFamily: fontFamilies.mono },
-  tabularNums: { fontVariantNumeric: 'tabular-nums' },
-  lineThrough: { textDecoration: 'line-through' },
-  truncate: {
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  },
-})
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type StyleXTokenKeys<T> = Exclude<

@@ -1,9 +1,9 @@
 from typing import Annotated, Literal
 
-from annotated_types import Gt, Le
+from annotated_types import Gt
 from pydantic.types import UUID4
 
-from polar.kit.schemas import Schema
+from polar.kit.schemas import Int32, Schema
 from polar.models.benefit import BenefitType
 
 from ..base.schemas import (
@@ -13,8 +13,6 @@ from ..base.schemas import (
     BenefitUpdateBase,
     BenefitUpdateVisibilityMixin,
 )
-
-INT_MAX_VALUE = 2_147_483_647
 
 
 class BenefitMeterCreditProperties(Schema):
@@ -32,7 +30,7 @@ class BenefitMeterCreditCreateProperties(Schema):
     Properties for creating a benefit of type `meter_unit`.
     """
 
-    units: Annotated[int, Gt(0), Le(INT_MAX_VALUE)]
+    units: Annotated[Int32, Gt(0)]
     rollover: bool
     meter_id: UUID4
 

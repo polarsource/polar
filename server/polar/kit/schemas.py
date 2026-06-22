@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Annotated, Any, Literal, cast, get_args, overload
 
+from annotated_types import Ge, Le
 from pydantic import (
     UUID4,
     AfterValidator,
@@ -68,6 +69,10 @@ UUID4ToStr = Annotated[UUID4, PlainSerializer(lambda v: str(v), return_type=str)
 HttpUrlToStr = Annotated[HttpUrl, PlainSerializer(lambda v: str(v), return_type=str)]
 
 StripValidator = AfterValidator(lambda v: v.strip())
+
+# Bound to the PostgreSQL `INTEGER` (int32) range so input values that
+# would overflow at the database layer are rejected at validation.
+Int32 = Annotated[int, Ge(-2147483648), Le(2147483647)]
 
 
 @dataclasses.dataclass(slots=True)

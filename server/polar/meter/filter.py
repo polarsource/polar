@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import TYPE_CHECKING, Annotated, Any
 
-from annotated_types import Ge, Le, MaxLen
+from annotated_types import MaxLen
 from pydantic import AfterValidator, BaseModel, ConfigDict
 from sqlalchemy import (
     ColumnExpressionArgument,
@@ -20,14 +20,11 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 
 from polar.kit.metadata import get_nested_metadata_attr, get_nested_metadata_value
+from polar.kit.schemas import Int32
 
 if TYPE_CHECKING:
     from polar.models import Event
 
-
-# PostgreSQL int4 range limits
-INT_MIN_VALUE = -2_147_483_648
-INT_MAX_VALUE = 2_147_483_647
 
 # String length limit for filtering values
 MAX_STRING_LENGTH = 1000
@@ -52,11 +49,7 @@ def _strip_metadata_prefix(value: str) -> str:
 class FilterClause(BaseModel):
     property: Annotated[str, AfterValidator(_strip_metadata_prefix)]
     operator: FilterOperator
-    value: (
-        Annotated[str, MaxLen(MAX_STRING_LENGTH)]
-        | Annotated[int, Ge(INT_MIN_VALUE), Le(INT_MAX_VALUE)]
-        | bool
-    )
+    value: Annotated[str, MaxLen(MAX_STRING_LENGTH)] | Int32 | bool
 
     def get_sql_clause(self, model: type[Any]) -> ColumnExpressionArgument[bool]:
         if self.property in model._filterable_fields:

@@ -22,6 +22,7 @@ from polar.kit.schemas import (
     ClassName,
     EmptyStrToNone,
     IDSchema,
+    Int32,
     MergeJSONSchema,
     Schema,
     SetSchemaReference,
@@ -90,14 +91,14 @@ EndsAt = Annotated[
     ),
 ]
 MaxRedemptions = Annotated[
-    int | None,
+    Int32 | None,
     Field(
         description="Optional maximum number of times the discount can be redeemed.",
     ),
     Ge(1),
 ]
 DurationInMonths = Annotated[
-    int,
+    Int32,
     Field(
         description=inspect.cleandoc("""
         Number of months the discount should be applied.
@@ -131,7 +132,7 @@ Amounts = Annotated[
     ),
 ]
 BasisPoints = Annotated[
-    int,
+    Int32,
     Field(
         description=(
             inspect.cleandoc("""
@@ -186,7 +187,7 @@ Duration = Annotated[
     ),
 ]
 DurationInMonthsOptional = Annotated[
-    int | None,
+    Int32 | None,
     Field(
         default=None,
         description=inspect.cleandoc("""

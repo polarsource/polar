@@ -24,6 +24,7 @@ from polar.kit.schemas import (
     METER_ID_EXAMPLE,
     PRODUCT_ID_EXAMPLE,
     IDSchema,
+    Int32,
     MergeJSONSchema,
     Schema,
     SetSchemaReference,
@@ -327,7 +328,7 @@ class SubscriptionUpdateBase(Schema):
 class SubscriptionUpdateSeats(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    seats: int = Field(
+    seats: Int32 = Field(
         description="Update the number of seats for this subscription.",
         ge=1,
     )

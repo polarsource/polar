@@ -43,6 +43,7 @@ from polar.kit.schemas import (
     EmptyStrToNoneValidator,
     HttpUrlToStr,
     IDSchema,
+    Int32,
     Schema,
     SetSchemaReference,
     StripValidator,
@@ -196,19 +197,19 @@ class CheckoutCreateBase(
         default=False, description=_require_billing_address_description
     )
     amount: Amount | None = None
-    seats: int | None = Field(
+    seats: Int32 | None = Field(
         default=None,
         ge=1,
         le=10000,
         description="Predefined number of seats (works with seat-based pricing only)",
     )
-    min_seats: int | None = Field(
+    min_seats: Int32 | None = Field(
         default=None,
         ge=1,
         le=10000,
         description=("Minimum number of seats (works with seat-based pricing only)"),
     )
-    max_seats: int | None = Field(
+    max_seats: Int32 | None = Field(
         default=None,
         ge=1,
         le=10000,
@@ -361,7 +362,7 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
         ),
     )
     amount: Amount | None = None
-    seats: int | None = Field(
+    seats: Int32 | None = Field(
         default=None,
         ge=1,
         le=10000,

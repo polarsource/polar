@@ -36,6 +36,8 @@ server/polar/subscription/service.py
   s_055272d137234c::t_e5ca5ce0e5cf1a 2852,2855-2856
   s_055272d137234c::t_5b0c4d4014c6f4 879-880
   s_055272d137234c::t_347c154181cef3 1048-1059
+  s_055272d137234c::t_c8c48b0fedc1c2 1047
+  s_055272d137234c::t_672fbfcffb5ed1 878,881-884
 server/polar/models/subscription_meter.py
   s_055272d137234c::t_03714b182e5504 23-30
 server/tests/e2e/infra/scheduler_simulator.py
@@ -51,6 +53,7 @@ server/tests/order/test_service.py
   s_055272d137234c::t_3098ecf59e5b34 2234
   s_055272d137234c::t_3c4d638107343b 3186-3191
   s_055272d137234c::t_03714b182e5504 3,123,2138-2233,2235-2239,2335-2363,3092-3184
+  s_055272d137234c::t_c8c48b0fedc1c2 3185
 server/migrations/versions/2026-06-17-2114_add_carried_units_to_subscription_meter.py
   s_055272d137234c::t_03714b182e5504 1-44
 server/polar/customer_meter/service.py
@@ -80,6 +83,9 @@ server/polar/order/service.py
   s_055272d137234c::t_34d6aaed955276 3124-3128
   s_055272d137234c::t_20270736667e34 1550-1551,1567-1569,1572-1579,1581,1601
   s_055272d137234c::t_0d39a85445ef3a 1588-1589
+  s_055272d137234c::t_c8c48b0fedc1c2 2971,3101-3102,3104-3109,3112-3115,3117-3120,3122-3123,3129-3133
+server/tests/order/test_schemas.py
+  s_055272d137234c::t_c8c48b0fedc1c2 26
 ---
 {
   "schema_version": "authorship/3.0.0",

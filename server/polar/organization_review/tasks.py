@@ -118,6 +118,7 @@ async def _persist_agent_result(
     max_retries=4,
     min_backoff=30_000,
     debounce_key=_run_agent_debounce_key,
+    debounce_min_threshold=300,
 )
 async def run_review_agent(
     organization_id: uuid.UUID,

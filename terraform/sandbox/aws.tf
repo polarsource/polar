@@ -34,7 +34,7 @@ module "dummy_lambda_worker" {
   name                 = "dummy"
   queue_name           = "polar-sandbox-tasks-dummy"
   image_uri            = "${module.lambda_worker_ecr.repository_url}:latest"
-  enabled              = false
+  enabled              = true
   reserved_concurrency = null
   subnet_ids           = local.lambda_subnet_ids
   security_group_ids   = local.lambda_security_group_ids

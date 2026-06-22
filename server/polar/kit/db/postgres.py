@@ -53,12 +53,15 @@ def create_async_engine(
     pool_recycle: int | None = None,
     command_timeout: float | None = None,
     debug: bool = False,
+    ssl: str | None = None,
 ) -> AsyncEngine:
     connect_args: dict[str, Any] = {"prepared_statement_cache_size": 0}
     if application_name is not None:
         connect_args["server_settings"] = {"application_name": application_name}
     if command_timeout is not None:
         connect_args["command_timeout"] = command_timeout
+    if ssl is not None:
+        connect_args["ssl"] = ssl
 
     return _create_async_engine(
         dsn,

@@ -31,6 +31,7 @@ def create_async_engine(
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
         command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
+        ssl="require" if settings.POSTGRES_SSL else None,
     )
 
 
@@ -43,6 +44,7 @@ def create_async_read_engine(process_name: ProcessName) -> AsyncEngine:
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
         command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
+        ssl="require" if settings.POSTGRES_SSL else None,
     )
 
 

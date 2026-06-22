@@ -210,9 +210,9 @@ data "aws_iam_policy_document" "lambda_worker_deploy" {
       "lambda:UpdateFunctionCode",
     ]
     resources = [
-      "arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:polar-test-lambda-worker*",
-      "arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:polar-sandbox-lambda-worker*",
-      "arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:polar-production-lambda-worker*",
+      "arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:polar-test-worker-*",
+      "arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:polar-sandbox-worker-*",
+      "arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:polar-production-worker-*",
     ]
   }
 }

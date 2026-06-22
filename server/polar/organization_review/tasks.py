@@ -8,6 +8,10 @@ from polar.exceptions import PolarTaskError
 from polar.integrations.polar.service import polar_self
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.organization_review import OrganizationReview
+from polar.models.support_case import (
+    SupportCaseAudience,
+    SupportCaseMessageAuthorKind,
+)
 from polar.organization.repository import (
     OrganizationRepository,
 )
@@ -16,9 +20,15 @@ from polar.organization.repository import (
 )
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
+from polar.support_case.repository import (
+    SupportCaseMessageRepository,
+    SupportCaseRepository,
+)
+from polar.support_case.service import support_case as support_case_service
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .agent import run_organization_review
+from .appeal_case import HUMAN_REVIEW_GREETING
 from .report import build_agent_report
 from .repository import OrganizationReviewRepository
 from .schemas import (
@@ -365,4 +375,34 @@ async def review_appeal(organization_id: uuid.UUID) -> None:
             review_context=ReviewContext.APPEAL,
             verdict=report.verdict,
             risk_score=report.overall_risk_score,
+        )
+
+
+@actor(
+    actor_name="organization_review.post_appeal_greeting",
+    priority=TaskPriority.LOW,
+)
+async def post_appeal_greeting(case_id: uuid.UUID) -> None:
+    """Post the automated greeting to a freshly opened human-review case."""
+    async with AsyncSessionMaker() as session:
+        case = await SupportCaseRepository.from_session(session).get_by_id(case_id)
+        if case is None:
+            return
+
+        message_repository = SupportCaseMessageRepository.from_session(session)
+        if not await message_repository.is_open(case_id):
+            return
+        existing = await message_repository.list_by_case(case_id, visible_to=None)
+        if any(
+            message.author_kind == SupportCaseMessageAuthorKind.platform
+            for message in existing
+        ):
+            return
+
+        await support_case_service.post_message(
+            session,
+            case,
+            author_kind=SupportCaseMessageAuthorKind.platform,
+            body=HUMAN_REVIEW_GREETING,
+            audience=[SupportCaseAudience.merchant],
         )

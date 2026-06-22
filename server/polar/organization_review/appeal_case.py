@@ -22,6 +22,15 @@ from polar.support_case.repository import (
 from polar.support_case.service import support_case as support_case_service
 from polar.worker import enqueue_job
 
+HUMAN_REVIEW_GREETING = (
+    "Thanks for reaching out! Our team will review your appeal and get back to "
+    "you within 1–2 business days."
+)
+
+# The greeting is posted by a background job after this delay, so it lands a
+# beat after the merchant's message instead of in the same instant.
+HUMAN_REVIEW_GREETING_DELAY_MS = 1500
+
 
 class AppealCaseError(PolarError): ...
 
@@ -88,6 +97,11 @@ class AppealCaseService:
             author_user=requested_by_user,
             body=reason,
             audience=[SupportCaseAudience.merchant],
+        )
+        enqueue_job(
+            "organization_review.post_appeal_greeting",
+            case_id=case.id,
+            delay=HUMAN_REVIEW_GREETING_DELAY_MS,
         )
         return case
 

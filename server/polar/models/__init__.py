@@ -98,6 +98,7 @@ from .user import OAuthAccount, User
 from .user_notification import UserNotification
 from .user_organization import UserOrganization
 from .user_session import UserSession
+from .user_session_organization import UserSessionOrganization
 from .wallet import Wallet
 from .wallet_transaction import WalletTransaction
 from .webhook_delivery import WebhookDelivery
@@ -208,6 +209,7 @@ __all__ = [
     "UserNotification",
     "UserOrganization",
     "UserSession",
+    "UserSessionOrganization",
     "Wallet",
     "WalletTransaction",
     "WebhookDelivery",

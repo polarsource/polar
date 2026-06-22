@@ -244,7 +244,7 @@ class Settings(BaseSettings):
     # uses Firecrawl Cloud, and "shadow" runs Firecrawl alongside Playwright to
     # log a comparison while still using Playwright's result for the live verdict.
     ORGANIZATION_REVIEW_SCRAPER: Literal["playwright", "firecrawl", "shadow"] = (
-        "playwright"
+        "firecrawl"
     )
 
     # Stripe

@@ -19,7 +19,7 @@ const TONE_APPEARANCE: Record<
   success: { backgroundColor: 'background-success', color: 'text-success' },
   warning: { backgroundColor: 'background-warning', color: 'text-warning' },
   danger: { backgroundColor: 'background-danger', color: 'text-danger' },
-  pending: { backgroundColor: 'background-pending', color: 'text-pending' },
+  pending: { backgroundColor: 'background-card', color: 'text-disabled' },
   neutral: { backgroundColor: 'background-card', color: 'text-secondary' },
 }
 

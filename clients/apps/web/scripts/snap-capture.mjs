@@ -48,6 +48,7 @@ async function login(page, job, baseUrl, runDir) {
   const signIn = page.getByRole('button', { name: 'Sign in with email' })
   let navigated = false
   for (let attempt = 0; attempt < 3 && !navigated; attempt++) {
+    await signIn.click().catch(() => {})
     navigated = await page
       .waitForURL(/email-otp/, { timeout: 45000 })
       .then(() => true)
@@ -67,6 +68,7 @@ async function login(page, job, baseUrl, runDir) {
   if (!code)
     throw new Error('OTP code never appeared in api.log (is the run’s API up?)')
 
+  await page.fill('input[autocomplete="one-time-code"]', code)
   await page.waitForURL(/\/dashboard/, { timeout: 30000 }).catch(() => {})
 }
 
@@ -80,7 +82,7 @@ function toUrl(shotUrl, baseUrl) {
 
 async function main() {
   const job = JSON.parse(await readFile(jobPath, 'utf8'))
-
+  const runDir = path.dirname(path.resolve(jobPath))
   const resultDir = path.join(runDir, 'result')
   const baseUrl = `http://${job.host}:${job.port}`
   const shots = job.shots || []

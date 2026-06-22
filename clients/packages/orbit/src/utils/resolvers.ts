@@ -3,25 +3,29 @@ import type React from 'react'
 import type {
   BackgroundColorToken,
   BorderColorToken,
+  TextColorToken,
+} from '../tokens/semantics.stylex'
+import type {
   BorderRadiusToken,
   BreakpointKey,
   DurationToken,
   EasingToken,
   ShadowToken,
   SpacingToken,
-  TextColorToken,
-} from '../tokens/tokens.stylex'
+} from '../tokens/value.stylex'
 import {
   backgroundColors,
   borderColors,
+  textColors,
+} from '../tokens/semantics.stylex'
+import {
   borderRadii,
   breakpoints,
   durations,
   easings,
   shadows,
   spacing,
-  textColors,
-} from '../tokens/tokens.stylex'
+} from '../tokens/value.stylex'
 import {
   alignContentStyles,
   alignItemsStyles,
@@ -64,7 +68,6 @@ import {
   pointerEventsStyles,
   positionStyles,
   rowGapStyles,
-  textAlignStyles,
   TRANSITION_PROPERTY_VALUES,
   transitionDelayStyles,
   transitionDurationStyles,
@@ -73,6 +76,7 @@ import {
   userSelectStyles,
   visibilityStyles,
 } from './box-styles'
+import { textAlignStyles } from './text-styles'
 import type { BoxStyleProps, PseudoState, ResponsiveValue } from './types'
 
 const PSEUDO_SELECTOR_MAP: Record<PseudoState, string> = {

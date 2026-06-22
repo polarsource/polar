@@ -1216,7 +1216,8 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
                 "`dev snap` runs the whole dev stack itself. It rebuilds "
                 "packages and restarts the web server on each branch, and reads the "
                 f"login OTP from its own API log. So it needs :{DEFAULT_API_PORT} "
-                f"and :{DEFAULT_WEB_PORT} to itself."
+                f"and :{DEFAULT_WEB_PORT} to itself.\n\n"
+                "Free them with [cyan]dev kill-ports[/cyan], then re-run."
             )
             console.print()
             console.print(

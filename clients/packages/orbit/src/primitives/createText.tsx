@@ -1,11 +1,17 @@
-import { cva, type VariantProps } from 'class-variance-authority'
 import {
   type ComponentPropsWithoutRef,
   type ElementType,
   type JSX,
   type ReactNode,
 } from 'react'
-import { twMerge } from 'tailwind-merge'
+import * as stylex from '@stylexjs/stylex'
+
+import { textColorStyles, textRoleStyles } from '../tokens/semantics.stylex'
+import {
+  textAlignStyles,
+  textUtilityStyles,
+  textWrapStyles,
+} from '../utils/text-styles'
 
 type TextTag =
   | 'p'
@@ -23,59 +29,42 @@ type TextTag =
   | 'h5'
   | 'h6'
 
-const textVariants = cva('', {
-  variants: {
-    variant: {
-      default: 'text-sm',
-      body: 'text-base',
-      label: 'text-xs font-medium',
-      caption: 'text-xs leading-snug',
-      'heading-2xl': `font-display text-6xl md:text-8xl`,
-      'heading-xl': `font-display text-5xl md:text-7xl`,
-      'heading-l': `font-display text-4xl md:text-5xl`,
-      'heading-m': `text-3xl md:text-4xl`,
-      'heading-s': `text-2xl md:text-3xl`,
-      'heading-xs': `text-xl  md:text-2xl`,
-      'heading-xxs': `text-lg  md:text-xl`,
-    },
-    color: {
-      default: 'text-black dark:text-white',
-      muted: 'text-gray-500 dark:text-polar-500',
-      disabled: 'text-gray-400 dark:text-polar-600',
-      accent: 'text-indigo-500 dark:text-indigo-500',
-      danger: 'text-red-500 dark:text-red-500',
-      error: 'text-red-500 dark:text-red-500',
-      warning: 'text-amber-500 dark:text-amber-500',
-      success: 'text-emerald-500 dark:text-emerald-500',
-      inverse: 'text-white dark:text-black',
-      white: 'text-white dark:text-white',
-      black: 'text-black dark:text-black',
-      inherit: '',
-    },
-    align: {
-      left: 'text-left',
-      center: 'text-center',
-      right: 'text-right',
-      justify: 'text-justify',
-    },
-    wrap: {
-      wrap: 'text-wrap',
-      nowrap: 'text-nowrap',
-      balance: 'text-balance',
-      pretty: 'text-pretty',
-    },
-  },
-  defaultVariants: {
-    variant: 'default',
-    color: 'default',
-  },
-})
+export type TextVariant =
+  | 'default'
+  | 'body'
+  | 'label'
+  | 'caption'
+  | 'heading-2xl'
+  | 'heading-xl'
+  | 'heading-l'
+  | 'heading-m'
+  | 'heading-s'
+  | 'heading-xs'
+  | 'heading-xxs'
 
-export type TextVariant = NonNullable<
-  VariantProps<typeof textVariants>['variant']
->
-export type TextColor = NonNullable<VariantProps<typeof textVariants>['color']>
-export type TextStyleProps = VariantProps<typeof textVariants>
+export type TextColor =
+  | 'default'
+  | 'muted'
+  | 'disabled'
+  | 'accent'
+  | 'danger'
+  | 'error'
+  | 'warning'
+  | 'success'
+  | 'inverse'
+  | 'white'
+  | 'black'
+  | 'inherit'
+
+export type TextAlign = 'left' | 'center' | 'right' | 'justify'
+export type TextWrap = 'wrap' | 'nowrap' | 'balance' | 'pretty'
+
+export type TextStyleProps = {
+  variant?: TextVariant
+  color?: TextColor
+  align?: TextAlign
+  wrap?: TextWrap
+}
 
 // The role each variant plays decides which element it should render as, so the
 // integrator picks a role and gets a sane document outline for free. Override
@@ -299,9 +288,20 @@ function Text<E extends TextTag = 'p'>({
     }
   }
 
+  const stylexProps = stylex.props(
+    textRoleStyles[resolvedVariant],
+    textColorStyles[color ?? 'default'],
+    align && textAlignStyles[align],
+    resolvedWrap && textWrapStyles[resolvedWrap],
+    monospace && textUtilityStyles.monospace,
+    tabularNums && textUtilityStyles.tabularNums,
+    lineThrough && textUtilityStyles.lineThrough,
+    truncate === true && textUtilityStyles.truncate,
+  )
+
   const mergedStyle: React.CSSProperties = {
+    ...stylexProps.style,
     ...(isHeading && { fontFeatureSettings: HEADING_FONT_FEATURES }),
-    ...(lineThrough ? { textDecoration: 'line-through' } : {}),
     ...(typeof truncate === 'number'
       ? {
           display: '-webkit-box',
@@ -316,12 +316,7 @@ function Text<E extends TextTag = 'p'>({
 
   return (
     <Tag
-      className={twMerge(
-        textVariants({ variant, color, align, wrap: resolvedWrap }),
-        monospace && 'font-mono',
-        tabularNums && 'tabular-nums',
-        truncate === true && 'truncate',
-      )}
+      className={stylexProps.className}
       style={mergedStyle}
       {...(props as object)}
     >

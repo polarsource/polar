@@ -13,12 +13,10 @@ export const BACKGROUND_TOKENS: {
   { token: 'background-primary', note: 'Page background' },
   { token: 'background-secondary', note: 'Sectioned / raised surface' },
   { token: 'background-card', note: 'Card / inset panel surface' },
-  { token: 'background-card-raised', note: 'Raised card (dark only)' },
   { token: 'background-inverse', note: 'Inverted, high-contrast surface' },
   { token: 'background-warning', note: 'Warning surface' },
   { token: 'background-success', note: 'Success surface' },
   { token: 'background-danger', note: 'Danger surface' },
-  { token: 'background-pending', note: 'Pending / neutral surface' },
 ]
 
 export const TEXT_TOKENS: { token: TextColorToken; note: string }[] = [
@@ -28,14 +26,12 @@ export const TEXT_TOKENS: { token: TextColorToken; note: string }[] = [
   { token: 'text-success', note: 'Success text' },
   { token: 'text-danger', note: 'Danger text' },
   { token: 'text-warning', note: 'Warning text' },
-  { token: 'text-pending', note: 'Pending / neutral text' },
 ]
 
 export const BORDER_TOKENS: { token: BorderColorToken; note: string }[] = [
   { token: 'border-primary', note: 'Default borders & dividers' },
   { token: 'border-secondary', note: 'Subtle / secondary dividers' },
   { token: 'border-warning', note: 'Warning borders' },
-  { token: 'border-card', note: 'Card outlines' },
 ]
 
 function SwatchFrame({
@@ -126,7 +122,7 @@ export function BorderSwatch({
         height={64}
         borderRadius="m"
         backgroundColor="background-secondary"
-        borderWidth={4}
+        borderWidth={1}
         borderStyle="solid"
         borderColor={token}
       />

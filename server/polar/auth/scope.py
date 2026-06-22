@@ -144,7 +144,15 @@ READ_ONLY_SCOPES: set[Scope] = {
     Scope.organization_access_tokens_read,
 }
 
-SCOPES_SUPPORTED = [s.value for s in Scope]
+SCOPES_SUPPORTED = [
+    s.value
+    for s in Scope
+    if s
+    not in {
+        Scope.organization_access_tokens_read,
+        Scope.organization_access_tokens_write,
+    }
+]
 SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.openid: "OpenID",
     Scope.profile: "Read your profile",

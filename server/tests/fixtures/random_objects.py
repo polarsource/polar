@@ -661,12 +661,13 @@ async def create_product_fixed_and_seat(
     tiers: list[dict[str, typing.Any]] | None = None,
     seat_tier_type: SeatTierType = SeatTierType.volume,
     currency: str = "usd",
-    recurring_interval: SubscriptionRecurringInterval = (
+    recurring_interval: SubscriptionRecurringInterval | None = (
         SubscriptionRecurringInterval.month
     ),
 ) -> Product:
-    """Create a recurring product composing one fixed price with one seat price.
+    """Create a product composing one fixed price with one seat price.
 
+    Recurring by default; pass ``recurring_interval=None`` for a one-time product.
     Bills ``fixed_amount + seat_price.calculate_amount(seats)``. Pass ``tiers``
     (with ``seat_tier_type=graduated``) for a graduated seat schedule.
     """

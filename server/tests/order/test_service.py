@@ -825,6 +825,45 @@ class TestCreateFromCheckoutOneTime:
         await session.refresh(customer)
         assert customer.type == CustomerType.individual
 
+    async def test_composed_fixed_and_seat_upgrades_customer_to_team(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # A one-time product composing a fixed price with a seat price always
+        # bills both (fixed + per-seat), so the buyer really does purchase seats
+        # and must be upgraded to 'team'.
+        product = await create_product_fixed_and_seat(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            fixed_amount=5000,
+            price_per_seat=1000,
+        )
+
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+            seats=3,
+        )
+
+        order = await order_service.create_from_checkout_one_time(session, checkout)
+
+        assert order.seats == 3
+        assert len(order.items) == 2
+
+        await session.refresh(customer)
+        assert customer.type == CustomerType.team
+
+        # Seat-based orders defer benefit grants until seats are claimed
+        for c in enqueue_job_mock.call_args_list:
+            assert c.args[0] != "benefit.enqueue_benefits_grants"
+
 
 @pytest.mark.asyncio
 class TestCreateFromCheckoutSubscription:

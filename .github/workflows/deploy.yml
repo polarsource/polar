@@ -288,6 +288,8 @@ jobs:
           context: ./server
           target: lambda
           platforms: linux/amd64
+          provenance: false
+          sbom: false
           build-args: |
             RELEASE_VERSION=${{ github.sha }}
           secrets: |

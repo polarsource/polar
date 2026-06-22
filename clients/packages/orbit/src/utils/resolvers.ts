@@ -3,25 +3,29 @@ import type React from 'react'
 import type {
   BackgroundColorToken,
   BorderColorToken,
+  TextColorToken,
+} from '../tokens/semantics.stylex'
+import type {
   BorderRadiusToken,
   BreakpointKey,
   DurationToken,
   EasingToken,
   ShadowToken,
   SpacingToken,
-  TextColorToken,
-} from '../tokens/tokens.stylex'
+} from '../tokens/value.stylex'
 import {
   backgroundColors,
   borderColors,
+  textColors,
+} from '../tokens/semantics.stylex'
+import {
   borderRadii,
   breakpoints,
   durations,
   easings,
   shadows,
   spacing,
-  textColors,
-} from '../tokens/tokens.stylex'
+} from '../tokens/value.stylex'
 import {
   alignContentStyles,
   alignItemsStyles,

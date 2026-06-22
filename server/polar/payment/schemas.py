@@ -13,7 +13,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.models.payment import PaymentStatus
+from polar.models.payment import PaymentStatus, PaymentTrigger
 
 PaymentID = Annotated[UUID4, Path(description="The payment ID.")]
 
@@ -31,6 +31,14 @@ class PaymentBase(IDSchema, TimestampedSchema):
         examples=["usd"],
     )
     method: str = Field(description="The payment method used.", examples=["card"])
+    trigger: PaymentTrigger | None = Field(
+        None,
+        description=(
+            "What initiated this payment attempt, e.g. initial purchase, "
+            "subscription renewal, or an automated dunning retry."
+        ),
+        examples=[PaymentTrigger.subscription_cycle],
+    )
     decline_reason: str | None = Field(
         description="Error code, if the payment was declined.",
         examples=["insufficient_funds"],

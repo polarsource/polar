@@ -12,3 +12,8 @@ output "dummy_lambda_worker_queue_url" {
   description = "Sandbox dummy Lambda worker SQS queue URL."
   value       = module.dummy_lambda_worker.queue_url
 }
+
+output "egress_ip" {
+  description = "Static NAT egress IP for the sandbox VPC. Add this (as a /32) to the database IP allow list."
+  value       = module.egress_ip.public_ip
+}

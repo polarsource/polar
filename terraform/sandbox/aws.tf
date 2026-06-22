@@ -74,13 +74,10 @@ module "dummy_lambda_worker" {
     POLAR_LOG_LEVEL               = "INFO"
     POLAR_TESTING                 = "0"
     POLAR_POSTGRES_DATABASE       = "polar_sandbox"
-    POLAR_POSTGRES_HOST           = local.db_internal_host
+    POLAR_POSTGRES_HOST           = local.db_external_host
     POLAR_POSTGRES_PORT           = local.db_port
     POLAR_POSTGRES_USER           = local.db_user
-    POLAR_POSTGRES_READ_DATABASE  = "polar_sandbox"
-    POLAR_POSTGRES_READ_HOST      = local.read_replica.id
-    POLAR_POSTGRES_READ_PORT      = local.db_port
-    POLAR_POSTGRES_READ_USER      = local.db_user
+    POLAR_POSTGRES_SSL            = "true"
     POLAR_REDIS_HOST              = local.redis_host
     POLAR_REDIS_PORT              = local.redis_port
     POLAR_REDIS_DB                = "1"
@@ -90,14 +87,13 @@ module "dummy_lambda_worker" {
   }
 
   secret_environment_variables = {
-    POLAR_CURRENT_JWK_KID   = var.backend_current_jwk_kid_sandbox
-    POLAR_JWKS_CONTENT      = var.backend_jwks_sandbox
-    POLAR_LOGFIRE_TOKEN     = var.logfire_token
-    POLAR_POSTGRES_PWD      = local.db_password
-    POLAR_POSTGRES_READ_PWD = local.db_password
-    POLAR_SECRET            = var.backend_secret_sandbox
-    POLAR_SENTRY_DSN        = var.backend_sentry_dsn_sandbox
-    TAILSCALE_AUTHKEY       = var.lambda_worker_tailscale_token
+    POLAR_CURRENT_JWK_KID = var.backend_current_jwk_kid_sandbox
+    POLAR_JWKS_CONTENT    = var.backend_jwks_sandbox
+    POLAR_LOGFIRE_TOKEN   = var.logfire_token
+    POLAR_POSTGRES_PWD    = local.db_password
+    POLAR_SECRET          = var.backend_secret_sandbox
+    POLAR_SENTRY_DSN      = var.backend_sentry_dsn_sandbox
+    TAILSCALE_AUTHKEY     = var.lambda_worker_tailscale_token
   }
 }
 

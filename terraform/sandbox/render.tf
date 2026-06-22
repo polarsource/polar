@@ -35,6 +35,7 @@ locals {
   # Database connection info (derived from postgres resource)
   # db_host          = render_postgres.db.id
   db_internal_host = data.render_postgres.db.id
+  db_external_host = nonsensitive(regex("@([^/:]+)", data.render_postgres.db.connection_info.external_connection_string))
   db_port          = "5432"
   # db_name          = data.render_postgres.db.database_name
   db_user     = data.render_postgres.db.database_user

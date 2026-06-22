@@ -9,6 +9,7 @@ from sqlalchemy import (
     Integer,
     String,
     Uuid,
+    text,
 )
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -28,17 +29,19 @@ class DownloadableStatus(StrEnum):
 class Downloadable(RecordModel):
     __tablename__ = "downloadables"
     __table_args__ = (
-        # Uniqueness is member-aware, like benefit grants: each member holding the
+        # Member-aware uniqueness, matching benefit_grants: each member holding the
         # benefit gets their own row. NULLS NOT DISTINCT keeps customer-level
-        # (member_id IS NULL) grants idempotent for products without members.
+        # (member_id IS NULL) grants idempotent for products without members, and
+        # the partial WHERE excludes soft-deleted rows from the constraint.
         Index(
-            "downloadables_customer_id_file_id_benefit_id_member_id_key",
+            "ix_downloadables_scope_unique",
             "customer_id",
             "file_id",
             "benefit_id",
             "member_id",
             unique=True,
             postgresql_nulls_not_distinct=True,
+            postgresql_where=text("deleted_at IS NULL"),
         ),
     )
 

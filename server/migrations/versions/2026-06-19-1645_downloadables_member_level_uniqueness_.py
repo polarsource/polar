@@ -6,6 +6,7 @@ Create Date: 2026-06-19 16:45:39.548649
 
 """
 
+import sqlalchemy as sa
 from alembic import op
 
 # Polar Custom Imports
@@ -16,7 +17,7 @@ down_revision = "54267f23e641"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 
-NEW_INDEX = "downloadables_customer_id_file_id_benefit_id_member_id_key"
+NEW_INDEX = "ix_downloadables_scope_unique"
 OLD_CONSTRAINT = "downloadables_customer_id_file_id_benefit_id_key"
 
 
@@ -44,6 +45,7 @@ def upgrade() -> None:
             unique=True,
             postgresql_concurrently=True,
             postgresql_nulls_not_distinct=True,
+            postgresql_where=sa.text("deleted_at IS NULL"),
         )
 
     op.execute("SET LOCAL lock_timeout = '5s'")

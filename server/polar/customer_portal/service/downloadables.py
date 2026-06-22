@@ -100,6 +100,8 @@ class DownloadableService(
                 "status",
             },
             autocommit=False,
+            # Matches the partial unique index ix_downloadables_scope_unique.
+            index_where=Downloadable.deleted_at.is_(None),
         )
         await session.flush()
         instance = records[0]

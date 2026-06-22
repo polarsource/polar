@@ -54,6 +54,7 @@ _CANDIDATES = """
                 AND x.file_id = d.file_id
                 AND x.benefit_id = d.benefit_id
                 AND x.member_id = bg.member_id
+                AND x.deleted_at IS NULL
         )
 """
 
@@ -69,7 +70,9 @@ _INSERT_SQL = text(
         gen_random_uuid(), now(), 'granted',
         t.file_id, t.customer_id, t.member_id, t.benefit_id, 0
     FROM ({_CANDIDATES} LIMIT :batch_size) t
-    ON CONFLICT (customer_id, file_id, benefit_id, member_id) DO NOTHING
+    ON CONFLICT (customer_id, file_id, benefit_id, member_id)
+        WHERE deleted_at IS NULL
+        DO NOTHING
     """
 )
 

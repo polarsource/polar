@@ -72,7 +72,7 @@ export const OrderCalloutBanner = ({
   return (
     <Box
       display="grid"
-      gridTemplateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
+      gridTemplateColumns={{ base: '1fr', xl: 'repeat(2, minmax(0, 1fr))' }}
       alignItems="stretch"
       overflow="hidden"
       borderRadius="l"
@@ -84,7 +84,7 @@ export const OrderCalloutBanner = ({
       <Box
         flexDirection="column"
         rowGap="l"
-        padding="xl"
+        padding={{ base: 'l', md: 'xl' }}
         justifyContent="center"
       >
         <Box flexDirection="column" rowGap="m">
@@ -123,10 +123,10 @@ export const OrderCalloutBanner = ({
       <Box
         flexDirection="column"
         rowGap="l"
-        padding="xl"
+        padding={{ base: 'l', md: 'xl' }}
         justifyContent="center"
-        borderLeftWidth={{ base: 0, lg: 1 }}
-        borderTopWidth={{ base: 1, lg: 0 }}
+        borderLeftWidth={{ base: 0, xl: 1 }}
+        borderTopWidth={{ base: 1, xl: 0 }}
         borderStyle="solid"
         borderColor="border-primary"
       >

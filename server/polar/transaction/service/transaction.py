@@ -41,7 +41,7 @@ class TransactionService(BaseTransactionService):
         session: AsyncReadSession,
         user: User,
         *,
-        organization_ids: frozenset[uuid.UUID] | None = None,
+        organization_ids: frozenset[uuid.UUID] | None,
         type: TransactionType | None = None,
         account_id: uuid.UUID | None = None,
         payment_customer_id: uuid.UUID | None = None,
@@ -108,7 +108,7 @@ class TransactionService(BaseTransactionService):
         id: uuid.UUID,
         user: User,
         *,
-        organization_ids: frozenset[uuid.UUID] | None = None,
+        organization_ids: frozenset[uuid.UUID] | None,
     ) -> Transaction:
         statement = (
             self._get_readable_transactions_statement(
@@ -283,7 +283,7 @@ class TransactionService(BaseTransactionService):
         return int(result.scalar_one())
 
     def _get_readable_transactions_statement(
-        self, user: User, *, organization_ids: frozenset[uuid.UUID] | None = None
+        self, user: User, *, organization_ids: frozenset[uuid.UUID] | None
     ) -> Select[Any]:
         readable_org_ids = select_user_org_ids(
             user.id,

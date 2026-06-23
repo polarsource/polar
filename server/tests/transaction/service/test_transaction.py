@@ -23,7 +23,10 @@ class TestSearch:
         all_transactions: list[Transaction],
     ) -> None:
         results, count = await transaction_service.search(
-            session, user_second, pagination=PaginationParams(1, 10)
+            session,
+            user_second,
+            organization_ids=None,
+            pagination=PaginationParams(1, 10),
         )
 
         assert count == 0
@@ -38,7 +41,7 @@ class TestSearch:
         all_transactions: list[Transaction],
     ) -> None:
         results, count = await transaction_service.search(
-            session, user, pagination=PaginationParams(1, 10)
+            session, user, organization_ids=None, pagination=PaginationParams(1, 10)
         )
 
         assert count == len(readable_user_transactions)
@@ -69,6 +72,7 @@ class TestSearch:
         results, count = await transaction_service.search(
             session,
             user,
+            organization_ids=None,
             type=TransactionType.payout,
             pagination=PaginationParams(1, 10),
         )
@@ -96,7 +100,11 @@ class TestSearch:
         session.expunge_all()
 
         results, count = await transaction_service.search(
-            session, user, account_id=account.id, pagination=PaginationParams(1, 10)
+            session,
+            user,
+            organization_ids=None,
+            account_id=account.id,
+            pagination=PaginationParams(1, 10),
         )
 
         assert count == len(account_transactions)
@@ -121,6 +129,7 @@ class TestSearch:
         results, count = await transaction_service.search(
             session,
             user,
+            organization_ids=None,
             payment_user_id=user.id,
             pagination=PaginationParams(1, 10),
         )
@@ -148,6 +157,7 @@ class TestSearch:
         results, count = await transaction_service.search(
             session,
             user,
+            organization_ids=None,
             payment_organization_id=organization.id,
             pagination=PaginationParams(1, 10),
         )
@@ -253,7 +263,9 @@ class TestLookup:
         session.expunge_all()
 
         with pytest.raises(ResourceNotFound):
-            await transaction_service.lookup(session, uuid.uuid4(), user_second)
+            await transaction_service.lookup(
+                session, uuid.uuid4(), user_second, organization_ids=None
+            )
 
     async def test_user_not_accessible(
         self,
@@ -267,7 +279,10 @@ class TestLookup:
 
         with pytest.raises(ResourceNotFound):
             await transaction_service.lookup(
-                session, readable_user_transactions[0].id, user_second
+                session,
+                readable_user_transactions[0].id,
+                user_second,
+                organization_ids=None,
             )
 
     async def test_valid(
@@ -282,7 +297,7 @@ class TestLookup:
         session.expunge_all()
 
         transaction = await transaction_service.lookup(
-            session, readable_user_transactions[0].id, user
+            session, readable_user_transactions[0].id, user, organization_ids=None
         )
 
         assert transaction.id == readable_user_transactions[0].id

@@ -36,7 +36,7 @@ class TestBlockedOrganizationTransactionAccess:
         await save_fixture(organization)
 
         results, count = await transaction_service.search(
-            session, user, pagination=PaginationParams(1, 10)
+            session, user, organization_ids=None, pagination=PaginationParams(1, 10)
         )
 
         result_ids = [t.id for t in results]
@@ -61,7 +61,7 @@ class TestBlockedOrganizationTransactionAccess:
         await save_fixture(organization)
 
         results, count = await transaction_service.search(
-            session, user, pagination=PaginationParams(1, 10)
+            session, user, organization_ids=None, pagination=PaginationParams(1, 10)
         )
 
         result_ids = [t.id for t in results]
@@ -86,7 +86,7 @@ class TestBlockedOrganizationTransactionAccess:
         await save_fixture(organization)
 
         results, count = await transaction_service.search(
-            session, user, pagination=PaginationParams(1, 10)
+            session, user, organization_ids=None, pagination=PaginationParams(1, 10)
         )
 
         result_ids = [t.id for t in results]

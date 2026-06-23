@@ -81,7 +81,7 @@ else:
     redis_jobs = self._enqueued_jobs
 ```
 
-Each task that is handled by Lambda will get its own SQS queue. This means that the infrastructure per task is 1 Lambda, 1 SQS queue, and all other resources needed to handle this (IAM policies, etc). The logs and traces from the Lambda will be forwarded to Logfire, similar to how we handle logs today. The infrastructure will be encapsulated with a terraform module to make it easy to spin up (and down) new tasks as we add them.
+Each task that is handled by Lambda will get its own SQS queue. This means that the infrastructure per task is 1 Lambda, 1 SQS queue. Policies and security groups will be shared between the Lambdas to ensure that we don't have unnecessarily many resources tracked in Terraform, and that the tasks doesn't start to diverge too much. The added benefit with sharing security groups is that they will also share the same Hyperplane ENI. The logs and traces from the Lambda will be forwarded to Logfire, similar to how we handle logs today. The infrastructure will be encapsulated with a terraform module to make it easy to spin up (and down) new tasks as we add them.
 
 The tasks will be enqueued somewhat similar to how we enqueue tasks to Dramatiq today.
 
@@ -136,25 +136,42 @@ flowchart LR
      producer --> sqs_c["SQS: polar-tasks-task_c"]
      producer --> sqs_more["..."]
 
-     sqs_a --> lambda_a["Lambda: event.ingested"]
-     sqs_b --> lambda_b["Lambda: email.send"]
-     sqs_c --> lambda_c["Lambda: task_c"]
-     sqs_more --> lambda_more["..."]
+     sqs_a --> Lambda_a["Lambda: event.ingested"]
+     sqs_b --> Lambda_b["Lambda: email.send"]
+     sqs_c --> Lambda_c["Lambda: task_c"]
+     sqs_more --> Lambda_more["..."]
 
-     lambda_a -->|"failure: batchItemFailures → SQS redrive"| sqs_a
-     lambda_b -->|"failure: batchItemFailures → SQS redrive"| sqs_b
+     Lambda_a -->|"failure: batchItemFailures → SQS redrive"| sqs_a
+     Lambda_b -->|"failure: batchItemFailures → SQS redrive"| sqs_b
 
-     lambda_a -.->|"enqueue tinybird.ingest"| producer
-     lambda_c -.->|"enqueue new job"| producer
+     Lambda_a -.->|"enqueue tinybird.ingest"| producer
+     Lambda_c -.->|"enqueue new job"| producer
 
      note_conc["variable concurrency<br/>(scales with load)"]
-     lambda_b -.- note_conc
+     Lambda_b -.- note_conc
 
      classDef note fill:#fff3cd,stroke:#d39e00,color:#000;
      class note_conc note;
 ```
 
 We preserve the same retry/backoff behavior, implemented through SQS visibility/redrive instead of via the `Retry` exception handler in Dramatiq.
+
+The AWS environments will have a single static external IP per environment (production, sandbox, test). These can be used with the IP allow listing on Render to allow the Lambdas to access the database.
+
+Redis will on the other hand be segregated into Render and AWS instances. Since there are only a few touch points in Redis (Dramatiq, Customer state cache, Metrics cache), most of the usage is fine to be non-interlinked. The main drawbacks of this is that we will not be able to share cache between non-migrated tasks and migrated tasks, and we will not be able to enqueue non-migrated tasks from AWS. Both of these are deemed as acceptable trade-offs to prevent us from going above the connection limit on Redis on Render. The AWS Redis has higher connection limits which fits the higher concurrency limits of Lambdas better.
+
+### Potential problems and their solutions
+
+1. We can hit ENI limits
+
+If we reuse the same security groups and VPC subnets for all of the Lambdas, we will be able to reuse the same Hyperplane ENI. This will give us 65k connections per subnet. These will scale automatically behind the scenes, so even if we exhaust them we will get a new Hyperplane ENI. Setting up a new Hyperplane ENI has a small startup cost, which will impact the startup time of the Lambdas that are running with the new one.
+
+2. Hard limit timeout of Lambdas is 15m
+
+Our current p99.9 is 20.5s for the invoice generation, otherwise it's 12.5s. Overall the ambition is for the worker tasks to run fairly quickly, the default time limit is 60 seconds, with a few exceptions (10 minutes for organization member backfill, 3 minutes for organization review and 3 minutes for invoice rendering). We also have cron triggers that run every 5 or 15 minutes with the ambition is that the work should have finished before the next iteration of the same tasks are scheduled again.
+
+15 minutes is a good target for our tasks to be below, and is not a difficult constraint today.
+
 
 
 ### Local development
@@ -163,14 +180,26 @@ Local development will utilise [localstack](https://github.com/localstack/locals
 
 ### Rollout and rollback plan
 
-Rollout will be done on a task-by-task basis. We can consider having a fall-back lambda that reads from SQS and writes to Redis to allow us to move back in the event that something does not work out with the lambda solution.
+Rollout will be done on a task-by-task basis. We can consider having a fall-back Lambda that reads from SQS and writes to Redis to allow us to move back in the event that something does not work out with the Lambda solution.
 
 ## Alternatives considered
 
-N/A
+## Continue on Render
+
+The downsides that we have today will remain, where we have to split the workers into more pieces to gain the ability to handle prioritization between tasks. We can't easily give more prioritization or increase the throughput on a specific task today, and it is overall a fairly blunt instrument to handle.
+
+## ECS/Fargate
+
+Running on ECS / Fargate would allow us to migrate the Dramatiq queues over to SQS, but the overall infrastructure would be the same as what is running on Render today. Management, deployments and such are very similar on ECS and Render. The positive aspects is that it will still allow us to dip our toes into the AWS ecosystem, and solve some of the pain points that we have today. The downsides are that we would still need to handle increased load manually by scaling instances, and we would not gain the fleixibility of Lambda when it comes to high concurrency and low amounts of idling systems.
+
 
 ## Open questions
 
+### Cron schedule
+
+This RFC and the initial version doesn't handle the jobs scheduled by the scheduler (i.e. the cron jobs). The initial plan is to let the scheduler continue to live in Render and that it will enqueue the jobs that are tracked by the Python code. We could move these over to something like EventBridge that will trigger events that the Lambdas can listen to. The downside to doing that is that we would move the cron definitions away from the Python code and into the infrastructure.
+
+
 ### Database Connections
 
-Given that we are aiming for scaling the concurrency per lambda instead of per queue (as we have done previously) we have the risk of running out of database connections. The number of database connections is constrained by the database type we use. Here we might need to calculate what the max scaling we can afford, as well as look into introducing something like [pgBouncer](https://planetscale.com/blog/scaling-postgres-connections-with-pgbouncer) to allow us to scale up our database connections without choking the database.
+Given that we are aiming for scaling the concurrency per Lambda instead of per queue (as we have done previously) we have the risk of running out of database connections. The number of database connections is constrained by the database type we use. Here we might need to calculate what the max scaling we can afford, as well as look into introducing something like [pgBouncer](https://planetscale.com/blog/scaling-postgres-connections-with-pgbouncer) to allow us to scale up our database connections without choking the database.

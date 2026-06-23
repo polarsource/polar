@@ -46,6 +46,7 @@ if TYPE_CHECKING:
         CustomerSeat,
         Discount,
         Meter,
+        Order,
         Organization,
         PaymentMethod,
         Product,
@@ -414,8 +415,41 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         amount = sum(price.amount for price in prices)
         if discount is not None:
             amount -= discount.get_discount_amount(amount, self.currency)
+
+        # Preserve the net/gross ratio across the amount change. The customer's
+        # effective tax rate is fixed (single tax code, stable address) and recurring
+        # orders bill against subscription.tax_behavior, which is pinned at creation —
+        # so the ratio the first charge established stays valid even across plan
+        # changes. Cold start (creation, or free becoming paid) has no ratio: fall
+        # back to gross and let the next order derive the real net.
+        # TODO: once a plan change can move subscription.tax_behavior, reset to gross
+        # when the new behavior isn't inclusive instead of carrying the old ratio.
+        previous_amount = self.amount
+        previous_net_amount = self.net_amount
         self.amount = amount
-        self.net_amount = amount  # Same as amount while tax-exclusive
+        if previous_amount:
+            self.net_amount = round(amount * previous_net_amount / previous_amount)
+        else:
+            self.net_amount = amount
+
+    def update_net_amount_from(self, charge: "Order | Checkout") -> None:
+        """
+        Derive net_amount from the tax treatment of a charge (an order or checkout).
+
+        net_amount is the recurring amount net of inclusive tax. The fraction the
+        charge applied is uniform across its recurring, proration and metered line
+        items, so we reapply it to the subscription's own amount: tax-inclusive
+        charges back the tax out, tax-exclusive charges leave net_amount equal to
+        amount. Charges with no usable tax treatment ($0/credit, or a failed tax
+        calculation) are skipped so they can't overwrite a previously derived value.
+        """
+        taxable_total = charge.net_amount + (charge.tax_amount or 0)
+        if charge.tax_behavior is None or taxable_total <= 0:
+            return
+        if charge.tax_behavior == TaxBehavior.inclusive:
+            self.net_amount = round(self.amount * charge.net_amount / taxable_total)
+        else:
+            self.net_amount = self.amount
 
     def update_meters(self, prices: Sequence["SubscriptionProductPrice"]) -> None:
         subscription_meters = self.meters or []

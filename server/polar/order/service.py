@@ -825,6 +825,9 @@ class OrderService:
             flush=True,
         )
 
+        if subscription is not None:
+            subscription.update_net_amount_from(checkout)
+
         # Link payment and balance transaction to the order
         if payment is not None:
             payment_repository = PaymentRepository.from_session(session)
@@ -1410,6 +1413,8 @@ class OrderService:
                 flush=True,
             )
 
+            subscription.update_net_amount_from(order)
+
             # Impact customer's balance
             if balance_change != 0:
                 await wallet_service.create_balance_transaction(
@@ -1535,6 +1540,9 @@ class OrderService:
             ),
             flush=True,
         )
+
+        if checkout is not None:
+            subscription.update_net_amount_from(checkout)
 
         await self._on_order_created(session, order)
 

@@ -29,6 +29,7 @@ import ast
 import re
 import sys
 from pathlib import Path
+from typing import TypeGuard
 
 NOQA_MARKER = "org-scope"
 MODEL_NAME = "UserOrganization"
@@ -39,7 +40,7 @@ SUBJECT_NAME = "auth_subject"
 _NOQA_RE = re.compile(r"#\s*noqa(?::\s*(?P<codes>[^#]*))?", re.IGNORECASE)
 
 
-def _is_model_attr(node: ast.AST) -> bool:
+def _is_model_attr(node: ast.AST) -> TypeGuard[ast.Attribute]:
     """True for `UserOrganization.<attr>`, including a module-qualified base
     (e.g. `UserOrganization.user_id` or `models.UserOrganization.user_id`)."""
     if not isinstance(node, ast.Attribute):

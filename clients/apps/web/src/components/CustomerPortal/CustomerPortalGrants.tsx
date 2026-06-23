@@ -13,7 +13,6 @@ export interface CustomerPortalGrantsProps {
 }
 
 export const CustomerPortalGrants = ({
-  organization,
   api,
   subscriptionId,
   orderId,
@@ -44,7 +43,6 @@ export const CustomerPortalGrants = ({
 
   return isSimplifiedView ? (
     <CustomerPortalGrantsSimple
-      organization={organization}
       benefitGrants={initialBenefitGrants}
       api={api}
     />

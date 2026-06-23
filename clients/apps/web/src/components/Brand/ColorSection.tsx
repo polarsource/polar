@@ -46,7 +46,7 @@ export function ColorSection() {
   return (
     <BrandSection
       meta={brandSections[1]}
-      title="A monochrome system, one accent"
+      title="A monochrome color system"
       lead="The palette runs from Night to Snow in a single neutral hue. Ether is the only accent, reserved for moments that need to carry energy."
     >
       <div className="flex w-full flex-col overflow-hidden md:flex-row">

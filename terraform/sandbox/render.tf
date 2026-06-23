@@ -154,7 +154,7 @@ module "sandbox" {
     # Temporary drain worker - listens to ALL queues on production Redis
     # This allows draining in-flight tasks from the current shared Redis
     worker-sandbox-drain = {
-      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues high_priority,medium_priority,low_priority,webhooks,tinybird,invoices_and_receipts"
+      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues high_priority medium_priority low_priority webhooks tinybird invoices_and_receipts"
       dramatiq_prom_port = "10004"
       plan               = "standard"
       redis_host         = local.production_redis_host

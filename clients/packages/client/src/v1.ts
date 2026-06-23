@@ -36943,7 +36943,6 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
           'text/csv': string
         }
       }
@@ -39025,7 +39024,6 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
           'text/csv': string
         }
       }
@@ -41423,7 +41421,6 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
           'text/csv': string
         }
       }
@@ -42663,7 +42660,6 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
           'text/csv': string
         }
       }
@@ -50349,8 +50345,16 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
           'text/csv': string
+        }
+      }
+      /** @description Payout not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'text/csv': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */

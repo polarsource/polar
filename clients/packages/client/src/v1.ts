@@ -22476,17 +22476,6 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /** NotPaidOrder */
-    NotPaidOrder: {
-      /**
-       * Error
-       * @example NotPaidOrder
-       * @constant
-       */
-      error: 'NotPaidOrder'
-      /** Detail */
-      detail: string
-    }
     /** NotPermitted */
     NotPermitted: {
       /**
@@ -39275,15 +39264,13 @@ export interface operations {
           'application/json': unknown
         }
       }
-      /** @description Order is not paid or is missing billing name or address. */
+      /** @description Order is missing billing name or address. */
       422: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['MissingInvoiceBillingDetails']
-            | components['schemas']['NotPaidOrder']
+          'application/json': components['schemas']['MissingInvoiceBillingDetails']
         }
       }
     }
@@ -45239,15 +45226,13 @@ export interface operations {
           'application/json': unknown
         }
       }
-      /** @description Order is not paid or is missing billing name or address. */
+      /** @description Order is missing billing name or address. */
       422: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['MissingInvoiceBillingDetails']
-            | components['schemas']['NotPaidOrder']
+          'application/json': components['schemas']['MissingInvoiceBillingDetails']
         }
       }
     }

@@ -13,7 +13,6 @@ from polar.openapi import APITag
 from polar.order.schemas import OrderID
 from polar.order.service import (
     MissingInvoiceBillingDetails,
-    NotPaidOrder,
     PaymentAlreadyInProgress,
 )
 from polar.payment.repository import PaymentRepository
@@ -141,8 +140,8 @@ async def update(
     summary="Generate Order Invoice",
     responses={
         422: {
-            "description": "Order is not paid or is missing billing name or address.",
-            "model": MissingInvoiceBillingDetails.schema() | NotPaidOrder.schema(),
+            "description": "Order is missing billing name or address.",
+            "model": MissingInvoiceBillingDetails.schema(),
         },
     },
 )

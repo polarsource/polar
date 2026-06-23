@@ -43,7 +43,6 @@ from .schemas import (
 )
 from .service import (
     MissingInvoiceBillingDetails,
-    NotPaidOrder,
     OffSessionChargesNotEnabled,
     OrderNotDraft,
     OrganizationNotReadyForPayments,
@@ -306,8 +305,8 @@ async def finalize(
     summary="Generate Order Invoice",
     responses={
         422: {
-            "description": "Order is not paid or is missing billing name or address.",
-            "model": MissingInvoiceBillingDetails.schema() | NotPaidOrder.schema(),
+            "description": "Order is missing billing name or address.",
+            "model": MissingInvoiceBillingDetails.schema(),
         },
     },
 )

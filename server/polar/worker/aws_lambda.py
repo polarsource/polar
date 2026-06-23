@@ -9,8 +9,8 @@ from polar.logging import Logger
 from polar.logging import configure as configure_logging
 from polar.sentry import configure_sentry
 
-from ._runner import bootstrap, run_task
-from ._sqs import parse_envelope
+from ._runner import bootstrap, compute_retry_backoff, run_task
+from ._sqs import parse_envelope, set_message_visibility
 
 configure_sentry()
 configure_logfire("worker")
@@ -51,7 +51,29 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
                     message_id=message_id,
                     exc_info=True,
                 )
+                _apply_retry_backoff(record)
                 batch_item_failures.append({"itemIdentifier": message_id})
     finally:
         logfire.force_flush()
     return {"batchItemFailures": batch_item_failures}
+
+
+def _apply_retry_backoff(record: dict[str, Any]) -> None:
+    """Delay the failed message's next SQS redelivery by the Dramatiq-style backoff."""
+    try:
+        actor, _, _, _ = parse_envelope(record["body"])
+        receive_count = int(
+            record.get("attributes", {}).get("ApproximateReceiveCount", "1")
+        )
+        backoff_seconds = compute_retry_backoff(actor, receive_count)
+        set_message_visibility(
+            record["eventSourceARN"], record["receiptHandle"], backoff_seconds
+        )
+        log.info(
+            "polar.worker.sqs_retry_scheduled",
+            actor=actor,
+            receive_count=receive_count,
+            backoff_seconds=backoff_seconds,
+        )
+    except Exception:
+        log.error("polar.worker.sqs_backoff_failed", exc_info=True)

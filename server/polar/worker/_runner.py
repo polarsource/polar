@@ -1,13 +1,16 @@
 import contextlib
 import functools
 import inspect
+import math
 from collections.abc import Iterator, Sequence
 from typing import Any
 
 import dramatiq
 import logfire
 import structlog
+from dramatiq.common import compute_backoff
 from dramatiq.middleware.current_message import CurrentMessage
+from dramatiq.middleware.retries import DEFAULT_MAX_BACKOFF
 
 from polar import tasks  # noqa: F401  (registers all actors with the broker)
 from polar.config import settings
@@ -75,6 +78,20 @@ def validate_allowlist() -> None:
             raise ValueError(
                 f"Actor {actor_name!r} uses debounce, unsupported over SQS"
             )
+
+
+def compute_retry_backoff(actor_name: str, receive_count: int) -> int:
+    """Seconds to delay the next SQS redelivery, mirroring Dramatiq's Retries middleware."""
+    actor = dramatiq.get_broker().get_actor(actor_name)
+    min_backoff = actor.options.get(
+        "min_backoff", settings.WORKER_MIN_BACKOFF_MILLISECONDS
+    )
+    max_backoff = min(
+        actor.options.get("max_backoff", DEFAULT_MAX_BACKOFF), DEFAULT_MAX_BACKOFF
+    )
+    retries = max(receive_count - 1, 0)
+    _, delay_ms = compute_backoff(retries, factor=min_backoff, max_backoff=max_backoff)
+    return min(math.ceil(delay_ms / 1000), _sqs.MAX_VISIBILITY_TIMEOUT_SECONDS)
 
 
 @contextlib.contextmanager
@@ -159,6 +176,7 @@ __all__ = [
     "UnknownActor",
     "bootstrap",
     "build_registry",
+    "compute_retry_backoff",
     "run_task",
     "shutdown",
     "validate_allowlist",

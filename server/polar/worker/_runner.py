@@ -1,9 +1,11 @@
+import contextlib
 import functools
 import inspect
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from typing import Any
 
 import dramatiq
+import logfire
 import structlog
 from dramatiq.middleware.current_message import CurrentMessage
 
@@ -79,6 +81,27 @@ def validate_allowlist() -> None:
             )
 
 
+@contextlib.contextmanager
+def _task_span(
+    actor_name: str,
+    message: dramatiq.Message[Any],
+    correlation_id: str,
+    source_correlation_id: str | None,
+) -> Iterator[None]:
+    if actor_name in settings.LOGFIRE_IGNORED_ACTORS:
+        with logfire.suppress_instrumentation():
+            yield
+    else:
+        with logfire.span(
+            "TASK {actor}",
+            actor=actor_name,
+            message=message.asdict(),
+            correlation_id=correlation_id,
+            source_correlation_id=source_correlation_id,
+        ):
+            yield
+
+
 async def run_task(
     actor_name: str,
     args: Sequence[Any] = (),
@@ -115,7 +138,8 @@ async def run_task(
     )
     token = CurrentMessage._MESSAGE.set(message)
     try:
-        await fn(*args, **kwargs)
+        with _task_span(actor_name, message, correlation_id, source_correlation_id):
+            await fn(*args, **kwargs)
     finally:
         CurrentMessage._MESSAGE.reset(token)
         structlog.contextvars.unbind_contextvars(

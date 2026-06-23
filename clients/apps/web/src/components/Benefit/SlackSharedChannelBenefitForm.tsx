@@ -5,6 +5,7 @@ import {
 } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import {
+  Alert,
   Button,
   Checkbox,
   Input,
@@ -145,7 +146,7 @@ export const SlackSharedChannelBenefitForm = ({
       <FormField
         control={control}
         name="properties.slack_integration_id"
-        rules={{ required: 'Connect Slack before creating this benefit.' }}
+        rules={{ required: true }}
         render={({ field }) => (
           <FormItem>
             <FormControl>
@@ -383,22 +384,12 @@ const SlackConnectedBanner = ({
 
   return (
     <>
-      <Box
-        display="flex"
-        alignItems="center"
-        justifyContent="between"
-        padding="m"
-        borderRadius="m"
-        backgroundColor="background-success"
-        columnGap="m"
-      >
-        <Text variant="caption">
-          Connected to {integration.team_name ?? integration.team_id}
-        </Text>
-        <Button variant="ghost" size="sm" onClick={() => setShowConfirm(true)}>
-          Disconnect
-        </Button>
-      </Box>
+      <Alert
+        title={`Connected to ${integration.team_name ?? integration.team_id}`}
+        description="You've successfully connected the Slack integration"
+        actions={[{ text: 'Disconnect', onClick: () => setShowConfirm(true) }]}
+      />
+
       <ConfirmModal
         isShown={showConfirm}
         hide={() => setShowConfirm(false)}

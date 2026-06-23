@@ -20,11 +20,11 @@ function ColorColumn({ color }: { color: BrandColor }) {
       className="flex min-h-[60vh] flex-col justify-between p-8 md:min-h-[80vh] md:p-10"
       style={{ flex: color.flex, backgroundColor: color.hex, color: fg }}
     >
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-baseline justify-between gap-x-8">
         <span className="text-base font-medium tracking-tight">
           {color.name}
         </span>
-        <span className="font-mono text-xs" style={{ color: muted }}>
+        <span className="text-base" style={{ color: muted }}>
           {color.role}
         </span>
       </div>

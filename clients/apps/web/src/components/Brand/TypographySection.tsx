@@ -16,12 +16,12 @@ export function TypographySection() {
   return (
     <BrandSection
       meta={brandSections[2]}
-      title="Inter, set with intent"
-      lead="Inter is the single typeface of the identity, chosen for its clarity and structured geometry. GeistMono carries technical detail like code and data."
+      title="Neue Montreal, set with intent"
+      lead="PP Neue Montreal is the single typeface of the identity, chosen for its clarity and structured geometry. GeistMono carries technical detail like code and data."
     >
       <div className="flex flex-col gap-12 md:gap-16">
         <div className="flex flex-col gap-4 overflow-hidden bg-[#171717] p-8 md:p-16">
-          <span className={`${specimenClass} text-[#ADADAD]`}>Inter</span>
+          <span className={`${specimenClass} text-[#ADADAD]`}>Montreal</span>
           <span className={`${specimenClass} text-[#575757]`}>AaBbCc</span>
           <span className={`${specimenClass} text-[#575757]`}>0123456789</span>
         </div>

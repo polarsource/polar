@@ -44,7 +44,7 @@ export const brandColors: BrandColor[] = [
     name: 'Snow',
     hex: '#ADADAD',
     oklch: '74.8% 0 0',
-    role: 'Primary',
+    role: 'Foreground',
     flex: 3,
   },
   {

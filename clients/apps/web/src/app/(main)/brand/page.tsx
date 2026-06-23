@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 export default function BrandPage() {
   return (
-    <div className="min-h-screen bg-[#070708] text-[#575757] antialiased">
+    <div className="font-neue-montreal min-h-screen bg-[#070708] text-[#575757] antialiased">
       <BrandNav />
       <main>
         <BrandHero />

@@ -2,10 +2,10 @@
 
 set -euo pipefail
 
-# Usage: ./deploy_server.sh <docker_tag> <has_migrations> <api_service_id> <worker_service_ids> [playwright_tag] [playwright_worker_service_ids]
+# Usage: ./deploy_server.sh <docker_tag> <has_migrations> <api_service_id> <worker_service_ids>
 if [ $# -lt 4 ]; then
-  echo "Usage: $0 <docker_tag> <has_migrations> <api_service_id> <worker_service_ids> [playwright_tag] [playwright_worker_service_ids]"
-  echo "Example: $0 sha-abc1234 true srv-123 srv-456,srv-789 sha-def5678 srv-999"
+  echo "Usage: $0 <docker_tag> <has_migrations> <api_service_id> <worker_service_ids>"
+  echo "Example: $0 sha-abc1234 true srv-123 srv-456,srv-789"
   exit 1
 fi
 
@@ -126,16 +126,6 @@ deploy_servers() {
   echo "✅ ${services} deployments completed successfully!"
 }
 
-# Parse playwright configuration
-PLAYWRIGHT_TAG="${5:-}"
-PLAYWRIGHT_WORKER_IDS="${6:-}"
-PLAYWRIGHT_SERVERS=()
-PLAYWRIGHT_IMG=""
-if [[ -n "$PLAYWRIGHT_TAG" && -n "$PLAYWRIGHT_WORKER_IDS" ]]; then
-  PLAYWRIGHT_IMG="ghcr.io/polarsource/polar-playwright:${PLAYWRIGHT_TAG}"
-  IFS=',' read -ra PLAYWRIGHT_SERVERS <<< "$PLAYWRIGHT_WORKER_IDS"
-fi
-
 # Deploy based on migration status
 if [ "$HAS_MIGRATIONS" = "true" ]; then
   echo "📋 Deploying API first (migrations detected), then workers in parallel"
@@ -144,16 +134,11 @@ if [ "$HAS_MIGRATIONS" = "true" ]; then
   api_server=("$API_SERVICE_ID")
   deploy_servers api_server "API" "environment"
 
-  # Deploy workers and playwright workers in parallel
+  # Deploy workers
   pids=()
 
   if [ ${#WORKER_SERVERS[@]} -gt 0 ]; then
     deploy_servers WORKER_SERVERS "workers" "environment" &
-    pids+=($!)
-  fi
-
-  if [ ${#PLAYWRIGHT_SERVERS[@]} -gt 0 ]; then
-    deploy_servers PLAYWRIGHT_SERVERS "playwright-workers" "environment" "$PLAYWRIGHT_IMG" &
     pids+=($!)
   fi
 
@@ -173,11 +158,6 @@ else
   pids=()
   deploy_servers all_servers "All" "environment" &
   pids+=($!)
-
-  if [ ${#PLAYWRIGHT_SERVERS[@]} -gt 0 ]; then
-    deploy_servers PLAYWRIGHT_SERVERS "playwright-workers" "environment" "$PLAYWRIGHT_IMG" &
-    pids+=($!)
-  fi
 
   for pid in "${pids[@]}"; do
     wait "$pid" || exit 1

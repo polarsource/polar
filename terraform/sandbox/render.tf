@@ -28,6 +28,23 @@ data "render_redis" "redis" {
 }
 
 # =============================================================================
+# Sandbox Redis Instance
+# =============================================================================
+
+resource "render_redis" "redis_sandbox" {
+  environment_id    = data.tfe_outputs.production.values.sandbox_environment_id
+  name              = "redis-sandbox"
+  plan              = "standard"
+  region            = "ohio"
+  max_memory_policy = "noeviction"
+
+  # Empty IP allow list means only private network connections
+  ip_allow_list = []
+
+  depends_on = [render_registry_credential.ghcr]
+}
+
+# =============================================================================
 # Locals
 # =============================================================================
 
@@ -45,8 +62,12 @@ locals {
   read_replica = [for r in data.render_postgres.db.read_replicas : r if r.name == "polar-read"][0]
 
   # Redis connection info
-  redis_host = data.render_redis.redis.id
+  redis_host = render_redis.redis_sandbox.id
   redis_port = "6379"
+
+  # Production Redis connection info - for the drain worker
+  production_redis_host = data.render_redis.redis.id
+  production_redis_port = "6379"
 }
 
 # =============================================================================
@@ -128,6 +149,17 @@ module "sandbox" {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 3 --queues invoices_and_receipts"
       plan               = "standard"
       dramatiq_prom_port = "10003"
+    }
+
+    # Temporary drain worker - listens to ALL queues on production Redis
+    # This allows draining in-flight tasks from the current shared Redis
+    worker-sandbox-drain = {
+      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues high_priority,medium_priority,low_priority,webhooks,tinybird,invoices_and_receipts"
+      dramatiq_prom_port = "10004"
+      plan               = "standard"
+      redis_host         = local.production_redis_host
+      redis_port         = local.production_redis_port
+      redis_db           = "1"
     }
   }
 
@@ -266,7 +298,7 @@ module "sandbox" {
     workspace           = var.tinybird_workspace
   }
 
-  depends_on = [render_registry_credential.ghcr, data.render_postgres.db, data.render_redis.redis]
+  depends_on = [render_registry_credential.ghcr, data.render_postgres.db, data.render_redis.redis, render_redis.redis_sandbox]
 }
 
 # =============================================================================

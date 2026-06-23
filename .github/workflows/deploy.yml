@@ -226,28 +226,6 @@ jobs:
           secrets: |
             IPINFO_ACCESS_TOKEN=${{ secrets.IPINFO_ACCESS_TOKEN }}
 
-      - name: Docker meta (Playwright)
-        id: meta-playwright
-        uses: docker/metadata-action@v6
-        with:
-          images: ghcr.io/polarsource/polar-playwright
-          tags: |
-            type=sha
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - uses: useblacksmith/build-push-action@v2
-        id: push-playwright
-        with:
-          push: true
-          tags: ${{ steps.meta-playwright.outputs.tags }}
-          context: ./server
-          target: playwright
-          platforms: linux/amd64
-          build-args: |
-            RELEASE_VERSION=${{ github.sha }}
-          secrets: |
-            IPINFO_ACCESS_TOKEN=${{ secrets.IPINFO_ACCESS_TOKEN }}
-
   build-lambda-worker:
     name: "Build Lambda Worker Image (ECR) λ"
     needs: changes
@@ -355,8 +333,7 @@ jobs:
     with:
       environment: sandbox
       render-api-service-id: "srv-crkocgbtq21c73ddsdbg"
-      render-worker-service-ids: "srv-d62q7vh4tr6s73fk44ng,srv-d733cp15pdvs73f6vqng,srv-d7unnjhj2pic73c2vr60"
-      render-playwright-worker-service-ids: "srv-d089jj7diees73934kgg"
+      render-worker-service-ids: "srv-d62q7vh4tr6s73fk44ng,srv-d733cp15pdvs73f6vqng,srv-d7unnjhj2pic73c2vr60,srv-d089jj7diees73934kgg"
       has-migrations: ${{ needs.changes.outputs.migrations-sandbox == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
       skip-frontend: ${{ needs.changes.outputs.frontend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
@@ -376,8 +353,7 @@ jobs:
     with:
       environment: production
       render-api-service-id: "srv-ci4r87h8g3ne0dmvvl60"
-      render-worker-service-ids: "srv-d4k62svpm1nc73af5e3g,srv-d3hrh1j3fgac73a1t4r0,srv-d4uto5ili9vc73dd37tg,srv-d5l0oekhg0os73clofm0,srv-d733djuuk2gs73e98h1g,srv-d7us9je7r5hc73be5ieg"
-      render-playwright-worker-service-ids: "srv-d4k6otfgi27c73cicnpg"
+      render-worker-service-ids: "srv-d4k62svpm1nc73af5e3g,srv-d3hrh1j3fgac73a1t4r0,srv-d4uto5ili9vc73dd37tg,srv-d5l0oekhg0os73clofm0,srv-d733djuuk2gs73e98h1g,srv-d7us9je7r5hc73be5ieg,srv-d4k6otfgi27c73cicnpg"
       has-migrations: ${{ needs.changes.outputs.migrations-production == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend-production != 'true' && github.event_name != 'workflow_dispatch' }}
       skip-frontend: ${{ needs.changes.outputs.frontend-production != 'true' && github.event_name != 'workflow_dispatch' }}

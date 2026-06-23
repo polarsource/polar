@@ -7,8 +7,9 @@ import pytest_asyncio
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
+from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
-from polar.models import Customer, Order, Organization, Product, UserOrganization
+from polar.models import Customer, Order, Organization, Product, User, UserOrganization
 from polar.models.order import OrderStatus
 from polar.order.service import PaymentFailed, PaymentFailedReason
 from tests.fixtures.auth import AuthSubjectFixture
@@ -105,6 +106,37 @@ class TestListOrders:
         assert response.status_code == 200
         json = response.json()
         assert json["pagination"]["total_count"] == 2
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_read}))
+    async def test_organization_scoped_session(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        auth_subject: AuthSubject[User],
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+        orders: list[Order],
+        order_organization_second: Order,
+    ) -> None:
+        # Member of both organizations.
+        await save_fixture(
+            UserOrganization(user=user, organization=organization_second)
+        )
+
+        # Unscoped session sees orders from both organizations.
+        response = await client.get("/v1/orders/")
+        assert response.status_code == 200
+        assert response.json()["pagination"]["total_count"] == len(orders) + 1
+
+        # Down-scoping the session to one org hides the other org's orders.
+        auth_subject.organization_ids = frozenset({organization.id})
+        response = await client.get("/v1/orders/")
+        assert response.status_code == 200
+        returned_ids = {item["id"] for item in response.json()["items"]}
+        assert returned_ids == {str(order.id) for order in orders}
+        assert str(order_organization_second.id) not in returned_ids
 
 
 @pytest.mark.asyncio

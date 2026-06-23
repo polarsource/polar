@@ -3,15 +3,12 @@ from __future__ import annotations
 import asyncio
 import functools
 import re
-import time
 from dataclasses import dataclass, field
-from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import httpx
 import structlog
 import trafilatura
-from playwright.async_api import Browser, Page, Playwright, Route, async_playwright
 from pydantic_ai import Agent, RunContext
 
 from polar.config import settings
@@ -35,45 +32,6 @@ _USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 )
-
-# JS: extract internal links from navigation areas, CTAs, and main content.
-_EXTRACT_LINKS_JS = """
-() => {
-    const results = [];
-    const seen = new Set();
-
-    function addLink(a) {
-        const href = a.href;
-        const text = (a.textContent || '').trim().substring(0, 80);
-        if (href && !seen.has(href) && text && !href.startsWith('javascript:')) {
-            seen.add(href);
-            results.push(text + ' -> ' + href);
-        }
-    }
-
-    // Nav, header, footer, sidebar, ARIA navigation
-    const navSelectors = [
-        'nav a', 'header a', 'footer a', 'aside a',
-        '[role="navigation"] a', '[role="menu"] a', '[role="menubar"] a',
-    ];
-    for (const sel of navSelectors) {
-        for (const a of document.querySelectorAll(sel)) addLink(a);
-    }
-
-    // CTA-style links in main content
-    for (const a of document.querySelectorAll('main a, [role="main"] a, #content a, .content a')) {
-        addLink(a);
-    }
-
-    // Remaining top-level links
-    for (const a of document.querySelectorAll('a[href]')) {
-        if (results.length >= 40) break;
-        addLink(a);
-    }
-
-    return results.slice(0, 40);
-}
-"""
 
 SYSTEM_PROMPT = """\
 You are a website analyst for a business compliance review. Your job is to explore \
@@ -116,90 +74,12 @@ Keep it factual and under 500 words. Skip sections with no relevant info.
 
 @dataclass
 class WebsiteDeps:
-    """Shared dependencies — HTTP client always available, browser lazy-initialized."""
+    """Shared dependencies for the website agent's page-visiting tools."""
 
     client: httpx.AsyncClient
     allowed_domain: str
     pages_visited: list[WebsitePage] = field(default_factory=list)
     pages_navigated: int = 0
-
-    # Playwright state — initialized on first `browse_page` call
-    _playwright: Playwright | None = field(default=None, repr=False)
-    _browser: Browser | None = field(default=None, repr=False)
-    _browser_page: Page | None = field(default=None, repr=False)
-
-    async def get_browser_page(self) -> Page:
-        """Lazily launch a headless browser and return its page."""
-        if self._browser_page is None:
-            self._playwright = await async_playwright().start()
-            self._browser = await self._playwright.chromium.launch(headless=True)
-            context = await self._browser.new_context(
-                user_agent=_USER_AGENT,
-                java_script_enabled=True,
-                viewport={"width": 1280, "height": 720},
-                locale="en-US",
-            )
-            self._browser_page = await context.new_page()
-            await self._install_request_interceptor(self._browser_page)
-        return self._browser_page
-
-    async def _install_request_interceptor(self, page: Page) -> None:
-        """Install a route handler that blocks off-origin navigations and SSRF."""
-        allowed_domain = self.allowed_domain
-
-        async def _handler(route: Route) -> None:
-            request = route.request
-            url = request.url
-            parsed = urlparse(url)
-
-            # Allow data: and blob: URLs (inline resources)
-            if parsed.scheme in ("data", "blob"):
-                await route.continue_()
-                return
-
-            resource_type = request.resource_type
-
-            # Origin check: only for document/fetch/xhr (allows CDN subresources)
-            if resource_type in ("document", "fetch", "xhr"):
-                if not _is_allowed_origin(url, allowed_domain):
-                    log.info(
-                        "website_collector.playwright_blocked_origin",
-                        url=url,
-                        resource_type=resource_type,
-                    )
-                    await route.abort("blockedbyclient")
-                    return
-
-            # SSRF check: for all requests with a hostname
-            hostname = parsed.hostname
-            if hostname:
-                try:
-                    await resolve_and_validate_ip(hostname)
-                except SSRFBlockedError:
-                    log.info(
-                        "website_collector.playwright_blocked_ssrf",
-                        url=url,
-                        resource_type=resource_type,
-                    )
-                    await route.abort("blockedbyclient")
-                    return
-
-            await route.continue_()
-
-        await page.route("**/*", _handler)
-
-    async def cleanup(self) -> None:
-        """Close browser resources if they were initialized."""
-        try:
-            if self._browser:
-                await self._browser.close()
-        except Exception:
-            log.warning("website_collector.browser_close_failed", exc_info=True)
-        try:
-            if self._playwright:
-                await self._playwright.stop()
-        except Exception:
-            log.warning("website_collector.playwright_stop_failed", exc_info=True)
 
 
 # ---------------------------------------------------------------------------
@@ -389,6 +269,10 @@ with server-side rendering. Use this by default."""
 async def browse_page(ctx: RunContext[WebsiteDeps], url: str) -> str:
     """Open a URL in a headless browser with full JavaScript rendering. \
 Slower but handles SPAs and JS-heavy sites. Use when fetch_page returns empty content."""
+    # Rendering runs on Firecrawl Cloud, which executes JavaScript and follows
+    # redirects server-side and egresses from Firecrawl's network rather than
+    # ours. The per-hop SSRF interceptor is therefore not needed — the cheap
+    # origin pre-flight plus the origin-lock on the returned final URL remain.
     deps = ctx.deps
     if deps.pages_navigated >= MAX_PAGES:
         return "Page limit reached. Produce your summary now."
@@ -396,97 +280,6 @@ Slower but handles SPAs and JS-heavy sites. Use when fetch_page returns empty co
     if not _is_allowed_origin(url, deps.allowed_domain):
         return f"Error: URL is off-origin (only {deps.allowed_domain} is allowed)"
 
-    scraper = settings.ORGANIZATION_REVIEW_SCRAPER
-    if scraper == "firecrawl":
-        return await _browse_page_firecrawl(deps, url)
-    if scraper == "shadow":
-        return await _browse_page_shadow(deps, url)
-    return await _browse_page_playwright(deps, url)
-
-
-async def _browse_page_playwright(deps: WebsiteDeps, url: str) -> str:
-    """Render a page with the in-house headless browser (Playwright)."""
-    # SSRF pre-check (defense-in-depth — interceptor also blocks)
-    initial_host = urlparse(url).hostname
-    if initial_host:
-        try:
-            await resolve_and_validate_ip(initial_host)
-        except SSRFBlockedError as e:
-            return f"Error: {e}"
-
-    deps.pages_navigated += 1
-    page = await deps.get_browser_page()
-
-    try:
-        response = await page.goto(
-            url, timeout=PAGE_TIMEOUT_MS, wait_until="domcontentloaded"
-        )
-        if response and response.status >= 400:
-            return f"Error: HTTP {response.status} for {url}"
-    except Exception as e:
-        return f"Error navigating to {url}: {str(e)[:100]}"
-
-    # Wait for JS rendering / SPA hydration
-    try:
-        await page.wait_for_load_state("networkidle", timeout=5_000)
-    except Exception:
-        pass  # Best-effort; don't fail if network stays busy
-    await page.wait_for_timeout(1_000)
-
-    # Post-navigation origin check — catch JS-driven redirects
-    current_url = page.url
-    if not _is_allowed_origin(current_url, deps.allowed_domain):
-        return (
-            f"Error: page redirected to off-origin URL {current_url} "
-            f"(only {deps.allowed_domain} is allowed)"
-        )
-
-    # Extract content via trafilatura
-    try:
-        html = await page.content()
-        content = trafilatura.extract(html, output_format="markdown") or ""
-    except Exception:
-        content = ""
-
-    title = await page.title() or None
-
-    truncated = len(content) > MAX_CHARS_PER_PAGE
-    if truncated:
-        content = content[:MAX_CHARS_PER_PAGE]
-
-    deps.pages_visited.append(
-        WebsitePage(
-            url=current_url,
-            title=title,
-            content=content,
-            content_truncated=truncated,
-            method="browser",
-        )
-    )
-
-    # Extract links for the agent to choose from
-    try:
-        links = await page.evaluate(_EXTRACT_LINKS_JS)
-    except Exception:
-        links = []
-
-    return _build_tool_response(
-        title=title,
-        current_url=current_url,
-        pages_navigated=deps.pages_navigated,
-        content=content,
-        truncated=truncated,
-        links=links,
-    )
-
-
-async def _browse_page_firecrawl(deps: WebsiteDeps, url: str) -> str:
-    """Render a page via Firecrawl Cloud.
-
-    Firecrawl's browser egress is external, so the per-hop SSRF interceptor is
-    dropped — the cheap origin pre-flight (already done by the caller) plus the
-    origin-lock on the returned final URL remain.
-    """
     deps.pages_navigated += 1
 
     try:
@@ -530,63 +323,6 @@ async def _browse_page_firecrawl(deps: WebsiteDeps, url: str) -> str:
         truncated=truncated,
         links=[],
     )
-
-
-async def _browse_page_shadow(deps: WebsiteDeps, url: str) -> str:
-    """Run Firecrawl alongside Playwright, log a comparison, return Playwright's.
-
-    Observational: the Firecrawl scrape never raises and never touches
-    `pages_navigated` / `pages_visited` — only Playwright's result is used. The
-    two run concurrently so the shadow scrape never adds to the live verdict's
-    latency (which is bounded by `OVERALL_TIMEOUT_S`).
-    """
-    pages_before = len(deps.pages_visited)
-    observation, response = await asyncio.gather(
-        _firecrawl_observe(url),
-        _browse_page_playwright(deps, url),
-    )
-
-    # Only attribute a page to this call if Playwright actually appended one;
-    # otherwise pages_visited[-1] would be a stale page from an earlier call.
-    playwright_page = (
-        deps.pages_visited[-1] if len(deps.pages_visited) > pages_before else None
-    )
-    log.info(
-        "website_collector.shadow_compare",
-        url=url,
-        playwright_markdown_length=(
-            len(playwright_page.content) if playwright_page else 0
-        ),
-        playwright_final_url=playwright_page.url if playwright_page else None,
-        **observation,
-    )
-    return response
-
-
-async def _firecrawl_observe(url: str) -> dict[str, Any]:
-    """Scrape via Firecrawl for shadow comparison. Never raises; returns log fields.
-
-    Success and failure return the same set of keys so the `shadow_compare` log
-    event has a stable schema for downstream comparison queries.
-    """
-    start = time.monotonic()
-    try:
-        result = await scrape_markdown(url)
-    except Exception as e:
-        return {
-            "firecrawl_markdown_length": 0,
-            "firecrawl_final_url": None,
-            "firecrawl_status_code": None,
-            "firecrawl_latency_ms": int((time.monotonic() - start) * 1000),
-            "firecrawl_error": str(e)[:200],
-        }
-    return {
-        "firecrawl_markdown_length": len(result.markdown),
-        "firecrawl_final_url": result.url,
-        "firecrawl_status_code": result.status_code,
-        "firecrawl_latency_ms": int((time.monotonic() - start) * 1000),
-        "firecrawl_error": None,
-    }
 
 
 # ---------------------------------------------------------------------------
@@ -658,27 +394,24 @@ async def _run_website_agent(
         headers={"User-Agent": _USER_AGENT},
     ) as client:
         deps = WebsiteDeps(client=client, allowed_domain=allowed_domain)
-        try:
-            with organization_baggage(
-                organization_id=organization_id,
-                organization_slug=organization_slug,
-            ):
-                result = await agent.run(
-                    f"Analyze the website at: {base_url}",
-                    deps=deps,
-                )
-
-            return WebsiteData(
-                base_url=base_url,
-                pages=deps.pages_visited,
-                summary=result.output,
-                total_pages_attempted=max(deps.pages_navigated, 1),
-                total_pages_succeeded=len(
-                    [p for p in deps.pages_visited if p.content.strip()]
-                ),
-                usage=UsageInfo.from_agent_usage(
-                    result.usage(), model_provider, model_name
-                ),
+        with organization_baggage(
+            organization_id=organization_id,
+            organization_slug=organization_slug,
+        ):
+            result = await agent.run(
+                f"Analyze the website at: {base_url}",
+                deps=deps,
             )
-        finally:
-            await deps.cleanup()
+
+        return WebsiteData(
+            base_url=base_url,
+            pages=deps.pages_visited,
+            summary=result.output,
+            total_pages_attempted=max(deps.pages_navigated, 1),
+            total_pages_succeeded=len(
+                [p for p in deps.pages_visited if p.content.strip()]
+            ),
+            usage=UsageInfo.from_agent_usage(
+                result.usage(), model_provider, model_name
+            ),
+        )

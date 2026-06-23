@@ -3674,6 +3674,54 @@ class TestSetOrganizationOffboarding:
 
 
 @pytest.mark.asyncio
+class TestSetOrganizationOffboarded:
+    async def test_from_offboarding(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.OFFBOARDING
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.set_organization_offboarded(
+            session, organization
+        )
+
+        assert result.status == OrganizationStatus.OFFBOARDED
+        assert result.status_updated_at is not None
+        assert result.internal_notes is not None
+        assert "Manually offboarded" in result.internal_notes
+        enqueue_job_mock.assert_called_once_with(
+            "organization.offboarded", organization_id=organization.id
+        )
+
+    @pytest.mark.parametrize(
+        "status",
+        [
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.SNOOZED,
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.CREATED,
+            OrganizationStatus.OFFBOARDED,
+        ],
+    )
+    async def test_from_non_offboarding_raises(
+        self,
+        status: OrganizationStatus,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = status
+
+        with pytest.raises(Exception, match="Only organizations that are offboarding"):
+            await organization_service.set_organization_offboarded(
+                session, organization
+            )
+
+
+@pytest.mark.asyncio
 class TestSnoozeOrganization:
     async def test_from_review(
         self,

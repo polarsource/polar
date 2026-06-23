@@ -3,9 +3,7 @@ from urllib.parse import urlparse
 
 import httpx
 import structlog
-from playwright.async_api import async_playwright
 
-from polar.config import settings
 from polar.kit.http import SSRFBlockedError, resolve_and_validate_ip
 from polar.models.checkout_link import CheckoutLink
 from polar.models.webhook_endpoint import WebhookEndpoint
@@ -31,8 +29,6 @@ _REDIRECT_TIMEOUT = 5.0
 _MAX_URLS_TO_RESOLVE = 20
 # Maximum concurrent redirect resolutions
 _MAX_CONCURRENT = 5
-# Timeout for Playwright page navigation (ms)
-_BROWSER_PAGE_TIMEOUT_MS = 10_000
 
 
 def _extract_domain(url: str) -> str | None:
@@ -157,110 +153,11 @@ def _pick_one_per_hostname(urls: list[str]) -> list[str]:
 
 
 async def _resolve_redirect_with_browser(url: str) -> UrlRedirectInfo:
-    """Detect client-side redirects (meta refresh, JS) for a single URL.
-
-    Dispatches to the configured scraper: the in-house Playwright browser,
-    Firecrawl Cloud, or (in shadow mode) both — logging a comparison while
-    returning Playwright's result for the live verdict.
-    """
-    scraper = settings.ORGANIZATION_REVIEW_SCRAPER
-    if scraper == "firecrawl":
-        return await _resolve_redirect_firecrawl(url)
-    if scraper == "shadow":
-        return await _resolve_redirect_shadow(url)
-    return await _resolve_redirect_playwright(url)
-
-
-async def _resolve_redirect_playwright(url: str) -> UrlRedirectInfo:
-    """Use a headless browser to detect client-side redirects (meta refresh, JS).
-
-    Launches a fresh Playwright browser, navigates to the URL, waits for
-    any client-side redirects to settle, then compares the final domain.
-    """
-    try:
-        _validate_url_scheme(url)
-        await _validate_url_host(url)
-    except (ValueError, SSRFBlockedError):
-        return UrlRedirectInfo(original_url=url, error="blocked")
-
-    pw = None
-    browser = None
-    try:
-        pw = await async_playwright().start()
-        browser = await pw.chromium.launch(headless=True)
-        context = await browser.new_context(
-            user_agent=(
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/131.0.0.0 Safari/537.36"
-            ),
-            java_script_enabled=True,
-        )
-        page = await context.new_page()
-
-        # Install SSRF-only interceptor (allow cross-origin — we want to detect it)
-        async def _ssrf_handler(route):  # type: ignore[no-untyped-def]
-            parsed = urlparse(route.request.url)
-            if parsed.scheme in ("data", "blob"):
-                await route.continue_()
-                return
-            hostname = parsed.hostname
-            if hostname:
-                try:
-                    await resolve_and_validate_ip(hostname)
-                except SSRFBlockedError:
-                    await route.abort("blockedbyclient")
-                    return
-            await route.continue_()
-
-        await page.route("**/*", _ssrf_handler)
-
-        await page.goto(
-            url,
-            timeout=_BROWSER_PAGE_TIMEOUT_MS,
-            wait_until="domcontentloaded",
-        )
-        # Wait for JS / meta-refresh redirects to settle
-        try:
-            await page.wait_for_load_state("networkidle", timeout=5_000)
-        except Exception:
-            pass  # best-effort
-        await page.wait_for_timeout(1_000)
-
-        final_url = page.url
-        final_domain = _extract_domain(final_url)
-        original_domain = _extract_domain(url)
-        redirected = _is_cross_domain(original_domain, final_domain)
-
-        return UrlRedirectInfo(
-            original_url=url,
-            final_url=final_url,
-            final_domain=final_domain,
-            redirected=redirected,
-        )
-    except Exception:
-        log.warning("setup_collector.browser_redirect_error", url=url, exc_info=True)
-        return UrlRedirectInfo(original_url=url, error="browser_error")
-    finally:
-        if browser:
-            try:
-                await browser.close()
-            except Exception:
-                pass
-        if pw:
-            try:
-                await pw.stop()
-            except Exception:
-                pass
-
-
-async def _resolve_redirect_firecrawl(url: str) -> UrlRedirectInfo:
-    """Use Firecrawl Cloud to detect client-side redirects (meta refresh, JS).
+    """Detect client-side redirects (meta refresh, JS) via Firecrawl Cloud.
 
     Firecrawl follows HTTP/JS/meta-refresh redirects server-side and reports the
     final URL; we compare its domain against the original. Egress is Firecrawl's
-    network, so the per-hop SSRF interceptor is dropped — the scheme/host
-    pre-flight remains.
+    network rather than ours, so only the scheme/host pre-flight applies.
     """
     try:
         _validate_url_scheme(url)
@@ -284,29 +181,6 @@ async def _resolve_redirect_firecrawl(url: str) -> UrlRedirectInfo:
         final_domain=final_domain,
         redirected=redirected,
     )
-
-
-async def _resolve_redirect_shadow(url: str) -> UrlRedirectInfo:
-    """Run Firecrawl alongside Playwright, log a comparison, return Playwright's.
-
-    The two resolvers run concurrently so the observational Firecrawl scrape
-    doesn't add its latency on top of Playwright's for every URL.
-    """
-    firecrawl_result, playwright_result = await asyncio.gather(
-        _resolve_redirect_firecrawl(url),
-        _resolve_redirect_playwright(url),
-    )
-    log.info(
-        "setup_collector.shadow_compare",
-        url=url,
-        playwright_redirected=playwright_result.redirected,
-        playwright_final_url=playwright_result.final_url,
-        playwright_error=playwright_result.error,
-        firecrawl_redirected=firecrawl_result.redirected,
-        firecrawl_final_url=firecrawl_result.final_url,
-        firecrawl_error=firecrawl_result.error,
-    )
-    return playwright_result
 
 
 async def resolve_url_redirects(urls: list[str]) -> list[UrlRedirectInfo]:

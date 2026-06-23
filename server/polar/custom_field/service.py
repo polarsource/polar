@@ -17,7 +17,7 @@ from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
-from polar.authz.repository import select_user_org_ids
+from polar.authz.repository import select_accessible_org_ids
 from polar.authz.service import (
     assert_organization_permission,
     assert_resource_permission,
@@ -275,8 +275,8 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
         if is_user(auth_subject):
             statement = statement.where(
                 CustomField.organization_id.in_(
-                    select_user_org_ids(
-                        auth_subject.subject.id,
+                    select_accessible_org_ids(
+                        auth_subject,
                         permission=OrganizationPermission.custom_fields_read,
                     )
                 )

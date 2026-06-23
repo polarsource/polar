@@ -4,6 +4,7 @@
   "globalEnv": [
     "POLAR_API_URL",
     "API_URL",
+    "FRONTEND_URL",
     "EXPO_PUBLIC_POLAR_SERVER_URL",
     "NODE_ENV",
     "NEXT_PHASE",

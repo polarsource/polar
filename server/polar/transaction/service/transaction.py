@@ -9,7 +9,7 @@ from sqlalchemy.orm import joinedload, subqueryload
 
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
-from polar.authz.repository import select_user_org_ids
+from polar.authz.repository import select_accessible_org_ids
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
@@ -279,7 +279,7 @@ class TransactionService(BaseTransactionService):
     def _get_readable_transactions_statement(
         self, auth_subject: AuthSubject[User]
     ) -> Select[Any]:
-        readable_org_ids = select_user_org_ids(
+        readable_org_ids = select_accessible_org_ids(
             auth_subject, permission=OrganizationPermission.finance_read
         )
         statement = (

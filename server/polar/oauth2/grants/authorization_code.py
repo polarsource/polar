@@ -18,7 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from polar.auth.permission import OrganizationPermission
-from polar.authz.repository import select_user_org_ids_by_id
+from polar.authz.repository import select_user_org_ids
 from polar.config import settings
 from polar.kit.crypto import generate_token, get_token_hash
 from polar.models import (
@@ -315,7 +315,7 @@ class ValidateSubAndPrompt:
         statement = select(Organization).where(
             Organization.id == organization_id,
             Organization.id.in_(
-                select_user_org_ids_by_id(
+                select_user_org_ids(
                     user.id,
                     permission=OrganizationPermission.organization_manage,
                 )

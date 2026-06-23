@@ -23,7 +23,7 @@ from sqlalchemy.dialects.postgresql import TIMESTAMP
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
-from polar.authz.repository import select_user_org_ids
+from polar.authz.repository import select_accessible_org_ids
 from polar.config import settings
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.time_queries import TimeInterval
@@ -106,7 +106,7 @@ def _get_readable_orders_statement(
     if is_user(auth_subject):
         statement = statement.where(
             Product.organization_id.in_(
-                select_user_org_ids(
+                select_accessible_org_ids(
                     auth_subject, permission=OrganizationPermission.analytics_read
                 )
             )
@@ -360,7 +360,7 @@ def _get_readable_subscriptions_statement(
     if is_user(auth_subject):
         statement = statement.where(
             Product.organization_id.in_(
-                select_user_org_ids(
+                select_accessible_org_ids(
                     auth_subject, permission=OrganizationPermission.analytics_read
                 )
             )
@@ -448,7 +448,7 @@ def get_checkouts_cte(
     if is_user(auth_subject):
         readable_checkouts_statement = readable_checkouts_statement.where(
             Product.organization_id.in_(
-                select_user_org_ids(
+                select_accessible_org_ids(
                     auth_subject, permission=OrganizationPermission.analytics_read
                 )
             )
@@ -703,7 +703,7 @@ def _get_readable_seats_statement(
     if is_user(auth_subject):
         statement = statement.where(
             Product.organization_id.in_(
-                select_user_org_ids(
+                select_accessible_org_ids(
                     auth_subject, permission=OrganizationPermission.analytics_read
                 )
             )

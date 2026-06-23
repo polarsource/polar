@@ -15,7 +15,7 @@ from sqlalchemy import (
 
 from polar.auth.models import AuthSubject, User
 from polar.auth.scope import Scope
-from polar.authz.repository import select_user_org_ids
+from polar.authz.repository import select_accessible_org_ids
 from polar.kit.db.postgres import AsyncReadSession
 from polar.models import (
     Customer,
@@ -69,7 +69,7 @@ class SearchService:
 
         organization_subquery = select(Organization.id).where(
             Organization.id == organization_id,
-            Organization.id.in_(select_user_org_ids(auth_subject)),
+            Organization.id.in_(select_accessible_org_ids(auth_subject)),
         )
 
         subqueries: list[Select[Any]] = []

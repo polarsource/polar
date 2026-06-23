@@ -9,20 +9,21 @@ from polar.models import Organization, UserOrganization
 from polar.postgres import AsyncReadSession
 
 
-def select_user_org_ids_by_id(
+def select_user_org_ids(
     user_id: UUID,
     *,
     permission: OrganizationPermission | None = None,
 ) -> Select[tuple[UUID]]:
-    """SQL `SELECT` of organization IDs a specific user is a member of.
+    """SQL `SELECT` of organization IDs a user is a member of.
 
     Joins ``Organization`` so soft-deleted orgs and orgs without ``api_access``
     are excluded. When ``permission`` is provided, results are restricted to
     organizations where the user's role grants that permission.
 
-    Takes a raw ``user_id`` and applies **no** session down-scope. Use it for
-    flows that check a particular user's membership (e.g. OAuth consent), not the
-    caller's accessible resources — for the latter use ``select_user_org_ids``.
+    Takes a raw ``user_id`` and applies **no** session down-scope — it answers
+    "which orgs does this user belong to?". Use it for flows that check a
+    particular user's membership (e.g. OAuth consent), not the caller's
+    accessible resources — for the latter use ``select_accessible_org_ids``.
     """
     stmt = (
         select(UserOrganization.organization_id)
@@ -38,22 +39,22 @@ def select_user_org_ids_by_id(
     return stmt
 
 
-def select_user_org_ids(
+def select_accessible_org_ids(
     auth_subject: AuthSubject[User],
     *,
     permission: OrganizationPermission | None = None,
 ) -> Select[tuple[UUID]]:
     """SQL `SELECT` of organization IDs the subject can access.
 
-    Intended as a subquery inside ``Resource.organization_id.in_(...)`` when
-    building auth-aware statements. Takes the full ``AuthSubject`` so the
-    session/token down-scope (``organization_ids``) travels with the subject and
-    can't be forgotten or mismatched with a stray ``user_id``: results are the
-    user's memberships (optionally narrowed by ``permission``) intersected with
-    that scope. An unscoped subject (``organization_ids is None``) is not
-    narrowed.
+    The SQL-subquery sibling of ``get_accessible_org_ids``: use it inside
+    ``Resource.organization_id.in_(...)`` when building auth-aware statements.
+    Takes the full ``AuthSubject`` so the session/token down-scope
+    (``organization_ids``) travels with the subject and can't be forgotten or
+    mismatched with a stray ``user_id``: results are the user's memberships
+    (optionally narrowed by ``permission``) intersected with that scope. An
+    unscoped subject (``organization_ids is None``) is not narrowed.
     """
-    stmt = select_user_org_ids_by_id(auth_subject.subject.id, permission=permission)
+    stmt = select_user_org_ids(auth_subject.subject.id, permission=permission)
     if auth_subject.organization_ids is not None:
         stmt = stmt.where(
             UserOrganization.organization_id.in_(auth_subject.organization_ids)
@@ -82,7 +83,7 @@ class AuthzRepository:
         down-scope (``organization_ids``) is applied intrinsically.
         """
         result = await self.session.scalars(
-            select_user_org_ids(auth_subject, permission=permission)
+            select_accessible_org_ids(auth_subject, permission=permission)
         )
         return set(result.all())
 
@@ -102,7 +103,9 @@ class AuthzRepository:
         )
 
         if is_user(auth_subject):
-            stmt = stmt.where(Organization.id.in_(select_user_org_ids(auth_subject)))
+            stmt = stmt.where(
+                Organization.id.in_(select_accessible_org_ids(auth_subject))
+            )
         elif is_organization(auth_subject):
             stmt = stmt.where(Organization.id == auth_subject.subject.id)
         else:

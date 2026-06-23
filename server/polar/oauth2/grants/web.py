@@ -13,7 +13,7 @@ from authlib.oauth2.rfc6749.hooks import hooked
 from sqlalchemy import select
 
 from polar.auth.permission import OrganizationPermission
-from polar.authz.repository import select_user_org_ids_by_id
+from polar.authz.repository import select_user_org_ids
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
@@ -114,7 +114,7 @@ class WebGrant(BaseGrant, TokenEndpointMixin):
         statement = select(Organization).where(
             Organization.id == organization_id,
             Organization.id.in_(
-                select_user_org_ids_by_id(
+                select_user_org_ids(
                     user.id,
                     permission=OrganizationPermission.organization_manage,
                 )

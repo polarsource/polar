@@ -378,11 +378,22 @@ resource "render_web_service" "worker" {
 
   custom_domains = length(each.value.custom_domains) > 0 ? each.value.custom_domains : null
 
-  env_vars = {
-    SERVICE_NAME             = { value = each.key }
-    dramatiq_prom_port       = { value = each.value.dramatiq_prom_port }
-    POLAR_DATABASE_POOL_SIZE = { value = each.value.database_pool_size }
-  }
+  env_vars = merge(
+    {
+      SERVICE_NAME             = { value = each.key }
+      dramatiq_prom_port       = { value = each.value.dramatiq_prom_port }
+      POLAR_DATABASE_POOL_SIZE = { value = each.value.database_pool_size }
+    },
+    each.value.redis_host != null ? {
+      POLAR_REDIS_HOST = { value = each.value.redis_host }
+    } : {},
+    each.value.redis_port != null ? {
+      POLAR_REDIS_PORT = { value = each.value.redis_port }
+    } : {},
+    each.value.redis_db != null ? {
+      POLAR_REDIS_DB = { value = each.value.redis_db }
+    } : {}
+  )
 }
 
 resource "render_cron_job" "cron" {

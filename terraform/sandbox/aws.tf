@@ -63,7 +63,7 @@ module "dummy_lambda_worker" {
     POLAR_POSTGRES_SSL            = "true"
     POLAR_REDIS_HOST              = module.redis.host
     POLAR_REDIS_PORT              = tostring(module.redis.port)
-    POLAR_REDIS_DB                = "1"
+    POLAR_REDIS_DB                = "0"
     POLAR_AWS_REGION              = "us-east-2"
     POLAR_WORKER_SQS_ENABLED      = "true"
     POLAR_WORKER_SQS_QUEUE_PREFIX = "polar-sandbox-tasks"

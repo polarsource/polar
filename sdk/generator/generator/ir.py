@@ -220,7 +220,7 @@ class HTTPMethod(enum.StrEnum):
     TRACE = "TRACE"
 
 
-type ResponseType = typing.Literal["json", "text"]
+type ResponseType = typing.Literal["json", "text", "none"]
 
 
 class Method(BaseModel):
@@ -674,7 +674,7 @@ def _get_success_response_schema_raw(
 ) -> tuple[op.Schema | op.Reference | None, ResponseType]:
     """Return (schema, response_type) for the first matching 2xx response."""
     if operation.responses is None:
-        return None, "json"
+        return None, "none"
 
     for status_code in sorted(operation.responses.keys()):
         if not status_code.startswith("2"):
@@ -685,7 +685,6 @@ def _get_success_response_schema_raw(
         if response.content is None:
             continue
 
-        # Determine response type based on content types
         response_type: ResponseType = "json"
         schema: op.Schema | op.Reference | None = None
 
@@ -700,10 +699,9 @@ def _get_success_response_schema_raw(
                 if media_type_obj.media_type_schema is not None:
                     schema = media_type_obj.media_type_schema
 
-        if schema is not None:
-            return schema, response_type
+        return schema, response_type
 
-    return None, "json"
+    return None, "none"
 
 
 def _get_error_responses_raw(

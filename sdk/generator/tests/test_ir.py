@@ -619,7 +619,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                             }
                                         ],
                                         "query_params": [],
-                                        "response_type": "json",
+                                        "response_type": "none",
                                         "errors": [],
                                     },
                                     {
@@ -644,7 +644,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                             },
                                         ],
                                         "query_params": [],
-                                        "response_type": "json",
+                                        "response_type": "none",
                                         "errors": [],
                                     },
                                 ],
@@ -658,7 +658,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "path": "/products",
                                 "path_params": [],
                                 "query_params": [],
-                                "response_type": "json",
+                                "response_type": "none",
                                 "errors": [],
                             }
                         ],
@@ -1777,7 +1777,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                     }
                                 ],
                                 "body": {"kind": "model", "name": "FileUpload"},
-                                "response_type": "json",
+                                "response_type": "none",
                                 "errors": [],
                             }
                         ],
@@ -1856,6 +1856,15 @@ _STRING = {"kind": "primitive", "type": "string"}
                             },
                         }
                     },
+                    "/export-none": {
+                        "get": {
+                            "operationId": "export:none",
+                            "description": "Export with no content type",
+                            "responses": {
+                                "200": {"description": "No content type specified"}
+                            },
+                        }
+                    },
                 },
             },
             {
@@ -1897,6 +1906,16 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "response": {"kind": "primitive", "type": "unknown"},
                                 "errors": [],
                             },
+                            {
+                                "name": "none",
+                                "description": "Export with no content type",
+                                "http_method": "GET",
+                                "path": "/export-none",
+                                "path_params": [],
+                                "query_params": [],
+                                "response_type": "none",
+                                "errors": [],
+                            },
                         ],
                     },
                 ],
@@ -1906,7 +1925,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                 "input_unions": [],
                 "output_unions": [],
             },
-            id="Response type is determined from content types (JSON vs text)",
+            id="Response type is determined from content types (JSON vs text vs none)",
         ),
     ],
 )

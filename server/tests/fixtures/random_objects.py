@@ -41,6 +41,7 @@ from polar.models import (
     Dispute,
     Event,
     EventType,
+    File,
     IssueReward,
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
@@ -49,6 +50,7 @@ from polar.models import (
     Order,
     OrderItem,
     Organization,
+    OrganizationReview,
     Payment,
     PaymentMethod,
     Payout,
@@ -105,6 +107,7 @@ from polar.models.discount import (
 )
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
 from polar.models.event import EventSource
+from polar.models.file import FileServiceTypes
 from polar.models.member import MemberRole
 from polar.models.notification_recipient import NotificationRecipient
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
@@ -119,6 +122,14 @@ from polar.models.product_price import (
     SeatTierType,
 )
 from polar.models.subscription import SubscriptionStatus
+from polar.models.support_case import (
+    DisputeSupportCase,
+    ReviewAppealSupportCase,
+    SupportCase,
+    SupportCaseMessage,
+    SupportCaseMessageAuthorKind,
+    SupportCaseMessageType,
+)
 from polar.models.transaction import Processor, TransactionType
 from polar.models.user import OAuthAccount, OAuthPlatform
 from polar.models.user_organization import OrganizationRole
@@ -2576,3 +2587,104 @@ async def create_dispute(
     )
     await save_fixture(dispute)
     return dispute
+
+
+async def create_organization_review(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    *,
+    verdict: OrganizationReview.Verdict = OrganizationReview.Verdict.FAIL,
+    risk_score: float = 90.0,
+    violated_sections: list[str] | None = None,
+    reason: str = "denied",
+    model_used: str = "test",
+    appeal_submitted_at: datetime | None = None,
+    appeal_reason: str | None = None,
+    appeal_reviewed_at: datetime | None = None,
+    appeal_decision: OrganizationReview.AppealDecision | None = None,
+) -> OrganizationReview:
+    review = OrganizationReview(
+        organization_id=organization.id,
+        verdict=verdict,
+        risk_score=risk_score,
+        violated_sections=violated_sections if violated_sections is not None else [],
+        reason=reason,
+        model_used=model_used,
+        appeal_submitted_at=appeal_submitted_at,
+        appeal_reason=appeal_reason,
+        appeal_reviewed_at=appeal_reviewed_at,
+        appeal_decision=appeal_decision,
+    )
+    await save_fixture(review)
+    return review
+
+
+async def _open_case(save_fixture: SaveFixture, case: SupportCase) -> None:
+    """Emit the ``opened`` lifecycle event every persisted case carries in
+    production (a case is never without one)."""
+    await save_fixture(
+        SupportCaseMessage(
+            case=case,
+            type=SupportCaseMessageType.opened,
+            author_kind=SupportCaseMessageAuthorKind.system,
+            audience=[],
+        )
+    )
+
+
+async def create_appeal_case(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    *,
+    review: OrganizationReview | None = None,
+    opened: bool = True,
+) -> ReviewAppealSupportCase:
+    if review is None:
+        review = await create_organization_review(save_fixture, organization)
+    case = ReviewAppealSupportCase(
+        organization_review=review, organization=organization
+    )
+    await save_fixture(case)
+    if opened:
+        await _open_case(save_fixture, case)
+    return case
+
+
+async def create_dispute_case(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    customer: Customer,
+    product: Product,
+    *,
+    opened: bool = True,
+) -> DisputeSupportCase:
+    order = await create_order(save_fixture, customer=customer, product=product)
+    payment = await create_payment(save_fixture, organization, order=order)
+    dispute = await create_dispute(save_fixture, order, payment)
+    case = DisputeSupportCase(dispute=dispute, organization=organization)
+    await save_fixture(case)
+    if opened:
+        await _open_case(save_fixture, case)
+    return case
+
+
+async def create_support_case_attachment_file(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    *,
+    name: str = "evidence.pdf",
+    service: FileServiceTypes = FileServiceTypes.support_case_attachment,
+    is_uploaded: bool = True,
+) -> File:
+    file = File(
+        organization=organization,
+        name=name,
+        path=f"support_case_attachment/{name}",
+        mime_type="application/pdf",
+        size=1234,
+        service=service,
+        is_uploaded=is_uploaded,
+        is_enabled=True,
+    )
+    await save_fixture(file)
+    return file

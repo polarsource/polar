@@ -415,7 +415,7 @@ class SupportCaseSection:
             ):
                 pass
             with tag.div(
-                classes="grid grid-cols-[minmax(0,15rem)_minmax(0,1fr)] gap-x-6 gap-y-5"
+                classes="grid grid-cols-[minmax(0,15rem)_minmax(0,1fr)] gap-x-6 gap-y-10"
             ):
                 for message in messages:
                     self._render_entry(request, message)
@@ -503,7 +503,7 @@ class SupportCaseSection:
             if message.body:
                 with tag.div(classes=f"flex {justify}"):
                     with tag.div(
-                        classes=f"max-w-md text-sm whitespace-pre-wrap {self._bubble(message, internal)}"
+                        classes=f"max-w-md text-sm leading-relaxed whitespace-pre-wrap p-3 rounded-s {self._bubble(message, internal)}"
                     ):
                         text(message.body)
             for attachment in attachments:
@@ -545,16 +545,16 @@ class SupportCaseSection:
     def _bubble(self, message: SupportCaseMessage, internal: bool) -> str:
         if internal:
             return (
-                "bg-warning/10 border-l-2 border-warning rounded-lg px-3 py-2 "
+                "bg-warning/10 border-l-2 border-warning rounded-2xl px-5 py-3.5 "
                 "text-base-content/80"
             )
         if message.type == SupportCaseMessageType.appeal_approved:
-            return "bg-success/10 rounded-xl px-4 py-2.5"
+            return "bg-success/10 rounded-2xl px-5 py-3.5"
         if message.type == SupportCaseMessageType.appeal_denied:
-            return "bg-error/10 rounded-xl px-4 py-2.5"
+            return "bg-error/10 rounded-2xl px-5 py-3.5"
         if message.author_kind == SupportCaseMessageAuthorKind.merchant:
-            return "bg-info/10 rounded-2xl rounded-tr-md px-4 py-2.5"
-        return "bg-base-200 rounded-2xl rounded-tl-md px-4 py-2.5"
+            return "bg-info/10 rounded-2xl px-5 py-3.5"
+        return "bg-base-200 rounded-2xl px-5 py-3.5"
 
     # -- Composer -----------------------------------------------------------
 

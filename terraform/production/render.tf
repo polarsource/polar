@@ -65,7 +65,6 @@ resource "render_postgres" "db" {
   environment_id = render_project.polar.environments["Production"].id
   name           = "db"
   database_name  = "polar_cpit"
-  database_user  = "polar_cpit_user"
   plan           = "pro_64gb"
   region         = "ohio"
   version        = "15"
@@ -83,7 +82,6 @@ resource "render_postgres" "db" {
     ignore_changes = [
       ip_allow_list,
       disk_size_gb,
-      database_user,
       database_name,
     ]
   }

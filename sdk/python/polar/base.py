@@ -44,7 +44,7 @@ class BuildRequestMixin:
         body: typing.Any | None = None,
     ) -> httpx.Request:
         url = url.format(**(path_params or {}))
-        params = {k: v for k, v in (query_params or {}).items() if v}
+        params = {k: v for k, v in (query_params or {}).items() if v is not None}
         return self._client.build_request(method, url, params=params, json=body)
 
 

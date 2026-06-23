@@ -19,7 +19,9 @@ class PolarNetworkError(PolarError):
 class PolarServerError(PolarError):
     def __init__(self, status_code: int, message: str):
         self.status_code = status_code
-        super().__init__(f"Polar API returned a server error: {status_code} - {message}")
+        super().__init__(
+            f"Polar API returned a server error: {status_code} - {message}"
+        )
 
 
 class PolarClientError(PolarError):
@@ -42,7 +44,7 @@ class BuildRequestMixin:
         body: typing.Any | None = None,
     ) -> httpx.Request:
         url = url.format(**(path_params or {}))
-        params = {k: v for k, v in (query_params or {}).items() if v}
+        params = {k: v for k, v in (query_params or {}).items() if v is not None}
         return self._client.build_request(method, url, params=params, json=body)
 
 
@@ -126,6 +128,7 @@ retort = adaptix.Retort()
 
 E = typing.TypeVar("E", bound=PolarClientError)
 
+
 def parse_response(
     response: httpx.Response,
     response_type: typing.Any,
@@ -139,7 +142,9 @@ def parse_response(
     if response.is_client_error:
         try:
             error_class = (errors or {})[status_code]
-            raise error_class(status_code, retort.load(response.json(), error_class.error_type))
+            raise error_class(
+                status_code, retort.load(response.json(), error_class.error_type)
+            )
         except KeyError:
             raise PolarClientError(status_code, response.text)
 

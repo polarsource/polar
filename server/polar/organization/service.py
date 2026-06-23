@@ -1223,7 +1223,7 @@ class OrganizationService:
         organization: Organization,
         next_review_threshold: int | None = None,
         *,
-        reason: str,
+        reason: str | None = None,
         internal_note: str | None = None,
         staff_user: User,
     ) -> Organization:
@@ -1241,6 +1241,11 @@ class OrganizationService:
         ``internal_note`` overrides the default reactivation note (and omits the
         reason line) so callers can record a context-specific note instead — the
         appeal flow points to the support case rather than repeating its reason.
+
+        ``reason`` is optional and, when set, becomes the merchant-facing body of
+        the appeal decision message on the support case. The appeal flow keeps it
+        optional (the staff-facing override reason is recorded separately); the
+        org-level reactivation passes its required override reason through here.
         """
         notes = {
             OrganizationStatus.DENIED: "Organization reactivated from denied.",

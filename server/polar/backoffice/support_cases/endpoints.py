@@ -37,7 +37,6 @@ from ..dependencies import get_admin
 from ..layout import layout
 from ..organizations_v2.views.sections.support_case_section import SupportCaseSection
 from ..responses import HXRedirectResponse
-from ..toast import add_toast
 from .queries import TYPE_LABELS, Row, cases_statement
 from .urls import case_detail_url, is_safe_return_to
 
@@ -261,21 +260,26 @@ async def reply_case(
     user_session: UserSession = Depends(get_admin),
 ) -> HXRedirectResponse:
     """Post a staff reply (or internal note) to any case, then notify the
-    organization if it's merchant-visible."""
+    organization if it's merchant-visible. Internal notes are allowed on closed
+    cases too, so staff can keep following up after a decision."""
     case = await SupportCaseRepository.from_session(session).get_by_id(case_id)
     if case is None:
         raise HTTPException(status_code=404, detail="Support case not found")
 
     message_repository = SupportCaseMessageRepository.from_session(session)
-    if not await message_repository.is_open(case.id):
-        await add_toast(request, "This case is closed.", variant="error")
-        return _detail_redirect(request, case_id, return_to)
+    is_open = await message_repository.is_open(case.id)
 
     form_data = await request.form()
     body = str(form_data.get("body", "")).strip()
-    # Disputes have no staff ↔ merchant reply channel yet: staff messages are
-    # always internal notes, regardless of the (absent) composer toggle.
-    internal = bool(form_data.get("internal")) or case.type == SupportCaseType.dispute
+    # Force the message to be internal when there's no live merchant channel:
+    # disputes have no staff ↔ merchant reply channel yet, and a closed case is
+    # internal-notes-only (a merchant-facing message would email the merchant
+    # with no accessible thread to follow up in).
+    internal = (
+        bool(form_data.get("internal"))
+        or case.type == SupportCaseType.dispute
+        or not is_open
+    )
 
     if body:
         audience = [] if internal else [SupportCaseAudience.merchant]

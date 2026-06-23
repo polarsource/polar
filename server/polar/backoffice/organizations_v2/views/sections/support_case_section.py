@@ -172,8 +172,7 @@ class SupportCaseSection:
                 if self.dispute is not None:
                     self._render_dispute_details(request, self.dispute)
                 self._render_timeline(request, messages)
-                if is_open:
-                    self._render_composer(request, case)
+                self._render_composer(request, case, is_open)
             yield
 
     # -- Header -------------------------------------------------------------
@@ -559,14 +558,24 @@ class SupportCaseSection:
 
     # -- Composer -----------------------------------------------------------
 
-    def _render_composer(self, request: Request, case: SupportCase) -> None:
+    def _render_composer(
+        self, request: Request, case: SupportCase, is_open: bool
+    ) -> None:
         reply_url = self._with_return_to(
             str(request.url_for("support_cases:reply", case_id=case.id))
         )
-        # Disputes don't have a staff ↔ merchant reply channel yet, so the
-        # composer is internal-notes-only (the endpoint enforces this too).
-        internal_only = self._case_type == SupportCaseType.dispute
+        # The composer is internal-notes-only when there's no live merchant
+        # channel (the endpoint enforces this too): disputes have none yet, and a
+        # closed case only takes internal follow-ups after the decision.
+        internal_only = self._case_type == SupportCaseType.dispute or not is_open
         with tag.div(classes="mt-8 pt-6 border-t border-base-200"):
+            if not is_open:
+                with tag.div(
+                    classes="flex items-center gap-2 mb-3 text-sm text-base-content/60"
+                ):
+                    with tag.span(classes="icon-square"):
+                        pass
+                    text("This case is closed — only internal notes can be added.")
             with tag.form(hx_post=reply_url, classes="flex flex-col gap-3"):
                 with tag.textarea(
                     name="body",

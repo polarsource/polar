@@ -95,14 +95,16 @@ export const toChatMessages = (
   }))
 
 export const toChatAttachments = (
-  organizationId: string,
+  caseId: string | undefined,
   attachments: schemas['SupportCaseAttachment'][],
 ): ChatAttachment[] =>
-  attachments.map((attachment) => ({
-    id: attachment.id,
-    messageId: attachment.message_id,
-    name: attachment.file.name,
-    mimeType: attachment.file.mime_type,
-    size: attachment.file.size,
-    href: `${CONFIG.BASE_URL}/v1/organizations/${organizationId}/appeal/case/attachments/${attachment.id}/download`,
-  }))
+  caseId === undefined
+    ? []
+    : attachments.map((attachment) => ({
+        id: attachment.id,
+        messageId: attachment.message_id,
+        name: attachment.file.name,
+        mimeType: attachment.file.mime_type,
+        size: attachment.file.size,
+        href: `${CONFIG.BASE_URL}/v1/support-cases/${caseId}/attachments/${attachment.id}/download`,
+      }))

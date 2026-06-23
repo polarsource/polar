@@ -7,7 +7,7 @@ import {
   schemas,
   unwrap,
 } from '@polar-sh/client'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { skipToken, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useListOrganizationMembers = (id: string) =>
@@ -398,25 +398,29 @@ export const useRequestHumanReview = (id: string) =>
       }),
     onSuccess: (result) => {
       if (result.error) return
-      getQueryClient().invalidateQueries({ queryKey: ['appealCase', id] })
+      getQueryClient().invalidateQueries({
+        queryKey: ['organizationReviewStatus', id],
+      })
     },
   })
 
-export const useAppealCase = (
-  id: string,
+export const useSupportCase = (
+  id: string | undefined,
   enabled: boolean = true,
   pollInterval: number = 10_000,
 ) =>
   useQuery({
-    queryKey: ['appealCase', id],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/organizations/{id}/appeal/case', {
-          params: { path: { id } },
-        }),
-      ),
+    queryKey: ['supportCase', id],
+    queryFn: id
+      ? () =>
+          unwrap(
+            api.GET('/v1/support-cases/{id}', {
+              params: { path: { id } },
+            }),
+          )
+      : skipToken,
     retry: defaultRetry,
-    enabled: enabled && !!id,
+    enabled,
     refetchInterval: (query) => {
       if (!query.state.data?.is_open) return false
       const hidden = typeof document !== 'undefined' && document.hidden
@@ -425,16 +429,24 @@ export const useAppealCase = (
     refetchIntervalInBackground: true,
   })
 
-export const useReplyToAppealCase = (id: string) =>
+export const useReplyToSupportCase = () =>
   useMutation({
-    mutationFn: ({ body, file_ids }: { body?: string; file_ids?: string[] }) =>
-      api.POST('/v1/organizations/{id}/appeal/case/messages', {
-        params: { path: { id } },
+    mutationFn: ({
+      caseId,
+      body,
+      file_ids,
+    }: {
+      caseId: string
+      body?: string
+      file_ids?: string[]
+    }) =>
+      api.POST('/v1/support-cases/{id}/messages', {
+        params: { path: { id: caseId } },
         body: { body: body || null, file_ids },
       }),
-    onSuccess: async (result) => {
+    onSuccess: async (result, { caseId }) => {
       if (result.error) return
-      getQueryClient().invalidateQueries({ queryKey: ['appealCase', id] })
+      getQueryClient().invalidateQueries({ queryKey: ['supportCase', caseId] })
     },
   })
 

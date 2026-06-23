@@ -23,7 +23,7 @@ from polar.kit.utils import utc_now
 from polar.logfire import configure_logfire
 from polar.logging import Logger
 from polar.logging import configure as configure_logging
-from polar.postgres import create_async_engine, create_async_read_engine
+from polar.postgres import AsyncEngine, create_async_engine, create_async_read_engine
 from polar.redis import Redis, create_redis
 from polar.webhook.repository import WebhookEventRepository
 
@@ -41,9 +41,14 @@ def set_heartbeat_checker(checker: Callable[[], bool]) -> None:
 
 
 class HealthMiddleware(Middleware):
+    def __init__(self, *, database: bool = True) -> None:
+        self._database = database
+
     @property
     def forks(self) -> list[Callable[[], int]]:
-        return [_run_exposition_server]
+        if self._database:
+            return [_run_exposition_server]
+        return [_run_exposition_server_without_db]
 
 
 async def health(request: Request) -> JSONResponse:
@@ -106,22 +111,29 @@ async def external_events(request: Request) -> JSONResponse:
     return JSONResponse({"status": "ok"})
 
 
-@contextlib.asynccontextmanager
-async def lifespan(app: Starlette) -> AsyncGenerator[Mapping[str, Any]]:
-    if settings.is_read_replica_configured():
-        async_engine = create_async_read_engine("worker")
-    else:
-        async_engine = create_async_engine("worker")
-    async_sessionmaker = create_async_sessionmaker(async_engine)
-    redis = create_redis("worker")
+def _create_lifespan(
+    *, database: bool
+) -> Callable[[Starlette], contextlib.AbstractAsyncContextManager[Mapping[str, Any]]]:
+    @contextlib.asynccontextmanager
+    async def lifespan(app: Starlette) -> AsyncGenerator[Mapping[str, Any]]:
+        redis = create_redis("worker")
+        state: dict[str, Any] = {"redis": redis}
 
-    yield {
-        "redis": redis,
-        "async_sessionmaker": async_sessionmaker,
-    }
+        async_engine: AsyncEngine | None = None
+        if database:
+            if settings.is_read_replica_configured():
+                async_engine = create_async_read_engine("worker")
+            else:
+                async_engine = create_async_engine("worker")
+            state["async_sessionmaker"] = create_async_sessionmaker(async_engine)
 
-    await redis.close()
-    await async_engine.dispose()
+        yield state
+
+        await redis.close()
+        if async_engine is not None:
+            await async_engine.dispose()
+
+    return lifespan
 
 
 async def handle_server_error(request: Request, exc: Exception) -> JSONResponse:
@@ -129,24 +141,27 @@ async def handle_server_error(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse({"status": "error"}, status_code=500)
 
 
-def create_app() -> Starlette:
-    routes = [
-        Route("/", health, methods=["GET"]),
-        Route("/webhooks", webhooks, methods=["GET"]),
-        Route("/unhandled-external-events", external_events, methods=["GET"]),
-    ]
+def create_app(*, database: bool = True) -> Starlette:
+    routes = [Route("/", health, methods=["GET"])]
+    # The webhooks and external-events probes query PostgreSQL; only expose them
+    # when the worker has a database.
+    if database:
+        routes += [
+            Route("/webhooks", webhooks, methods=["GET"]),
+            Route("/unhandled-external-events", external_events, methods=["GET"]),
+        ]
     return Starlette(
         routes=routes,
-        lifespan=lifespan,
+        lifespan=_create_lifespan(database=database),
         exception_handlers={Exception: handle_server_error},
     )
 
 
-def _run_exposition_server() -> int:
+def _run_server(*, database: bool) -> int:
     log.debug("Starting exposition server...")
     configure_logfire("worker")
     configure_logging(logfire=True)
-    app = create_app()
+    app = create_app(database=database)
     config = uvicorn.Config(
         app, host=HTTP_HOST, port=HTTP_PORT, log_level="error", access_log=False
     )
@@ -157,3 +172,11 @@ def _run_exposition_server() -> int:
         pass
 
     return 0
+
+
+def _run_exposition_server() -> int:
+    return _run_server(database=True)
+
+
+def _run_exposition_server_without_db() -> int:
+    return _run_server(database=False)

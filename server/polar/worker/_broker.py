@@ -196,7 +196,7 @@ def get_broker(*, database: bool = True) -> dramatiq.Broker:
         *([SQLAlchemyMiddleware()] if database else []),
         RedisMiddleware(),
         HTTPXMiddleware(),
-        HealthMiddleware(),
+        HealthMiddleware(database=database),
         scheduler_middleware,
         # Observability (outer layer for message processing)
         LogContextMiddleware(),

@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from pytest_mock import MockerFixture
 from redis import RedisError
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
@@ -14,6 +15,11 @@ from starlette.routing import Route
 
 import polar.worker._health as health_module
 from polar.worker._health import (
+    HealthMiddleware,
+    _create_lifespan,
+    _run_exposition_server,
+    _run_exposition_server_without_db,
+    create_app,
     handle_server_error,
     health,
 )
@@ -187,3 +193,70 @@ class TestSchedulerHealthIntegration:
                 assert response.status_code == 200
         finally:
             health_module._heartbeat_checker = original
+
+
+class TestHealthMiddlewareForks:
+    def test_database_uses_db_exposition_server(self) -> None:
+        assert HealthMiddleware(database=True).forks == [_run_exposition_server]
+
+    def test_no_database_uses_dbless_exposition_server(self) -> None:
+        assert HealthMiddleware(database=False).forks == [
+            _run_exposition_server_without_db
+        ]
+
+    def test_defaults_to_database(self) -> None:
+        assert HealthMiddleware().forks == [_run_exposition_server]
+
+
+class TestCreateApp:
+    def test_database_exposes_db_routes(self) -> None:
+        paths = {route.path for route in create_app(database=True).routes}
+        assert paths == {"/", "/webhooks", "/unhandled-external-events"}
+
+    def test_no_database_exposes_only_liveness(self) -> None:
+        paths = {route.path for route in create_app(database=False).routes}
+        assert paths == {"/"}
+
+
+@pytest.mark.asyncio
+class TestLifespan:
+    async def test_no_database_does_not_create_engine(
+        self, mocker: MockerFixture
+    ) -> None:
+        create_engine = mocker.patch.object(health_module, "create_async_engine")
+        create_read_engine = mocker.patch.object(
+            health_module, "create_async_read_engine"
+        )
+        mocker.patch.object(
+            health_module, "create_redis", return_value=MagicMock(close=AsyncMock())
+        )
+
+        async with _create_lifespan(database=False)(MagicMock()) as state:
+            assert "redis" in state
+            assert "async_sessionmaker" not in state
+
+        create_engine.assert_not_called()
+        create_read_engine.assert_not_called()
+
+    async def test_database_creates_engine_and_sessionmaker(
+        self, mocker: MockerFixture
+    ) -> None:
+        engine = MagicMock(dispose=AsyncMock())
+        create_engine = mocker.patch.object(
+            health_module, "create_async_engine", return_value=engine
+        )
+        mocker.patch.object(
+            health_module, "create_async_sessionmaker", return_value="sessionmaker"
+        )
+        mocker.patch.object(
+            health_module.settings, "is_read_replica_configured", return_value=False
+        )
+        mocker.patch.object(
+            health_module, "create_redis", return_value=MagicMock(close=AsyncMock())
+        )
+
+        async with _create_lifespan(database=True)(MagicMock()) as state:
+            assert state["async_sessionmaker"] == "sessionmaker"
+
+        create_engine.assert_called_once()
+        engine.dispose.assert_awaited_once()

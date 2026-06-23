@@ -1,6 +1,10 @@
 'use client'
 
 import { MetricGroup } from '@/components/Metrics/dashboards/MetricGroup'
+import {
+  shouldShowSubscriptionMetricsTaxAlert,
+  SubscriptionMetricsTaxAlert,
+} from '@/components/Metrics/SubscriptionMetricsTaxAlert'
 import { Modal } from '@polar-sh/orbit'
 import { useMetrics } from '@/hooks/queries'
 import { useChartRange } from '@/hooks/useChartRange'
@@ -82,6 +86,9 @@ export function OverviewSection({ organization }: OverviewSectionProps) {
           </Button>
         </div>
       </div>
+      {shouldShowSubscriptionMetricsTaxAlert(organization) && (
+        <SubscriptionMetricsTaxAlert />
+      )}
       <MetricGroup
         data={data}
         metricKeys={activeMetrics}

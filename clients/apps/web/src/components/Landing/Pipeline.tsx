@@ -3,23 +3,6 @@
 import { Avatar, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
-import { useState } from 'react'
-
-const ArrowRight = () => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <line x1="5" y1="12" x2="19" y2="12" />
-    <polyline points="12 5 19 12 12 19" />
-  </svg>
-)
 
 interface Aspect {
   title: string
@@ -148,30 +131,7 @@ const ArrowDown = () => (
   </Box>
 )
 
-const Chevron = ({ open }: { open: boolean }) => (
-  <Box color="text-tertiary" flexShrink={0}>
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{
-        transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-        transition: 'transform 150ms ease',
-      }}
-    >
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  </Box>
-)
-
 export const Pipeline = () => {
-  const [active, setActive] = useState(0)
-
   return (
     <Box
       position="relative"
@@ -187,67 +147,48 @@ export const Pipeline = () => {
         alignItems="start"
       >
         {/* Accordion */}
-        <Box as="ul" flexDirection="column" rowGap="2xl">
+        <Box flexDirection="column" rowGap="2xl">
           <Box flexDirection="column" rowGap="2xl">
             <Text variant="heading-l" as="h2" wrap="balance">
               Everything between usage & revenue
             </Text>
           </Box>
 
-          <Box display={{ base: 'none', md: 'flex' }} flexDirection="column">
-            {ASPECTS.map((aspect, index) => {
-              const open = index === active
+          <Box
+            as="ul"
+            display={{ base: 'none', md: 'flex' }}
+            rowGap="xl"
+            flexDirection="column"
+          >
+            {ASPECTS.map((aspect) => {
               return (
                 <Box
                   as="li"
                   key={aspect.title}
-                  borderBottomWidth={1}
-                  borderStyle="solid"
-                  borderColor="border-secondary"
-                  paddingVertical="xl"
                   display="flex"
                   flexDirection="column"
-                  rowGap="l"
                 >
-                  <Box
-                    alignItems="center"
-                    justifyContent="between"
-                    columnGap="l"
-                    cursor="pointer"
-                    onClick={() => setActive(index)}
-                  >
-                    <Box flexDirection="row" columnGap="s">
-                      <Text
-                        variant="heading-xxs"
-                        color={open ? undefined : 'muted'}
-                      >
-                        {aspect.title}
-                      </Text>
-                    </Box>
-                    <Chevron open={open} />
-                  </Box>
-                  {open && (
-                    <Box paddingBottom="l" flexDirection="column" rowGap="m">
-                      <Text variant="body" color="muted">
-                        {aspect.desc}
-                      </Text>
-                      <Link href={aspect.href}>
-                        <Box
-                          alignItems="center"
-                          columnGap="m"
-                          width="fit-content"
-                          color={{
-                            base: 'text-primary',
-                            hover: 'text-secondary',
-                          }}
-                          cursor="pointer"
-                        >
-                          <Text variant="body">Learn more</Text>
-                          <ArrowRight />
+                  <Link href={aspect.href}>
+                    <Box
+                      display="flex"
+                      flexDirection="column"
+                      rowGap="s"
+                      borderLeftWidth={4}
+                      borderStyle="solid"
+                      paddingLeft="xl"
+                    >
+                      <Box alignItems="center" justifyContent="between">
+                        <Box flexDirection="row" columnGap="s">
+                          <Text variant="heading-xxs">{aspect.title}</Text>
                         </Box>
-                      </Link>
+                      </Box>
+                      <Box flexDirection="column" rowGap="m">
+                        <Text variant="body" color="muted">
+                          {aspect.desc}
+                        </Text>
+                      </Box>
                     </Box>
-                  )}
+                  </Link>
                 </Box>
               )
             })}
@@ -303,8 +244,6 @@ export const Pipeline = () => {
                 padding="s"
               >
                 {group.map((aspect) => {
-                  const globalIndex = ASPECTS.indexOf(aspect)
-                  const isActive = globalIndex === active
                   return (
                     <Box
                       key={aspect.title}
@@ -313,15 +252,9 @@ export const Pipeline = () => {
                       paddingVertical="s"
                       paddingHorizontal="s"
                       cursor="pointer"
-                      onClick={() => setActive(globalIndex)}
                     >
-                      <CheckIcon active={isActive} />
-                      <Text
-                        variant="body"
-                        color={isActive ? undefined : 'muted'}
-                      >
-                        {aspect.title}
-                      </Text>
+                      <CheckIcon active={true} />
+                      <Text variant="body">{aspect.title}</Text>
                     </Box>
                   )
                 })}

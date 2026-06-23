@@ -48,6 +48,8 @@ class MembersSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -86,6 +88,8 @@ class MembersSync(SyncServiceBase):
             CreateMember403Error: Not permitted to add members.
             ResourceNotFound: Member not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -119,6 +123,8 @@ class MembersSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Member not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -138,7 +144,7 @@ class MembersSync(SyncServiceBase):
     def delete_member(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a member.
 
@@ -152,6 +158,8 @@ class MembersSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Member not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -166,7 +174,7 @@ class MembersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     def update_member(
         self,
@@ -187,6 +195,8 @@ class MembersSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Member not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -224,6 +234,8 @@ class MembersSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Member not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -249,7 +261,7 @@ class MembersSync(SyncServiceBase):
         *,
         customer_id: str | None = None,
         external_customer_id: str | None = None,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a member by external ID. One of customer_id or external_customer_id must be specified.
 
@@ -263,6 +275,8 @@ class MembersSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Member not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -280,7 +294,7 @@ class MembersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     def update_member_by_external_id(
         self,
@@ -303,6 +317,8 @@ class MembersSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Member not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -440,7 +456,7 @@ class MembersAsync(AsyncServiceBase):
     async def delete_member(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a member.
 
@@ -468,7 +484,7 @@ class MembersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     async def update_member(
         self,
@@ -551,7 +567,7 @@ class MembersAsync(AsyncServiceBase):
         *,
         customer_id: str | None = None,
         external_customer_id: str | None = None,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a member by external ID. One of customer_id or external_customer_id must be specified.
 
@@ -582,7 +598,7 @@ class MembersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     async def update_member_by_external_id(
         self,

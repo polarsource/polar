@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 
-from polar.base import PolarErrorResponse
+from polar.base import PolarClientError
 {% if imports %}
 from polar.outputs import (
 {% for type in imports %}
@@ -13,7 +13,7 @@ from polar.outputs import (
 
 
 {% for error in errors %}
-class {{ error.name }}(PolarErrorResponse):
+class {{ error.name }}(PolarClientError):
     error_type = {{ error.type | type_annotation(ref_suffix="Model") }}
     error: {{ error.type | type_annotation(ref_suffix="Model") }}
 

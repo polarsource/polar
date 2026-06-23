@@ -49,6 +49,8 @@ class FilesSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -104,6 +106,8 @@ class FilesSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -140,6 +144,8 @@ class FilesSync(SyncServiceBase):
             NotPermitted: You don't have the permission to update this file.
             ResourceNotFound: File not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -168,7 +174,7 @@ class FilesSync(SyncServiceBase):
     def delete(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a file.
 
@@ -181,6 +187,8 @@ class FilesSync(SyncServiceBase):
             NotPermitted: You don't have the permission to delete this file.
             ResourceNotFound: File not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -196,7 +204,7 @@ class FilesSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     def update(
         self,
@@ -220,6 +228,8 @@ class FilesSync(SyncServiceBase):
             NotPermitted: You don't have the permission to update this file.
             ResourceNotFound: File not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -387,7 +397,7 @@ class FilesAsync(AsyncServiceBase):
     async def delete(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a file.
 
@@ -415,7 +425,7 @@ class FilesAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     async def update(
         self,

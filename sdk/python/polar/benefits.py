@@ -71,6 +71,8 @@ class BenefitsSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -155,6 +157,8 @@ class BenefitsSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -184,6 +188,8 @@ class BenefitsSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Benefit not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -203,7 +209,7 @@ class BenefitsSync(SyncServiceBase):
     def delete(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a benefit.
 
@@ -220,6 +226,8 @@ class BenefitsSync(SyncServiceBase):
             NotPermitted: This benefit is not deletable.
             ResourceNotFound: Benefit not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -235,7 +243,7 @@ class BenefitsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     @typing.overload
     def update(
@@ -309,6 +317,8 @@ class BenefitsSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Benefit not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -354,6 +364,8 @@ class BenefitsSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Benefit not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -541,7 +553,7 @@ class BenefitsAsync(AsyncServiceBase):
     async def delete(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a benefit.
 
@@ -573,7 +585,7 @@ class BenefitsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     @typing.overload
     async def update(

@@ -58,6 +58,8 @@ class MetricsSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -114,6 +116,8 @@ class MetricsSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -148,6 +152,8 @@ class MetricsSync(SyncServiceBase):
         Args:
 
         Raises:
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -173,6 +179,8 @@ class MetricsSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -203,6 +211,8 @@ class MetricsSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -231,6 +241,8 @@ class MetricsSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -249,7 +261,7 @@ class MetricsSync(SyncServiceBase):
     def delete_dashboard(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a user-defined metric dashboard.
 
@@ -260,6 +272,8 @@ class MetricsSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -273,7 +287,7 @@ class MetricsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     def update_dashboard(
         self,
@@ -290,6 +304,8 @@ class MetricsSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -534,7 +550,7 @@ class MetricsAsync(AsyncServiceBase):
     async def delete_dashboard(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a user-defined metric dashboard.
 
@@ -558,7 +574,7 @@ class MetricsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     async def update_dashboard(
         self,

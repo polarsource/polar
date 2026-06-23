@@ -49,6 +49,8 @@ class MembersSync(SyncServiceBase):
             ListMembers401Error: Authentication required
             ListMembers403Error: Not permitted - requires owner or billing manager role
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -87,6 +89,8 @@ class MembersSync(SyncServiceBase):
             AddMember401Error: Authentication required
             AddMember403Error: Not permitted - requires owner or billing manager role
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -107,7 +111,7 @@ class MembersSync(SyncServiceBase):
     def remove_member(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Remove a member from the team.
 
@@ -126,6 +130,8 @@ class MembersSync(SyncServiceBase):
             RemoveMember403Error: Not permitted - requires owner or billing manager role
             RemoveMember404Error: Member not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -143,7 +149,7 @@ class MembersSync(SyncServiceBase):
             404: RemoveMember404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     def update_member(
         self,
@@ -168,6 +174,8 @@ class MembersSync(SyncServiceBase):
             UpdateMember403Error: Not permitted - requires owner or billing manager role
             UpdateMember404Error: Member not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -267,7 +275,7 @@ class MembersAsync(AsyncServiceBase):
     async def remove_member(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Remove a member from the team.
 
@@ -303,7 +311,7 @@ class MembersAsync(AsyncServiceBase):
             404: RemoveMember404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     async def update_member(
         self,

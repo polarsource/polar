@@ -56,6 +56,8 @@ class CustomerSeatsSync(SyncServiceBase):
             ListSeats403Error: Not permitted or seat-based pricing not enabled
             ListSeats404Error: Subscription or order not found
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -90,6 +92,8 @@ class CustomerSeatsSync(SyncServiceBase):
             AssignSeat403Error: Not permitted or seat-based pricing not enabled
             AssignSeat404Error: Subscription, order, or customer not found
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -123,6 +127,8 @@ class CustomerSeatsSync(SyncServiceBase):
             RevokeSeat403Error: Not permitted or seat-based pricing not enabled
             RevokeSeat404Error: Seat not found
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -157,6 +163,8 @@ class CustomerSeatsSync(SyncServiceBase):
             ResendInvitation403Error: Not permitted or seat-based pricing not enabled
             ResendInvitation404Error: Seat not found
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -190,6 +198,8 @@ class CustomerSeatsSync(SyncServiceBase):
             GetClaimInfo403Error: Seat-based pricing not enabled for organization
             GetClaimInfo404Error: Seat not found
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -220,6 +230,8 @@ class CustomerSeatsSync(SyncServiceBase):
             ClaimSeat400Error: Invalid, expired, or already claimed token
             ClaimSeat403Error: Seat-based pricing not enabled for organization
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",

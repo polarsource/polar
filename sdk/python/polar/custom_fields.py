@@ -56,6 +56,8 @@ class CustomFieldsSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -119,6 +121,8 @@ class CustomFieldsSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -148,6 +152,8 @@ class CustomFieldsSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Custom field not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -167,7 +173,7 @@ class CustomFieldsSync(SyncServiceBase):
     def delete(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a custom field.
 
@@ -179,6 +185,8 @@ class CustomFieldsSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Custom field not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -193,7 +201,7 @@ class CustomFieldsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     @typing.overload
     def update(
@@ -246,6 +254,8 @@ class CustomFieldsSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Custom field not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -401,7 +411,7 @@ class CustomFieldsAsync(AsyncServiceBase):
     async def delete(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a custom field.
 
@@ -427,7 +437,7 @@ class CustomFieldsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     @typing.overload
     async def update(

@@ -47,6 +47,8 @@ class CheckoutLinksSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -97,6 +99,8 @@ class CheckoutLinksSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -126,6 +130,8 @@ class CheckoutLinksSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Checkout link not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -145,7 +151,7 @@ class CheckoutLinksSync(SyncServiceBase):
     def delete(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a checkout link.
 
@@ -157,6 +163,8 @@ class CheckoutLinksSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Checkout link not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -171,7 +179,7 @@ class CheckoutLinksSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     def update(
         self,
@@ -189,6 +197,8 @@ class CheckoutLinksSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Checkout link not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -329,7 +339,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
     async def delete(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a checkout link.
 
@@ -355,7 +365,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     async def update(
         self,

@@ -56,6 +56,8 @@ class CustomersSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -103,6 +105,8 @@ class CustomersSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -132,6 +136,8 @@ class CustomersSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -162,6 +168,8 @@ class CustomersSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -183,7 +191,7 @@ class CustomersSync(SyncServiceBase):
         id: str,
         *,
         anonymize: bool = False,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a customer.
 
@@ -210,6 +218,8 @@ class CustomersSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -226,7 +236,7 @@ class CustomersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     def update(
         self,
@@ -244,6 +254,8 @@ class CustomersSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -276,6 +288,8 @@ class CustomersSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -297,7 +311,7 @@ class CustomersSync(SyncServiceBase):
         external_id: str,
         *,
         anonymize: bool = False,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a customer by external ID.
 
@@ -314,6 +328,8 @@ class CustomersSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -330,7 +346,7 @@ class CustomersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     def update_external(
         self,
@@ -348,6 +364,8 @@ class CustomersSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -386,6 +404,8 @@ class CustomersSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -423,6 +443,8 @@ class CustomersSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -459,6 +481,8 @@ class CustomersSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -498,6 +522,8 @@ class CustomersSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -675,7 +701,7 @@ class CustomersAsync(AsyncServiceBase):
         id: str,
         *,
         anonymize: bool = False,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a customer.
 
@@ -718,7 +744,7 @@ class CustomersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     async def update(
         self,
@@ -789,7 +815,7 @@ class CustomersAsync(AsyncServiceBase):
         external_id: str,
         *,
         anonymize: bool = False,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a customer by external ID.
 
@@ -822,7 +848,7 @@ class CustomersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     async def update_external(
         self,

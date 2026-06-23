@@ -40,6 +40,8 @@ class CustomersSync(SyncServiceBase):
         Args:
 
         Raises:
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -61,6 +63,8 @@ class CustomersSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -90,6 +94,8 @@ class CustomersSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -120,6 +126,8 @@ class CustomersSync(SyncServiceBase):
         Raises:
             PaymentMethodSetupFailed: The card was declined while setting up the payment method.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -149,6 +157,8 @@ class CustomersSync(SyncServiceBase):
         Raises:
             CustomerNotReady: Customer is not ready to confirm a payment method.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -169,7 +179,7 @@ class CustomersSync(SyncServiceBase):
     def delete_payment_method(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a payment method from the authenticated customer.
 
@@ -180,6 +190,8 @@ class CustomersSync(SyncServiceBase):
             PaymentMethodInUseByActiveSubscription: Payment method is used by active subscription(s).
             ResourceNotFound: Payment method not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -195,7 +207,7 @@ class CustomersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     def request_email_update(
         self,
@@ -208,6 +220,8 @@ class CustomersSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -226,7 +240,7 @@ class CustomersSync(SyncServiceBase):
         self,
         *,
         token: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Check if an email change verification token is still valid.
 
@@ -236,6 +250,8 @@ class CustomersSync(SyncServiceBase):
         Raises:
             CheckEmailUpdate401Error: Invalid or expired verification token.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -250,7 +266,7 @@ class CustomersSync(SyncServiceBase):
             401: CheckEmailUpdate401Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     def verify_email_update(
         self,
@@ -264,6 +280,8 @@ class CustomersSync(SyncServiceBase):
         Raises:
             VerifyEmailUpdate401Error: Invalid or expired verification token.
             VerifyEmailUpdate422Error: Email address is already in use.
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -423,7 +441,7 @@ class CustomersAsync(AsyncServiceBase):
     async def delete_payment_method(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a payment method from the authenticated customer.
 
@@ -449,7 +467,7 @@ class CustomersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     async def request_email_update(
         self,
@@ -480,7 +498,7 @@ class CustomersAsync(AsyncServiceBase):
         self,
         *,
         token: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Check if an email change verification token is still valid.
 
@@ -504,7 +522,7 @@ class CustomersAsync(AsyncServiceBase):
             401: CheckEmailUpdate401Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     async def verify_email_update(
         self,

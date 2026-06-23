@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import typing
-
-from polar.base import PolarErrorResponse
+from polar.base import PolarClientError
 from polar.outputs import (
     AlreadyCanceledSubscription as AlreadyCanceledSubscriptionModel,
 )
@@ -74,7 +72,7 @@ from polar.outputs import (
 )
 
 
-class HTTPValidationError(PolarErrorResponse):
+class HTTPValidationError(PolarClientError):
     error_type = HTTPValidationErrorModel
     error: HTTPValidationErrorModel
 
@@ -83,7 +81,7 @@ class HTTPValidationError(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class ResourceNotFound(PolarErrorResponse):
+class ResourceNotFound(PolarClientError):
     error_type = ResourceNotFoundModel
     error: ResourceNotFoundModel
 
@@ -92,7 +90,7 @@ class ResourceNotFound(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class NotPermitted(PolarErrorResponse):
+class NotPermitted(PolarClientError):
     error_type = NotPermittedModel
     error: NotPermittedModel
 
@@ -101,7 +99,7 @@ class NotPermitted(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class AlreadyCanceledSubscription(PolarErrorResponse):
+class AlreadyCanceledSubscription(PolarClientError):
     error_type = AlreadyCanceledSubscriptionModel
     error: AlreadyCanceledSubscriptionModel
 
@@ -112,7 +110,7 @@ class AlreadyCanceledSubscription(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class SubscriptionLocked(PolarErrorResponse):
+class SubscriptionLocked(PolarClientError):
     error_type = SubscriptionLockedModel
     error: SubscriptionLockedModel
 
@@ -121,7 +119,7 @@ class SubscriptionLocked(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class PaymentFailed(PolarErrorResponse):
+class PaymentFailed(PolarClientError):
     error_type = PaymentFailedModel
     error: PaymentFailedModel
 
@@ -130,7 +128,7 @@ class PaymentFailed(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class Finalize402Error(PolarErrorResponse):
+class Finalize402Error(PolarClientError):
     error_type = PaymentFailedModel | PaymentActionRequiredModel
     error: PaymentFailedModel | PaymentActionRequiredModel
 
@@ -141,7 +139,7 @@ class Finalize402Error(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class Finalize403Error(PolarErrorResponse):
+class Finalize403Error(PolarClientError):
     error_type = OffSessionChargesNotEnabledModel | OrganizationNotReadyForPaymentsModel
     error: OffSessionChargesNotEnabledModel | OrganizationNotReadyForPaymentsModel
 
@@ -154,7 +152,7 @@ class Finalize403Error(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class OrderNotDraft(PolarErrorResponse):
+class OrderNotDraft(PolarClientError):
     error_type = OrderNotDraftModel
     error: OrderNotDraftModel
 
@@ -163,7 +161,7 @@ class OrderNotDraft(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class GenerateInvoice422Error(PolarErrorResponse):
+class GenerateInvoice422Error(PolarClientError):
     error_type = MissingInvoiceBillingDetailsModel | NotPaidOrderModel
     error: MissingInvoiceBillingDetailsModel | NotPaidOrderModel
 
@@ -176,7 +174,7 @@ class GenerateInvoice422Error(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class RefundedAlready(PolarErrorResponse):
+class RefundedAlready(PolarClientError):
     error_type = RefundedAlreadyModel
     error: RefundedAlreadyModel
 
@@ -185,7 +183,7 @@ class RefundedAlready(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class Update403Error(PolarErrorResponse):
+class Update403Error(PolarClientError):
     error_type = CheckoutForbiddenErrorModel
     error: CheckoutForbiddenErrorModel
 
@@ -194,7 +192,7 @@ class Update403Error(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class ExpiredCheckoutError(PolarErrorResponse):
+class ExpiredCheckoutError(PolarClientError):
     error_type = ExpiredCheckoutErrorModel
     error: ExpiredCheckoutErrorModel
 
@@ -203,7 +201,7 @@ class ExpiredCheckoutError(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class ClientUpdate403Error(PolarErrorResponse):
+class ClientUpdate403Error(PolarClientError):
     error_type = CheckoutForbiddenErrorModel
     error: CheckoutForbiddenErrorModel
 
@@ -212,7 +210,7 @@ class ClientUpdate403Error(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class PaymentError(PolarErrorResponse):
+class PaymentError(PolarClientError):
     error_type = PaymentErrorModel
     error: PaymentErrorModel
 
@@ -221,7 +219,7 @@ class PaymentError(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class ClientConfirm403Error(PolarErrorResponse):
+class ClientConfirm403Error(PolarClientError):
     error_type = CheckoutForbiddenErrorModel
     error: CheckoutForbiddenErrorModel
 
@@ -230,7 +228,7 @@ class ClientConfirm403Error(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class Unauthorized(PolarErrorResponse):
+class Unauthorized(PolarClientError):
     error_type = UnauthorizedModel
     error: UnauthorizedModel
 
@@ -239,16 +237,16 @@ class Unauthorized(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class CreateMember403Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class CreateMember403Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class PaymentMethodSetupFailed(PolarErrorResponse):
+class PaymentMethodSetupFailed(PolarClientError):
     error_type = PaymentMethodSetupFailedModel
     error: PaymentMethodSetupFailedModel
 
@@ -257,7 +255,7 @@ class PaymentMethodSetupFailed(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class CustomerNotReady(PolarErrorResponse):
+class CustomerNotReady(PolarClientError):
     error_type = CustomerNotReadyModel
     error: CustomerNotReadyModel
 
@@ -266,7 +264,7 @@ class CustomerNotReady(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class PaymentMethodInUseByActiveSubscription(PolarErrorResponse):
+class PaymentMethodInUseByActiveSubscription(PolarClientError):
     error_type = PaymentMethodInUseByActiveSubscriptionModel
     error: PaymentMethodInUseByActiveSubscriptionModel
 
@@ -277,286 +275,286 @@ class PaymentMethodInUseByActiveSubscription(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class CheckEmailUpdate401Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class CheckEmailUpdate401Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class VerifyEmailUpdate401Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class VerifyEmailUpdate401Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class VerifyEmailUpdate422Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class VerifyEmailUpdate422Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class ListSeats401Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class ListSeats401Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class ListSeats403Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class ListSeats403Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class ListSeats404Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class ListSeats404Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class AssignSeat400Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class AssignSeat400Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class AssignSeat401Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class AssignSeat401Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class AssignSeat403Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class AssignSeat403Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class AssignSeat404Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class AssignSeat404Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class RevokeSeat401Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class RevokeSeat401Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class RevokeSeat403Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class RevokeSeat403Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class RevokeSeat404Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class RevokeSeat404Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class ResendInvitation400Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class ResendInvitation400Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class ResendInvitation401Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class ResendInvitation401Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class ResendInvitation403Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class ResendInvitation403Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class ResendInvitation404Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class ResendInvitation404Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class ListClaimedSubscriptions401Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class ListClaimedSubscriptions401Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class ListMembers401Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class ListMembers401Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class ListMembers403Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class ListMembers403Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class AddMember400Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class AddMember400Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class AddMember401Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class AddMember401Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class AddMember403Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class AddMember403Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class RemoveMember400Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class RemoveMember400Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class RemoveMember401Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class RemoveMember401Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class RemoveMember403Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class RemoveMember403Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class RemoveMember404Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class RemoveMember404Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class UpdateMember400Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class UpdateMember400Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class UpdateMember401Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class UpdateMember401Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class UpdateMember403Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class UpdateMember403Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class UpdateMember404Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class UpdateMember404Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class PaymentAlreadyInProgress(PolarErrorResponse):
+class PaymentAlreadyInProgress(PolarClientError):
     error_type = PaymentAlreadyInProgressModel
     error: PaymentAlreadyInProgressModel
 
@@ -565,7 +563,7 @@ class PaymentAlreadyInProgress(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class OrderNotEligibleForRetry(PolarErrorResponse):
+class OrderNotEligibleForRetry(PolarClientError):
     error_type = OrderNotEligibleForRetryModel
     error: OrderNotEligibleForRetryModel
 
@@ -574,7 +572,7 @@ class OrderNotEligibleForRetry(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class ManualRetryLimitExceeded(PolarErrorResponse):
+class ManualRetryLimitExceeded(PolarClientError):
     error_type = ManualRetryLimitExceededModel
     error: ManualRetryLimitExceededModel
 
@@ -583,55 +581,55 @@ class ManualRetryLimitExceeded(PolarErrorResponse):
         super().__init__(status_code, error)
 
 
-class GetClaimInfo400Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class GetClaimInfo400Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class GetClaimInfo403Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class GetClaimInfo403Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class GetClaimInfo404Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class GetClaimInfo404Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class ClaimSeat400Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class ClaimSeat400Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class ClaimSeat403Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class ClaimSeat403Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class Update404Error(PolarErrorResponse):
-    error_type = typing.Any
-    error: typing.Any
+class Update404Error(PolarClientError):
+    error_type = None
+    error: None
 
-    def __init__(self, status_code: int, error: typing.Any) -> None:
+    def __init__(self, status_code: int, error: None) -> None:
         self.error = error
         super().__init__(status_code, error)

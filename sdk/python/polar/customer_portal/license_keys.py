@@ -42,6 +42,8 @@ class LicenseKeysSync(SyncServiceBase):
             Unauthorized: Not authorized to manage license key.
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -76,6 +78,8 @@ class LicenseKeysSync(SyncServiceBase):
         Raises:
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -109,6 +113,8 @@ class LicenseKeysSync(SyncServiceBase):
         Raises:
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -142,6 +148,8 @@ class LicenseKeysSync(SyncServiceBase):
             NotPermitted: License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -161,7 +169,7 @@ class LicenseKeysSync(SyncServiceBase):
     def deactivate(
         self,
         **kwargs: typing.Unpack[LicenseKeyDeactivate],
-    ) -> typing.Any:
+    ) -> None:
         """
         Deactivate a license key instance.
 
@@ -175,6 +183,8 @@ class LicenseKeysSync(SyncServiceBase):
         Raises:
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -188,7 +198,7 @@ class LicenseKeysSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
 
 class LicenseKeysAsync(AsyncServiceBase):
@@ -330,7 +340,7 @@ class LicenseKeysAsync(AsyncServiceBase):
     async def deactivate(
         self,
         **kwargs: typing.Unpack[LicenseKeyDeactivate],
-    ) -> typing.Any:
+    ) -> None:
         """
         Deactivate a license key instance.
 
@@ -357,4 +367,4 @@ class LicenseKeysAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)

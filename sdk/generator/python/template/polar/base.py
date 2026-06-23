@@ -5,6 +5,33 @@ import adaptix
 import httpx
 
 
+class PolarError(Exception):
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(message)
+
+
+class PolarNetworkError(PolarError):
+    def __init__(self, message: str):
+        super().__init__(f"Polar API network error: {message}")
+
+
+class PolarServerError(PolarError):
+    def __init__(self, status_code: int, message: str):
+        self.status_code = status_code
+        super().__init__(f"Polar API returned a server error: {status_code} - {message}")
+
+
+class PolarClientError(PolarError):
+    error_type: typing.ClassVar[typing.Any]
+    error: typing.Any
+
+    def __init__(self, status_code: int, error: typing.Any):
+        self.status_code = status_code
+        self.error = error
+        super().__init__(f"Polar API returned an error: {status_code} - {error}")
+
+
 class BuildRequestMixin:
     def build_request(
         self: "SyncClientBase | AsyncClientBase",
@@ -42,7 +69,10 @@ class SyncClientBase(BuildRequestMixin):
         self._client.__exit__(exc_type, exc_val, exc_tb)
 
     def send_request(self, request: httpx.Request) -> httpx.Response:
-        return self._client.send(request)
+        try:
+            return self._client.send(request)
+        except httpx.RequestError as e:
+            raise PolarNetworkError(str(e)) from e
 
 
 class AsyncClientBase(BuildRequestMixin):
@@ -68,7 +98,10 @@ class AsyncClientBase(BuildRequestMixin):
         await self._client.__aexit__(exc_type, exc_val, exc_tb)
 
     async def send_request(self, request: httpx.Request) -> httpx.Response:
-        return await self._client.send(request)
+        try:
+            return await self._client.send(request)
+        except httpx.RequestError as e:
+            raise PolarNetworkError(str(e)) from e
 
 
 class SyncServiceBase:
@@ -91,23 +124,7 @@ class AsyncServiceBase:
 
 retort = adaptix.Retort()
 
-
-class PolarError(Exception):
-    def __init__(self, message: str):
-        self.message = message
-        super().__init__(message)
-
-
-class PolarErrorResponse(PolarError):
-    error_type: typing.ClassVar[typing.Any]
-    error: typing.Any
-
-    def __init__(self, status_code: int, error: typing.Any):
-        self.status_code = status_code
-        self.error = error
-        super().__init__(f"Polar API returned an error: {status_code} - {error}")
-
-E = typing.TypeVar("E", bound=PolarErrorResponse)
+E = typing.TypeVar("E", bound=PolarClientError)
 
 def parse_response(
     response: httpx.Response,
@@ -115,10 +132,18 @@ def parse_response(
     errors: dict[int, type[E]] | None = None,
 ) -> typing.Any:
     status_code = response.status_code
-    try:
-        error_class = (errors or {})[status_code]
-        raise error_class(status_code, retort.load(response.json(), error_class.error_type))
-    except KeyError:
-        pass
+
+    if response.is_server_error:
+        raise PolarServerError(status_code, response.text)
+
+    if response.is_client_error:
+        try:
+            error_class = (errors or {})[status_code]
+            raise error_class(status_code, retort.load(response.json(), error_class.error_type))
+        except KeyError:
+            raise PolarClientError(status_code, response.text)
+
+    if response_type is None:
+        return None
 
     return retort.load(response.json(), response_type)

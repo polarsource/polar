@@ -63,6 +63,8 @@ class CheckoutsSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -99,6 +101,8 @@ class CheckoutsSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -128,6 +132,8 @@ class CheckoutsSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Checkout session not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -161,6 +167,8 @@ class CheckoutsSync(SyncServiceBase):
             Update403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
             ResourceNotFound: Checkout session not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -193,6 +201,8 @@ class CheckoutsSync(SyncServiceBase):
             ResourceNotFound: Checkout session not found.
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -226,6 +236,8 @@ class CheckoutsSync(SyncServiceBase):
             ResourceNotFound: Checkout session not found.
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -264,6 +276,8 @@ class CheckoutsSync(SyncServiceBase):
             ResourceNotFound: Checkout session not found.
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",

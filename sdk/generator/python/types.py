@@ -56,7 +56,9 @@ def collect_model_enum_imports(
     return enum_imports
 
 
-def convert_type_to_annotation(type_ref: TypeRef, *, ref_suffix: str = "") -> str:
+def convert_type_to_annotation(
+    type_ref: TypeRef | None, *, ref_suffix: str = ""
+) -> str:
     if isinstance(type_ref, PrimitiveType):
         return _convert_primitive_type(type_ref)
 
@@ -100,7 +102,7 @@ def convert_type_to_annotation(type_ref: TypeRef, *, ref_suffix: str = "") -> st
         ]
         return " | ".join(variant_strs)
 
-    return "typing.Any"
+    return "None"
 
 
 def wrap_nullable_type(type_ref: TypeRef) -> NullableType:

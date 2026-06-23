@@ -41,6 +41,8 @@ class WebhooksSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -71,6 +73,8 @@ class WebhooksSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -100,6 +104,8 @@ class WebhooksSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Webhook endpoint not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -119,7 +125,7 @@ class WebhooksSync(SyncServiceBase):
     def delete_webhook_endpoint(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a webhook endpoint.
 
@@ -131,6 +137,8 @@ class WebhooksSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Webhook endpoint not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -145,7 +153,7 @@ class WebhooksSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     def update_webhook_endpoint(
         self,
@@ -163,6 +171,8 @@ class WebhooksSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Webhook endpoint not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -195,6 +205,8 @@ class WebhooksSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Webhook endpoint not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -248,6 +260,8 @@ class WebhooksSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -286,6 +300,8 @@ class WebhooksSync(SyncServiceBase):
         Raises:
             ResourceNotFound: Webhook event not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -401,7 +417,7 @@ class WebhooksAsync(AsyncServiceBase):
     async def delete_webhook_endpoint(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         Delete a webhook endpoint.
 
@@ -427,7 +443,7 @@ class WebhooksAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     async def update_webhook_endpoint(
         self,

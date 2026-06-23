@@ -45,6 +45,8 @@ class OrganizationAccessTokensSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -76,6 +78,8 @@ class OrganizationAccessTokensSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -95,7 +99,7 @@ class OrganizationAccessTokensSync(SyncServiceBase):
     def delete(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         **Scopes**: `organization_access_tokens:write`
 
@@ -104,6 +108,8 @@ class OrganizationAccessTokensSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -117,7 +123,7 @@ class OrganizationAccessTokensSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     def update(
         self,
@@ -132,6 +138,8 @@ class OrganizationAccessTokensSync(SyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -223,7 +231,7 @@ class OrganizationAccessTokensAsync(AsyncServiceBase):
     async def delete(
         self,
         id: str,
-    ) -> typing.Any:
+    ) -> None:
         """
         **Scopes**: `organization_access_tokens:write`
 
@@ -245,7 +253,7 @@ class OrganizationAccessTokensAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response(response, None, method_errors)
 
     async def update(
         self,

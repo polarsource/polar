@@ -9,6 +9,14 @@ vi.mock('./utils/client', () => ({
 
 const nextConfig = {}
 
+const getForwardedRequestHeader = (
+  response: Response,
+  header: string,
+): string | null => response.headers.get(`x-middleware-request-${header}`)
+
+const getForwardedRequestHeaderNames = (response: Response): string[] =>
+  response.headers.get('x-middleware-override-headers')?.split(',') ?? []
+
 describe('proxy matcher configuration', () => {
   it('should run for dashboard routes', () => {
     expect(
@@ -214,6 +222,7 @@ describe('middleware function', () => {
 
   it('should allow authenticated users to access protected routes', async () => {
     const mockUser = { id: '123', email: 'test@example.com' }
+    const spoofedUser = { id: 'spoofed', email: 'attacker@example.com' }
     createServerSideAPI.mockResolvedValue({
       GET: vi.fn().mockResolvedValue({
         data: mockUser,
@@ -221,13 +230,19 @@ describe('middleware function', () => {
       }),
     })
 
-    const request = new NextRequest('https://example.com/dashboard')
+    const request = new NextRequest('https://example.com/dashboard', {
+      headers: {
+        'x-polar-user': Buffer.from(JSON.stringify(spoofedUser)).toString(
+          'base64',
+        ),
+      },
+    })
     request.cookies.set('polar_session', 'valid-session-token')
 
     const response = await proxy(request)
 
     expect(response.status).toBe(200)
-    expect(response.headers.get('x-polar-user')).toBe(
+    expect(getForwardedRequestHeader(response, 'x-polar-user')).toBe(
       Buffer.from(JSON.stringify(mockUser)).toString('base64'),
     )
   })
@@ -238,7 +253,10 @@ describe('middleware function', () => {
     const response = await proxy(request)
 
     expect(response.status).toBe(200)
-    expect(response.headers.get('x-polar-user')).toBeNull()
+    expect(getForwardedRequestHeader(response, 'x-polar-user')).toBeNull()
+    expect(getForwardedRequestHeaderNames(response)).not.toContain(
+      'x-polar-user',
+    )
   })
 
   it('should redirect to login with query params preserved', async () => {

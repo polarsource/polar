@@ -26,7 +26,9 @@ def select_user_org_ids(
     grants that permission.
     """
     stmt = (
-        select(UserOrganization.organization_id)
+        # The one blessed place that expands user memberships into org ids;
+        # every other caller must go through this helper.
+        select(UserOrganization.organization_id)  # noqa: org-scope
         .join(Organization, UserOrganization.organization_id == Organization.id)
         .where(
             UserOrganization.user_id == user_id,

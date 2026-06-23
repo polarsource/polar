@@ -3,6 +3,7 @@ from datetime import timedelta
 
 import pytest
 
+from polar.auth.models import AuthSubject
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
@@ -14,6 +15,10 @@ from tests.fixtures.database import SaveFixture
 from tests.transaction.conftest import create_transaction
 
 
+def _auth(user: User) -> AuthSubject[User]:
+    return AuthSubject(user, set(), None)
+
+
 @pytest.mark.asyncio
 class TestSearch:
     async def test_no_access(
@@ -23,10 +28,7 @@ class TestSearch:
         all_transactions: list[Transaction],
     ) -> None:
         results, count = await transaction_service.search(
-            session,
-            user_second,
-            organization_ids=None,
-            pagination=PaginationParams(1, 10),
+            session, _auth(user_second), pagination=PaginationParams(1, 10)
         )
 
         assert count == 0
@@ -41,7 +43,7 @@ class TestSearch:
         all_transactions: list[Transaction],
     ) -> None:
         results, count = await transaction_service.search(
-            session, user, organization_ids=None, pagination=PaginationParams(1, 10)
+            session, _auth(user), pagination=PaginationParams(1, 10)
         )
 
         assert count == len(readable_user_transactions)
@@ -71,8 +73,7 @@ class TestSearch:
 
         results, count = await transaction_service.search(
             session,
-            user,
-            organization_ids=None,
+            _auth(user),
             type=TransactionType.payout,
             pagination=PaginationParams(1, 10),
         )
@@ -101,8 +102,7 @@ class TestSearch:
 
         results, count = await transaction_service.search(
             session,
-            user,
-            organization_ids=None,
+            _auth(user),
             account_id=account.id,
             pagination=PaginationParams(1, 10),
         )
@@ -128,8 +128,7 @@ class TestSearch:
 
         results, count = await transaction_service.search(
             session,
-            user,
-            organization_ids=None,
+            _auth(user),
             payment_user_id=user.id,
             pagination=PaginationParams(1, 10),
         )
@@ -156,8 +155,7 @@ class TestSearch:
 
         results, count = await transaction_service.search(
             session,
-            user,
-            organization_ids=None,
+            _auth(user),
             payment_organization_id=organization.id,
             pagination=PaginationParams(1, 10),
         )
@@ -263,9 +261,7 @@ class TestLookup:
         session.expunge_all()
 
         with pytest.raises(ResourceNotFound):
-            await transaction_service.lookup(
-                session, uuid.uuid4(), user_second, organization_ids=None
-            )
+            await transaction_service.lookup(session, uuid.uuid4(), _auth(user_second))
 
     async def test_user_not_accessible(
         self,
@@ -279,10 +275,7 @@ class TestLookup:
 
         with pytest.raises(ResourceNotFound):
             await transaction_service.lookup(
-                session,
-                readable_user_transactions[0].id,
-                user_second,
-                organization_ids=None,
+                session, readable_user_transactions[0].id, _auth(user_second)
             )
 
     async def test_valid(
@@ -297,7 +290,7 @@ class TestLookup:
         session.expunge_all()
 
         transaction = await transaction_service.lookup(
-            session, readable_user_transactions[0].id, user, organization_ids=None
+            session, readable_user_transactions[0].id, _auth(user)
         )
 
         assert transaction.id == readable_user_transactions[0].id

@@ -32,11 +32,7 @@ async def get_accessible_org_ids(
         return {AccessibleOrganizationID(auth_subject.subject.id)}
     if is_user(auth_subject):
         repository = AuthzRepository.from_session(session)
-        raw_ids = await repository.get_user_org_ids(
-            auth_subject.subject.id,
-            permission=permission,
-            scoped_to=auth_subject.organization_ids,
-        )
+        raw_ids = await repository.get_user_org_ids(auth_subject, permission=permission)
         return {AccessibleOrganizationID(uid) for uid in raw_ids}
     return set()
 

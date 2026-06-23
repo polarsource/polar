@@ -276,9 +276,8 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             statement = statement.where(
                 CustomField.organization_id.in_(
                     select_user_org_ids(
-                        auth_subject.subject.id,
+                        auth_subject,
                         permission=OrganizationPermission.custom_fields_read,
-                        scoped_to=auth_subject.organization_ids,
                     )
                 )
             )

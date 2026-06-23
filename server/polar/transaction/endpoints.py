@@ -44,8 +44,7 @@ async def search_transactions(
 ) -> ListResource[Transaction]:
     results, count = await transaction_service.search(
         session,
-        auth_subject.subject,
-        organization_ids=auth_subject.organization_ids,
+        auth_subject,
         type=type,
         account_id=account_id,
         payment_customer_id=payment_customer_id,

@@ -1221,12 +1221,7 @@ class EventService:
             )
             if is_user(auth_subject):
                 statement = statement.where(
-                    Customer.organization_id.in_(
-                        select_user_org_ids(
-                            auth_subject.subject.id,
-                            scoped_to=auth_subject.organization_ids,
-                        )
-                    )
+                    Customer.organization_id.in_(select_user_org_ids(auth_subject))
                 )
             else:
                 statement = statement.where(
@@ -1267,12 +1262,7 @@ class EventService:
             )
             if is_user(auth_subject):
                 statement = statement.where(
-                    Member.organization_id.in_(
-                        select_user_org_ids(
-                            auth_subject.subject.id,
-                            scoped_to=auth_subject.organization_ids,
-                        )
-                    )
+                    Member.organization_id.in_(select_user_org_ids(auth_subject))
                 )
             else:
                 statement = statement.where(

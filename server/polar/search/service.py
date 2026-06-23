@@ -69,11 +69,7 @@ class SearchService:
 
         organization_subquery = select(Organization.id).where(
             Organization.id == organization_id,
-            Organization.id.in_(
-                select_user_org_ids(
-                    auth_subject.subject.id, scoped_to=auth_subject.organization_ids
-                )
-            ),
+            Organization.id.in_(select_user_org_ids(auth_subject)),
         )
 
         subqueries: list[Select[Any]] = []

@@ -474,9 +474,7 @@ class DiscountService(ResourceServiceReader[Discount]):
             statement = statement.where(
                 Discount.organization_id.in_(
                     select_user_org_ids(
-                        auth_subject.subject.id,
-                        permission=OrganizationPermission.products_read,
-                        scoped_to=auth_subject.organization_ids,
+                        auth_subject, permission=OrganizationPermission.products_read
                     )
                 )
             )

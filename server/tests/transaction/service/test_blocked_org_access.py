@@ -1,5 +1,6 @@
 import pytest
 
+from polar.auth.models import AuthSubject
 from polar.kit.pagination import PaginationParams
 from polar.models import (
     Account,
@@ -13,6 +14,10 @@ from polar.postgres import AsyncSession
 from polar.transaction.service.transaction import transaction as transaction_service
 from tests.fixtures.database import SaveFixture
 from tests.transaction.conftest import create_transaction
+
+
+def _auth(user: User) -> AuthSubject[User]:
+    return AuthSubject(user, set(), None)
 
 
 @pytest.mark.asyncio
@@ -36,7 +41,7 @@ class TestBlockedOrganizationTransactionAccess:
         await save_fixture(organization)
 
         results, count = await transaction_service.search(
-            session, user, organization_ids=None, pagination=PaginationParams(1, 10)
+            session, _auth(user), pagination=PaginationParams(1, 10)
         )
 
         result_ids = [t.id for t in results]
@@ -61,7 +66,7 @@ class TestBlockedOrganizationTransactionAccess:
         await save_fixture(organization)
 
         results, count = await transaction_service.search(
-            session, user, organization_ids=None, pagination=PaginationParams(1, 10)
+            session, _auth(user), pagination=PaginationParams(1, 10)
         )
 
         result_ids = [t.id for t in results]
@@ -86,7 +91,7 @@ class TestBlockedOrganizationTransactionAccess:
         await save_fixture(organization)
 
         results, count = await transaction_service.search(
-            session, user, organization_ids=None, pagination=PaginationParams(1, 10)
+            session, _auth(user), pagination=PaginationParams(1, 10)
         )
 
         result_ids = [t.id for t in results]

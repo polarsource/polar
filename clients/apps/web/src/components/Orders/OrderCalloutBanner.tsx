@@ -4,7 +4,7 @@ import { schemas } from '@polar-sh/client'
 import { Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { addDays, parseISO } from 'date-fns'
+import { addDays, min, parseISO } from 'date-fns'
 
 const DUNNING_RETRY_COUNT = 4
 const DUNNING_MAX_ATTEMPTS = DUNNING_RETRY_COUNT + 1
@@ -50,8 +50,24 @@ export const OrderDunningBanner = ({
   const gracePeriodDays =
     organization.subscription_settings.benefit_revocation_grace_period
 
-  const failedPaymentDisplayMessage = latestFailedPayment?.decline_message ??
-    latestFailedPayment?.decline_reason
+  const cancellationDate = subscription.ended_at
+    ? parseISO(subscription.ended_at)
+    : revocationDeadline
+
+  const benefitsRevocationDate = subscription.past_due_at
+    ? min(
+        [
+          addDays(parseISO(subscription.past_due_at), gracePeriodDays),
+          cancellationDate,
+        ].filter((date) => date !== null),
+      )
+    : null
+
+  const benefitsRevoked =
+    benefitsRevocationDate !== null && benefitsRevocationDate < new Date()
+
+  const failedPaymentDisplayMessage =
+    latestFailedPayment?.decline_message ?? latestFailedPayment?.decline_reason
 
   return (
     <Box
@@ -86,12 +102,9 @@ export const OrderDunningBanner = ({
               size="small"
             />
           </Box>
-          {failedPaymentDisplayMessage
-            ? (
-              <Text>
-                {failedPaymentDisplayMessage}
-              </Text>
-            ) : null}
+          {failedPaymentDisplayMessage ? (
+            <Text>{failedPaymentDisplayMessage}</Text>
+          ) : null}
           {latestFailedPayment ? (
             <Text color="muted">
               Last attempt{' '}
@@ -145,21 +158,25 @@ export const OrderDunningBanner = ({
           {subscription.ended_at ? (
             <Text color="muted">
               The subscription was canceled on{' '}
-              <FormattedDateTime
-                dateStyle="medium"
-                resolution="day"
-                datetime={subscription.ended_at}
-              />
+              <Text as="span" color="default">
+                <FormattedDateTime
+                  dateStyle="medium"
+                  resolution="day"
+                  datetime={subscription.ended_at}
+                />
+              </Text>
               .
             </Text>
           ) : revocationDeadline ? (
             <Text color="muted">
               If all retries fail, the subscription is canceled by{' '}
-              <FormattedDateTime
-                dateStyle="medium"
-                resolution="day"
-                datetime={revocationDeadline.toISOString()}
-              />
+              <Text as="span" color="default">
+                <FormattedDateTime
+                  dateStyle="medium"
+                  resolution="day"
+                  datetime={revocationDeadline.toISOString()}
+                />
+              </Text>
               .
             </Text>
           ) : (
@@ -167,12 +184,25 @@ export const OrderDunningBanner = ({
               If all retries fail, the subscription is canceled.
             </Text>
           )}
-          <Text color="muted">
-            {gracePeriodDays > 0
-              ? `Benefits stay active for ${gracePeriodDays} ${gracePeriodDays === 1 ? 'day' : 'days'
-              } after cancellation, then are revoked.`
-              : 'Benefits are revoked as soon as the subscription is canceled.'}
-          </Text>
+          {benefitsRevocationDate ? (
+            <Text color="muted">
+              {benefitsRevoked
+                ? 'Benefits were revoked on '
+                : 'Benefits stay active until '}
+              <Text as="span" color="default">
+                <FormattedDateTime
+                  dateStyle="medium"
+                  resolution="day"
+                  datetime={benefitsRevocationDate.toISOString()}
+                />
+              </Text>
+              {benefitsRevoked ? '.' : ', then are revoked.'}
+            </Text>
+          ) : (
+            <Text color="muted">
+              Benefits are revoked as soon as the subscription is canceled.
+            </Text>
+          )}
         </Box>
       </Box>
     </Box>

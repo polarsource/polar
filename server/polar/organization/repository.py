@@ -48,11 +48,6 @@ UNSNOOZE_EXPIRED_BATCH_SIZE = 500
 # Maximum orgs the auto-offboard cron processes per run.
 OFFBOARD_EXPIRED_BATCH_SIZE = 500
 
-# Order statuses that count as a completed (not fully refunded) payment when
-# anchoring the offboarding chargeback-risk window. Shared so the auto-offboard
-# cron and the backoffice "remaining period" display can't drift.
-PAID_ORDER_STATUSES = (OrderStatus.paid, OrderStatus.partially_refunded)
-
 
 class OrganizationRepository(
     RepositorySortingMixin[Organization, OrganizationSortProperty],
@@ -213,7 +208,7 @@ class OrganizationRepository(
             select(func.max(Order.created_at))
             .where(
                 Order.organization_id == Organization.id,
-                Order.status.in_(PAID_ORDER_STATUSES),
+                Order.status.in_(OrderStatus.paid_statuses()),
                 Order.deleted_at.is_(None),
             )
             .correlate(Organization)
@@ -241,7 +236,7 @@ class OrganizationRepository(
         """
         statement = select(func.max(Order.created_at)).where(
             Order.organization_id == organization_id,
-            Order.status.in_(PAID_ORDER_STATUSES),
+            Order.status.in_(OrderStatus.paid_statuses()),
             Order.deleted_at.is_(None),
         )
         result = await self.session.execute(statement)

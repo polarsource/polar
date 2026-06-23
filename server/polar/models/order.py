@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 from uuid import UUID
 
 from alembic_utils.pg_function import PGFunction
@@ -73,6 +73,11 @@ class OrderStatus(StrEnum):
     refunded = "refunded"
     partially_refunded = "partially_refunded"
     void = "void"
+
+    @classmethod
+    def paid_statuses(cls) -> set[Self]:
+        """Orders that count as a completed, not fully refunded, payment."""
+        return {cls.paid, cls.partially_refunded}  # pyright: ignore
 
 
 class OrderError(PolarError): ...

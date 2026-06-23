@@ -341,12 +341,13 @@ resource "render_web_service" "api" {
   custom_domains = var.api_service_config.custom_domains
 
   env_vars = {
-    SERVICE_NAME             = { value = "api${local.env_suffix}" }
-    WEB_CONCURRENCY          = { value = var.api_service_config.web_concurrency }
-    FORWARDED_ALLOW_IPS      = { value = var.api_service_config.forwarded_allow_ips }
-    POLAR_ALLOWED_HOSTS      = { value = var.api_service_config.allowed_hosts }
-    POLAR_CORS_ORIGINS       = { value = var.api_service_config.cors_origins }
-    POLAR_DATABASE_POOL_SIZE = { value = var.api_service_config.database_pool_size }
+    SERVICE_NAME                = { value = "api${local.env_suffix}" }
+    WEB_CONCURRENCY             = { value = var.api_service_config.web_concurrency }
+    FORWARDED_ALLOW_IPS         = { value = var.api_service_config.forwarded_allow_ips }
+    POLAR_ALLOWED_HOSTS         = { value = var.api_service_config.allowed_hosts }
+    POLAR_CORS_ORIGINS          = { value = var.api_service_config.cors_origins }
+    POLAR_DATABASE_POOL_SIZE    = { value = var.api_service_config.database_pool_size }
+    POLAR_REDIS_MAX_CONNECTIONS = { value = var.api_service_config.redis_max_connections }
   }
 }
 
@@ -379,9 +380,10 @@ resource "render_web_service" "worker" {
   custom_domains = length(each.value.custom_domains) > 0 ? each.value.custom_domains : null
 
   env_vars = {
-    SERVICE_NAME             = { value = each.key }
-    dramatiq_prom_port       = { value = each.value.dramatiq_prom_port }
-    POLAR_DATABASE_POOL_SIZE = { value = each.value.database_pool_size }
+    SERVICE_NAME                = { value = each.key }
+    dramatiq_prom_port          = { value = each.value.dramatiq_prom_port }
+    POLAR_DATABASE_POOL_SIZE    = { value = each.value.database_pool_size }
+    POLAR_REDIS_MAX_CONNECTIONS = { value = each.value.redis_max_connections }
   }
 }
 
@@ -409,10 +411,11 @@ resource "render_cron_job" "cron" {
   # and write it to a temp file in the start command. POLAR_JWKS is set here
   # to override the env group value (/etc/secrets/jwks.json) which doesn't exist.
   env_vars = {
-    SERVICE_NAME             = { value = each.key }
-    POLAR_DATABASE_POOL_SIZE = { value = each.value.database_pool_size }
-    POLAR_JWKS               = { value = "/tmp/jwks.json" }
-    POLAR_JWKS_CONTENT       = { value = var.backend_secrets.jwks }
+    SERVICE_NAME                = { value = each.key }
+    POLAR_DATABASE_POOL_SIZE    = { value = each.value.database_pool_size }
+    POLAR_REDIS_MAX_CONNECTIONS = { value = each.value.redis_max_connections }
+    POLAR_JWKS                  = { value = "/tmp/jwks.json" }
+    POLAR_JWKS_CONTENT          = { value = var.backend_secrets.jwks }
   }
 }
 

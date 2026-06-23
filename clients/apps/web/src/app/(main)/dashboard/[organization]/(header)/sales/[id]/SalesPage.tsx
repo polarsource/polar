@@ -6,7 +6,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { DownloadInvoiceDashboard } from '@/components/Orders/DownloadInvoice'
-import { OrderDunningBanner } from '@/components/Orders/OrderDunningBanner'
+import { OrderCalloutBanner } from '@/components/Orders/OrderCalloutBanner'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
 import PaymentMethod from '@/components/PaymentMethod/PaymentMethod'
 import PaymentStatus from '@/components/PaymentStatus/PaymentStatus'
@@ -129,7 +129,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:shadow-none"
     >
       {showDunningBanner && dunningSubscription ? (
-        <OrderDunningBanner
+        <OrderCalloutBanner
           organization={organization}
           order={order}
           subscription={dunningSubscription}

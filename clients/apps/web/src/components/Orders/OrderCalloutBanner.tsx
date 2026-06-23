@@ -15,19 +15,19 @@ const DUNNING_COUNTING_TRIGGERS = new Set<schemas['PaymentTrigger']>([
   'retry_dunning',
 ])
 
-interface OrderDunningBannerProps {
+interface OrderCalloutBannerProps {
   organization: schemas['Organization']
   order: schemas['Order']
   subscription: schemas['Subscription']
   payments: schemas['Payment'][]
 }
 
-export const OrderDunningBanner = ({
+export const OrderCalloutBanner = ({
   organization,
   order,
   subscription,
   payments,
-}: OrderDunningBannerProps) => {
+}: OrderCalloutBannerProps) => {
   const failedDunningAttempts = payments.filter(
     (payment) =>
       payment.status === 'failed' &&

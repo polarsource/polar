@@ -147,7 +147,7 @@ export const Pipeline = () => {
         alignItems="start"
       >
         {/* Accordion */}
-        <Box as="ul" flexDirection="column" rowGap="2xl">
+        <Box flexDirection="column" rowGap="2xl">
           <Box flexDirection="column" rowGap="2xl">
             <Text variant="heading-l" as="h2" wrap="balance">
               Everything between usage & revenue
@@ -155,34 +155,41 @@ export const Pipeline = () => {
           </Box>
 
           <Box
+            as="ul"
             display={{ base: 'none', md: 'flex' }}
             rowGap="xl"
             flexDirection="column"
           >
             {ASPECTS.map((aspect) => {
               return (
-                <Link href={aspect.href} key={aspect.title}>
-                  <Box
-                    as="li"
-                    display="flex"
-                    flexDirection="column"
-                    rowGap="s"
-                    borderLeftWidth={4}
-                    borderStyle="solid"
-                    paddingLeft="xl"
-                  >
-                    <Box alignItems="center" justifyContent="between">
-                      <Box flexDirection="row" columnGap="s">
-                        <Text variant="heading-xxs">{aspect.title}</Text>
+                <Box
+                  as="li"
+                  key={aspect.title}
+                  display="flex"
+                  flexDirection="column"
+                >
+                  <Link href={aspect.href}>
+                    <Box
+                      display="flex"
+                      flexDirection="column"
+                      rowGap="s"
+                      borderLeftWidth={4}
+                      borderStyle="solid"
+                      paddingLeft="xl"
+                    >
+                      <Box alignItems="center" justifyContent="between">
+                        <Box flexDirection="row" columnGap="s">
+                          <Text variant="heading-xxs">{aspect.title}</Text>
+                        </Box>
+                      </Box>
+                      <Box flexDirection="column" rowGap="m">
+                        <Text variant="body" color="muted">
+                          {aspect.desc}
+                        </Text>
                       </Box>
                     </Box>
-                    <Box flexDirection="column" rowGap="m">
-                      <Text variant="body" color="muted">
-                        {aspect.desc}
-                      </Text>
-                    </Box>
-                  </Box>
-                </Link>
+                  </Link>
+                </Box>
               )
             })}
           </Box>

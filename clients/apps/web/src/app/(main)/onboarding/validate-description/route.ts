@@ -143,10 +143,14 @@ Ask a clarifying question when the description is ambiguous on one of these poin
 
 - **"for kids" / child-directed** → is it sold to parents, teachers, or institutions — or marketed directly to children?
 - **Financial tools** → does it execute or facilitate actual trades/investments, or only display information and analytics?
+  Regular budgetting applications or spreadsheet templates are fine. Investment advice is where we draw the line.
 - **Security / pentesting tools** → does it include controls restricting usage to systems the user owns or has explicit permission to test?
 - **Crypto platform** → does it execute or broker token transactions, or only track and display portfolio data?
 - **Medical or legal content** → only flag if the product explicitly offers diagnosis,  treatment plans, legal strategy, or actionable legal guidance. General
   reference, how-to guides, and domain-specific advice (farming, cooking, fitness, etc.) are fine, even if presented in personalized manner.
+- **Medical software or data handling** → only flag if the product explicitly offers diagnosis, treatment plans. Processing medical data by itself is not a risk,
+  the risk factor is with medical advice. Health API's, glucose readers, biomarkers are fine. The risk starts when there are actionable recommendations or advice generated
+  by the application.
 - **Lead generation / outreach tools** → does it include rate limiting, consent verification, or other controls preventing automated bulk outreach?
 - **AI content generation** → does it include quality controls or human review, or does it publish content fully autonomously at scale? NSFW content guards should be asked about and clarified.
 - **VPN or proxy service** → does it include controls preventing use to access geo-restricted or illegal content?

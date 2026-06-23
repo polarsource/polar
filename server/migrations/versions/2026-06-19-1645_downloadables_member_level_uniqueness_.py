@@ -18,6 +18,7 @@ branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 
 NEW_INDEX = "ix_downloadables_scope_unique"
+CUSTOMER_INDEX = "ix_downloadables_customer_id"
 OLD_CONSTRAINT = "downloadables_customer_id_file_id_benefit_id_key"
 
 
@@ -47,6 +48,21 @@ def upgrade() -> None:
             postgresql_nulls_not_distinct=True,
             postgresql_where=sa.text("deleted_at IS NULL"),
         )
+        # The new scope index is partial, so it no longer fully covers
+        # customer_id (cascade deletes, soft-deleted lookups). Add a full index
+        # before dropping the old constraint so coverage is never lost.
+        op.drop_index(
+            CUSTOMER_INDEX,
+            table_name="downloadables",
+            if_exists=True,
+            postgresql_concurrently=True,
+        )
+        op.create_index(
+            CUSTOMER_INDEX,
+            "downloadables",
+            ["customer_id"],
+            postgresql_concurrently=True,
+        )
 
     op.execute("SET LOCAL lock_timeout = '5s'")
     op.drop_constraint(OLD_CONSTRAINT, "downloadables", type_="unique")
@@ -57,6 +73,13 @@ def downgrade() -> None:
         op.drop_index(
             NEW_INDEX,
             table_name="downloadables",
+            postgresql_concurrently=True,
+        )
+        # The restored non-partial constraint covers customer_id again.
+        op.drop_index(
+            CUSTOMER_INDEX,
+            table_name="downloadables",
+            if_exists=True,
             postgresql_concurrently=True,
         )
 

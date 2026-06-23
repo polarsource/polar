@@ -59,9 +59,10 @@ class Downloadable(RecordModel):
         Uuid,
         ForeignKey("customers.id", ondelete="cascade"),
         nullable=False,
-        # Don't create an index for customer_id
-        # as it's covered by the unique index, being the leading column of it
-        index=False,
+        # The scope unique index is partial (deleted_at IS NULL) so it doesn't
+        # cover soft-deleted rows; keep a full index for customer_id lookups and
+        # FK cascade deletes, like benefit_grants does.
+        index=True,
     )
 
     @declared_attr

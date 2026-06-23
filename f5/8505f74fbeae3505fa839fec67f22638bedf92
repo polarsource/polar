@@ -1,0 +1,19 @@
+server/migrations/versions/2026-06-19-1645_downloadables_member_level_uniqueness_.py
+  s_993e379d6d5a27::t_3388941a5016c5 72-76,79-80,100-103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "f58505f74fbeae3505fa839fec67f22638bedf92",
+  "prompts": {},
+  "sessions": {
+    "s_993e379d6d5a27": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1c31ca18-7baa-4be9-94ec-c9317093b7c4",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

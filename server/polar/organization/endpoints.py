@@ -697,14 +697,8 @@ async def validate_with_ai(
         # Review is pending (background task not yet complete)
         return OrganizationReviewStatus()
 
-    return OrganizationReviewStatus(
-        verdict=review.verdict,  # type: ignore[arg-type]
-        reason=review.reason,
-        appeal_submitted_at=review.appeal_submitted_at,
-        appeal_reason=review.appeal_reason,
-        appeal_decision=review.appeal_decision,
-        appeal_reviewed_at=review.appeal_reviewed_at,
-    )
+    case = await appeal_case_service.get_case(session, review)
+    return OrganizationReviewStatus.from_review(review, case)
 
 
 @router.post(
@@ -955,14 +949,8 @@ async def get_review_status(
     if review is None:
         return OrganizationReviewStatus()
 
-    return OrganizationReviewStatus(
-        verdict=review.verdict,  # type: ignore[arg-type]
-        reason=review.reason,
-        appeal_submitted_at=review.appeal_submitted_at,
-        appeal_reason=review.appeal_reason,
-        appeal_decision=review.appeal_decision,
-        appeal_reviewed_at=review.appeal_reviewed_at,
-    )
+    case = await appeal_case_service.get_case(session, review)
+    return OrganizationReviewStatus.from_review(review, case)
 
 
 @router.get(

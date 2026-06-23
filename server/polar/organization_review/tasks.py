@@ -405,5 +405,6 @@ async def post_appeal_greeting(case_id: uuid.UUID) -> None:
             author_kind=SupportCaseMessageAuthorKind.platform,
             body=HUMAN_REVIEW_GREETING,
             audience=[SupportCaseAudience.merchant],
+            is_auto_reply=True,
         )
         await publish_appeal_update(case.organization_id)

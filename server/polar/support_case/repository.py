@@ -107,13 +107,16 @@ class SupportCaseMessageRepository(
         side — i.e. a participant spoke last and the platform owes a reply.
         Defined by exclusion (not ``platform``/``system``) so it stays correct
         for any participant kind. Internal notes and lifecycle events (empty
-        audience) are ignored, so they don't clear it.
+        audience) are ignored, so they don't clear it. Automated replies (e.g.
+        the appeal greeting) are ignored too, they aren't a human reply, so
+        they mustn't clear the signal that a participant is still awaiting one.
         """
         latest_author = (
             select(SupportCaseMessage.author_kind)
             .where(
                 SupportCaseMessage.case_id == SupportCase.id,
                 func.cardinality(SupportCaseMessage.audience) > 0,
+                SupportCaseMessage.is_auto_reply.is_(False),
             )
             .order_by(SupportCaseMessage.created_at.desc())
             .limit(1)

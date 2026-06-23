@@ -76,6 +76,7 @@ class SupportCaseService:
         author_user: User | None = None,
         body: str | None = None,
         audience: Sequence[SupportCaseAudience] = (),
+        is_auto_reply: bool = False,
     ) -> SupportCaseMessage:
         repository = SupportCaseMessageRepository.from_session(session)
         return await repository.create(
@@ -86,6 +87,7 @@ class SupportCaseService:
                 author_user=author_user,
                 body=body,
                 audience=list(audience),
+                is_auto_reply=is_auto_reply,
             ),
             flush=True,
         )

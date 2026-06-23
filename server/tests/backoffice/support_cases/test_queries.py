@@ -1,6 +1,8 @@
 """Tests for the shared backoffice support-case list query — the polymorphic
 join that resolves an organization for both appeal and dispute cases."""
 
+from datetime import UTC, datetime
+
 import pytest
 
 from polar.backoffice.support_cases.queries import (
@@ -202,3 +204,60 @@ class TestOpenCaseOrganizationIds:
             )
         )
         assert organization.id in set(result.scalars().all())
+
+    async def test_auto_reply_does_not_clear_awaiting(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        case = await _dispute_case(save_fixture, organization, customer, product)
+
+        await save_fixture(
+            SupportCaseMessage(
+                case=case,
+                type=SupportCaseMessageType.chat,
+                author_kind=SupportCaseMessageAuthorKind.merchant,
+                body="Here is my evidence.",
+                audience=[SupportCaseAudience.merchant],
+                created_at=datetime(2026, 6, 23, 12, 0, tzinfo=UTC),
+            )
+        )
+
+
+        await save_fixture(
+            SupportCaseMessage(
+                case=case,
+                type=SupportCaseMessageType.chat,
+                author_kind=SupportCaseMessageAuthorKind.platform,
+                body="Thanks for reaching out!",
+                audience=[SupportCaseAudience.merchant],
+                is_auto_reply=True,
+                created_at=datetime(2026, 6, 23, 12, 1, tzinfo=UTC),
+            )
+        )
+        result = await session.execute(
+            open_case_organization_ids(
+                organization_ids=[organization.id], awaiting_reply=True
+            )
+        )
+        assert organization.id in set(result.scalars().all())
+
+        await save_fixture(
+            SupportCaseMessage(
+                case=case,
+                type=SupportCaseMessageType.chat,
+                author_kind=SupportCaseMessageAuthorKind.platform,
+                body="We've submitted your evidence.",
+                audience=[SupportCaseAudience.merchant],
+                created_at=datetime(2026, 6, 23, 12, 2, tzinfo=UTC),
+            )
+        )
+        result = await session.execute(
+            open_case_organization_ids(
+                organization_ids=[organization.id], awaiting_reply=True
+            )
+        )
+        assert organization.id not in set(result.scalars().all())

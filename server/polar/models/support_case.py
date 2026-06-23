@@ -5,6 +5,7 @@ from uuid import UUID
 
 from sqlalchemy import (
     TIMESTAMP,
+    Boolean,
     CheckConstraint,
     ForeignKey,
     ForeignKeyConstraint,
@@ -340,6 +341,9 @@ class SupportCaseMessage(RecordModel):
         ARRAY(StringEnum(SupportCaseAudience, length=16)),
         nullable=False,
         default=list,
+    )
+    is_auto_reply: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
     )
 
     @declared_attr

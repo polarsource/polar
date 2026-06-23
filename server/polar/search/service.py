@@ -15,6 +15,7 @@ from sqlalchemy import (
 
 from polar.auth.models import AuthSubject, User
 from polar.auth.scope import Scope
+from polar.authz.repository import select_user_org_ids
 from polar.kit.db.postgres import AsyncReadSession
 from polar.models import (
     Customer,
@@ -22,7 +23,6 @@ from polar.models import (
     Organization,
     Product,
     Subscription,
-    UserOrganization,
 )
 
 from .schemas import (
@@ -67,14 +67,9 @@ class SearchService:
         ts_query_english = func.websearch_to_tsquery("english", query)
         ilike_term = f"%{query}%"
 
-        organization_subquery = (
-            select(Organization.id)
-            .join(UserOrganization, Organization.id == UserOrganization.organization_id)
-            .where(
-                Organization.id == organization_id,
-                UserOrganization.user_id == auth_subject.subject.id,
-                UserOrganization.is_deleted.is_(False),
-            )
+        organization_subquery = select(Organization.id).where(
+            Organization.id == organization_id,
+            Organization.id.in_(select_user_org_ids(auth_subject.subject.id)),
         )
 
         subqueries: list[Select[Any]] = []

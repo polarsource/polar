@@ -95,6 +95,12 @@ uv run alembic revision --autogenerate -m "description"   # generate a migration
 uv run alembic upgrade head                               # apply migrations
 ```
 
+**Visual regression testing** — use `dev snap` to capture before/after screenshots across branches:
+```bash
+dev snap --branch my-feature        # test a specific branch
+dev snap --detect                   # auto-detect URLs from git diff
+```
+
 See `server/AGENTS.md` for backend command and testing specifics.
 
 ## Conventions

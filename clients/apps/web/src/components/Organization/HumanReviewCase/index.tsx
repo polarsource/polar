@@ -7,10 +7,12 @@ import {
   useReplyToAppealCase,
   useRequestHumanReview,
 } from '@/hooks/queries/org'
+import { useOrganizationSSE } from '@/hooks/sse'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
+import { useQueryClient } from '@tanstack/react-query'
 import { Loader2, MessageCircle } from 'lucide-react'
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   supportCaseUploader,
   toChatAttachments,
@@ -34,6 +36,19 @@ const HumanReviewCase = ({ organization }: Props) => {
   const requestReview = useRequestHumanReview(organization.id)
   const reply = useReplyToAppealCase(organization.id)
   useUnreadTitleBadge(organization.id, thread?.messages)
+
+  const queryClient = useQueryClient()
+  const eventEmitter = useOrganizationSSE(organization.id)
+  useEffect(() => {
+    const handler = () =>
+      queryClient.invalidateQueries({
+        queryKey: ['appealCase', organization.id],
+      })
+    eventEmitter.on('appeal_case.updated', handler)
+    return () => {
+      eventEmitter.off('appeal_case.updated', handler)
+    }
+  }, [eventEmitter, queryClient, organization.id])
 
   const messages = useMemo(() => thread?.messages ?? [], [thread])
   const messageById = useMemo(

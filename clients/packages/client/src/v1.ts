@@ -4572,7 +4572,7 @@ export interface paths {
     }
     /**
      * List Seats
-     * @description **Scopes**: `customer_seats:write`
+     * @description **Scopes**: `customer_seats:read`
      */
     get: operations['customer-seats:list_seats']
     put?: never

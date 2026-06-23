@@ -127,6 +127,19 @@ resource "render_env_group" "aws_s3" {
   }
 }
 
+resource "render_env_group" "worker_sqs" {
+  count          = var.worker_sqs_config != null ? 1 : 0
+  environment_id = var.render_environment_id
+  name           = "worker-sqs-${var.environment}"
+  env_vars = {
+    POLAR_WORKER_SQS_ENABLED               = { value = var.worker_sqs_config.enabled }
+    POLAR_WORKER_SQS_ACTORS                = { value = var.worker_sqs_config.actors }
+    POLAR_WORKER_SQS_QUEUE_PREFIX          = { value = var.worker_sqs_config.queue_prefix }
+    POLAR_WORKER_SQS_AWS_ACCESS_KEY_ID     = { value = var.worker_sqs_config.aws_access_key_id }
+    POLAR_WORKER_SQS_AWS_SECRET_ACCESS_KEY = { value = var.worker_sqs_config.aws_secret_access_key }
+  }
+}
+
 resource "render_env_group" "github" {
   environment_id = var.render_environment_id
   name           = "github-${var.environment}"
@@ -423,6 +436,12 @@ resource "render_env_group_link" "redis" {
 
 resource "render_env_group_link" "aws_s3" {
   env_group_id = render_env_group.aws_s3.id
+  service_ids  = local.all_service_ids
+}
+
+resource "render_env_group_link" "worker_sqs" {
+  count        = var.worker_sqs_config != null ? 1 : 0
+  env_group_id = render_env_group.worker_sqs[0].id
   service_ids  = local.all_service_ids
 }
 

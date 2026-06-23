@@ -124,6 +124,14 @@ resource "tfe_variable" "backend_jwks_test" {
   variable_set_id = tfe_variable_set.test.id
 }
 
+resource "tfe_variable" "lambda_worker_tailscale_token_test" {
+  key             = "lambda_worker_tailscale_token"
+  category        = "terraform"
+  description     = "Tailscale auth token for test Lambda workers"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
 resource "tfe_variable" "aws_access_key_id_test" {
   key             = "aws_access_key_id"
   category        = "terraform"

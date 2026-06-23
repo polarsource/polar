@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
+from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.models import File, Organization, User
 from polar.models.organization_review import OrganizationReview
@@ -21,6 +22,22 @@ from polar.support_case.repository import (
 )
 from polar.support_case.service import support_case as support_case_service
 from polar.worker import enqueue_job
+
+HUMAN_REVIEW_GREETING = (
+    "Thanks for reaching out! Our team will review your appeal and get back to "
+    "you within 1–2 business days."
+)
+
+# Add a small delay to the automated greeting message
+# so it doesn't appear instantly (which looks a bit wonky)
+HUMAN_REVIEW_GREETING_DELAY_MS = 1500
+APPEAL_CASE_UPDATED_EVENT = "appeal_case.updated"
+
+
+async def publish_appeal_update(organization_id: UUID) -> None:
+    await eventstream_publish(
+        APPEAL_CASE_UPDATED_EVENT, {}, organization_id=organization_id
+    )
 
 
 class AppealCaseError(PolarError): ...
@@ -89,6 +106,12 @@ class AppealCaseService:
             body=reason,
             audience=[SupportCaseAudience.merchant],
         )
+        await publish_appeal_update(organization.id)
+        enqueue_job(
+            "organization_review.post_appeal_greeting",
+            case_id=case.id,
+            delay=HUMAN_REVIEW_GREETING_DELAY_MS,
+        )
         return case
 
     async def add_reply(
@@ -124,6 +147,7 @@ class AppealCaseService:
                 "support_case.notify_organization_of_new_message",
                 message_id=message.id,
             )
+            await publish_appeal_update(case.organization_id)
         return message
 
     async def record_decision(
@@ -160,6 +184,7 @@ class AppealCaseService:
         enqueue_job(
             "support_case.notify_organization_of_new_message", message_id=message.id
         )
+        await publish_appeal_update(case.organization_id)
         # This records the decision on the case only. The caller drives org
         # state: approve goes through organization.backoffice_approve, which
         # closes the case via approve_open_case; deny needs no org change, as

@@ -48,7 +48,7 @@ export const CreateCustomerModal = ({
       ),
     }
 
-    createCustomer.mutateAsync(data).then(async ({ data: customer, error }) => {
+    createCustomer.mutateAsync(data).then(({ data: customer, error }) => {
       if (error) {
         if (error.detail) {
           setValidationErrors(error.detail, form.setError)

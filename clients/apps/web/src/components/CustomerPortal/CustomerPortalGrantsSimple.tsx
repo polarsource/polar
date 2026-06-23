@@ -5,7 +5,6 @@ import { List, ListItem } from '@polar-sh/orbit'
 import { BenefitGrant } from '../Benefit/BenefitGrant'
 
 export interface CustomerPortalGrantsSimpleProps {
-  organization?: schemas['CustomerOrganization']
   benefitGrants: schemas['CustomerBenefitGrant'][]
   api: Client
 }

@@ -37,7 +37,7 @@ const STATUS_APPEARANCE: Record<
   passed: { backgroundColor: 'background-success', color: 'text-success' },
   failed: { backgroundColor: 'background-danger', color: 'text-danger' },
   warning: { backgroundColor: 'background-warning', color: 'text-warning' },
-  pending: { backgroundColor: 'background-pending', color: 'text-pending' },
+  pending: { backgroundColor: 'background-secondary', color: 'text-disabled' },
 }
 
 interface Props {

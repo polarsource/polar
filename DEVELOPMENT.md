@@ -362,6 +362,25 @@ vim dev/docker/.env.docker
 > [!NOTE]
 > The Docker-based setup is additive. The traditional host-based development workflow (`docker compose up -d` + `uv run task api`) continues to work as before.
 
+## Visual Regression Testing
+
+Use `dev snap` to capture before/after screenshots and detect visual changes across branches:
+
+```sh
+dev snap                            # Interactive: pick branch and URLs
+dev snap --branch my-feature        # Test a specific branch
+dev snap --url /dashboard/settings  # Test specific URL(s)
+dev snap --detect                   # Auto-detect URLs from git diff
+dev snap --viewport desktop,mobile  # Test multiple viewports
+```
+
+The tool:
+1. Screenshots each URL on your feature branch
+2. Checks out the base branch and screenshots again
+3. Generates a visual diff report with pixel-level comparison
+
+Results are saved to `dev/snap-runs/<timestamp>/result/` with an HTML report for side-by-side comparison.
+
 ## Login using email
 
 To log in for the first time, follow these steps:

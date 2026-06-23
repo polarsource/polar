@@ -35,6 +35,7 @@ locals {
   # Database connection info (derived from postgres resource)
   # db_host          = render_postgres.db.id
   db_internal_host = data.render_postgres.db.id
+  db_external_host = nonsensitive(regex("@([^/:]+)", data.render_postgres.db.connection_info.external_connection_string)[0])
   db_port          = "5432"
   # db_name          = data.render_postgres.db.database_name
   db_user     = data.render_postgres.db.database_user
@@ -199,6 +200,14 @@ module "sandbox" {
     secret_access_key     = var.aws_secret_access_key_sandbox
     files_download_salt   = var.s3_files_download_salt_sandbox
     files_download_secret = var.s3_files_download_secret_sandbox
+  }
+
+  worker_sqs_config = {
+    enabled               = "true"
+    actors                = jsonencode(["dummy"])
+    queue_prefix          = "polar-sandbox-tasks"
+    aws_access_key_id     = aws_iam_access_key.tasks_producer.id
+    aws_secret_access_key = aws_iam_access_key.tasks_producer.secret
   }
 
   github_secrets = {

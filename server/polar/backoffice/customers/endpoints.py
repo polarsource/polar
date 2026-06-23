@@ -372,6 +372,7 @@ async def get(
                             text("Generate Portal Link")
 
                 with datatable.Datatable[Member, Any](
+                    datatable.DatatableAttrColumn("id", "ID", clipboard=True),
                     datatable.DatatableAttrColumn("email", "Email", clipboard=True),
                     datatable.DatatableAttrColumn("name", "Name"),
                     datatable.DatatableAttrColumn("role", "Role"),

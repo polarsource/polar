@@ -61,6 +61,7 @@ from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.organization_review import OrganizationReview
 from polar.models.support_case import (
     ReviewAppealSupportCase,
+    SupportCaseMessageAuthorKind,
 )
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
@@ -1664,10 +1665,17 @@ async def appeal_case_approve_dialog(
 
     if request.method == "POST":
         form_data = await request.form()
-        reason = str(form_data.get("reason", "")).strip() or None
+        # Approving overrides the AI's denial: the internal note is mandatory and
+        # staff-only, so a later re-flag shows who overrode and why. The merchant
+        # message is optional and the only part the merchant sees.
+        internal_note = str(form_data.get("internal_note", "")).strip() or None
+        merchant_message = str(form_data.get("merchant_message", "")).strip() or None
         message_repository = SupportCaseMessageRepository.from_session(session)
-        if not reason:
-            error_message = "A reason is required to approve the appeal."
+        if not internal_note:
+            error_message = (
+                "An internal note is required to approve — it overrides the AI's "
+                "denial."
+            )
         elif not await message_repository.is_open(case.id):
             error_message = "This appeal case is already closed."
         else:
@@ -1678,12 +1686,20 @@ async def appeal_case_approve_dialog(
                     reviewer_id=user_session.user.id,
                     decision=DecisionType.APPROVE,
                     review_context=ReviewContext.APPEAL,
-                    reason=reason,
+                    reason=internal_note,
+                )
+                await appeal_case_service.add_reply(
+                    session,
+                    case,
+                    author_kind=SupportCaseMessageAuthorKind.platform,
+                    author_user=user_session.user,
+                    body=internal_note,
+                    internal=True,
                 )
                 await organization_service.backoffice_approve(
                     session,
                     organization,
-                    reason=reason,
+                    reason=merchant_message,
                     internal_note="Appeal approved — see support case.",
                     staff_user=user_session.user,
                 )
@@ -1714,19 +1730,32 @@ async def appeal_case_approve_dialog(
                     text(error_message)
             with tag.p():
                 text(
-                    "Approving reactivates the organization and closes the "
-                    "support case. The merchant is notified of the decision."
+                    "Approving overrides the AI's denial, reactivates the "
+                    "organization and closes the support case. The merchant is "
+                    "notified of the decision."
                 )
             with tag.div(classes="form-control"):
                 with tag.label(classes="label"):
                     with tag.span(classes="label-text"):
-                        text("Reason (required, shared with the merchant)")
+                        text("Internal note (required, not shared with the merchant)")
                 with tag.textarea(
-                    name="reason",
+                    name="internal_note",
                     classes="textarea textarea-bordered w-full",
-                    placeholder="Why are you approving this appeal?",
+                    placeholder="Why are you overriding the AI's denial? "
+                    "Staff-only — recorded for future reviews.",
                     rows="3",
                     required=True,
+                ):
+                    pass
+            with tag.div(classes="form-control"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text"):
+                        text("Message to the merchant (optional, shared with them)")
+                with tag.textarea(
+                    name="merchant_message",
+                    classes="textarea textarea-bordered w-full",
+                    placeholder="Optional note included with the approval.",
+                    rows="3",
                 ):
                     pass
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):

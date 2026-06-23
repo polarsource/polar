@@ -390,6 +390,13 @@ class OrganizationListView:
                 ),
             ),
             Tab(
+                label="Active",
+                url=str(request.url_for("organizations:list")) + "?status=active",
+                active=status_filter == OrganizationStatus.ACTIVE,
+                count=status_counts.get(OrganizationStatus.ACTIVE, 0),
+                badge_variant="success",
+            ),
+            Tab(
                 label="Review",
                 url=str(request.url_for("organizations:list")) + "?status=review",
                 active=status_filter == OrganizationStatus.REVIEW,
@@ -404,11 +411,18 @@ class OrganizationListView:
                 badge_variant="warning",
             ),
             Tab(
-                label="Active",
-                url=str(request.url_for("organizations:list")) + "?status=active",
-                active=status_filter == OrganizationStatus.ACTIVE,
-                count=status_counts.get(OrganizationStatus.ACTIVE, 0),
-                badge_variant="success",
+                label="Offboarding",
+                url=str(request.url_for("organizations:list")) + "?status=offboarding",
+                active=status_filter == OrganizationStatus.OFFBOARDING,
+                count=status_counts.get(OrganizationStatus.OFFBOARDING, 0),
+                badge_variant="warning",
+            ),
+            Tab(
+                label="Offboarded",
+                url=str(request.url_for("organizations:list")) + "?status=offboarded",
+                active=status_filter == OrganizationStatus.OFFBOARDED,
+                count=status_counts.get(OrganizationStatus.OFFBOARDED, 0),
+                badge_variant="error",
             ),
             Tab(
                 label="Denied",
@@ -423,19 +437,6 @@ class OrganizationListView:
                 active=status_filter == OrganizationStatus.BLOCKED,
                 count=status_counts.get(OrganizationStatus.BLOCKED, 0),
                 badge_variant="error",
-            ),
-            Tab(
-                label="Offboarding",
-                url=str(request.url_for("organizations:list")) + "?status=offboarding",
-                active=status_filter == OrganizationStatus.OFFBOARDING,
-                count=status_counts.get(OrganizationStatus.OFFBOARDING, 0),
-                badge_variant="warning",
-            ),
-            Tab(
-                label="Offboarded",
-                url=str(request.url_for("organizations:list")) + "?status=offboarded",
-                active=status_filter == OrganizationStatus.OFFBOARDED,
-                count=status_counts.get(OrganizationStatus.OFFBOARDED, 0),
             ),
             # Pushed to the right — a separate dimension from the status tabs.
             Tab(

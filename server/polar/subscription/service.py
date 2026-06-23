@@ -80,7 +80,6 @@ from polar.models import (
     User,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
-from polar.models.customer import CustomerType
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import ProductPrice, ProductPriceSeatUnit
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
@@ -578,7 +577,7 @@ class SubscriptionService:
 
         # Auto-upgrade customer to 'team' type when subscribing to a seat-based product
         if product.has_seat_based_price:
-            await self._maybe_upgrade_customer_to_team(session, customer)
+            await customer_service.upgrade_to_team(session, customer)
 
         await self._after_subscription_created(session, subscription)
         # ⚠️ Some users are relying on `subscription.updated` for everything
@@ -711,7 +710,7 @@ class SubscriptionService:
 
         # Auto-upgrade customer to 'team' type when subscribing to a seat-based product
         if product.has_seat_based_price:
-            await self._maybe_upgrade_customer_to_team(session, customer)
+            await customer_service.upgrade_to_team(session, customer)
 
         # Link potential discount redemption to the subscription
         if subscription.discount is not None:
@@ -926,19 +925,6 @@ class SubscriptionService:
                         },
                     ),
                 )
-
-    async def _maybe_upgrade_customer_to_team(
-        self, session: AsyncSession, customer: Customer
-    ) -> None:
-        customer_type = customer.type or CustomerType.individual
-        if customer_type != CustomerType.individual:
-            return
-        customer_repository = CustomerRepository.from_session(session)
-        await customer_repository.update(
-            customer,
-            update_dict={"type": CustomerType.team},
-            flush=True,
-        )
 
     async def _after_subscription_created(
         self, session: AsyncSession, subscription: Subscription
@@ -1327,7 +1313,7 @@ class SubscriptionService:
                 # the billing customer to a 'team' customer and claim a seat for
                 # them so they keep benefit access immediately after the switch.
                 if is_initial_seat_transition:
-                    await self._maybe_upgrade_customer_to_team(
+                    await customer_service.upgrade_to_team(
                         session, subscription.customer
                     )
                     await seat_service.assign_seat(

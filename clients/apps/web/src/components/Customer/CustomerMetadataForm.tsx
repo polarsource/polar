@@ -1,11 +1,10 @@
-import { FormField } from '@polar-sh/ui/components/ui/form'
-
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import {
   FormControl,
+  FormField,
   FormItem,
   FormLabel,
   FormMessage,

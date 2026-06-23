@@ -396,7 +396,7 @@ export const useRequestHumanReview = (id: string) =>
         params: { path: { id } },
         body: { reason },
       }),
-    onSuccess: async (result) => {
+    onSuccess: (result) => {
       if (result.error) return
       getQueryClient().invalidateQueries({ queryKey: ['appealCase', id] })
     },

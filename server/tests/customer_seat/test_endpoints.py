@@ -90,6 +90,23 @@ class TestListSeats:
 
         assert response.status_code == 403
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.customer_seats_read}),
+    )
+    async def test_list_seats_read_scope_only(
+        self,
+        client: AsyncClient,
+        subscription_with_seats: Subscription,
+        customer_seat_pending: CustomerSeat,
+        user_organization_seat_enabled: UserOrganization,
+    ) -> None:
+        response = await client.get(
+            "/v1/customer-seats",
+            params={"subscription_id": str(subscription_with_seats.id)},
+        )
+
+        assert response.status_code == 200
+
     async def test_list_seats_unauthorized(
         self,
         client: AsyncClient,

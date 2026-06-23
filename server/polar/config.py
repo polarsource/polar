@@ -167,6 +167,7 @@ class Settings(BaseSettings):
     POSTGRES_HOST: str = "127.0.0.1"
     POSTGRES_PORT: int = 5432
     POSTGRES_DATABASE: str = "polar"
+    POSTGRES_SSL: bool = False
     DATABASE_POOL_SIZE: int = 5
     DATABASE_SYNC_POOL_SIZE: int = 1  # Specific pool size for sync connection: since we only use it in OAuth2 router, don't waste resources.
     DATABASE_POOL_RECYCLE_SECONDS: int = 600  # 10 minutes
@@ -336,6 +337,8 @@ class Settings(BaseSettings):
     WORKER_SQS_QUEUE_PREFIX: str = "polar-tasks"
     # Override to http://127.0.0.1:4566 in .env to target LocalStack
     SQS_ENDPOINT_URL: str | None = None
+    WORKER_SQS_AWS_ACCESS_KEY_ID: str | None = None
+    WORKER_SQS_AWS_SECRET_ACCESS_KEY: str | None = None
 
     # Downloadable files
     S3_FILES_BUCKET_NAME: str = "polar-s3"

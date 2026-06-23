@@ -33,6 +33,7 @@ from polar.support_case.repository import (
     SupportCaseParticipantRepository,
 )
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_organization_review
 
 _post_appeal_greeting = post_appeal_greeting.__wrapped__  # type: ignore[attr-defined]
 
@@ -46,17 +47,11 @@ async def _session_maker(session: AsyncSession) -> AsyncIterator[AsyncSession]:
 async def denied_review(
     save_fixture: SaveFixture, organization: Organization
 ) -> OrganizationReview:
-    review = OrganizationReview(
-        organization_id=organization.id,
-        verdict=OrganizationReview.Verdict.FAIL,
-        risk_score=90.0,
-        violated_sections=[],
-        reason="Automated review denied.",
-        model_used="test",
+    return await create_organization_review(
+        save_fixture,
+        organization,
         appeal_decision=OrganizationReview.AppealDecision.REJECTED,
     )
-    await save_fixture(review)
-    return review
 
 
 async def _participants(

@@ -8,11 +8,8 @@ from polar.backoffice.support_cases.queries import (
     cases_statement,
     open_case_organization_ids,
 )
-from polar.models import Customer, Organization, OrganizationReview, Product
+from polar.models import Customer, Organization, Product
 from polar.models.support_case import (
-    DisputeSupportCase,
-    ReviewAppealSupportCase,
-    SupportCase,
     SupportCaseAudience,
     SupportCaseMessage,
     SupportCaseMessageAuthorKind,
@@ -22,56 +19,9 @@ from polar.models.support_case import (
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    create_dispute,
-    create_order,
-    create_payment,
+    create_appeal_case,
+    create_dispute_case,
 )
-
-
-async def _opened(save_fixture: SaveFixture, case: SupportCase) -> None:
-    await save_fixture(
-        SupportCaseMessage(
-            case=case,
-            type=SupportCaseMessageType.opened,
-            author_kind=SupportCaseMessageAuthorKind.system,
-            audience=[],
-        )
-    )
-
-
-async def _appeal_case(
-    save_fixture: SaveFixture, organization: Organization
-) -> ReviewAppealSupportCase:
-    review = OrganizationReview(
-        organization_id=organization.id,
-        verdict=OrganizationReview.Verdict.FAIL,
-        risk_score=90.0,
-        violated_sections=[],
-        reason="denied",
-        model_used="test",
-    )
-    await save_fixture(review)
-    case = ReviewAppealSupportCase(
-        organization_review=review, organization=organization
-    )
-    await save_fixture(case)
-    await _opened(save_fixture, case)
-    return case
-
-
-async def _dispute_case(
-    save_fixture: SaveFixture,
-    organization: Organization,
-    customer: Customer,
-    product: Product,
-) -> DisputeSupportCase:
-    order = await create_order(save_fixture, customer=customer, product=product)
-    payment = await create_payment(save_fixture, organization, order=order)
-    dispute = await create_dispute(save_fixture, order, payment)
-    case = DisputeSupportCase(dispute=dispute, organization=organization)
-    await save_fixture(case)
-    await _opened(save_fixture, case)
-    return case
 
 
 async def _rows(session: AsyncSession, **kwargs: object) -> list[Row]:
@@ -89,8 +39,10 @@ class TestCasesStatement:
         customer: Customer,
         product: Product,
     ) -> None:
-        appeal = await _appeal_case(save_fixture, organization)
-        dispute = await _dispute_case(save_fixture, organization, customer, product)
+        appeal = await create_appeal_case(save_fixture, organization)
+        dispute = await create_dispute_case(
+            save_fixture, organization, customer, product
+        )
 
         rows = await _rows(session, organization_id=organization.id)
 
@@ -112,8 +64,10 @@ class TestCasesStatement:
         customer: Customer,
         product: Product,
     ) -> None:
-        await _appeal_case(save_fixture, organization)
-        dispute = await _dispute_case(save_fixture, organization, customer, product)
+        await create_appeal_case(save_fixture, organization)
+        dispute = await create_dispute_case(
+            save_fixture, organization, customer, product
+        )
 
         rows = await _rows(
             session,
@@ -131,7 +85,9 @@ class TestCasesStatement:
         customer: Customer,
         product: Product,
     ) -> None:
-        dispute = await _dispute_case(save_fixture, organization, customer, product)
+        dispute = await create_dispute_case(
+            save_fixture, organization, customer, product
+        )
         await save_fixture(
             SupportCaseMessage(
                 case=dispute,
@@ -160,7 +116,7 @@ class TestOpenCaseOrganizationIds:
         customer: Customer,
         product: Product,
     ) -> None:
-        await _dispute_case(save_fixture, organization, customer, product)
+        await create_dispute_case(save_fixture, organization, customer, product)
 
         result = await session.execute(
             open_case_organization_ids(organization_ids=[organization.id])
@@ -176,7 +132,7 @@ class TestOpenCaseOrganizationIds:
         customer: Customer,
         product: Product,
     ) -> None:
-        case = await _dispute_case(save_fixture, organization, customer, product)
+        case = await create_dispute_case(save_fixture, organization, customer, product)
 
         # Opened only (lifecycle, no audience): not awaiting a platform reply.
         result = await session.execute(

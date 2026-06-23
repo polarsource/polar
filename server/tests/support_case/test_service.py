@@ -1,10 +1,8 @@
 import pytest
 
 from polar.auth.models import AuthSubject
-from polar.models import File, Organization, OrganizationReview, User
-from polar.models.file import FileServiceTypes
+from polar.models import Organization, User
 from polar.models.support_case import (
-    ReviewAppealSupportCase,
     SupportCaseAudience,
     SupportCaseMessageAuthorKind,
     SupportCaseMessageType,
@@ -14,48 +12,10 @@ from polar.postgres import AsyncSession
 from polar.support_case.service import support_case as support_case_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-
-
-async def _open_case(
-    session: AsyncSession,
-    save_fixture: SaveFixture,
-    organization: Organization,
-    *,
-    author_user: User,
-) -> ReviewAppealSupportCase:
-    review = OrganizationReview(
-        organization_id=organization.id,
-        verdict=OrganizationReview.Verdict.FAIL,
-        risk_score=90.0,
-        violated_sections=[],
-        reason="denied",
-        model_used="test",
-    )
-    await save_fixture(review)
-    return await support_case_service.create(
-        session,
-        ReviewAppealSupportCase(organization_review=review, organization=organization),
-        author_kind=SupportCaseMessageAuthorKind.merchant,
-        author_user=author_user,
-        audience=[SupportCaseAudience.merchant],
-    )
-
-
-async def _attachment_file(
-    save_fixture: SaveFixture, organization: Organization
-) -> File:
-    file = File(
-        organization=organization,
-        name="evidence.pdf",
-        path="support_case_attachment/evidence.pdf",
-        mime_type="application/pdf",
-        size=1234,
-        service=FileServiceTypes.support_case_attachment,
-        is_uploaded=True,
-        is_enabled=True,
-    )
-    await save_fixture(file)
-    return file
+from tests.fixtures.random_objects import (
+    create_appeal_case,
+    create_support_case_attachment_file,
+)
 
 
 @pytest.mark.asyncio
@@ -67,10 +27,9 @@ class TestGet:
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
-        user: User,
         user_organization: UserOrganization,
     ) -> None:
-        case = await _open_case(session, save_fixture, organization, author_user=user)
+        case = await create_appeal_case(save_fixture, organization)
 
         fetched = await support_case_service.get(session, auth_subject, case.id)
 
@@ -84,9 +43,8 @@ class TestGet:
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
-        user: User,
     ) -> None:
-        case = await _open_case(session, save_fixture, organization, author_user=user)
+        case = await create_appeal_case(save_fixture, organization)
 
         fetched = await support_case_service.get(session, auth_subject, case.id)
 
@@ -99,13 +57,12 @@ class TestGet:
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
-        user: User,
         user_organization: UserOrganization,
     ) -> None:
         # A plain member lacks `organization:manage` — the chat is admin-only.
         user_organization.role = OrganizationRole.member
         await save_fixture(user_organization)
-        case = await _open_case(session, save_fixture, organization, author_user=user)
+        case = await create_appeal_case(save_fixture, organization)
 
         fetched = await support_case_service.get(session, auth_subject, case.id)
 
@@ -118,9 +75,8 @@ class TestGet:
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[Organization],
         organization: Organization,
-        user: User,
     ) -> None:
-        case = await _open_case(session, save_fixture, organization, author_user=user)
+        case = await create_appeal_case(save_fixture, organization)
 
         fetched = await support_case_service.get(session, auth_subject, case.id)
 
@@ -135,9 +91,8 @@ class TestGetThread:
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
-        user: User,
     ) -> None:
-        case = await _open_case(session, save_fixture, organization, author_user=user)
+        case = await create_appeal_case(save_fixture, organization)
         await support_case_service.post_message(
             session,
             case,
@@ -167,9 +122,8 @@ class TestGetThread:
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
-        user: User,
     ) -> None:
-        case = await _open_case(session, save_fixture, organization, author_user=user)
+        case = await create_appeal_case(save_fixture, organization)
         await support_case_service.post_message(
             session,
             case,
@@ -189,9 +143,8 @@ class TestGetThread:
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
-        user: User,
     ) -> None:
-        case = await _open_case(session, save_fixture, organization, author_user=user)
+        case = await create_appeal_case(save_fixture, organization)
         await support_case_service.close(
             session,
             case,
@@ -213,10 +166,9 @@ class TestGetAttachment:
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
-        user: User,
     ) -> None:
-        case = await _open_case(session, save_fixture, organization, author_user=user)
-        file = await _attachment_file(save_fixture, organization)
+        case = await create_appeal_case(save_fixture, organization)
+        file = await create_support_case_attachment_file(save_fixture, organization)
         attachment = await support_case_service.add_attachment(
             session, case, file=file, audience=[]
         )
@@ -232,10 +184,9 @@ class TestGetAttachment:
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
-        user: User,
     ) -> None:
-        case = await _open_case(session, save_fixture, organization, author_user=user)
-        file = await _attachment_file(save_fixture, organization)
+        case = await create_appeal_case(save_fixture, organization)
+        file = await create_support_case_attachment_file(save_fixture, organization)
         attachment = await support_case_service.add_attachment(
             session, case, file=file, audience=[SupportCaseAudience.merchant]
         )
@@ -259,7 +210,7 @@ class TestAssignment:
     ) -> None:
         # The audience must stay empty: assignment is platform-only churn and
         # must never surface in the merchant-visible thread.
-        case = await _open_case(session, save_fixture, organization, author_user=user)
+        case = await create_appeal_case(save_fixture, organization)
 
         assigned = await support_case_service.assign(session, case, assignee=user)
         assert case.assigned_user_id == user.id

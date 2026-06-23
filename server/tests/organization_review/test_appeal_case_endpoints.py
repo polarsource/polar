@@ -4,7 +4,7 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
-from polar.models import File, OrganizationReview
+from polar.models import OrganizationReview
 from polar.models.file import FileServiceTypes
 from polar.models.organization import Organization
 from polar.models.support_case import SupportCaseMessageAuthorKind
@@ -13,6 +13,10 @@ from polar.models.user_organization import UserOrganization
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import (
+    create_organization_review,
+    create_support_case_attachment_file,
+)
 
 REASON = "Please reconsider my account — here is the additional context for the review."
 
@@ -21,38 +25,11 @@ REASON = "Please reconsider my account — here is the additional context for th
 async def denied_review(
     save_fixture: SaveFixture, organization: Organization
 ) -> OrganizationReview:
-    review = OrganizationReview(
-        organization_id=organization.id,
-        verdict=OrganizationReview.Verdict.FAIL,
-        risk_score=90.0,
-        violated_sections=[],
-        reason="Automated review denied.",
-        model_used="test",
+    return await create_organization_review(
+        save_fixture,
+        organization,
         appeal_decision=OrganizationReview.AppealDecision.REJECTED,
     )
-    await save_fixture(review)
-    return review
-
-
-async def _uploaded_attachment_file(
-    save_fixture: SaveFixture,
-    organization: Organization,
-    *,
-    service: FileServiceTypes = FileServiceTypes.support_case_attachment,
-    is_uploaded: bool = True,
-) -> File:
-    file = File(
-        organization=organization,
-        name="evidence.pdf",
-        path="support_case_attachment/evidence.pdf",
-        mime_type="application/pdf",
-        size=1234,
-        service=service,
-        is_uploaded=is_uploaded,
-        is_enabled=True,
-    )
-    await save_fixture(file)
-    return file
 
 
 @pytest.mark.asyncio
@@ -133,17 +110,12 @@ class TestRequestHumanReview:
     ) -> None:
         # Appeal still pending (AI hasn't decided): a human-review case cannot
         # be opened yet — the frontend gate is enforced server-side too.
-        review = OrganizationReview(
-            organization_id=organization.id,
-            verdict=OrganizationReview.Verdict.FAIL,
-            risk_score=90.0,
-            violated_sections=[],
-            reason="Automated review denied.",
-            model_used="test",
+        await create_organization_review(
+            save_fixture,
+            organization,
             appeal_submitted_at=datetime.now(UTC),
             appeal_reason="My pending appeal.",
         )
-        await save_fixture(review)
 
         response = await client.post(
             f"/v1/organizations/{organization.id}/appeal/human-review",
@@ -298,8 +270,8 @@ class TestReplyWithAttachments:
             requested_by_user=user,
             organization=organization,
         )
-        file_a = await _uploaded_attachment_file(save_fixture, organization)
-        file_b = await _uploaded_attachment_file(save_fixture, organization)
+        file_a = await create_support_case_attachment_file(save_fixture, organization)
+        file_b = await create_support_case_attachment_file(save_fixture, organization)
         await session.flush()
 
         response = await client.post(
@@ -336,7 +308,7 @@ class TestReplyWithAttachments:
             requested_by_user=user,
             organization=organization,
         )
-        file = await _uploaded_attachment_file(save_fixture, organization)
+        file = await create_support_case_attachment_file(save_fixture, organization)
         await session.flush()
 
         response = await client.post(
@@ -412,7 +384,7 @@ class TestReplyWithAttachments:
             requested_by_user=user,
             organization=organization,
         )
-        file = await _uploaded_attachment_file(
+        file = await create_support_case_attachment_file(
             save_fixture, organization, service=FileServiceTypes.downloadable
         )
         await session.flush()
@@ -440,7 +412,7 @@ class TestReplyWithAttachments:
             requested_by_user=user,
             organization=organization,
         )
-        file = await _uploaded_attachment_file(
+        file = await create_support_case_attachment_file(
             save_fixture, organization, is_uploaded=False
         )
         await session.flush()
@@ -471,7 +443,7 @@ class TestReplyWithAttachments:
         await appeal_case_service.record_decision(
             session, case, approved=False, staff_user=user, reason="final"
         )
-        file = await _uploaded_attachment_file(save_fixture, organization)
+        file = await create_support_case_attachment_file(save_fixture, organization)
         await session.flush()
         response = await client.post(
             f"/v1/organizations/{organization.id}/appeal/case/messages",
@@ -500,7 +472,7 @@ class TestDownloadAppealCaseAttachment:
             requested_by_user=user,
             organization=organization,
         )
-        file = await _uploaded_attachment_file(save_fixture, organization)
+        file = await create_support_case_attachment_file(save_fixture, organization)
         await session.flush()
         attach = await client.post(
             f"/v1/organizations/{organization.id}/appeal/case/messages",

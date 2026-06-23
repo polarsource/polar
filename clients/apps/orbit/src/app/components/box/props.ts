@@ -73,8 +73,7 @@ export const boxProps: PropRow[] = [
   {
     name: 'borderColor',
     type: 'BorderColorToken',
-    description:
-      'border-primary | border-secondary | border-warning.',
+    description: 'border-primary | border-secondary | border-warning.',
   },
   {
     name: 'borderRadius',

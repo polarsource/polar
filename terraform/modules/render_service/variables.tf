@@ -49,6 +49,9 @@ variable "workers" {
     plan               = optional(string, "pro")
     num_instances      = optional(number, 1)
     database_pool_size = optional(string, "5")
+    redis_host         = optional(string)
+    redis_port         = optional(string)
+    redis_db           = optional(string)
   }))
 }
 

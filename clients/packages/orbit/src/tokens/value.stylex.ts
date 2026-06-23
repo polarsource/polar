@@ -1,7 +1,7 @@
 // ─── Value Tokens (Tier 1 — Primitives) ───────────────────────────────────────
 // Raw, context-free values. This is the ONLY tier where literal colors, sizes
 // and font definitions live. Nothing here encodes intent — `gray500` is just a
-// color, not "secondary text". Semantic (decision) tokens in tokens.stylex.ts
+// color, not "secondary text". Semantic (decision) tokens in semantics.stylex.ts
 // reference these; never consume them directly in components.
 //
 // The neutral ramps (`gray*` light, `polar*` dark) are the canonical Polar

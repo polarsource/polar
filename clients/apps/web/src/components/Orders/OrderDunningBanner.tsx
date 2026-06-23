@@ -7,6 +7,7 @@ import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { addDays, parseISO } from 'date-fns'
 
 const DUNNING_RETRY_COUNT = 4
+const DUNNING_MAX_ATTEMPTS = DUNNING_RETRY_COUNT + 1
 const DUNNING_TOTAL_RETRY_DAYS = 21
 const DUNNING_COUNTING_TRIGGERS = new Set<schemas['PaymentTrigger']>([
   'purchase',
@@ -49,6 +50,9 @@ export const OrderDunningBanner = ({
   const gracePeriodDays =
     organization.subscription_settings.benefit_revocation_grace_period
 
+  const failedPaymentDisplayMessage = latestFailedPayment?.decline_message ??
+    latestFailedPayment?.decline_reason
+
   return (
     <Box
       display="grid"
@@ -82,13 +86,12 @@ export const OrderDunningBanner = ({
               size="small"
             />
           </Box>
-          {latestFailedPayment?.decline_message ??
-          latestFailedPayment?.decline_reason ? (
-            <Text>
-              {latestFailedPayment.decline_message ??
-                latestFailedPayment.decline_reason}
-            </Text>
-          ) : null}
+          {failedPaymentDisplayMessage
+            ? (
+              <Text>
+                {failedPaymentDisplayMessage}
+              </Text>
+            ) : null}
           {latestFailedPayment ? (
             <Text color="muted">
               Last attempt{' '}
@@ -115,13 +118,15 @@ export const OrderDunningBanner = ({
         borderColor="border-primary"
       >
         <Box flexDirection="column" rowGap="xs">
-          <Text color="muted">What happens next</Text>
-          <Text as="strong" variant="body">
-            Retry{' '}
-            {Math.min(Math.max(failedDunningAttempts, 1), DUNNING_RETRY_COUNT)}{' '}
-            of {DUNNING_RETRY_COUNT}
+          <Text color="muted">
+            {subscription.ended_at !== null ? 'Outcome' : 'What happens next'}
           </Text>
-          {order.next_payment_attempt_at ? (
+          <Text as="strong" variant="body">
+            Attempt{' '}
+            {Math.min(Math.max(failedDunningAttempts, 1), DUNNING_MAX_ATTEMPTS)}{' '}
+            of {DUNNING_MAX_ATTEMPTS}
+          </Text>
+          {subscription.ended_at ? null : order.next_payment_attempt_at ? (
             <Text color="muted">
               Next automatic retry{' '}
               <Text as="span" color="default">
@@ -137,7 +142,17 @@ export const OrderDunningBanner = ({
               No further automatic retries are scheduled for this order.
             </Text>
           )}
-          {revocationDeadline ? (
+          {subscription.ended_at ? (
+            <Text color="muted">
+              The subscription was canceled on{' '}
+              <FormattedDateTime
+                dateStyle="medium"
+                resolution="day"
+                datetime={subscription.ended_at}
+              />
+              .
+            </Text>
+          ) : revocationDeadline ? (
             <Text color="muted">
               If all retries fail, the subscription is canceled by{' '}
               <FormattedDateTime
@@ -154,9 +169,8 @@ export const OrderDunningBanner = ({
           )}
           <Text color="muted">
             {gracePeriodDays > 0
-              ? `Benefits stay active for ${gracePeriodDays} ${
-                  gracePeriodDays === 1 ? 'day' : 'days'
-                } after cancellation, then are revoked.`
+              ? `Benefits stay active for ${gracePeriodDays} ${gracePeriodDays === 1 ? 'day' : 'days'
+              } after cancellation, then are revoked.`
               : 'Benefits are revoked as soon as the subscription is canceled.'}
           </Text>
         </Box>

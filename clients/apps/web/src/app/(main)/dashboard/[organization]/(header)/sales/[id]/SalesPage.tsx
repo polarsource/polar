@@ -87,8 +87,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const seats = seatsData?.seats || []
 
   const orderPayments = payments?.items ?? []
-  const showDunningBanner =
-    !!order && isOrderInDunning(order, orderPayments)
+  const showDunningBanner = !!order && isOrderInDunning(order, orderPayments)
 
   const { data: dunningSubscription } = useSubscription(
     order?.subscription_id ?? '',

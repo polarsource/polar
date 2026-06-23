@@ -1,6 +1,7 @@
 import asyncio
 from typing import Any
 
+import logfire
 import structlog
 
 from polar.logfire import configure_logfire
@@ -27,25 +28,30 @@ bootstrap()
 
 def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     batch_item_failures: list[dict[str, str]] = []
-    for record in event.get("Records", []):
-        message_id = record["messageId"]
-        try:
-            actor, args, kwargs, correlation_id = parse_envelope(record["body"])
-            receive_count = int(
-                record.get("attributes", {}).get("ApproximateReceiveCount", "1")
-            )
-            _loop.run_until_complete(
-                run_task(
-                    actor,
-                    args,
-                    kwargs,
-                    receive_count=receive_count,
-                    source_correlation_id=correlation_id,
+    try:
+        for record in event.get("Records", []):
+            message_id = record["messageId"]
+            try:
+                actor, args, kwargs, correlation_id = parse_envelope(record["body"])
+                receive_count = int(
+                    record.get("attributes", {}).get("ApproximateReceiveCount", "1")
                 )
-            )
-        except Exception:
-            log.error(
-                "polar.worker.sqs_task_failed", message_id=message_id, exc_info=True
-            )
-            batch_item_failures.append({"itemIdentifier": message_id})
+                _loop.run_until_complete(
+                    run_task(
+                        actor,
+                        args,
+                        kwargs,
+                        receive_count=receive_count,
+                        source_correlation_id=correlation_id,
+                    )
+                )
+            except Exception:
+                log.error(
+                    "polar.worker.sqs_task_failed",
+                    message_id=message_id,
+                    exc_info=True,
+                )
+                batch_item_failures.append({"itemIdentifier": message_id})
+    finally:
+        logfire.force_flush()
     return {"batchItemFailures": batch_item_failures}

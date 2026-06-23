@@ -1,5 +1,6 @@
-from typing import Self
+from typing import Annotated, Self
 
+from fastapi import Path
 from pydantic import UUID4, Field, model_validator
 
 from polar.exceptions import ResourceNotFound
@@ -9,6 +10,9 @@ from polar.models.support_case import (
     SupportCaseMessageType,
     SupportCaseType,
 )
+
+SupportCaseID = Annotated[UUID4, Path(description="The support case ID.")]
+SupportCaseAttachmentID = Annotated[UUID4, Path(description="The attachment ID.")]
 
 SupportCaseNotFound = {
     "description": "Support case not found.",

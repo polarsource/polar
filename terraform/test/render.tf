@@ -138,13 +138,15 @@ module "test" {
     postgres_database      = local.db_name
     postgres_read_database = local.db_name
     redis_db               = "0"
+    redis_max_connections  = "50"
     plan                   = "pro"
   }
 
   workers = {
     worker-test = {
-      start_command      = "uv run dramatiq -p 2 -t 4 -f polar.worker.scheduler:start polar.worker.run"
-      dramatiq_prom_port = "10000"
+      start_command         = "uv run dramatiq -p 2 -t 4 -f polar.worker.scheduler:start polar.worker.run"
+      dramatiq_prom_port    = "10000"
+      redis_max_connections = "10"
     }
   }
 

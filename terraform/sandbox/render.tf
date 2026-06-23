@@ -107,27 +107,32 @@ module "sandbox" {
     postgres_database      = "polar_sandbox"
     postgres_read_database = "polar_sandbox"
     redis_db               = "1"
+    redis_max_connections  = "50"
     plan                   = "pro"
   }
 
   workers = {
     worker-sandbox = {
-      start_command      = "uv run dramatiq polar.worker.run -p 4 -t 8 -f polar.worker.scheduler:start --queues high_priority medium_priority low_priority"
-      dramatiq_prom_port = "10000"
+      start_command         = "uv run dramatiq polar.worker.run -p 4 -t 8 -f polar.worker.scheduler:start --queues high_priority medium_priority low_priority"
+      dramatiq_prom_port    = "10000"
+      redis_max_connections = "10"
     }
     worker-sandbox-webhook = {
-      start_command      = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues webhooks"
-      dramatiq_prom_port = "10001"
-      database_pool_size = "16"
+      start_command         = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues webhooks"
+      dramatiq_prom_port    = "10001"
+      database_pool_size    = "16"
+      redis_max_connections = "10"
     }
     worker-sandbox-tinybird = {
-      start_command      = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues tinybird"
-      dramatiq_prom_port = "10002"
+      start_command         = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues tinybird"
+      dramatiq_prom_port    = "10002"
+      redis_max_connections = "10"
     }
     worker-sandbox-invoices-receipts = {
-      start_command      = "uv run dramatiq polar.worker.run -p 1 -t 3 --queues invoices_and_receipts"
-      plan               = "standard"
-      dramatiq_prom_port = "10003"
+      start_command         = "uv run dramatiq polar.worker.run -p 1 -t 3 --queues invoices_and_receipts"
+      plan                  = "standard"
+      dramatiq_prom_port    = "10003"
+      redis_max_connections = "10"
     }
   }
 

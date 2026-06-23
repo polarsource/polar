@@ -147,6 +147,7 @@ module "production" {
     custom_domains         = [{ name = "api.polar.sh" }, { name = "api-alt.polar.sh" }, { name = "buy.polar.sh" }, { name = "backoffice.polar.sh" }]
     plan                   = "pro_plus"
     web_concurrency        = "6"
+    redis_max_connections  = "50"
   }
 
   postgres_config = {
@@ -173,36 +174,43 @@ module "production" {
 
   workers = {
     "scheduler" = {
-      start_command      = "uv run python -m polar.worker.scheduler"
-      plan               = "standard"
-      dramatiq_prom_port = "10000"
+      start_command         = "uv run python -m polar.worker.scheduler"
+      plan                  = "standard"
+      dramatiq_prom_port    = "10000"
+      redis_max_connections = "10"
     }
     "worker" = {
-      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues low_priority"
-      custom_domains     = [{ name = "worker.polar.sh" }]
-      dramatiq_prom_port = "10000"
+      start_command         = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues low_priority"
+      custom_domains        = [{ name = "worker.polar.sh" }]
+      dramatiq_prom_port    = "10000"
+      redis_max_connections = "10"
     }
     "worker-medium-priority" = {
-      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues medium_priority"
-      dramatiq_prom_port = "10001"
+      start_command         = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues medium_priority"
+      dramatiq_prom_port    = "10001"
+      redis_max_connections = "10"
     }
     "worker-high-priority" = {
-      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues high_priority"
-      dramatiq_prom_port = "10001"
+      start_command         = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues high_priority"
+      dramatiq_prom_port    = "10001"
+      redis_max_connections = "10"
     }
     "worker-webhook" = {
-      start_command      = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues webhooks"
-      dramatiq_prom_port = "10001"
-      database_pool_size = "16"
+      start_command         = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues webhooks"
+      dramatiq_prom_port    = "10001"
+      database_pool_size    = "16"
+      redis_max_connections = "10"
     }
     "worker-tinybird" = {
-      start_command      = "uv run dramatiq polar.worker.run -p 4 -t 32 --queues tinybird"
-      dramatiq_prom_port = "10002"
+      start_command         = "uv run dramatiq polar.worker.run -p 4 -t 32 --queues tinybird"
+      dramatiq_prom_port    = "10002"
+      redis_max_connections = "10"
     }
     "worker-invoices-receipts" = {
-      start_command      = "uv run dramatiq polar.worker.run -p 1 -t 3 --queues invoices_and_receipts"
-      plan               = "standard"
-      dramatiq_prom_port = "10003"
+      start_command         = "uv run dramatiq polar.worker.run -p 1 -t 3 --queues invoices_and_receipts"
+      plan                  = "standard"
+      dramatiq_prom_port    = "10003"
+      redis_max_connections = "10"
     }
   }
 

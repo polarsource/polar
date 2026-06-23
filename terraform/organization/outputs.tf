@@ -1,0 +1,33 @@
+output "management_account" {
+  value = {
+    id   = data.aws_organizations_organization.current.master_account_id
+    name = data.aws_organizations_organization.current.master_account_name
+  }
+}
+
+output "organizational_units" {
+  value = {
+    workloads = {
+      id   = aws_organizations_organizational_unit.workloads.id
+      name = aws_organizations_organizational_unit.workloads.name
+    }
+    workload_environments = {
+      for key, organizational_unit in aws_organizations_organizational_unit.workload :
+      key => {
+        id   = organizational_unit.id
+        name = organizational_unit.name
+      }
+    }
+  }
+}
+
+output "workload_accounts" {
+  value = {
+    for key, account in aws_organizations_account.workload :
+    key => {
+      id                  = account.id
+      name                = account.name
+      organizational_unit = local.workload_accounts[key].organizational_unit
+    }
+  }
+}

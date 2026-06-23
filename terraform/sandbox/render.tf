@@ -28,6 +28,23 @@ data "render_redis" "redis" {
 }
 
 # =============================================================================
+# Sandbox Redis Instance
+# =============================================================================
+
+resource "render_redis" "redis_sandbox" {
+  environment_id    = data.tfe_outputs.production.values.sandbox_environment_id
+  name              = "redis-sandbox"
+  plan              = "standard"
+  region            = "ohio"
+  max_memory_policy = "noeviction"
+
+  # Empty IP allow list means only private network connections
+  ip_allow_list = []
+
+  depends_on = [render_registry_credential.ghcr]
+}
+
+# =============================================================================
 # Locals
 # =============================================================================
 

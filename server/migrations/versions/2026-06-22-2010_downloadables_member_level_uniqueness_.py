@@ -69,34 +69,25 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # Run as a single transaction so a failure can never leave the table without
-    # a uniqueness guard: restore the old constraint first, then drop the new
-    # indexes, and roll the whole thing back on any error. Index drops are not
-    # concurrent here, but create_unique_constraint already needs an exclusive
-    # lock and this is a rollback path, not the live forward deploy.
+    # Operationally gated rollback: reverting to customer-level uniqueness only
+    # works once per-member rows have been collapsed to one row per
+    # (customer, file, benefit). We deliberately do NOT mass-delete here — if
+    # duplicates remain, recreating the constraint fails loudly rather than
+    # silently dropping member downloadables. Runs as a single transaction, so a
+    # failure rolls back to the member-aware index and never leaves the table
+    # without a uniqueness guard. This is the rarely-run rollback path; the live
+    # forward deploy is the upgrade above. lock_timeout bounds lock waits.
     op.execute("SET LOCAL lock_timeout = '5s'")
-    # The per-member rows would violate the customer-level constraint; keep one
-    # row per (customer, file, benefit), preferring live rows over soft-deleted
-    # ones, then oldest.
-    op.execute(
-        """
-        DELETE FROM downloadables d
-        USING (
-            SELECT id,
-                   ROW_NUMBER() OVER (
-                       PARTITION BY customer_id, file_id, benefit_id
-                       ORDER BY (deleted_at IS NOT NULL), created_at, id
-                   ) AS rn
-            FROM downloadables
-        ) dup
-        WHERE d.id = dup.id AND dup.rn > 1
-        """
-    )
+    # Restore the old constraint before dropping the member-aware indexes, all in
+    # one transaction, so a failure rolls back to the member-aware index and
+    # never leaves the table without a uniqueness guard.
     op.create_unique_constraint(
         OLD_CONSTRAINT,
         "downloadables",
         ["customer_id", "file_id", "benefit_id"],
     )
+    op.drop_index(NEW_INDEX, table_name="downloadables")
+    op.drop_index(CUSTOMER_INDEX, table_name="downloadables")
     # The restored non-partial constraint provides uniqueness and customer_id
     # coverage (leading column) again, so the new indexes can go.
     op.drop_index(NEW_INDEX, table_name="downloadables")

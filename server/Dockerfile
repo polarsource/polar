@@ -195,16 +195,17 @@ if [ -n "${POLAR_JWKS_CONTENT:-}" ] && [ -n "${POLAR_JWKS:-}" ]; then
   printf "%s" "$POLAR_JWKS_CONTENT" > "$POLAR_JWKS"
 fi
 
-if [ -n "${TAILSCALE_AUTHKEY:-}" ]; then
-  mkdir -p /tmp/tailscale
-  /var/runtime/tailscaled --tun=userspace-networking --socks5-server=localhost:1055 &
-  tailscale_hostname="${TAILSCALE_HOSTNAME:-polar-${POLAR_ENV:-unknown}-worker-lambda}"
-  tailscale_tags="tag:${POLAR_ENV:-unknown},tag:worker-lambda,tag:aws"
-  until /var/runtime/tailscale up --authkey="${TAILSCALE_AUTHKEY}?ephemeral=true&preauthorized=true" --hostname="${tailscale_hostname}" --advertise-tags="${tailscale_tags}"; do
-    sleep 0.1
-  done
-  export ALL_PROXY="${ALL_PROXY:-socks5://localhost:1055/}"
-fi
+# Tailscale disabled: ALL_PROXY routed HTTP egress through the SOCKS proxy. Re-enable for private-network access.
+# if [ -n "${TAILSCALE_AUTHKEY:-}" ]; then
+#   mkdir -p /tmp/tailscale
+#   /var/runtime/tailscaled --tun=userspace-networking --socks5-server=localhost:1055 &
+#   tailscale_hostname="${TAILSCALE_HOSTNAME:-polar-${POLAR_ENV:-unknown}-worker-lambda}"
+#   tailscale_tags="tag:${POLAR_ENV:-unknown},tag:worker-lambda,tag:aws"
+#   until /var/runtime/tailscale up --authkey="${TAILSCALE_AUTHKEY}?ephemeral=true&preauthorized=true" --hostname="${tailscale_hostname}" --advertise-tags="${tailscale_tags}"; do
+#     sleep 0.1
+#   done
+#   export ALL_PROXY="${ALL_PROXY:-socks5://localhost:1055/}"
+# fi
 
 exec /lambda-entrypoint.sh "$@"
 BOOTSTRAP

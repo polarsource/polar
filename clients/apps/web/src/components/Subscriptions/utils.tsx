@@ -1,4 +1,5 @@
 import { schemas } from '@polar-sh/client'
+import type { PillColor } from '@polar-sh/orbit'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -13,6 +14,39 @@ export const subscriptionStatusDisplayNames: {
   canceled: 'Canceled',
   unpaid: 'Unpaid',
 }
+
+export const getSubscriptionStatusColor = (
+  status: schemas['SubscriptionStatus'],
+  isEnding = false,
+): PillColor => {
+  switch (status) {
+    case 'active':
+      return isEnding ? 'yellow' : 'green'
+    case 'trialing':
+      return 'blue'
+    case 'past_due':
+      return 'yellow'
+    case 'unpaid':
+    case 'canceled':
+      return 'red'
+    default:
+      return 'gray'
+  }
+}
+
+const STATUS_BORDER_COLOR: Record<PillColor, string> = {
+  green: 'border-emerald-500',
+  yellow: 'border-yellow-500',
+  red: 'border-red-500',
+  blue: 'border-blue-500',
+  gray: 'dark:border-polar-500 border-gray-500',
+  purple: 'border-purple-500',
+}
+
+export const getSubscriptionStatusBorderColor = (
+  status: schemas['SubscriptionStatus'],
+  isEnding = false,
+): string => STATUS_BORDER_COLOR[getSubscriptionStatusColor(status, isEnding)]
 
 export const SubscriptionStatusLabel = ({
   className,
@@ -30,18 +64,14 @@ export const SubscriptionStatusLabel = ({
     }
   }, [subscription])
 
-  const statusColor = useMemo(() => {
-    switch (subscription.status) {
-      case 'active':
-        return subscription.cancel_at_period_end
-          ? 'border-yellow-500'
-          : 'border-emerald-500'
-      case 'trialing':
-        return 'border-cyan-500'
-      default:
-        return 'border-red-500'
-    }
-  }, [subscription])
+  const statusColor = useMemo(
+    () =>
+      getSubscriptionStatusBorderColor(
+        subscription.status,
+        subscription.cancel_at_period_end,
+      ),
+    [subscription.status, subscription.cancel_at_period_end],
+  )
 
   return (
     <div className={twMerge('flex flex-row items-center gap-x-2', className)}>

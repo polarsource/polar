@@ -1,8 +1,8 @@
 """downloadables member-level uniqueness
 
 Revision ID: 46c188b1734f
-Revises: 54267f23e641
-Create Date: 2026-06-19 16:45:39.548649
+Revises: e59a12239bc2
+Create Date: 2026-06-22 20:10:00.000000
 
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "46c188b1734f"
-down_revision = "54267f23e641"
+down_revision = "e59a12239bc2"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

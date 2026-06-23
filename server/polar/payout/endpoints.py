@@ -1,11 +1,11 @@
 from fastapi import Depends, Query
-from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 from sqlalchemy.orm import joinedload
 
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
 from polar.exceptions import ResourceNotFound
+from polar.kit.csv import CSVStreamingResponse
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -125,28 +125,23 @@ async def create(
 
 
 @router.get(
-    "/{id}/csv",
-    summary="Export Payout as CSV",
-    responses={200: {"content": {"text/csv": {"schema": {"type": "string"}}}}},
+    "/{id}/csv", summary="Export Payout as CSV", response_class=CSVStreamingResponse
 )
 async def get_csv(
     id: UUID4,
     auth_subject: payouts_auth.PayoutsRead,
     session: AsyncSession = Depends(get_db_session),
     sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
-) -> StreamingResponse:
+) -> CSVStreamingResponse:
     payout = await payout_service.get(session, auth_subject, id)
 
     if payout is None:
         raise ResourceNotFound()
 
     content = payout_service.get_csv(session, sessionmaker, payout)
-    filename = f"polar-payout-{payout.created_at.isoformat()}.csv"
 
-    return StreamingResponse(
-        content,
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    return CSVStreamingResponse(
+        content, f"polar-payout-{payout.created_at.isoformat()}.csv"
     )
 
 

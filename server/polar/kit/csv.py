@@ -1,7 +1,9 @@
 import collections
+import collections.abc
 import csv
-from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, BinaryIO
+
+from fastapi.responses import StreamingResponse
 
 if TYPE_CHECKING:
     import _csv
@@ -9,12 +11,12 @@ if TYPE_CHECKING:
 from .email import EmailNotValidError, validate_email
 
 
-def get_iterable_from_binary_io(file: BinaryIO) -> Iterable[str]:
+def get_iterable_from_binary_io(file: BinaryIO) -> collections.abc.Iterable[str]:
     for line in file:
         yield line.decode("utf-8")
 
 
-def get_emails_from_csv(lines: Iterable[str]) -> set[str]:
+def get_emails_from_csv(lines: collections.abc.Iterable[str]) -> set[str]:
     emails: set[str] = set()
 
     reader = csv.DictReader(lines)
@@ -78,7 +80,7 @@ class IterableCSVWriter:
             strict=strict,
         )
 
-    def getrow(self, row: Iterable[Any]) -> str:
+    def getrow(self, row: collections.abc.Iterable[Any]) -> str:
         self.writer.writerow(row)
         return self.read()
 
@@ -87,3 +89,26 @@ class IterableCSVWriter:
 
     def read(self) -> str:
         return self._lines.popleft()
+
+
+class CSVStreamingResponse(StreamingResponse):
+    """
+    A StreamingResponse that streams CSV data.
+
+    Declare it as response_class on a FastAPI endpoint to generate the correct OpenAPI schema for CSV responses.
+    """
+
+    media_type = "text/csv"
+
+    def __init__(
+        self,
+        content: collections.abc.AsyncGenerator[str, None],
+        filename: str,
+        status_code: int = 200,
+    ):
+        super().__init__(
+            content,
+            status_code=status_code,
+            media_type=self.media_type,
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
+        )

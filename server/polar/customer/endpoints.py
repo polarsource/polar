@@ -1,8 +1,7 @@
 import json
 from collections.abc import AsyncGenerator
 
-from fastapi import Depends, Query, Response
-from fastapi.responses import StreamingResponse
+from fastapi import Depends, Query
 from pydantic import TypeAdapter
 
 from polar.auth.permission import OrganizationPermission
@@ -11,7 +10,7 @@ from polar.authz.service import (
     get_accessible_org_ids,
 )
 from polar.exceptions import ResourceNotFound
-from polar.kit.csv import IterableCSVWriter
+from polar.kit.csv import CSVStreamingResponse, IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -109,22 +108,14 @@ async def list(
     )
 
 
-@router.get(
-    "/export",
-    summary="Export Customers",
-    responses={
-        200: {
-            "content": {"text/csv": {"schema": {"type": "string"}}},
-        },
-    },
-)
+@router.get("/export", summary="Export Customers", response_class=CSVStreamingResponse)
 async def export(
     auth_subject: auth.CustomerRead,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, description="Filter by organization ID."
     ),
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> Response:
+) -> CSVStreamingResponse:
     """Export customers as a CSV file."""
 
     async def create_csv() -> AsyncGenerator[str, None]:
@@ -177,12 +168,7 @@ async def export(
                 )
             )
 
-    filename = "polar-customers.csv"
-    return StreamingResponse(
-        create_csv(),
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
-    )
+    return CSVStreamingResponse(create_csv(), "polar-customers.csv")
 
 
 @router.get(

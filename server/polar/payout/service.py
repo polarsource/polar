@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from collections.abc import AsyncIterable, Sequence
+from collections.abc import AsyncGenerator, Sequence
 from typing import Any, cast
 
 import sentry_sdk
@@ -893,7 +893,7 @@ class PayoutService:
 
     async def get_csv(
         self, session: AsyncSession, sessionmaker: AsyncSessionMaker, payout: Payout
-    ) -> AsyncIterable[str]:
+    ) -> AsyncGenerator[str]:
         payout_transaction_repository = PayoutTransactionRepository.from_session(
             session
         )

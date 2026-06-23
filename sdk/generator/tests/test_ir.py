@@ -92,6 +92,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "path_params": [],
                                 "query_params": [],
                                 "response": {"kind": "model", "name": "Product"},
+                                "response_type": "json",
                                 "errors": [],
                             }
                         ],
@@ -108,6 +109,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "path_params": [],
                                 "query_params": [],
                                 "response": {"kind": "model", "name": "User"},
+                                "response_type": "json",
                                 "errors": [],
                             }
                         ],
@@ -209,6 +211,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "query_params": [],
                                 "body": {"kind": "model", "name": "UserCreate"},
                                 "response": {"kind": "model", "name": "UserResponse"},
+                                "response_type": "json",
                                 "errors": [],
                             }
                         ],
@@ -372,6 +375,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                     }
                                 ],
                                 "response": {"kind": "model", "name": "Product"},
+                                "response_type": "json",
                                 "errors": [],
                             },
                             {
@@ -390,6 +394,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 ],
                                 "query_params": [],
                                 "response": {"kind": "model", "name": "Product"},
+                                "response_type": "json",
                                 "errors": [],
                             },
                         ],
@@ -501,6 +506,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                     }
                                 ],
                                 "response": {"kind": "model", "name": "Order"},
+                                "response_type": "json",
                                 "errors": [],
                             }
                         ],
@@ -613,6 +619,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                             }
                                         ],
                                         "query_params": [],
+                                        "response_type": "json",
                                         "errors": [],
                                     },
                                     {
@@ -637,6 +644,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                             },
                                         ],
                                         "query_params": [],
+                                        "response_type": "json",
                                         "errors": [],
                                     },
                                 ],
@@ -650,6 +658,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "path": "/products",
                                 "path_params": [],
                                 "query_params": [],
+                                "response_type": "json",
                                 "errors": [],
                             }
                         ],
@@ -720,6 +729,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "path_params": [],
                                 "query_params": [],
                                 "response": {"kind": "model", "name": "Account"},
+                                "response_type": "json",
                                 "errors": [],
                             }
                         ],
@@ -821,6 +831,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "path_params": [],
                                 "query_params": [],
                                 "response": {"kind": "union_ref", "name": "Event"},
+                                "response_type": "json",
                                 "errors": [],
                             }
                         ],
@@ -925,6 +936,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "path_params": [],
                                 "query_params": [],
                                 "response": {"kind": "union_ref", "name": "Payment"},
+                                "response_type": "json",
                                 "errors": [],
                             }
                         ],
@@ -1012,6 +1024,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "path_params": [],
                                 "query_params": [],
                                 "response": {"kind": "model", "name": "Metadata"},
+                                "response_type": "json",
                                 "errors": [],
                             }
                         ],
@@ -1127,6 +1140,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 ],
                                 "query_params": [],
                                 "response": {"kind": "model", "name": "Product"},
+                                "response_type": "json",
                                 "errors": [
                                     {
                                         "name": "NotFound",
@@ -1289,6 +1303,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "path_params": [],
                                 "query_params": [],
                                 "response": {"kind": "model", "name": "Item"},
+                                "response_type": "json",
                                 "errors": [],
                             },
                             {
@@ -1300,6 +1315,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "query_params": [],
                                 "body": {"kind": "model", "name": "ItemCreate"},
                                 "response": {"kind": "model", "name": "Item"},
+                                "response_type": "json",
                                 "errors": [],
                             },
                             {
@@ -1311,6 +1327,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "query_params": [],
                                 "body": {"kind": "model", "name": "Item"},
                                 "response": {"kind": "model", "name": "Item"},
+                                "response_type": "json",
                                 "errors": [],
                             },
                         ],
@@ -1414,6 +1431,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "query_params": [],
                                 "body": {"kind": "model", "name": "ItemCreate"},
                                 "response": {"kind": "model", "name": "ItemResponse"},
+                                "response_type": "json",
                                 "errors": [],
                             }
                         ],
@@ -1508,6 +1526,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "query_params": [],
                                 "body": {"kind": "model", "name": "CheckoutCreate"},
                                 "response": {"kind": "model", "name": "CheckoutCreate"},
+                                "response_type": "json",
                                 "errors": [],
                             }
                         ],
@@ -1631,6 +1650,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                     "kind": "union_ref",
                                     "name": "APaymentMethod",
                                 },
+                                "response_type": "json",
                                 "errors": [],
                             }
                         ],
@@ -1757,6 +1777,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                     }
                                 ],
                                 "body": {"kind": "model", "name": "FileUpload"},
+                                "response_type": "json",
                                 "errors": [],
                             }
                         ],
@@ -1783,6 +1804,110 @@ _STRING = {"kind": "primitive", "type": "string"}
             },
             id="Path/Query parameters conflicting with body parameters are correctly resolved",
         ),
+        pytest.param(
+            {
+                "openapi": "3.1.0",
+                "info": {"title": "Test API", "version": "1.0.0"},
+                "paths": {
+                    "/export": {
+                        "get": {
+                            "operationId": "export:data",
+                            "description": "Export data as CSV",
+                            "responses": {
+                                "200": {
+                                    "description": "CSV export",
+                                    "content": {
+                                        "text/csv": {"schema": {"type": "string"}}
+                                    },
+                                }
+                            },
+                        }
+                    },
+                    "/export-json": {
+                        "get": {
+                            "operationId": "export:json",
+                            "description": "Export data as JSON",
+                            "responses": {
+                                "200": {
+                                    "description": "JSON export",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {"type": "object"}
+                                        }
+                                    },
+                                }
+                            },
+                        }
+                    },
+                    "/export-mixed": {
+                        "get": {
+                            "operationId": "export:mixed",
+                            "description": "Export with both CSV and JSON",
+                            "responses": {
+                                "200": {
+                                    "description": "Mixed export",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {"type": "object"}
+                                        },
+                                        "text/csv": {"schema": {"type": "string"}},
+                                    },
+                                }
+                            },
+                        }
+                    },
+                },
+            },
+            {
+                "services": [
+                    {
+                        "name": "Export",
+                        "services": [],
+                        "methods": [
+                            {
+                                "name": "data",
+                                "description": "Export data as CSV",
+                                "http_method": "GET",
+                                "path": "/export",
+                                "path_params": [],
+                                "query_params": [],
+                                "response_type": "text",
+                                "response": {"kind": "primitive", "type": "string"},
+                                "errors": [],
+                            },
+                            {
+                                "name": "json",
+                                "description": "Export data as JSON",
+                                "http_method": "GET",
+                                "path": "/export-json",
+                                "path_params": [],
+                                "query_params": [],
+                                "response_type": "json",
+                                "response": {"kind": "primitive", "type": "unknown"},
+                                "errors": [],
+                            },
+                            {
+                                "name": "mixed",
+                                "description": "Export with both CSV and JSON",
+                                "http_method": "GET",
+                                "path": "/export-mixed",
+                                "path_params": [],
+                                "query_params": [],
+                                "response_type": "json",
+                                "response": {"kind": "primitive", "type": "unknown"},
+                                "errors": [],
+                            },
+                        ],
+                    },
+                ],
+                "input_models": [],
+                "output_models": [],
+                "enums": [],
+                "input_unions": [],
+                "output_unions": [],
+            },
+            id="Response type is determined from content types (JSON vs text)",
+        ),
     ],
 )
 def test_ir_generation(
@@ -1791,4 +1916,4 @@ def test_ir_generation(
     """Test that the IR is generated correctly from the OpenAPI spec."""
     ir = generate_ir(op.OpenAPI.model_validate(input))
 
-    assert ir.model_dump(exclude_none=True) == output
+    assert ir.model_dump(mode="json", exclude_none=True) == output

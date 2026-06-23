@@ -220,6 +220,9 @@ class HTTPMethod(enum.StrEnum):
     TRACE = "TRACE"
 
 
+type ResponseType = typing.Literal["json", "text"]
+
+
 class Method(BaseModel):
     """A single API endpoint grouped under a Service."""
 
@@ -229,6 +232,7 @@ class Method(BaseModel):
     path: str
     path_params: list[Parameter]
     query_params: list[Parameter]
+    response_type: ResponseType
     body: TypeRef | None = None
     response: TypeRef | None = None
     errors: list[ErrorResponse] = []
@@ -667,9 +671,10 @@ def _get_body_schema_raw(
 
 def _get_success_response_schema_raw(
     operation: op.Operation, spec: op.OpenAPI
-) -> op.Schema | op.Reference | None:
+) -> tuple[op.Schema | op.Reference | None, ResponseType]:
+    """Return (schema, response_type) for the first matching 2xx response."""
     if operation.responses is None:
-        return None
+        return None, "json"
 
     for status_code in sorted(operation.responses.keys()):
         if not status_code.startswith("2"):
@@ -680,17 +685,25 @@ def _get_success_response_schema_raw(
         if response.content is None:
             continue
 
-        try:
-            media_type = response.content["application/json"]
-        except KeyError:
-            continue
+        # Determine response type based on content types
+        response_type: ResponseType = "json"
+        schema: op.Schema | op.Reference | None = None
 
-        if media_type.media_type_schema is None:
-            continue
+        for content_type, media_type_obj in response.content.items():
+            if content_type == "application/json":
+                response_type = "json"
+                if media_type_obj.media_type_schema is not None:
+                    schema = media_type_obj.media_type_schema
+                    break
+            elif content_type.startswith("text/"):
+                response_type = "text"
+                if media_type_obj.media_type_schema is not None:
+                    schema = media_type_obj.media_type_schema
 
-        return media_type.media_type_schema
+        if schema is not None:
+            return schema, response_type
 
-    return None
+    return None, "json"
 
 
 def _get_error_responses_raw(
@@ -981,7 +994,9 @@ def generate_ir(
                     for p in resolved_parameters
                     if p.param_in == op.ParameterLocation.QUERY
                 ]
-                raw_response = _get_success_response_schema_raw(operation, spec)
+                raw_response, response_type = _get_success_response_schema_raw(
+                    operation, spec
+                )
                 error_responses_raw = _get_error_responses_raw(operation, spec)
 
                 body = (
@@ -1041,6 +1056,7 @@ def generate_ir(
                     path=path,
                     path_params=path_params,
                     query_params=query_params,
+                    response_type=response_type,
                     body=body,
                     response=response,
                     errors=errors,

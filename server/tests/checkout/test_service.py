@@ -27,6 +27,7 @@ from polar.checkout.service import (
     AlreadyActiveSubscriptionError,
     CheckoutCustomerDeleted,
     CheckoutCustomerExternalIdMismatch,
+    ExpiredCheckoutError,
     NotConfirmedCheckout,
     NotOpenCheckout,
     TrialAlreadyRedeemed,
@@ -2893,6 +2894,22 @@ class TestGetByClientSecret:
         await save_fixture(checkout_one_time_fixed.organization)
 
         with pytest.raises(NotPermitted):
+            await checkout_service.get_by_client_secret(
+                session, checkout_one_time_fixed.client_secret
+            )
+
+    async def test_raises_expired_before_not_permitted_for_blocked_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        checkout_one_time_fixed.expires_at = utc_now() - timedelta(days=1)
+        checkout_one_time_fixed.organization.set_status(OrganizationStatus.BLOCKED)
+        await save_fixture(checkout_one_time_fixed)
+        await save_fixture(checkout_one_time_fixed.organization)
+
+        with pytest.raises(ExpiredCheckoutError):
             await checkout_service.get_by_client_secret(
                 session, checkout_one_time_fixed.client_secret
             )

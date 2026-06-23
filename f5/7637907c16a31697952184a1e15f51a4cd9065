@@ -1,0 +1,26 @@
+server/polar/worker/_health.py
+  s_55425a4ea3c9b4::t_d890aad7cf65f1 62-73
+  s_55425a4ea3c9b4::t_5963b248149d8c 137-139
+  s_55425a4ea3c9b4::t_122006438558ba 13-14
+  s_55425a4ea3c9b4::t_81c0da239ce662 27
+server/tests/worker/test_health.py
+  s_55425a4ea3c9b4::t_5c5ef326f51ebd 1,10
+  s_55425a4ea3c9b4::t_89ae11a389ed07 102-134
+  s_55425a4ea3c9b4::t_833180b86acc24 41,45-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "f57637907c16a31697952184a1e15f51a4cd9065",
+  "prompts": {},
+  "sessions": {
+    "s_55425a4ea3c9b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "142d8293-14bc-46bf-a97c-7bc7f8358d23",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

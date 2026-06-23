@@ -290,6 +290,12 @@ class TestCreate:
         enqueue_job_mock.assert_called_once()
 ```
 
+Get an `AuthSubject` from the `@pytest.mark.auth` marker + the `auth_subject` fixture — never
+hand-roll one with a local helper like `AuthSubject(user, set(), None)`. Use `@pytest.mark.auth`
+(default `user`) or `@pytest.mark.auth(AuthSubjectFixture(subject="user_second"))`, take
+`auth_subject: AuthSubject[User]`, and pass it straight to the service. Keep an explicit `user`
+fixture param only when the body still needs it (e.g. `user.id`).
+
 ### API Tests (Integration)
 
 ```python

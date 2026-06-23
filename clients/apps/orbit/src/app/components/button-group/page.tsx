@@ -86,7 +86,7 @@ export default function ButtonGroupPage() {
 
       <Section
         title="Props"
-        description="ButtonGroup owns the variant and size; actions only carry text, onClick, loading and disabled."
+        description="ButtonGroup owns variant and size; actions can pass Button props (for example onClick, loading, and disabled) plus text."
       >
         <PropsTable rows={buttonGroupProps} slug="button-group" />
       </Section>

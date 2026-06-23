@@ -100,6 +100,12 @@ _INSERT_SQL = text(
             AND d.status = 'granted'
             AND d.deleted_at IS NULL
         WHERE bg.id = ANY(:grant_ids)
+            -- Re-check active state at insert time: a grant could have been
+            -- revoked/deleted between paging and this insert.
+            AND bg.member_id IS NOT NULL
+            AND bg.granted_at IS NOT NULL
+            AND bg.revoked_at IS NULL
+            AND bg.deleted_at IS NULL
     ) t
     ON CONFLICT (customer_id, member_id, file_id, benefit_id)
         WHERE deleted_at IS NULL

@@ -86,9 +86,7 @@ def downgrade() -> None:
         "downloadables",
         ["customer_id", "file_id", "benefit_id"],
     )
+    # The restored non-partial constraint provides uniqueness and customer_id
+    # coverage (leading column) again, so the member-aware indexes can go.
     op.drop_index(NEW_INDEX, table_name="downloadables")
     op.drop_index(CUSTOMER_INDEX, table_name="downloadables")
-    # The restored non-partial constraint provides uniqueness and customer_id
-    # coverage (leading column) again, so the new indexes can go.
-    op.drop_index(NEW_INDEX, table_name="downloadables")
-    op.drop_index(CUSTOMER_INDEX, table_name="downloadables", if_exists=True)

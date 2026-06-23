@@ -37,6 +37,7 @@ resource "render_postgres" "db" {
   environment_id = local.environment_id
   name           = "db-test"
   database_name  = "polar_cpit"
+  database_user  = "polar_cpit_user"
   plan           = "pro_4gb"
   region         = "ohio"
   version        = "15"
@@ -52,6 +53,7 @@ resource "render_postgres" "db" {
     prevent_destroy = true
     ignore_changes = [
       ip_allow_list,
+      database_user,
       database_name,
     ]
   }

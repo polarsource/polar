@@ -1440,15 +1440,40 @@ class OrganizationService:
         candidates = await repository.get_offboarding_past_period(cutoff)
         transitioned: list[Organization] = []
         for organization in candidates:
-            organization.set_status(OrganizationStatus.OFFBOARDED)
-            _append_internal_note(
+            self._transition_to_offboarded(
+                session,
                 organization,
                 "Automatically offboarded after the offboarding period elapsed.",
             )
-            session.add(organization)
-            enqueue_job("organization.offboarded", organization_id=organization.id)
             transitioned.append(organization)
         return transitioned
+
+    async def set_organization_offboarded(
+        self, session: AsyncSession, organization: Organization
+    ) -> Organization:
+        """Manually transition an offboarding org to the terminal offboarded state.
+
+        Same effect as the auto-offboard cron, but triggered from the
+        backoffice — used to complete offboarding before the wind-down period
+        has fully elapsed.
+        """
+        if organization.status != OrganizationStatus.OFFBOARDING:
+            raise OrganizationError(
+                "Only organizations that are offboarding can be set to offboarded.",
+                403,
+            )
+        self._transition_to_offboarded(
+            session, organization, "Manually offboarded from the backoffice."
+        )
+        return organization
+
+    def _transition_to_offboarded(
+        self, session: AsyncSession, organization: Organization, note: str
+    ) -> None:
+        organization.set_status(OrganizationStatus.OFFBOARDED)
+        _append_internal_note(organization, note)
+        session.add(organization)
+        enqueue_job("organization.offboarded", organization_id=organization.id)
 
     async def _exit_snooze_to_review(
         self, session: AsyncSession, organization: Organization

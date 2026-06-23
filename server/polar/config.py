@@ -184,7 +184,6 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "127.0.0.1"
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
-    REDIS_MAX_CONNECTIONS: int = 50
 
     # Emails
     EMAIL_RENDERER_BINARY_PATH: Annotated[

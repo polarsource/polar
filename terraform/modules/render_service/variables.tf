@@ -35,7 +35,6 @@ variable "api_service_config" {
     postgres_database      = optional(string, "polar_cpit")
     postgres_read_database = optional(string, "polar_cpit")
     redis_db               = optional(string, "0")
-    redis_max_connections  = optional(string, "50")
     plan                   = optional(string, "standard")
   })
 }
@@ -43,14 +42,13 @@ variable "api_service_config" {
 variable "workers" {
   description = "Map of worker configurations"
   type = map(object({
-    start_command         = string
-    image_url             = optional(string, "ghcr.io/polarsource/polar")
-    custom_domains        = optional(list(object({ name = string })), [])
-    dramatiq_prom_port    = optional(string, "10000")
-    plan                  = optional(string, "pro")
-    num_instances         = optional(number, 1)
-    database_pool_size    = optional(string, "5")
-    redis_max_connections = optional(string, "10")
+    start_command      = string
+    image_url          = optional(string, "ghcr.io/polarsource/polar")
+    custom_domains     = optional(list(object({ name = string })), [])
+    dramatiq_prom_port = optional(string, "10000")
+    plan               = optional(string, "pro")
+    num_instances      = optional(number, 1)
+    database_pool_size = optional(string, "5")
   }))
 }
 
@@ -295,12 +293,11 @@ variable "polar_self_config" {
 variable "cron_jobs" {
   description = "Map of cron job configurations. image_url defaults to the API service image. Uses 'latest' tag so Render pulls the newest image before each run."
   type = map(object({
-    schedule              = string
-    start_command         = string
-    image_url             = optional(string)
-    plan                  = optional(string, "starter")
-    database_pool_size    = optional(string, "5")
-    redis_max_connections = optional(string, "10")
+    schedule           = string
+    start_command      = string
+    image_url          = optional(string)
+    plan               = optional(string, "starter")
+    database_pool_size = optional(string, "5")
   }))
   default = {}
 }

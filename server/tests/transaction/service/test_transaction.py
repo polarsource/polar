@@ -3,6 +3,7 @@ from datetime import timedelta
 
 import pytest
 
+from polar.auth.models import AuthSubject
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
@@ -10,35 +11,38 @@ from polar.models import Account, Organization, Transaction, User, UserOrganizat
 from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.transaction import transaction as transaction_service
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.transaction.conftest import create_transaction
 
 
 @pytest.mark.asyncio
 class TestSearch:
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
     async def test_no_access(
         self,
         session: AsyncSession,
-        user_second: User,
+        auth_subject: AuthSubject[User],
         all_transactions: list[Transaction],
     ) -> None:
         results, count = await transaction_service.search(
-            session, user_second, pagination=PaginationParams(1, 10)
+            session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
         assert count == 0
         assert len(results) == 0
 
+    @pytest.mark.auth
     async def test_no_filter(
         self,
         session: AsyncSession,
-        user: User,
+        auth_subject: AuthSubject[User],
         user_organization: UserOrganization,
         readable_user_transactions: list[Transaction],
         all_transactions: list[Transaction],
     ) -> None:
         results, count = await transaction_service.search(
-            session, user, pagination=PaginationParams(1, 10)
+            session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
         assert count == len(readable_user_transactions)
@@ -54,11 +58,12 @@ class TestSearch:
             if result.order is not None:
                 result.order.product
 
+    @pytest.mark.auth
     async def test_filter_type(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[User],
         account: Account,
-        user: User,
         user_organization: UserOrganization,
         readable_user_transactions: list[Transaction],
         all_transactions: list[Transaction],
@@ -68,7 +73,7 @@ class TestSearch:
 
         results, count = await transaction_service.search(
             session,
-            user,
+            auth_subject,
             type=TransactionType.payout,
             pagination=PaginationParams(1, 10),
         )
@@ -83,10 +88,11 @@ class TestSearch:
         for result in results:
             assert result.id in payout_transactions_id
 
+    @pytest.mark.auth
     async def test_filter_account(
         self,
         session: AsyncSession,
-        user: User,
+        auth_subject: AuthSubject[User],
         account: Account,
         user_organization: UserOrganization,
         account_transactions: list[Transaction],
@@ -96,7 +102,10 @@ class TestSearch:
         session.expunge_all()
 
         results, count = await transaction_service.search(
-            session, user, account_id=account.id, pagination=PaginationParams(1, 10)
+            session,
+            auth_subject,
+            account_id=account.id,
+            pagination=PaginationParams(1, 10),
         )
 
         assert count == len(account_transactions)
@@ -107,9 +116,11 @@ class TestSearch:
         for result in results:
             assert result.id in account_transactions_id
 
+    @pytest.mark.auth
     async def test_filter_payment_user(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[User],
         user: User,
         user_organization: UserOrganization,
         user_transactions: list[Transaction],
@@ -120,7 +131,7 @@ class TestSearch:
 
         results, count = await transaction_service.search(
             session,
-            user,
+            auth_subject,
             payment_user_id=user.id,
             pagination=PaginationParams(1, 10),
         )
@@ -133,10 +144,11 @@ class TestSearch:
         for result in results:
             assert result.id in user_transactions_id
 
+    @pytest.mark.auth
     async def test_filter_payment_organization(
         self,
         session: AsyncSession,
-        user: User,
+        auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
         organization_transactions: list[Transaction],
@@ -147,7 +159,7 @@ class TestSearch:
 
         results, count = await transaction_service.search(
             session,
-            user,
+            auth_subject,
             payment_organization_id=organization.id,
             pagination=PaginationParams(1, 10),
         )
@@ -248,17 +260,21 @@ class TestGetSummary:
 
 @pytest.mark.asyncio
 class TestLookup:
-    async def test_not_existing(self, session: AsyncSession, user_second: User) -> None:
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
+    async def test_not_existing(
+        self, session: AsyncSession, auth_subject: AuthSubject[User]
+    ) -> None:
         # then
         session.expunge_all()
 
         with pytest.raises(ResourceNotFound):
-            await transaction_service.lookup(session, uuid.uuid4(), user_second)
+            await transaction_service.lookup(session, uuid.uuid4(), auth_subject)
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
     async def test_user_not_accessible(
         self,
         session: AsyncSession,
-        user_second: User,
+        auth_subject: AuthSubject[User],
         readable_user_transactions: list[Transaction],
         all_transactions: list[Transaction],
     ) -> None:
@@ -267,13 +283,14 @@ class TestLookup:
 
         with pytest.raises(ResourceNotFound):
             await transaction_service.lookup(
-                session, readable_user_transactions[0].id, user_second
+                session, readable_user_transactions[0].id, auth_subject
             )
 
+    @pytest.mark.auth
     async def test_valid(
         self,
         session: AsyncSession,
-        user: User,
+        auth_subject: AuthSubject[User],
         user_organization: UserOrganization,
         readable_user_transactions: list[Transaction],
         all_transactions: list[Transaction],
@@ -282,7 +299,7 @@ class TestLookup:
         session.expunge_all()
 
         transaction = await transaction_service.lookup(
-            session, readable_user_transactions[0].id, user
+            session, readable_user_transactions[0].id, auth_subject
         )
 
         assert transaction.id == readable_user_transactions[0].id

@@ -175,7 +175,18 @@ async def get_auth_subject(
 
     user_session = await get_user_session(request, session)
     if user_session is not None:
-        return AuthSubject(user_session.user, set(user_session.scopes), user_session)
+        organization_ids = (
+            frozenset(
+                scope.organization_id for scope in user_session.organization_scopes
+            )
+            or None
+        )
+        return AuthSubject(
+            user_session.user,
+            set(user_session.scopes),
+            user_session,
+            organization_ids,
+        )
 
     return AuthSubject(Anonymous(), set(), None)
 

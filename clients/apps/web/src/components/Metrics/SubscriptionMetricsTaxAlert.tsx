@@ -1,40 +1,30 @@
-import { schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
-import { Box } from '@polar-sh/orbit/Box'
+import type { schemas } from '@polar-sh/client'
+import { SubscriptionMetricsTaxAlertClient } from './SubscriptionMetricsTaxAlertClient'
 
 const AFFECTED_TAX_BEHAVIORS = new Set<schemas['TaxBehaviorOption']>([
   'location',
   'inclusive',
 ])
 
-interface OrganizationWithTaxBehavior {
-  organization: Pick<schemas['Organization'], 'default_tax_behavior'>
+const SUBSCRIPTION_METRICS_TAX_CHANGE_TIMESTAMP = Date.parse(
+  '2026-06-23T07:47:00.000Z',
+)
+
+interface SubscriptionMetricsTaxAlertProps {
+  organization: schemas['Organization']
 }
 
-export const shouldShowSubscriptionMetricsTaxAlert = ({
-  default_tax_behavior,
-}: OrganizationWithTaxBehavior['organization']) => {
-  return AFFECTED_TAX_BEHAVIORS.has(default_tax_behavior)
-}
+export const SubscriptionMetricsTaxAlert = ({
+  organization,
+}: SubscriptionMetricsTaxAlertProps) => {
+  const shouldShow =
+    Date.parse(organization.created_at) <
+      SUBSCRIPTION_METRICS_TAX_CHANGE_TIMESTAMP &&
+    AFFECTED_TAX_BEHAVIORS.has(organization.default_tax_behavior)
 
-export const SubscriptionMetricsTaxAlert = () => {
-  return (
-    <Box
-      flexDirection={'column'}
-      rowGap="xs"
-      borderRadius="l"
-      backgroundColor="background-card"
-      padding="l"
-    >
-      <Text as="strong">Subscription metrics now exclude tax</Text>
-      <Box>
-        <Text color="muted">
-          We corrected subscription metrics to be tax-exclusive, matching your
-          revenue metrics. Because your organization uses location-based or
-          inclusive tax behavior, these subscription metrics may be a bit lower
-          than before.
-        </Text>
-      </Box>
-    </Box>
-  )
+  if (!shouldShow) {
+    return null
+  }
+
+  return <SubscriptionMetricsTaxAlertClient organizationId={organization.id} />
 }

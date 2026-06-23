@@ -1,6 +1,5 @@
 import ClientPage from '@/components/Metrics/dashboards/ClientPage'
 import DashboardDetailClientPage from '@/components/Metrics/dashboards/DashboardDetailClientPage'
-import { shouldShowSubscriptionMetricsTaxAlert } from '@/components/Metrics/SubscriptionMetricsTaxAlert'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { fromISODate, METRIC_GROUPS, toISODate } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
@@ -140,13 +139,5 @@ export default async function Page(props: {
     redirect(`${redirectPath}?${urlSearchParams}`, RedirectType.replace)
   }
 
-  return (
-    <ClientPage
-      metric={metric}
-      organizationId={organization.id}
-      showSubscriptionMetricsTaxAlert={shouldShowSubscriptionMetricsTaxAlert(
-        organization,
-      )}
-    />
-  )
+  return <ClientPage metric={metric} organization={organization} />
 }

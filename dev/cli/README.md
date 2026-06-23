@@ -54,6 +54,19 @@ dev seed --reset        # Recreate database and load fresh seed data
 dev help                # Show all commands
 ```
 
+### Visual Regression Testing
+
+```bash
+dev snap                            # Interactive: pick branch and URLs to test
+dev snap --branch my-feature        # Test a specific branch
+dev snap --url /dashboard/settings  # Test specific URL(s)
+dev snap --detect                   # Auto-detect URLs from git diff
+dev snap --viewport desktop,mobile  # Test multiple viewports
+dev snap --interactive              # Show browser (headed mode)
+```
+
+Captures before/after screenshots across branches and generates a visual diff report.
+
 ## Docker dev environment
 
 One shared infra stack (postgres, redis, minio, tinybird) plus one app stack (api, worker, web) per worktree, each on its own DB / Redis index / buckets. Service-aware commands auto-route by service name (`api`/`worker`/`web` → this instance, `db`/`redis`/`minio`/`tinybird` → shared). `dev docker --help` for the full list.

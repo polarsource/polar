@@ -103,6 +103,7 @@ resource "aws_lambda_function" "task" {
 
   environment {
     variables = merge(
+      { SERVICE_NAME = local.function_name },
       var.environment_variables,
       var.secret_environment_variables,
       { POLAR_DATABASE_POOL_SIZE = "1" },

@@ -22,7 +22,13 @@ const COMPONENTS = [
   { slug: 'grid-item', file: 'components/GridItem.tsx', export: 'GridItem' },
   { slug: 'text', file: 'components/Text.tsx', export: 'Text' },
   { slug: 'button', file: 'components/Button.tsx', export: 'Button' },
+  {
+    slug: 'button-group',
+    file: 'components/ButtonGroup.tsx',
+    export: 'ButtonGroup',
+  },
   { slug: 'avatar', file: 'components/Avatar.tsx', export: 'Avatar' },
+  { slug: 'alert', file: 'components/Alert.tsx', export: 'Alert' },
   { slug: 'pill', file: 'components/Pill.tsx', export: 'Pill' },
   { slug: 'status', file: 'components/Status.tsx', export: 'Status' },
   {

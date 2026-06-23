@@ -1,7 +1,10 @@
 import { cva } from 'class-variance-authority'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
-import { ButtonProps, Button as ShadcnButton } from './ui/button'
+import {
+  Button as ShadcnButton,
+  ButtonProps as ShadcnButtonProps,
+} from './ui/button'
 
 const buttonVariants = cva(
   'relative font-normal inline-flex items-center cursor-pointer font-display font-semibold select-none justify-center rounded-full text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap',
@@ -36,6 +39,12 @@ const buttonVariants = cva(
   },
 )
 
+export type ButtonProps = ShadcnButtonProps & {
+  wrapperClassNames?: string
+  loading?: boolean
+  fullWidth?: boolean
+}
+
 const Button = ({
   ref,
   className,
@@ -50,9 +59,6 @@ const Button = ({
   ...props
 }: ButtonProps & {
   ref?: React.RefObject<HTMLButtonElement>
-  wrapperClassNames?: string
-  loading?: boolean
-  fullWidth?: boolean
 }) => {
   return (
     <ShadcnButton
@@ -139,5 +145,3 @@ export const RawButton = ({
 }
 
 RawButton.displayName = 'RawButton'
-
-export type { ButtonProps }

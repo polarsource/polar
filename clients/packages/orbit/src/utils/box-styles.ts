@@ -274,6 +274,9 @@ export const backgroundColorStyles = stylex.create({
   'background-inverse': {
     backgroundColor: backgroundColors['background-inverse'],
   },
+  'background-accent': {
+    backgroundColor: backgroundColors['background-accent'],
+  },
   'background-warning': {
     backgroundColor: backgroundColors['background-warning'],
   },

@@ -31,6 +31,7 @@ type TextTag =
 
 export type TextVariant =
   | 'default'
+  | 'title'
   | 'body'
   | 'label'
   | 'caption'
@@ -74,6 +75,7 @@ export type TextStyleProps = {
 // `<p>`, which is the real accessibility win here.
 const VARIANT_DEFAULT_TAG: Record<TextVariant, TextTag> = {
   default: 'p',
+  title: 'p',
   body: 'p',
   label: 'p',
   caption: 'p',

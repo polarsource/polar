@@ -25,8 +25,7 @@ import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
 import { ClientResponseError, type schemas } from '@polar-sh/client'
 import { AcceptedLocale } from '@polar-sh/i18n'
-import Alert from '@polar-sh/ui/components/atoms/Alert'
-import { Avatar } from '@polar-sh/orbit'
+import { Alert, Avatar } from '@polar-sh/orbit'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import {
   Dialog,
@@ -44,7 +43,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Slideshow } from '../Products/Slideshow'
 import { CheckoutDiscountInput } from './CheckoutDiscountInput'
 import { CheckoutProductDescription } from './CheckoutProductDescription'
-import { twMerge } from 'tailwind-merge'
 
 const PaymentNotReadyBanner = ({
   organizationStatus,
@@ -56,25 +54,19 @@ const PaymentNotReadyBanner = ({
   const isTestMode = organizationStatus === 'created'
 
   return (
-    <Alert color={isTestMode ? 'gray' : 'red'}>
-      <div className="flex flex-col gap-y-1 p-2">
-        <div
-          className={twMerge(
-            'text-sm font-medium',
-            isTestMode ? 'text-black dark:text-white' : '',
-          )}
-        >
-          {isTestMode
-            ? `${organizationName} is in test mode`
-            : 'Payments are currently unavailable'}
-        </div>
-        <div className="text-sm">
-          {isTestMode
-            ? `You can test checkout with free products or 100% discount orders.`
-            : `${organizationName} doesn't allow payments.`}
-        </div>
-      </div>
-    </Alert>
+    <Alert
+      variant={isTestMode ? 'info' : 'danger'}
+      title={
+        isTestMode
+          ? `${organizationName} is in test mode`
+          : 'Payments are currently unavailable'
+      }
+      description={
+        isTestMode
+          ? `You can test checkout with free products or 100% discount orders.`
+          : `${organizationName} doesn't allow payments.`
+      }
+    />
   )
 }
 

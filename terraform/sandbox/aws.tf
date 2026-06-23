@@ -34,7 +34,7 @@ module "dummy_lambda_worker" {
   name                 = "dummy"
   queue_name           = "polar-sandbox-tasks-dummy"
   image_uri            = "${module.lambda_worker_ecr.repository_url}:latest"
-  enabled              = false
+  enabled              = true
   reserved_concurrency = null
   subnet_ids           = local.lambda_subnet_ids
   security_group_ids   = local.lambda_security_group_ids
@@ -69,6 +69,35 @@ module "dummy_lambda_worker" {
     POLAR_SENTRY_DSN      = var.backend_sentry_dsn_sandbox
     TAILSCALE_AUTHKEY     = var.lambda_worker_tailscale_token
   }
+}
+
+# =============================================================================
+# Task producer IAM user (SQS send-only, used by the Render backend)
+# =============================================================================
+
+resource "aws_iam_user" "tasks_producer" {
+  name = "polar-sandbox-tasks-producer"
+}
+
+resource "aws_iam_access_key" "tasks_producer" {
+  user = aws_iam_user.tasks_producer.name
+}
+
+data "aws_iam_policy_document" "tasks_producer" {
+  statement {
+    sid = "SendTasks"
+    actions = [
+      "sqs:SendMessage",
+      "sqs:GetQueueUrl",
+    ]
+    resources = [module.dummy_lambda_worker.queue_arn]
+  }
+}
+
+resource "aws_iam_user_policy" "tasks_producer" {
+  name   = "polar-sandbox-tasks-producer"
+  user   = aws_iam_user.tasks_producer.name
+  policy = data.aws_iam_policy_document.tasks_producer.json
 }
 
 # =============================================================================

@@ -39,7 +39,7 @@ export const useSubscription = (
       unwrap(api.GET('/v1/subscriptions/{id}', { params: { path: { id } } })),
     retry: defaultRetry,
     initialData,
-    enabled: options?.enabled ?? !!id,
+    enabled: options?.enabled ?? true,
   })
 
 export const useSubscriptionChargePreview = (id: string) =>

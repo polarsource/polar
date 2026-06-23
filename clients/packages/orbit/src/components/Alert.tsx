@@ -7,7 +7,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react'
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { Box } from './Box'
 import { ButtonGroup, type ButtonGroupActions } from './ButtonGroup'
 import { Grid } from './Grid'
@@ -60,9 +60,10 @@ export interface AlertProps {
    */
   title: string
   /**
-   * Supporting copy shown beneath the title. Omit for a title-only alert.
+   * Supporting copy shown beneath the title. Accepts inline elements (links,
+   * bold text, …), not just a plain string. Omit for a title-only alert.
    */
-  description?: string
+  description?: ReactNode
   /**
    * Swaps the variant icon for a spinner, for an alert whose subject is still
    * resolving. Colors and layout are unchanged.

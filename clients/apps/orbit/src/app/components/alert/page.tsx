@@ -57,6 +57,17 @@ const loadingCode = `<Alert
   loading
 />`
 
+const richDescriptionCode = `<Alert
+  variant="info"
+  title="Domain not verified"
+  description={
+    <>
+      Add the TXT record, then <strong>retry</strong>. See the{' '}
+      <a href="/docs/domains">setup guide</a> for details.
+    </>
+  }
+/>`
+
 const dismissCode = `<Alert
   variant="warning"
   title="Unsaved changes"
@@ -90,9 +101,9 @@ const alertProps: PropRow[] = [
   },
   {
     name: 'description',
-    type: 'string',
+    type: 'ReactNode',
     description:
-      'Supporting copy beneath the title. Omit for a title-only alert.',
+      'Supporting copy beneath the title. Accepts inline elements (links, bold text, …), not just a string. Omit for a title-only alert.',
   },
   {
     name: 'loading',
@@ -158,6 +169,24 @@ export default function AlertPage() {
       >
         <Example code={titleOnlyCode}>
           <Alert variant="info" title="Title-only alerts are allowed too" />
+        </Example>
+      </Section>
+
+      <Section
+        title="Rich description"
+        description="The description accepts inline elements — links, bold text and the like — not just a plain string."
+      >
+        <Example code={richDescriptionCode}>
+          <Alert
+            variant="info"
+            title="Domain not verified"
+            description={
+              <>
+                Add the TXT record, then <strong>retry</strong>. See the{' '}
+                <a href="/docs/domains">setup guide</a> for details.
+              </>
+            }
+          />
         </Example>
       </Section>
 

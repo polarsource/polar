@@ -2682,7 +2682,7 @@
       "type": "boolean",
       "source": {
         "path": "clients/packages/orbit/src/components/Button.tsx",
-        "line": 55
+        "line": 45
       }
     },
     {
@@ -2690,7 +2690,7 @@
       "type": "boolean",
       "source": {
         "path": "clients/packages/orbit/src/components/Button.tsx",
-        "line": 54
+        "line": 44
       }
     },
     {
@@ -2714,7 +2714,7 @@
       "type": "string",
       "source": {
         "path": "clients/packages/orbit/src/components/Button.tsx",
-        "line": 53
+        "line": 43
       }
     }
   ],
@@ -2726,7 +2726,7 @@
       "description": "One or two actions. The first renders as the primary (default) button, the second as a quieter ghost button.",
       "source": {
         "path": "clients/packages/orbit/src/components/ButtonGroup.tsx",
-        "line": 27
+        "line": 23
       }
     },
     {
@@ -2735,7 +2735,7 @@
       "description": "Button size applied to every action in the group.",
       "source": {
         "path": "clients/packages/orbit/src/components/ButtonGroup.tsx",
-        "line": 31
+        "line": 27
       }
     }
   ],
@@ -2807,7 +2807,7 @@
       "description": "The headline of the alert, rendered in the variant's accent color.",
       "source": {
         "path": "clients/packages/orbit/src/components/Alert.tsx",
-        "line": 71
+        "line": 61
       }
     },
     {
@@ -2816,16 +2816,16 @@
       "description": "One or two call-to-action buttons, rendered bottom-right via ButtonGroup. The first is the primary action, the second a quieter ghost button.",
       "source": {
         "path": "clients/packages/orbit/src/components/Alert.tsx",
-        "line": 90
+        "line": 81
       }
     },
     {
       "name": "description",
-      "type": "string",
-      "description": "Supporting copy shown beneath the title. Omit for a title-only alert.",
+      "type": "ReactNode",
+      "description": "Supporting copy shown beneath the title. Accepts inline elements (links, bold text, …), not just a plain string. Omit for a title-only alert.",
       "source": {
         "path": "clients/packages/orbit/src/components/Alert.tsx",
-        "line": 75
+        "line": 66
       }
     },
     {
@@ -2834,7 +2834,7 @@
       "description": "Swaps the variant icon for a spinner, for an alert whose subject is still resolving. Colors and layout are unchanged.",
       "source": {
         "path": "clients/packages/orbit/src/components/Alert.tsx",
-        "line": 80
+        "line": 71
       }
     },
     {
@@ -2843,7 +2843,7 @@
       "description": "Called when the dismiss button is pressed. Provide it to render a dismiss button; omit it for a persistent alert.",
       "source": {
         "path": "clients/packages/orbit/src/components/Alert.tsx",
-        "line": 85
+        "line": 76
       }
     },
     {
@@ -2852,7 +2852,7 @@
       "description": "Picks the icon, surface tint and accent color in one go. Use it to map the alert to its meaning rather than styling icon and colors by hand.",
       "source": {
         "path": "clients/packages/orbit/src/components/Alert.tsx",
-        "line": 67
+        "line": 57
       }
     }
   ],

@@ -75,7 +75,20 @@ export default function ClientPage({
             <Alert
               variant="warning"
               title="Sandbox notice"
-              description="In sandbox, customer-facing emails are only delivered to members of your organization. Sub-addressing aliases like you+test@example.com are accepted."
+              description={
+                <>
+                  In sandbox, customer-facing emails are only delivered to{' '}
+                  <Link
+                    href="./members"
+                    className="font-medium underline hover:no-underline"
+                  >
+                    members of your organization
+                  </Link>
+                  . Sub-addressing aliases like{' '}
+                  <strong className="font-medium">you+test@example.com</strong>{' '}
+                  are accepted.
+                </>
+              }
             />
           )}
           <OrganizationCustomerEmailSettings
@@ -105,8 +118,18 @@ export default function ClientPage({
           {CONFIG.IS_SANDBOX && (
             <Alert
               title="Preview features in sandbox"
-              description="To enable paid access to preview features in sandbox, go to
-              Settings → Billing."
+              description={
+                <>
+                  To enable paid access to preview features in sandbox, go to{' '}
+                  <Link
+                    href="./billing"
+                    className="font-medium underline hover:no-underline"
+                  >
+                    Settings → Billing
+                  </Link>
+                  .
+                </>
+              }
             />
           )}
           <FeatureSettings

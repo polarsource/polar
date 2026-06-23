@@ -36,3 +36,15 @@ export const canRetryOrderPayment = (
     order.subscription !== null
   )
 }
+
+export function isOrderInDunning(
+  order: schemas['Order'],
+  payments: schemas['Payment'][],
+): boolean {
+  return (
+    !order.paid &&
+    order.subscription_id !== null &&
+    (!!order.next_payment_attempt_at ||
+      payments.some((payment) => payment.status === 'failed'))
+  )
+}

@@ -6,6 +6,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { DownloadInvoiceDashboard } from '@/components/Orders/DownloadInvoice'
+import { OrderDunningBanner } from '@/components/Orders/OrderDunningBanner'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
 import PaymentMethod from '@/components/PaymentMethod/PaymentMethod'
 import PaymentStatus from '@/components/PaymentStatus/PaymentStatus'
@@ -17,7 +18,7 @@ import {
 } from '@/components/Refunds/utils'
 import { SeatViewOnlyTable } from '@/components/Seats/SeatViewOnlyTable'
 import { DetailRow } from '@/components/Shared/DetailRow'
-import { useCustomFields, useProduct } from '@/hooks/queries'
+import { useCustomFields, useProduct, useSubscription } from '@/hooks/queries'
 import { useDisputes } from '@/hooks/queries/disputes'
 import { useOrder } from '@/hooks/queries/orders'
 import { usePayments } from '@/hooks/queries/payments'
@@ -28,6 +29,7 @@ import {
   DisputeStatusDisplayTitle,
 } from '@/utils/dispute'
 import { formatCountry } from '@/utils/formatters'
+import { isOrderInDunning } from '@/utils/order'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { ArrowUpRightIcon } from 'lucide-react'
 import { schemas } from '@polar-sh/client'
@@ -84,6 +86,16 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const availableSeats = seatsData?.available_seats || 0
   const seats = seatsData?.seats || []
 
+  const orderPayments = payments?.items ?? []
+  const showDunningBanner =
+    !!order && isOrderInDunning(order, orderPayments)
+
+  const { data: dunningSubscription } = useSubscription(
+    order?.subscription_id ?? '',
+    undefined,
+    { enabled: showDunningBanner },
+  )
+
   if (!order) {
     return null
   }
@@ -117,6 +129,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
       }
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:shadow-none"
     >
+      {showDunningBanner && dunningSubscription ? (
+        <OrderDunningBanner
+          organization={organization}
+          order={order}
+          subscription={dunningSubscription}
+          payments={orderPayments}
+        />
+      ) : null}
+
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
         <div className="flex flex-col gap-6 p-4 md:p-8">
           <div className="flex flex-col gap-1">

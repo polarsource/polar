@@ -11011,6 +11011,11 @@ export interface components {
        */
       method: 'card'
       /**
+       * @description What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry.
+       * @example subscription_cycle
+       */
+      trigger?: components['schemas']['PaymentTrigger'] | null
+      /**
        * Decline Reason
        * @description Error code, if the payment was declined.
        * @example insufficient_funds
@@ -16002,6 +16007,11 @@ export interface components {
       subscription_id: string | null
       /** Checkout Id */
       checkout_id: string | null
+      /**
+       * Next Payment Attempt At
+       * @description When the next automatic payment retry is scheduled. `null` if the order is not in dunning or all retries have been exhausted.
+       */
+      next_payment_attempt_at?: string | null
       product: components['schemas']['CustomerOrderProduct'] | null
       subscription: components['schemas']['CustomerOrderSubscription'] | null
       /**
@@ -16015,11 +16025,6 @@ export interface components {
        * @example Pro Plan
        */
       description: string
-      /**
-       * Next Payment Attempt At
-       * @description When the next payment retry is scheduled
-       */
-      next_payment_attempt_at?: string | null
       /**
        * Refundable Amount
        * @description Amount in cents that can still be refunded (net, before taxes). Accounts for any applied customer balance and previous refunds.
@@ -16304,6 +16309,11 @@ export interface components {
        * @description The timestamp when the subscription ended.
        */
       ended_at: string | null
+      /**
+       * Past Due At
+       * @description The timestamp when the subscription entered `past_due` status.
+       */
+      past_due_at?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -17725,6 +17735,11 @@ export interface components {
        * @description The timestamp when the subscription ended.
        */
       ended_at: string | null
+      /**
+       * Past Due At
+       * @description The timestamp when the subscription entered `past_due` status.
+       */
+      past_due_at?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -20265,6 +20280,11 @@ export interface components {
        * @example card
        */
       method: string
+      /**
+       * @description What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry.
+       * @example subscription_cycle
+       */
+      trigger?: components['schemas']['PaymentTrigger'] | null
       /**
        * Decline Reason
        * @description Error code, if the payment was declined.
@@ -22912,6 +22932,11 @@ export interface components {
       subscription_id: string | null
       /** Checkout Id */
       checkout_id: string | null
+      /**
+       * Next Payment Attempt At
+       * @description When the next automatic payment retry is scheduled. `null` if the order is not in dunning or all retries have been exhausted.
+       */
+      next_payment_attempt_at?: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Custom Field Data
@@ -23625,6 +23650,11 @@ export interface components {
        * @description The timestamp when the subscription ended.
        */
       ended_at: string | null
+      /**
+       * Past Due At
+       * @description The timestamp when the subscription entered `past_due` status.
+       */
+      past_due_at?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -26804,6 +26834,17 @@ export interface components {
      * @enum {string}
      */
     PaymentStatus: 'pending' | 'succeeded' | 'failed'
+    /**
+     * PaymentTrigger
+     * @enum {string}
+     */
+    PaymentTrigger:
+      | 'purchase'
+      | 'subscription_cycle'
+      | 'retry_dunning'
+      | 'retry_customer'
+      | 'retry_payment_method_update'
+      | 'retry_admin'
     /** Payout */
     Payout: {
       /**
@@ -29634,6 +29675,11 @@ export interface components {
        * @description The timestamp when the subscription ended.
        */
       ended_at: string | null
+      /**
+       * Past Due At
+       * @description The timestamp when the subscription entered `past_due` status.
+       */
+      past_due_at?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -59296,6 +59342,16 @@ export const paymentSortPropertyValues: ReadonlyArray<
 export const paymentStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PaymentStatus']
 > = ['pending', 'succeeded', 'failed']
+export const paymentTriggerValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PaymentTrigger']
+> = [
+  'purchase',
+  'subscription_cycle',
+  'retry_dunning',
+  'retry_customer',
+  'retry_payment_method_update',
+  'retry_admin',
+]
 export const payoutAccountTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PayoutAccountType']
 > = ['stripe', 'manual']

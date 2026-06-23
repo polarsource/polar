@@ -1,0 +1,24 @@
+server/tests/worker/test_health.py
+  s_55425a4ea3c9b4::t_833180b86acc24 41,45-50
+  s_55425a4ea3c9b4::t_5c5ef326f51ebd 1,10
+  s_55425a4ea3c9b4::t_89ae11a389ed07 102-134
+server/polar/worker/_health.py
+  s_55425a4ea3c9b4::t_d890aad7cf65f1 63-76
+  s_55425a4ea3c9b4::t_122006438558ba 13-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "33a323ebe5a862a191a49c8d9401ce974a224835",
+  "prompts": {},
+  "sessions": {
+    "s_55425a4ea3c9b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "142d8293-14bc-46bf-a97c-7bc7f8358d23",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

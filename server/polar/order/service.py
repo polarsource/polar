@@ -100,7 +100,6 @@ from polar.payment_method.service import payment_method as payment_method_servic
 from polar.product.guard import (
     is_custom_price,
     is_fixed_price,
-    is_seat_price,
     is_static_price,
 )
 from polar.product.price_set import (
@@ -614,11 +613,11 @@ class OrderService:
             session, checkout, OrderBillingReasonInternal.purchase, payment
         )
 
-        # For seat-based orders, benefits are granted when seats are claimed
-        # For non-seat orders, grant benefits immediately
-        prices = checkout.prices[product.id]
-        has_seat_price = any(is_seat_price(price) for price in prices)
-        if not has_seat_price:
+        # Key the decision off the seats actually purchased on this order, not the
+        # product's price catalog: a product may compose a fixed price with a seat
+        # price, so only `order.seats` reflects whether seats were really bought.
+        if order.seats is None:
+            # Non-seat orders grant benefits immediately
             enqueue_job(
                 "benefit.enqueue_benefits_grants",
                 task="grant",
@@ -626,6 +625,11 @@ class OrderService:
                 product_id=product.id,
                 order_id=order.id,
             )
+        else:
+            # Seat-based orders grant benefits when seats are claimed; upgrade the
+            # buyer to a 'team' customer so they can manage and claim their seats
+            # (mirrors the subscription flow)
+            await customer_service.upgrade_to_team(session, order.customer)
 
         # Trigger notifications
         organization = checkout.organization

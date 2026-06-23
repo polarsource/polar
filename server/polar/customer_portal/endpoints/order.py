@@ -139,6 +139,7 @@ async def update(
     status_code=202,
     summary="Generate Order Invoice",
     responses={
+        404: OrderNotFound,
         422: {
             "description": "Order is missing billing name or address.",
             "model": MissingInvoiceBillingDetails.schema(),

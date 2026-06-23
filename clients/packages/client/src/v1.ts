@@ -39264,6 +39264,15 @@ export interface operations {
           'application/json': unknown
         }
       }
+      /** @description Order not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
       /** @description Order is missing billing name or address. */
       422: {
         headers: {
@@ -45224,6 +45233,15 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+        }
+      }
+      /** @description Order not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Order is missing billing name or address. */

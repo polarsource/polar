@@ -18,7 +18,7 @@ from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 from polar.subscription.repository import SubscriptionRepository
 
-from .auth import SeatWrite
+from .auth import SeatRead, SeatWrite
 from .repository import CustomerSeatRepository
 from .schemas import CustomerSeat as CustomerSeatSchema
 from .schemas import (
@@ -113,7 +113,7 @@ async def assign_seat(
     },
 )
 async def list_seats(
-    auth_subject: SeatWrite,
+    auth_subject: SeatRead,
     session: AsyncSession = Depends(get_db_session),
     subscription_id: Annotated[UUID4 | None, Query()] = None,
     order_id: Annotated[UUID4 | None, Query()] = None,

@@ -69,24 +69,15 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    with op.get_context().autocommit_block():
-        op.drop_index(
-            NEW_INDEX,
-            table_name="downloadables",
-            postgresql_concurrently=True,
-        )
-        # The restored non-partial constraint covers customer_id again.
-        op.drop_index(
-            CUSTOMER_INDEX,
-            table_name="downloadables",
-            if_exists=True,
-            postgresql_concurrently=True,
-        )
-
+    # Run as a single transaction so a failure can never leave the table without
+    # a uniqueness guard: restore the old constraint first, then drop the new
+    # indexes, and roll the whole thing back on any error. Index drops are not
+    # concurrent here, but create_unique_constraint already needs an exclusive
+    # lock and this is a rollback path, not the live forward deploy.
     op.execute("SET LOCAL lock_timeout = '5s'")
     # The per-member rows would violate the customer-level constraint; keep one
-    # row per (customer, file, benefit) so the constraint can be restored,
-    # preferring live rows over soft-deleted ones, then oldest.
+    # row per (customer, file, benefit), preferring live rows over soft-deleted
+    # ones, then oldest.
     op.execute(
         """
         DELETE FROM downloadables d
@@ -106,3 +97,7 @@ def downgrade() -> None:
         "downloadables",
         ["customer_id", "file_id", "benefit_id"],
     )
+    # The restored non-partial constraint provides uniqueness and customer_id
+    # coverage (leading column) again, so the new indexes can go.
+    op.drop_index(NEW_INDEX, table_name="downloadables")
+    op.drop_index(CUSTOMER_INDEX, table_name="downloadables", if_exists=True)

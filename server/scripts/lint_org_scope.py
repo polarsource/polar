@@ -61,8 +61,11 @@ def _references_subject(node: ast.AST) -> bool:
 
 
 def _is_membership_expansion(node: ast.AST) -> bool:
-    """True for `select(UserOrganization.organization_id)` — hand-building the
-    user→accessible-orgs subquery instead of calling the helper."""
+    """True for a `select(...)` projecting `UserOrganization.organization_id` —
+    hand-building the user→accessible-orgs subquery instead of calling the helper.
+    Catches wrapped/unpacked forms too (e.g. `select(distinct(...))` or
+    `select(UserOrganization.organization_id.label(...))`) by scanning each
+    projected argument's subtree."""
     if not isinstance(node, ast.Call):
         return False
     func = node.func
@@ -72,9 +75,9 @@ def _is_membership_expansion(node: ast.AST) -> bool:
     if not is_select:
         return False
     return any(
-        _is_model_attr(arg) and arg.attr == "organization_id"
+        _is_model_attr(descendant) and descendant.attr == "organization_id"
         for arg in node.args
-        if isinstance(arg, ast.Attribute)
+        for descendant in ast.walk(arg)
     )
 
 
@@ -101,6 +104,7 @@ def check_file(path: Path) -> list[tuple[Path, int, str]]:
 
     source_lines = source.splitlines()
     violations: list[tuple[Path, int, str]] = []
+    seen_lines: set[int] = set()
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
@@ -117,6 +121,10 @@ def check_file(path: Path) -> list[tuple[Path, int, str]]:
 
         if _line_has_noqa(source_lines, node.lineno):
             continue
+
+        if node.lineno in seen_lines:  # one query can match both branches
+            continue
+        seen_lines.add(node.lineno)
 
         violations.append(
             (

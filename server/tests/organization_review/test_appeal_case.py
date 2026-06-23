@@ -353,14 +353,14 @@ class TestPostAppealGreeting:
 
         message_repository = SupportCaseMessageRepository.from_session(session)
         messages = await message_repository.list_by_case(case.id)
-        platform = [
+        greeting = [
             message
             for message in messages
-            if message.author_kind == SupportCaseMessageAuthorKind.platform
+            if message.author_kind == SupportCaseMessageAuthorKind.system
             and message.type == SupportCaseMessageType.chat
         ]
-        assert len(platform) == 1
-        assert platform[0].body == HUMAN_REVIEW_GREETING
+        assert len(greeting) == 1
+        assert greeting[0].body == HUMAN_REVIEW_GREETING
         publish_mock.assert_called_once_with(case.organization_id)
 
     async def test_idempotent(
@@ -390,9 +390,10 @@ class TestPostAppealGreeting:
 
         message_repository = SupportCaseMessageRepository.from_session(session)
         messages = await message_repository.list_by_case(case.id)
-        platform = [
+        greeting = [
             message
             for message in messages
-            if message.author_kind == SupportCaseMessageAuthorKind.platform
+            if message.author_kind == SupportCaseMessageAuthorKind.system
+            and message.type == SupportCaseMessageType.chat
         ]
-        assert len(platform) == 1
+        assert len(greeting) == 1

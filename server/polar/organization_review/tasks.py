@@ -395,14 +395,20 @@ async def post_appeal_greeting(case_id: uuid.UUID) -> None:
         existing = await message_repository.list_by_case(case_id, visible_to=None)
         if any(
             message.author_kind == SupportCaseMessageAuthorKind.platform
+            or (
+                message.author_kind == SupportCaseMessageAuthorKind.system
+                and message.audience
+            )
             for message in existing
         ):
             return
 
+        # Posted as `system`: an automated greeting isn't a human reply, so it
+        # must not clear the "awaiting platform reply" signal in the backoffice.
         await support_case_service.post_message(
             session,
             case,
-            author_kind=SupportCaseMessageAuthorKind.platform,
+            author_kind=SupportCaseMessageAuthorKind.system,
             body=HUMAN_REVIEW_GREETING,
             audience=[SupportCaseAudience.merchant],
         )

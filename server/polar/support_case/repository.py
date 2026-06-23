@@ -108,12 +108,15 @@ class SupportCaseMessageRepository(
         Defined by exclusion (not ``platform``/``system``) so it stays correct
         for any participant kind. Internal notes and lifecycle events (empty
         audience) are ignored, so they don't clear it.
+
+        ``system`` messages are excluded entirely since they're automated.
         """
         latest_author = (
             select(SupportCaseMessage.author_kind)
             .where(
                 SupportCaseMessage.case_id == SupportCase.id,
                 func.cardinality(SupportCaseMessage.audience) > 0,
+                SupportCaseMessage.author_kind != SupportCaseMessageAuthorKind.system,
             )
             .order_by(SupportCaseMessage.created_at.desc())
             .limit(1)

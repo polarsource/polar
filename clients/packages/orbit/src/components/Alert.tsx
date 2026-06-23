@@ -9,12 +9,13 @@ import {
 } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { Box } from './Box'
+import { ButtonGroup, type ButtonGroupActions } from './ButtonGroup'
 import { Grid } from './Grid'
 import { GridItem } from './GridItem'
 import { Text, type TextColor } from './Text'
 import type { BackgroundColorToken } from '../tokens/semantics.stylex'
 
-export type AlertVariant = 'notice' | 'warning' | 'danger' | 'success'
+export type AlertVariant = 'info' | 'warning' | 'danger' | 'success'
 
 // The variant is the only styling lever: it picks the icon, the tinted surface
 // and the accent color so callers never reach for an icon or a color token.
@@ -26,10 +27,10 @@ const variantStyles: Record<
     accentColor: TextColor
   }
 > = {
-  notice: {
+  info: {
     icon: Info,
-    backgroundColor: 'background-accent',
-    accentColor: 'accent',
+    backgroundColor: 'background-card',
+    accentColor: 'default',
   },
   warning: {
     icon: TriangleAlert,
@@ -53,7 +54,7 @@ export interface AlertProps {
    * Picks the icon, surface tint and accent color in one go. Use it to map the
    * alert to its meaning rather than styling icon and colors by hand.
    */
-  variant: AlertVariant
+  variant?: AlertVariant
   /**
    * The headline of the alert, rendered in the variant's accent color.
    */
@@ -72,6 +73,11 @@ export interface AlertProps {
    * button; omit it for a persistent alert.
    */
   onDismiss?: () => void
+  /**
+   * One or two call-to-action buttons, rendered bottom-right via ButtonGroup.
+   * The first is the primary action, the second a quieter ghost button.
+   */
+  actions?: ButtonGroupActions
 }
 
 // A button has no Box equivalent, so the dismiss control is a native button
@@ -94,11 +100,12 @@ const iconBoxStyle: CSSProperties = { display: 'flex' }
 // Styling is intentionally closed: no `className` escape hatch. The variant
 // abstracts away the icon and every color decision.
 export const Alert = ({
-  variant,
+  variant = 'info',
   title,
   description,
   loading,
   onDismiss,
+  actions,
 }: AlertProps) => {
   const {
     icon: VariantIcon,
@@ -115,7 +122,8 @@ export const Alert = ({
       alignItems="center"
       backgroundColor={backgroundColor}
       borderRadius="s"
-      padding="l"
+      paddingVertical="l"
+      paddingHorizontal="xl"
       flexGrow={1}
     >
       <Text as="span" color={accentColor} style={iconBoxStyle}>
@@ -125,7 +133,7 @@ export const Alert = ({
           className={loading ? 'animate-spin' : undefined}
         />
       </Text>
-      <Text color={accentColor} variant="title">
+      <Text color={accentColor} variant="title" wrap="pretty">
         {title}
       </Text>
       {onDismiss && (
@@ -150,7 +158,14 @@ export const Alert = ({
       )}
       {description && (
         <GridItem colStart={2}>
-          <Text color={accentColor}>{description}</Text>
+          <Text color={accentColor === 'default' ? 'muted' : accentColor}>
+            {description}
+          </Text>
+        </GridItem>
+      )}
+      {actions && (
+        <GridItem colStart={2} marginTop="l">
+          <ButtonGroup actions={actions} size="sm" />
         </GridItem>
       )}
     </Grid>

@@ -81,6 +81,12 @@ const components: NavItem[] = [
     description: 'Actions across variants, sizes and loading states.',
   },
   {
+    title: 'ButtonGroup',
+    slug: 'button-group',
+    href: '/components/button-group',
+    description: 'One or two related actions, with primary and ghost emphasis.',
+  },
+  {
     title: 'Avatar',
     slug: 'avatar',
     href: '/components/avatar',

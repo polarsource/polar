@@ -17,6 +17,7 @@ const SOURCE_PATHS: Record<string, string> = {
   grid: 'components/Grid.tsx',
   text: 'components/Text.tsx',
   button: 'components/Button.tsx',
+  'button-group': 'components/ButtonGroup.tsx',
   avatar: 'components/Avatar.tsx',
   alert: 'components/Alert.tsx',
   pill: 'components/Pill.tsx',

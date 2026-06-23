@@ -505,12 +505,16 @@ Use these instead of hand-rolled tailwind components:
 import { Text } from '@polar-sh/orbit' // typography (variant-driven)
 import { Button, Grid } from '@polar-sh/orbit'
 import { Avatar, SegmentedControl } from '@polar-sh/orbit'
-import { Alert } from '@polar-sh/orbit' // tinted callout (notice/warning/danger/success)
+import { Alert } from '@polar-sh/orbit' // tinted callout (info/warning/danger/success)
+import { ButtonGroup } from '@polar-sh/orbit' // one or two primary/ghost actions
 ```
 
-`Alert` takes a `variant` (`notice` | `warning` | `danger` | `success`), a `title`, and an
-optional `description`; the variant abstracts away the icon and all colors. It also accepts
-`loading` (swaps the icon for a spinner) and `onDismiss` (renders a dismiss button).
+`Alert` takes a `variant` (`info` | `warning` | `danger` | `success`, default `info`), a
+`title`, and an optional `description`; the variant abstracts away the icon and all colors.
+It also accepts `loading` (swaps the icon for a spinner), `onDismiss` (renders a dismiss
+button), and `actions` (one or two `ButtonGroup` CTAs, rendered bottom-right). `ButtonGroup`
+takes an `actions` tuple of at most two `{ text, onClick, loading?, disabled? }` — the first
+renders as the primary button, the second as a ghost button.
 
 Prefer `Box` when you need full control; prefer the named primitive when one exists for
 your use case (Text for any text node, Button for actions, Grid for grid layouts).

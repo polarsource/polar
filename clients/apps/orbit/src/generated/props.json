@@ -2550,7 +2550,7 @@
       "type": "TextAlign",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 65
+        "line": 66
       }
     },
     {
@@ -2559,7 +2559,7 @@
       "description": "Underlying DOM element. Defaults to a sensible element per variant (heading variants render `h1`–`h6`, everything else `p`). Override to keep a correct document outline. DOM props for the element are typed and forwarded.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 147
+        "line": 149
       }
     },
     {
@@ -2568,7 +2568,7 @@
       "description": "The text to render. Prefer plain strings and numbers; inline elements are allowed where you genuinely need them (a `<br>`, an inline link), but reach for Box to compose layout rather than nesting containers inside Text.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 162
+        "line": 164
       }
     },
     {
@@ -2576,7 +2576,7 @@
       "type": "TextColor",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 64
+        "line": 65
       }
     },
     {
@@ -2585,7 +2585,7 @@
       "description": "Format the children value for display. 'number' adds grouping separators (3290033 → \"3,290,033\"), 'compact' shortens (3290033 → \"3.3M\"), or pass a function for full control. Pass the raw value as children, not a pre-formatted string.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 204
+        "line": 206
       }
     },
     {
@@ -2594,7 +2594,7 @@
       "description": "Apply a line-through decoration, e.g. for a struck-out previous price.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 181
+        "line": 183
       }
     },
     {
@@ -2603,7 +2603,7 @@
       "description": "Render a pulsing skeleton placeholder instead of children, for content that is still loading.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 167
+        "line": 169
       }
     },
     {
@@ -2612,7 +2612,7 @@
       "description": "Render in the monospace font family while keeping the variant's size and weight. Orthogonal to `variant`, so any text can be monospaced.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 186
+        "line": 188
       }
     },
     {
@@ -2621,7 +2621,7 @@
       "description": "When greater than 1, renders a multi-line loading skeleton with that many lines.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 177
+        "line": 179
       }
     },
     {
@@ -2630,7 +2630,7 @@
       "description": "Sizes the single-line loading skeleton. Falls back to children, then to \"Loading...\".",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 172
+        "line": 174
       }
     },
     {
@@ -2639,7 +2639,7 @@
       "description": "Align figures for vertical scanning in tables and stat readouts. Pairs well with a numeric `formatter`.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 191
+        "line": 193
       }
     },
     {
@@ -2648,7 +2648,7 @@
       "description": "Truncate overflow. `true` clamps to a single line with an ellipsis; a number clamps to that many lines. The component owns the CSS, so callers never hand-roll line-clamp utilities.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 197
+        "line": 199
       }
     },
     {
@@ -2656,7 +2656,7 @@
       "type": "TextVariant",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 63
+        "line": 64
       }
     },
     {
@@ -2664,7 +2664,7 @@
       "type": "TextWrap",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 66
+        "line": 67
       }
     }
   ],
@@ -2715,6 +2715,27 @@
       "source": {
         "path": "clients/packages/orbit/src/components/Button.tsx",
         "line": 53
+      }
+    }
+  ],
+  "button-group": [
+    {
+      "name": "actions",
+      "type": "ButtonGroupActions",
+      "required": true,
+      "description": "One or two actions. The first renders as the primary (default) button, the second as a quieter ghost button.",
+      "source": {
+        "path": "clients/packages/orbit/src/components/ButtonGroup.tsx",
+        "line": 27
+      }
+    },
+    {
+      "name": "size",
+      "type": "\"sm\" | \"lg\" | \"default\" | \"icon\" | null",
+      "description": "Button size applied to every action in the group.",
+      "source": {
+        "path": "clients/packages/orbit/src/components/ButtonGroup.tsx",
+        "line": 31
       }
     }
   ],
@@ -2786,17 +2807,16 @@
       "description": "The headline of the alert, rendered in the variant's accent color.",
       "source": {
         "path": "clients/packages/orbit/src/components/Alert.tsx",
-        "line": 58
+        "line": 71
       }
     },
     {
-      "name": "variant",
-      "type": "AlertVariant",
-      "required": true,
-      "description": "Picks the icon, surface tint and accent color in one go. Use it to map the alert to its meaning rather than styling icon and colors by hand.",
+      "name": "actions",
+      "type": "ButtonGroupActions",
+      "description": "One or two call-to-action buttons, rendered bottom-right via ButtonGroup. The first is the primary action, the second a quieter ghost button.",
       "source": {
         "path": "clients/packages/orbit/src/components/Alert.tsx",
-        "line": 54
+        "line": 90
       }
     },
     {
@@ -2805,7 +2825,7 @@
       "description": "Supporting copy shown beneath the title. Omit for a title-only alert.",
       "source": {
         "path": "clients/packages/orbit/src/components/Alert.tsx",
-        "line": 62
+        "line": 75
       }
     },
     {
@@ -2814,7 +2834,7 @@
       "description": "Swaps the variant icon for a spinner, for an alert whose subject is still resolving. Colors and layout are unchanged.",
       "source": {
         "path": "clients/packages/orbit/src/components/Alert.tsx",
-        "line": 67
+        "line": 80
       }
     },
     {
@@ -2823,7 +2843,16 @@
       "description": "Called when the dismiss button is pressed. Provide it to render a dismiss button; omit it for a persistent alert.",
       "source": {
         "path": "clients/packages/orbit/src/components/Alert.tsx",
-        "line": 72
+        "line": 85
+      }
+    },
+    {
+      "name": "variant",
+      "type": "AlertVariant",
+      "description": "Picks the icon, surface tint and accent color in one go. Use it to map the alert to its meaning rather than styling icon and colors by hand.",
+      "source": {
+        "path": "clients/packages/orbit/src/components/Alert.tsx",
+        "line": 67
       }
     }
   ],

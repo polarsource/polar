@@ -28,9 +28,9 @@ function DismissibleExample() {
 }
 
 const variantsCode = `<Alert
-  variant="notice"
-  title="Heads up"
-  description="This is some neutral information worth noticing."
+  variant="info"
+  title="For your information"
+  description="A muted, neutral alert with no severity attached."
 />
 <Alert
   variant="warning"
@@ -48,10 +48,10 @@ const variantsCode = `<Alert
   description="Your changes were saved successfully."
 />`
 
-const titleOnlyCode = `<Alert variant="notice" title="Title-only alerts are allowed too" />`
+const titleOnlyCode = `<Alert variant="info" title="Title-only alerts are allowed too" />`
 
 const loadingCode = `<Alert
-  variant="notice"
+  variant="info"
   title="Checking your domain"
   description="This usually takes a few seconds."
   loading
@@ -64,11 +64,21 @@ const dismissCode = `<Alert
   onDismiss={() => setVisible(false)}
 />`
 
+const actionsCode = `<Alert
+  variant="info"
+  title="Update available"
+  description="A new version is ready to install."
+  actions={[
+    { text: 'Update now', onClick: onUpdate },
+    { text: 'Later', onClick: onDismiss },
+  ]}
+/>`
+
 const alertProps: PropRow[] = [
   {
     name: 'variant',
-    type: "'notice' | 'warning' | 'danger' | 'success'",
-    required: true,
+    type: "'info' | 'warning' | 'danger' | 'success'",
+    default: "'info'",
     description:
       'Picks the icon, surface tint and accent color in one go, mapping the alert to its meaning.',
   },
@@ -96,6 +106,12 @@ const alertProps: PropRow[] = [
     description:
       'Called when the dismiss button is pressed. Provide it to render a dismiss button; omit for a persistent alert.',
   },
+  {
+    name: 'actions',
+    type: 'ButtonGroupActions',
+    description:
+      'One or two call-to-action buttons, rendered bottom-right via ButtonGroup. The first is primary, the second a ghost button.',
+  },
 ]
 
 export default function AlertPage() {
@@ -108,14 +124,14 @@ export default function AlertPage() {
 
       <Section
         title="Variants"
-        description="Four variants map to common severities. Each picks its own icon, tinted surface and accent color."
+        description="A muted info default plus three severity variants. Each picks its own icon, tinted surface and accent color."
       >
         <Example code={variantsCode}>
           <Box flexDirection="column" rowGap="m">
             <Alert
-              variant="notice"
-              title="Heads up"
-              description="This is some neutral information worth noticing."
+              variant="info"
+              title="For your information"
+              description="A muted, neutral alert with no severity attached."
             />
             <Alert
               variant="warning"
@@ -141,7 +157,7 @@ export default function AlertPage() {
         description="The description is optional. Omit it for a compact, single-line alert."
       >
         <Example code={titleOnlyCode}>
-          <Alert variant="notice" title="Title-only alerts are allowed too" />
+          <Alert variant="info" title="Title-only alerts are allowed too" />
         </Example>
       </Section>
 
@@ -151,7 +167,7 @@ export default function AlertPage() {
       >
         <Example code={loadingCode}>
           <Alert
-            variant="notice"
+            variant="info"
             title="Checking your domain"
             description="This usually takes a few seconds."
             loading
@@ -165,6 +181,23 @@ export default function AlertPage() {
       >
         <Example code={dismissCode}>
           <DismissibleExample />
+        </Example>
+      </Section>
+
+      <Section
+        title="Actions"
+        description="Pass one or two actions to render call-to-action buttons bottom-right. The first is the primary button, the second a ghost button; they stack vertically on mobile."
+      >
+        <Example code={actionsCode}>
+          <Alert
+            variant="info"
+            title="Update available"
+            description="A new version is ready to install."
+            actions={[
+              { text: 'Update now', onClick: () => {} },
+              { text: 'Later', onClick: () => {} },
+            ]}
+          />
         </Example>
       </Section>
 

@@ -23,6 +23,7 @@ const COMPONENTS = [
   { slug: 'text', file: 'components/Text.tsx', export: 'Text' },
   { slug: 'button', file: 'components/Button.tsx', export: 'Button' },
   { slug: 'avatar', file: 'components/Avatar.tsx', export: 'Avatar' },
+  { slug: 'alert', file: 'components/Alert.tsx', export: 'Alert' },
   { slug: 'pill', file: 'components/Pill.tsx', export: 'Pill' },
   { slug: 'status', file: 'components/Status.tsx', export: 'Status' },
   {

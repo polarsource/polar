@@ -87,6 +87,12 @@ const components: NavItem[] = [
     description: 'User and entity avatars with initials fallback.',
   },
   {
+    title: 'Alert',
+    slug: 'alert',
+    href: '/components/alert',
+    description: 'Tinted callouts that communicate a message and its severity.',
+  },
+  {
     title: 'Pill',
     slug: 'pill',
     href: '/components/pill',

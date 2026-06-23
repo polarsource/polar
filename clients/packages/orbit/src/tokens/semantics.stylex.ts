@@ -27,6 +27,7 @@ export const backgroundColors = stylex.defineVars({
   'background-secondary': `light-dark(${palette.gray50}, ${palette.polar900})`,
   'background-card': `light-dark(${palette.gray100}, ${palette.polar800})`,
   'background-inverse': `light-dark(${palette.gray900}, ${palette.white})`,
+  'background-accent': `light-dark(${palette.indigo50}, ${palette.indigo950})`,
   'background-warning': `light-dark(${palette.amber50}, ${palette.amber950})`,
   'background-success': `light-dark(${palette.emerald50}, ${palette.emerald950})`,
   'background-danger': `light-dark(${palette.red50}, ${palette.red950})`,
@@ -40,6 +41,7 @@ export const textColors = stylex.defineVars({
   'text-success': `light-dark(${palette.emerald500}, ${palette.emerald500})`,
   'text-danger': `light-dark(${palette.red500}, ${palette.red500})`,
   'text-warning': `light-dark(${palette.amber500}, ${palette.amber500})`,
+  'text-accent': `light-dark(${palette.indigo500}, ${palette.indigo500})`,
 } as const)
 
 export const borderColors = stylex.defineVars({
@@ -60,6 +62,12 @@ export const textRoleStyles = stylex.create({
     fontFamily: fontFamilies.sans,
     fontSize: fontSizes[2],
     lineHeight: lineHeights.normal,
+  },
+  title: {
+    fontFamily: fontFamilies.sans,
+    fontSize: fontSizes[2],
+    lineHeight: lineHeights.normal,
+    fontWeight: fontWeights.medium,
   },
   body: {
     fontFamily: fontFamilies.sans,
@@ -118,7 +126,7 @@ export const textColorStyles = stylex.create({
   default: { color: textColors['text-primary'] },
   muted: { color: textColors['text-secondary'] },
   disabled: { color: textColors['text-disabled'] },
-  accent: { color: palette.indigo500 },
+  accent: { color: textColors['text-accent'] },
   danger: { color: textColors['text-danger'] },
   error: { color: textColors['text-danger'] },
   warning: { color: textColors['text-warning'] },

@@ -5,7 +5,7 @@
       "type": "ResponsiveValue<\"center\" | \"start\" | \"end\" | \"stretch\" | \"between\" | \"around\" | \"evenly\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 127
+        "line": 129
       }
     },
     {
@@ -13,7 +13,7 @@
       "type": "ResponsiveValue<\"center\" | \"start\" | \"end\" | \"baseline\" | \"stretch\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 118
+        "line": 120
       }
     },
     {
@@ -21,7 +21,7 @@
       "type": "ResponsiveValue<\"center\" | \"start\" | \"auto\" | \"end\" | \"baseline\" | \"stretch\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 121
+        "line": 123
       }
     },
     {
@@ -37,7 +37,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 106
+        "line": 108
       }
     },
     {
@@ -45,7 +45,7 @@
       "type": "ResponsiveValue<BackgroundColorToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 62
+        "line": 64
       }
     },
     {
@@ -53,7 +53,7 @@
       "type": "ResponsiveValue<BorderRadiusToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 71
+        "line": 73
       }
     },
     {
@@ -61,7 +61,7 @@
       "type": "ResponsiveValue<BorderRadiusToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 72
+        "line": 74
       }
     },
     {
@@ -69,7 +69,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 76
+        "line": 78
       }
     },
     {
@@ -77,7 +77,7 @@
       "type": "ResponsiveValue<BorderColorToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 64
+        "line": 66
       }
     },
     {
@@ -85,7 +85,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 77
+        "line": 79
       }
     },
     {
@@ -93,7 +93,7 @@
       "type": "ResponsiveValue<BorderRadiusToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 68
+        "line": 70
       }
     },
     {
@@ -101,7 +101,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 75
+        "line": 77
       }
     },
     {
@@ -109,7 +109,7 @@
       "type": "ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 78
+        "line": 80
       }
     },
     {
@@ -117,7 +117,7 @@
       "type": "ResponsiveValue<BorderRadiusToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 69
+        "line": 71
       }
     },
     {
@@ -125,7 +125,7 @@
       "type": "ResponsiveValue<BorderRadiusToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 70
+        "line": 72
       }
     },
     {
@@ -133,7 +133,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 74
+        "line": 76
       }
     },
     {
@@ -141,7 +141,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 73
+        "line": 75
       }
     },
     {
@@ -149,7 +149,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 156
+        "line": 158
       }
     },
     {
@@ -157,7 +157,7 @@
       "type": "ResponsiveValue<ShadowToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 82
+        "line": 84
       }
     },
     {
@@ -181,7 +181,7 @@
       "type": "ResponsiveValue<TextColorToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 63
+        "line": 65
       }
     },
     {
@@ -189,7 +189,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 57
+        "line": 59
       }
     },
     {
@@ -197,7 +197,7 @@
       "type": "ResponsiveValue<\"text\" | \"move\" | \"default\" | \"pointer\" | \"not-allowed\" | \"grab\" | \"grabbing\" | \"wait\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 190
+        "line": 192
       }
     },
     {
@@ -205,7 +205,7 @@
       "type": "ResponsiveValue<\"flex\" | \"none\" | \"grid\" | \"inline\" | \"block\" | \"inline-flex\" | \"inline-grid\" | \"inline-block\" | \"contents\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 86
+        "line": 88
       }
     },
     {
@@ -214,7 +214,7 @@
       "description": "Alias for `transitionTimingFunction`.",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 181
+        "line": 183
       }
     },
     {
@@ -222,7 +222,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 110
+        "line": 112
       }
     },
     {
@@ -230,7 +230,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 117
+        "line": 119
       }
     },
     {
@@ -238,7 +238,7 @@
       "type": "ResponsiveValue<\"row\" | \"column\" | \"row-reverse\" | \"column-reverse\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 111
+        "line": 113
       }
     },
     {
@@ -246,7 +246,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 115
+        "line": 117
       }
     },
     {
@@ -254,7 +254,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 116
+        "line": 118
       }
     },
     {
@@ -262,7 +262,7 @@
       "type": "ResponsiveValue<\"wrap\" | \"nowrap\" | \"wrap-reverse\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 114
+        "line": 116
       }
     },
     {
@@ -270,7 +270,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 58
+        "line": 60
       }
     },
     {
@@ -278,7 +278,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 55
+        "line": 57
       }
     },
     {
@@ -286,7 +286,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 138
+        "line": 140
       }
     },
     {
@@ -294,7 +294,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 146
+        "line": 148
       }
     },
     {
@@ -302,7 +302,7 @@
       "type": "ResponsiveValue<\"row\" | \"column\" | \"dense\" | \"row-dense\" | \"column-dense\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 143
+        "line": 145
       }
     },
     {
@@ -310,7 +310,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 147
+        "line": 149
       }
     },
     {
@@ -318,7 +318,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 136
+        "line": 138
       }
     },
     {
@@ -326,7 +326,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 140
+        "line": 142
       }
     },
     {
@@ -334,7 +334,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 139
+        "line": 141
       }
     },
     {
@@ -342,7 +342,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 137
+        "line": 139
       }
     },
     {
@@ -350,7 +350,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 142
+        "line": 144
       }
     },
     {
@@ -358,7 +358,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 141
+        "line": 143
       }
     },
     {
@@ -366,7 +366,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 135
+        "line": 137
       }
     },
     {
@@ -374,7 +374,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 133
+        "line": 135
       }
     },
     {
@@ -382,7 +382,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 134
+        "line": 136
       }
     },
     {
@@ -390,7 +390,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 101
+        "line": 103
       }
     },
     {
@@ -398,7 +398,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 158
+        "line": 160
       }
     },
     {
@@ -406,7 +406,7 @@
       "type": "ResponsiveValue<\"center\" | \"start\" | \"end\" | \"between\" | \"around\" | \"evenly\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 124
+        "line": 126
       }
     },
     {
@@ -414,7 +414,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 157
+        "line": 159
       }
     },
     {
@@ -422,7 +422,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 47
+        "line": 49
       }
     },
     {
@@ -430,7 +430,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 40
+        "line": 42
       }
     },
     {
@@ -438,7 +438,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 43
+        "line": 45
       }
     },
     {
@@ -446,7 +446,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 45
+        "line": 47
       }
     },
     {
@@ -454,7 +454,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 44
+        "line": 46
       }
     },
     {
@@ -462,7 +462,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 42
+        "line": 44
       }
     },
     {
@@ -470,7 +470,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 41
+        "line": 43
       }
     },
     {
@@ -478,7 +478,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 46
+        "line": 48
       }
     },
     {
@@ -486,7 +486,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 105
+        "line": 107
       }
     },
     {
@@ -494,7 +494,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 103
+        "line": 105
       }
     },
     {
@@ -502,7 +502,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 50
+        "line": 52
       }
     },
     {
@@ -510,7 +510,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 104
+        "line": 106
       }
     },
     {
@@ -518,7 +518,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 102
+        "line": 104
       }
     },
     {
@@ -526,7 +526,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 51
+        "line": 53
       }
     },
     {
@@ -534,7 +534,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 49
+        "line": 51
       }
     },
     {
@@ -542,7 +542,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 48
+        "line": 50
       }
     },
     {
@@ -550,7 +550,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 52
+        "line": 54
       }
     },
     {
@@ -558,7 +558,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 53
+        "line": 55
       }
     },
     {
@@ -566,7 +566,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 189
+        "line": 191
       }
     },
     {
@@ -574,7 +574,7 @@
       "type": "ResponsiveValue<\"hidden\" | \"auto\" | \"scroll\" | \"visible\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 97
+        "line": 99
       }
     },
     {
@@ -582,7 +582,7 @@
       "type": "ResponsiveValue<\"hidden\" | \"auto\" | \"scroll\" | \"visible\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 98
+        "line": 100
       }
     },
     {
@@ -590,7 +590,7 @@
       "type": "ResponsiveValue<\"hidden\" | \"auto\" | \"scroll\" | \"visible\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 99
+        "line": 101
       }
     },
     {
@@ -598,7 +598,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 32
+        "line": 34
       }
     },
     {
@@ -606,7 +606,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 25
+        "line": 27
       }
     },
     {
@@ -614,7 +614,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 28
+        "line": 30
       }
     },
     {
@@ -622,7 +622,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 30
+        "line": 32
       }
     },
     {
@@ -630,7 +630,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 29
+        "line": 31
       }
     },
     {
@@ -638,7 +638,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 27
+        "line": 29
       }
     },
     {
@@ -646,7 +646,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 26
+        "line": 28
       }
     },
     {
@@ -654,7 +654,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 31
+        "line": 33
       }
     },
     {
@@ -662,7 +662,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 35
+        "line": 37
       }
     },
     {
@@ -670,7 +670,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 36
+        "line": 38
       }
     },
     {
@@ -678,7 +678,7 @@
       "type": "ResponsiveValue<\"none\" | \"auto\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 200
+        "line": 202
       }
     },
     {
@@ -686,7 +686,7 @@
       "type": "ResponsiveValue<\"relative\" | \"absolute\" | \"fixed\" | \"sticky\" | \"static\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 151
+        "line": 153
       }
     },
     {
@@ -694,7 +694,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 34
+        "line": 36
       }
     },
     {
@@ -702,7 +702,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 33
+        "line": 35
       }
     },
     {
@@ -710,7 +710,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 37
+        "line": 39
       }
     },
     {
@@ -718,7 +718,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 38
+        "line": 40
       }
     },
     {
@@ -726,7 +726,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 155
+        "line": 157
       }
     },
     {
@@ -734,7 +734,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 56
+        "line": 58
       }
     },
     {
@@ -742,7 +742,7 @@
       "type": "ResponsiveValue<\"right\" | \"left\" | \"center\" | \"justify\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 203
+        "line": 205
       }
     },
     {
@@ -750,7 +750,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 154
+        "line": 156
       }
     },
     {
@@ -758,7 +758,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 183
+        "line": 185
       }
     },
     {
@@ -766,7 +766,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 184
+        "line": 186
       }
     },
     {
@@ -774,7 +774,7 @@
       "type": "ResponsiveValue<DurationToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 182
+        "line": 184
       }
     },
     {
@@ -782,7 +782,7 @@
       "type": "ResponsiveValue<DurationToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 178
+        "line": 180
       }
     },
     {
@@ -790,7 +790,7 @@
       "type": "ResponsiveValue<TransitionProperty>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 177
+        "line": 179
       }
     },
     {
@@ -798,7 +798,7 @@
       "type": "ResponsiveValue<\"standard\" | \"decelerate\" | \"accelerate\" | \"spring\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 179
+        "line": 181
       }
     },
     {
@@ -806,7 +806,7 @@
       "type": "ResponsiveValue<\"text\" | \"none\" | \"auto\" | \"all\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 202
+        "line": 204
       }
     },
     {
@@ -814,7 +814,7 @@
       "type": "ResponsiveValue<\"hidden\" | \"visible\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 201
+        "line": 203
       }
     },
     {
@@ -822,7 +822,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 100
+        "line": 102
       }
     },
     {
@@ -830,7 +830,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 185
+        "line": 187
       }
     },
     {
@@ -838,7 +838,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 159
+        "line": 161
       }
     }
   ],
@@ -848,7 +848,7 @@
       "type": "ResponsiveValue<\"center\" | \"start\" | \"end\" | \"stretch\" | \"between\" | \"around\" | \"evenly\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 127
+        "line": 129
       }
     },
     {
@@ -856,7 +856,7 @@
       "type": "ResponsiveValue<\"center\" | \"start\" | \"end\" | \"baseline\" | \"stretch\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 118
+        "line": 120
       }
     },
     {
@@ -864,7 +864,7 @@
       "type": "ResponsiveValue<\"center\" | \"start\" | \"auto\" | \"end\" | \"baseline\" | \"stretch\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 121
+        "line": 123
       }
     },
     {
@@ -880,7 +880,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 106
+        "line": 108
       }
     },
     {
@@ -915,7 +915,7 @@
       "type": "ResponsiveValue<BackgroundColorToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 62
+        "line": 64
       }
     },
     {
@@ -923,7 +923,7 @@
       "type": "ResponsiveValue<BorderRadiusToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 71
+        "line": 73
       }
     },
     {
@@ -931,7 +931,7 @@
       "type": "ResponsiveValue<BorderRadiusToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 72
+        "line": 74
       }
     },
     {
@@ -939,7 +939,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 76
+        "line": 78
       }
     },
     {
@@ -947,7 +947,7 @@
       "type": "ResponsiveValue<BorderColorToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 64
+        "line": 66
       }
     },
     {
@@ -955,7 +955,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 77
+        "line": 79
       }
     },
     {
@@ -963,7 +963,7 @@
       "type": "ResponsiveValue<BorderRadiusToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 68
+        "line": 70
       }
     },
     {
@@ -971,7 +971,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 75
+        "line": 77
       }
     },
     {
@@ -979,7 +979,7 @@
       "type": "ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 78
+        "line": 80
       }
     },
     {
@@ -987,7 +987,7 @@
       "type": "ResponsiveValue<BorderRadiusToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 69
+        "line": 71
       }
     },
     {
@@ -995,7 +995,7 @@
       "type": "ResponsiveValue<BorderRadiusToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 70
+        "line": 72
       }
     },
     {
@@ -1003,7 +1003,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 74
+        "line": 76
       }
     },
     {
@@ -1011,7 +1011,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 73
+        "line": 75
       }
     },
     {
@@ -1019,7 +1019,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 156
+        "line": 158
       }
     },
     {
@@ -1027,7 +1027,7 @@
       "type": "ResponsiveValue<ShadowToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 82
+        "line": 84
       }
     },
     {
@@ -1051,7 +1051,7 @@
       "type": "ResponsiveValue<TextColorToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 63
+        "line": 65
       }
     },
     {
@@ -1068,7 +1068,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 57
+        "line": 59
       }
     },
     {
@@ -1076,7 +1076,7 @@
       "type": "ResponsiveValue<\"text\" | \"move\" | \"default\" | \"pointer\" | \"not-allowed\" | \"grab\" | \"grabbing\" | \"wait\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 190
+        "line": 192
       }
     },
     {
@@ -1085,7 +1085,7 @@
       "description": "Alias for `transitionTimingFunction`.",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 181
+        "line": 183
       }
     },
     {
@@ -1093,7 +1093,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 110
+        "line": 112
       }
     },
     {
@@ -1101,7 +1101,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 117
+        "line": 119
       }
     },
     {
@@ -1109,7 +1109,7 @@
       "type": "ResponsiveValue<\"row\" | \"column\" | \"row-reverse\" | \"column-reverse\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 111
+        "line": 113
       }
     },
     {
@@ -1117,7 +1117,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 115
+        "line": 117
       }
     },
     {
@@ -1125,7 +1125,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 116
+        "line": 118
       }
     },
     {
@@ -1133,7 +1133,7 @@
       "type": "ResponsiveValue<\"wrap\" | \"nowrap\" | \"wrap-reverse\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 114
+        "line": 116
       }
     },
     {
@@ -1141,7 +1141,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 58
+        "line": 60
       }
     },
     {
@@ -1149,7 +1149,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 55
+        "line": 57
       }
     },
     {
@@ -1157,7 +1157,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 138
+        "line": 140
       }
     },
     {
@@ -1165,7 +1165,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 140
+        "line": 142
       }
     },
     {
@@ -1173,7 +1173,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 139
+        "line": 141
       }
     },
     {
@@ -1181,7 +1181,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 142
+        "line": 144
       }
     },
     {
@@ -1189,7 +1189,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 141
+        "line": 143
       }
     },
     {
@@ -1197,7 +1197,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 101
+        "line": 103
       }
     },
     {
@@ -1214,7 +1214,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 158
+        "line": 160
       }
     },
     {
@@ -1222,7 +1222,7 @@
       "type": "ResponsiveValue<\"center\" | \"start\" | \"end\" | \"between\" | \"around\" | \"evenly\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 124
+        "line": 126
       }
     },
     {
@@ -1230,7 +1230,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 157
+        "line": 159
       }
     },
     {
@@ -1238,7 +1238,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 47
+        "line": 49
       }
     },
     {
@@ -1246,7 +1246,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 40
+        "line": 42
       }
     },
     {
@@ -1254,7 +1254,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 43
+        "line": 45
       }
     },
     {
@@ -1262,7 +1262,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 45
+        "line": 47
       }
     },
     {
@@ -1270,7 +1270,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 44
+        "line": 46
       }
     },
     {
@@ -1278,7 +1278,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 42
+        "line": 44
       }
     },
     {
@@ -1286,7 +1286,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 41
+        "line": 43
       }
     },
     {
@@ -1294,7 +1294,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 46
+        "line": 48
       }
     },
     {
@@ -1302,7 +1302,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 105
+        "line": 107
       }
     },
     {
@@ -1310,7 +1310,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 103
+        "line": 105
       }
     },
     {
@@ -1318,7 +1318,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 50
+        "line": 52
       }
     },
     {
@@ -1326,7 +1326,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 104
+        "line": 106
       }
     },
     {
@@ -1334,7 +1334,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 102
+        "line": 104
       }
     },
     {
@@ -1342,7 +1342,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 51
+        "line": 53
       }
     },
     {
@@ -1350,7 +1350,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 49
+        "line": 51
       }
     },
     {
@@ -1358,7 +1358,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 48
+        "line": 50
       }
     },
     {
@@ -1366,7 +1366,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 52
+        "line": 54
       }
     },
     {
@@ -1374,7 +1374,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 53
+        "line": 55
       }
     },
     {
@@ -1382,7 +1382,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 189
+        "line": 191
       }
     },
     {
@@ -1390,7 +1390,7 @@
       "type": "ResponsiveValue<\"hidden\" | \"auto\" | \"scroll\" | \"visible\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 97
+        "line": 99
       }
     },
     {
@@ -1398,7 +1398,7 @@
       "type": "ResponsiveValue<\"hidden\" | \"auto\" | \"scroll\" | \"visible\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 98
+        "line": 100
       }
     },
     {
@@ -1406,7 +1406,7 @@
       "type": "ResponsiveValue<\"hidden\" | \"auto\" | \"scroll\" | \"visible\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 99
+        "line": 101
       }
     },
     {
@@ -1414,7 +1414,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 32
+        "line": 34
       }
     },
     {
@@ -1422,7 +1422,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 25
+        "line": 27
       }
     },
     {
@@ -1430,7 +1430,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 28
+        "line": 30
       }
     },
     {
@@ -1438,7 +1438,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 30
+        "line": 32
       }
     },
     {
@@ -1446,7 +1446,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 29
+        "line": 31
       }
     },
     {
@@ -1454,7 +1454,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 27
+        "line": 29
       }
     },
     {
@@ -1462,7 +1462,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 26
+        "line": 28
       }
     },
     {
@@ -1470,7 +1470,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 31
+        "line": 33
       }
     },
     {
@@ -1478,7 +1478,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 35
+        "line": 37
       }
     },
     {
@@ -1486,7 +1486,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 36
+        "line": 38
       }
     },
     {
@@ -1494,7 +1494,7 @@
       "type": "ResponsiveValue<\"none\" | \"auto\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 200
+        "line": 202
       }
     },
     {
@@ -1502,7 +1502,7 @@
       "type": "ResponsiveValue<\"relative\" | \"absolute\" | \"fixed\" | \"sticky\" | \"static\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 151
+        "line": 153
       }
     },
     {
@@ -1510,7 +1510,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 34
+        "line": 36
       }
     },
     {
@@ -1518,7 +1518,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 33
+        "line": 35
       }
     },
     {
@@ -1526,7 +1526,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 37
+        "line": 39
       }
     },
     {
@@ -1534,7 +1534,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 38
+        "line": 40
       }
     },
     {
@@ -1542,7 +1542,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 155
+        "line": 157
       }
     },
     {
@@ -1559,7 +1559,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 56
+        "line": 58
       }
     },
     {
@@ -1594,7 +1594,7 @@
       "type": "ResponsiveValue<\"right\" | \"left\" | \"center\" | \"justify\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 203
+        "line": 205
       }
     },
     {
@@ -1602,7 +1602,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 154
+        "line": 156
       }
     },
     {
@@ -1610,7 +1610,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 183
+        "line": 185
       }
     },
     {
@@ -1618,7 +1618,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 184
+        "line": 186
       }
     },
     {
@@ -1626,7 +1626,7 @@
       "type": "ResponsiveValue<DurationToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 182
+        "line": 184
       }
     },
     {
@@ -1634,7 +1634,7 @@
       "type": "ResponsiveValue<DurationToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 178
+        "line": 180
       }
     },
     {
@@ -1642,7 +1642,7 @@
       "type": "ResponsiveValue<TransitionProperty>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 177
+        "line": 179
       }
     },
     {
@@ -1650,7 +1650,7 @@
       "type": "ResponsiveValue<\"standard\" | \"decelerate\" | \"accelerate\" | \"spring\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 179
+        "line": 181
       }
     },
     {
@@ -1658,7 +1658,7 @@
       "type": "ResponsiveValue<\"text\" | \"none\" | \"auto\" | \"all\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 202
+        "line": 204
       }
     },
     {
@@ -1666,7 +1666,7 @@
       "type": "ResponsiveValue<\"hidden\" | \"visible\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 201
+        "line": 203
       }
     },
     {
@@ -1674,7 +1674,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 100
+        "line": 102
       }
     },
     {
@@ -1682,7 +1682,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 185
+        "line": 187
       }
     },
     {
@@ -1690,7 +1690,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 159
+        "line": 161
       }
     }
   ],
@@ -1700,7 +1700,7 @@
       "type": "ResponsiveValue<\"center\" | \"start\" | \"end\" | \"stretch\" | \"between\" | \"around\" | \"evenly\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 127
+        "line": 129
       }
     },
     {
@@ -1708,7 +1708,7 @@
       "type": "ResponsiveValue<\"center\" | \"start\" | \"end\" | \"baseline\" | \"stretch\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 118
+        "line": 120
       }
     },
     {
@@ -1716,7 +1716,7 @@
       "type": "ResponsiveValue<\"center\" | \"start\" | \"auto\" | \"end\" | \"baseline\" | \"stretch\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 121
+        "line": 123
       }
     },
     {
@@ -1741,7 +1741,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 106
+        "line": 108
       }
     },
     {
@@ -1749,7 +1749,7 @@
       "type": "ResponsiveValue<BackgroundColorToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 62
+        "line": 64
       }
     },
     {
@@ -1757,7 +1757,7 @@
       "type": "ResponsiveValue<BorderRadiusToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 71
+        "line": 73
       }
     },
     {
@@ -1765,7 +1765,7 @@
       "type": "ResponsiveValue<BorderRadiusToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 72
+        "line": 74
       }
     },
     {
@@ -1773,7 +1773,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 76
+        "line": 78
       }
     },
     {
@@ -1781,7 +1781,7 @@
       "type": "ResponsiveValue<BorderColorToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 64
+        "line": 66
       }
     },
     {
@@ -1789,7 +1789,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 77
+        "line": 79
       }
     },
     {
@@ -1797,7 +1797,7 @@
       "type": "ResponsiveValue<BorderRadiusToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 68
+        "line": 70
       }
     },
     {
@@ -1805,7 +1805,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 75
+        "line": 77
       }
     },
     {
@@ -1813,7 +1813,7 @@
       "type": "ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 78
+        "line": 80
       }
     },
     {
@@ -1821,7 +1821,7 @@
       "type": "ResponsiveValue<BorderRadiusToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 69
+        "line": 71
       }
     },
     {
@@ -1829,7 +1829,7 @@
       "type": "ResponsiveValue<BorderRadiusToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 70
+        "line": 72
       }
     },
     {
@@ -1837,7 +1837,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 74
+        "line": 76
       }
     },
     {
@@ -1845,7 +1845,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 73
+        "line": 75
       }
     },
     {
@@ -1853,7 +1853,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 156
+        "line": 158
       }
     },
     {
@@ -1861,7 +1861,7 @@
       "type": "ResponsiveValue<ShadowToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 82
+        "line": 84
       }
     },
     {
@@ -1894,7 +1894,7 @@
       "type": "ResponsiveValue<TextColorToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 63
+        "line": 65
       }
     },
     {
@@ -1920,7 +1920,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 57
+        "line": 59
       }
     },
     {
@@ -1928,7 +1928,7 @@
       "type": "ResponsiveValue<\"text\" | \"move\" | \"default\" | \"pointer\" | \"not-allowed\" | \"grab\" | \"grabbing\" | \"wait\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 190
+        "line": 192
       }
     },
     {
@@ -1936,7 +1936,7 @@
       "type": "ResponsiveValue<\"flex\" | \"none\" | \"grid\" | \"inline\" | \"block\" | \"inline-flex\" | \"inline-grid\" | \"inline-block\" | \"contents\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 86
+        "line": 88
       }
     },
     {
@@ -1945,7 +1945,7 @@
       "description": "Alias for `transitionTimingFunction`.",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 181
+        "line": 183
       }
     },
     {
@@ -1953,7 +1953,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 110
+        "line": 112
       }
     },
     {
@@ -1961,7 +1961,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 117
+        "line": 119
       }
     },
     {
@@ -1969,7 +1969,7 @@
       "type": "ResponsiveValue<\"row\" | \"column\" | \"row-reverse\" | \"column-reverse\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 111
+        "line": 113
       }
     },
     {
@@ -1977,7 +1977,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 115
+        "line": 117
       }
     },
     {
@@ -1985,7 +1985,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 116
+        "line": 118
       }
     },
     {
@@ -1993,7 +1993,7 @@
       "type": "ResponsiveValue<\"wrap\" | \"nowrap\" | \"wrap-reverse\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 114
+        "line": 116
       }
     },
     {
@@ -2001,7 +2001,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 58
+        "line": 60
       }
     },
     {
@@ -2009,7 +2009,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 55
+        "line": 57
       }
     },
     {
@@ -2017,7 +2017,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 146
+        "line": 148
       }
     },
     {
@@ -2025,7 +2025,7 @@
       "type": "ResponsiveValue<\"row\" | \"column\" | \"dense\" | \"row-dense\" | \"column-dense\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 143
+        "line": 145
       }
     },
     {
@@ -2033,7 +2033,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 147
+        "line": 149
       }
     },
     {
@@ -2041,7 +2041,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 135
+        "line": 137
       }
     },
     {
@@ -2049,7 +2049,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 133
+        "line": 135
       }
     },
     {
@@ -2057,7 +2057,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 134
+        "line": 136
       }
     },
     {
@@ -2065,7 +2065,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 101
+        "line": 103
       }
     },
     {
@@ -2073,7 +2073,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 158
+        "line": 160
       }
     },
     {
@@ -2081,7 +2081,7 @@
       "type": "ResponsiveValue<\"center\" | \"start\" | \"end\" | \"between\" | \"around\" | \"evenly\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 124
+        "line": 126
       }
     },
     {
@@ -2089,7 +2089,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 157
+        "line": 159
       }
     },
     {
@@ -2097,7 +2097,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 47
+        "line": 49
       }
     },
     {
@@ -2105,7 +2105,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 40
+        "line": 42
       }
     },
     {
@@ -2113,7 +2113,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 43
+        "line": 45
       }
     },
     {
@@ -2121,7 +2121,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 45
+        "line": 47
       }
     },
     {
@@ -2129,7 +2129,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 44
+        "line": 46
       }
     },
     {
@@ -2137,7 +2137,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 42
+        "line": 44
       }
     },
     {
@@ -2145,7 +2145,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 41
+        "line": 43
       }
     },
     {
@@ -2153,7 +2153,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 46
+        "line": 48
       }
     },
     {
@@ -2161,7 +2161,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 105
+        "line": 107
       }
     },
     {
@@ -2169,7 +2169,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 103
+        "line": 105
       }
     },
     {
@@ -2177,7 +2177,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 50
+        "line": 52
       }
     },
     {
@@ -2185,7 +2185,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 104
+        "line": 106
       }
     },
     {
@@ -2193,7 +2193,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 102
+        "line": 104
       }
     },
     {
@@ -2201,7 +2201,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 51
+        "line": 53
       }
     },
     {
@@ -2209,7 +2209,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 49
+        "line": 51
       }
     },
     {
@@ -2217,7 +2217,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 48
+        "line": 50
       }
     },
     {
@@ -2225,7 +2225,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 52
+        "line": 54
       }
     },
     {
@@ -2233,7 +2233,7 @@
       "type": "ResponsiveValue<\"auto\" | SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 53
+        "line": 55
       }
     },
     {
@@ -2241,7 +2241,7 @@
       "type": "ResponsiveValue<number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 189
+        "line": 191
       }
     },
     {
@@ -2249,7 +2249,7 @@
       "type": "ResponsiveValue<\"hidden\" | \"auto\" | \"scroll\" | \"visible\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 97
+        "line": 99
       }
     },
     {
@@ -2257,7 +2257,7 @@
       "type": "ResponsiveValue<\"hidden\" | \"auto\" | \"scroll\" | \"visible\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 98
+        "line": 100
       }
     },
     {
@@ -2265,7 +2265,7 @@
       "type": "ResponsiveValue<\"hidden\" | \"auto\" | \"scroll\" | \"visible\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 99
+        "line": 101
       }
     },
     {
@@ -2273,7 +2273,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 32
+        "line": 34
       }
     },
     {
@@ -2281,7 +2281,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 25
+        "line": 27
       }
     },
     {
@@ -2289,7 +2289,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 28
+        "line": 30
       }
     },
     {
@@ -2297,7 +2297,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 30
+        "line": 32
       }
     },
     {
@@ -2305,7 +2305,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 29
+        "line": 31
       }
     },
     {
@@ -2313,7 +2313,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 27
+        "line": 29
       }
     },
     {
@@ -2321,7 +2321,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 26
+        "line": 28
       }
     },
     {
@@ -2329,7 +2329,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 31
+        "line": 33
       }
     },
     {
@@ -2337,7 +2337,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 35
+        "line": 37
       }
     },
     {
@@ -2345,7 +2345,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 36
+        "line": 38
       }
     },
     {
@@ -2353,7 +2353,7 @@
       "type": "ResponsiveValue<\"none\" | \"auto\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 200
+        "line": 202
       }
     },
     {
@@ -2361,7 +2361,7 @@
       "type": "ResponsiveValue<\"relative\" | \"absolute\" | \"fixed\" | \"sticky\" | \"static\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 151
+        "line": 153
       }
     },
     {
@@ -2369,7 +2369,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 34
+        "line": 36
       }
     },
     {
@@ -2377,7 +2377,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 33
+        "line": 35
       }
     },
     {
@@ -2385,7 +2385,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 37
+        "line": 39
       }
     },
     {
@@ -2393,7 +2393,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 38
+        "line": 40
       }
     },
     {
@@ -2401,7 +2401,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 155
+        "line": 157
       }
     },
     {
@@ -2418,7 +2418,7 @@
       "type": "ResponsiveValue<SpacingToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 56
+        "line": 58
       }
     },
     {
@@ -2444,7 +2444,7 @@
       "type": "ResponsiveValue<\"right\" | \"left\" | \"center\" | \"justify\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 203
+        "line": 205
       }
     },
     {
@@ -2452,7 +2452,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 154
+        "line": 156
       }
     },
     {
@@ -2460,7 +2460,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 183
+        "line": 185
       }
     },
     {
@@ -2468,7 +2468,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 184
+        "line": 186
       }
     },
     {
@@ -2476,7 +2476,7 @@
       "type": "ResponsiveValue<DurationToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 182
+        "line": 184
       }
     },
     {
@@ -2484,7 +2484,7 @@
       "type": "ResponsiveValue<DurationToken>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 178
+        "line": 180
       }
     },
     {
@@ -2492,7 +2492,7 @@
       "type": "ResponsiveValue<TransitionProperty>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 177
+        "line": 179
       }
     },
     {
@@ -2500,7 +2500,7 @@
       "type": "ResponsiveValue<\"standard\" | \"decelerate\" | \"accelerate\" | \"spring\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 179
+        "line": 181
       }
     },
     {
@@ -2508,7 +2508,7 @@
       "type": "ResponsiveValue<\"text\" | \"none\" | \"auto\" | \"all\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 202
+        "line": 204
       }
     },
     {
@@ -2516,7 +2516,7 @@
       "type": "ResponsiveValue<\"hidden\" | \"visible\">",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 201
+        "line": 203
       }
     },
     {
@@ -2524,7 +2524,7 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 100
+        "line": 102
       }
     },
     {
@@ -2532,7 +2532,7 @@
       "type": "ResponsiveValue<string>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 185
+        "line": 187
       }
     },
     {
@@ -2540,17 +2540,17 @@
       "type": "ResponsiveValue<string | number>",
       "source": {
         "path": "clients/packages/orbit/src/utils/types.ts",
-        "line": 159
+        "line": 161
       }
     }
   ],
   "text": [
     {
       "name": "align",
-      "type": "\"right\" | \"left\" | \"center\" | \"justify\" | null",
+      "type": "TextAlign",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 55
+        "line": 65
       }
     },
     {
@@ -2559,7 +2559,7 @@
       "description": "Underlying DOM element. Defaults to a sensible element per variant (heading variants render `h1`–`h6`, everything else `p`). Override to keep a correct document outline. DOM props for the element are typed and forwarded.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 162
+        "line": 147
       }
     },
     {
@@ -2568,15 +2568,15 @@
       "description": "The text to render. Prefer plain strings and numbers; inline elements are allowed where you genuinely need them (a `<br>`, an inline link), but reach for Box to compose layout rather than nesting containers inside Text.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 177
+        "line": 162
       }
     },
     {
       "name": "color",
-      "type": "\"disabled\" | \"inherit\" | \"default\" | \"muted\" | \"accent\" | \"danger\" | \"error\" | \"warning\" | \"success\" | \"inverse\" | \"white\" | \"black\" | null",
+      "type": "TextColor",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 41
+        "line": 64
       }
     },
     {
@@ -2585,7 +2585,7 @@
       "description": "Format the children value for display. 'number' adds grouping separators (3290033 → \"3,290,033\"), 'compact' shortens (3290033 → \"3.3M\"), or pass a function for full control. Pass the raw value as children, not a pre-formatted string.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 219
+        "line": 204
       }
     },
     {
@@ -2594,7 +2594,7 @@
       "description": "Apply a line-through decoration, e.g. for a struck-out previous price.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 196
+        "line": 181
       }
     },
     {
@@ -2603,7 +2603,7 @@
       "description": "Render a pulsing skeleton placeholder instead of children, for content that is still loading.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 182
+        "line": 167
       }
     },
     {
@@ -2612,7 +2612,7 @@
       "description": "Render in the monospace font family while keeping the variant's size and weight. Orthogonal to `variant`, so any text can be monospaced.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 201
+        "line": 186
       }
     },
     {
@@ -2621,7 +2621,7 @@
       "description": "When greater than 1, renders a multi-line loading skeleton with that many lines.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 192
+        "line": 177
       }
     },
     {
@@ -2630,7 +2630,7 @@
       "description": "Sizes the single-line loading skeleton. Falls back to children, then to \"Loading...\".",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 187
+        "line": 172
       }
     },
     {
@@ -2639,7 +2639,7 @@
       "description": "Align figures for vertical scanning in tables and stat readouts. Pairs well with a numeric `formatter`.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 206
+        "line": 191
       }
     },
     {
@@ -2648,23 +2648,23 @@
       "description": "Truncate overflow. `true` clamps to a single line with an ellipsis; a number clamps to that many lines. The component owns the CSS, so callers never hand-roll line-clamp utilities.",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 212
+        "line": 197
       }
     },
     {
       "name": "variant",
-      "type": "\"body\" | \"caption\" | \"label\" | \"default\" | \"heading-2xl\" | \"heading-xl\" | \"heading-l\" | \"heading-m\" | \"heading-s\" | \"heading-xs\" | \"heading-xxs\" | null",
+      "type": "TextVariant",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 28
+        "line": 63
       }
     },
     {
       "name": "wrap",
-      "type": "\"wrap\" | \"nowrap\" | \"balance\" | \"pretty\" | null",
+      "type": "TextWrap",
       "source": {
         "path": "clients/packages/orbit/src/primitives/createText.tsx",
-        "line": 61
+        "line": 66
       }
     }
   ],
@@ -2775,6 +2775,55 @@
       "source": {
         "path": "clients/packages/orbit/src/components/Avatar.tsx",
         "line": 11
+      }
+    }
+  ],
+  "alert": [
+    {
+      "name": "title",
+      "type": "string",
+      "required": true,
+      "description": "The headline of the alert, rendered in the variant's accent color.",
+      "source": {
+        "path": "clients/packages/orbit/src/components/Alert.tsx",
+        "line": 58
+      }
+    },
+    {
+      "name": "variant",
+      "type": "AlertVariant",
+      "required": true,
+      "description": "Picks the icon, surface tint and accent color in one go. Use it to map the alert to its meaning rather than styling icon and colors by hand.",
+      "source": {
+        "path": "clients/packages/orbit/src/components/Alert.tsx",
+        "line": 54
+      }
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "description": "Supporting copy shown beneath the title. Omit for a title-only alert.",
+      "source": {
+        "path": "clients/packages/orbit/src/components/Alert.tsx",
+        "line": 62
+      }
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "description": "Swaps the variant icon for a spinner, for an alert whose subject is still resolving. Colors and layout are unchanged.",
+      "source": {
+        "path": "clients/packages/orbit/src/components/Alert.tsx",
+        "line": 67
+      }
+    },
+    {
+      "name": "onDismiss",
+      "type": "(() => void)",
+      "description": "Called when the dismiss button is pressed. Provide it to render a dismiss button; omit it for a persistent alert.",
+      "source": {
+        "path": "clients/packages/orbit/src/components/Alert.tsx",
+        "line": 72
       }
     }
   ],

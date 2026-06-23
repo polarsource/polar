@@ -18,6 +18,7 @@ const SOURCE_PATHS: Record<string, string> = {
   text: 'components/Text.tsx',
   button: 'components/Button.tsx',
   avatar: 'components/Avatar.tsx',
+  alert: 'components/Alert.tsx',
   pill: 'components/Pill.tsx',
   status: 'components/Status.tsx',
   checkbox: 'components/Checkbox.tsx',

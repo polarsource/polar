@@ -1,4 +1,6 @@
 // ─── Components ───────────────────────────────────────────────────────────────
+export { Alert } from './components/Alert'
+export type { AlertProps, AlertVariant } from './components/Alert'
 export { Avatar } from './components/Avatar'
 export type { AvatarProps } from './components/Avatar'
 export { Button, RawButton } from './components/Button'

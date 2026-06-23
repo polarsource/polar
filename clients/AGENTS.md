@@ -505,7 +505,12 @@ Use these instead of hand-rolled tailwind components:
 import { Text } from '@polar-sh/orbit' // typography (variant-driven)
 import { Button, Grid } from '@polar-sh/orbit'
 import { Avatar, SegmentedControl } from '@polar-sh/orbit'
+import { Alert } from '@polar-sh/orbit' // tinted callout (notice/warning/danger/success)
 ```
+
+`Alert` takes a `variant` (`notice` | `warning` | `danger` | `success`), a `title`, and an
+optional `description`; the variant abstracts away the icon and all colors. It also accepts
+`loading` (swaps the icon for a spinner) and `onDismiss` (renders a dismiss button).
 
 Prefer `Box` when you need full control; prefer the named primitive when one exists for
 your use case (Text for any text node, Button for actions, Grid for grid layouts).

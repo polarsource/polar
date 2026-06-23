@@ -78,4 +78,11 @@ class Dispute(DisputeBase):
     A dispute is a challenge raised by a customer or their bank regarding a payment.
     """
 
-    pass
+    case_id: Annotated[
+        UUID4 | None,
+        Field(
+            description=(
+                "The ID of the support case for this dispute, if one was opened."
+            ),
+        ),
+    ]

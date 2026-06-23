@@ -23,6 +23,7 @@ from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
     from polar.models import Order, Payment
+    from polar.models.support_case import DisputeSupportCase
 
 
 class DisputeStatus(StrEnum):
@@ -125,6 +126,24 @@ class Dispute(RecordModel):
     @declared_attr
     def payment(cls) -> Mapped["Payment"]:
         return relationship("Payment", lazy="raise")
+
+    @declared_attr
+    def support_case(cls) -> Mapped["DisputeSupportCase | None"]:
+        # The live merchant support case for this dispute, if one was opened.
+        return relationship(
+            "DisputeSupportCase",
+            lazy="raise",
+            uselist=False,
+            viewonly=True,
+            primaryjoin=(
+                "and_(Dispute.id == DisputeSupportCase.dispute_id, "
+                "DisputeSupportCase.deleted_at == None)"
+            ),
+        )
+
+    @property
+    def case_id(self) -> UUID | None:
+        return self.support_case.id if self.support_case is not None else None
 
     @hybrid_property
     def resolved(self) -> bool:

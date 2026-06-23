@@ -1,3 +1,4 @@
+import contextlib
 import time
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
@@ -6,6 +7,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from pytest_mock import MockerFixture
 from redis import RedisError
+from sqlalchemy.exc import SQLAlchemyError
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -36,7 +38,16 @@ def mock_redis() -> AsyncMock:
 def mock_request(mock_redis: AsyncMock) -> MagicMock:
     req = MagicMock()
     req.state.redis = mock_redis
+    req.state.async_sessionmaker = None
     return req
+
+
+def _sessionmaker_for(session: Any) -> MagicMock:
+    @contextlib.asynccontextmanager
+    async def maker() -> Any:
+        yield session
+
+    return MagicMock(side_effect=maker)
 
 
 @pytest.mark.asyncio
@@ -87,6 +98,39 @@ class TestHealth:
 
         assert exc_info.value.status_code == 503
         assert "Redis" in str(exc_info.value.detail)
+
+    async def test_database_accessible_in_db_mode(
+        self, mock_request: MagicMock, mock_redis: AsyncMock
+    ) -> None:
+        session = AsyncMock()
+        mock_request.state.async_sessionmaker = _sessionmaker_for(session)
+
+        response = await health(mock_request)
+
+        assert response.status_code == 200
+        session.execute.assert_awaited_once()
+
+    async def test_database_unavailable_in_db_mode(
+        self, mock_request: MagicMock, mock_redis: AsyncMock
+    ) -> None:
+        session = AsyncMock()
+        session.execute.side_effect = SQLAlchemyError("Connection refused")
+        mock_request.state.async_sessionmaker = _sessionmaker_for(session)
+
+        with pytest.raises(HTTPException) as exc_info:
+            await health(mock_request)
+
+        assert exc_info.value.status_code == 503
+        assert "Database" in str(exc_info.value.detail)
+
+    async def test_database_not_checked_in_db_less_mode(
+        self, mock_request: MagicMock, mock_redis: AsyncMock
+    ) -> None:
+        mock_request.state.async_sessionmaker = None
+
+        response = await health(mock_request)
+
+        assert response.status_code == 200
 
 
 class TestIsSchedulerHealthy:
@@ -224,9 +268,6 @@ class TestLifespan:
         self, mocker: MockerFixture
     ) -> None:
         create_engine = mocker.patch.object(health_module, "create_async_engine")
-        create_read_engine = mocker.patch.object(
-            health_module, "create_async_read_engine"
-        )
         mocker.patch.object(
             health_module, "create_redis", return_value=MagicMock(close=AsyncMock())
         )
@@ -236,7 +277,6 @@ class TestLifespan:
             assert "async_sessionmaker" not in state
 
         create_engine.assert_not_called()
-        create_read_engine.assert_not_called()
 
     async def test_database_creates_engine_and_sessionmaker(
         self, mocker: MockerFixture
@@ -247,9 +287,6 @@ class TestLifespan:
         )
         mocker.patch.object(
             health_module, "create_async_sessionmaker", return_value="sessionmaker"
-        )
-        mocker.patch.object(
-            health_module.settings, "is_read_replica_configured", return_value=False
         )
         mocker.patch.object(
             health_module, "create_redis", return_value=MagicMock(close=AsyncMock())

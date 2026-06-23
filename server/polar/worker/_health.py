@@ -10,20 +10,21 @@ import structlog
 import uvicorn
 from dramatiq.middleware import Middleware
 from redis import RedisError
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
-from polar.config import settings
 from polar.external_event.repository import ExternalEventRepository
 from polar.kit.db.postgres import AsyncSessionMaker, create_async_sessionmaker
 from polar.kit.utils import utc_now
 from polar.logfire import configure_logfire
 from polar.logging import Logger
 from polar.logging import configure as configure_logging
-from polar.postgres import AsyncEngine, create_async_engine, create_async_read_engine
+from polar.postgres import AsyncEngine, create_async_engine
 from polar.redis import Redis, create_redis
 from polar.webhook.repository import WebhookEventRepository
 
@@ -57,6 +58,18 @@ async def health(request: Request) -> JSONResponse:
         await redis.ping()
     except RedisError as e:
         raise HTTPException(status_code=503, detail="Redis is not available") from e
+
+    async_sessionmaker: AsyncSessionMaker | None = getattr(
+        request.state, "async_sessionmaker", None
+    )
+    if async_sessionmaker is not None:
+        try:
+            async with async_sessionmaker() as session:
+                await session.execute(text("SELECT 1"))
+        except SQLAlchemyError as e:
+            raise HTTPException(
+                status_code=503, detail="Database is not available"
+            ) from e
 
     if _heartbeat_checker is not None and not _heartbeat_checker():
         raise HTTPException(status_code=503, detail="Scheduler heartbeat is stale")
@@ -121,10 +134,7 @@ def _create_lifespan(
 
         async_engine: AsyncEngine | None = None
         if database:
-            if settings.is_read_replica_configured():
-                async_engine = create_async_read_engine("worker")
-            else:
-                async_engine = create_async_engine("worker")
+            async_engine = create_async_engine("worker")
             state["async_sessionmaker"] = create_async_sessionmaker(async_engine)
 
         yield state

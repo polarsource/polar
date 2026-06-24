@@ -25669,6 +25669,7 @@ export interface components {
      */
     OrganizationReviewCheckReason:
       | 'not_started'
+      | 'not_authorized'
       | 'in_progress'
       | 'external_pending'
       | 'identity.rejected'
@@ -58948,6 +58949,7 @@ export const organizationReviewCheckReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationReviewCheckReason']
 > = [
   'not_started',
+  'not_authorized',
   'in_progress',
   'external_pending',
   'identity.rejected',

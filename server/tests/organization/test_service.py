@@ -63,6 +63,7 @@ from polar.support_case.repository import SupportCaseMessageRepository
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
@@ -1716,6 +1717,36 @@ class TestGetReviewState:
                 OrganizationReviewCheckReason.NOT_STARTED in reasons
                 for reasons in reason_lists
             )
+
+    @pytest.mark.auth
+    async def test_identity_owner_viewer_sees_not_started(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        state = await organization_service.get_review_state(
+            session, organization, auth_subject
+        )
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_STRIPE_VERIFICATION)
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert OrganizationReviewCheckReason.NOT_STARTED in step.reasons
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
+    async def test_identity_non_owner_viewer_sees_not_authorized(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        state = await organization_service.get_review_state(
+            session, organization, auth_subject
+        )
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_STRIPE_VERIFICATION)
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert step.reasons == [OrganizationReviewCheckReason.NOT_AUTHORIZED]
 
     async def test_email_set_passes(
         self,

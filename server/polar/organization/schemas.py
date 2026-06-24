@@ -682,6 +682,7 @@ class OrganizationReviewCheckReason(StrEnum):
 
     # Universal
     NOT_STARTED = "not_started"
+    NOT_AUTHORIZED = "not_authorized"
     IN_PROGRESS = "in_progress"
     EXTERNAL_PENDING = "external_pending"
 

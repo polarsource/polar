@@ -32,8 +32,14 @@ export const IdentityVerificationSection = ({
     })
   }, [identityVerificationStatus, organization.id])
 
+  const notAuthorized = (step.reasons ?? []).includes('not_authorized')
+  const status =
+    step.status === 'passed' ? 'verified' : identityVerificationStatus
+
   const tone = step.status === 'failed' ? 'danger' : 'warning'
   const showBanners =
+    !notAuthorized &&
+    step.status !== 'passed' &&
     reasonItems.length > 0 &&
     (identityVerificationStatus === 'failed' ||
       identityVerificationStatus === 'unverified' ||
@@ -42,8 +48,9 @@ export const IdentityVerificationSection = ({
   return (
     <>
       <IdentityVerificationStatusContent
-        status={identityVerificationStatus}
+        status={status}
         onStart={start}
+        notAuthorized={notAuthorized}
       />
       {showBanners && (
         <Box flexDirection="column" rowGap="m">

@@ -1,7 +1,7 @@
 output "management_account" {
   value = {
-    id   = data.aws_organizations_organization.current.master_account_id
-    name = data.aws_organizations_organization.current.master_account_name
+    id   = aws_organizations_organization.current.master_account_id
+    name = aws_organizations_organization.current.master_account_name
   }
 }
 

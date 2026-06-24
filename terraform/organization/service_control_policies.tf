@@ -140,4 +140,6 @@ resource "aws_organizations_policy_attachment" "service_control" {
 
   policy_id = aws_organizations_policy.service_control[each.value.policy_key].id
   target_id = each.value.target_id
+
+  depends_on = [aws_organizations_organization.current]
 }

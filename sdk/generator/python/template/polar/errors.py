@@ -14,8 +14,16 @@ from polar.outputs import (
 
 {% for error in errors %}
 class {{ error.name }}(PolarClientError):
+{% if error.response_type == "json" %}
     error_type = {{ error.type | type_annotation(ref_suffix="Model") }}
     error: {{ error.type | type_annotation(ref_suffix="Model") }}
+{% elif error.response_type == "text" %}
+    error_type = str
+    error: str
+{% elif error.response_type == "none" %}
+    error_type = None
+    error: None
+{% endif %}
 
     def __init__(self, status_code: int, error: {{ error.type | type_annotation(ref_suffix="Model") }}) -> None:
         self.error = error

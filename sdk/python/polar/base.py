@@ -1,3 +1,4 @@
+import builtins
 import types
 import typing
 
@@ -141,9 +142,16 @@ def _handle_errors(
     if response.is_client_error:
         try:
             error_class = (errors or {})[status_code]
-            raise error_class(
-                status_code, retort.load(response.json(), error_class.error_type)
-            )
+            match error_class.error_type:
+                case None:
+                    raise error_class(status_code, None)
+                case builtins.str:
+                    raise error_class(status_code, response.text)
+                case _:
+                    raise error_class(
+                        status_code,
+                        retort.load(response.json(), error_class.error_type),
+                    )
         except KeyError:
             raise PolarClientError(status_code, response.text)
 

@@ -402,7 +402,7 @@ class TestUpdateReviewSubmission:
         error_locations = {tuple(error["loc"]) for error in exc_info.value.errors()}
         assert ("body", "website") in error_locations
         assert ("body", "email") in error_locations
-        assert ("body", "socials") in error_locations
+        assert ("body", "socials") not in error_locations
         assert ("body", "details", "product_description") in error_locations
 
     @pytest.mark.auth
@@ -2339,6 +2339,23 @@ class TestGetReviewState:
             step.status == OrganizationReviewCheckStatus.PASSED
             for step in state.preliminary_steps
         )
+
+    async def test_missing_socials_does_not_block_submission(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        await _setup_passing_org(save_fixture, organization, user)
+        organization.socials = []
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+
+        socials_step = _step(state, OrganizationReviewCheckKey.IDENTITY_SOCIAL_LINKS)
+        assert socials_step.status == OrganizationReviewCheckStatus.PENDING
+        assert state.can_submit is True
 
     async def test_submitted_blocks_resubmission(
         self,

@@ -585,7 +585,7 @@ class OrganizationReviewSubmission(Schema):
     name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
     website: Annotated[str, StringConstraints(min_length=1)]
     email: EmailStrDNS
-    socials: list[OrganizationSocialLink] = Field(min_length=1)
+    socials: list[OrganizationSocialLink] = Field(default_factory=list)
     details: Annotated[
         OrganizationReviewSubmissionDetails,
         BeforeValidator(_empty_review_submission_details_to_dict),

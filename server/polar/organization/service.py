@@ -1594,6 +1594,7 @@ class OrganizationService:
         ]
 
         submitted_at = organization.details_submitted_at
+        optional_keys = {OrganizationReviewCheckKey.IDENTITY_SOCIAL_LINKS}
         is_blocked = any(
             step.status
             in (
@@ -1601,6 +1602,7 @@ class OrganizationService:
                 OrganizationReviewCheckStatus.PENDING,
             )
             for step in preliminary_steps
+            if step.key not in optional_keys
         )
         can_submit = submitted_at is None and not is_blocked
 

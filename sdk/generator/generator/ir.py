@@ -514,6 +514,8 @@ def _convert_typeref(
     if schema_type == "object" or schema.properties is not None:
         if schema.properties is None and schema.additionalProperties is not None:
             if isinstance(schema.additionalProperties, bool):
+                if not schema.additionalProperties:
+                    return PrimitiveType(kind="primitive", type="unknown")
                 return MapType(
                     kind="map",
                     value_type=PrimitiveType(kind="primitive", type="unknown"),

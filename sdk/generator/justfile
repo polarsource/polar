@@ -14,4 +14,4 @@ lint-check:
     uv run ty check .
 
 test:
-    uv run pytest -vv
+    uv run pytest tests/

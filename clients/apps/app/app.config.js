@@ -64,6 +64,9 @@ module.exports = {
         'com.apple.security.application-groups': [
           'group.com.polarsource.Polar',
         ],
+        'keychain-access-groups': [
+          '$(AppIdentifierPrefix)com.polarsource.Polar',
+        ],
       },
       associatedDomains: ['applinks:polar.godetour.link'],
     },

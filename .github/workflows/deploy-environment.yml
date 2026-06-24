@@ -85,7 +85,6 @@ jobs:
     concurrency:
       group: deploy-backend-${{ inputs.environment }}
       cancel-in-progress: false
-    needs: build-frontend
     if: always() && inputs.skip-backend != true
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}

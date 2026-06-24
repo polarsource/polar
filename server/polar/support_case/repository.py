@@ -2,10 +2,13 @@ from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, func, select, text
+from sqlalchemy import ColumnElement, Select, func, select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import joinedload
 
+from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
+from polar.auth.permission import OrganizationPermission
+from polar.authz.repository import select_accessible_org_ids
 from polar.kit.repository.base import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -37,6 +40,30 @@ class SupportCaseRepository(
     RepositoryBase[SupportCase],
 ):
     model = SupportCase
+
+    def get_readable_statement(
+        self, auth_subject: AuthSubject[User | Organization]
+    ) -> Select[tuple[SupportCase]]:
+        """Cases the subject may read: those owned by an organization they manage.
+
+        Merchant-facing parity with the appeal gating — only org admins
+        (``organization:manage``), not every member, may reach a case.
+        """
+        statement = self.get_base_statement()
+        if is_user(auth_subject):
+            statement = statement.where(
+                SupportCase.organization_id.in_(
+                    select_accessible_org_ids(
+                        auth_subject,
+                        permission=OrganizationPermission.organization_manage,
+                    )
+                )
+            )
+        elif is_organization(auth_subject):
+            statement = statement.where(
+                SupportCase.organization_id == auth_subject.subject.id
+            )
+        return statement
 
 
 class SupportCaseMessageRepository(

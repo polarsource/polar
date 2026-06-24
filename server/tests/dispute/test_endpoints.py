@@ -4,10 +4,11 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
-from polar.models import Customer, Dispute, Product, UserOrganization
+from polar.models import Customer, Dispute, Organization, Product, UserOrganization
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_dispute,
+    create_dispute_case,
     create_order,
     create_payment,
 )
@@ -70,3 +71,39 @@ class TestGetDispute:
         response = await client.get(f"/v1/disputes/{dispute_organization_second.id}")
 
         assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_case_id_present_when_case_exists(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        case = await create_dispute_case(save_fixture, organization, customer, product)
+
+        response = await client.get(f"/v1/disputes/{case.dispute_id}")
+
+        assert response.status_code == 200
+        assert response.json()["case_id"] == str(case.id)
+
+    @pytest.mark.auth
+    async def test_case_id_null_without_case(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer, product=product)
+        payment = await create_payment(save_fixture, organization, order=order)
+        dispute = await create_dispute(save_fixture, order, payment)
+
+        response = await client.get(f"/v1/disputes/{dispute.id}")
+
+        assert response.status_code == 200
+        assert response.json()["case_id"] is None

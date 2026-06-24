@@ -20456,6 +20456,8 @@ export interface components {
       sub_type: components['schemas']['SubType']
       /** Sub */
       sub: string
+      /** Organizations */
+      organizations: string[]
       /** Aud */
       aud: string
       /** Iss */

@@ -8,7 +8,8 @@ WORKDIR /app
 
 COPY ./emails/pnpm-lock.yaml .
 COPY ./emails/package.json .
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,target=/pnpm/store \
+  pnpm install --frozen-lockfile --store-dir=/pnpm/store
 
 COPY ./emails/src src/
 COPY ./emails/tsconfig.json .
@@ -27,7 +28,8 @@ WORKDIR /app
 COPY ./polar/backoffice/pnpm-lock.yaml .
 COPY ./polar/backoffice/package.json .
 COPY ./polar/backoffice/pnpm-workspace.yaml .
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,target=/pnpm/store \
+  pnpm install --frozen-lockfile --store-dir=/pnpm/store
 
 COPY ./polar/backoffice/ .
 
@@ -83,11 +85,11 @@ FROM --platform=$BUILDPLATFORM python:3.14-slim AS production
 LABEL org.opencontainers.image.source=https://github.com/polarsource/polar
 LABEL org.opencontainers.image.description="Polar"
 LABEL org.opencontainers.image.licenses=Apache-2.0
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.11.24 /uv /uvx /bin/
 
 ENV PYTHONUNBUFFERED=1
 ENV UV_COMPILE_BYTECODE=1
-ENV UV_NO_CACHE=1
+ENV UV_LINK_MODE=copy
 ENV UV_NO_SYNC=1
 ENV PATH="/root/.local/bin:$PATH"
 
@@ -95,12 +97,12 @@ WORKDIR /app/server
 
 RUN --mount=type=bind,source=uv.lock,target=uv.lock \
   --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+  --mount=type=cache,target=/root/.cache/uv \
   apt-get update \
   && apt-get install -y \
   git \
   build-essential \
-  redis \
-  libpq-dev \
+  libpq5 \
   && uv sync --no-group dev --frozen \
   && uv tool install tinybird --python 3.13 \
   && apt-get autoremove -y build-essential
@@ -111,7 +113,6 @@ COPY --from=build-emails-bin /app/bin/react-email-pkg /app/server/
 ENV POLAR_EMAIL_RENDERER_BINARY_PATH=/app/server/react-email-pkg
 
 COPY --from=build-backoffice /app/static /app/server/polar/backoffice/static
-RUN ls -la /app/server/polar/backoffice/static
 
 COPY --from=download-ipinfo /data /data
 ENV POLAR_IP_GEOLOCATION_DATABASE_DIRECTORY_PATH=/data
@@ -126,18 +127,18 @@ CMD ["uv", "run", "uvicorn", "polar.app:app", "--host", "0.0.0.0", "--port", "10
 
 # Stage 6: AWS Lambda image (SQS-driven background tasks, POC)
 FROM public.ecr.aws/lambda/python:3.14 AS lambda-build
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.11.24 /uv /uvx /bin/
 
 ENV PYTHONUNBUFFERED=1
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
-ENV UV_NO_CACHE=1
 ENV UV_NO_SYNC=1
 
 WORKDIR /app/server
 
 RUN --mount=type=bind,source=uv.lock,target=uv.lock \
   --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+  --mount=type=cache,target=/root/.cache/uv \
   dnf install -y gcc gcc-c++ git make \
   && uv sync --no-group dev --frozen \
   && dnf clean all
@@ -161,8 +162,8 @@ ENV RELEASE_VERSION=${RELEASE_VERSION}
 
 COPY --from=lambda-build /app /app
 COPY --from=lambda-build /data /data
-COPY --from=docker.io/tailscale/tailscale:stable /usr/local/bin/tailscaled /var/runtime/tailscaled
-COPY --from=docker.io/tailscale/tailscale:stable /usr/local/bin/tailscale /var/runtime/tailscale
+COPY --from=docker.io/tailscale/tailscale:v1.98.4 /usr/local/bin/tailscaled /var/runtime/tailscaled
+COPY --from=docker.io/tailscale/tailscale:v1.98.4 /usr/local/bin/tailscale /var/runtime/tailscale
 
 ENV LAMBDA_TASK_ROOT=/app/server
 ENV PATH="/app/server/.venv/bin:$PATH"

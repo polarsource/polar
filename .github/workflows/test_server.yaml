@@ -26,7 +26,7 @@ jobs:
       tinybird: ${{ steps.filter.outputs.tinybird }}
       server_files: ${{ steps.filter.outputs.server_files }}
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -50,7 +50,7 @@ jobs:
     timeout-minutes: 15
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
 
       # - uses: actions/cache@v4
       #   with:
@@ -67,7 +67,7 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.2.0
         with:
           python-version-file: "server/pyproject.toml"
 
@@ -90,9 +90,9 @@ jobs:
     timeout-minutes: 10
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
 
-      - uses: pnpm/action-setup@v6.0.8
+      - uses: pnpm/action-setup@v6.0.9
         with:
           package_json_file: server/emails/package.json
 
@@ -131,7 +131,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
 
       - name: 🐦 Install Tinybird CLI
         run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
@@ -291,7 +291,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
 
       - name: 💿 MinIO Setup
         working-directory: ./server/.minio
@@ -306,7 +306,7 @@ jobs:
           POLICY_FILE: policy.json
         run: bash github.sh
 
-      - uses: pnpm/action-setup@v6.0.8
+      - uses: pnpm/action-setup@v6.0.9
         with:
           package_json_file: server/emails/package.json
 
@@ -327,13 +327,13 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.2.0
         with:
           python-version-file: "server/pyproject.toml"
 
       - name: Cache CJK fonts
         id: cjk-fonts-cache
-        uses: actions/cache@v5
+        uses: actions/cache@v5.0.5
         with:
           path: /usr/share/fonts/opentype/noto
           key: cjk-fonts-${{ runner.os }}-noto-cjk-v1

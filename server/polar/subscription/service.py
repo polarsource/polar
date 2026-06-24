@@ -1795,8 +1795,14 @@ class SubscriptionService:
     async def cancel_customer(
         self, session: AsyncSession, customer_id: uuid.UUID
     ) -> None:
+        """Immediately cancel all billable subscriptions of a customer.
+
+        Used when a customer is deleted. This includes ``past_due`` subscriptions,
+        whose pending orders would otherwise keep being retried by dunning. Revoking
+        them voids any pending order through ``_on_subscription_revoked``.
+        """
         subscription_repository = SubscriptionRepository.from_session(session)
-        subscriptions = await subscription_repository.list_active_by_customer(
+        subscriptions = await subscription_repository.list_billable_by_customer(
             customer_id, options=subscription_repository.get_eager_options()
         )
         for subscription in subscriptions:

@@ -221,6 +221,8 @@ jobs:
           context: ./server
           target: production
           platforms: linux/amd64
+          cache-from: type=registry,ref=ghcr.io/polarsource/polar:buildcache
+          cache-to: type=registry,ref=ghcr.io/polarsource/polar:buildcache,mode=max
           build-args: |
             RELEASE_VERSION=${{ github.sha }}
           secrets: |

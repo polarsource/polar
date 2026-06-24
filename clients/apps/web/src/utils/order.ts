@@ -44,7 +44,7 @@ export function isOrderInDunning(
   return (
     !order.paid &&
     order.subscription_id !== null &&
-    (!!order.next_payment_attempt_at ||
-      payments.some((payment) => payment.status === 'failed'))
+    order.next_payment_attempt_at !== null &&
+    payments.some((payment) => payment.status === 'failed')
   )
 }

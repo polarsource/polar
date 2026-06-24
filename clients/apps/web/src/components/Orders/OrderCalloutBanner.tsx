@@ -1,19 +1,17 @@
 'use client'
 
+import PaymentMethod from '@/components/PaymentMethod/PaymentMethod'
 import { schemas } from '@polar-sh/client'
-import { Status, Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { addDays, min, parseISO } from 'date-fns'
+import { addDays, isPast, min, parseISO } from 'date-fns'
+import { ExternalLinkIcon } from 'lucide-react'
 
-const DUNNING_RETRY_COUNT = 4
-const DUNNING_MAX_ATTEMPTS = DUNNING_RETRY_COUNT + 1
 const DUNNING_TOTAL_RETRY_DAYS = 21
-const DUNNING_COUNTING_TRIGGERS = new Set<schemas['PaymentTrigger']>([
-  'purchase',
-  'subscription_cycle',
-  'retry_dunning',
-])
+
+const FAILED_PAYMENTS_DOCS_URL =
+  'https://docs.polar.sh/features/subscriptions/failed-payments'
 
 interface OrderCalloutBannerProps {
   organization: schemas['Organization']
@@ -28,13 +26,6 @@ export const OrderCalloutBanner = ({
   subscription,
   payments,
 }: OrderCalloutBannerProps) => {
-  const failedDunningAttempts = payments.filter(
-    (payment) =>
-      payment.status === 'failed' &&
-      typeof payment.trigger === 'string' &&
-      DUNNING_COUNTING_TRIGGERS.has(payment.trigger),
-  ).length
-
   const latestFailedPayment =
     payments
       .filter((payment) => payment.status === 'failed')
@@ -50,159 +41,181 @@ export const OrderCalloutBanner = ({
   const gracePeriodDays =
     organization.subscription_settings.benefit_revocation_grace_period
 
-  const cancellationDate = subscription.ended_at
-    ? parseISO(subscription.ended_at)
-    : revocationDeadline
-
   const benefitsRevocationDate = subscription.past_due_at
     ? min(
-        [
-          addDays(parseISO(subscription.past_due_at), gracePeriodDays),
-          cancellationDate,
-        ].filter((date) => date !== null),
-      )
+      [
+        addDays(parseISO(subscription.past_due_at), gracePeriodDays),
+        revocationDeadline,
+      ].filter((date) => date !== null),
+    )
     : null
-
-  const benefitsRevoked =
-    benefitsRevocationDate !== null && benefitsRevocationDate < new Date()
 
   const failedPaymentDisplayMessage =
     latestFailedPayment?.decline_message ?? latestFailedPayment?.decline_reason
 
+  const benefitsRevokedInPast = benefitsRevocationDate
+    ? isPast(benefitsRevocationDate)
+    : false
+  const subscriptionCanceledInPast = revocationDeadline
+    ? isPast(revocationDeadline)
+    : false
+
   return (
     <Box
-      display="grid"
-      gridTemplateColumns={{ base: '1fr', xl: 'repeat(2, minmax(0, 1fr))' }}
-      alignItems="stretch"
+      flexDirection="column"
       overflow="hidden"
       borderRadius="l"
       borderWidth={1}
       borderStyle="solid"
       borderColor="border-primary"
-      backgroundColor="background-card-raised"
     >
       <Box
-        flexDirection="column"
-        rowGap="l"
-        padding={{ base: 'l', md: 'xl' }}
-        justifyContent="center"
+        alignItems="center"
+        columnGap="m"
+        paddingHorizontal="xl"
+        paddingVertical="l"
       >
-        <Box flexDirection="column" rowGap="m">
-          <Box alignItems="center" columnGap="m" flexWrap="wrap" rowGap="s">
-            <Text as="strong" variant="body">
-              Payment failed
-            </Text>
-            <Status
-              status={
-                subscription.status === 'past_due'
-                  ? 'Past due'
-                  : 'Renewal failed'
-              }
-              color="red"
-              size="small"
-            />
-          </Box>
-          {failedPaymentDisplayMessage ? (
-            <Text>{failedPaymentDisplayMessage}</Text>
-          ) : null}
-          {latestFailedPayment ? (
-            <Text color="muted">
-              Last attempt{' '}
-              <Text as="span" color="default">
-                <FormattedDateTime
-                  dateStyle="medium"
-                  resolution="time"
-                  datetime={latestFailedPayment.created_at}
-                />
-              </Text>
-            </Text>
-          ) : null}
-        </Box>
+        <Text variant="heading-xxs" as="strong">
+          Payment Failed
+        </Text>
       </Box>
 
       <Box
-        flexDirection="column"
-        rowGap="l"
-        padding={{ base: 'l', md: 'xl' }}
-        justifyContent="center"
-        borderLeftWidth={{ base: 0, xl: 1 }}
-        borderTopWidth={{ base: 1, xl: 0 }}
+        display="grid"
+        gridTemplateColumns={{ base: '1fr', lg: 'repeat(3, 1fr)' }}
+        borderTopWidth={1}
         borderStyle="solid"
         borderColor="border-primary"
       >
-        <Box flexDirection="column" rowGap="xs">
-          <Text color="muted">
-            {subscription.ended_at !== null ? 'Outcome' : 'What happens next'}
-          </Text>
-          <Text as="strong" variant="body">
-            Attempt{' '}
-            {Math.min(Math.max(failedDunningAttempts, 1), DUNNING_MAX_ATTEMPTS)}{' '}
-            of {DUNNING_MAX_ATTEMPTS}
-          </Text>
-          {subscription.ended_at ? null : order.next_payment_attempt_at ? (
-            <Text color="muted">
-              Next automatic retry{' '}
-              <Text as="span" color="default">
+        <Box flexDirection="column" rowGap="m" padding="xl">
+          <Box flexDirection="column" rowGap="xs">
+            <Text color="muted">Last attempt</Text>
+            {latestFailedPayment ? (
+              <Text variant="heading-xxs">
                 <FormattedDateTime
-                  dateStyle="medium"
                   resolution="time"
+                  showYear={false}
+                  datetime={latestFailedPayment.created_at}
+                />
+              </Text>
+            ) : null}
+          </Box>
+          {latestFailedPayment ? (
+            <span className="text-sm">
+              <PaymentMethod payment={latestFailedPayment} />
+            </span>
+          ) : null}
+          {failedPaymentDisplayMessage ? (
+            <Box
+              flexDirection="column"
+              rowGap="xs"
+              backgroundColor="background-card"
+              borderRadius="m"
+              padding="l"
+            >
+              <Text variant="caption" color="muted">
+                Bank Decline Reason
+              </Text>
+              <Text>{failedPaymentDisplayMessage}</Text>
+            </Box>
+          ) : null}
+        </Box>
+
+        <Box
+          flexDirection="column"
+          rowGap="m"
+          padding="xl"
+          borderTopWidth={{ base: 1, lg: 0 }}
+          borderLeftWidth={{ base: 0, lg: 1 }}
+          borderStyle="solid"
+          borderColor="border-primary"
+        >
+          <Box flexDirection="column" rowGap="xs">
+            <Text color="muted">Next attempt</Text>
+            {order.next_payment_attempt_at ? (
+              <Text variant="heading-xxs">
+                <FormattedDateTime
+                  resolution="day"
+                  showYear={false}
                   datetime={order.next_payment_attempt_at}
                 />
               </Text>
-            </Text>
-          ) : (
-            <Text color="muted">
-              No further automatic retries are scheduled for this order.
-            </Text>
-          )}
-          {subscription.ended_at ? (
-            <Text color="muted">
-              The subscription was canceled on{' '}
-              <Text as="span" color="default">
-                <FormattedDateTime
-                  dateStyle="medium"
-                  resolution="day"
-                  datetime={subscription.ended_at}
-                />
+            ) : null}
+          </Box>
+          <Text>
+            Polar always tries to recover failed subscription payments for you.
+          </Text>
+          <a
+            href={FAILED_PAYMENTS_DOCS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-fit"
+          >
+            <Box
+              as="span"
+              display="inline-flex"
+              alignItems="center"
+              columnGap="xs"
+            >
+              <Text as="span">
+                <span className="underline">Learn more</span>
               </Text>
-              .
-            </Text>
-          ) : revocationDeadline ? (
-            <Text color="muted">
-              If all retries fail, the subscription is canceled by{' '}
-              <Text as="span" color="default">
+              <ExternalLinkIcon className="h-3.5 w-3.5 shrink-0" />
+            </Box>
+          </a>
+        </Box>
+
+        <Box
+          flexDirection="column"
+          rowGap="m"
+          padding="xl"
+          borderTopWidth={{ base: 1, lg: 0 }}
+          borderLeftWidth={{ base: 0, lg: 1 }}
+          borderStyle="solid"
+          borderColor="border-primary"
+        >
+          <Box flexDirection="column" rowGap="xs">
+            <Text color="muted">What happens next</Text>
+            {revocationDeadline ? (
+              <Text variant="heading-xxs">
                 <FormattedDateTime
-                  dateStyle="medium"
                   resolution="day"
+                  showYear={false}
                   datetime={revocationDeadline.toISOString()}
                 />
               </Text>
-              .
-            </Text>
-          ) : (
-            <Text color="muted">
-              If all retries fail, the subscription is canceled.
-            </Text>
-          )}
-          {benefitsRevocationDate ? (
-            <Text color="muted">
-              {benefitsRevoked
-                ? 'Benefits were revoked on '
-                : 'Benefits stay active until '}
-              <Text as="span" color="default">
+            ) : null}
+          </Box>
+          <Text>
+            If we can&apos;t recover the payment, the subscription{' '}
+            {subscriptionCanceledInPast ? 'was canceled' : 'will be canceled'}
+            {revocationDeadline ? (
+              <>
+                {' on '}
                 <FormattedDateTime
-                  dateStyle="medium"
                   resolution="day"
+                  showYear={false}
+                  datetime={revocationDeadline.toISOString()}
+                />
+              </>
+            ) : null}
+            .
+          </Text>
+          <Text>
+            Benefits{' '}
+            {benefitsRevokedInPast ? 'were revoked' : 'will be revoked'}
+            {benefitsRevocationDate ? (
+              <>
+                {' on '}
+                <FormattedDateTime
+                  resolution="day"
+                  showYear={false}
                   datetime={benefitsRevocationDate.toISOString()}
                 />
-              </Text>
-              {benefitsRevoked ? '.' : ', then are revoked.'}
-            </Text>
-          ) : (
-            <Text color="muted">
-              Benefits are revoked as soon as the subscription is canceled.
-            </Text>
-          )}
+              </>
+            ) : null}
+            .
+          </Text>
         </Box>
       </Box>
     </Box>

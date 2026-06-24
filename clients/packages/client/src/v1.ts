@@ -39447,7 +39447,7 @@ export interface operations {
     }
     responses: {
       /** @description Reply posted. */
-      200: {
+      201: {
         headers: {
           [name: string]: unknown
         }

@@ -81,8 +81,9 @@ async def get_support_case(
     "/{id}/messages",
     summary="Reply to Support Case",
     response_model=SupportCaseMessageSchema,
+    status_code=201,
     responses={
-        200: {"description": "Reply posted."},
+        201: {"description": "Reply posted."},
         404: SupportCaseNotFound,
         409: {
             "description": "The case is closed, or its type does not accept replies.",

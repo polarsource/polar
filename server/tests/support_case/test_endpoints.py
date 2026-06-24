@@ -130,7 +130,7 @@ class TestReplyToSupportCase:
             f"/v1/support-cases/{case.id}/messages",
             json={"body": "here is more detail"},
         )
-        assert response.status_code == 200
+        assert response.status_code == 201
         assert response.json()["body"] == "here is more detail"
 
     @pytest.mark.auth
@@ -150,7 +150,7 @@ class TestReplyToSupportCase:
             f"/v1/support-cases/{case.id}/messages",
             json={"body": "see attached", "file_ids": [str(file.id)]},
         )
-        assert response.status_code == 200
+        assert response.status_code == 201
 
         thread = await client.get(f"/v1/support-cases/{case.id}")
         attachments = thread.json()["attachments"]

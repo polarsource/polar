@@ -10,6 +10,7 @@ from polar.oauth2.sub_type import SubTypeModelMixin
 
 if TYPE_CHECKING:
     from .oauth2_client import OAuth2Client
+    from .oauth2_token_organization import OAuth2TokenOrganization
 
 
 class OAuth2Token(RecordModel, OAuth2TokenMixin, SubTypeModelMixin):
@@ -25,6 +26,17 @@ class OAuth2Token(RecordModel, OAuth2TokenMixin, SubTypeModelMixin):
             primaryjoin="foreign(OAuth2Token.client_id) == OAuth2Client.client_id",
             viewonly=True,
             lazy="raise",
+        )
+
+    @declared_attr
+    def organization_scopes(cls) -> Mapped[list["OAuth2TokenOrganization"]]:
+        # Down-scope links (M2M). Eager-loaded so the auth middleware can read
+        # the scope on every request without a lazy load. No rows means the
+        # token is unrestricted.
+        return relationship(
+            "OAuth2TokenOrganization",
+            lazy="selectin",
+            cascade="all, delete-orphan",
         )
 
     @property

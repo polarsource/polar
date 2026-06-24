@@ -56,6 +56,9 @@ class OAuth2Token(RecordModel, OAuth2TokenMixin, SubTypeModelMixin):
             "scope": self.get_scope(),
             "sub_type": self.sub_type,
             "sub": str(self.sub.id),
+            "organizations": [
+                str(scope.organization_id) for scope in self.organization_scopes
+            ],
             "aud": self.client_id,
             "iss": issuer,
             "exp": self.expires_at,

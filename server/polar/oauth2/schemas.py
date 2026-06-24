@@ -186,6 +186,7 @@ class IntrospectTokenResponse(Schema):
     scope: str
     sub_type: SubType
     sub: str
+    organizations: list[str]
     aud: str
     iss: str
     exp: int

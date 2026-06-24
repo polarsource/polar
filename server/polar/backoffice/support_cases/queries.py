@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from typing import Any, cast
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, and_, func, or_, select
 
 from polar.models import Dispute, Order, Organization, User
 from polar.models.organization_review import OrganizationReview
@@ -17,12 +17,16 @@ from polar.models.support_case import (
     DisputeSupportCase,
     ReviewAppealSupportCase,
     SupportCase,
+    SupportCaseMessage,
+    SupportCaseMessageType,
+    SupportCaseParticipant,
+    SupportCaseParticipantKind,
     SupportCaseType,
 )
 from polar.support_case.repository import SupportCaseMessageRepository
 
-# (case, organization, is_open, assignee_email, awaiting_platform)
-Row = tuple[SupportCase, Organization, bool, str | None, bool]
+# (case, organization, is_open, assignee_email, awaiting_platform, unread)
+Row = tuple[SupportCase, Organization, bool, str | None, bool, bool]
 
 # Human-readable label per case type, shared by every case list.
 TYPE_LABELS: dict[SupportCaseType, str] = {
@@ -39,6 +43,7 @@ def cases_statement(
     status: str = "all",
     assigned: str = "all",
     assigned_user_id: UUID | None = None,
+    viewer_user_id: UUID | None = None,
     case_type: str = "all",
     sort: str = "recency",
 ) -> Select[Row]:
@@ -50,6 +55,35 @@ def cases_statement(
     """
     is_open = SupportCaseMessageRepository.is_open_expression()
     awaiting_platform = SupportCaseMessageRepository.awaiting_platform_expression()
+
+    latest_activity = (
+        select(func.max(SupportCaseMessage.created_at))
+        .where(
+            SupportCaseMessage.case_id == SupportCase.id,
+            SupportCaseMessage.type.notin_(
+                [
+                    SupportCaseMessageType.assigned,
+                    SupportCaseMessageType.released,
+                ]
+            ),
+        )
+        .scalar_subquery()
+    )
+    viewer_read_at = (
+        select(SupportCaseParticipant.last_read_at)
+        .where(
+            SupportCaseParticipant.case_id == SupportCase.id,
+            SupportCaseParticipant.kind == SupportCaseParticipantKind.platform,
+            SupportCaseParticipant.platform_user_id == viewer_user_id,
+            SupportCaseParticipant.deleted_at.is_(None),
+        )
+        .scalar_subquery()
+    )
+    unread = and_(
+        latest_activity.isnot(None),
+        or_(viewer_read_at.is_(None), viewer_read_at < latest_activity),
+    )
+
     statement = (
         select(
             SupportCase,
@@ -57,6 +91,7 @@ def cases_statement(
             is_open.label("is_open"),
             User.email.label("assignee_email"),
             awaiting_platform.label("awaiting_platform"),
+            unread.label("unread"),
         )
         .outerjoin(
             OrganizationReview,

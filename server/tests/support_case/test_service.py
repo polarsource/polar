@@ -1,8 +1,14 @@
 import pytest
 
 from polar.models import Organization, OrganizationReview, User
-from polar.models.support_case import ReviewAppealSupportCase, SupportCaseMessageType
+from polar.models.support_case import (
+    ReviewAppealSupportCase,
+    SupportCaseMessageType,
+    SupportCaseParticipant,
+    SupportCaseParticipantKind,
+)
 from polar.postgres import AsyncSession
+from polar.support_case.repository import SupportCaseParticipantRepository
 from polar.support_case.service import support_case as support_case_service
 from tests.fixtures.database import SaveFixture
 
@@ -48,3 +54,32 @@ class TestAssignment:
         assert case.assigned_user_id is None
         assert released.type == SupportCaseMessageType.released
         assert released.audience == []
+
+
+@pytest.mark.asyncio
+class TestMarkRead:
+    async def test_creates_then_updates_participant(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        case = await _case(save_fixture, organization)
+
+        first = await support_case_service.mark_read(session, case, user=user)
+        assert first.kind == SupportCaseParticipantKind.platform
+        assert first.platform_user_id == user.id
+        assert first.last_read_at is not None
+
+        second = await support_case_service.mark_read(session, case, user=user)
+        assert second.id == first.id
+        assert second.last_read_at is not None
+        assert second.last_read_at >= first.last_read_at
+
+        repository = SupportCaseParticipantRepository.from_session(session)
+        statement = repository.get_base_statement().where(
+            SupportCaseParticipant.case_id == case.id,
+            SupportCaseParticipant.kind == SupportCaseParticipantKind.platform,
+        )
+        assert len(await repository.get_all(statement)) == 1

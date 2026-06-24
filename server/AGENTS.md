@@ -388,5 +388,5 @@ When adding or modifying tax ID validators in `polar/tax/tax_id.py`:
 - Repository base: `polar/kit/repository/base.py`
 - Auth models: `polar/auth/models.py`
 - Pagination: `polar/kit/pagination.py`
-- Worker: `polar/worker.py`
+- Worker: `polar/worker/`
 - Example module: `polar/organization/`

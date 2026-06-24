@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Annotated, Any, Protocol
 import stdnum.ca.bn
 import stdnum.cl.rut
 import stdnum.co.nit
+import stdnum.cr.cpf
+import stdnum.cr.cpj
 import stdnum.ec.ruc
 import stdnum.exceptions
 import stdnum.il.idnr
@@ -290,6 +292,16 @@ class CONITValidator(ValidatorProtocol):
             raise InvalidTaxID(number, country) from e
 
 
+class CRTINValidator(ValidatorProtocol):
+    def validate(self, number: str, country: str) -> str:
+        for module in (stdnum.cr.cpj, stdnum.cr.cpf):
+            try:
+                return module.validate(module.compact(number))
+            except stdnum.exceptions.ValidationError:
+                continue
+        raise InvalidTaxID(number, country)
+
+
 # Structural fallback for company RUCs the SRI issues without a usable módulo-11
 # check digit (see ECRUCValidator for the full breakdown). Self-contained so the
 # recovery path validates the structure itself rather than trusting stdnum,
@@ -421,6 +433,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return CLTINValidator()
         case TaxIDFormat.co_nit:
             return CONITValidator()
+        case TaxIDFormat.cr_tin:
+            return CRTINValidator()
         case TaxIDFormat.ec_ruc:
             return ECRUCValidator()
         case TaxIDFormat.ge_vat:

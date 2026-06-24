@@ -191,6 +191,7 @@ class ErrorResponse(BaseModel):
 
     name: str
     status_code: int
+    response_type: ResponseType
     type: TypeRef | None = None
     description: str | None = None
 
@@ -669,12 +670,27 @@ def _get_body_schema_raw(
     return media_type.media_type_schema
 
 
+def _get_response_type_schema(
+    content: dict[str, op.MediaType] | None,
+) -> tuple[ResponseType, op.Schema | op.Reference | None]:
+    if content is None:
+        return "none", None
+
+    for content_type, media_type_obj in content.items():
+        if content_type == "application/json":
+            return "json", media_type_obj.media_type_schema
+        elif content_type.startswith("text/"):
+            return "text", media_type_obj.media_type_schema
+
+    return "none", None
+
+
 def _get_success_response_schema_raw(
     operation: op.Operation, spec: op.OpenAPI
-) -> tuple[op.Schema | op.Reference | None, ResponseType]:
+) -> tuple[ResponseType, op.Schema | op.Reference | None]:
     """Return (schema, response_type) for the first matching 2xx response."""
     if operation.responses is None:
-        return None, "none"
+        return "none", None
 
     for status_code in sorted(operation.responses.keys()):
         if not status_code.startswith("2"):
@@ -685,33 +701,21 @@ def _get_success_response_schema_raw(
         if response.content is None:
             continue
 
-        response_type: ResponseType = "json"
-        schema: op.Schema | op.Reference | None = None
+        return _get_response_type_schema(response.content)
 
-        for content_type, media_type_obj in response.content.items():
-            if content_type == "application/json":
-                response_type = "json"
-                if media_type_obj.media_type_schema is not None:
-                    schema = media_type_obj.media_type_schema
-                    break
-            elif content_type.startswith("text/"):
-                response_type = "text"
-                if media_type_obj.media_type_schema is not None:
-                    schema = media_type_obj.media_type_schema
-
-        return schema, response_type
-
-    return None, "none"
+    return "none", None
 
 
 def _get_error_responses_raw(
     operation: op.Operation, spec: op.OpenAPI
-) -> list[tuple[int, op.Schema | op.Reference | None, str | None]]:
-    """Return (status_code, schema_or_ref, description) for all non-2xx responses."""
+) -> list[tuple[int, ResponseType, op.Schema | op.Reference | None, str | None]]:
+    """Return (status_code, schema_or_ref, response_type, description) for all non-2xx responses."""
     if operation.responses is None:
         return []
 
-    results: list[tuple[int, op.Schema | op.Reference | None, str | None]] = []
+    results: list[
+        tuple[int, ResponseType, op.Schema | op.Reference | None, str | None]
+    ] = []
     for status_code_str, response_or_ref in operation.responses.items():
         if status_code_str.startswith("2"):
             continue
@@ -722,15 +726,9 @@ def _get_error_responses_raw(
 
         response = _resolve_reference(response_or_ref, spec)
 
-        schema: op.Schema | op.Reference | None = None
-        if response.content:
-            try:
-                media_type = response.content["application/json"]
-                schema = media_type.media_type_schema
-            except KeyError:
-                pass
+        response_type, schema = _get_response_type_schema(response.content)
 
-        results.append((status_code, schema, response.description))
+        results.append((status_code, response_type, schema, response.description))
 
     return sorted(results, key=lambda x: x[0])
 
@@ -992,7 +990,7 @@ def generate_ir(
                     for p in resolved_parameters
                     if p.param_in == op.ParameterLocation.QUERY
                 ]
-                raw_response, response_type = _get_success_response_schema_raw(
+                response_type, raw_response = _get_success_response_schema_raw(
                     operation, spec
                 )
                 error_responses_raw = _get_error_responses_raw(operation, spec)
@@ -1023,7 +1021,12 @@ def generate_ir(
                 )
 
                 errors: list[ErrorResponse] = []
-                for status_code, schema_raw, description in error_responses_raw:
+                for (
+                    status_code,
+                    error_response_type,
+                    schema_raw,
+                    description,
+                ) in error_responses_raw:
                     type = None
                     name = to_pascal_case(f"{method_name}_{status_code}_error")
                     if schema_raw is not None:
@@ -1042,6 +1045,7 @@ def generate_ir(
                         ErrorResponse(
                             name=name,
                             status_code=status_code,
+                            response_type=error_response_type,
                             type=type,
                             description=description,
                         )

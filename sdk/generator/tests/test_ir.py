@@ -1145,12 +1145,14 @@ _STRING = {"kind": "primitive", "type": "string"}
                                     {
                                         "name": "NotFound",
                                         "status_code": 404,
+                                        "response_type": "json",
                                         "type": {"kind": "model", "name": "NotFound"},
                                         "description": "Not found",
                                     },
                                     {
                                         "name": "ValidationError",
                                         "status_code": 422,
+                                        "response_type": "json",
                                         "type": {
                                             "kind": "model",
                                             "name": "ValidationError",
@@ -1160,6 +1162,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                     {
                                         "name": "Get503Error",
                                         "status_code": 503,
+                                        "response_type": "none",
                                         "description": "Service unavailable — no body",
                                     },
                                 ],

@@ -17,10 +17,11 @@ export const SubscriptionMetricsTaxAlertClient = ({
 
   const { data: subscriptions } = useSubscriptions(organizationId, {
     limit: 1,
+    sorting: ['-amount'],
   })
-  const hasSubscriptions = (subscriptions?.pagination.total_count ?? 0) > 0
+  const hasPaidSubscription = (subscriptions?.items[0]?.amount ?? 0) > 0
 
-  if (isDismissed || !hasSubscriptions) {
+  if (isDismissed || !hasPaidSubscription) {
     return null
   }
 

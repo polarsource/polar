@@ -31,3 +31,11 @@ output "workload_accounts" {
     }
   }
 }
+
+output "terraform_cloud_run_roles" {
+  value = {
+    production = module.terraform_cloud_run_role_production.role_arn
+    sandbox    = module.terraform_cloud_run_role_sandbox.role_arn
+    test       = module.terraform_cloud_run_role_test.role_arn
+  }
+}

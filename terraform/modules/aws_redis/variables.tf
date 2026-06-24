@@ -13,11 +13,6 @@ variable "subnet_ids" {
   type        = list(string)
 }
 
-variable "ingress_security_group_ids" {
-  description = "Security groups allowed to reach Redis on the cache port."
-  type        = list(string)
-}
-
 variable "node_type" {
   description = "ElastiCache node type."
   type        = string

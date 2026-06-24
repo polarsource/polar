@@ -113,14 +113,20 @@ _MIN_REVIEW_THRESHOLD = 10_000
 SNOOZE_MIN_DAYS = 1
 SNOOZE_MAX_DAYS = 7
 
-# Benefit types Polar fulfills without merchant API integration.
-_CHECKOUT_FULFILLABLE_BENEFITS: frozenset[BenefitType] = frozenset(
-    {
-        BenefitType.downloadables,
-        BenefitType.license_keys,
-        BenefitType.github_repository,
-        BenefitType.discord,
-    }
+# Benefit types that deliver nothing to the customer without a merchant API
+# integration: `feature_flag` (the merchant's app has to read the flag via the
+# API) and `meter_credit` (the credit is only meaningful once the merchant
+# ingests usage events via the API).
+_CHECKOUT_API_ONLY_BENEFITS: frozenset[BenefitType] = frozenset(
+    {BenefitType.feature_flag, BenefitType.meter_credit}
+)
+
+# Every other benefit delivers something on
+# its own — Polar grants it automatically (downloadables, license_keys,
+# github_repository, discord, slack_shared_channel) or the customer sees it in
+# their portal (custom note).
+_CHECKOUT_FULFILLABLE_BENEFITS: frozenset[BenefitType] = (
+    frozenset(BenefitType) - _CHECKOUT_API_ONLY_BENEFITS
 )
 
 # Hosting domains where it's unreasonable to expect the organization's support email to

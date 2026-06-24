@@ -3,6 +3,7 @@ import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
 import { List, ListItem } from '@polar-sh/orbit'
+import OrganizationDownScopeSelector from './OrganizationDownScopeSelector'
 import SharedLayout from './components/SharedLayout'
 
 const isSubTypeOrganization = (
@@ -29,7 +30,14 @@ const groupScopes = (scopes: schemas['Scope'][]) => {
 }
 
 const AuthorizePage = ({
-  authorizeResponse: { client, scopes, sub_type, sub, scope_display_names },
+  authorizeResponse: {
+    client,
+    scopes,
+    sub_type,
+    sub,
+    scope_display_names,
+    organizations,
+  },
   searchParams,
 }: {
   authorizeResponse:
@@ -109,6 +117,10 @@ const AuthorizePage = ({
             ))}
           </List>
         </div>
+
+        {sub_type === 'user' && (
+          <OrganizationDownScopeSelector organizations={organizations} />
+        )}
 
         <div className="flex w-full flex-col gap-3">
           <Button className="grow" type="submit" name="action" value="allow">

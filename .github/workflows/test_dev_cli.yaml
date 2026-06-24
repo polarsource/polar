@@ -21,7 +21,7 @@ jobs:
     outputs:
       dev_cli: ${{ steps.filter.outputs.dev_cli }}
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v6.0.3
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -37,7 +37,7 @@ jobs:
     timeout-minutes: 5
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v6.0.3
 
       - name: Install uv
         uses: astral-sh/setup-uv@v8.2.0

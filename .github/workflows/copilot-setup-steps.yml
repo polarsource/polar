@@ -55,9 +55,9 @@ jobs:
     # You can define any steps you want, and they will run before the agent starts.
     # If you do not check out your code, Copilot will do this for you.
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v6.0.3
 
-      - uses: actions/cache@v5.0.5
+      - uses: actions/cache@v5
         with:
           path: |
             server/.mypy_cache
@@ -79,7 +79,7 @@ jobs:
           POLICY_FILE: policy.json
         run: bash github.sh
 
-      - uses: pnpm/action-setup@v6.0.9
+      - uses: pnpm/action-setup@v6.0.8
         with:
           package_json_file: server/emails/package.json
 
@@ -100,7 +100,7 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v6.2.0
+        uses: actions/setup-python@v6
         with:
           python-version-file: "server/pyproject.toml"
 

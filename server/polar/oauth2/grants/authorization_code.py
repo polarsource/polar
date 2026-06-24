@@ -152,6 +152,11 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
         )
         if self.session_organization_ids is not None:
             member_organization_ids &= self.session_organization_ids
+            # A scoped session with no accessible organizations can't be
+            # represented as a down-scope (no rows == unrestricted), so refuse
+            # to issue rather than silently widen the token.
+            if not member_organization_ids:
+                raise InvalidRequestError("The session has no accessible organizations")
 
         try:
             selected = {

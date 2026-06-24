@@ -9,6 +9,7 @@ import dramatiq
 import logfire
 import structlog
 from dramatiq.common import compute_backoff
+from dramatiq.errors import Retry
 from dramatiq.middleware.current_message import CurrentMessage
 from dramatiq.middleware.retries import DEFAULT_MAX_BACKOFF
 
@@ -80,8 +81,14 @@ def validate_allowlist() -> None:
             )
 
 
-def compute_retry_backoff(actor_name: str, receive_count: int) -> int:
+def compute_retry_backoff(
+    actor_name: str, receive_count: int, exception: BaseException | None = None
+) -> int:
     """Seconds to delay the next SQS redelivery, mirroring Dramatiq's Retries middleware."""
+    if isinstance(exception, Retry) and exception.delay is not None:
+        return min(
+            math.ceil(exception.delay / 1000), _sqs.MAX_VISIBILITY_TIMEOUT_SECONDS
+        )
     actor = dramatiq.get_broker().get_actor(actor_name)
     min_backoff = actor.options.get(
         "min_backoff", settings.WORKER_MIN_BACKOFF_MILLISECONDS

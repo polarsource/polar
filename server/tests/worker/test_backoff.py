@@ -1,5 +1,6 @@
 import math
 
+from dramatiq.errors import Retry
 from pytest_mock import MockerFixture
 
 import polar.tasks  # noqa: F401  (registers actors with the broker)
@@ -36,6 +37,20 @@ class TestComputeRetryBackoff:
         low, high = _jitter_bounds(10_000, 0)
         for _ in range(50):
             assert low <= compute_retry_backoff("dummy", 1) <= high
+
+    def test_explicit_retry_delay_overrides_backoff(self) -> None:
+        assert compute_retry_backoff("dummy", 5, Retry(delay=30_000)) == 30
+
+    def test_explicit_retry_delay_capped_at_sqs_limit(self) -> None:
+        assert (
+            compute_retry_backoff("dummy", 1, Retry(delay=999_999_999))
+            == _sqs.MAX_VISIBILITY_TIMEOUT_SECONDS
+        )
+
+    def test_retry_without_delay_uses_exponential_backoff(self) -> None:
+        low, high = _jitter_bounds(settings.WORKER_MIN_BACKOFF_MILLISECONDS, 0)
+        for _ in range(50):
+            assert low <= compute_retry_backoff("dummy", 1, Retry()) <= high
 
 
 class TestSetMessageVisibility:

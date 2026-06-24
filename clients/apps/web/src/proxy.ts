@@ -107,7 +107,11 @@ export async function proxy(request: NextRequest) {
   // @pieterbeulque added this because the `config.matcher` behavior below
   // doesn't appear to be working consistently with Vercel rewrites
   if (isForwardedRoute(request)) {
-    return NextResponse.next()
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    })
   }
 
   if (request.nextUrl.pathname.startsWith('/to/')) {

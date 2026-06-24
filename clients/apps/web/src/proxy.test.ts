@@ -259,6 +259,25 @@ describe('middleware function', () => {
     )
   })
 
+  it('should strip spoofed user headers from forwarded routes', async () => {
+    const request = new NextRequest('https://example.com/docs/overview', {
+      headers: {
+        'x-polar-user': Buffer.from(
+          JSON.stringify({ id: 'spoofed', email: 'attacker@example.com' }),
+        ).toString('base64'),
+      },
+    })
+
+    const response = await proxy(request)
+
+    expect(response.status).toBe(200)
+    expect(getForwardedRequestHeader(response, 'x-polar-user')).toBeNull()
+    expect(getForwardedRequestHeaderNames(response)).not.toContain(
+      'x-polar-user',
+    )
+    expect(createServerSideAPI).not.toHaveBeenCalled()
+  })
+
   it('should redirect to login with query params preserved', async () => {
     const request = new NextRequest(
       'https://example.com/dashboard?foo=bar&baz=qux',

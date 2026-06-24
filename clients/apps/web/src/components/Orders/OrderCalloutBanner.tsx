@@ -47,10 +47,7 @@ const ColumnHeading = ({
     <Text color="muted">{label}</Text>
     {datetime ? (
       <Text variant="heading-xxs">
-        <FormattedDateTime
-          resolution={resolution}
-          datetime={datetime}
-        />
+        <FormattedDateTime resolution={resolution} datetime={datetime} />
       </Text>
     ) : null}
   </Box>
@@ -122,10 +119,7 @@ const RecoveringColumns = ({
         {revocationDeadline ? (
           <>
             {' on '}
-            <FormattedDateTime
-              resolution="day"
-              datetime={revocationDeadline}
-            />
+            <FormattedDateTime resolution="day" datetime={revocationDeadline} />
           </>
         ) : null}
         .

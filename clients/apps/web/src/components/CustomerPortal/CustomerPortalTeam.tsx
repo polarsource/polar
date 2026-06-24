@@ -7,6 +7,7 @@ import {
   useRemoveCustomerPortalMember,
   useUpdateCustomerPortalMember,
 } from '@/hooks/queries/customerPortal'
+import { useCopyMemberLoginLink } from '@/hooks/useCopyMemberLoginLink'
 import { validateEmail } from '@/utils/validation'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { Client, schemas } from '@polar-sh/client'
@@ -31,6 +32,7 @@ import { toast } from '../Toast/use-toast'
 
 interface CustomerPortalTeamSectionProps {
   api: Client
+  organizationSlug: string
 }
 
 const roleDisplayNames: Record<string, string> = {
@@ -51,12 +53,14 @@ const roleToDisplayName = (role: string): string => {
 
 export const CustomerPortalTeamSection = ({
   api,
+  organizationSlug,
 }: CustomerPortalTeamSectionProps) => {
   const { data: members } = useCustomerPortalMembers(api)
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
   const updateMember = useUpdateCustomerPortalMember(api)
   const removeMember = useRemoveCustomerPortalMember(api)
   const addMember = useAddCustomerPortalMember(api)
+  const copyMemberLoginLink = useCopyMemberLoginLink(organizationSlug)
 
   const [memberToRemove, setMemberToRemove] = useState<string | null>(null)
   const [loadingMembers, setLoadingMembers] = useState<Set<string>>(new Set())
@@ -273,6 +277,12 @@ export const CustomerPortalTeamSection = ({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => copyMemberLoginLink(member.email)}
+                              disabled={isLoading}
+                            >
+                              Copy login link
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => setMemberToRemove(member.id)}
                               disabled={isLoading}

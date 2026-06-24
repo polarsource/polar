@@ -1,11 +1,14 @@
 'use client'
 
 import { useModal } from '@/components/Modal/useModal'
+import { useCopyMemberLoginLink } from '@/hooks/useCopyMemberLoginLink'
 import { useMembers } from '@/hooks/queries/members'
 import { useMultipleCustomerSeats } from '@/hooks/queries/seats'
+import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
 import {
   Avatar,
+  Button,
   DataTable,
   InlineModal,
   Status,
@@ -14,6 +17,12 @@ import {
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useMemo, useState } from 'react'
 import { EditMemberModal } from './EditMemberModal'
 import { seatStatusDisplayConfig } from '../Seats/seatStatus'
@@ -48,6 +57,7 @@ export const MembersSection = ({
   orders,
 }: MembersSectionProps) => {
   const { data: membersData, isLoading } = useMembers(customer.id)
+  const copyMemberLoginLink = useCopyMemberLoginLink(organization.slug)
 
   const isEnabled =
     organization?.feature_settings?.member_model_enabled &&
@@ -114,6 +124,7 @@ export const MembersSection = ({
           {
             header: 'Member',
             accessorKey: 'email',
+            size: 260,
             cell: ({ row: { original } }) => (
               <Box alignItems="center" gap="m">
                 <Avatar
@@ -175,6 +186,29 @@ export const MembersSection = ({
             accessorKey: 'created_at',
             cell: ({ row: { original } }) => (
               <FormattedDateTime datetime={original.created_at} />
+            ),
+          },
+          {
+            id: 'actions',
+            header: () => null,
+            size: 60,
+            cell: ({ row: { original } }) => (
+              <Box justifyContent="end" onClick={(e) => e.stopPropagation()}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="h-8 w-8" variant="ghost" size="icon">
+                      <MoreVertOutlined fontSize="inherit" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => copyMemberLoginLink(original.email)}
+                    >
+                      Copy login link
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </Box>
             ),
           },
         ]}

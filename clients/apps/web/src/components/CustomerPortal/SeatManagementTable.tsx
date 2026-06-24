@@ -7,6 +7,7 @@ import {
   useRevokeSeat,
   useUpdateCustomerPortalMember,
 } from '@/hooks/queries/customerPortal'
+import { useCopyMemberLoginLink } from '@/hooks/useCopyMemberLoginLink'
 import { validateEmail } from '@/utils/validation'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { Client, schemas } from '@polar-sh/client'
@@ -34,6 +35,7 @@ type SeatBasedOrder = { orderId: string }
 interface SeatManagementTableProps {
   api: Client
   identifier: SeatBasedSubscription | SeatBasedOrder
+  organizationSlug: string
   prorationBehavior?: schemas['CustomerOrganization']['proration_behavior']
 }
 
@@ -46,8 +48,11 @@ function isSeatBasedSubscription(
 export const SeatManagementTable = ({
   api,
   identifier,
+  organizationSlug,
   prorationBehavior,
 }: SeatManagementTableProps) => {
+  const copyMemberLoginLink = useCopyMemberLoginLink(organizationSlug)
+
   const { data: seatsData, isLoading: isLoadingSeats } = useCustomerSeats(
     api,
     isSeatBasedSubscription(identifier)
@@ -280,6 +285,17 @@ export const SeatManagementTable = ({
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                {seat.status === 'claimed' &&
+                                  memberEmail !== '—' && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        copyMemberLoginLink(memberEmail)
+                                      }
+                                      disabled={isSeatLoading}
+                                    >
+                                      Copy login link
+                                    </DropdownMenuItem>
+                                  )}
                                 {seat.member?.id && (
                                   <DropdownMenuItem
                                     onClick={() => startEditingName(seat)}

@@ -1,11 +1,9 @@
 'use client'
 
 import { useModal } from '@/components/Modal/useModal'
-import { toast } from '@/components/Toast/use-toast'
-import { useSafeCopy } from '@/hooks/clipboard'
+import { useCopyMemberLoginLink } from '@/hooks/useCopyMemberLoginLink'
 import { useMembers } from '@/hooks/queries/members'
 import { useMultipleCustomerSeats } from '@/hooks/queries/seats'
-import { CONFIG } from '@/utils/config'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
 import {
@@ -59,7 +57,7 @@ export const MembersSection = ({
   orders,
 }: MembersSectionProps) => {
   const { data: membersData, isLoading } = useMembers(customer.id)
-  const safeCopy = useSafeCopy(toast)
+  const copyMemberLoginLink = useCopyMemberLoginLink(organization.slug)
 
   const isEnabled =
     organization?.feature_settings?.member_model_enabled &&
@@ -110,18 +108,6 @@ export const MembersSection = ({
     })
     return map
   }, [seats])
-
-  const handleCopyLoginLink = async (memberEmail: string) => {
-    const link = `${CONFIG.FRONTEND_BASE_URL}/${organization.slug}/portal/request?email=${encodeURIComponent(
-      memberEmail,
-    )}`
-    await safeCopy(link)
-    toast({
-      title: 'Login link copied',
-      description:
-        'Share it with the member so they can sign in to the customer portal with their email.',
-    })
-  }
 
   if (!isEnabled) {
     return null
@@ -216,7 +202,7 @@ export const MembersSection = ({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
-                      onClick={() => handleCopyLoginLink(original.email)}
+                      onClick={() => copyMemberLoginLink(original.email)}
                     >
                       Copy login link
                     </DropdownMenuItem>

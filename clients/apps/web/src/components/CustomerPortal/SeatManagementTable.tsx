@@ -7,8 +7,7 @@ import {
   useRevokeSeat,
   useUpdateCustomerPortalMember,
 } from '@/hooks/queries/customerPortal'
-import { useSafeCopy } from '@/hooks/clipboard'
-import { CONFIG } from '@/utils/config'
+import { useCopyMemberLoginLink } from '@/hooks/useCopyMemberLoginLink'
 import { validateEmail } from '@/utils/validation'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { Client, schemas } from '@polar-sh/client'
@@ -52,7 +51,7 @@ export const SeatManagementTable = ({
   organizationSlug,
   prorationBehavior,
 }: SeatManagementTableProps) => {
-  const safeCopy = useSafeCopy(toast)
+  const copyMemberLoginLink = useCopyMemberLoginLink(organizationSlug)
 
   const { data: seatsData, isLoading: isLoadingSeats } = useCustomerSeats(
     api,
@@ -158,18 +157,6 @@ export const SeatManagementTable = ({
         return next
       })
     }
-  }
-
-  const handleCopyLoginLink = async (memberEmail: string) => {
-    const link = `${CONFIG.FRONTEND_BASE_URL}/${organizationSlug}/portal/request?email=${encodeURIComponent(
-      memberEmail,
-    )}`
-    await safeCopy(link)
-    toast({
-      title: 'Login link copied',
-      description:
-        'Share it with the member so they can sign in to the portal with their email.',
-    })
   }
 
   const startEditingName = (seat: CustomerSeat) => {
@@ -302,7 +289,7 @@ export const SeatManagementTable = ({
                                   memberEmail !== '—' && (
                                     <DropdownMenuItem
                                       onClick={() =>
-                                        handleCopyLoginLink(memberEmail)
+                                        copyMemberLoginLink(memberEmail)
                                       }
                                       disabled={isSeatLoading}
                                     >

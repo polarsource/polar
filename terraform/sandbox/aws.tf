@@ -15,8 +15,8 @@ module "redis" {
 resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
   security_group_id            = module.redis.security_group_id
   referenced_security_group_id = aws_security_group.lambda.id
-  from_port                    = 6379
-  to_port                      = 6379
+  from_port                    = module.redis.port
+  to_port                      = module.redis.port
   ip_protocol                  = "tcp"
 }
 

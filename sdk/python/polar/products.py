@@ -3,7 +3,7 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
     HTTPValidationError,
     NotPermitted,
@@ -87,7 +87,7 @@ class ProductsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceProduct, method_errors)
+        return parse_response_json(response, ListResourceProduct, method_errors)
 
     @typing.overload
     def create(
@@ -128,7 +128,7 @@ class ProductsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, Product, method_errors)
+        return parse_response_json(response, Product, method_errors)
 
     def get(
         self,
@@ -161,7 +161,7 @@ class ProductsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Product, method_errors)
+        return parse_response_json(response, Product, method_errors)
 
     def update(
         self,
@@ -198,7 +198,7 @@ class ProductsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Product, method_errors)
+        return parse_response_json(response, Product, method_errors)
 
     def update_benefits(
         self,
@@ -235,7 +235,7 @@ class ProductsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Product, method_errors)
+        return parse_response_json(response, Product, method_errors)
 
 
 class ProductsAsync(AsyncServiceBase):
@@ -274,6 +274,8 @@ class ProductsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -297,7 +299,7 @@ class ProductsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceProduct, method_errors)
+        return parse_response_json(response, ListResourceProduct, method_errors)
 
     @typing.overload
     async def create(
@@ -324,6 +326,8 @@ class ProductsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -336,7 +340,7 @@ class ProductsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, Product, method_errors)
+        return parse_response_json(response, Product, method_errors)
 
     async def get(
         self,
@@ -353,6 +357,8 @@ class ProductsAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Product not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -367,7 +373,7 @@ class ProductsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Product, method_errors)
+        return parse_response_json(response, Product, method_errors)
 
     async def update(
         self,
@@ -386,6 +392,8 @@ class ProductsAsync(AsyncServiceBase):
             NotPermitted: You don't have the permission to update this product.
             ResourceNotFound: Product not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -402,7 +410,7 @@ class ProductsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Product, method_errors)
+        return parse_response_json(response, Product, method_errors)
 
     async def update_benefits(
         self,
@@ -421,6 +429,8 @@ class ProductsAsync(AsyncServiceBase):
             NotPermitted: You don't have the permission to update this product.
             ResourceNotFound: Product not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -437,4 +447,4 @@ class ProductsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Product, method_errors)
+        return parse_response_json(response, Product, method_errors)

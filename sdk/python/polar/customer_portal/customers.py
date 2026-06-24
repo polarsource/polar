@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import (
+    AsyncServiceBase,
+    SyncServiceBase,
+    parse_response_json,
+    parse_response_none,
+)
 from polar.errors import (
     CheckEmailUpdate401Error,
     CustomerNotReady,
@@ -50,7 +55,7 @@ class CustomersSync(SyncServiceBase):
             query_params={},
         )
         response = self.client.send_request(request)
-        return parse_response(response, CustomerPortalCustomer)
+        return parse_response_json(response, CustomerPortalCustomer)
 
     def update(
         self,
@@ -77,7 +82,7 @@ class CustomersSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerPortalCustomer, method_errors)
+        return parse_response_json(response, CustomerPortalCustomer, method_errors)
 
     def list_payment_methods(
         self,
@@ -110,7 +115,7 @@ class CustomersSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(
+        return parse_response_json(
             response, ListResourceCustomerPaymentMethod, method_errors
         )
 
@@ -141,7 +146,7 @@ class CustomersSync(SyncServiceBase):
             400: PaymentMethodSetupFailed,
             422: HTTPValidationError,
         }
-        return parse_response(
+        return parse_response_json(
             response, CustomerPaymentMethodCreateResponse, method_errors
         )
 
@@ -172,7 +177,7 @@ class CustomersSync(SyncServiceBase):
             400: CustomerNotReady,
             422: HTTPValidationError,
         }
-        return parse_response(
+        return parse_response_json(
             response, CustomerPaymentMethodCreateResponse, method_errors
         )
 
@@ -207,7 +212,7 @@ class CustomersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     def request_email_update(
         self,
@@ -234,7 +239,7 @@ class CustomersSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_json(response, typing.Any, method_errors)
 
     def check_email_update(
         self,
@@ -266,7 +271,7 @@ class CustomersSync(SyncServiceBase):
             401: CheckEmailUpdate401Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     def verify_email_update(
         self,
@@ -295,7 +300,7 @@ class CustomersSync(SyncServiceBase):
             401: VerifyEmailUpdate401Error,
             422: VerifyEmailUpdate422Error,
         }
-        return parse_response(
+        return parse_response_json(
             response, CustomerEmailUpdateVerifyResponse, method_errors
         )
 
@@ -312,6 +317,8 @@ class CustomersAsync(AsyncServiceBase):
         Args:
 
         Raises:
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -320,7 +327,7 @@ class CustomersAsync(AsyncServiceBase):
             query_params={},
         )
         response = await self.client.send_request(request)
-        return parse_response(response, CustomerPortalCustomer)
+        return parse_response_json(response, CustomerPortalCustomer)
 
     async def update(
         self,
@@ -333,6 +340,8 @@ class CustomersAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -345,7 +354,7 @@ class CustomersAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerPortalCustomer, method_errors)
+        return parse_response_json(response, CustomerPortalCustomer, method_errors)
 
     async def list_payment_methods(
         self,
@@ -362,6 +371,8 @@ class CustomersAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -376,7 +387,7 @@ class CustomersAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(
+        return parse_response_json(
             response, ListResourceCustomerPaymentMethod, method_errors
         )
 
@@ -392,6 +403,8 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             PaymentMethodSetupFailed: The card was declined while setting up the payment method.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -405,7 +418,7 @@ class CustomersAsync(AsyncServiceBase):
             400: PaymentMethodSetupFailed,
             422: HTTPValidationError,
         }
-        return parse_response(
+        return parse_response_json(
             response, CustomerPaymentMethodCreateResponse, method_errors
         )
 
@@ -421,6 +434,8 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             CustomerNotReady: Customer is not ready to confirm a payment method.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -434,7 +449,7 @@ class CustomersAsync(AsyncServiceBase):
             400: CustomerNotReady,
             422: HTTPValidationError,
         }
-        return parse_response(
+        return parse_response_json(
             response, CustomerPaymentMethodCreateResponse, method_errors
         )
 
@@ -452,6 +467,8 @@ class CustomersAsync(AsyncServiceBase):
             PaymentMethodInUseByActiveSubscription: Payment method is used by active subscription(s).
             ResourceNotFound: Payment method not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -467,7 +484,7 @@ class CustomersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     async def request_email_update(
         self,
@@ -480,6 +497,8 @@ class CustomersAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -492,7 +511,7 @@ class CustomersAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_json(response, typing.Any, method_errors)
 
     async def check_email_update(
         self,
@@ -508,6 +527,8 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             CheckEmailUpdate401Error: Invalid or expired verification token.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -522,7 +543,7 @@ class CustomersAsync(AsyncServiceBase):
             401: CheckEmailUpdate401Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     async def verify_email_update(
         self,
@@ -536,6 +557,8 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             VerifyEmailUpdate401Error: Invalid or expired verification token.
             VerifyEmailUpdate422Error: Email address is already in use.
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -549,6 +572,6 @@ class CustomersAsync(AsyncServiceBase):
             401: VerifyEmailUpdate401Error,
             422: VerifyEmailUpdate422Error,
         }
-        return parse_response(
+        return parse_response_json(
             response, CustomerEmailUpdateVerifyResponse, method_errors
         )

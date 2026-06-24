@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import builtins
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
     HTTPValidationError,
     ResourceNotFound,
@@ -63,7 +63,7 @@ class DisputesSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceDispute, method_errors)
+        return parse_response_json(response, ListResourceDispute, method_errors)
 
     def get(
         self,
@@ -96,7 +96,7 @@ class DisputesSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Dispute, method_errors)
+        return parse_response_json(response, Dispute, method_errors)
 
 
 class DisputesAsync(AsyncServiceBase):
@@ -125,6 +125,8 @@ class DisputesAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -143,7 +145,7 @@ class DisputesAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceDispute, method_errors)
+        return parse_response_json(response, ListResourceDispute, method_errors)
 
     async def get(
         self,
@@ -160,6 +162,8 @@ class DisputesAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Dispute not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -174,4 +178,4 @@ class DisputesAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Dispute, method_errors)
+        return parse_response_json(response, Dispute, method_errors)

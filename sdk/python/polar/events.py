@@ -3,7 +3,7 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
     HTTPValidationError,
     ResourceNotFound,
@@ -102,7 +102,7 @@ class EventsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(
+        return parse_response_json(
             response,
             ListResourceEvent | ListResourceWithCursorPaginationEvent,
             method_errors,
@@ -159,7 +159,7 @@ class EventsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceEventName, method_errors)
+        return parse_response_json(response, ListResourceEventName, method_errors)
 
     def get(
         self,
@@ -192,7 +192,7 @@ class EventsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Event, method_errors)
+        return parse_response_json(response, Event, method_errors)
 
     def ingest(
         self,
@@ -221,7 +221,7 @@ class EventsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, EventsIngestResponse, method_errors)
+        return parse_response_json(response, EventsIngestResponse, method_errors)
 
 
 class EventsAsync(AsyncServiceBase):
@@ -270,6 +270,8 @@ class EventsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -298,7 +300,7 @@ class EventsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(
+        return parse_response_json(
             response,
             ListResourceEvent | ListResourceWithCursorPaginationEvent,
             method_errors,
@@ -333,6 +335,8 @@ class EventsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -353,7 +357,7 @@ class EventsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceEventName, method_errors)
+        return parse_response_json(response, ListResourceEventName, method_errors)
 
     async def get(
         self,
@@ -370,6 +374,8 @@ class EventsAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Event not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -384,7 +390,7 @@ class EventsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Event, method_errors)
+        return parse_response_json(response, Event, method_errors)
 
     async def ingest(
         self,
@@ -399,6 +405,8 @@ class EventsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -411,4 +419,4 @@ class EventsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, EventsIngestResponse, method_errors)
+        return parse_response_json(response, EventsIngestResponse, method_errors)

@@ -3,7 +3,12 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import (
+    AsyncServiceBase,
+    SyncServiceBase,
+    parse_response_json,
+    parse_response_none,
+)
 from polar.errors import (
     HTTPValidationError,
     ResourceNotFound,
@@ -76,7 +81,7 @@ class CustomFieldsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCustomField, method_errors)
+        return parse_response_json(response, ListResourceCustomField, method_errors)
 
     @typing.overload
     def create(
@@ -135,7 +140,7 @@ class CustomFieldsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomField, method_errors)
+        return parse_response_json(response, CustomField, method_errors)
 
     def get(
         self,
@@ -168,7 +173,7 @@ class CustomFieldsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomField, method_errors)
+        return parse_response_json(response, CustomField, method_errors)
 
     def delete(
         self,
@@ -201,7 +206,7 @@ class CustomFieldsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     @typing.overload
     def update(
@@ -271,7 +276,7 @@ class CustomFieldsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomField, method_errors)
+        return parse_response_json(response, CustomField, method_errors)
 
 
 class CustomFieldsAsync(AsyncServiceBase):
@@ -300,6 +305,8 @@ class CustomFieldsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -318,7 +325,7 @@ class CustomFieldsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCustomField, method_errors)
+        return parse_response_json(response, ListResourceCustomField, method_errors)
 
     @typing.overload
     async def create(
@@ -363,6 +370,8 @@ class CustomFieldsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -375,7 +384,7 @@ class CustomFieldsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomField, method_errors)
+        return parse_response_json(response, CustomField, method_errors)
 
     async def get(
         self,
@@ -392,6 +401,8 @@ class CustomFieldsAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Custom field not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -406,7 +417,7 @@ class CustomFieldsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomField, method_errors)
+        return parse_response_json(response, CustomField, method_errors)
 
     async def delete(
         self,
@@ -423,6 +434,8 @@ class CustomFieldsAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Custom field not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -437,7 +450,7 @@ class CustomFieldsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     @typing.overload
     async def update(
@@ -490,6 +503,8 @@ class CustomFieldsAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Custom field not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -505,4 +520,4 @@ class CustomFieldsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomField, method_errors)
+        return parse_response_json(response, CustomField, method_errors)

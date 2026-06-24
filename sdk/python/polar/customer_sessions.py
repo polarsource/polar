@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
     HTTPValidationError,
 )
@@ -58,7 +58,7 @@ class CustomerSessionsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSession, method_errors)
+        return parse_response_json(response, CustomerSession, method_errors)
 
 
 class CustomerSessionsAsync(AsyncServiceBase):
@@ -90,6 +90,8 @@ class CustomerSessionsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -102,4 +104,4 @@ class CustomerSessionsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSession, method_errors)
+        return parse_response_json(response, CustomerSession, method_errors)

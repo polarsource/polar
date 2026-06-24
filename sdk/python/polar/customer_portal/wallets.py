@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import builtins
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
     HTTPValidationError,
     ResourceNotFound,
@@ -51,7 +51,7 @@ class WalletsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCustomerWallet, method_errors)
+        return parse_response_json(response, ListResourceCustomerWallet, method_errors)
 
     def get(
         self,
@@ -82,7 +82,7 @@ class WalletsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerWallet, method_errors)
+        return parse_response_json(response, CustomerWallet, method_errors)
 
 
 class WalletsAsync(AsyncServiceBase):
@@ -103,6 +103,8 @@ class WalletsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -118,7 +120,7 @@ class WalletsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCustomerWallet, method_errors)
+        return parse_response_json(response, ListResourceCustomerWallet, method_errors)
 
     async def get(
         self,
@@ -133,6 +135,8 @@ class WalletsAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Wallet not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -147,4 +151,4 @@ class WalletsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerWallet, method_errors)
+        return parse_response_json(response, CustomerWallet, method_errors)

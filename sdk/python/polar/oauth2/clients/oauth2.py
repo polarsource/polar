@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
     HTTPValidationError,
 )
@@ -38,7 +38,7 @@ class Oauth2Sync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_json(response, typing.Any, method_errors)
 
     def get_client(
         self,
@@ -67,7 +67,7 @@ class Oauth2Sync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_json(response, typing.Any, method_errors)
 
     def update_client(
         self,
@@ -98,7 +98,7 @@ class Oauth2Sync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_json(response, typing.Any, method_errors)
 
     def delete_client(
         self,
@@ -127,7 +127,7 @@ class Oauth2Sync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_json(response, typing.Any, method_errors)
 
 
 class Oauth2Async(AsyncServiceBase):
@@ -142,6 +142,8 @@ class Oauth2Async(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -154,7 +156,7 @@ class Oauth2Async(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_json(response, typing.Any, method_errors)
 
     async def get_client(
         self,
@@ -168,6 +170,8 @@ class Oauth2Async(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -181,7 +185,7 @@ class Oauth2Async(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_json(response, typing.Any, method_errors)
 
     async def update_client(
         self,
@@ -196,6 +200,8 @@ class Oauth2Async(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PUT",
@@ -210,7 +216,7 @@ class Oauth2Async(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_json(response, typing.Any, method_errors)
 
     async def delete_client(
         self,
@@ -224,6 +230,8 @@ class Oauth2Async(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -237,4 +245,4 @@ class Oauth2Async(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_json(response, typing.Any, method_errors)

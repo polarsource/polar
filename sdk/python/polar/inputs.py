@@ -3,7 +3,6 @@ from __future__ import annotations
 import typing
 
 from polar.literals import (
-    AvailableScope,
     BenefitVisibility,
     CountryAlpha2Input,
     CustomerCancellationReason,
@@ -2424,22 +2423,6 @@ class OrderUpdate(typing.TypedDict):
 
     billing_address: typing.NotRequired[AddressInput | None]
     """The address of the customer that should appear on the invoice. Country and state fields cannot be updated."""
-
-
-class OrganizationAccessTokenCreate(typing.TypedDict):
-    organization_id: typing.NotRequired[str | None]
-
-    comment: str
-
-    expires_in: typing.NotRequired[str | None]
-
-    scopes: list[AvailableScope]
-
-
-class OrganizationAccessTokenUpdate(typing.TypedDict):
-    comment: typing.NotRequired[str | None]
-
-    scopes: typing.NotRequired[list[AvailableScope] | None]
 
 
 class OrganizationAvatarFileCreate(typing.TypedDict):

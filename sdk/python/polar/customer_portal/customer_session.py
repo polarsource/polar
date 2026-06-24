@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.outputs import (
     CustomerCustomerSession,
     PortalAuthenticatedUser,
@@ -29,7 +29,7 @@ class CustomerSessionSync(SyncServiceBase):
             query_params={},
         )
         response = self.client.send_request(request)
-        return parse_response(response, CustomerCustomerSession)
+        return parse_response_json(response, CustomerCustomerSession)
 
     def get_authenticated_user(
         self,
@@ -52,7 +52,7 @@ class CustomerSessionSync(SyncServiceBase):
             query_params={},
         )
         response = self.client.send_request(request)
-        return parse_response(response, PortalAuthenticatedUser)
+        return parse_response_json(response, PortalAuthenticatedUser)
 
 
 class CustomerSessionAsync(AsyncServiceBase):
@@ -67,6 +67,8 @@ class CustomerSessionAsync(AsyncServiceBase):
         Args:
 
         Raises:
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -75,7 +77,7 @@ class CustomerSessionAsync(AsyncServiceBase):
             query_params={},
         )
         response = await self.client.send_request(request)
-        return parse_response(response, CustomerCustomerSession)
+        return parse_response_json(response, CustomerCustomerSession)
 
     async def get_authenticated_user(
         self,
@@ -88,6 +90,8 @@ class CustomerSessionAsync(AsyncServiceBase):
         Args:
 
         Raises:
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -96,4 +100,4 @@ class CustomerSessionAsync(AsyncServiceBase):
             query_params={},
         )
         response = await self.client.send_request(request)
-        return parse_response(response, PortalAuthenticatedUser)
+        return parse_response_json(response, PortalAuthenticatedUser)

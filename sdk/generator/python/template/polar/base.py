@@ -129,11 +129,10 @@ retort = adaptix.Retort()
 E = typing.TypeVar("E", bound=PolarClientError)
 
 
-def parse_response(
+def _handle_errors(
     response: httpx.Response,
-    response_type: typing.Any,
     errors: dict[int, type[E]] | None = None,
-) -> typing.Any:
+) -> None:
     status_code = response.status_code
 
     if response.is_server_error:
@@ -148,7 +147,31 @@ def parse_response(
         except KeyError:
             raise PolarClientError(status_code, response.text)
 
-    if response_type is None:
-        return None
 
-    return retort.load(response.json(), response_type)
+def parse_response_json(
+    response: httpx.Response,
+    response_model: typing.Any | None = None,
+    errors: dict[int, type[E]] | None = None,
+) -> typing.Any:
+    _handle_errors(response, errors)
+
+    if response_model is not None:
+        return retort.load(response.json(), response_model)
+
+    return response.json()
+
+
+def parse_response_text(
+    response: httpx.Response,
+    errors: dict[int, type[E]] | None = None,
+) -> str:
+    _handle_errors(response, errors)
+    return response.text
+
+
+def parse_response_none(
+    response: httpx.Response,
+    errors: dict[int, type[E]] | None = None,
+) -> None:
+    _handle_errors(response, errors)
+    return None

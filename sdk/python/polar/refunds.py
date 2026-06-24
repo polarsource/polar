@@ -3,7 +3,7 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
     HTTPValidationError,
     RefundedAlready,
@@ -78,7 +78,7 @@ class RefundsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceRefund, method_errors)
+        return parse_response_json(response, ListResourceRefund, method_errors)
 
     def create(
         self,
@@ -109,7 +109,7 @@ class RefundsSync(SyncServiceBase):
             403: RefundedAlready,
             422: HTTPValidationError,
         }
-        return parse_response(response, Refund, method_errors)
+        return parse_response_json(response, Refund, method_errors)
 
 
 class RefundsAsync(AsyncServiceBase):
@@ -146,6 +146,8 @@ class RefundsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -168,7 +170,7 @@ class RefundsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceRefund, method_errors)
+        return parse_response_json(response, ListResourceRefund, method_errors)
 
     async def create(
         self,
@@ -184,6 +186,8 @@ class RefundsAsync(AsyncServiceBase):
         Raises:
             RefundedAlready: Order is already fully refunded.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -197,4 +201,4 @@ class RefundsAsync(AsyncServiceBase):
             403: RefundedAlready,
             422: HTTPValidationError,
         }
-        return parse_response(response, Refund, method_errors)
+        return parse_response_json(response, Refund, method_errors)

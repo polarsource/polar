@@ -3,12 +3,17 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import (
+    AsyncServiceBase,
+    SyncServiceBase,
+    parse_response_json,
+    parse_response_text,
+)
 from polar.errors import (
     Finalize402Error,
     Finalize403Error,
-    GenerateInvoice422Error,
     HTTPValidationError,
+    MissingInvoiceBillingDetails,
     OrderNotDraft,
     ResourceNotFound,
 )
@@ -96,7 +101,7 @@ class OrdersSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceOrder, method_errors)
+        return parse_response_json(response, ListResourceOrder, method_errors)
 
     def create(
         self,
@@ -129,14 +134,14 @@ class OrdersSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, Order, method_errors)
+        return parse_response_json(response, Order, method_errors)
 
     def export(
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
-    ) -> typing.Any:
+    ) -> str:
         """
         Export orders as a CSV file.
 
@@ -164,7 +169,7 @@ class OrdersSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_text(response, method_errors)
 
     def get(
         self,
@@ -197,7 +202,7 @@ class OrdersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Order, method_errors)
+        return parse_response_json(response, Order, method_errors)
 
     def update(
         self,
@@ -232,7 +237,7 @@ class OrdersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Order, method_errors)
+        return parse_response_json(response, Order, method_errors)
 
     def finalize(
         self,
@@ -279,7 +284,7 @@ class OrdersSync(SyncServiceBase):
             412: OrderNotDraft,
             422: HTTPValidationError,
         }
-        return parse_response(response, Order, method_errors)
+        return parse_response_json(response, Order, method_errors)
 
     def invoice(
         self,
@@ -312,7 +317,7 @@ class OrdersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, OrderInvoice, method_errors)
+        return parse_response_json(response, OrderInvoice, method_errors)
 
     def generate_invoice(
         self,
@@ -327,7 +332,8 @@ class OrdersSync(SyncServiceBase):
             id: The order ID.
 
         Raises:
-            GenerateInvoice422Error: Order is not paid or is missing billing name or address.
+            ResourceNotFound: Order not found.
+            MissingInvoiceBillingDetails: Order is missing billing name or address.
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
@@ -341,9 +347,10 @@ class OrdersSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            422: GenerateInvoice422Error,
+            404: ResourceNotFound,
+            422: MissingInvoiceBillingDetails,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_json(response, typing.Any, method_errors)
 
     def receipt(
         self,
@@ -376,7 +383,7 @@ class OrdersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, OrderReceipt, method_errors)
+        return parse_response_json(response, OrderReceipt, method_errors)
 
 
 class OrdersAsync(AsyncServiceBase):
@@ -419,6 +426,8 @@ class OrdersAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -443,7 +452,7 @@ class OrdersAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceOrder, method_errors)
+        return parse_response_json(response, ListResourceOrder, method_errors)
 
     async def create(
         self,
@@ -462,6 +471,8 @@ class OrdersAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -474,14 +485,14 @@ class OrdersAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, Order, method_errors)
+        return parse_response_json(response, Order, method_errors)
 
     async def export(
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
-    ) -> typing.Any:
+    ) -> str:
         """
         Export orders as a CSV file.
 
@@ -493,6 +504,8 @@ class OrdersAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -507,7 +520,7 @@ class OrdersAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_text(response, method_errors)
 
     async def get(
         self,
@@ -524,6 +537,8 @@ class OrdersAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Order not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -538,7 +553,7 @@ class OrdersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Order, method_errors)
+        return parse_response_json(response, Order, method_errors)
 
     async def update(
         self,
@@ -556,6 +571,8 @@ class OrdersAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Order not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -571,7 +588,7 @@ class OrdersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Order, method_errors)
+        return parse_response_json(response, Order, method_errors)
 
     async def finalize(
         self,
@@ -598,6 +615,8 @@ class OrdersAsync(AsyncServiceBase):
             ResourceNotFound: Order not found.
             OrderNotDraft: The order is not in `draft` status.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -616,7 +635,7 @@ class OrdersAsync(AsyncServiceBase):
             412: OrderNotDraft,
             422: HTTPValidationError,
         }
-        return parse_response(response, Order, method_errors)
+        return parse_response_json(response, Order, method_errors)
 
     async def invoice(
         self,
@@ -633,6 +652,8 @@ class OrdersAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Order not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -647,7 +668,7 @@ class OrdersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, OrderInvoice, method_errors)
+        return parse_response_json(response, OrderInvoice, method_errors)
 
     async def generate_invoice(
         self,
@@ -662,7 +683,10 @@ class OrdersAsync(AsyncServiceBase):
             id: The order ID.
 
         Raises:
-            GenerateInvoice422Error: Order is not paid or is missing billing name or address.
+            ResourceNotFound: Order not found.
+            MissingInvoiceBillingDetails: Order is missing billing name or address.
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -674,9 +698,10 @@ class OrdersAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            422: GenerateInvoice422Error,
+            404: ResourceNotFound,
+            422: MissingInvoiceBillingDetails,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_json(response, typing.Any, method_errors)
 
     async def receipt(
         self,
@@ -693,6 +718,8 @@ class OrdersAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Order not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -707,4 +734,4 @@ class OrdersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, OrderReceipt, method_errors)
+        return parse_response_json(response, OrderReceipt, method_errors)

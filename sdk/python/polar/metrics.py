@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import (
+    AsyncServiceBase,
+    SyncServiceBase,
+    parse_response_json,
+    parse_response_none,
+    parse_response_text,
+)
 from polar.errors import (
     HTTPValidationError,
 )
@@ -81,7 +87,7 @@ class MetricsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, MetricsResponse, method_errors)
+        return parse_response_json(response, MetricsResponse, method_errors)
 
     def export(
         self,
@@ -97,7 +103,7 @@ class MetricsSync(SyncServiceBase):
         | None = None,
         customer_id: str | list[str] | None = None,
         metrics: list[str] | None = None,
-    ) -> typing.Any:
+    ) -> str:
         """
         Export metrics as a CSV file.
 
@@ -139,7 +145,7 @@ class MetricsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_text(response, method_errors)
 
     def limits(
         self,
@@ -162,7 +168,7 @@ class MetricsSync(SyncServiceBase):
             query_params={},
         )
         response = self.client.send_request(request)
-        return parse_response(response, MetricsLimits)
+        return parse_response_json(response, MetricsLimits)
 
     def list_dashboards(
         self,
@@ -194,7 +200,7 @@ class MetricsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(
+        return parse_response_json(
             response, list[MetricDashboardSchema], method_errors
         )
 
@@ -225,7 +231,7 @@ class MetricsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, MetricDashboardSchema, method_errors)
+        return parse_response_json(response, MetricDashboardSchema, method_errors)
 
     def get_dashboard(
         self,
@@ -256,7 +262,7 @@ class MetricsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, MetricDashboardSchema, method_errors)
+        return parse_response_json(response, MetricDashboardSchema, method_errors)
 
     def delete_dashboard(
         self,
@@ -287,7 +293,7 @@ class MetricsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     def update_dashboard(
         self,
@@ -320,7 +326,7 @@ class MetricsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, MetricDashboardSchema, method_errors)
+        return parse_response_json(response, MetricDashboardSchema, method_errors)
 
 
 class MetricsAsync(AsyncServiceBase):
@@ -359,6 +365,8 @@ class MetricsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -380,7 +388,7 @@ class MetricsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, MetricsResponse, method_errors)
+        return parse_response_json(response, MetricsResponse, method_errors)
 
     async def export(
         self,
@@ -396,7 +404,7 @@ class MetricsAsync(AsyncServiceBase):
         | None = None,
         customer_id: str | list[str] | None = None,
         metrics: list[str] | None = None,
-    ) -> typing.Any:
+    ) -> str:
         """
         Export metrics as a CSV file.
 
@@ -415,6 +423,8 @@ class MetricsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -436,7 +446,7 @@ class MetricsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_text(response, method_errors)
 
     async def limits(
         self,
@@ -449,6 +459,8 @@ class MetricsAsync(AsyncServiceBase):
         Args:
 
         Raises:
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -457,7 +469,7 @@ class MetricsAsync(AsyncServiceBase):
             query_params={},
         )
         response = await self.client.send_request(request)
-        return parse_response(response, MetricsLimits)
+        return parse_response_json(response, MetricsLimits)
 
     async def list_dashboards(
         self,
@@ -474,6 +486,8 @@ class MetricsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -487,7 +501,7 @@ class MetricsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(
+        return parse_response_json(
             response, list[MetricDashboardSchema], method_errors
         )
 
@@ -504,6 +518,8 @@ class MetricsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -516,7 +532,7 @@ class MetricsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, MetricDashboardSchema, method_errors)
+        return parse_response_json(response, MetricDashboardSchema, method_errors)
 
     async def get_dashboard(
         self,
@@ -532,6 +548,8 @@ class MetricsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -545,7 +563,7 @@ class MetricsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, MetricDashboardSchema, method_errors)
+        return parse_response_json(response, MetricDashboardSchema, method_errors)
 
     async def delete_dashboard(
         self,
@@ -561,6 +579,8 @@ class MetricsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -574,7 +594,7 @@ class MetricsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     async def update_dashboard(
         self,
@@ -591,6 +611,8 @@ class MetricsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -605,4 +627,4 @@ class MetricsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, MetricDashboardSchema, method_errors)
+        return parse_response_json(response, MetricDashboardSchema, method_errors)

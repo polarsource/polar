@@ -23,10 +23,6 @@ from polar.meters import MetersAsync, MetersSync
 from polar.metrics import MetricsAsync, MetricsSync
 from polar.oauth2 import Oauth2Async, Oauth2Sync
 from polar.orders import OrdersAsync, OrdersSync
-from polar.organization_access_tokens import (
-    OrganizationAccessTokensAsync,
-    OrganizationAccessTokensSync,
-)
 from polar.organizations import OrganizationsAsync, OrganizationsSync
 from polar.payments import PaymentsAsync, PaymentsSync
 from polar.products import ProductsAsync, ProductsSync
@@ -63,7 +59,6 @@ class Polar:
         self.events = EventsSync(self._client)
         self.event_types = EventTypesSync(self._client)
         self.meters = MetersSync(self._client)
-        self.organization_access_tokens = OrganizationAccessTokensSync(self._client)
         self.customer_meters = CustomerMetersSync(self._client)
         self.payments = PaymentsSync(self._client)
 
@@ -108,7 +103,6 @@ class PolarAsync:
         self.events = EventsAsync(self._client)
         self.event_types = EventTypesAsync(self._client)
         self.meters = MetersAsync(self._client)
-        self.organization_access_tokens = OrganizationAccessTokensAsync(self._client)
         self.customer_meters = CustomerMetersAsync(self._client)
         self.payments = PaymentsAsync(self._client)
 

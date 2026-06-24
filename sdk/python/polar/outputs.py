@@ -5960,13 +5960,6 @@ class ListResourceOrganization:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
-class ListResourceOrganizationAccessToken:
-    items: list[OrganizationAccessToken]
-
-    pagination: Pagination
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
 class ListResourcePayment:
     items: list[Payment]
 
@@ -6661,13 +6654,6 @@ class NotOpenCheckout:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
-class NotPaidOrder:
-    error: typing.Literal["NotPaidOrder"]
-
-    detail: str
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
 class NotPermitted:
     error: typing.Literal["NotPermitted"]
 
@@ -7286,35 +7272,6 @@ class Organization:
     """ID of the payout account."""
 
     capabilities: OrganizationCapabilities
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class OrganizationAccessToken:
-    created_at: str
-    """Creation timestamp of the object."""
-
-    modified_at: str | None
-    """Last modification timestamp of the object."""
-
-    id: str
-
-    scopes: list[Scope]
-
-    expires_at: str | None
-
-    comment: str
-
-    last_used_at: str | None
-
-    organization_id: str
-    """The organization ID."""
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class OrganizationAccessTokenCreateResponse:
-    organization_access_token: OrganizationAccessToken
-
-    token: str
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)

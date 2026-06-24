@@ -3,8 +3,14 @@ from __future__ import annotations
 import typing
 
 from polar.base import AsyncServiceBase, SyncServiceBase
-{% if service.methods %}
-from polar.base import parse_response
+{% if service.methods | selectattr("response_type", "equalto", "json") | list %}
+from polar.base import parse_response_json
+{% endif %}
+{% if service.methods | selectattr("response_type", "equalto", "text") | list %}
+from polar.base import parse_response_text
+{% endif %}
+{% if service.methods | selectattr("response_type", "equalto", "none") | list %}
+from polar.base import parse_response_none
 {% endif %}
 {% if imports.enum %}
 from polar.literals import (
@@ -131,7 +137,13 @@ class {{ service.name }}Sync(SyncServiceBase):
         {% elif method.body %}
         **kwargs: typing.Unpack[{{ method.body | type_annotation }}],
         {% endif %}
+{% if method.response_type == 'json' %}
     ) -> {{ method.response | type_annotation }}:
+{% elif method.response_type == 'text' %}
+    ) -> str:
+{% elif method.response_type == 'none' %}
+    ) -> None:
+{% endif %}
         """
 {% if method.description %}
 {{ method.description }}
@@ -151,7 +163,7 @@ Raises:
 {% endfor %}
     PolarNetworkError: Raised when a network error occurs while making the request.
     PolarServerError: Raised when the server returns a 5xx error response.
-"""
+        """
         request = self.client.build_request(
             method="{{ method.http_method | upper }}",
             url="{{ method.path }}",
@@ -168,9 +180,13 @@ Raises:
             {{ error.status_code }}: {{ error.name }},
             {% endfor %}
         }
-        return parse_response(response, {{ method.response | type_annotation }}, method_errors)
-        {% else %}
-        return parse_response(response, {{ method.response | type_annotation }})
+        {% endif %}
+        {% if method.response_type == 'json' %}
+        return parse_response_json(response, {{ method.response | type_annotation }}{% if method.errors %}, method_errors{% endif %})
+        {% elif method.response_type == 'text' %}
+        return parse_response_text(response{% if method.errors %}, method_errors{% endif %})
+        {% elif method.response_type == 'none' %}
+        return parse_response_none(response{% if method.errors %}, method_errors{% endif %})
         {% endif %}
 
 {% endfor %}
@@ -266,7 +282,13 @@ class {{ service.name }}Async(AsyncServiceBase):
         {% elif method.body %}
         **kwargs: typing.Unpack[{{ method.body | type_annotation }}],
         {% endif %}
+{% if method.response_type == 'json' %}
     ) -> {{ method.response | type_annotation }}:
+{% elif method.response_type == 'text' %}
+    ) -> str:
+{% elif method.response_type == 'none' %}
+    ) -> None:
+{% endif %}
         """
 {% if method.description %}
 {{ method.description }}
@@ -284,6 +306,8 @@ Raises:
 {% for error in method.errors %}
     {{ error.name }}: {{ error.description }}
 {% endfor %}
+    PolarNetworkError: Raised when a network error occurs while making the request.
+    PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="{{ method.http_method | upper }}",
@@ -301,9 +325,13 @@ Raises:
             {{ error.status_code }}: {{ error.name }},
             {% endfor %}
         }
-        return parse_response(response, {{ method.response | type_annotation }}, method_errors)
-        {% else %}
-        return parse_response(response, {{ method.response | type_annotation }})
+        {% endif %}
+        {% if method.response_type == 'json' %}
+        return parse_response_json(response, {{ method.response | type_annotation }}{% if method.errors %}, method_errors{% endif %})
+        {% elif method.response_type == 'text' %}
+        return parse_response_text(response{% if method.errors %}, method_errors{% endif %})
+        {% elif method.response_type == 'none' %}
+        return parse_response_none(response{% if method.errors %}, method_errors{% endif %})
         {% endif %}
 
 {% endfor %}

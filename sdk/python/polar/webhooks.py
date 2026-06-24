@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import (
+    AsyncServiceBase,
+    SyncServiceBase,
+    parse_response_json,
+    parse_response_none,
+)
 from polar.errors import (
     HTTPValidationError,
     ResourceNotFound,
@@ -58,7 +63,7 @@ class WebhooksSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceWebhookEndpoint, method_errors)
+        return parse_response_json(response, ListResourceWebhookEndpoint, method_errors)
 
     def create_webhook_endpoint(
         self,
@@ -87,7 +92,7 @@ class WebhooksSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, WebhookEndpoint, method_errors)
+        return parse_response_json(response, WebhookEndpoint, method_errors)
 
     def get_webhook_endpoint(
         self,
@@ -120,7 +125,7 @@ class WebhooksSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, WebhookEndpoint, method_errors)
+        return parse_response_json(response, WebhookEndpoint, method_errors)
 
     def delete_webhook_endpoint(
         self,
@@ -153,7 +158,7 @@ class WebhooksSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     def update_webhook_endpoint(
         self,
@@ -188,7 +193,7 @@ class WebhooksSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, WebhookEndpoint, method_errors)
+        return parse_response_json(response, WebhookEndpoint, method_errors)
 
     def reset_webhook_endpoint_secret(
         self,
@@ -221,7 +226,7 @@ class WebhooksSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, WebhookEndpoint, method_errors)
+        return parse_response_json(response, WebhookEndpoint, method_errors)
 
     def list_webhook_deliveries(
         self,
@@ -283,7 +288,7 @@ class WebhooksSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceWebhookDelivery, method_errors)
+        return parse_response_json(response, ListResourceWebhookDelivery, method_errors)
 
     def redeliver_webhook_event(
         self,
@@ -316,7 +321,7 @@ class WebhooksSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_json(response, typing.Any, method_errors)
 
 
 class WebhooksAsync(AsyncServiceBase):
@@ -339,6 +344,8 @@ class WebhooksAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -354,7 +361,7 @@ class WebhooksAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceWebhookEndpoint, method_errors)
+        return parse_response_json(response, ListResourceWebhookEndpoint, method_errors)
 
     async def create_webhook_endpoint(
         self,
@@ -369,6 +376,8 @@ class WebhooksAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -381,7 +390,7 @@ class WebhooksAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, WebhookEndpoint, method_errors)
+        return parse_response_json(response, WebhookEndpoint, method_errors)
 
     async def get_webhook_endpoint(
         self,
@@ -398,6 +407,8 @@ class WebhooksAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Webhook endpoint not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -412,7 +423,7 @@ class WebhooksAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, WebhookEndpoint, method_errors)
+        return parse_response_json(response, WebhookEndpoint, method_errors)
 
     async def delete_webhook_endpoint(
         self,
@@ -429,6 +440,8 @@ class WebhooksAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Webhook endpoint not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -443,7 +456,7 @@ class WebhooksAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     async def update_webhook_endpoint(
         self,
@@ -461,6 +474,8 @@ class WebhooksAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Webhook endpoint not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -476,7 +491,7 @@ class WebhooksAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, WebhookEndpoint, method_errors)
+        return parse_response_json(response, WebhookEndpoint, method_errors)
 
     async def reset_webhook_endpoint_secret(
         self,
@@ -493,6 +508,8 @@ class WebhooksAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Webhook endpoint not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -507,7 +524,7 @@ class WebhooksAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, WebhookEndpoint, method_errors)
+        return parse_response_json(response, WebhookEndpoint, method_errors)
 
     async def list_webhook_deliveries(
         self,
@@ -546,6 +563,8 @@ class WebhooksAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -567,7 +586,7 @@ class WebhooksAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceWebhookDelivery, method_errors)
+        return parse_response_json(response, ListResourceWebhookDelivery, method_errors)
 
     async def redeliver_webhook_event(
         self,
@@ -584,6 +603,8 @@ class WebhooksAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Webhook event not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -598,4 +619,4 @@ class WebhooksAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_json(response, typing.Any, method_errors)

@@ -23,9 +23,6 @@ from polar.outputs import (
     MissingInvoiceBillingDetails as MissingInvoiceBillingDetailsModel,
 )
 from polar.outputs import (
-    NotPaidOrder as NotPaidOrderModel,
-)
-from polar.outputs import (
     NotPermitted as NotPermittedModel,
 )
 from polar.outputs import (
@@ -161,14 +158,12 @@ class OrderNotDraft(PolarClientError):
         super().__init__(status_code, error)
 
 
-class GenerateInvoice422Error(PolarClientError):
-    error_type = MissingInvoiceBillingDetailsModel | NotPaidOrderModel
-    error: MissingInvoiceBillingDetailsModel | NotPaidOrderModel
+class MissingInvoiceBillingDetails(PolarClientError):
+    error_type = MissingInvoiceBillingDetailsModel
+    error: MissingInvoiceBillingDetailsModel
 
     def __init__(
-        self,
-        status_code: int,
-        error: MissingInvoiceBillingDetailsModel | NotPaidOrderModel,
+        self, status_code: int, error: MissingInvoiceBillingDetailsModel
     ) -> None:
         self.error = error
         super().__init__(status_code, error)

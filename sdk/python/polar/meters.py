@@ -3,7 +3,7 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
     HTTPValidationError,
     ResourceNotFound,
@@ -75,7 +75,7 @@ class MetersSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceMeter, method_errors)
+        return parse_response_json(response, ListResourceMeter, method_errors)
 
     def create(
         self,
@@ -104,7 +104,7 @@ class MetersSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, Meter, method_errors)
+        return parse_response_json(response, Meter, method_errors)
 
     def get(
         self,
@@ -137,7 +137,7 @@ class MetersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Meter, method_errors)
+        return parse_response_json(response, Meter, method_errors)
 
     def update(
         self,
@@ -172,7 +172,7 @@ class MetersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Meter, method_errors)
+        return parse_response_json(response, Meter, method_errors)
 
     def quantities(
         self,
@@ -231,7 +231,7 @@ class MetersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, MeterQuantities, method_errors)
+        return parse_response_json(response, MeterQuantities, method_errors)
 
 
 class MetersAsync(AsyncServiceBase):
@@ -262,6 +262,8 @@ class MetersAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -281,7 +283,7 @@ class MetersAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceMeter, method_errors)
+        return parse_response_json(response, ListResourceMeter, method_errors)
 
     async def create(
         self,
@@ -296,6 +298,8 @@ class MetersAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -308,7 +312,7 @@ class MetersAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, Meter, method_errors)
+        return parse_response_json(response, Meter, method_errors)
 
     async def get(
         self,
@@ -325,6 +329,8 @@ class MetersAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Meter not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -339,7 +345,7 @@ class MetersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Meter, method_errors)
+        return parse_response_json(response, Meter, method_errors)
 
     async def update(
         self,
@@ -357,6 +363,8 @@ class MetersAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Meter not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -372,7 +380,7 @@ class MetersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Meter, method_errors)
+        return parse_response_json(response, Meter, method_errors)
 
     async def quantities(
         self,
@@ -406,6 +414,8 @@ class MetersAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Meter not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -429,4 +439,4 @@ class MetersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, MeterQuantities, method_errors)
+        return parse_response_json(response, MeterQuantities, method_errors)

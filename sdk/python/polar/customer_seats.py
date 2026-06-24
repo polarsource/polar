@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
     AssignSeat400Error,
     AssignSeat401Error,
@@ -45,7 +45,7 @@ class CustomerSeatsSync(SyncServiceBase):
         order_id: str | None = None,
     ) -> SeatsList:
         """
-        **Scopes**: `customer_seats:write`
+        **Scopes**: `customer_seats:read`
 
         Args:
             subscription_id: None
@@ -75,7 +75,7 @@ class CustomerSeatsSync(SyncServiceBase):
             404: ListSeats404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, SeatsList, method_errors)
+        return parse_response_json(response, SeatsList, method_errors)
 
     def assign_seat(
         self,
@@ -110,7 +110,7 @@ class CustomerSeatsSync(SyncServiceBase):
             404: AssignSeat404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSeat, method_errors)
+        return parse_response_json(response, CustomerSeat, method_errors)
 
     def revoke_seat(
         self,
@@ -145,7 +145,7 @@ class CustomerSeatsSync(SyncServiceBase):
             404: RevokeSeat404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSeat, method_errors)
+        return parse_response_json(response, CustomerSeat, method_errors)
 
     def resend_invitation(
         self,
@@ -182,7 +182,7 @@ class CustomerSeatsSync(SyncServiceBase):
             404: ResendInvitation404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSeat, method_errors)
+        return parse_response_json(response, CustomerSeat, method_errors)
 
     def get_claim_info(
         self,
@@ -216,7 +216,7 @@ class CustomerSeatsSync(SyncServiceBase):
             404: GetClaimInfo404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, SeatClaimInfo, method_errors)
+        return parse_response_json(response, SeatClaimInfo, method_errors)
 
     def claim_seat(
         self,
@@ -246,7 +246,7 @@ class CustomerSeatsSync(SyncServiceBase):
             403: ClaimSeat403Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSeatClaimResponse, method_errors)
+        return parse_response_json(response, CustomerSeatClaimResponse, method_errors)
 
 
 class CustomerSeatsAsync(AsyncServiceBase):
@@ -257,7 +257,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
         order_id: str | None = None,
     ) -> SeatsList:
         """
-        **Scopes**: `customer_seats:write`
+        **Scopes**: `customer_seats:read`
 
         Args:
             subscription_id: None
@@ -268,6 +268,8 @@ class CustomerSeatsAsync(AsyncServiceBase):
             ListSeats403Error: Not permitted or seat-based pricing not enabled
             ListSeats404Error: Subscription or order not found
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -285,7 +287,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
             404: ListSeats404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, SeatsList, method_errors)
+        return parse_response_json(response, SeatsList, method_errors)
 
     async def assign_seat(
         self,
@@ -302,6 +304,8 @@ class CustomerSeatsAsync(AsyncServiceBase):
             AssignSeat403Error: Not permitted or seat-based pricing not enabled
             AssignSeat404Error: Subscription, order, or customer not found
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -318,7 +322,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
             404: AssignSeat404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSeat, method_errors)
+        return parse_response_json(response, CustomerSeat, method_errors)
 
     async def revoke_seat(
         self,
@@ -335,6 +339,8 @@ class CustomerSeatsAsync(AsyncServiceBase):
             RevokeSeat403Error: Not permitted or seat-based pricing not enabled
             RevokeSeat404Error: Seat not found
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -351,7 +357,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
             404: RevokeSeat404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSeat, method_errors)
+        return parse_response_json(response, CustomerSeat, method_errors)
 
     async def resend_invitation(
         self,
@@ -369,6 +375,8 @@ class CustomerSeatsAsync(AsyncServiceBase):
             ResendInvitation403Error: Not permitted or seat-based pricing not enabled
             ResendInvitation404Error: Seat not found
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -386,7 +394,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
             404: ResendInvitation404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSeat, method_errors)
+        return parse_response_json(response, CustomerSeat, method_errors)
 
     async def get_claim_info(
         self,
@@ -402,6 +410,8 @@ class CustomerSeatsAsync(AsyncServiceBase):
             GetClaimInfo403Error: Seat-based pricing not enabled for organization
             GetClaimInfo404Error: Seat not found
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -418,7 +428,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
             404: GetClaimInfo404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, SeatClaimInfo, method_errors)
+        return parse_response_json(response, SeatClaimInfo, method_errors)
 
     async def claim_seat(
         self,
@@ -432,6 +442,8 @@ class CustomerSeatsAsync(AsyncServiceBase):
             ClaimSeat400Error: Invalid, expired, or already claimed token
             ClaimSeat403Error: Seat-based pricing not enabled for organization
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -446,4 +458,4 @@ class CustomerSeatsAsync(AsyncServiceBase):
             403: ClaimSeat403Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSeatClaimResponse, method_errors)
+        return parse_response_json(response, CustomerSeatClaimResponse, method_errors)

@@ -3,7 +3,7 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
     HTTPValidationError,
     NotPermitted,
@@ -90,7 +90,9 @@ class BenefitGrantsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCustomerBenefitGrant, method_errors)
+        return parse_response_json(
+            response, ListResourceCustomerBenefitGrant, method_errors
+        )
 
     def get(
         self,
@@ -123,7 +125,7 @@ class BenefitGrantsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerBenefitGrant, method_errors)
+        return parse_response_json(response, CustomerBenefitGrant, method_errors)
 
     @typing.overload
     def update(
@@ -216,7 +218,7 @@ class BenefitGrantsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerBenefitGrant, method_errors)
+        return parse_response_json(response, CustomerBenefitGrant, method_errors)
 
 
 class BenefitGrantsAsync(AsyncServiceBase):
@@ -256,6 +258,8 @@ class BenefitGrantsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -278,7 +282,9 @@ class BenefitGrantsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCustomerBenefitGrant, method_errors)
+        return parse_response_json(
+            response, ListResourceCustomerBenefitGrant, method_errors
+        )
 
     async def get(
         self,
@@ -295,6 +301,8 @@ class BenefitGrantsAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Benefit grant not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -309,7 +317,7 @@ class BenefitGrantsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerBenefitGrant, method_errors)
+        return parse_response_json(response, CustomerBenefitGrant, method_errors)
 
     @typing.overload
     async def update(
@@ -384,6 +392,8 @@ class BenefitGrantsAsync(AsyncServiceBase):
             NotPermitted: The benefit grant is revoked and cannot be updated.
             ResourceNotFound: Benefit grant not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -400,4 +410,4 @@ class BenefitGrantsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerBenefitGrant, method_errors)
+        return parse_response_json(response, CustomerBenefitGrant, method_errors)

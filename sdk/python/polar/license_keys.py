@@ -3,7 +3,12 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import (
+    AsyncServiceBase,
+    SyncServiceBase,
+    parse_response_json,
+    parse_response_none,
+)
 from polar.errors import (
     HTTPValidationError,
     NotPermitted,
@@ -75,7 +80,7 @@ class LicenseKeysSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceLicenseKeyRead, method_errors)
+        return parse_response_json(response, ListResourceLicenseKeyRead, method_errors)
 
     def get(
         self,
@@ -110,7 +115,7 @@ class LicenseKeysSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, LicenseKeyWithActivations, method_errors)
+        return parse_response_json(response, LicenseKeyWithActivations, method_errors)
 
     def update(
         self,
@@ -147,7 +152,7 @@ class LicenseKeysSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, LicenseKeyRead, method_errors)
+        return parse_response_json(response, LicenseKeyRead, method_errors)
 
     def get_activation(
         self,
@@ -185,7 +190,7 @@ class LicenseKeysSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, LicenseKeyActivationRead, method_errors)
+        return parse_response_json(response, LicenseKeyActivationRead, method_errors)
 
     def validate(
         self,
@@ -216,7 +221,7 @@ class LicenseKeysSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, ValidatedLicenseKey, method_errors)
+        return parse_response_json(response, ValidatedLicenseKey, method_errors)
 
     def activate(
         self,
@@ -249,7 +254,7 @@ class LicenseKeysSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, LicenseKeyActivationRead, method_errors)
+        return parse_response_json(response, LicenseKeyActivationRead, method_errors)
 
     def deactivate(
         self,
@@ -280,7 +285,7 @@ class LicenseKeysSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
 
 class LicenseKeysAsync(AsyncServiceBase):
@@ -309,6 +314,8 @@ class LicenseKeysAsync(AsyncServiceBase):
             Unauthorized: Not authorized to manage license key.
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -328,7 +335,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceLicenseKeyRead, method_errors)
+        return parse_response_json(response, ListResourceLicenseKeyRead, method_errors)
 
     async def get(
         self,
@@ -346,6 +353,8 @@ class LicenseKeysAsync(AsyncServiceBase):
             Unauthorized: Not authorized to manage license key.
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -361,7 +370,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, LicenseKeyWithActivations, method_errors)
+        return parse_response_json(response, LicenseKeyWithActivations, method_errors)
 
     async def update(
         self,
@@ -380,6 +389,8 @@ class LicenseKeysAsync(AsyncServiceBase):
             Unauthorized: Not authorized to manage license key.
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -396,7 +407,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, LicenseKeyRead, method_errors)
+        return parse_response_json(response, LicenseKeyRead, method_errors)
 
     async def get_activation(
         self,
@@ -416,6 +427,8 @@ class LicenseKeysAsync(AsyncServiceBase):
             Unauthorized: Not authorized to manage license key.
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -432,7 +445,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, LicenseKeyActivationRead, method_errors)
+        return parse_response_json(response, LicenseKeyActivationRead, method_errors)
 
     async def validate(
         self,
@@ -448,6 +461,8 @@ class LicenseKeysAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -461,7 +476,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, ValidatedLicenseKey, method_errors)
+        return parse_response_json(response, ValidatedLicenseKey, method_errors)
 
     async def activate(
         self,
@@ -478,6 +493,8 @@ class LicenseKeysAsync(AsyncServiceBase):
             NotPermitted: License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -492,7 +509,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, LicenseKeyActivationRead, method_errors)
+        return parse_response_json(response, LicenseKeyActivationRead, method_errors)
 
     async def deactivate(
         self,
@@ -508,6 +525,8 @@ class LicenseKeysAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -521,4 +540,4 @@ class LicenseKeysAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)

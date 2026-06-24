@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import builtins
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
     HTTPValidationError,
     ResourceNotFound,
@@ -75,7 +75,7 @@ class PaymentsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourcePayment, method_errors)
+        return parse_response_json(response, ListResourcePayment, method_errors)
 
     def get(
         self,
@@ -108,7 +108,7 @@ class PaymentsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Payment, method_errors)
+        return parse_response_json(response, Payment, method_errors)
 
 
 class PaymentsAsync(AsyncServiceBase):
@@ -145,6 +145,8 @@ class PaymentsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -167,7 +169,7 @@ class PaymentsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourcePayment, method_errors)
+        return parse_response_json(response, ListResourcePayment, method_errors)
 
     async def get(
         self,
@@ -184,6 +186,8 @@ class PaymentsAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Payment not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -198,4 +202,4 @@ class PaymentsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Payment, method_errors)
+        return parse_response_json(response, Payment, method_errors)

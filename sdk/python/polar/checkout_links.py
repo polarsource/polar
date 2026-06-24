@@ -3,7 +3,12 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import (
+    AsyncServiceBase,
+    SyncServiceBase,
+    parse_response_json,
+    parse_response_none,
+)
 from polar.errors import (
     HTTPValidationError,
     ResourceNotFound,
@@ -66,7 +71,7 @@ class CheckoutLinksSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCheckoutLink, method_errors)
+        return parse_response_json(response, ListResourceCheckoutLink, method_errors)
 
     @typing.overload
     def create(
@@ -113,7 +118,7 @@ class CheckoutLinksSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, CheckoutLink, method_errors)
+        return parse_response_json(response, CheckoutLink, method_errors)
 
     def get(
         self,
@@ -146,7 +151,7 @@ class CheckoutLinksSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CheckoutLink, method_errors)
+        return parse_response_json(response, CheckoutLink, method_errors)
 
     def delete(
         self,
@@ -179,7 +184,7 @@ class CheckoutLinksSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     def update(
         self,
@@ -214,7 +219,7 @@ class CheckoutLinksSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CheckoutLink, method_errors)
+        return parse_response_json(response, CheckoutLink, method_errors)
 
 
 class CheckoutLinksAsync(AsyncServiceBase):
@@ -241,6 +246,8 @@ class CheckoutLinksAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -258,7 +265,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCheckoutLink, method_errors)
+        return parse_response_json(response, ListResourceCheckoutLink, method_errors)
 
     @typing.overload
     async def create(
@@ -291,6 +298,8 @@ class CheckoutLinksAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -303,7 +312,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, CheckoutLink, method_errors)
+        return parse_response_json(response, CheckoutLink, method_errors)
 
     async def get(
         self,
@@ -320,6 +329,8 @@ class CheckoutLinksAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Checkout link not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -334,7 +345,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CheckoutLink, method_errors)
+        return parse_response_json(response, CheckoutLink, method_errors)
 
     async def delete(
         self,
@@ -351,6 +362,8 @@ class CheckoutLinksAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Checkout link not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -365,7 +378,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     async def update(
         self,
@@ -383,6 +396,8 @@ class CheckoutLinksAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Checkout link not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -398,4 +413,4 @@ class CheckoutLinksAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CheckoutLink, method_errors)
+        return parse_response_json(response, CheckoutLink, method_errors)

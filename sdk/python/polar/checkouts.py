@@ -3,7 +3,7 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
     ClientConfirm403Error,
     ClientUpdate403Error,
@@ -86,7 +86,7 @@ class CheckoutsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCheckout, method_errors)
+        return parse_response_json(response, ListResourceCheckout, method_errors)
 
     def create(
         self,
@@ -115,7 +115,7 @@ class CheckoutsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, Checkout, method_errors)
+        return parse_response_json(response, Checkout, method_errors)
 
     def get(
         self,
@@ -148,7 +148,7 @@ class CheckoutsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Checkout, method_errors)
+        return parse_response_json(response, Checkout, method_errors)
 
     def update(
         self,
@@ -185,7 +185,7 @@ class CheckoutsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Checkout, method_errors)
+        return parse_response_json(response, Checkout, method_errors)
 
     def client_get(
         self,
@@ -218,7 +218,7 @@ class CheckoutsSync(SyncServiceBase):
             410: ExpiredCheckoutError,
             422: HTTPValidationError,
         }
-        return parse_response(response, CheckoutPublic, method_errors)
+        return parse_response_json(response, CheckoutPublic, method_errors)
 
     def client_update(
         self,
@@ -255,7 +255,7 @@ class CheckoutsSync(SyncServiceBase):
             410: ExpiredCheckoutError,
             422: HTTPValidationError,
         }
-        return parse_response(response, CheckoutPublic, method_errors)
+        return parse_response_json(response, CheckoutPublic, method_errors)
 
     def client_confirm(
         self,
@@ -296,7 +296,7 @@ class CheckoutsSync(SyncServiceBase):
             410: ExpiredCheckoutError,
             422: HTTPValidationError,
         }
-        return parse_response(response, CheckoutPublicConfirmed, method_errors)
+        return parse_response_json(response, CheckoutPublicConfirmed, method_errors)
 
 
 class CheckoutsAsync(AsyncServiceBase):
@@ -331,6 +331,8 @@ class CheckoutsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -352,7 +354,7 @@ class CheckoutsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCheckout, method_errors)
+        return parse_response_json(response, ListResourceCheckout, method_errors)
 
     async def create(
         self,
@@ -367,6 +369,8 @@ class CheckoutsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -379,7 +383,7 @@ class CheckoutsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, Checkout, method_errors)
+        return parse_response_json(response, Checkout, method_errors)
 
     async def get(
         self,
@@ -396,6 +400,8 @@ class CheckoutsAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Checkout session not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -410,7 +416,7 @@ class CheckoutsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Checkout, method_errors)
+        return parse_response_json(response, Checkout, method_errors)
 
     async def update(
         self,
@@ -429,6 +435,8 @@ class CheckoutsAsync(AsyncServiceBase):
             Update403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
             ResourceNotFound: Checkout session not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -445,7 +453,7 @@ class CheckoutsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Checkout, method_errors)
+        return parse_response_json(response, Checkout, method_errors)
 
     async def client_get(
         self,
@@ -461,6 +469,8 @@ class CheckoutsAsync(AsyncServiceBase):
             ResourceNotFound: Checkout session not found.
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -476,7 +486,7 @@ class CheckoutsAsync(AsyncServiceBase):
             410: ExpiredCheckoutError,
             422: HTTPValidationError,
         }
-        return parse_response(response, CheckoutPublic, method_errors)
+        return parse_response_json(response, CheckoutPublic, method_errors)
 
     async def client_update(
         self,
@@ -494,6 +504,8 @@ class CheckoutsAsync(AsyncServiceBase):
             ResourceNotFound: Checkout session not found.
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -511,7 +523,7 @@ class CheckoutsAsync(AsyncServiceBase):
             410: ExpiredCheckoutError,
             422: HTTPValidationError,
         }
-        return parse_response(response, CheckoutPublic, method_errors)
+        return parse_response_json(response, CheckoutPublic, method_errors)
 
     async def client_confirm(
         self,
@@ -532,6 +544,8 @@ class CheckoutsAsync(AsyncServiceBase):
             ResourceNotFound: Checkout session not found.
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -550,4 +564,4 @@ class CheckoutsAsync(AsyncServiceBase):
             410: ExpiredCheckoutError,
             422: HTTPValidationError,
         }
-        return parse_response(response, CheckoutPublicConfirmed, method_errors)
+        return parse_response_json(response, CheckoutPublicConfirmed, method_errors)

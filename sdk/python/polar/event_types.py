@@ -3,7 +3,7 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
     HTTPValidationError,
     Update404Error,
@@ -79,7 +79,9 @@ class EventTypesSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceEventTypeWithStats, method_errors)
+        return parse_response_json(
+            response, ListResourceEventTypeWithStats, method_errors
+        )
 
     def update(
         self,
@@ -114,7 +116,7 @@ class EventTypesSync(SyncServiceBase):
             404: Update404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, EventType, method_errors)
+        return parse_response_json(response, EventType, method_errors)
 
 
 class EventTypesAsync(AsyncServiceBase):
@@ -151,6 +153,8 @@ class EventTypesAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -173,7 +177,9 @@ class EventTypesAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceEventTypeWithStats, method_errors)
+        return parse_response_json(
+            response, ListResourceEventTypeWithStats, method_errors
+        )
 
     async def update(
         self,
@@ -191,6 +197,8 @@ class EventTypesAsync(AsyncServiceBase):
         Raises:
             Update404Error: Not Found
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -206,4 +214,4 @@ class EventTypesAsync(AsyncServiceBase):
             404: Update404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, EventType, method_errors)
+        return parse_response_json(response, EventType, method_errors)

@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import (
+    AsyncServiceBase,
+    SyncServiceBase,
+    parse_response_json,
+    parse_response_none,
+)
 from polar.errors import (
     AddMember400Error,
     AddMember401Error,
@@ -67,7 +72,9 @@ class MembersSync(SyncServiceBase):
             403: ListMembers403Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCustomerPortalMember, method_errors)
+        return parse_response_json(
+            response, ListResourceCustomerPortalMember, method_errors
+        )
 
     def add_member(
         self,
@@ -106,7 +113,7 @@ class MembersSync(SyncServiceBase):
             403: AddMember403Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerPortalMember, method_errors)
+        return parse_response_json(response, CustomerPortalMember, method_errors)
 
     def remove_member(
         self,
@@ -149,7 +156,7 @@ class MembersSync(SyncServiceBase):
             404: RemoveMember404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     def update_member(
         self,
@@ -194,7 +201,7 @@ class MembersSync(SyncServiceBase):
             404: UpdateMember404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerPortalMember, method_errors)
+        return parse_response_json(response, CustomerPortalMember, method_errors)
 
 
 class MembersAsync(AsyncServiceBase):
@@ -217,6 +224,8 @@ class MembersAsync(AsyncServiceBase):
             ListMembers401Error: Authentication required
             ListMembers403Error: Not permitted - requires owner or billing manager role
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -233,7 +242,9 @@ class MembersAsync(AsyncServiceBase):
             403: ListMembers403Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCustomerPortalMember, method_errors)
+        return parse_response_json(
+            response, ListResourceCustomerPortalMember, method_errors
+        )
 
     async def add_member(
         self,
@@ -255,6 +266,8 @@ class MembersAsync(AsyncServiceBase):
             AddMember401Error: Authentication required
             AddMember403Error: Not permitted - requires owner or billing manager role
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -270,7 +283,7 @@ class MembersAsync(AsyncServiceBase):
             403: AddMember403Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerPortalMember, method_errors)
+        return parse_response_json(response, CustomerPortalMember, method_errors)
 
     async def remove_member(
         self,
@@ -294,6 +307,8 @@ class MembersAsync(AsyncServiceBase):
             RemoveMember403Error: Not permitted - requires owner or billing manager role
             RemoveMember404Error: Member not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -311,7 +326,7 @@ class MembersAsync(AsyncServiceBase):
             404: RemoveMember404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     async def update_member(
         self,
@@ -336,6 +351,8 @@ class MembersAsync(AsyncServiceBase):
             UpdateMember403Error: Not permitted - requires owner or billing manager role
             UpdateMember404Error: Member not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -354,4 +371,4 @@ class MembersAsync(AsyncServiceBase):
             404: UpdateMember404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerPortalMember, method_errors)
+        return parse_response_json(response, CustomerPortalMember, method_errors)

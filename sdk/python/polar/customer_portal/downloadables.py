@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import builtins
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
     HTTPValidationError,
 )
@@ -46,7 +46,9 @@ class DownloadablesSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceDownloadableRead, method_errors)
+        return parse_response_json(
+            response, ListResourceDownloadableRead, method_errors
+        )
 
 
 class DownloadablesAsync(AsyncServiceBase):
@@ -67,6 +69,8 @@ class DownloadablesAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -82,4 +86,6 @@ class DownloadablesAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceDownloadableRead, method_errors)
+        return parse_response_json(
+            response, ListResourceDownloadableRead, method_errors
+        )

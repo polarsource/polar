@@ -3,7 +3,12 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import (
+    AsyncServiceBase,
+    SyncServiceBase,
+    parse_response_json,
+    parse_response_none,
+)
 from polar.errors import (
     HTTPValidationError,
     ResourceNotFound,
@@ -65,7 +70,7 @@ class DiscountsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceDiscount, method_errors)
+        return parse_response_json(response, ListResourceDiscount, method_errors)
 
     @typing.overload
     def create(
@@ -106,7 +111,7 @@ class DiscountsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, Discount, method_errors)
+        return parse_response_json(response, Discount, method_errors)
 
     def get(
         self,
@@ -139,7 +144,7 @@ class DiscountsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Discount, method_errors)
+        return parse_response_json(response, Discount, method_errors)
 
     def delete(
         self,
@@ -172,7 +177,7 @@ class DiscountsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     def update(
         self,
@@ -207,7 +212,7 @@ class DiscountsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Discount, method_errors)
+        return parse_response_json(response, Discount, method_errors)
 
 
 class DiscountsAsync(AsyncServiceBase):
@@ -234,6 +239,8 @@ class DiscountsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -251,7 +258,7 @@ class DiscountsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceDiscount, method_errors)
+        return parse_response_json(response, ListResourceDiscount, method_errors)
 
     @typing.overload
     async def create(
@@ -278,6 +285,8 @@ class DiscountsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -290,7 +299,7 @@ class DiscountsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, Discount, method_errors)
+        return parse_response_json(response, Discount, method_errors)
 
     async def get(
         self,
@@ -307,6 +316,8 @@ class DiscountsAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Discount not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -321,7 +332,7 @@ class DiscountsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Discount, method_errors)
+        return parse_response_json(response, Discount, method_errors)
 
     async def delete(
         self,
@@ -338,6 +349,8 @@ class DiscountsAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Discount not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -352,7 +365,7 @@ class DiscountsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     async def update(
         self,
@@ -370,6 +383,8 @@ class DiscountsAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Discount not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -385,4 +400,4 @@ class DiscountsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Discount, method_errors)
+        return parse_response_json(response, Discount, method_errors)

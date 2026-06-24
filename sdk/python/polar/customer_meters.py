@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import builtins
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
     HTTPValidationError,
     ResourceNotFound,
@@ -65,7 +65,7 @@ class CustomerMetersSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCustomerMeter, method_errors)
+        return parse_response_json(response, ListResourceCustomerMeter, method_errors)
 
     def get(
         self,
@@ -98,7 +98,7 @@ class CustomerMetersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerMeter, method_errors)
+        return parse_response_json(response, CustomerMeter, method_errors)
 
 
 class CustomerMetersAsync(AsyncServiceBase):
@@ -129,6 +129,8 @@ class CustomerMetersAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -148,7 +150,7 @@ class CustomerMetersAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCustomerMeter, method_errors)
+        return parse_response_json(response, ListResourceCustomerMeter, method_errors)
 
     async def get(
         self,
@@ -165,6 +167,8 @@ class CustomerMetersAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Customer meter not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -179,4 +183,4 @@ class CustomerMetersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerMeter, method_errors)
+        return parse_response_json(response, CustomerMeter, method_errors)

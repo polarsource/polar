@@ -3,7 +3,12 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import (
+    AsyncServiceBase,
+    SyncServiceBase,
+    parse_response_json,
+    parse_response_text,
+)
 from polar.errors import (
     AlreadyCanceledSubscription,
     HTTPValidationError,
@@ -108,7 +113,7 @@ class SubscriptionsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceSubscription, method_errors)
+        return parse_response_json(response, ListResourceSubscription, method_errors)
 
     @typing.overload
     def create(
@@ -154,13 +159,13 @@ class SubscriptionsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, Subscription, method_errors)
+        return parse_response_json(response, Subscription, method_errors)
 
     def export(
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
-    ) -> typing.Any:
+    ) -> str:
         """
         Export subscriptions as a CSV file.
 
@@ -186,7 +191,7 @@ class SubscriptionsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_text(response, method_errors)
 
     def get(
         self,
@@ -219,7 +224,7 @@ class SubscriptionsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Subscription, method_errors)
+        return parse_response_json(response, Subscription, method_errors)
 
     def revoke(
         self,
@@ -256,7 +261,7 @@ class SubscriptionsSync(SyncServiceBase):
             409: SubscriptionLocked,
             422: HTTPValidationError,
         }
-        return parse_response(response, Subscription, method_errors)
+        return parse_response_json(response, Subscription, method_errors)
 
     @typing.overload
     def update(
@@ -339,7 +344,7 @@ class SubscriptionsSync(SyncServiceBase):
             409: SubscriptionLocked,
             422: HTTPValidationError,
         }
-        return parse_response(response, Subscription, method_errors)
+        return parse_response_json(response, Subscription, method_errors)
 
 
 class SubscriptionsAsync(AsyncServiceBase):
@@ -388,6 +393,8 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -415,7 +422,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceSubscription, method_errors)
+        return parse_response_json(response, ListResourceSubscription, method_errors)
 
     @typing.overload
     async def create(
@@ -447,6 +454,8 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -459,13 +468,13 @@ class SubscriptionsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, Subscription, method_errors)
+        return parse_response_json(response, Subscription, method_errors)
 
     async def export(
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
-    ) -> typing.Any:
+    ) -> str:
         """
         Export subscriptions as a CSV file.
 
@@ -476,6 +485,8 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -489,7 +500,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_text(response, method_errors)
 
     async def get(
         self,
@@ -506,6 +517,8 @@ class SubscriptionsAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Subscription not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -520,7 +533,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Subscription, method_errors)
+        return parse_response_json(response, Subscription, method_errors)
 
     async def revoke(
         self,
@@ -539,6 +552,8 @@ class SubscriptionsAsync(AsyncServiceBase):
             ResourceNotFound: Subscription not found.
             SubscriptionLocked: Subscription is pending an update.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -555,7 +570,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             409: SubscriptionLocked,
             422: HTTPValidationError,
         }
-        return parse_response(response, Subscription, method_errors)
+        return parse_response_json(response, Subscription, method_errors)
 
     @typing.overload
     async def update(
@@ -618,6 +633,8 @@ class SubscriptionsAsync(AsyncServiceBase):
             ResourceNotFound: Subscription not found.
             SubscriptionLocked: Subscription is pending an update.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -636,4 +653,4 @@ class SubscriptionsAsync(AsyncServiceBase):
             409: SubscriptionLocked,
             422: HTTPValidationError,
         }
-        return parse_response(response, Subscription, method_errors)
+        return parse_response_json(response, Subscription, method_errors)

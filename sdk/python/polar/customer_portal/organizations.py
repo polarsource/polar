@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
     HTTPValidationError,
     ResourceNotFound,
@@ -40,7 +40,7 @@ class OrganizationsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerOrganizationData, method_errors)
+        return parse_response_json(response, CustomerOrganizationData, method_errors)
 
 
 class OrganizationsAsync(AsyncServiceBase):
@@ -57,6 +57,8 @@ class OrganizationsAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Organization not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -71,4 +73,4 @@ class OrganizationsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerOrganizationData, method_errors)
+        return parse_response_json(response, CustomerOrganizationData, method_errors)

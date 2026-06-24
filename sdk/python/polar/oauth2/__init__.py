@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.outputs import (
     AuthorizeResponseOrganization,
     AuthorizeResponseUser,
@@ -41,7 +41,7 @@ class Oauth2Sync(SyncServiceBase):
             query_params={},
         )
         response = self.client.send_request(request)
-        return parse_response(
+        return parse_response_json(
             response, AuthorizeResponseUser | AuthorizeResponseOrganization
         )
 
@@ -64,7 +64,7 @@ class Oauth2Sync(SyncServiceBase):
             query_params={},
         )
         response = self.client.send_request(request)
-        return parse_response(response, TokenResponse)
+        return parse_response_json(response, TokenResponse)
 
     def revoke_token(
         self,
@@ -85,7 +85,7 @@ class Oauth2Sync(SyncServiceBase):
             query_params={},
         )
         response = self.client.send_request(request)
-        return parse_response(response, RevokeTokenResponse)
+        return parse_response_json(response, RevokeTokenResponse)
 
     def introspect_token(
         self,
@@ -106,7 +106,7 @@ class Oauth2Sync(SyncServiceBase):
             query_params={},
         )
         response = self.client.send_request(request)
-        return parse_response(response, IntrospectTokenResponse)
+        return parse_response_json(response, IntrospectTokenResponse)
 
     def userinfo(
         self,
@@ -127,7 +127,7 @@ class Oauth2Sync(SyncServiceBase):
             query_params={},
         )
         response = self.client.send_request(request)
-        return parse_response(response, UserInfoUser | UserInfoOrganization)
+        return parse_response_json(response, UserInfoUser | UserInfoOrganization)
 
 
 class Oauth2Async(AsyncServiceBase):
@@ -145,6 +145,8 @@ class Oauth2Async(AsyncServiceBase):
         Args:
 
         Raises:
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -153,7 +155,7 @@ class Oauth2Async(AsyncServiceBase):
             query_params={},
         )
         response = await self.client.send_request(request)
-        return parse_response(
+        return parse_response_json(
             response, AuthorizeResponseUser | AuthorizeResponseOrganization
         )
 
@@ -166,6 +168,8 @@ class Oauth2Async(AsyncServiceBase):
         Args:
 
         Raises:
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -174,7 +178,7 @@ class Oauth2Async(AsyncServiceBase):
             query_params={},
         )
         response = await self.client.send_request(request)
-        return parse_response(response, TokenResponse)
+        return parse_response_json(response, TokenResponse)
 
     async def revoke_token(
         self,
@@ -185,6 +189,8 @@ class Oauth2Async(AsyncServiceBase):
         Args:
 
         Raises:
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -193,7 +199,7 @@ class Oauth2Async(AsyncServiceBase):
             query_params={},
         )
         response = await self.client.send_request(request)
-        return parse_response(response, RevokeTokenResponse)
+        return parse_response_json(response, RevokeTokenResponse)
 
     async def introspect_token(
         self,
@@ -204,6 +210,8 @@ class Oauth2Async(AsyncServiceBase):
         Args:
 
         Raises:
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -212,7 +220,7 @@ class Oauth2Async(AsyncServiceBase):
             query_params={},
         )
         response = await self.client.send_request(request)
-        return parse_response(response, IntrospectTokenResponse)
+        return parse_response_json(response, IntrospectTokenResponse)
 
     async def userinfo(
         self,
@@ -223,6 +231,8 @@ class Oauth2Async(AsyncServiceBase):
         Args:
 
         Raises:
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -231,4 +241,4 @@ class Oauth2Async(AsyncServiceBase):
             query_params={},
         )
         response = await self.client.send_request(request)
-        return parse_response(response, UserInfoUser | UserInfoOrganization)
+        return parse_response_json(response, UserInfoUser | UserInfoOrganization)

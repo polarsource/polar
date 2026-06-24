@@ -3,7 +3,7 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
     AlreadyCanceledSubscription,
     HTTPValidationError,
@@ -71,7 +71,9 @@ class SubscriptionsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCustomerSubscription, method_errors)
+        return parse_response_json(
+            response, ListResourceCustomerSubscription, method_errors
+        )
 
     def get(
         self,
@@ -104,7 +106,7 @@ class SubscriptionsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSubscription, method_errors)
+        return parse_response_json(response, CustomerSubscription, method_errors)
 
     def cancel(
         self,
@@ -137,7 +139,7 @@ class SubscriptionsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSubscription, method_errors)
+        return parse_response_json(response, CustomerSubscription, method_errors)
 
     @typing.overload
     def update(
@@ -202,7 +204,7 @@ class SubscriptionsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSubscription, method_errors)
+        return parse_response_json(response, CustomerSubscription, method_errors)
 
 
 class SubscriptionsAsync(AsyncServiceBase):
@@ -231,6 +233,8 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -249,7 +253,9 @@ class SubscriptionsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCustomerSubscription, method_errors)
+        return parse_response_json(
+            response, ListResourceCustomerSubscription, method_errors
+        )
 
     async def get(
         self,
@@ -266,6 +272,8 @@ class SubscriptionsAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Customer subscription was not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -280,7 +288,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSubscription, method_errors)
+        return parse_response_json(response, CustomerSubscription, method_errors)
 
     async def cancel(
         self,
@@ -296,6 +304,8 @@ class SubscriptionsAsync(AsyncServiceBase):
             AlreadyCanceledSubscription: Customer subscription is already canceled or will be at the end of the period, or the user lacks billing permissions.
             ResourceNotFound: Customer subscription was not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -311,7 +321,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSubscription, method_errors)
+        return parse_response_json(response, CustomerSubscription, method_errors)
 
     @typing.overload
     async def update(
@@ -357,6 +367,8 @@ class SubscriptionsAsync(AsyncServiceBase):
             AlreadyCanceledSubscription: Customer subscription is already canceled or will be at the end of the period, or the user lacks billing permissions.
             ResourceNotFound: Customer subscription was not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -374,4 +386,4 @@ class SubscriptionsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSubscription, method_errors)
+        return parse_response_json(response, CustomerSubscription, method_errors)

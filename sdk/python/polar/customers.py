@@ -3,7 +3,13 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import (
+    AsyncServiceBase,
+    SyncServiceBase,
+    parse_response_json,
+    parse_response_none,
+    parse_response_text,
+)
 from polar.errors import (
     HTTPValidationError,
     ResourceNotFound,
@@ -78,7 +84,7 @@ class CustomersSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCustomer, method_errors)
+        return parse_response_json(response, ListResourceCustomer, method_errors)
 
     @typing.overload
     def create(
@@ -119,13 +125,13 @@ class CustomersSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, Customer, method_errors)
+        return parse_response_json(response, Customer, method_errors)
 
     def export(
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
-    ) -> typing.Any:
+    ) -> str:
         """
         Export customers as a CSV file.
 
@@ -151,7 +157,7 @@ class CustomersSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_text(response, method_errors)
 
     def get(
         self,
@@ -184,7 +190,7 @@ class CustomersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Customer, method_errors)
+        return parse_response_json(response, Customer, method_errors)
 
     def delete(
         self,
@@ -236,7 +242,7 @@ class CustomersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     def update(
         self,
@@ -271,7 +277,7 @@ class CustomersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Customer, method_errors)
+        return parse_response_json(response, Customer, method_errors)
 
     def get_external(
         self,
@@ -304,7 +310,7 @@ class CustomersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Customer, method_errors)
+        return parse_response_json(response, Customer, method_errors)
 
     def delete_external(
         self,
@@ -346,7 +352,7 @@ class CustomersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     def update_external(
         self,
@@ -381,7 +387,7 @@ class CustomersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Customer, method_errors)
+        return parse_response_json(response, Customer, method_errors)
 
     def get_state(
         self,
@@ -420,7 +426,7 @@ class CustomersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerState, method_errors)
+        return parse_response_json(response, CustomerState, method_errors)
 
     def get_state_external(
         self,
@@ -459,7 +465,7 @@ class CustomersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerState, method_errors)
+        return parse_response_json(response, CustomerState, method_errors)
 
     def list_payment_methods(
         self,
@@ -500,7 +506,7 @@ class CustomersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourcePaymentMethod, method_errors)
+        return parse_response_json(response, ListResourcePaymentMethod, method_errors)
 
     def list_payment_methods_external(
         self,
@@ -541,7 +547,7 @@ class CustomersSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourcePaymentMethod, method_errors)
+        return parse_response_json(response, ListResourcePaymentMethod, method_errors)
 
 
 class CustomersAsync(AsyncServiceBase):
@@ -574,6 +580,8 @@ class CustomersAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -594,7 +602,7 @@ class CustomersAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCustomer, method_errors)
+        return parse_response_json(response, ListResourceCustomer, method_errors)
 
     @typing.overload
     async def create(
@@ -621,6 +629,8 @@ class CustomersAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -633,13 +643,13 @@ class CustomersAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, Customer, method_errors)
+        return parse_response_json(response, Customer, method_errors)
 
     async def export(
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
-    ) -> typing.Any:
+    ) -> str:
         """
         Export customers as a CSV file.
 
@@ -650,6 +660,8 @@ class CustomersAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -663,7 +675,7 @@ class CustomersAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, typing.Any, method_errors)
+        return parse_response_text(response, method_errors)
 
     async def get(
         self,
@@ -680,6 +692,8 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -694,7 +708,7 @@ class CustomersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Customer, method_errors)
+        return parse_response_json(response, Customer, method_errors)
 
     async def delete(
         self,
@@ -728,6 +742,8 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -744,7 +760,7 @@ class CustomersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     async def update(
         self,
@@ -762,6 +778,8 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -777,7 +795,7 @@ class CustomersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Customer, method_errors)
+        return parse_response_json(response, Customer, method_errors)
 
     async def get_external(
         self,
@@ -794,6 +812,8 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -808,7 +828,7 @@ class CustomersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Customer, method_errors)
+        return parse_response_json(response, Customer, method_errors)
 
     async def delete_external(
         self,
@@ -832,6 +852,8 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -848,7 +870,7 @@ class CustomersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     async def update_external(
         self,
@@ -866,6 +888,8 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -881,7 +905,7 @@ class CustomersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Customer, method_errors)
+        return parse_response_json(response, Customer, method_errors)
 
     async def get_state(
         self,
@@ -904,6 +928,8 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -918,7 +944,7 @@ class CustomersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerState, method_errors)
+        return parse_response_json(response, CustomerState, method_errors)
 
     async def get_state_external(
         self,
@@ -941,6 +967,8 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -955,7 +983,7 @@ class CustomersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerState, method_errors)
+        return parse_response_json(response, CustomerState, method_errors)
 
     async def list_payment_methods(
         self,
@@ -977,6 +1005,8 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -994,7 +1024,7 @@ class CustomersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourcePaymentMethod, method_errors)
+        return parse_response_json(response, ListResourcePaymentMethod, method_errors)
 
     async def list_payment_methods_external(
         self,
@@ -1016,6 +1046,8 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -1033,4 +1065,4 @@ class CustomersAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourcePaymentMethod, method_errors)
+        return parse_response_json(response, ListResourcePaymentMethod, method_errors)

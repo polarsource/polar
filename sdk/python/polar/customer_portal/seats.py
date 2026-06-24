@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
     AssignSeat400Error,
     AssignSeat401Error,
@@ -69,7 +69,7 @@ class SeatsSync(SyncServiceBase):
             404: ListSeats404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, SeatsList, method_errors)
+        return parse_response_json(response, SeatsList, method_errors)
 
     def assign_seat(
         self,
@@ -103,7 +103,7 @@ class SeatsSync(SyncServiceBase):
             404: AssignSeat404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSeat, method_errors)
+        return parse_response_json(response, CustomerSeat, method_errors)
 
     def revoke_seat(
         self,
@@ -137,7 +137,7 @@ class SeatsSync(SyncServiceBase):
             404: RevokeSeat404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSeat, method_errors)
+        return parse_response_json(response, CustomerSeat, method_errors)
 
     def resend_invitation(
         self,
@@ -173,7 +173,7 @@ class SeatsSync(SyncServiceBase):
             404: ResendInvitation404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSeat, method_errors)
+        return parse_response_json(response, CustomerSeat, method_errors)
 
     def list_claimed_subscriptions(
         self,
@@ -210,7 +210,9 @@ class SeatsSync(SyncServiceBase):
             401: ListClaimedSubscriptions401Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCustomerSubscription, method_errors)
+        return parse_response_json(
+            response, ListResourceCustomerSubscription, method_errors
+        )
 
 
 class SeatsAsync(AsyncServiceBase):
@@ -232,6 +234,8 @@ class SeatsAsync(AsyncServiceBase):
             ListSeats403Error: Not permitted or seat-based pricing not enabled
             ListSeats404Error: Subscription or order not found
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -249,7 +253,7 @@ class SeatsAsync(AsyncServiceBase):
             404: ListSeats404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, SeatsList, method_errors)
+        return parse_response_json(response, SeatsList, method_errors)
 
     async def assign_seat(
         self,
@@ -265,6 +269,8 @@ class SeatsAsync(AsyncServiceBase):
             AssignSeat403Error: Not permitted or seat-based pricing not enabled
             AssignSeat404Error: Subscription, order, or customer not found
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -281,7 +287,7 @@ class SeatsAsync(AsyncServiceBase):
             404: AssignSeat404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSeat, method_errors)
+        return parse_response_json(response, CustomerSeat, method_errors)
 
     async def revoke_seat(
         self,
@@ -297,6 +303,8 @@ class SeatsAsync(AsyncServiceBase):
             RevokeSeat403Error: Not permitted or seat-based pricing not enabled
             RevokeSeat404Error: Seat not found
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -313,7 +321,7 @@ class SeatsAsync(AsyncServiceBase):
             404: RevokeSeat404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSeat, method_errors)
+        return parse_response_json(response, CustomerSeat, method_errors)
 
     async def resend_invitation(
         self,
@@ -330,6 +338,8 @@ class SeatsAsync(AsyncServiceBase):
             ResendInvitation403Error: Not permitted or seat-based pricing not enabled
             ResendInvitation404Error: Seat not found
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -347,7 +357,7 @@ class SeatsAsync(AsyncServiceBase):
             404: ResendInvitation404Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, CustomerSeat, method_errors)
+        return parse_response_json(response, CustomerSeat, method_errors)
 
     async def list_claimed_subscriptions(
         self,
@@ -367,6 +377,8 @@ class SeatsAsync(AsyncServiceBase):
         Raises:
             ListClaimedSubscriptions401Error: Authentication required
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -382,4 +394,6 @@ class SeatsAsync(AsyncServiceBase):
             401: ListClaimedSubscriptions401Error,
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceCustomerSubscription, method_errors)
+        return parse_response_json(
+            response, ListResourceCustomerSubscription, method_errors
+        )

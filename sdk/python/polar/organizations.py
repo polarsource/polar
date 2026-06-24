@@ -3,7 +3,7 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
     HTTPValidationError,
     NotPermitted,
@@ -62,7 +62,7 @@ class OrganizationsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceOrganization, method_errors)
+        return parse_response_json(response, ListResourceOrganization, method_errors)
 
     def create(
         self,
@@ -91,7 +91,7 @@ class OrganizationsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, Organization, method_errors)
+        return parse_response_json(response, Organization, method_errors)
 
     def get(
         self,
@@ -124,7 +124,7 @@ class OrganizationsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Organization, method_errors)
+        return parse_response_json(response, Organization, method_errors)
 
     def update(
         self,
@@ -161,7 +161,7 @@ class OrganizationsSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Organization, method_errors)
+        return parse_response_json(response, Organization, method_errors)
 
 
 class OrganizationsAsync(AsyncServiceBase):
@@ -186,6 +186,8 @@ class OrganizationsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -202,7 +204,7 @@ class OrganizationsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceOrganization, method_errors)
+        return parse_response_json(response, ListResourceOrganization, method_errors)
 
     async def create(
         self,
@@ -217,6 +219,8 @@ class OrganizationsAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -229,7 +233,7 @@ class OrganizationsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, Organization, method_errors)
+        return parse_response_json(response, Organization, method_errors)
 
     async def get(
         self,
@@ -246,6 +250,8 @@ class OrganizationsAsync(AsyncServiceBase):
         Raises:
             ResourceNotFound: Organization not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -260,7 +266,7 @@ class OrganizationsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Organization, method_errors)
+        return parse_response_json(response, Organization, method_errors)
 
     async def update(
         self,
@@ -279,6 +285,8 @@ class OrganizationsAsync(AsyncServiceBase):
             NotPermitted: You don't have the permission to update this organization.
             ResourceNotFound: Organization not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -295,4 +303,4 @@ class OrganizationsAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, Organization, method_errors)
+        return parse_response_json(response, Organization, method_errors)

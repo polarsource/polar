@@ -3,7 +3,12 @@ from __future__ import annotations
 import builtins
 import typing
 
-from polar.base import AsyncServiceBase, SyncServiceBase, parse_response
+from polar.base import (
+    AsyncServiceBase,
+    SyncServiceBase,
+    parse_response_json,
+    parse_response_none,
+)
 from polar.errors import (
     HTTPValidationError,
     NotPermitted,
@@ -67,7 +72,7 @@ class FilesSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceFileRead, method_errors)
+        return parse_response_json(response, ListResourceFileRead, method_errors)
 
     @typing.overload
     def create(
@@ -120,7 +125,7 @@ class FilesSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, FileUpload, method_errors)
+        return parse_response_json(response, FileUpload, method_errors)
 
     def uploaded(
         self,
@@ -162,7 +167,7 @@ class FilesSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(
+        return parse_response_json(
             response,
             DownloadableFileRead
             | ProductMediaFileRead
@@ -204,7 +209,7 @@ class FilesSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     def update(
         self,
@@ -246,7 +251,7 @@ class FilesSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(
+        return parse_response_json(
             response,
             DownloadableFileRead
             | ProductMediaFileRead
@@ -278,6 +283,8 @@ class FilesAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="GET",
@@ -294,7 +301,7 @@ class FilesAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, ListResourceFileRead, method_errors)
+        return parse_response_json(response, ListResourceFileRead, method_errors)
 
     @typing.overload
     async def create(
@@ -333,6 +340,8 @@ class FilesAsync(AsyncServiceBase):
 
         Raises:
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -345,7 +354,7 @@ class FilesAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response(response, FileUpload, method_errors)
+        return parse_response_json(response, FileUpload, method_errors)
 
     async def uploaded(
         self,
@@ -369,6 +378,8 @@ class FilesAsync(AsyncServiceBase):
             NotPermitted: You don't have the permission to update this file.
             ResourceNotFound: File not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="POST",
@@ -385,7 +396,7 @@ class FilesAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(
+        return parse_response_json(
             response,
             DownloadableFileRead
             | ProductMediaFileRead
@@ -410,6 +421,8 @@ class FilesAsync(AsyncServiceBase):
             NotPermitted: You don't have the permission to delete this file.
             ResourceNotFound: File not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="DELETE",
@@ -425,7 +438,7 @@ class FilesAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(response, None, method_errors)
+        return parse_response_none(response, method_errors)
 
     async def update(
         self,
@@ -449,6 +462,8 @@ class FilesAsync(AsyncServiceBase):
             NotPermitted: You don't have the permission to update this file.
             ResourceNotFound: File not found.
             HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
             method="PATCH",
@@ -465,7 +480,7 @@ class FilesAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response(
+        return parse_response_json(
             response,
             DownloadableFileRead
             | ProductMediaFileRead

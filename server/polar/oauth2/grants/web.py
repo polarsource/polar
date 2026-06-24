@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, cast
 
 from authlib.oauth2.rfc6749 import ClientMixin
 from authlib.oauth2.rfc6749.errors import (
@@ -19,7 +19,9 @@ from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
 from polar.models import Organization, User, UserSession
 
+from ..requests import StarletteOAuth2Payload
 from ..sub_type import SubType, SubTypeValue
+from .organizations import validate_down_scope_organizations
 
 
 class WebGrant(BaseGrant, TokenEndpointMixin):
@@ -94,6 +96,11 @@ class WebGrant(BaseGrant, TokenEndpointMixin):
         sub_value: User | Organization | None = None
         if sub_type == SubType.user:
             sub_value = user
+            self.request.organization_ids = validate_down_scope_organizations(
+                self.server.session,
+                cast(StarletteOAuth2Payload, payload),
+                user,
+            )
         elif sub_type == SubType.organization:
             assert sub is not None
             try:

@@ -87,10 +87,7 @@ class DisputeRepository(
         statement = (
             self.get_base_statement()
             .join(Dispute.payment)
-            .options(
-                contains_eager(Dispute.payment),
-                joinedload(Dispute.support_case),
-            )
+            .options(contains_eager(Dispute.payment))
         )
         statement = statement.where(Payment.organization_id.in_(org_ids))
         return statement

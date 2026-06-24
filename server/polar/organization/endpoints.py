@@ -972,7 +972,9 @@ async def get_review(
     Powers the account review UI: pre-submission gating checks plus,
     after submission, the AI verdict and appeal state.
     """
-    return await organization_service.get_review_state(session, authz.organization)
+    return await organization_service.get_review_state(
+        session, authz.organization, authz.auth_subject
+    )
 
 
 @router.post(

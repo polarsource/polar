@@ -13,7 +13,7 @@ from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.exc import IntegrityError
 
 from polar.account.service import account as account_service
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, is_user
 from polar.authz.service import get_accessible_org_ids
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.config import settings
@@ -1556,6 +1556,7 @@ class OrganizationService:
         self,
         session: AsyncReadSession,
         organization: Organization,
+        auth_subject: AuthSubject[User | Organization] | None = None,
     ) -> OrganizationReviewState:
         """Build the merchant self-review checklist state.
 
@@ -1572,6 +1573,17 @@ class OrganizationService:
 
         organization_repository = OrganizationRepository.from_session(session)
         owner_user = await organization_repository.get_owner_user(organization)
+
+        # Identity verification is the owner's to complete. When a non-owner
+        # member is viewing, surface that they can't action it
+        current_user = (
+            auth_subject.subject
+            if auth_subject is not None and is_user(auth_subject)
+            else None
+        )
+        identity_restricted = current_user is not None and not (
+            owner_user is not None and current_user.id == owner_user.id
+        )
 
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
@@ -1592,7 +1604,9 @@ class OrganizationService:
             self._build_product_description_check(organization),
             product_configuration_check,
             setup_readiness_check,
-            self._build_identity_verification_check(owner_user),
+            self._build_identity_verification_check(
+                owner_user, restricted=identity_restricted
+            ),
             self._build_payout_account_check(payout_account),
             self._build_socials_check(organization),
             await product_url_task,
@@ -1714,9 +1728,21 @@ class OrganizationService:
         return self._passed_check(key)
 
     def _build_identity_verification_check(
-        self, owner_user: User | None
+        self, owner_user: User | None, *, restricted: bool = False
     ) -> OrganizationReviewCheck:
         key = OrganizationReviewCheckKey.IDENTITY_STRIPE_VERIFICATION
+        check = self._owner_identity_check(owner_user, key)
+        if restricted and check.status != OrganizationReviewCheckStatus.PASSED:
+            return OrganizationReviewCheck(
+                key=key,
+                status=check.status,
+                reasons=[OrganizationReviewCheckReason.NOT_AUTHORIZED],
+            )
+        return check
+
+    def _owner_identity_check(
+        self, owner_user: User | None, key: OrganizationReviewCheckKey
+    ) -> OrganizationReviewCheck:
         if owner_user is None:
             return self._not_started_check(key)
 

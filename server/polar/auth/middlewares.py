@@ -28,7 +28,6 @@ from polar.oauth2.constants import is_access_token_prefix, is_registration_token
 from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_handler
 from polar.oauth2.exceptions import InvalidTokenError
 from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
-from polar.oauth2.sub_type import SubType
 from polar.organization_access_token.service import (
     TOKEN_PREFIX as ORGANIZATION_ACCESS_TOKEN_PREFIX,
 )
@@ -159,20 +158,11 @@ async def get_auth_subject(
         if is_access_token_prefix(token):
             oauth2_token = await get_oauth2_token(session, token)
             if oauth2_token:
-                organization_ids = None
-                if oauth2_token.sub_type == SubType.user:
-                    organization_ids = (
-                        frozenset(
-                            scope.organization_id
-                            for scope in oauth2_token.organization_scopes
-                        )
-                        or None
-                    )
                 return AuthSubject(
                     oauth2_token.sub,
                     oauth2_token.scopes,
                     oauth2_token,
-                    organization_ids,
+                    oauth2_token.organization_ids,
                 )
             raise InvalidTokenError()
 

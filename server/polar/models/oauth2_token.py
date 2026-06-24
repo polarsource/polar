@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, Any, cast
+from uuid import UUID
 
 from authlib.integrations.sqla_oauth2 import OAuth2TokenMixin
 from sqlalchemy import String
@@ -6,7 +7,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.auth.scope import Scope, scope_to_set
 from polar.kit.db.models import RecordModel
-from polar.oauth2.sub_type import SubTypeModelMixin
+from polar.oauth2.sub_type import SubType, SubTypeModelMixin
 
 if TYPE_CHECKING:
     from .oauth2_client import OAuth2Client
@@ -46,6 +47,20 @@ class OAuth2Token(RecordModel, OAuth2TokenMixin, SubTypeModelMixin):
     @property
     def scopes(self) -> set[Scope]:
         return scope_to_set(cast(str, self.get_scope()))
+
+    @property
+    def organization_ids(self) -> frozenset[UUID] | None:
+        """Organizations this token is down-scoped to, or ``None`` if unrestricted.
+
+        Only meaningful for user-subject tokens; organization-subject tokens are
+        never down-scoped.
+        """
+        if self.sub_type != SubType.user:
+            return None
+        return (
+            frozenset(scope.organization_id for scope in self.organization_scopes)
+            or None
+        )
 
     def get_introspection_data(self, issuer: str) -> dict[str, Any]:
         return {

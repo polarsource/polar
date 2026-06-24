@@ -3,7 +3,11 @@ import { nanoid } from 'nanoid'
 import { RequestCookiesAdapter } from 'next/dist/server/web/spec-extension/adapters/request-cookies'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { COOKIE_MAX_AGE, DISTINCT_ID_COOKIE } from './experiments/constants'
+import {
+  COOKIE_MAX_AGE,
+  DISTINCT_ID_COOKIE,
+  DISTINCT_ID_HEADER,
+} from './experiments/constants'
 import { createServerSideAPI } from './utils/client'
 import { CONFIG } from './utils/config'
 import { POLAR_ENV_COOKIE } from './utils/cookies'
@@ -11,7 +15,6 @@ import { POLAR_ENV_COOKIE } from './utils/cookies'
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
 const POLAR_USER_HEADER = 'x-polar-user'
-const POLAR_DISTINCT_ID_HEADER = 'x-polar-distinct-id'
 
 const IS_SANDBOX =
   (process.env.NEXT_PUBLIC_ENVIRONMENT ||
@@ -277,7 +280,7 @@ export async function proxy(request: NextRequest) {
   const { id: distinctId, isNew: isNewDistinctId } =
     getOrCreateDistinctId(request)
 
-  requestHeaders.set(POLAR_DISTINCT_ID_HEADER, distinctId)
+  requestHeaders.set(DISTINCT_ID_HEADER, distinctId)
   if (user) {
     requestHeaders.set(
       POLAR_USER_HEADER,

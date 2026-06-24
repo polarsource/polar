@@ -90,6 +90,7 @@ class RefundsSync(SyncServiceBase):
         **Scopes**: `refunds:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             RefundedAlready: Order is already fully refunded.
@@ -182,6 +183,7 @@ class RefundsAsync(AsyncServiceBase):
         **Scopes**: `refunds:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             RefundedAlready: Order is already fully refunded.

@@ -15,6 +15,3 @@ lint-check:
 
 test:
     uv run pytest -vv
-
-test-cov-xml:
-    uv run pytest --cov-report=xml

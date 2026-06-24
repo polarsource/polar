@@ -214,6 +214,7 @@ class MetricsSync(SyncServiceBase):
         **Scopes**: `metrics:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -307,6 +308,7 @@ class MetricsSync(SyncServiceBase):
 
         Args:
             id: The metric dashboard ID.
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -515,6 +517,7 @@ class MetricsAsync(AsyncServiceBase):
         **Scopes**: `metrics:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -608,6 +611,7 @@ class MetricsAsync(AsyncServiceBase):
 
         Args:
             id: The metric dashboard ID.
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error

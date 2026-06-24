@@ -5,6 +5,7 @@ from generator.ir import (
     MapType,
     ModelRef,
     NullableType,
+    OpenAPIIR,
     PrimitiveType,
     TypeRef,
     UnionRef,
@@ -31,29 +32,28 @@ def _convert_literal_type(literal: LiteralType) -> str:
     return f"typing.Literal[{literal.value}]"
 
 
-def _collect_enum_imports(type_ref: TypeRef, enum_imports: set[str]) -> None:
+def collect_enum_imports(
+    type_ref: TypeRef, enum_imports: set[str], ir: OpenAPIIR
+) -> None:
     if isinstance(type_ref, EnumRef):
         enum_imports.add(type_ref.name)
     elif isinstance(type_ref, NullableType):
-        _collect_enum_imports(type_ref.inner, enum_imports)
+        collect_enum_imports(type_ref.inner, enum_imports, ir)
     elif isinstance(type_ref, ArrayType):
-        _collect_enum_imports(type_ref.items, enum_imports)
+        collect_enum_imports(type_ref.items, enum_imports, ir)
     elif isinstance(type_ref, MapType):
-        _collect_enum_imports(type_ref.value_type, enum_imports)
+        collect_enum_imports(type_ref.value_type, enum_imports, ir)
         if type_ref.key_type is not None:
-            _collect_enum_imports(type_ref.key_type, enum_imports)
+            collect_enum_imports(type_ref.key_type, enum_imports, ir)
     elif isinstance(type_ref, UnionType):
         for variant in type_ref.variants:
-            _collect_enum_imports(variant, enum_imports)
-
-
-def collect_model_enum_imports(
-    _model_name: str, type_ref: TypeRef, enum_imports: set[str] | None = None
-) -> set[str]:
-    if enum_imports is None:
-        enum_imports = set()
-    _collect_enum_imports(type_ref, enum_imports)
-    return enum_imports
+            collect_enum_imports(variant, enum_imports, ir)
+    elif isinstance(type_ref, UnionRef):
+        for union in ir.input_unions + ir.output_unions:
+            if union.name == type_ref.name:
+                for variant in union.variants:
+                    collect_enum_imports(variant, enum_imports, ir)
+                break
 
 
 def convert_type_to_annotation(

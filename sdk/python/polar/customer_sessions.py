@@ -41,6 +41,7 @@ class CustomerSessionsSync(SyncServiceBase):
         **Scopes**: `customer_sessions:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -87,6 +88,7 @@ class CustomerSessionsAsync(AsyncServiceBase):
         **Scopes**: `customer_sessions:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error

@@ -78,7 +78,7 @@ class LicenseKeysSync(SyncServiceBase):
         **Scopes**: `customer_portal:read` `customer_portal:write`
 
         Args:
-            id: None
+            id:
 
         Raises:
             ResourceNotFound: License key not found.
@@ -114,6 +114,7 @@ class LicenseKeysSync(SyncServiceBase):
         > endpoint instead.
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: License key not found.
@@ -148,6 +149,7 @@ class LicenseKeysSync(SyncServiceBase):
         > endpoint instead.
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             NotPermitted: License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.
@@ -184,6 +186,7 @@ class LicenseKeysSync(SyncServiceBase):
         > endpoint instead.
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: License key not found.
@@ -257,7 +260,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         **Scopes**: `customer_portal:read` `customer_portal:write`
 
         Args:
-            id: None
+            id:
 
         Raises:
             ResourceNotFound: License key not found.
@@ -293,6 +296,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         > endpoint instead.
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: License key not found.
@@ -327,6 +331,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         > endpoint instead.
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             NotPermitted: License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.
@@ -363,6 +368,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         > endpoint instead.
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: License key not found.

@@ -14,4 +14,4 @@ def to_snake_case(name: str) -> str:
 
 def to_pascal_case(name: str) -> str:
     """Convert a string to PascalCase."""
-    return "".join(word.capitalize() for word in name.split("_"))
+    return "".join(word[:1].upper() + word[1:] for word in name.split("_") if word)

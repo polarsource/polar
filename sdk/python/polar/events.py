@@ -204,6 +204,7 @@ class EventsSync(SyncServiceBase):
         **Scopes**: `events:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -402,6 +403,7 @@ class EventsAsync(AsyncServiceBase):
         **Scopes**: `events:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error

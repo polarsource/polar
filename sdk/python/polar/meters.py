@@ -87,6 +87,7 @@ class MetersSync(SyncServiceBase):
         **Scopes**: `meters:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -151,6 +152,7 @@ class MetersSync(SyncServiceBase):
 
         Args:
             id: The meter ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Meter not found.
@@ -295,6 +297,7 @@ class MetersAsync(AsyncServiceBase):
         **Scopes**: `meters:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -359,6 +362,7 @@ class MetersAsync(AsyncServiceBase):
 
         Args:
             id: The meter ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Meter not found.

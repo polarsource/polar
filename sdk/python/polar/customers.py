@@ -108,6 +108,7 @@ class CustomersSync(SyncServiceBase):
         **Scopes**: `customers:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -256,6 +257,7 @@ class CustomersSync(SyncServiceBase):
 
         Args:
             id: The customer ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Customer not found.
@@ -366,6 +368,7 @@ class CustomersSync(SyncServiceBase):
 
         Args:
             external_id: The customer external ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Customer not found.
@@ -626,6 +629,7 @@ class CustomersAsync(AsyncServiceBase):
         **Scopes**: `customers:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -774,6 +778,7 @@ class CustomersAsync(AsyncServiceBase):
 
         Args:
             id: The customer ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Customer not found.
@@ -884,6 +889,7 @@ class CustomersAsync(AsyncServiceBase):
 
         Args:
             external_id: The customer external ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Customer not found.

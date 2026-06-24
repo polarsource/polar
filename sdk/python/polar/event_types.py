@@ -95,6 +95,7 @@ class EventTypesSync(SyncServiceBase):
 
         Args:
             id: The event type ID.
+            **kwargs: Request body parameters
 
         Raises:
             Update404Error: Not Found
@@ -193,6 +194,7 @@ class EventTypesAsync(AsyncServiceBase):
 
         Args:
             id: The event type ID.
+            **kwargs: Request body parameters
 
         Raises:
             Update404Error: Not Found

@@ -25,6 +25,8 @@ class {{ model.name }}(typing.TypedDict):
     """{{ field.description }}"""
     {% endif %}
 
+{% else %}
+    ...
 {% endfor %}
 
 {% endfor %}

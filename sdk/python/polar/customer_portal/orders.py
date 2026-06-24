@@ -122,6 +122,7 @@ class OrdersSync(SyncServiceBase):
 
         Args:
             id: The order ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Order not found.
@@ -279,6 +280,7 @@ class OrdersSync(SyncServiceBase):
 
         Args:
             id: The order ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Order not found.
@@ -401,6 +403,7 @@ class OrdersAsync(AsyncServiceBase):
 
         Args:
             id: The order ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Order not found.
@@ -558,6 +561,7 @@ class OrdersAsync(AsyncServiceBase):
 
         Args:
             id: The order ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Order not found.

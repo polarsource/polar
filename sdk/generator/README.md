@@ -21,7 +21,7 @@ The SDK emitter takes the IR and generates the actual SDK code in the target pro
 
 ### Python
 
-The Python generator is located in the `generator/python` folder. It generates the Python SDK code from the IR. Post processing includes linting with Ruff and type checking with ty.
+The Python generator is located in the `sdk/generator/python` folder. It generates the Python SDK code from the IR. Post processing includes linting with Ruff and type checking with ty.
 
 Generate the Python SDK by running the following command:
 

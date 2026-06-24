@@ -65,6 +65,7 @@ class CustomersSync(SyncServiceBase):
         Update authenticated customer.
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -127,6 +128,7 @@ class CustomersSync(SyncServiceBase):
         Add a payment method to the authenticated customer.
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             PaymentMethodSetupFailed: The card was declined while setting up the payment method.
@@ -158,6 +160,7 @@ class CustomersSync(SyncServiceBase):
         Confirm a payment method for the authenticated customer.
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             CustomerNotReady: Customer is not ready to confirm a payment method.
@@ -189,7 +192,7 @@ class CustomersSync(SyncServiceBase):
         Delete a payment method from the authenticated customer.
 
         Args:
-            id: None
+            id:
 
         Raises:
             PaymentMethodInUseByActiveSubscription: Payment method is used by active subscription(s).
@@ -222,6 +225,7 @@ class CustomersSync(SyncServiceBase):
         Request an email change for the authenticated customer.
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -250,7 +254,7 @@ class CustomersSync(SyncServiceBase):
         Check if an email change verification token is still valid.
 
         Args:
-            token: None
+            token:
 
         Raises:
             CheckEmailUpdate401Error: Invalid or expired verification token.
@@ -281,6 +285,7 @@ class CustomersSync(SyncServiceBase):
         Verify an email change using the token from the verification email.
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             VerifyEmailUpdate401Error: Invalid or expired verification token.
@@ -337,6 +342,7 @@ class CustomersAsync(AsyncServiceBase):
         Update authenticated customer.
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -399,6 +405,7 @@ class CustomersAsync(AsyncServiceBase):
         Add a payment method to the authenticated customer.
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             PaymentMethodSetupFailed: The card was declined while setting up the payment method.
@@ -430,6 +437,7 @@ class CustomersAsync(AsyncServiceBase):
         Confirm a payment method for the authenticated customer.
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             CustomerNotReady: Customer is not ready to confirm a payment method.
@@ -461,7 +469,7 @@ class CustomersAsync(AsyncServiceBase):
         Delete a payment method from the authenticated customer.
 
         Args:
-            id: None
+            id:
 
         Raises:
             PaymentMethodInUseByActiveSubscription: Payment method is used by active subscription(s).
@@ -494,6 +502,7 @@ class CustomersAsync(AsyncServiceBase):
         Request an email change for the authenticated customer.
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -522,7 +531,7 @@ class CustomersAsync(AsyncServiceBase):
         Check if an email change verification token is still valid.
 
         Args:
-            token: None
+            token:
 
         Raises:
             CheckEmailUpdate401Error: Invalid or expired verification token.
@@ -553,6 +562,7 @@ class CustomersAsync(AsyncServiceBase):
         Verify an email change using the token from the verification email.
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             VerifyEmailUpdate401Error: Invalid or expired verification token.

@@ -117,6 +117,7 @@ class OrdersSync(SyncServiceBase):
         **Scopes**: `orders:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -216,6 +217,7 @@ class OrdersSync(SyncServiceBase):
 
         Args:
             id: The order ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Order not found.
@@ -257,6 +259,7 @@ class OrdersSync(SyncServiceBase):
 
         Args:
             id: The order ID.
+            **kwargs: Request body parameters
 
         Raises:
             Finalize402Error: The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session.
@@ -468,6 +471,7 @@ class OrdersAsync(AsyncServiceBase):
         **Scopes**: `orders:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -567,6 +571,7 @@ class OrdersAsync(AsyncServiceBase):
 
         Args:
             id: The order ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Order not found.
@@ -608,6 +613,7 @@ class OrdersAsync(AsyncServiceBase):
 
         Args:
             id: The order ID.
+            **kwargs: Request body parameters
 
         Raises:
             Finalize402Error: The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session.

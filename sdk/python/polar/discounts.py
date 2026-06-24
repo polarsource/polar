@@ -94,6 +94,7 @@ class DiscountsSync(SyncServiceBase):
         **Scopes**: `discounts:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -191,6 +192,7 @@ class DiscountsSync(SyncServiceBase):
 
         Args:
             id: The discount ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Discount not found.
@@ -282,6 +284,7 @@ class DiscountsAsync(AsyncServiceBase):
         **Scopes**: `discounts:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -379,6 +382,7 @@ class DiscountsAsync(AsyncServiceBase):
 
         Args:
             id: The discount ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Discount not found.

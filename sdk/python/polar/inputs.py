@@ -278,9 +278,13 @@ You can store up to **50 key-value pairs**."""
 class BenefitFeatureFlagCreateProperties(typing.TypedDict):
     """Properties for creating a benefit of type `feature_flag`."""
 
+    ...
+
 
 class BenefitFeatureFlagProperties(typing.TypedDict):
     """Properties for a benefit of type `feature_flag`."""
+
+    ...
 
 
 class BenefitFeatureFlagUpdate(typing.TypedDict):

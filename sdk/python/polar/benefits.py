@@ -159,6 +159,7 @@ class BenefitsSync(SyncServiceBase):
         **Scopes**: `benefits:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -188,7 +189,7 @@ class BenefitsSync(SyncServiceBase):
         **Scopes**: `benefits:read` `benefits:write`
 
         Args:
-            id: None
+            id:
 
         Raises:
             ResourceNotFound: Benefit not found.
@@ -225,7 +226,7 @@ class BenefitsSync(SyncServiceBase):
         **Scopes**: `benefits:write`
 
         Args:
-            id: None
+            id:
 
         Raises:
             NotPermitted: This benefit is not deletable.
@@ -317,7 +318,8 @@ class BenefitsSync(SyncServiceBase):
         **Scopes**: `benefits:write`
 
         Args:
-            id: None
+            id:
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Benefit not found.
@@ -359,7 +361,7 @@ class BenefitsSync(SyncServiceBase):
         **Scopes**: `benefits:read` `benefits:write`
 
         Args:
-            id: None
+            id:
             is_granted: Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned.
             customer_id: Filter by customer.
             member_id: Filter by member.
@@ -509,6 +511,7 @@ class BenefitsAsync(AsyncServiceBase):
         **Scopes**: `benefits:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -538,7 +541,7 @@ class BenefitsAsync(AsyncServiceBase):
         **Scopes**: `benefits:read` `benefits:write`
 
         Args:
-            id: None
+            id:
 
         Raises:
             ResourceNotFound: Benefit not found.
@@ -575,7 +578,7 @@ class BenefitsAsync(AsyncServiceBase):
         **Scopes**: `benefits:write`
 
         Args:
-            id: None
+            id:
 
         Raises:
             NotPermitted: This benefit is not deletable.
@@ -667,7 +670,8 @@ class BenefitsAsync(AsyncServiceBase):
         **Scopes**: `benefits:write`
 
         Args:
-            id: None
+            id:
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Benefit not found.
@@ -709,7 +713,7 @@ class BenefitsAsync(AsyncServiceBase):
         **Scopes**: `benefits:read` `benefits:write`
 
         Args:
-            id: None
+            id:
             is_granted: Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned.
             customer_id: Filter by customer.
             member_id: Filter by member.

@@ -147,15 +147,21 @@ class {{ service.name }}Sync(SyncServiceBase):
         """
 {% if method.description %}
 {{ method.description }}
-{% endif %}
 
+{% endif %}
 Args:
 {% for param in method.path_params %}
-    {{ param.parameter_name }}: {{ param.description }}
+    {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
+
 {% endfor %}
 {% for param in method.query_params %}
-    {{ param.parameter_name }}: {{ param.description }}
+    {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
+
 {% endfor %}
+{% if method.body %}
+    **kwargs: {% if method.body.description %}{{ method.body.description }}{% else %}Request body parameters{% endif %}
+
+{% endif %}
 
 Raises:
 {% for error in method.errors %}
@@ -292,15 +298,21 @@ class {{ service.name }}Async(AsyncServiceBase):
         """
 {% if method.description %}
 {{ method.description }}
-{% endif %}
 
+{% endif %}
 Args:
 {% for param in method.path_params %}
-    {{ param.parameter_name }}: {{ param.description }}
+    {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
+
 {% endfor %}
 {% for param in method.query_params %}
-    {{ param.parameter_name }}: {{ param.description }}
+    {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
+
 {% endfor %}
+{% if method.body %}
+    **kwargs: {% if method.body.description %}{{ method.body.description }}{% else %}Request body parameters{% endif %}
+
+{% endif %}
 
 Raises:
 {% for error in method.errors %}

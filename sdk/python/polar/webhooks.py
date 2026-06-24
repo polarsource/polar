@@ -75,6 +75,7 @@ class WebhooksSync(SyncServiceBase):
         **Scopes**: `webhooks:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -172,6 +173,7 @@ class WebhooksSync(SyncServiceBase):
 
         Args:
             id: The webhook endpoint ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Webhook endpoint not found.
@@ -373,6 +375,7 @@ class WebhooksAsync(AsyncServiceBase):
         **Scopes**: `webhooks:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -470,6 +473,7 @@ class WebhooksAsync(AsyncServiceBase):
 
         Args:
             id: The webhook endpoint ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Webhook endpoint not found.

@@ -21,6 +21,7 @@ class Oauth2Sync(SyncServiceBase):
         Create an OAuth2 client.
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -48,7 +49,7 @@ class Oauth2Sync(SyncServiceBase):
         Get an OAuth2 client by Client ID.
 
         Args:
-            client_id: None
+            client_id:
 
         Raises:
             HTTPValidationError: Validation Error
@@ -78,7 +79,8 @@ class Oauth2Sync(SyncServiceBase):
         Update an OAuth2 client.
 
         Args:
-            client_id_path: None
+            client_id_path:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -108,7 +110,7 @@ class Oauth2Sync(SyncServiceBase):
         Delete an OAuth2 client.
 
         Args:
-            client_id: None
+            client_id:
 
         Raises:
             HTTPValidationError: Validation Error
@@ -139,6 +141,7 @@ class Oauth2Async(AsyncServiceBase):
         Create an OAuth2 client.
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -166,7 +169,7 @@ class Oauth2Async(AsyncServiceBase):
         Get an OAuth2 client by Client ID.
 
         Args:
-            client_id: None
+            client_id:
 
         Raises:
             HTTPValidationError: Validation Error
@@ -196,7 +199,8 @@ class Oauth2Async(AsyncServiceBase):
         Update an OAuth2 client.
 
         Args:
-            client_id_path: None
+            client_id_path:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -226,7 +230,7 @@ class Oauth2Async(AsyncServiceBase):
         Delete an OAuth2 client.
 
         Args:
-            client_id: None
+            client_id:
 
         Raises:
             HTTPValidationError: Validation Error

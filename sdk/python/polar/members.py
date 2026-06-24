@@ -88,6 +88,7 @@ class MembersSync(SyncServiceBase):
         **Scopes**: `members:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             CreateMember403Error: Not permitted to add members.
@@ -123,7 +124,7 @@ class MembersSync(SyncServiceBase):
         **Scopes**: `members:read` `members:write`
 
         Args:
-            id: None
+            id:
 
         Raises:
             ResourceNotFound: Member not found.
@@ -158,7 +159,7 @@ class MembersSync(SyncServiceBase):
         **Scopes**: `members:write`
 
         Args:
-            id: None
+            id:
 
         Raises:
             ResourceNotFound: Member not found.
@@ -195,7 +196,8 @@ class MembersSync(SyncServiceBase):
         **Scopes**: `members:write`
 
         Args:
-            id: None
+            id:
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Member not found.
@@ -318,6 +320,7 @@ class MembersSync(SyncServiceBase):
             external_id: The member external ID.
             customer_id: The customer ID.
             external_customer_id: The customer external ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Member not found.
@@ -406,6 +409,7 @@ class MembersAsync(AsyncServiceBase):
         **Scopes**: `members:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             CreateMember403Error: Not permitted to add members.
@@ -441,7 +445,7 @@ class MembersAsync(AsyncServiceBase):
         **Scopes**: `members:read` `members:write`
 
         Args:
-            id: None
+            id:
 
         Raises:
             ResourceNotFound: Member not found.
@@ -476,7 +480,7 @@ class MembersAsync(AsyncServiceBase):
         **Scopes**: `members:write`
 
         Args:
-            id: None
+            id:
 
         Raises:
             ResourceNotFound: Member not found.
@@ -513,7 +517,8 @@ class MembersAsync(AsyncServiceBase):
         **Scopes**: `members:write`
 
         Args:
-            id: None
+            id:
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Member not found.
@@ -636,6 +641,7 @@ class MembersAsync(AsyncServiceBase):
             external_id: The member external ID.
             customer_id: The customer ID.
             external_customer_id: The customer external ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Member not found.

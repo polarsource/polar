@@ -111,6 +111,7 @@ class ProductsSync(SyncServiceBase):
         **Scopes**: `products:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -140,7 +141,7 @@ class ProductsSync(SyncServiceBase):
         **Scopes**: `products:read` `products:write`
 
         Args:
-            id: None
+            id:
 
         Raises:
             ResourceNotFound: Product not found.
@@ -174,7 +175,8 @@ class ProductsSync(SyncServiceBase):
         **Scopes**: `products:write`
 
         Args:
-            id: None
+            id:
+            **kwargs: Request body parameters
 
         Raises:
             NotPermitted: You don't have the permission to update this product.
@@ -211,7 +213,8 @@ class ProductsSync(SyncServiceBase):
         **Scopes**: `products:write`
 
         Args:
-            id: None
+            id:
+            **kwargs: Request body parameters
 
         Raises:
             NotPermitted: You don't have the permission to update this product.
@@ -323,6 +326,7 @@ class ProductsAsync(AsyncServiceBase):
         **Scopes**: `products:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -352,7 +356,7 @@ class ProductsAsync(AsyncServiceBase):
         **Scopes**: `products:read` `products:write`
 
         Args:
-            id: None
+            id:
 
         Raises:
             ResourceNotFound: Product not found.
@@ -386,7 +390,8 @@ class ProductsAsync(AsyncServiceBase):
         **Scopes**: `products:write`
 
         Args:
-            id: None
+            id:
+            **kwargs: Request body parameters
 
         Raises:
             NotPermitted: You don't have the permission to update this product.
@@ -423,7 +428,8 @@ class ProductsAsync(AsyncServiceBase):
         **Scopes**: `products:write`
 
         Args:
-            id: None
+            id:
+            **kwargs: Request body parameters
 
         Raises:
             NotPermitted: You don't have the permission to update this product.

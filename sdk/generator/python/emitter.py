@@ -15,7 +15,7 @@ from generator.ir import (
     UnionType,
 )
 from python.types import (
-    collect_model_enum_imports,
+    collect_enum_imports,
     convert_type_to_annotation,
     wrap_nullable_type,
 )
@@ -64,14 +64,7 @@ def _collect_enum_names(type_ref: TypeRef | None, ir: OpenAPIIR) -> set[str]:
         return set()
 
     enum_imports: set[str] = set()
-    collect_model_enum_imports("", type_ref, enum_imports)
-
-    # Also handle UnionRef by looking up the union and collecting from its variants
-    if isinstance(type_ref, UnionRef):
-        for union in ir.input_unions + ir.output_unions:
-            if union.name == type_ref.name:
-                for variant in union.variants:
-                    enum_imports.update(_collect_enum_names(variant, ir))
+    collect_enum_imports(type_ref, enum_imports, ir)
 
     return enum_imports
 
@@ -171,14 +164,14 @@ class PythonEmitter(EmitterBase):
         enum_imports: set[str] = set()
         for model in self.ir.input_models:
             for field in model.fields:
-                collect_model_enum_imports(model.name, field.type, enum_imports)
+                collect_enum_imports(field.type, enum_imports, self.ir)
         return enum_imports
 
     def _get_output_enum_imports(self) -> set[str]:
         enum_imports: set[str] = set()
         for model in self.ir.output_models:
             for field in model.fields:
-                collect_model_enum_imports(model.name, field.type, enum_imports)
+                collect_enum_imports(field.type, enum_imports, self.ir)
         return enum_imports
 
     def _collect_all_errors(self) -> list[ErrorResponse]:

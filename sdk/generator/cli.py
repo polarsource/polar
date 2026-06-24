@@ -29,6 +29,9 @@ spec_path = pathlib.Path(args.spec_path)
 if not spec_path.exists():
     print(f"Error: Spec file {spec_path} does not exist.", file=sys.stderr)
     sys.exit(1)
+if not spec_path.is_file():
+    print(f"Error: Spec path {spec_path} is not a file.", file=sys.stderr)
+    sys.exit(1)
 
 with open(spec_path) as f:
     raw_spec = f.read()

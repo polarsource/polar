@@ -101,6 +101,7 @@ class CheckoutLinksSync(SyncServiceBase):
         **Scopes**: `checkout_links:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -198,6 +199,7 @@ class CheckoutLinksSync(SyncServiceBase):
 
         Args:
             id: The checkout link ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Checkout link not found.
@@ -295,6 +297,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
         **Scopes**: `checkout_links:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -392,6 +395,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
 
         Args:
             id: The checkout link ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Checkout link not found.

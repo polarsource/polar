@@ -98,6 +98,7 @@ class CheckoutsSync(SyncServiceBase):
         **Scopes**: `checkouts:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -162,6 +163,7 @@ class CheckoutsSync(SyncServiceBase):
 
         Args:
             id: The checkout session ID.
+            **kwargs: Request body parameters
 
         Raises:
             Update403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
@@ -230,6 +232,7 @@ class CheckoutsSync(SyncServiceBase):
 
         Args:
             client_secret: The checkout session client secret.
+            **kwargs: Request body parameters
 
         Raises:
             ClientUpdate403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
@@ -269,6 +272,7 @@ class CheckoutsSync(SyncServiceBase):
 
         Args:
             client_secret: The checkout session client secret.
+            **kwargs: Request body parameters
 
         Raises:
             PaymentError: The payment failed.
@@ -366,6 +370,7 @@ class CheckoutsAsync(AsyncServiceBase):
         **Scopes**: `checkouts:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -430,6 +435,7 @@ class CheckoutsAsync(AsyncServiceBase):
 
         Args:
             id: The checkout session ID.
+            **kwargs: Request body parameters
 
         Raises:
             Update403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
@@ -498,6 +504,7 @@ class CheckoutsAsync(AsyncServiceBase):
 
         Args:
             client_secret: The checkout session client secret.
+            **kwargs: Request body parameters
 
         Raises:
             ClientUpdate403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
@@ -537,6 +544,7 @@ class CheckoutsAsync(AsyncServiceBase):
 
         Args:
             client_secret: The checkout session client secret.
+            **kwargs: Request body parameters
 
         Raises:
             PaymentError: The payment failed.

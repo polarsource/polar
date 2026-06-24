@@ -123,6 +123,7 @@ class CustomFieldsSync(SyncServiceBase):
         **Scopes**: `custom_fields:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -255,6 +256,7 @@ class CustomFieldsSync(SyncServiceBase):
 
         Args:
             id: The custom field ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Custom field not found.
@@ -367,6 +369,7 @@ class CustomFieldsAsync(AsyncServiceBase):
         **Scopes**: `custom_fields:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -499,6 +502,7 @@ class CustomFieldsAsync(AsyncServiceBase):
 
         Args:
             id: The custom field ID.
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: Custom field not found.

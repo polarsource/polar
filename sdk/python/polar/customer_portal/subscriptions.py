@@ -179,6 +179,7 @@ class SubscriptionsSync(SyncServiceBase):
 
         Args:
             id: The subscription ID.
+            **kwargs: Request body parameters
 
         Raises:
             PaymentFailed: Payment required to apply the subscription update.
@@ -361,6 +362,7 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Args:
             id: The subscription ID.
+            **kwargs: Request body parameters
 
         Raises:
             PaymentFailed: Payment required to apply the subscription update.

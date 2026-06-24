@@ -48,8 +48,8 @@ class CustomerSeatsSync(SyncServiceBase):
         **Scopes**: `customer_seats:read`
 
         Args:
-            subscription_id: None
-            order_id: None
+            subscription_id:
+            order_id:
 
         Raises:
             ListSeats401Error: Authentication required
@@ -85,6 +85,7 @@ class CustomerSeatsSync(SyncServiceBase):
         **Scopes**: `customer_seats:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             AssignSeat400Error: No available seats or customer already has a seat
@@ -120,7 +121,7 @@ class CustomerSeatsSync(SyncServiceBase):
         **Scopes**: `customer_seats:write`
 
         Args:
-            seat_id: None
+            seat_id:
 
         Raises:
             RevokeSeat401Error: Authentication required
@@ -155,7 +156,7 @@ class CustomerSeatsSync(SyncServiceBase):
         **Scopes**: `customer_seats:write`
 
         Args:
-            seat_id: None
+            seat_id:
 
         Raises:
             ResendInvitation400Error: Seat is not pending or already claimed
@@ -189,9 +190,8 @@ class CustomerSeatsSync(SyncServiceBase):
         invitation_token: str,
     ) -> SeatClaimInfo:
         """
-
         Args:
-            invitation_token: None
+            invitation_token:
 
         Raises:
             GetClaimInfo400Error: Invalid or expired invitation token
@@ -223,8 +223,8 @@ class CustomerSeatsSync(SyncServiceBase):
         **kwargs: typing.Unpack[SeatClaim],
     ) -> CustomerSeatClaimResponse:
         """
-
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             ClaimSeat400Error: Invalid, expired, or already claimed token
@@ -260,8 +260,8 @@ class CustomerSeatsAsync(AsyncServiceBase):
         **Scopes**: `customer_seats:read`
 
         Args:
-            subscription_id: None
-            order_id: None
+            subscription_id:
+            order_id:
 
         Raises:
             ListSeats401Error: Authentication required
@@ -297,6 +297,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
         **Scopes**: `customer_seats:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             AssignSeat400Error: No available seats or customer already has a seat
@@ -332,7 +333,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
         **Scopes**: `customer_seats:write`
 
         Args:
-            seat_id: None
+            seat_id:
 
         Raises:
             RevokeSeat401Error: Authentication required
@@ -367,7 +368,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
         **Scopes**: `customer_seats:write`
 
         Args:
-            seat_id: None
+            seat_id:
 
         Raises:
             ResendInvitation400Error: Seat is not pending or already claimed
@@ -401,9 +402,8 @@ class CustomerSeatsAsync(AsyncServiceBase):
         invitation_token: str,
     ) -> SeatClaimInfo:
         """
-
         Args:
-            invitation_token: None
+            invitation_token:
 
         Raises:
             GetClaimInfo400Error: Invalid or expired invitation token
@@ -435,8 +435,8 @@ class CustomerSeatsAsync(AsyncServiceBase):
         **kwargs: typing.Unpack[SeatClaim],
     ) -> CustomerSeatClaimResponse:
         """
-
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             ClaimSeat400Error: Invalid, expired, or already claimed token

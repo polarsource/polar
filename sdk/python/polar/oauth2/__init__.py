@@ -27,7 +27,6 @@ class Oauth2Sync(SyncServiceBase):
         self,
     ) -> AuthorizeResponseUser | AuthorizeResponseOrganization:
         """
-
         Args:
 
         Raises:
@@ -141,7 +140,6 @@ class Oauth2Async(AsyncServiceBase):
         self,
     ) -> AuthorizeResponseUser | AuthorizeResponseOrganization:
         """
-
         Args:
 
         Raises:

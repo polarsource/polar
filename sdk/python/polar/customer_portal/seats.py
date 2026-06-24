@@ -76,8 +76,8 @@ class SeatsSync(SyncServiceBase):
         **kwargs: typing.Unpack[CustomerSeatAssign],
     ) -> CustomerSeat:
         """
-
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             AssignSeat400Error: No available seats or customer already has a seat
@@ -110,9 +110,8 @@ class SeatsSync(SyncServiceBase):
         seat_id: str,
     ) -> CustomerSeat:
         """
-
         Args:
-            seat_id: None
+            seat_id:
 
         Raises:
             RevokeSeat401Error: Authentication required
@@ -144,9 +143,8 @@ class SeatsSync(SyncServiceBase):
         seat_id: str,
     ) -> CustomerSeat:
         """
-
         Args:
-            seat_id: None
+            seat_id:
 
         Raises:
             ResendInvitation400Error: Seat is not pending or already claimed
@@ -260,8 +258,8 @@ class SeatsAsync(AsyncServiceBase):
         **kwargs: typing.Unpack[CustomerSeatAssign],
     ) -> CustomerSeat:
         """
-
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             AssignSeat400Error: No available seats or customer already has a seat
@@ -294,9 +292,8 @@ class SeatsAsync(AsyncServiceBase):
         seat_id: str,
     ) -> CustomerSeat:
         """
-
         Args:
-            seat_id: None
+            seat_id:
 
         Raises:
             RevokeSeat401Error: Authentication required
@@ -328,9 +325,8 @@ class SeatsAsync(AsyncServiceBase):
         seat_id: str,
     ) -> CustomerSeat:
         """
-
         Args:
-            seat_id: None
+            seat_id:
 
         Raises:
             ResendInvitation400Error: Seat is not pending or already claimed

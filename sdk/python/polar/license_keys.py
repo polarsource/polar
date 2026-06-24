@@ -92,7 +92,7 @@ class LicenseKeysSync(SyncServiceBase):
         **Scopes**: `license_keys:read` `license_keys:write`
 
         Args:
-            id: None
+            id:
 
         Raises:
             Unauthorized: Not authorized to manage license key.
@@ -128,7 +128,8 @@ class LicenseKeysSync(SyncServiceBase):
         **Scopes**: `license_keys:write`
 
         Args:
-            id: None
+            id:
+            **kwargs: Request body parameters
 
         Raises:
             Unauthorized: Not authorized to manage license key.
@@ -165,8 +166,8 @@ class LicenseKeysSync(SyncServiceBase):
         **Scopes**: `license_keys:read` `license_keys:write`
 
         Args:
-            id: None
-            activation_id: None
+            id:
+            activation_id:
 
         Raises:
             Unauthorized: Not authorized to manage license key.
@@ -202,6 +203,7 @@ class LicenseKeysSync(SyncServiceBase):
         **Scopes**: `license_keys:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: License key not found.
@@ -233,6 +235,7 @@ class LicenseKeysSync(SyncServiceBase):
         **Scopes**: `license_keys:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             NotPermitted: License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.
@@ -266,6 +269,7 @@ class LicenseKeysSync(SyncServiceBase):
         **Scopes**: `license_keys:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: License key not found.
@@ -347,7 +351,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         **Scopes**: `license_keys:read` `license_keys:write`
 
         Args:
-            id: None
+            id:
 
         Raises:
             Unauthorized: Not authorized to manage license key.
@@ -383,7 +387,8 @@ class LicenseKeysAsync(AsyncServiceBase):
         **Scopes**: `license_keys:write`
 
         Args:
-            id: None
+            id:
+            **kwargs: Request body parameters
 
         Raises:
             Unauthorized: Not authorized to manage license key.
@@ -420,8 +425,8 @@ class LicenseKeysAsync(AsyncServiceBase):
         **Scopes**: `license_keys:read` `license_keys:write`
 
         Args:
-            id: None
-            activation_id: None
+            id:
+            activation_id:
 
         Raises:
             Unauthorized: Not authorized to manage license key.
@@ -457,6 +462,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         **Scopes**: `license_keys:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: License key not found.
@@ -488,6 +494,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         **Scopes**: `license_keys:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             NotPermitted: License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.
@@ -521,6 +528,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         **Scopes**: `license_keys:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             ResourceNotFound: License key not found.

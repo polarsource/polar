@@ -195,6 +195,7 @@ class BenefitGrantsSync(SyncServiceBase):
 
         Args:
             id: The benefit grant ID.
+            **kwargs: Request body parameters
 
         Raises:
             NotPermitted: The benefit grant is revoked and cannot be updated.
@@ -387,6 +388,7 @@ class BenefitGrantsAsync(AsyncServiceBase):
 
         Args:
             id: The benefit grant ID.
+            **kwargs: Request body parameters
 
         Raises:
             NotPermitted: The benefit grant is revoked and cannot be updated.

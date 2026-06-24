@@ -90,6 +90,7 @@ class MembersSync(SyncServiceBase):
         - If a member with this email already exists, the existing member is returned
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             AddMember400Error: Invalid request or member already exists.
@@ -129,7 +130,7 @@ class MembersSync(SyncServiceBase):
         - Cannot remove the only owner
 
         Args:
-            id: None
+            id:
 
         Raises:
             RemoveMember400Error: Cannot remove the only owner.
@@ -173,7 +174,8 @@ class MembersSync(SyncServiceBase):
         - Customer must have exactly one owner at all times
 
         Args:
-            id: None
+            id:
+            **kwargs: Request body parameters
 
         Raises:
             UpdateMember400Error: Invalid role change.
@@ -260,6 +262,7 @@ class MembersAsync(AsyncServiceBase):
         - If a member with this email already exists, the existing member is returned
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             AddMember400Error: Invalid request or member already exists.
@@ -299,7 +302,7 @@ class MembersAsync(AsyncServiceBase):
         - Cannot remove the only owner
 
         Args:
-            id: None
+            id:
 
         Raises:
             RemoveMember400Error: Cannot remove the only owner.
@@ -343,7 +346,8 @@ class MembersAsync(AsyncServiceBase):
         - Customer must have exactly one owner at all times
 
         Args:
-            id: None
+            id:
+            **kwargs: Request body parameters
 
         Raises:
             UpdateMember400Error: Invalid role change.

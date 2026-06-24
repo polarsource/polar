@@ -74,6 +74,7 @@ class OrganizationsSync(SyncServiceBase):
         **Scopes**: `organizations:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -103,7 +104,7 @@ class OrganizationsSync(SyncServiceBase):
         **Scopes**: `organizations:read` `organizations:write`
 
         Args:
-            id: None
+            id:
 
         Raises:
             ResourceNotFound: Organization not found.
@@ -137,7 +138,8 @@ class OrganizationsSync(SyncServiceBase):
         **Scopes**: `organizations:write`
 
         Args:
-            id: None
+            id:
+            **kwargs: Request body parameters
 
         Raises:
             NotPermitted: You don't have the permission to update this organization.
@@ -216,6 +218,7 @@ class OrganizationsAsync(AsyncServiceBase):
         **Scopes**: `organizations:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -245,7 +248,7 @@ class OrganizationsAsync(AsyncServiceBase):
         **Scopes**: `organizations:read` `organizations:write`
 
         Args:
-            id: None
+            id:
 
         Raises:
             ResourceNotFound: Organization not found.
@@ -279,7 +282,8 @@ class OrganizationsAsync(AsyncServiceBase):
         **Scopes**: `organizations:write`
 
         Args:
-            id: None
+            id:
+            **kwargs: Request body parameters
 
         Raises:
             NotPermitted: You don't have the permission to update this organization.

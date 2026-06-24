@@ -108,6 +108,7 @@ class FilesSync(SyncServiceBase):
         **Scopes**: `files:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -144,6 +145,7 @@ class FilesSync(SyncServiceBase):
 
         Args:
             id_path: The file ID.
+            **kwargs: Request body parameters
 
         Raises:
             NotPermitted: You don't have the permission to update this file.
@@ -186,7 +188,7 @@ class FilesSync(SyncServiceBase):
         **Scopes**: `files:write`
 
         Args:
-            id: None
+            id:
 
         Raises:
             NotPermitted: You don't have the permission to delete this file.
@@ -228,6 +230,7 @@ class FilesSync(SyncServiceBase):
 
         Args:
             id: The file ID.
+            **kwargs: Request body parameters
 
         Raises:
             NotPermitted: You don't have the permission to update this file.
@@ -337,6 +340,7 @@ class FilesAsync(AsyncServiceBase):
         **Scopes**: `files:write`
 
         Args:
+            **kwargs: Request body parameters
 
         Raises:
             HTTPValidationError: Validation Error
@@ -373,6 +377,7 @@ class FilesAsync(AsyncServiceBase):
 
         Args:
             id_path: The file ID.
+            **kwargs: Request body parameters
 
         Raises:
             NotPermitted: You don't have the permission to update this file.
@@ -415,7 +420,7 @@ class FilesAsync(AsyncServiceBase):
         **Scopes**: `files:write`
 
         Args:
-            id: None
+            id:
 
         Raises:
             NotPermitted: You don't have the permission to delete this file.
@@ -457,6 +462,7 @@ class FilesAsync(AsyncServiceBase):
 
         Args:
             id: The file ID.
+            **kwargs: Request body parameters
 
         Raises:
             NotPermitted: You don't have the permission to update this file.

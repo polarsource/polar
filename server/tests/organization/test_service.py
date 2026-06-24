@@ -1798,6 +1798,54 @@ class TestGetReviewState:
     @pytest.mark.parametrize(
         "website",
         [
+            "https://bolt.example.com",
+            "https://www.bolt.example.com",
+        ],
+    )
+    async def test_email_matching_website_subdomain_passes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        website: str,
+    ) -> None:
+        # The merchant's support email lives on the apex domain while the
+        # product is hosted on a subdomain — they still belong to the same
+        # organization, so this must not be flagged as a mismatch.
+        organization.email = "support@example.com"
+        organization.website = website
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
+
+        assert step.status == OrganizationReviewCheckStatus.PASSED
+        assert (
+            OrganizationReviewCheckReason.IDENTITY_DOMAIN_MISMATCH not in step.reasons
+        )
+
+    async def test_email_subdomain_matching_website_apex_passes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Reverse relationship: support email on a subdomain, website on the apex.
+        organization.email = "support@mail.example.com"
+        organization.website = "https://example.com"
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
+
+        assert step.status == OrganizationReviewCheckStatus.PASSED
+        assert (
+            OrganizationReviewCheckReason.IDENTITY_DOMAIN_MISMATCH not in step.reasons
+        )
+
+    @pytest.mark.parametrize(
+        "website",
+        [
             "https://framer.com/acme",
             "https://acme.framer.com",
         ],

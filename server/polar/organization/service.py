@@ -150,6 +150,20 @@ def _is_hosted_website_domain(website_domain: str) -> bool:
     )
 
 
+def _email_domain_matches_website(email_domain: str, website_domain: str) -> bool:
+    """Whether the support email domain belongs to the website's domain.
+
+    A subdomain relationship in either direction counts as a match, so a
+    `support@example.com` email is accepted for a website hosted on a subdomain
+    like `app.example.com`, and vice versa.
+    """
+    if email_domain == website_domain:
+        return True
+    return website_domain.endswith(f".{email_domain}") or email_domain.endswith(
+        f".{website_domain}"
+    )
+
+
 def _append_internal_note(
     organization: Organization, message: str, *, reason: str | None = None
 ) -> None:
@@ -1662,7 +1676,7 @@ class OrganizationService:
 
         if (
             website_domain
-            and email_domain != website_domain
+            and not _email_domain_matches_website(email_domain, website_domain)
             and not _is_hosted_website_domain(website_domain)
         ):
             reasons.append(OrganizationReviewCheckReason.IDENTITY_DOMAIN_MISMATCH)

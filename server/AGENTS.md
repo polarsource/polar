@@ -59,7 +59,7 @@ class ResourceRepository(
         if is_user(auth_subject):
             statement = statement.where(
                 Resource.organization_id.in_(
-                    select_user_org_ids(auth_subject.subject.id)
+                    select_accessible_org_ids(auth_subject)
                 )
             )
         elif is_organization(auth_subject):
@@ -74,12 +74,13 @@ class ResourceRepository(
         return await self.get_one_or_none(statement)
 ```
 
-**Always resolve a user's organizations via `select_user_org_ids(auth_subject.subject.id)`**
+**Always resolve a user's accessible organizations via `select_accessible_org_ids(auth_subject)`**
 (`polar.authz.repository`) for subqueries, or `get_accessible_org_ids(...)`
-(`polar.authz.service`) at the service layer. Never inline a
-`UserOrganization.user_id == auth_subject...` filter — those helpers are the
-single point where session/token org-scoping is enforced, so an inline subquery
-silently bypasses it. Enforced by `uv run task lint_org_scope`.
+(`polar.authz.service`) at the service layer. Use `select_user_org_ids(user_id)`
+only when you need raw membership (e.g., OAuth consent) without session scope.
+Never inline a `UserOrganization.user_id == auth_subject...` filter — those
+helpers are the single point where session/token org-scoping is enforced, so an
+inline subquery silently bypasses it. Enforced by `uv run task lint_org_scope`.
 
 **Key methods from base:**
 - `get_base_statement()` - Returns `select(self.model)`

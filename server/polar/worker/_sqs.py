@@ -76,14 +76,15 @@ def actor_to_queue_name(_actor_name: str) -> str:
     return f"{settings.WORKER_SQS_QUEUE_PREFIX}-default"
 
 
-_queue_url_cache: dict[str, str] = {}
+_queue_url_cache: dict[tuple[int, str], str] = {}
 
 
 def get_queue_url(client: "SQSClient", queue_name: str) -> str:
-    url = _queue_url_cache.get(queue_name)
+    cache_key = (id(client), queue_name)
+    url = _queue_url_cache.get(cache_key)
     if url is None:
         url = client.get_queue_url(QueueName=queue_name)["QueueUrl"]
-        _queue_url_cache[queue_name] = url
+        _queue_url_cache[cache_key] = url
     return url
 
 

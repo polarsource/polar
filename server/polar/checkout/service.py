@@ -1475,11 +1475,11 @@ class CheckoutService:
         if checkout is None:
             raise ResourceNotFound()
 
-        if checkout.is_expired:
-            raise ExpiredCheckoutError()
-
         if not checkout.organization.can_authenticate:
             raise NotPermitted()
+
+        if checkout.is_expired:
+            raise ExpiredCheckoutError()
         return checkout
 
     async def mark_opened(

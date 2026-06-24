@@ -35,13 +35,12 @@ async def test_instrument_fastapi_resolves_nested_routes(
     instrument_fastapi(app)  # same call as polar/app.py:264
 
     transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(
-        transport=transport, base_url="http://test"
-    ) as client:
-        response = await client.get("/v1/leaf/ping")
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        full_match = await client.get("/v1/leaf/ping")
+        partial_match = await client.post("/v1/leaf/ping")
 
-    assert response.status_code == 200
-    assert response.json() == {"ok": True}
+    assert full_match.status_code == 200
+    assert partial_match.status_code == 405
 
     routes = {
         span.attributes.get("http.route")

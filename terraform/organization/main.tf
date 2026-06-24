@@ -2,7 +2,15 @@ provider "aws" {
   region = "us-east-1"
 }
 
-data "aws_organizations_organization" "current" {}
+resource "aws_organizations_organization" "current" {
+  feature_set                   = "ALL"
+  aws_service_access_principals = ["sso.amazonaws.com"]
+  enabled_policy_types          = ["SERVICE_CONTROL_POLICY"]
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
 
 locals {
   management_account = {
@@ -42,12 +50,12 @@ locals {
     }
   }
 
-  root_id = data.aws_organizations_organization.current.roots[0].id
+  root_id = aws_organizations_organization.current.roots[0].id
 }
 
 check "management_account" {
   assert {
-    condition     = data.aws_organizations_organization.current.master_account_id == local.management_account.id
+    condition     = aws_organizations_organization.current.master_account_id == local.management_account.id
     error_message = "Terraform must run from the Polar management account (${local.management_account.id})."
   }
 }
@@ -79,6 +87,11 @@ resource "aws_organizations_account" "workload" {
   lifecycle {
     prevent_destroy = true
   }
+}
+
+import {
+  to = aws_organizations_organization.current
+  id = "o-hrbfnn1uf5"
 }
 
 import {

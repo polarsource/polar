@@ -72,6 +72,10 @@ resource "aws_organizations_account" "workload" {
   parent_id         = aws_organizations_organizational_unit.workload[each.value.organizational_unit].id
   close_on_deletion = false
 
+  tags = {
+    environment = each.key
+  }
+
   lifecycle {
     prevent_destroy = true
   }

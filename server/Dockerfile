@@ -8,7 +8,8 @@ WORKDIR /app
 
 COPY ./emails/pnpm-lock.yaml .
 COPY ./emails/package.json .
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,target=/pnpm/store \
+  pnpm install --frozen-lockfile --store-dir=/pnpm/store
 
 COPY ./emails/src src/
 COPY ./emails/tsconfig.json .
@@ -27,7 +28,8 @@ WORKDIR /app
 COPY ./polar/backoffice/pnpm-lock.yaml .
 COPY ./polar/backoffice/package.json .
 COPY ./polar/backoffice/pnpm-workspace.yaml .
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,target=/pnpm/store \
+  pnpm install --frozen-lockfile --store-dir=/pnpm/store
 
 COPY ./polar/backoffice/ .
 

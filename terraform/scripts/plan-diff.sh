@@ -4,7 +4,8 @@
 # plan, unmasking values the TFC UI shows as "(sensitive value)".
 #
 # Usage:
-#   ./plan-diff.sh run-XXXXXXXX [FILTER]
+#   ./plan-diff.sh [-w|--whitespace] run-XXXXXXXX [FILTER]
+#   -w:     reveal whitespace in values (·=space →=tab ␊=newline ␍=CR)
 #   FILTER: optional substring matched against the resource address or type
 #           e.g. ./plan-diff.sh run-XXXX render_web_service
 #
@@ -13,12 +14,18 @@
 
 set -euo pipefail
 
+WS=0
+if [[ "${1:-}" == "-w" || "${1:-}" == "--whitespace" ]]; then
+  WS=1
+  shift
+fi
+
 RUN_ID="${1:-}"
 FILTER="${2:-}"
 TFE_HOST="${TFE_HOST:-app.terraform.io}"
 
 if [[ -z "$RUN_ID" ]]; then
-  echo "usage: $0 run-XXXXXXXX [FILTER]   (run ID from the TFC run URL)" >&2
+  echo "usage: $0 [-w|--whitespace] run-XXXXXXXX [FILTER]   (run ID from the TFC run URL)" >&2
   exit 2
 fi
 
@@ -48,8 +55,13 @@ if [[ -z "$JSON" ]]; then
   JSON=$(curl -sfL "${H[@]}" "$API/plans/$PLAN_ID/json-output-redacted")
 fi
 
-echo "$JSON" | jq -r --arg filter "$FILTER" '
+echo "$JSON" | jq -r --arg filter "$FILTER" --argjson ws "$WS" '
   def fmt($v): if $v == null then "null" else ($v|tostring) end;
+  def vis:
+    gsub("\r"; "␍") | gsub("\t"; "→") | gsub(" "; "·") | gsub("\n"; "␊\n");
+  def maybevis($ws):
+    if $ws == 1 and (. != "(sensitive)") and (. != "(known after apply)") and (. != "null")
+    then vis else . end;
 
   .resource_changes[]
   | select(.change.actions != ["no-op"])
@@ -70,7 +82,7 @@ echo "$JSON" | jq -r --arg filter "$FILTER" '
       | (if ($u|getpath($p)?) == true then "(known after apply)"
          elif ($av == null and (($as|getpath($p)?) == true)) then "(sensitive)"
          else fmt($av) end) as $ashow
-      | "  \($key):  \($bshow)  ->  \($ashow)" ] as $lines
+      | "  \($key):  \($bshow|maybevis($ws))  ->  \($ashow|maybevis($ws))" ] as $lines
   | "\(.address)  (\(.change.actions|join("+")))",
     (if ($lines|length) > 0 then $lines[] else "  (no attribute-value changes; metadata/order only)" end),
     ""

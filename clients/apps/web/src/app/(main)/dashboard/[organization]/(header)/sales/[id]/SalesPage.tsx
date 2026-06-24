@@ -33,7 +33,8 @@ import { ArrowUpRightIcon } from 'lucide-react'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
-import { DataTable } from '@polar-sh/orbit'
+import { DataTable, type DataTableColumnDef } from '@polar-sh/orbit'
+import type { Row } from '@tanstack/react-table'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Status } from '@polar-sh/orbit'
@@ -57,6 +58,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const { data: payments, isLoading: paymentsLoading } = usePayments(
     organization.id,
     { order_id: _order.id },
+  )
+  const hasDeclinedPayment = (payments?.items ?? []).some(
+    (payment) => payment.decline_reason || payment.decline_message,
   )
   const { data: refunds, isLoading: refundsLoading } = useRefunds(_order.id)
   const { data: disputes, isLoading: disputesLoading } = useDisputes(
@@ -414,7 +418,36 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 <PaymentStatus payment={original} />
               ),
             },
-          ]}
+            ...(hasDeclinedPayment
+              ? [
+                  {
+                    accessorKey: 'decline_reason',
+                    header: 'Decline Reason',
+                    cell: ({
+                      row: {
+                        original: { decline_message, decline_reason },
+                      },
+                    }: {
+                      row: Row<schemas['Payment']>
+                    }) => {
+                      const reason = decline_message || decline_reason
+                      return reason ? (
+                        <span
+                          className="block max-w-xs truncate text-sm"
+                          title={reason}
+                        >
+                          {reason}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 dark:text-polar-500">
+                          —
+                        </span>
+                      )
+                    },
+                  },
+                ]
+              : []),
+          ] satisfies DataTableColumnDef<schemas['Payment']>[]}
           data={payments?.items ?? []}
         />
       </div>

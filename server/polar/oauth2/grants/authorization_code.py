@@ -23,6 +23,7 @@ from polar.config import settings
 from polar.kit.crypto import generate_token, get_token_hash
 from polar.models import (
     OAuth2AuthorizationCode,
+    OAuth2AuthorizationCodeOrganization,
     OAuth2Client,
     Organization,
     User,
@@ -33,6 +34,7 @@ from ..requests import StarletteOAuth2Request
 from ..service.oauth2_grant import oauth2_grant as oauth2_grant_service
 from ..sub_type import SubType, SubTypeValue
 from ..userinfo import UserInfo, generate_user_info
+from .organizations import validate_down_scope_organizations
 
 if typing.TYPE_CHECKING:
     from ..authorization_server import AuthorizationServer
@@ -121,6 +123,14 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
         )
         authorization_code.sub = self.sub
 
+        if self.sub_type == SubType.user:
+            authorization_code.organization_scopes = [
+                OAuth2AuthorizationCodeOrganization(organization_id=organization_id)
+                for organization_id in validate_down_scope_organizations(
+                    self.server.session, payload, typing.cast(User, self.sub)
+                )
+            ]
+
         self.server.session.add(authorization_code)
         self.server.session.flush()
         return authorization_code
@@ -151,6 +161,9 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
     def authenticate_user(
         self, authorization_code: OAuth2AuthorizationCode
     ) -> SubTypeValue | None:
+        self.request.organization_ids = [
+            scope.organization_id for scope in authorization_code.organization_scopes
+        ]
         return authorization_code.get_sub_type_value()
 
 

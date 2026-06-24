@@ -1,4 +1,5 @@
 from datetime import timedelta
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 import pytest_asyncio
@@ -12,6 +13,7 @@ from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.db.postgres import Session
 from polar.kit.utils import utc_now
 from polar.models import (
+    OAuth2AuthorizationCode,
     OAuth2Client,
     OAuth2Grant,
     OAuth2Token,
@@ -863,6 +865,54 @@ class TestOAuth2Consent:
         assert grant.scopes == ["openid", "profile", "email"]
 
     @pytest.mark.auth
+    async def test_allow_user_with_organizations_down_scope(
+        self,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        oauth2_client: OAuth2Client,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=user,
+                organization=organization,
+                role=OrganizationRole.member,
+            )
+        )
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "user",
+            "organizations": str(organization.id),
+        }
+        response = await client.post(
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+
+        assert response.status_code == 302
+        location = response.headers["location"]
+        code = parse_qs(urlparse(location).query)["code"][0]
+
+        authorization_code = (
+            sync_session.execute(
+                select(OAuth2AuthorizationCode).where(
+                    OAuth2AuthorizationCode.code
+                    == get_token_hash(code, secret=settings.SECRET)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert {
+            scope.organization_id
+            for scope in authorization_code.organization_scopes
+        } == {organization.id}
+
+    @pytest.mark.auth
     async def test_organization_missing_sub(
         self,
         client: AsyncClient,
@@ -1074,6 +1124,53 @@ class TestOAuth2Token:
         assert access_token.startswith("polar_at_u_")
         refresh_token = json["refresh_token"]
         assert refresh_token.startswith("polar_rt_u_")
+
+    async def test_authorization_code_user_carries_organization_down_scope(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        await create_oauth2_authorization_code(
+            save_fixture,
+            client=oauth2_client,
+            code="CODE",
+            scopes=["openid", "profile", "email"],
+            redirect_uri="http://127.0.0.1:8000/docs/oauth2-redirect",
+            user=user,
+            organizations=[organization],
+        )
+
+        data = {
+            "grant_type": "authorization_code",
+            "code": "CODE",
+            "client_id": oauth2_client.client_id,
+            "client_secret": oauth2_client.client_secret,
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        access_token = response.json()["access_token"]
+        assert access_token.startswith("polar_at_u_")
+
+        oauth2_token = (
+            sync_session.execute(
+                select(OAuth2Token).where(
+                    OAuth2Token.access_token
+                    == get_token_hash(access_token, secret=settings.SECRET)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert {
+            scope.organization_id for scope in oauth2_token.organization_scopes
+        } == {organization.id}
 
     async def test_authorization_code_public_client(
         self,

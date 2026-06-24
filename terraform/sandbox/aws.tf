@@ -7,10 +7,17 @@ module "lambda_worker_ecr" {
 module "redis" {
   source = "../modules/aws_redis"
 
-  name                       = "polar-sandbox-worker"
-  vpc_id                     = module.vpc.vpc_id
-  subnet_ids                 = module.vpc.private_subnet_ids
-  ingress_security_group_ids = [aws_security_group.lambda.id]
+  name       = "polar-sandbox-worker"
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnet_ids
+}
+
+resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
+  security_group_id            = module.redis.security_group_id
+  referenced_security_group_id = aws_security_group.lambda.id
+  from_port                    = module.redis.port
+  to_port                      = module.redis.port
+  ip_protocol                  = "tcp"
 }
 
 module "dummy_lambda_worker" {

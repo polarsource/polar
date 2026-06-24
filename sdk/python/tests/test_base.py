@@ -50,10 +50,11 @@ class TestBuildRequest:
                 "bool_param": True,
                 "int_param": 42,
                 "list_param": ["a", "b", "c"],
+                "dict_param": {"key": "value"},
             },
         )
         assert request.method == "GET"
         assert (
             str(request.url)
-            == "https://api.polar.sh/v1/items/?string_param=value&bool_param=true&int_param=42&list_param=a&list_param=b&list_param=c"
+            == "https://api.polar.sh/v1/items/?string_param=value&bool_param=true&int_param=42&list_param=a&list_param=b&list_param=c&dict_param%5Bkey%5D=value"
         )

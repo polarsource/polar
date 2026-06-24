@@ -228,7 +228,7 @@ export const OrderCalloutBanner = ({
       >
         <BannerColumn>
           <ColumnHeading
-            label="Last attempt"
+            label={dunningFailed ? 'Final attempt' : 'Last attempt'}
             datetime={latestFailedPayment?.created_at ?? null}
             resolution="time"
           />

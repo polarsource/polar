@@ -824,12 +824,20 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     @declared_attr
     def review(cls) -> Mapped["OrganizationReview | None"]:
+        # The single live review. A partial unique index guarantees at most one
+        # row per organization with deleted_at IS NULL, so a soft-deleted prior
+        # review (e.g. a reset grandfathered one) never shadows the live one.
         return relationship(
             "OrganizationReview",
             lazy="raise",
-            back_populates="organization",
-            cascade="delete, delete-orphan",
-            uselist=False,  # This makes it a one-to-one relationship
+            uselist=False,
+            viewonly=True,
+            primaryjoin=(
+                "and_("
+                "OrganizationReview.organization_id == Organization.id, "
+                "OrganizationReview.deleted_at.is_(None)"
+                ")"
+            ),
         )
 
     @declared_attr

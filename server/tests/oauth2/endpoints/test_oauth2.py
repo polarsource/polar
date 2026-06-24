@@ -908,8 +908,7 @@ class TestOAuth2Consent:
             .scalar_one()
         )
         assert {
-            scope.organization_id
-            for scope in authorization_code.organization_scopes
+            scope.organization_id for scope in authorization_code.organization_scopes
         } == {organization.id}
 
     @pytest.mark.auth

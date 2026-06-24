@@ -21,7 +21,7 @@ export function BrandSection({
             <span className="h-px w-12 bg-[#575757]" />
             <span>{meta.label}</span>
           </div>
-          <h2 className="max-w-5xl text-[clamp(2.75rem,7vw,7rem)] leading-[0.95] font-[350] tracking-[-0.01em] text-balance text-[#ADADAD]">
+          <h2 className="max-w-5xl text-[clamp(2.75rem,7vw,7rem)] leading-[0.95] font-[350] tracking-tight text-balance text-[#ADADAD]">
             {title}
           </h2>
           {lead ? (

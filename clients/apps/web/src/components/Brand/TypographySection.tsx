@@ -3,14 +3,14 @@ import { BrandSection } from './BrandSection'
 import { brandSections } from './brand'
 
 const weights = [
-  { name: 'Light', className: 'font-light' },
+  { name: 'Light', className: '' },
   { name: 'Regular', className: 'font-normal' },
   { name: 'Medium', className: 'font-medium' },
   { name: 'SemiBold', className: 'font-semibold' },
 ]
 
 const specimenClass =
-  'text-[clamp(3rem,12vw,11rem)] leading-[0.85] font-light tracking-[-0.04em]'
+  'text-[clamp(3rem,12vw,11rem)] leading-[0.85]  tracking-tight font-[350]'
 
 export function TypographySection() {
   return (
@@ -33,7 +33,7 @@ export function TypographySection() {
             >
               <span className="text-lg text-[#575757]">{weight.name}</span>
               <span
-                className={`text-7xl tracking-tight text-[#575757] ${weight.className}`}
+                className={`text-7xl font-[350] tracking-tight text-[#575757] ${weight.className}`}
               >
                 Ag
               </span>

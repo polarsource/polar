@@ -3,9 +3,9 @@ import { brandSections } from './brand'
 
 export function BrandHero() {
   return (
-    <section className="flex min-h-[calc(100vh-90px)] flex-col justify-between bg-[#171717] pt-20 pb-16 md:pt-32 md:pb-24">
-      <div className="mx-auto flex w-full max-w-[1600px] flex-col justify-end gap-10 px-8 md:px-16">
-        <h1 className="max-w-[15ch] text-[clamp(3rem,10vw,11rem)] leading-[0.92] font-light tracking-[-0.04em] text-[#ADADAD]">
+    <section className="flex min-h-[calc(100vh-164px)] flex-col justify-between gap-y-16 bg-[#171717] pt-20 pb-16 md:gap-y-48 md:pt-32 md:pb-24">
+      <div className="mx-auto flex w-full max-w-[1600px] grow flex-col justify-end gap-10 px-8 md:px-16">
+        <h1 className="max-w-[15ch] text-[clamp(3rem,10vw,11rem)] leading-[0.92] font-[350] tracking-tight text-[#ADADAD]">
           Identity for the intelligence era
         </h1>
       </div>

@@ -41,7 +41,7 @@ export function VoiceSection() {
             <span className="font-mono text-sm text-[#575757] md:col-span-1">
               0{index + 1}
             </span>
-            <h3 className="text-4xl font-light tracking-tight text-[#575757] md:col-span-5 md:text-6xl">
+            <h3 className="text-4xl font-[350] tracking-tight text-[#575757] md:col-span-5 md:text-6xl">
               {item.trait}
             </h3>
             <p className="text-lg leading-relaxed text-[#575757] md:col-span-6 md:text-2xl">

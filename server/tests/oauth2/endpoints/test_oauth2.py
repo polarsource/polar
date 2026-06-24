@@ -23,6 +23,7 @@ from polar.models import (
     UserSession,
 )
 from polar.models.user_organization import OrganizationRole
+from polar.models.user_session_organization import UserSessionOrganization
 from polar.oauth2.service.oauth2_grant import oauth2_grant as oauth2_grant_service
 from polar.oauth2.sub_type import SubType
 from tests.fixtures.auth import AuthSubjectFixture
@@ -1696,14 +1697,13 @@ class TestOAuth2Token:
 
         assert response.status_code == 400
 
-    async def test_web_grant_user_with_organizations_down_scope(
+    async def test_web_grant_user_inherits_session_down_scope(
         self,
         save_fixture: SaveFixture,
         sync_session: Session,
         client: AsyncClient,
         user: User,
         organization: Organization,
-        user_organization: UserOrganization,
         web_grant_oauth2_client: OAuth2Client,
     ) -> None:
         token, token_hash = generate_token_hash_pair(
@@ -1715,6 +1715,9 @@ class TestOAuth2Token:
             user=user,
             scopes=set(Scope),
             expires_at=utc_now() + timedelta(seconds=60),
+            organization_scopes=[
+                UserSessionOrganization(organization_id=organization.id)
+            ],
         )
         await save_fixture(user_session)
 
@@ -1723,7 +1726,6 @@ class TestOAuth2Token:
             "session_token": token,
             "client_id": web_grant_oauth2_client.client_id,
             "client_secret": web_grant_oauth2_client.client_secret,
-            "organizations": [str(organization.id)],
         }
 
         response = await client.post("/v1/oauth2/token", data=data)
@@ -1789,38 +1791,6 @@ class TestOAuth2Token:
             .scalar_one()
         )
         assert oauth2_token.organization_scopes == []
-
-    async def test_web_grant_user_organizations_not_member(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        user: User,
-        organization: Organization,
-        web_grant_oauth2_client: OAuth2Client,
-    ) -> None:
-        token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
-        )
-        user_session = UserSession(
-            token=token_hash,
-            user_agent="tests",
-            user=user,
-            scopes=set(Scope),
-            expires_at=utc_now() + timedelta(seconds=60),
-        )
-        await save_fixture(user_session)
-
-        data = {
-            "grant_type": "web",
-            "session_token": token,
-            "client_id": web_grant_oauth2_client.client_id,
-            "client_secret": web_grant_oauth2_client.client_secret,
-            "organizations": [str(organization.id)],
-        }
-
-        response = await client.post("/v1/oauth2/token", data=data)
-
-        assert response.status_code == 400
 
     async def test_web_grant_sub_organization_admin(
         self,

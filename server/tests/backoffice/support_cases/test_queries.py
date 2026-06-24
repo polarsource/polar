@@ -1,6 +1,9 @@
 """Tests for the shared backoffice support-case list query — the polymorphic
 join that resolves an organization for both appeal and dispute cases."""
 
+from datetime import UTC, datetime, timedelta
+from uuid import uuid4
+
 import pytest
 
 from polar.backoffice.support_cases.queries import (
@@ -8,12 +11,14 @@ from polar.backoffice.support_cases.queries import (
     cases_statement,
     open_case_organization_ids,
 )
-from polar.models import Customer, Organization, Product
+from polar.models import Customer, Organization, Product, User
 from polar.models.support_case import (
     SupportCaseAudience,
     SupportCaseMessage,
     SupportCaseMessageAuthorKind,
     SupportCaseMessageType,
+    SupportCaseParticipant,
+    SupportCaseParticipantKind,
     SupportCaseType,
 )
 from polar.postgres import AsyncSession
@@ -50,7 +55,7 @@ class TestCasesStatement:
         assert appeal.id in by_id
         assert dispute.id in by_id
         # Each row resolves to the owning organization, regardless of type.
-        for case, org, is_open, _assignee, _awaiting in rows:
+        for case, org, is_open, *_rest in rows:
             assert org.id == organization.id
             assert is_open is True
         assert by_id[appeal.id][0].type == SupportCaseType.review_appeal
@@ -104,6 +109,70 @@ class TestCasesStatement:
 
         assert dispute.id not in [row[0].id for row in open_rows]
         assert dispute.id in [row[0].id for row in closed_rows]
+
+    async def test_unread_per_viewer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user: User,
+    ) -> None:
+        case = await create_dispute_case(save_fixture, organization, customer, product)
+        base = datetime.now(UTC)
+        await save_fixture(
+            SupportCaseMessage(
+                case=case,
+                type=SupportCaseMessageType.chat,
+                author_kind=SupportCaseMessageAuthorKind.merchant,
+                body="Here is my evidence.",
+                audience=[SupportCaseAudience.merchant],
+                created_at=base + timedelta(minutes=1),
+            )
+        )
+
+        rows = await _rows(
+            session, organization_id=organization.id, viewer_user_id=user.id
+        )
+        *_, unread = rows[0]
+        assert unread is True
+
+        await save_fixture(
+            SupportCaseParticipant(
+                case=case,
+                kind=SupportCaseParticipantKind.platform,
+                platform_user=user,
+                last_read_at=base + timedelta(minutes=2),
+            )
+        )
+        rows = await _rows(
+            session, organization_id=organization.id, viewer_user_id=user.id
+        )
+        *_, unread = rows[0]
+        assert unread is False
+
+        rows = await _rows(
+            session, organization_id=organization.id, viewer_user_id=uuid4()
+        )
+        *_, unread = rows[0]
+        assert unread is True
+
+        await save_fixture(
+            SupportCaseMessage(
+                case=case,
+                type=SupportCaseMessageType.chat,
+                author_kind=SupportCaseMessageAuthorKind.merchant,
+                body="Any update?",
+                audience=[SupportCaseAudience.merchant],
+                created_at=base + timedelta(minutes=3),
+            )
+        )
+        rows = await _rows(
+            session, organization_id=organization.id, viewer_user_id=user.id
+        )
+        *_, unread = rows[0]
+        assert unread is True
 
 
 @pytest.mark.asyncio

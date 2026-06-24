@@ -240,10 +240,10 @@ def get_active_subscriptions_cte(
     converted_amount = case(
         (
             func.lower(Subscription.currency) == "usd",
-            Subscription.amount,
+            Subscription.net_amount,
         ),
         else_=func.round(
-            Subscription.amount
+            Subscription.net_amount
             * func.coalesce(
                 bucketed_fx_rate,
                 closest_global_fx_rate,

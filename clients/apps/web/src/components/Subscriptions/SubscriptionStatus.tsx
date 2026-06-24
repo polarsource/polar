@@ -3,7 +3,10 @@ import { Pill } from '@polar-sh/orbit'
 import { CircleX, Clock } from 'lucide-react'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { subscriptionStatusDisplayNames } from './utils'
+import {
+  getSubscriptionStatusBorderColor,
+  subscriptionStatusDisplayNames,
+} from './utils'
 
 const StatusLabel = ({
   color,
@@ -56,15 +59,10 @@ export const SubscriptionStatus = ({
   const { status, ends_at } = subscription
   const isEnding = useMemo(() => ends_at !== null, [ends_at])
 
-  const color = useMemo(() => {
-    if (status === 'active') {
-      return isEnding ? 'border-yellow-500' : 'border-emerald-500'
-    }
-    if (status === 'trialing') {
-      return 'border-cyan-500'
-    }
-    return 'border-red-500'
-  }, [status, isEnding])
+  const color = useMemo(
+    () => getSubscriptionStatusBorderColor(status, isEnding),
+    [status, isEnding],
+  )
 
   const icon = useMemo(() => {
     if (!isEnding) {

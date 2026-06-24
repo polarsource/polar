@@ -1,7 +1,9 @@
 from collections.abc import Sequence
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, Select, func, select
+from sqlalchemy import ColumnElement, Select, func, select, text
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
@@ -22,6 +24,7 @@ from polar.models.support_case import (
     SupportCaseMessageAuthorKind,
     SupportCaseMessageType,
     SupportCaseParticipant,
+    SupportCaseParticipantKind,
 )
 
 # Message types whose latest occurrence determines the open/closed state.
@@ -160,6 +163,35 @@ class SupportCaseParticipantRepository(
     RepositoryBase[SupportCaseParticipant],
 ):
     model = SupportCaseParticipant
+
+    async def upsert_platform_read(
+        self, case_id: UUID, user_id: UUID, *, read_at: datetime
+    ) -> SupportCaseParticipant:
+        """Atomically stamp a staff member's read state for a case.
+
+        Inserts the platform participant or, if one already exists, bumps its
+        ``last_read_at``. A single ``INSERT ... ON CONFLICT DO UPDATE`` so that
+        concurrent first reads (two tabs, a double-click) can't race the partial
+        unique ``(case_id, platform_user_id)`` index into an error.
+        """
+        statement = (
+            pg_insert(SupportCaseParticipant)
+            .values(
+                case_id=case_id,
+                kind=SupportCaseParticipantKind.platform,
+                platform_user_id=user_id,
+                last_read_at=read_at,
+            )
+            .on_conflict_do_update(
+                index_elements=["case_id", "platform_user_id"],
+                index_where=text("platform_user_id IS NOT NULL AND deleted_at IS NULL"),
+                set_={"last_read_at": read_at},
+            )
+            .returning(SupportCaseParticipant)
+            .execution_options(populate_existing=True)
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().one()
 
 
 class SupportCaseAttachmentRepository(

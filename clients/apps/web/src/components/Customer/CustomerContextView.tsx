@@ -14,6 +14,7 @@ import Link from 'next/link'
 import { DetailRow } from '../Shared/DetailRow'
 import { useSubscriptions } from '@/hooks/queries'
 import { PropsWithChildren } from 'react'
+import { getSubscriptionStatusBorderColor } from '../Subscriptions/utils'
 
 interface CustomerContextViewProps {
   organization: schemas['Organization']
@@ -181,16 +182,6 @@ const STATUS_ORDER: Record<schemas['SubscriptionStatus'], number> = {
   incomplete_expired: 6,
 }
 
-const STATUS_COLORS: Record<schemas['SubscriptionStatus'], string> = {
-  active: 'border-green-500',
-  trialing: 'border-blue-500',
-  past_due: 'border-yellow-500',
-  unpaid: 'border-orange-500',
-  canceled: 'border-red-500',
-  incomplete: 'dark:border-polar-500 border-gray-500',
-  incomplete_expired: 'dark:border-polar-500 border-gray-500',
-}
-
 const INTERVAL_LABELS: Record<
   schemas['SubscriptionRecurringInterval'],
   string
@@ -218,10 +209,10 @@ const SubscriptionRow = ({
   subscription,
   organization,
 }: SubscriptionRowProps) => {
-  const statusColor =
-    subscription.cancel_at_period_end && subscription.status === 'active'
-      ? 'border-yellow-500'
-      : STATUS_COLORS[subscription.status]
+  const statusColor = getSubscriptionStatusBorderColor(
+    subscription.status,
+    subscription.cancel_at_period_end,
+  )
 
   const formattedPrice =
     subscription.amount === 0

@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from uuid import UUID
 
 from polar.auth.models import AuthSubject, Organization, User
@@ -97,6 +98,20 @@ class SupportCaseService:
         if visible_to is not None and visible_to not in attachment.audience:
             return None
         return attachment
+
+    async def mark_read(
+        self, session: AsyncSession, case: SupportCase, *, user: User
+    ) -> SupportCaseParticipant:
+        """Record that a staff member has read the case up to now.
+
+        Upserts the staff member's ``platform`` participant and stamps
+        ``last_read_at``. Per-staff: each viewer tracks their own read state,
+        and the latest reader across staff is shown in the list.
+        """
+        repository = SupportCaseParticipantRepository.from_session(session)
+        return await repository.upsert_platform_read(
+            case.id, user.id, read_at=datetime.now(UTC)
+        )
 
     async def add_participant(
         self,

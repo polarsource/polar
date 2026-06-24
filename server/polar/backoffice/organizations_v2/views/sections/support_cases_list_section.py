@@ -55,6 +55,7 @@ class SupportCasesListSection:
                         is_open,
                         assignee_email,
                         awaiting_platform,
+                        _unread,
                     ) in self.rows:
                         case_url = case_detail_url(
                             request, case.id, return_to=return_to

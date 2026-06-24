@@ -80,12 +80,12 @@
     "nuqs": "^2.8.9",
     "posthog-js": "^1.369.1",
     "posthog-node": "^5.29.2",
-    "react-qr-code": "^2.0.11",
     "react": "19.2.5",
     "react-dom": "19.2.5",
     "react-dropzone": "^14.4.1",
     "react-focus-lock": "^2.13.7",
     "react-hook-form": "~7.72.1",
+    "react-qr-code": "^2.0.11",
     "react-timeago": "^8.3.0",
     "recharts": "^3.8.1",
     "rehype-mdx-import-media": "^1.4.0",
@@ -101,7 +101,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@playwright/test": "^1.59.1",
+    "@playwright/test": "^1.61.0",
     "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
     "@stylexjs/babel-plugin": "^0.18.2",

@@ -1,8 +1,16 @@
 // ─── Components ───────────────────────────────────────────────────────────────
+export { Alert } from './components/Alert'
+export type { AlertProps, AlertVariant } from './components/Alert'
 export { Avatar } from './components/Avatar'
 export type { AvatarProps } from './components/Avatar'
 export { Button, RawButton } from './components/Button'
 export type { ButtonProps } from './components/Button'
+export { ButtonGroup } from './components/ButtonGroup'
+export type {
+  ButtonGroupAction,
+  ButtonGroupActions,
+  ButtonGroupProps,
+} from './components/ButtonGroup'
 export { Checkbox } from './components/Checkbox'
 export { DataTable, DataTableColumnHeader } from './components/datatable'
 export type {

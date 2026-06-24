@@ -2,7 +2,7 @@
 
 import { type schemas } from '@polar-sh/client'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import { Button } from '@polar-sh/orbit'
+import { Alert, Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
@@ -23,7 +23,6 @@ import React, { useCallback, useState } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { ProductFormType } from '../ProductForm'
-import Alert from '@polar-sh/ui/components/atoms/Alert'
 
 type TieringModel = 'fixed' | 'graduated' | 'volume'
 
@@ -207,11 +206,14 @@ export const ProductPriceSeatBasedItem: React.FC<
       {!hasSingleTier &&
         tiers?.[0]?.min_seats != null &&
         tiers[0].min_seats > 1 && (
-          <Alert color="gray" className="p-3 px-4 text-sm">
-            {tiers[0].min_seats === 2
-              ? 'Buying one seat is not allowed'
-              : `Buying less than ${tiers[0].min_seats} seats is not allowed`}
-          </Alert>
+          <Alert
+            variant="info"
+            title={
+              tiers[0].min_seats === 2
+                ? 'Buying one seat is not allowed'
+                : `Buying less than ${tiers[0].min_seats} seats is not allowed`
+            }
+          />
         )}
       {fields.map((field, tierIndex) => {
         const isFirst = tierIndex === 0

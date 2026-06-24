@@ -81,10 +81,22 @@ const components: NavItem[] = [
     description: 'Actions across variants, sizes and loading states.',
   },
   {
+    title: 'ButtonGroup',
+    slug: 'button-group',
+    href: '/components/button-group',
+    description: 'One or two related actions, with primary and ghost emphasis.',
+  },
+  {
     title: 'Avatar',
     slug: 'avatar',
     href: '/components/avatar',
     description: 'User and entity avatars with initials fallback.',
+  },
+  {
+    title: 'Alert',
+    slug: 'alert',
+    href: '/components/alert',
+    description: 'Tinted callouts that communicate a message and its severity.',
   },
   {
     title: 'Pill',

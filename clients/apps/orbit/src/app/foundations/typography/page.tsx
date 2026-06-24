@@ -20,6 +20,7 @@ const VARIANTS: TextVariant[] = [
   'heading-xxs',
   'body',
   'default',
+  'title',
   'label',
   'caption',
 ]

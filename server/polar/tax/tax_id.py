@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Annotated, Any, Protocol
 import stdnum.ca.bn
 import stdnum.cl.rut
 import stdnum.co.nit
-import stdnum.cr.cpf
 import stdnum.cr.cpj
 import stdnum.ec.ruc
 import stdnum.exceptions
@@ -294,12 +293,11 @@ class CONITValidator(ValidatorProtocol):
 
 class CRTINValidator(ValidatorProtocol):
     def validate(self, number: str, country: str) -> str:
-        for module in (stdnum.cr.cpj, stdnum.cr.cpf):
-            try:
-                return module.validate(module.compact(number))
-            except stdnum.exceptions.ValidationError:
-                continue
-        raise InvalidTaxID(number, country)
+        number = stdnum.cr.cpj.compact(number)
+        try:
+            return stdnum.cr.cpj.validate(number)
+        except stdnum.exceptions.ValidationError as e:
+            raise InvalidTaxID(number, country) from e
 
 
 # Structural fallback for company RUCs the SRI issues without a usable módulo-11

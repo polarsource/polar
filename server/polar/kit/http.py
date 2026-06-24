@@ -1,8 +1,9 @@
 import ipaddress
 import socket
+import unicodedata
 from dataclasses import dataclass
 from typing import Annotated
-from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 
 import anyio
 import httpx
@@ -11,6 +12,30 @@ from pydantic import AfterValidator, HttpUrl, PlainSerializer, ValidationError
 from safe_redirect_url import url_has_allowed_host_and_scheme
 
 from polar.config import settings
+
+
+def get_content_disposition(filename: str) -> str:
+    """
+    Generate a Content-Disposition header value for file downloads.
+
+    Uses RFC 5987 encoding for non-ASCII filenames to ensure proper handling
+    of special characters like colons, spaces, etc.
+    """
+    if filename.isascii():
+        # RFC 6266 / RFC 7230: escape backslashes and quotes in quoted-strings,
+        # and strip control characters (CR, LF, etc.) to prevent header injection
+        safe_filename = filename.replace("\\", "\\\\").replace('"', '\\"')
+        safe_filename = "".join(
+            c for c in safe_filename if 32 <= ord(c) <= 126 or c in "\t"
+        )
+        return f'attachment; filename="{safe_filename}"'
+    ascii_fallback = (
+        unicodedata.normalize("NFKD", filename)
+        .encode("ascii", "ignore")
+        .decode("ascii")
+    )
+    encoded = quote(filename, safe="")
+    return f"attachment; filename=\"{ascii_fallback}\"; filename*=UTF-8''{encoded}"
 
 
 class SSRFBlockedError(Exception):

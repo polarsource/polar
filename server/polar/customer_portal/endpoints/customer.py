@@ -10,6 +10,7 @@ from polar.customer.service import customer as main_customer_service
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import ResourceNotFound
+from polar.kit.http import get_content_disposition
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Customer
 from polar.openapi import APITag
@@ -83,7 +84,7 @@ async def export(
     return Response(
         content=json.dumps(data, indent=2),
         media_type="application/json",
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
+        headers={"Content-Disposition": get_content_disposition(filename)},
     )
 
 

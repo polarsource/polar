@@ -6,7 +6,6 @@ interface FormattedDateTimeProps {
   dateStyle?: 'full' | 'long' | 'medium' | 'short'
   timeStyle?: 'full' | 'long' | 'medium' | 'short'
   resolution?: 'time' | 'day' | 'month'
-  showYear?: boolean
 }
 
 const FormattedDateTime: React.FC<FormattedDateTimeProps> = ({
@@ -15,7 +14,6 @@ const FormattedDateTime: React.FC<FormattedDateTimeProps> = ({
   dateStyle = 'medium',
   timeStyle = 'short',
   resolution = 'day',
-  showYear = true,
 }) => {
   const parsedDate = useMemo(() => new Date(datetime), [datetime])
   const isValidDate = useMemo(
@@ -26,21 +24,6 @@ const FormattedDateTime: React.FC<FormattedDateTimeProps> = ({
     try {
       if (!isValidDate) {
         return 'Invalid date'
-      }
-
-      if (!showYear) {
-        if (resolution === 'time') {
-          return parsedDate.toLocaleString(locale, {
-            month: 'long',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-          })
-        }
-        return parsedDate.toLocaleDateString(locale, {
-          month: 'long',
-          day: 'numeric',
-        })
       }
 
       if (resolution === 'time') {
@@ -60,15 +43,7 @@ const FormattedDateTime: React.FC<FormattedDateTimeProps> = ({
     } catch {
       return 'Invalid date or locale'
     }
-  }, [
-    parsedDate,
-    isValidDate,
-    locale,
-    resolution,
-    dateStyle,
-    timeStyle,
-    showYear,
-  ])
+  }, [parsedDate, isValidDate, locale, resolution, dateStyle, timeStyle])
 
   return (
     <time

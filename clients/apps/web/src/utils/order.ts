@@ -37,14 +37,36 @@ export const canRetryOrderPayment = (
   )
 }
 
-export function isOrderInDunning(
+export function isOrderInDunningLifecycle(
   order: schemas['Order'],
   payments: schemas['Payment'][],
 ): boolean {
   return (
     !order.paid &&
     order.subscription_id !== null &&
-    order.next_payment_attempt_at !== null &&
     payments.some((payment) => payment.status === 'failed')
+  )
+}
+
+export function isOrderInDunning(
+  order: schemas['Order'],
+  payments: schemas['Payment'][],
+): boolean {
+  return (
+    isOrderInDunningLifecycle(order, payments) &&
+    order.next_payment_attempt_at !== null
+  )
+}
+
+export function isOrderDunningFailed(
+  order: schemas['Order'],
+  subscription: schemas['Subscription'],
+  payments: schemas['Payment'][],
+): boolean {
+  return (
+    isOrderInDunningLifecycle(order, payments) &&
+    order.next_payment_attempt_at === null &&
+    subscription.ended_at !== null &&
+    subscription.customer_cancellation_reason === null
   )
 }

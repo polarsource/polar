@@ -29,7 +29,11 @@ import {
   DisputeStatusDisplayTitle,
 } from '@/utils/dispute'
 import { formatCountry } from '@/utils/formatters'
-import { isOrderInDunning } from '@/utils/order'
+import {
+  isOrderDunningFailed,
+  isOrderInDunning,
+  isOrderInDunningLifecycle,
+} from '@/utils/order'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { ArrowUpRightIcon } from 'lucide-react'
 import { schemas } from '@polar-sh/client'
@@ -87,13 +91,20 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const seats = seatsData?.seats || []
 
   const orderPayments = payments?.items ?? []
-  const showDunningBanner = !!order && isOrderInDunning(order, orderPayments)
+  const inDunningLifecycle =
+    !!order && isOrderInDunningLifecycle(order, orderPayments)
 
   const { data: dunningSubscription } = useSubscription(
     order?.subscription_id ?? '',
     undefined,
-    { enabled: showDunningBanner },
+    { enabled: inDunningLifecycle },
   )
+
+  const showDunningBanner =
+    !!order &&
+    !!dunningSubscription &&
+    (isOrderInDunning(order, orderPayments) ||
+      isOrderDunningFailed(order, dunningSubscription, orderPayments))
 
   if (!order) {
     return null

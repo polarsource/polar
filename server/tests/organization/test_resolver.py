@@ -91,3 +91,23 @@ class TestGetPayloadOrganization:
             await get_payload_organization(
                 session, auth_subject, OrganizationIDPayload()
             )
+
+    @pytest.mark.auth
+    async def test_multi_org_down_scope_single_member_still_requires_organization_id(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Down-scoped to two orgs but member of only one: the single accessible
+        # org must NOT be auto-resolved — the down-scope set has two entries.
+        auth_subject.organization_ids = frozenset(
+            {organization.id, organization_second.id}
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await get_payload_organization(
+                session, auth_subject, OrganizationIDPayload()
+            )

@@ -7,6 +7,7 @@ from polar.models import File, Organization, User
 from polar.models.organization_review import OrganizationReview
 from polar.models.support_case import (
     ReviewAppealSupportCase,
+    SupportCaseAttachment,
     SupportCaseAudience,
     SupportCaseMessage,
     SupportCaseMessageAuthorKind,
@@ -16,6 +17,7 @@ from polar.models.support_case import (
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.support_case.repository import (
     ReviewAppealSupportCaseRepository,
+    SupportCaseAttachmentRepository,
     SupportCaseMessageRepository,
 )
 from polar.support_case.service import support_case as support_case_service
@@ -267,6 +269,47 @@ class AppealCaseService:
     ) -> ReviewAppealSupportCase | None:
         repository = ReviewAppealSupportCaseRepository.from_session(session)
         return await repository.get_by_organization_review(review.id)
+
+    async def get_thread(
+        self,
+        session: AsyncSession | AsyncReadSession,
+        review: OrganizationReview,
+        *,
+        visible_to: SupportCaseAudience | None,
+    ) -> tuple[ReviewAppealSupportCase, bool, Sequence[SupportCaseMessage]] | None:
+        case = await self.get_case(session, review)
+        if case is None:
+            return None
+        message_repository = SupportCaseMessageRepository.from_session(session)
+        is_open = await message_repository.is_open(case.id)
+        messages = await message_repository.list_by_case(case.id, visible_to=visible_to)
+        return case, is_open, messages
+
+    async def list_attachments(
+        self,
+        session: AsyncSession | AsyncReadSession,
+        case: ReviewAppealSupportCase,
+        *,
+        visible_to: SupportCaseAudience | None,
+    ) -> Sequence[SupportCaseAttachment]:
+        repository = SupportCaseAttachmentRepository.from_session(session)
+        return await repository.list_by_case(case.id, visible_to=visible_to)
+
+    async def get_attachment(
+        self,
+        session: AsyncSession | AsyncReadSession,
+        case: ReviewAppealSupportCase,
+        attachment_id: UUID,
+        *,
+        visible_to: SupportCaseAudience | None,
+    ) -> SupportCaseAttachment | None:
+        repository = SupportCaseAttachmentRepository.from_session(session)
+        attachment = await repository.get_by_id_for_case(attachment_id, case.id)
+        if attachment is None:
+            return None
+        if visible_to is not None and visible_to not in attachment.audience:
+            return None
+        return attachment
 
     async def _assert_open(
         self, session: AsyncSession, case: ReviewAppealSupportCase

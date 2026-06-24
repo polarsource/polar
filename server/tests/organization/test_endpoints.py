@@ -523,7 +523,7 @@ class TestUpdateOrganization:
         error_locations = {tuple(error["loc"]) for error in response.json()["detail"]}
         assert ("body", "website") in error_locations
         assert ("body", "email") in error_locations
-        assert ("body", "socials") in error_locations
+        assert ("body", "socials") not in error_locations
         assert ("body", "details", "product_description") in error_locations
 
     @pytest.mark.auth

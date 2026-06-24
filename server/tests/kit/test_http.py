@@ -9,6 +9,7 @@ import pytest
 from polar.kit.http import (
     SSRFBlockedError,
     check_url_reachable,
+    get_content_disposition,
     get_safe_return_url,
     resolve_and_validate_ip,
 )
@@ -234,3 +235,59 @@ class TestCheckUrlReachable:
 
         assert result.reachable is False
         assert result.status == 404
+
+
+class TestGetContentDisposition:
+    def test_pure_ascii(self) -> None:
+        assert (
+            get_content_disposition("hello.mp3") == 'attachment; filename="hello.mp3"'
+        )
+
+    def test_non_latin1_character(self) -> None:
+        result = get_content_disposition("Sample\u2019s Filename.mp3")
+        assert result == (
+            'attachment; filename="Samples Filename.mp3"; '
+            "filename*=UTF-8''Sample%E2%80%99s%20Filename.mp3"
+        )
+        assert result.encode("latin-1")
+
+    def test_latin1_character(self) -> None:
+        result = get_content_disposition("café.mp3")
+        assert result == (
+            "attachment; filename=\"cafe.mp3\"; filename*=UTF-8''caf%C3%A9.mp3"
+        )
+        assert result.encode("latin-1")
+
+    def test_shift_jis_character(self) -> None:
+        result = get_content_disposition("サンプル.mp3")
+        assert result == (
+            'attachment; filename=".mp3"; '
+            "filename*=UTF-8''%E3%82%B5%E3%83%B3%E3%83%97%E3%83%AB.mp3"
+        )
+        assert result.encode("latin-1")
+
+    def test_quotes_escaped(self) -> None:
+        # Quotes must be escaped to prevent breaking out of the quoted-string
+        result = get_content_disposition('file"with"quotes.txt')
+        assert result == 'attachment; filename="file\\"with\\"quotes.txt"'
+
+    def test_backslashes_escaped(self) -> None:
+        # Backslashes must be escaped in quoted-strings per RFC 7230
+        result = get_content_disposition("file\\with\\backslash.txt")
+        assert result == 'attachment; filename="file\\\\with\\\\backslash.txt"'
+
+    def test_control_characters_removed(self) -> None:
+        # CR, LF, and other control characters must be removed to prevent header injection
+        result = get_content_disposition("file\nwith\nnewline.txt")
+        assert result == 'attachment; filename="filewithnewline.txt"'
+
+        result = get_content_disposition("file\rwith\rcarriage.txt")
+        assert result == 'attachment; filename="filewithcarriage.txt"'
+
+        result = get_content_disposition("file\x00null.txt")
+        assert result == 'attachment; filename="filenull.txt"'
+
+    def test_del_character_removed(self) -> None:
+        # ASCII DEL (0x7F) must be removed to prevent unsafe header bytes
+        result = get_content_disposition("file\x7fdel.txt")
+        assert result == 'attachment; filename="filedel.txt"'

@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     import _csv
 
 from .email import EmailNotValidError, validate_email
+from .http import get_content_disposition
 
 
 def get_iterable_from_binary_io(file: BinaryIO) -> collections.abc.Iterable[str]:
@@ -110,5 +111,5 @@ class CSVStreamingResponse(StreamingResponse):
             content,
             status_code=status_code,
             media_type=self.media_type,
-            headers={"Content-Disposition": f"attachment; filename={filename}"},
+            headers={"Content-Disposition": get_content_disposition(filename)},
         )

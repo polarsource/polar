@@ -132,13 +132,13 @@ COPY --from=ghcr.io/astral-sh/uv:0.11.24 /uv /uvx /bin/
 ENV PYTHONUNBUFFERED=1
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
-ENV UV_NO_CACHE=1
 ENV UV_NO_SYNC=1
 
 WORKDIR /app/server
 
 RUN --mount=type=bind,source=uv.lock,target=uv.lock \
   --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+  --mount=type=cache,target=/root/.cache/uv \
   dnf install -y gcc gcc-c++ git make \
   && uv sync --no-group dev --frozen \
   && dnf clean all
@@ -162,8 +162,8 @@ ENV RELEASE_VERSION=${RELEASE_VERSION}
 
 COPY --from=lambda-build /app /app
 COPY --from=lambda-build /data /data
-COPY --from=docker.io/tailscale/tailscale:stable /usr/local/bin/tailscaled /var/runtime/tailscaled
-COPY --from=docker.io/tailscale/tailscale:stable /usr/local/bin/tailscale /var/runtime/tailscale
+COPY --from=docker.io/tailscale/tailscale:v1.98.4 /usr/local/bin/tailscaled /var/runtime/tailscaled
+COPY --from=docker.io/tailscale/tailscale:v1.98.4 /usr/local/bin/tailscale /var/runtime/tailscale
 
 ENV LAMBDA_TASK_ROOT=/app/server
 ENV PATH="/app/server/.venv/bin:$PATH"

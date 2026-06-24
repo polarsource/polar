@@ -24,6 +24,7 @@ from polar.models import (
     OAuth2AuthorizationCodeOrganization,
     OAuth2Client,
     OAuth2Token,
+    OAuth2TokenOrganization,
     Organization,
     User,
 )
@@ -104,6 +105,7 @@ async def create_oauth2_token(
     scopes: list[str],
     user: User | None = None,
     organization: Organization | None = None,
+    organizations: list[Organization] | None = None,
     access_token_revoked_at: int | None = None,
     refresh_token_revoked_at: int | None = None,
     issued_at: int | None = None,
@@ -131,6 +133,11 @@ async def create_oauth2_token(
     if organization is not None:
         token.organization_id = organization.id
         token.sub_type = SubType.organization
+    if organizations is not None:
+        token.organization_scopes = [
+            OAuth2TokenOrganization(organization_id=organization.id)
+            for organization in organizations
+        ]
     await save_fixture(token)
     return token
 

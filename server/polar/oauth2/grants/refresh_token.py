@@ -32,6 +32,9 @@ class RefreshTokenGrant(_RefreshTokenGrant):
         return None
 
     def authenticate_user(self, refresh_token: OAuth2Token) -> SubTypeValue | None:
+        self.request.organization_ids = [
+            scope.organization_id for scope in refresh_token.organization_scopes
+        ]
         return refresh_token.get_sub_type_value()
 
     def revoke_old_credential(self, refresh_token: OAuth2Token) -> None:

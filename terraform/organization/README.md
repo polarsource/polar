@@ -36,7 +36,8 @@ Application workloads live under the `Workloads` OU:
 
 Terraform manages the workload OUs and member account placement.
 
-The management account is verified through the Organizations data source but is not managed as an
+The AWS Organization is managed as a `aws_organizations_organization` resource with
+SERVICE_CONTROL_POLICY enabled. The management account is not managed as an
 `aws_organizations_account` resource because that resource manages member accounts, not the
 management account itself.
 

@@ -25,7 +25,7 @@ path = "polar/__init__.py"
 packages = ["polar"]
 
 [dependency-groups]
-dev = ["ty", "ruff"]
+dev = ["ty", "ruff", "pytest"]
 
 [tool.ruff]
 target-version = "py311"

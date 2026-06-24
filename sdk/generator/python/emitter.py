@@ -83,6 +83,8 @@ class PythonEmitter(EmitterBase):
             ("polar", "base.py"),
             ("polar", "client.py"),
             ("polar", "literals.py"),
+            ("tests", "__init__.py"),
+            ("tests", "test_base.py"),
             (".python-version",),
             ("justfile",),
             ("pyproject.toml",),
@@ -130,6 +132,7 @@ class PythonEmitter(EmitterBase):
         super().run_post_actions(root_directory)
         self.run_command("just install", cwd=root_directory)
         self.run_command("just lint", cwd=root_directory)
+        self.run_command("just test", cwd=root_directory)
 
     def setup_environment(self) -> None:
         """Add Python-specific filters to the Jinja2 environment."""

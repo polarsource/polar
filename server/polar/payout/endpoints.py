@@ -125,7 +125,12 @@ async def create(
 
 
 @router.get(
-    "/{id}/csv", summary="Export Payout as CSV", response_class=CSVStreamingResponse
+    "/{id}/csv",
+    summary="Export Payout as CSV",
+    response_class=CSVStreamingResponse,
+    responses={
+        404: {"description": "Payout not found.", "model": ResourceNotFound.schema()},
+    },
 )
 async def get_csv(
     id: UUID4,

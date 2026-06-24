@@ -1,12 +1,15 @@
 import httpx
 import pytest
 from fastapi import APIRouter, FastAPI
+from logfire.testing import CaptureLogfire
 
 from polar.logfire import instrument_fastapi
 
 
 @pytest.mark.asyncio
-async def test_instrument_fastapi_resolves_nested_routes() -> None:
+async def test_instrument_fastapi_resolves_nested_routes(
+    capfire: CaptureLogfire,
+) -> None:
     """Guard against FastAPI <-> OpenTelemetry instrumentation skew.
 
     OTel names each server span by walking ``app.routes`` at *request* time
@@ -14,6 +17,9 @@ async def test_instrument_fastapi_resolves_nested_routes() -> None:
     (e.g. 0.137's tree with ``_IncludedRouter`` nodes) makes that walk raise
     mid-request instead of failing at import — so it only shows up once a real
     request flows through the *instrumented*, nested router tree.
+
+    ``capfire`` forces ``send_to_logfire=False`` and captures spans in memory,
+    so nothing is exported to Logfire or S3 regardless of ambient env.
     """
     leaf = APIRouter()
 
@@ -36,3 +42,10 @@ async def test_instrument_fastapi_resolves_nested_routes() -> None:
 
     assert response.status_code == 200
     assert response.json() == {"ok": True}
+
+    routes = {
+        span.attributes.get("http.route")
+        for span in capfire.exporter.exported_spans
+        if span.attributes is not None
+    }
+    assert "/v1/leaf/ping" in routes

@@ -30,11 +30,10 @@ from polar.models import (
 )
 
 from ..constants import AUTHORIZATION_CODE_PREFIX, JWT_CONFIG
-from ..requests import StarletteOAuth2Request
+from ..requests import StarletteOAuth2Payload, StarletteOAuth2Request
 from ..service.oauth2_grant import oauth2_grant as oauth2_grant_service
 from ..sub_type import SubType, SubTypeValue
 from ..userinfo import UserInfo, generate_user_info
-from .organizations import validate_down_scope_organizations
 
 if typing.TYPE_CHECKING:
     from ..authorization_server import AuthorizationServer
@@ -54,6 +53,9 @@ def _exists_nonce(
 class SubTypeGrantMixin:
     sub_type: SubType | None = None
     sub: User | Organization | None = None
+    # Down-scope of the session authenticating the consent; bounds the orgs the
+    # issued token may be scoped to. ``None`` means an unrestricted session.
+    session_organization_ids: frozenset[uuid.UUID] | None = None
 
 
 class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
@@ -126,14 +128,51 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
         if self.sub_type == SubType.user:
             authorization_code.organization_scopes = [
                 OAuth2AuthorizationCodeOrganization(organization_id=organization_id)
-                for organization_id in validate_down_scope_organizations(
-                    self.server.session, payload, typing.cast(User, self.sub)
+                for organization_id in self._resolve_organization_ids(
+                    typing.cast(User, self.sub), payload
                 )
             ]
 
         self.server.session.add(authorization_code)
         self.server.session.flush()
         return authorization_code
+
+    def _resolve_organization_ids(
+        self, user: User, payload: StarletteOAuth2Payload
+    ) -> list[uuid.UUID]:
+        """Organizations the issued token is down-scoped to.
+
+        The consent-time selection, validated against the orgs the
+        authenticating session can access (membership intersected with the
+        session's own down-scope). An empty selection inherits the session's
+        down-scope, so a token can never be broader than its session.
+        """
+        member_organization_ids = set(
+            self.server.session.execute(select_user_org_ids(user.id)).scalars().all()
+        )
+        if self.session_organization_ids is not None:
+            member_organization_ids &= self.session_organization_ids
+
+        try:
+            selected = {
+                uuid.UUID(value) for value in payload.datalist.get("organizations", [])
+            }
+        except ValueError as e:
+            raise InvalidRequestError("Invalid 'organizations' UUID") from e
+
+        for organization_id in selected:
+            if organization_id not in member_organization_ids:
+                raise InvalidRequestError(
+                    f"You are not a member of organization {organization_id}"
+                )
+
+        if selected:
+            return list(selected)
+        # No explicit selection: inherit the session's down-scope (if any) so
+        # the token is never broader than the session.
+        if self.session_organization_ids is not None:
+            return list(member_organization_ids)
+        return []
 
     def query_authorization_code(
         self, code: str, client: OAuth2Client

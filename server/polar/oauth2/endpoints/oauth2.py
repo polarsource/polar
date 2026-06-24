@@ -165,7 +165,10 @@ async def authorize(
         raise HTTPException(status_code=401)
     elif grant.prompt == "none":
         return authorization_server.create_authorization_response(
-            request=request, grant_user=user, save_consent=False
+            request=request,
+            grant_user=user,
+            save_consent=False,
+            session_organization_ids=auth_subject.organization_ids,
         )
 
     organizations: Sequence[Organization] | None = None
@@ -210,7 +213,10 @@ async def consent(
     await request.form()
     grant_user = auth_subject.subject if action == "allow" else None
     return authorization_server.create_authorization_response(
-        request=request, grant_user=grant_user, save_consent=True
+        request=request,
+        grant_user=grant_user,
+        save_consent=True,
+        session_organization_ids=auth_subject.organization_ids,
     )
 
 

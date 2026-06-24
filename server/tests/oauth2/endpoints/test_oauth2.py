@@ -913,6 +913,53 @@ class TestOAuth2Consent:
         } == {organization.id}
 
     @pytest.mark.auth
+    async def test_allow_user_organizations_deduplicated(
+        self,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        oauth2_client: OAuth2Client,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=user,
+                organization=organization,
+                role=OrganizationRole.member,
+            )
+        )
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "user",
+            "organizations": [str(organization.id), str(organization.id)],
+        }
+        response = await client.post(
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+
+        assert response.status_code == 302
+        location = response.headers["location"]
+        code = parse_qs(urlparse(location).query)["code"][0]
+
+        authorization_code = (
+            sync_session.execute(
+                select(OAuth2AuthorizationCode).where(
+                    OAuth2AuthorizationCode.code
+                    == get_token_hash(code, secret=settings.SECRET)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert [
+            scope.organization_id for scope in authorization_code.organization_scopes
+        ] == [organization.id]
+
+    @pytest.mark.auth
     async def test_organization_missing_sub(
         self,
         client: AsyncClient,

@@ -1,5 +1,6 @@
 'use client'
 
+import { useSubscriptions } from '@/hooks/queries'
 import { useDismissed } from '@/hooks/useDismissed'
 import { Alert } from '@polar-sh/orbit'
 
@@ -14,7 +15,13 @@ export const SubscriptionMetricsTaxAlertClient = ({
     `subscription_metrics_tax_alert:${organizationId}`,
   )
 
-  if (isDismissed) {
+  const { data: subscriptions } = useSubscriptions(organizationId, {
+    limit: 1,
+    sorting: ['-amount'],
+  })
+  const hasPaidSubscription = (subscriptions?.items[0]?.amount ?? 0) > 0
+
+  if (isDismissed || !hasPaidSubscription) {
     return null
   }
 

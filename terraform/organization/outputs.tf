@@ -39,3 +39,14 @@ output "terraform_cloud_run_roles" {
     test       = module.terraform_cloud_run_role_test.role_arn
   }
 }
+
+output "service_control_policies" {
+  value = {
+    for key, policy in aws_organizations_policy.service_control :
+    key => {
+      id          = policy.id
+      name        = policy.name
+      description = policy.description
+    }
+  }
+}

@@ -2115,11 +2115,25 @@ class TestGetReviewState:
             assert sub.status == OrganizationReviewCheckStatus.PENDING
             assert OrganizationReviewCheckReason.NOT_STARTED in sub.reasons
 
+    @pytest.mark.parametrize(
+        "benefit_type",
+        [
+            BenefitType.downloadables,
+            BenefitType.license_keys,
+            BenefitType.github_repository,
+            BenefitType.discord,
+            BenefitType.slack_shared_channel,
+            # `custom` is a free-form note, but the customer still sees it in
+            # their portal post-purchase — no API integration required.
+            BenefitType.custom,
+        ],
+    )
     async def test_setup_readiness_checkout_link_with_eligible_benefit_passes(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
+        benefit_type: BenefitType,
     ) -> None:
         product = await create_product(
             save_fixture, organization=organization, recurring_interval=None
@@ -2127,7 +2141,7 @@ class TestGetReviewState:
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
-            type=BenefitType.license_keys,
+            type=benefit_type,
         )
         await set_product_benefits(save_fixture, product=product, benefits=[benefit])
         await create_checkout_link(save_fixture, products=[product])
@@ -2152,10 +2166,12 @@ class TestGetReviewState:
     @pytest.mark.parametrize(
         "benefit_type",
         [
+            # Benefits a checkout link can't fulfill on its own — they only mean
+            # something once the merchant integrates the API. `feature_flag`:
+            # the merchant's app reads the flag. `meter_credit`: the credit is
+            # consumed via usage events the merchant ingests.
             BenefitType.feature_flag,
             BenefitType.meter_credit,
-            # `custom` is a free-form note with no automated fulfillment.
-            BenefitType.custom,
         ],
     )
     async def test_setup_readiness_ineligible_benefit_does_not_count(

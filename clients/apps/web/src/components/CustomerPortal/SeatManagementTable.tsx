@@ -7,6 +7,8 @@ import {
   useRevokeSeat,
   useUpdateCustomerPortalMember,
 } from '@/hooks/queries/customerPortal'
+import { useSafeCopy } from '@/hooks/clipboard'
+import { CONFIG } from '@/utils/config'
 import { validateEmail } from '@/utils/validation'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { Client, schemas } from '@polar-sh/client'
@@ -34,6 +36,7 @@ type SeatBasedOrder = { orderId: string }
 interface SeatManagementTableProps {
   api: Client
   identifier: SeatBasedSubscription | SeatBasedOrder
+  organizationSlug: string
   prorationBehavior?: schemas['CustomerOrganization']['proration_behavior']
 }
 
@@ -46,8 +49,11 @@ function isSeatBasedSubscription(
 export const SeatManagementTable = ({
   api,
   identifier,
+  organizationSlug,
   prorationBehavior,
 }: SeatManagementTableProps) => {
+  const safeCopy = useSafeCopy(toast)
+
   const { data: seatsData, isLoading: isLoadingSeats } = useCustomerSeats(
     api,
     isSeatBasedSubscription(identifier)
@@ -152,6 +158,18 @@ export const SeatManagementTable = ({
         return next
       })
     }
+  }
+
+  const handleCopyLoginLink = async (memberEmail: string) => {
+    const link = `${CONFIG.FRONTEND_BASE_URL}/${organizationSlug}/portal/request?email=${encodeURIComponent(
+      memberEmail,
+    )}`
+    await safeCopy(link)
+    toast({
+      title: 'Login link copied',
+      description:
+        'Share it with the member so they can sign in to the portal with their email.',
+    })
   }
 
   const startEditingName = (seat: CustomerSeat) => {
@@ -280,6 +298,17 @@ export const SeatManagementTable = ({
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                {seat.status === 'claimed' &&
+                                  memberEmail !== '—' && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleCopyLoginLink(memberEmail)
+                                      }
+                                      disabled={isSeatLoading}
+                                    >
+                                      Copy login link
+                                    </DropdownMenuItem>
+                                  )}
                                 {seat.member?.id && (
                                   <DropdownMenuItem
                                     onClick={() => startEditingName(seat)}

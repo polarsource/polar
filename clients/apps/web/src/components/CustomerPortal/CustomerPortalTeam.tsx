@@ -7,6 +7,8 @@ import {
   useRemoveCustomerPortalMember,
   useUpdateCustomerPortalMember,
 } from '@/hooks/queries/customerPortal'
+import { useSafeCopy } from '@/hooks/clipboard'
+import { CONFIG } from '@/utils/config'
 import { validateEmail } from '@/utils/validation'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { Client, schemas } from '@polar-sh/client'
@@ -31,6 +33,7 @@ import { toast } from '../Toast/use-toast'
 
 interface CustomerPortalTeamSectionProps {
   api: Client
+  organizationSlug: string
 }
 
 const roleDisplayNames: Record<string, string> = {
@@ -51,12 +54,14 @@ const roleToDisplayName = (role: string): string => {
 
 export const CustomerPortalTeamSection = ({
   api,
+  organizationSlug,
 }: CustomerPortalTeamSectionProps) => {
   const { data: members } = useCustomerPortalMembers(api)
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
   const updateMember = useUpdateCustomerPortalMember(api)
   const removeMember = useRemoveCustomerPortalMember(api)
   const addMember = useAddCustomerPortalMember(api)
+  const safeCopy = useSafeCopy(toast)
 
   const [memberToRemove, setMemberToRemove] = useState<string | null>(null)
   const [loadingMembers, setLoadingMembers] = useState<Set<string>>(new Set())
@@ -135,6 +140,18 @@ export const CustomerPortalTeamSection = ({
         return next
       })
     }
+  }
+
+  const handleCopyLoginLink = async (memberEmail: string) => {
+    const link = `${CONFIG.FRONTEND_BASE_URL}/${organizationSlug}/portal/request?email=${encodeURIComponent(
+      memberEmail,
+    )}`
+    await safeCopy(link)
+    toast({
+      title: 'Login link copied',
+      description:
+        'Share it with the member so they can sign in to the portal with their email.',
+    })
   }
 
   const handleRemoveMember = async (memberId: string) => {
@@ -273,6 +290,12 @@ export const CustomerPortalTeamSection = ({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleCopyLoginLink(member.email)}
+                              disabled={isLoading}
+                            >
+                              Copy login link
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => setMemberToRemove(member.id)}
                               disabled={isLoading}

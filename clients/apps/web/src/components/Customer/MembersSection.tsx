@@ -1,11 +1,16 @@
 'use client'
 
 import { useModal } from '@/components/Modal/useModal'
+import { toast } from '@/components/Toast/use-toast'
+import { useSafeCopy } from '@/hooks/clipboard'
 import { useMembers } from '@/hooks/queries/members'
 import { useMultipleCustomerSeats } from '@/hooks/queries/seats'
+import { CONFIG } from '@/utils/config'
+import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
 import {
   Avatar,
+  Button,
   DataTable,
   InlineModal,
   Status,
@@ -14,6 +19,12 @@ import {
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useMemo, useState } from 'react'
 import { EditMemberModal } from './EditMemberModal'
 import { seatStatusDisplayConfig } from '../Seats/seatStatus'
@@ -48,6 +59,7 @@ export const MembersSection = ({
   orders,
 }: MembersSectionProps) => {
   const { data: membersData, isLoading } = useMembers(customer.id)
+  const safeCopy = useSafeCopy(toast)
 
   const isEnabled =
     organization?.feature_settings?.member_model_enabled &&
@@ -99,6 +111,18 @@ export const MembersSection = ({
     return map
   }, [seats])
 
+  const handleCopyLoginLink = async (memberEmail: string) => {
+    const link = `${CONFIG.FRONTEND_BASE_URL}/${organization.slug}/portal/request?email=${encodeURIComponent(
+      memberEmail,
+    )}`
+    await safeCopy(link)
+    toast({
+      title: 'Login link copied',
+      description:
+        'Share it with the member so they can sign in to the customer portal with their email.',
+    })
+  }
+
   if (!isEnabled) {
     return null
   }
@@ -114,6 +138,7 @@ export const MembersSection = ({
           {
             header: 'Member',
             accessorKey: 'email',
+            size: 260,
             cell: ({ row: { original } }) => (
               <Box alignItems="center" gap="m">
                 <Avatar
@@ -175,6 +200,29 @@ export const MembersSection = ({
             accessorKey: 'created_at',
             cell: ({ row: { original } }) => (
               <FormattedDateTime datetime={original.created_at} />
+            ),
+          },
+          {
+            id: 'actions',
+            header: () => null,
+            size: 60,
+            cell: ({ row: { original } }) => (
+              <Box justifyContent="end" onClick={(e) => e.stopPropagation()}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="h-8 w-8" variant="ghost" size="icon">
+                      <MoreVertOutlined fontSize="inherit" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => handleCopyLoginLink(original.email)}
+                    >
+                      Copy login link
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </Box>
             ),
           },
         ]}

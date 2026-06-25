@@ -201,16 +201,14 @@ export const MembersSection = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    {customer.type === 'team' && (
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setSelectedMember(original)
-                          showEditMemberModal()
-                        }}
-                      >
-                        Edit member
-                      </DropdownMenuItem>
-                    )}
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSelectedMember(original)
+                        showEditMemberModal()
+                      }}
+                    >
+                      Edit member
+                    </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => copyMemberLoginLink(original.email)}
                     >

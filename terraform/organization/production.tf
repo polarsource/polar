@@ -196,11 +196,12 @@ module "production_image_resizer" {
     aws = aws
   }
 
-  function_name     = "polar-image-resizer"
-  s3_bucket         = aws_s3_bucket.production_lambda_artifacts.id
-  s3_key            = data.aws_s3_object.production_image_resizer_package.key
-  s3_object_version = data.aws_s3_object.production_image_resizer_package.version_id
-  source_bucket_arn = module.production_s3_buckets.public_files_bucket_arn
+  function_name            = "polar-image-resizer"
+  s3_bucket                = aws_s3_bucket.production_lambda_artifacts.id
+  s3_key                   = data.aws_s3_object.production_image_resizer_package.key
+  s3_object_version        = data.aws_s3_object.production_image_resizer_package.version_id
+  source_bucket_arn        = module.production_s3_buckets.public_files_bucket_arn
+  permissions_boundary_arn = module.permission_boundary_management.policy_arn
 }
 
 module "production_cloudfront_public_assets" {
@@ -328,6 +329,7 @@ module "production_github_oidc_backup" {
     lambda_artifacts = aws_iam_policy.production_lambda_artifacts_upload.arn
     e2e_reports      = aws_iam_policy.production_e2e_reports_upload.arn
   }
+  permissions_boundary_arn = module.permission_boundary_management.policy_arn
 }
 
 module "production_application_access" {

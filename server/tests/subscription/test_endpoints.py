@@ -5,7 +5,9 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
+from polar.auth.scope import Scope
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.models import (
     Customer,
@@ -17,6 +19,7 @@ from polar.models import (
 from polar.models.customer_seat import SeatStatus
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -1352,6 +1355,34 @@ class TestGetSubscription:
         )
 
         assert response.status_code == 404
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.subscriptions_read}),
+    )
+    async def test_past_due_at(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        past_due_at = datetime(2025, 6, 1, tzinfo=UTC)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+            started_at=utc_now(),
+            past_due_at=past_due_at,
+        )
+
+        response = await client.get(f"/v1/subscriptions/{subscription.id}")
+
+        assert response.status_code == 200
+        assert response.json()["past_due_at"] == past_due_at.isoformat().replace(
+            "+00:00", "Z"
+        )
 
 
 @pytest.mark.asyncio

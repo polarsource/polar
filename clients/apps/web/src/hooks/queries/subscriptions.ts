@@ -31,6 +31,7 @@ export const useSubscriptions = (
 export const useSubscription = (
   id: string,
   initialData?: schemas['Subscription'],
+  options?: { enabled?: boolean },
 ) =>
   useQuery({
     queryKey: ['subscriptions', { id }],
@@ -38,6 +39,7 @@ export const useSubscription = (
       unwrap(api.GET('/v1/subscriptions/{id}', { params: { path: { id } } })),
     retry: defaultRetry,
     initialData,
+    enabled: options?.enabled ?? true,
   })
 
 export const useSubscriptionChargePreview = (id: string) =>

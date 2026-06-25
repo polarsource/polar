@@ -92,3 +92,52 @@ resource "aws_iam_user_policy" "tasks_producer" {
   user   = aws_iam_user.tasks_producer.name
   policy = data.aws_iam_policy_document.tasks_producer.json
 }
+
+# =============================================================================
+# GitHub Actions OIDC role (builds the task-worker image and deploys it)
+# =============================================================================
+
+data "aws_iam_policy_document" "lambda_worker_deploy" {
+  statement {
+    sid       = "EcrAuthorization"
+    actions   = ["ecr:GetAuthorizationToken"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "EcrPush"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage",
+      "ecr:CompleteLayerUpload",
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:InitiateLayerUpload",
+      "ecr:PutImage",
+      "ecr:UploadLayerPart",
+    ]
+    resources = [module.lambda_worker_ecr.repository_arn]
+  }
+
+  statement {
+    sid       = "UpdateFunctionCode"
+    actions   = ["lambda:UpdateFunctionCode"]
+    resources = [module.dummy_lambda_worker.function_arn]
+  }
+}
+
+resource "aws_iam_policy" "lambda_worker_deploy" {
+  name   = "github-actions-lambda-worker-deploy"
+  policy = data.aws_iam_policy_document.lambda_worker_deploy.json
+}
+
+module "github_oidc_lambda_worker" {
+  source = "../modules/github_oidc"
+
+  role_name       = "github-actions-lambda-worker"
+  github_org      = "polarsource"
+  github_repo     = "polar"
+  github_subjects = ["ref:refs/heads/main"]
+  policy_arns = {
+    deploy = aws_iam_policy.lambda_worker_deploy.arn
+  }
+}

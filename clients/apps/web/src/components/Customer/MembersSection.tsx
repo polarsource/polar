@@ -202,6 +202,14 @@ export const MembersSection = ({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
+                      onClick={() => {
+                        setSelectedMember(original)
+                        showEditMemberModal()
+                      }}
+                    >
+                      Edit member
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
                       onClick={() => copyMemberLoginLink(original.email)}
                     >
                       Copy login link
@@ -214,13 +222,6 @@ export const MembersSection = ({
         ]}
         isLoading={isLoading}
         className="text-sm"
-        onRowClick={({ original }) => {
-          if (customer.type !== 'team') {
-            return
-          }
-          setSelectedMember(original)
-          showEditMemberModal()
-        }}
       />
       <InlineModal
         isShown={isEditMemberModalShown}

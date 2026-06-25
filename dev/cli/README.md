@@ -13,6 +13,17 @@ source ~/.zshrc  # or restart your terminal
 
 Now you can use `dev` from anywhere in the repo.
 
+## Privacy & Analytics
+
+The CLI collects anonymous usage analytics to help improve the tool. This includes:
+- Command name and flags used (secrets/tokens are automatically redacted)
+- Operating system
+- Git user name and email (for identification)
+
+To disable analytics, set either environment variable:
+- `DEV_CLI_NO_ANALYTICS=1` — Polar-specific opt-out
+- `DO_NOT_TRACK=1` — Standard privacy flag
+
 ## Commands
 
 ### Environment Setup

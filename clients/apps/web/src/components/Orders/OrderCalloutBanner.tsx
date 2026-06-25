@@ -24,7 +24,8 @@ const BannerColumn = ({
   <Box
     flexDirection="column"
     rowGap="m"
-    padding="xl"
+    paddingVertical="xl"
+    paddingHorizontal="2xl"
     borderTopWidth={divided ? { base: 1, lg: 0 } : undefined}
     borderLeftWidth={divided ? { base: 0, lg: 1 } : undefined}
     borderStyle={divided ? 'solid' : undefined}
@@ -46,7 +47,7 @@ const ColumnHeading = ({
   <Box flexDirection="column" rowGap="xs">
     <Text color="muted">{label}</Text>
     {datetime ? (
-      <Text variant="heading-xxs">
+      <Text variant="body">
         <FormattedDateTime resolution={resolution} datetime={datetime} />
       </Text>
     ) : null}
@@ -202,10 +203,10 @@ export const OrderCalloutBanner = ({
       <Box
         alignItems="center"
         columnGap="m"
-        paddingHorizontal="xl"
+        paddingHorizontal="2xl"
         paddingVertical="l"
       >
-        <Text variant="heading-xxs" as="strong">
+        <Text variant="body">
           {dunningFailed ? "Payment couldn't be recovered" : 'Payment Failed'}
         </Text>
       </Box>

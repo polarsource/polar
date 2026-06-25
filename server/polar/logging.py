@@ -1,5 +1,7 @@
 import contextvars
+import logging
 import logging.config
+import sys
 import typing
 import uuid
 from typing import Any
@@ -10,6 +12,26 @@ from logfire.integrations.structlog import LogfireProcessor
 from polar.config import settings
 
 Logger = structlog.stdlib.BoundLogger
+
+
+class VercelLoggingHandler(logging.Handler):
+    """Route WARNING+ to stderr, everything else to stdout"""
+
+    def __init__(self, level: int = logging.NOTSET) -> None:
+        super().__init__(level)
+        self._stdout = logging.StreamHandler(sys.stdout)
+        self._stderr = logging.StreamHandler(sys.stderr)
+
+    def setFormatter(self, fmt: logging.Formatter | None) -> None:
+        super().setFormatter(fmt)
+        self._stdout.setFormatter(fmt)
+        self._stderr.setFormatter(fmt)
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if record.levelno >= logging.WARNING:
+            self._stderr.emit(record)
+        else:
+            self._stdout.emit(record)
 
 
 def _map_critical_to_fatal(
@@ -59,6 +81,13 @@ class Logging[RendererType]:
     @classmethod
     def configure_stdlib(cls, *, logfire: bool) -> None:
         level = cls.get_level()
+        # On Vercel route info/debug to stdout and warnings/errors to stderr so
+        # only the latter show as [error] in the dashboard.
+        handler_class = (
+            "polar.logging.VercelLoggingHandler"
+            if settings.is_vercel()
+            else "logging.StreamHandler"
+        )
         logging.config.dictConfig(
             {
                 "version": 1,
@@ -90,7 +119,7 @@ class Logging[RendererType]:
                 "handlers": {
                     "default": {
                         "level": level,
-                        "class": "logging.StreamHandler",
+                        "class": handler_class,
                         "formatter": "polar",
                     },
                 },

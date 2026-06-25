@@ -2,14 +2,17 @@ import uuid
 from datetime import timedelta
 
 import structlog
+from sqlalchemy import update
 from sqlalchemy.orm import selectinload
 
+from polar.config import settings
 from polar.exceptions import PolarTaskError
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Subscription, SubscriptionMeter
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
+from polar.subscription.scheduler import SubscriptionJobStore
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
@@ -208,4 +211,46 @@ async def send_trial_conversion_reminder(subscription_id: uuid.UUID) -> None:
 
         await subscription_service.send_trial_conversion_reminder_email(
             session, subscription
+        )
+
+
+# Vercel replacement for SubscriptionJobStore using cron jobs,
+# because there's no primitive yet for long-running tasks that
+# can do background work without triggers
+@actor(
+    actor_name="subscription.cycle_due",
+    priority=TaskPriority.LOW,
+    cron_trigger=CronTrigger() if settings.is_vercel() else None,
+)
+async def subscription_cycle_due() -> None:
+    async with AsyncSessionMaker() as session:
+        statement = (
+            SubscriptionJobStore.scheduling_statement()
+            .where(Subscription.current_period_end <= utc_now())
+            .with_only_columns(Subscription.id)
+        )
+        result = await session.execute(statement)
+        subscription_ids = result.scalars().all()
+
+        locked_ids: set[uuid.UUID] = set()
+        if subscription_ids:
+            lock_result = await session.execute(
+                update(Subscription)
+                .where(
+                    Subscription.id.in_(subscription_ids),
+                    Subscription.scheduler_locked_at.is_(None),
+                )
+                .values(scheduler_locked_at=utc_now())
+                .returning(Subscription.id)
+            )
+            locked_ids = set(lock_result.scalars().all())
+
+    enqueued = [sid for sid in subscription_ids if sid in locked_ids]
+    for sid in enqueued:
+        enqueue_job("subscription.cycle", subscription_id=sid)
+
+    if enqueued:
+        log.info(
+            "subscription.cycle_due.enqueued",
+            count=len(enqueued),
         )

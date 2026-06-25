@@ -93,6 +93,11 @@ class JobQueueManager:
         queue_messages = defaultdict[str, list[tuple[str, Any]]](list)
         all_messages: list[tuple[str, Any]] = []
 
+        # On Vercel, VercelQueuesBroker.enqueue applies delays natively (via eta
+        # on the original queue), so we carry the delay through to enqueue rather
+        # than rewriting to a ".DQ" delay queue
+        vercel_messages: list[tuple[dramatiq.Message[Any], int | None]] = []
+
         for actor_name, args, kwargs, delay in redis_jobs:
             fn: dramatiq.Actor[Any, Any] = broker.get_actor(actor_name)
             redis_message_id = str(uuid.uuid4())
@@ -119,6 +124,12 @@ class JobQueueManager:
                 else:
                     delay = debounce_delay
 
+            if settings.is_vercel():
+                # don't use dq_name with Vercel Queues, because it has no ".DQ" queues
+                vercel_messages.append((message, delay))
+                all_messages.append((fn.actor_name, message.encode()))
+                continue
+
             # Handle delay: convert to eta and use delayed queue
             # See https://github.com/Bogdanp/dramatiq/blob/aa91cdfcfa6d8ad957ca0afe900266617f2661f8/dramatiq/brokers/stub.py#L107-L116
             if delay is not None and delay > 0:
@@ -135,12 +146,19 @@ class JobQueueManager:
             )
             all_messages.append((fn.actor_name, message.encode()))
 
-        for queue_name, messages in queue_messages.items():
-            for batch in itertools.batched(messages, FLUSH_BATCH_SIZE):
-                await self._batch_hset_messages(redis, queue_name, batch)
-                await self._batch_rpush_queue(
-                    redis, queue_name, (message_id for message_id, _ in batch)
-                )
+        if settings.is_vercel():
+            for message, delay in vercel_messages:
+                if delay is not None and delay > 0:
+                    broker.enqueue(message, delay=delay)
+                else:
+                    broker.enqueue(message)
+        else:
+            for queue_name, messages in queue_messages.items():
+                for batch in itertools.batched(messages, FLUSH_BATCH_SIZE):
+                    await self._batch_hset_messages(redis, queue_name, batch)
+                    await self._batch_rpush_queue(
+                        redis, queue_name, (message_id for message_id, _ in batch)
+                    )
 
         for actor_name, encoded_message in all_messages:
             log.debug(

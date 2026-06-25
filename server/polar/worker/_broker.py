@@ -15,6 +15,7 @@ from dramatiq.middleware.group_callbacks import GroupCallbacks
 from dramatiq.rate_limits.backends import RedisBackend as RateLimiterBackend
 from dramatiq.results import Results
 from dramatiq.results.backends import RedisBackend as ResultsBackend
+from vercel.workers.dramatiq import VercelQueuesBroker
 
 from polar.config import settings
 from polar.logfire import instrument_httpx
@@ -216,13 +217,14 @@ def get_broker(*, database: bool = True) -> dramatiq.Broker:
         middleware.CurrentMessage(),
     ]
 
-    broker = RedisBroker(
+    if settings.is_vercel():
+        return VercelQueuesBroker(middleware=middleware_list)
+
+    return RedisBroker(
         connection_pool=redis_pool,
         middleware=middleware_list,
         dead_message_ttl=3600 * 1000,  # 1 hour in milliseconds
     )
-
-    return broker
 
 
 __all__ = [

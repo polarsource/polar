@@ -23,9 +23,22 @@ const POLAR_AUTH_COOKIE_KEY =
 const ENVIRONMENT =
   process.env.VERCEL_ENV || process.env.NEXT_PUBLIC_VERCEL_ENV || 'development'
 
-const defaultFrontendHostname = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
-  ? new URL(process.env.NEXT_PUBLIC_FRONTEND_BASE_URL).hostname
-  : 'polar.sh'
+const resolveFrontendHostname = () => {
+  // Under `vc dev` everything is same-origin through the dev proxy.
+  if (process.env.VERCEL && process.env.VERCEL_ENV === 'development') {
+    return 'localhost'
+  }
+  // FRONTEND_URL is injected by Vercel as the absolute deployment URL.
+  if (process.env.FRONTEND_URL) {
+    return new URL(process.env.FRONTEND_URL).hostname
+  }
+  if (process.env.NEXT_PUBLIC_FRONTEND_BASE_URL) {
+    return new URL(process.env.NEXT_PUBLIC_FRONTEND_BASE_URL).hostname
+  }
+  return 'polar.sh'
+}
+
+const defaultFrontendHostname = resolveFrontendHostname()
 
 const S3_PUBLIC_IMAGES_BUCKET_ORIGIN = process.env
   .S3_PUBLIC_IMAGES_BUCKET_HOSTNAME
@@ -250,17 +263,23 @@ const nextConfig = {
             type: 'cookie',
             key: POLAR_AUTH_COOKIE_KEY,
           },
-          {
-            type: 'host',
-            value: defaultFrontendHostname,
-          },
+          // On Vercel everything is same origin
+          ...(process.env.VERCEL
+            ? []
+            : [
+                {
+                  type: 'host',
+                  value: defaultFrontendHostname,
+                },
+              ]),
         ],
         permanent: false,
       },
 
       // Redirect /dashboard to correct domain if on a different domain name
       // Skip in preview builds — preview env uses a single domain via Caddy proxy
-      ...(!previewBasePath
+      // and under Vercel services deployment
+      ...(!(previewBasePath || process.env.VERCEL)
         ? [
             {
               source: '/dashboard/:path*',

@@ -73,10 +73,12 @@ export const createServerSideAPI = async (
     }
   }
 
-  // Use POLAR_API_URL for server-side requests (e.g., in Docker containers)
+  // Use POLAR_API_URL or API_URL (injected by Vercel) for server-side requests (e.g., in Docker containers)
   // Fall back to NEXT_PUBLIC_API_URL for local development
   const apiUrl =
-    process.env.POLAR_API_URL || (process.env.NEXT_PUBLIC_API_URL as string)
+    process.env.POLAR_API_URL ||
+    process.env.API_URL ||
+    (process.env.NEXT_PUBLIC_API_URL as string)
 
   const client = baseCreateClient(apiUrl, token, apiHeaders)
 

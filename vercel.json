@@ -1,0 +1,49 @@
+{
+  "build": {
+    "env": {
+      "VERCEL_PYTHON_ON_HIVE": "1",
+      "VERCEL_PYTHON_COMPILEALL": "1"
+    }
+  },
+  "experimentalServices": {
+    "frontend": {
+      "type": "web",
+      "framework": "nextjs",
+      "root": "clients/apps/web",
+      "mount": "/"
+    },
+    "api": {
+      "type": "web",
+      "framework": "fastapi",
+      "root": "server",
+      "entrypoint": "polar.app:app",
+      "mount": "/api",
+      "buildCommand": "export PATH=/pnpm10/node_modules/.bin:$PATH && uv run task backoffice",
+      "preDeployCommand": "uv run --no-sync task db_migrate"
+    },
+    "worker": {
+      "type": "job",
+      "trigger": "queue",
+      "runtime": "python",
+      "root": "server",
+      "entrypoint": "polar/worker/run.py",
+      "topics": [
+        "high-priority",
+        "medium-priority",
+        "low-priority",
+        "webhooks",
+        "tinybird",
+        "invoices-and-receipts"
+      ],
+      "buildCommand": "export PATH=/pnpm10/node_modules/.bin:$PATH && uv run task emails"
+    },
+    "cron": {
+      "type": "job",
+      "trigger": "schedule",
+      "runtime": "python",
+      "root": "server",
+      "entrypoint": "polar.worker.cron:crontab",
+      "schedule": "<dynamic>"
+    }
+  }
+}

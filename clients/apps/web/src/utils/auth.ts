@@ -1,6 +1,26 @@
 import { getPublicServerURL } from '@/utils/api'
+import { CONFIG } from '@/utils/config'
 import { Client, operations, schemas } from '@polar-sh/client'
 import { redirect } from 'next/navigation'
+
+/**
+ * True when the API shares the frontend's origin.
+ *
+ * In that case the `/v1/auth/complete` route must be reached
+ * via a hard browser navigation rather than Next's client-side router, because
+ * `/v1/auth/complete` is a one-time GET.
+ */
+export const isApiSameOrigin = (): boolean => {
+  if (typeof window === 'undefined') return false
+  try {
+    return (
+      new URL(CONFIG.BASE_URL, window.location.origin).origin ===
+      window.location.origin
+    )
+  } catch {
+    return false
+  }
+}
 
 export const getGitHubAuthorizeLoginURL = (): string => {
   return `${getPublicServerURL()}/v1/auth/github/authorize`

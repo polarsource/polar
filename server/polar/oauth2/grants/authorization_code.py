@@ -185,16 +185,22 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
         else:
             result = []
 
-        # sub_type=organization must yield a single org. The frontend enforces
-        # this with a radio; a tampered request is truncated to one and logged.
-        if self.organization_request and len(result) > 1:
-            log.warning(
-                "oauth2.organization_sub_type_multiple_orgs",
-                client_id=payload.client_id,
-                user_id=str(user.id),
-                organization_ids=[str(value) for value in result],
-            )
-            result = result[:1]
+        # sub_type=organization must yield exactly one org. The radio UI enforces
+        # this client-side; defend it server-side too rather than silently
+        # widening (empty) or picking arbitrarily (>1).
+        if self.organization_request:
+            if not result:
+                raise InvalidRequestError(
+                    "sub_type=organization requires selecting an organization"
+                )
+            if len(result) > 1:
+                log.warning(
+                    "oauth2.organization_sub_type_multiple_orgs",
+                    client_id=payload.client_id,
+                    user_id=str(user.id),
+                    organization_ids=[str(value) for value in result],
+                )
+                result = [sorted(result, key=str)[0]]
 
         return result
 

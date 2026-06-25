@@ -959,6 +959,29 @@ class TestOAuth2Consent:
         assert len(authorization_code.organization_scopes) == 1
 
     @pytest.mark.auth
+    async def test_organization_sub_type_requires_an_organization(
+        self,
+        client: AsyncClient,
+        user: User,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        # sub_type=organization without a selection must not mint an unrestricted
+        # token — the server enforces it regardless of the UI.
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "organization",
+        }
+        response = await client.post(
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"] == "invalid_request"
+
+    @pytest.mark.auth
     async def test_organization_deny(
         self,
         client: AsyncClient,

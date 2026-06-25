@@ -1,9 +1,16 @@
 'use client'
 
 import { schemas } from '@polar-sh/client'
-import { Avatar, Checkbox, SegmentedControl, Text } from '@polar-sh/orbit'
+import {
+  Avatar,
+  Button,
+  Checkbox,
+  SegmentedControl,
+  Text,
+} from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useEffect, useState } from 'react'
+import CreateOrganizationForm from './components/CreateOrganizationForm'
 
 type AccessMode = 'all' | 'specific'
 
@@ -22,15 +29,23 @@ const OrganizationSelector = ({
     singleSelect ? 'specific' : 'all',
   )
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [createdOrganizations, setCreatedOrganizations] = useState<
+    schemas['AuthorizeOrganization'][]
+  >([])
+  const [creating, setCreating] = useState(
+    singleSelect && organizations.length === 0,
+  )
+
+  const allOrganizations = [...organizations, ...createdOrganizations]
+
+  // Offer creation only when the user has no organization yet — in either flow
+  // (e.g. a first-time user discovering Polar through a third-party app).
+  const showCreate = allOrganizations.length === 0
 
   // "All" is always valid; "specific" (and single-select) requires a selection.
   useEffect(() => {
     onValidityChange?.(mode === 'all' || selected.size > 0)
   }, [mode, selected, onValidityChange])
-
-  if (organizations.length === 0) {
-    return null
-  }
 
   const select = (id: string) => {
     if (singleSelect) {
@@ -48,6 +63,19 @@ const OrganizationSelector = ({
     })
   }
 
+  const onCreated = (organization: schemas['Organization']) => {
+    setCreatedOrganizations((previous) => [
+      ...previous,
+      {
+        id: organization.id,
+        slug: organization.slug,
+        avatar_url: organization.avatar_url,
+      },
+    ])
+    setSelected(new Set([organization.id]))
+    setCreating(false)
+  }
+
   return (
     <Box as="section" flexDirection="column" rowGap="m" marginBottom="l">
       <Box flexDirection="column" rowGap="xs">
@@ -61,7 +89,7 @@ const OrganizationSelector = ({
         </Text>
       </Box>
 
-      {!singleSelect && (
+      {!singleSelect && allOrganizations.length > 0 && (
         <SegmentedControl
           value={mode}
           onChange={setMode}
@@ -72,7 +100,7 @@ const OrganizationSelector = ({
         />
       )}
 
-      {mode === 'specific' && (
+      {mode === 'specific' && allOrganizations.length > 0 && (
         <Box
           flexDirection="column"
           borderRadius="m"
@@ -81,7 +109,7 @@ const OrganizationSelector = ({
           borderColor="border-primary"
           overflow="hidden"
         >
-          {organizations.map((organization, index) => (
+          {allOrganizations.map((organization, index) => (
             <Box
               as="label"
               key={organization.id}
@@ -125,6 +153,19 @@ const OrganizationSelector = ({
           ))}
         </Box>
       )}
+
+      {showCreate &&
+        (creating ? (
+          <CreateOrganizationForm onCreated={onCreated} />
+        ) : (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setCreating(true)}
+          >
+            Create a new organization
+          </Button>
+        ))}
     </Box>
   )
 }

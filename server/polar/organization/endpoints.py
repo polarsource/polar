@@ -2,7 +2,6 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from fastapi import Depends, Query, Request, Response, status
-from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import joinedload
 
 from polar.account.schemas import Account as AccountSchema
@@ -27,7 +26,6 @@ from polar.exceptions import (
     PolarRequestValidationError,
     ResourceNotFound,
 )
-from polar.file.service import file as file_service
 from polar.integrations.polar.exceptions import (
     PolarSelfPaymentMethodInUse,
 )
@@ -52,13 +50,9 @@ from polar.integrations.polar.schemas import (
 from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.http import check_url_reachable
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
-from polar.models import Account, File, Organization, UserOrganization
-from polar.models.file import FileServiceTypes
+from polar.models import Account, Organization, UserOrganization
 from polar.models.support_case import (
     SupportCase,
-    SupportCaseAudience,
-    SupportCaseMessage,
-    SupportCaseMessageAuthorKind,
 )
 from polar.models.user_organization import OrganizationRole
 from polar.openapi import APITag
@@ -68,7 +62,6 @@ from polar.organization.repository import (
 from polar.organization_review.appeal_case import (
     AppealNotRejectedError,
     CaseAlreadyExistsError,
-    CaseClosedError,
 )
 from polar.organization_review.appeal_case import (
     appeal_case as appeal_case_service,
@@ -89,15 +82,10 @@ from polar.startup_program.service import (
 )
 from polar.support_case.schemas import (
     HumanReviewRequest,
-    SupportCaseMessageCreate,
     SupportCaseNotFound,
-    SupportCaseThread,
 )
 from polar.support_case.schemas import (
     SupportCase as SupportCaseSchema,
-)
-from polar.support_case.schemas import (
-    SupportCaseMessage as SupportCaseMessageSchema,
 )
 from polar.user.service import user as user_service
 from polar.user_organization.schemas import (
@@ -776,136 +764,6 @@ async def request_human_review(
         reason=request.reason,
         requested_by_user=authz.auth_subject.subject,
     )
-
-
-@router.get(
-    "/{id}/appeal/case",
-    response_model=SupportCaseThread,
-    summary="Get Appeal Case",
-    responses={
-        200: {"description": "Appeal case thread returned."},
-        404: SupportCaseNotFound,
-    },
-    tags=[APITag.private],
-)
-async def get_appeal_case(
-    authz: AuthorizeOrgManageRead,
-    session: AsyncReadSession = Depends(get_db_read_session),
-) -> SupportCaseThread:
-    """Get the merchant's human-review case and its visible timeline."""
-    review_repository = OrganizationReviewRepository.from_session(session)
-    review = await review_repository.get_by_organization(authz.organization.id)
-    if review is None:
-        raise ResourceNotFound()
-
-    thread = await appeal_case_service.get_thread(
-        session, review, visible_to=SupportCaseAudience.merchant
-    )
-    if thread is None:
-        raise ResourceNotFound()
-
-    case, is_open, messages = thread
-    attachments = await appeal_case_service.list_attachments(
-        session, case, visible_to=SupportCaseAudience.merchant
-    )
-    return SupportCaseThread.model_validate(
-        {
-            "case": case,
-            "is_open": is_open,
-            "messages": messages,
-            "attachments": attachments,
-        }
-    )
-
-
-@router.post(
-    "/{id}/appeal/case/messages",
-    response_model=SupportCaseMessageSchema,
-    summary="Reply to Appeal Case",
-    responses={
-        200: {"description": "Reply posted."},
-        404: SupportCaseNotFound,
-        409: {
-            "description": "The case is closed.",
-            "model": CaseClosedError.schema(),
-        },
-    },
-    tags=[APITag.private],
-)
-async def reply_to_appeal_case(
-    authz: AuthorizeOrgManageUser,
-    message: SupportCaseMessageCreate,
-    session: AsyncSession = Depends(get_db_session),
-) -> SupportCaseMessage:
-    """Post a merchant reply to the human-review case.
-
-    The reply may carry free text, attachments, or both. Attachments must
-    first be uploaded through the files API with service
-    ``support_case_attachment``.
-    """
-    review_repository = OrganizationReviewRepository.from_session(session)
-    review = await review_repository.get_by_organization(authz.organization.id)
-    if review is None:
-        raise ResourceNotFound()
-
-    case = await appeal_case_service.get_case(session, review)
-    if case is None:
-        raise ResourceNotFound()
-
-    files: list[File] = []
-    for file_id in message.file_ids:
-        file = await file_service.get(session, authz.auth_subject, file_id)
-        if (
-            file is None
-            or file.organization_id != authz.organization.id
-            or not file.is_uploaded
-            or file.service != FileServiceTypes.support_case_attachment
-        ):
-            raise ResourceNotFound()
-        files.append(file)
-
-    return await appeal_case_service.add_reply(
-        session,
-        case,
-        author_kind=SupportCaseMessageAuthorKind.merchant,
-        author_user=authz.auth_subject.subject,
-        body=message.body,
-        files=files,
-    )
-
-
-@router.get(
-    "/{id}/appeal/case/attachments/{attachment_id}/download",
-    summary="Download Appeal Case Attachment",
-    responses={
-        302: {"description": "Redirect to a presigned download URL."},
-        404: SupportCaseNotFound,
-    },
-    tags=[APITag.private],
-)
-async def download_appeal_case_attachment(
-    authz: AuthorizeOrgManageRead,
-    attachment_id: UUID,
-    session: AsyncReadSession = Depends(get_db_read_session),
-) -> RedirectResponse:
-    """Redirect to a short-lived presigned URL for a merchant-visible attachment."""
-    review_repository = OrganizationReviewRepository.from_session(session)
-    review = await review_repository.get_by_organization(authz.organization.id)
-    if review is None:
-        raise ResourceNotFound()
-
-    case = await appeal_case_service.get_case(session, review)
-    if case is None:
-        raise ResourceNotFound()
-
-    attachment = await appeal_case_service.get_attachment(
-        session, case, attachment_id, visible_to=SupportCaseAudience.merchant
-    )
-    if attachment is None:
-        raise ResourceNotFound()
-
-    url, _ = file_service.generate_download_url(attachment.file)
-    return RedirectResponse(url, 302)
 
 
 @router.post(

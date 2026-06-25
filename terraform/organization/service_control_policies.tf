@@ -157,7 +157,9 @@ locals {
             Sid    = "DenyRemovingPermissionBoundary"
             Effect = "Deny"
             Action = [
+              "iam:PutRolePermissionsBoundary",
               "iam:DeleteRolePermissionsBoundary",
+              "iam:PutUserPermissionsBoundary",
               "iam:DeleteUserPermissionsBoundary",
             ]
             Resource = "*"

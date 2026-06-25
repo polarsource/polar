@@ -134,7 +134,7 @@ class ProductService:
 ```
 
 `get_accessible_org_ids` returns the set of organization IDs the subject can access:
-- For a **User**: all orgs they're a member of (via `UserOrganization`), optionally filtered by a required `permission`
+- For a **User**: all orgs they're a member of (via `UserOrganization`), intersected with `auth_subject.organization_ids` if the credential is down-scoped, optionally filtered by a required `permission`
 - For an **Organization** token: just that org's ID (permission filters are bypassed — the token represents the org itself)
 - For anything else: empty set
 

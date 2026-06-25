@@ -52751,6 +52751,13 @@
             "type": "string",
             "title": "Sub"
           },
+          "organizations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Organizations"
+          },
           "aud": {
             "type": "string",
             "title": "Aud"
@@ -52776,6 +52783,7 @@
           "scope",
           "sub_type",
           "sub",
+          "organizations",
           "aud",
           "iss",
           "exp",

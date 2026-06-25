@@ -12183,9 +12183,7 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
@@ -12544,9 +12542,7 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
@@ -16221,9 +16217,7 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
@@ -16326,7 +16320,7 @@ export interface components {
        * @description The interval at which the subscription recurs.
        * @example month
        */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
@@ -16806,9 +16800,7 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
@@ -17488,7 +17480,7 @@ export interface components {
        */
       currency: string
       /** @description The interval at which the subscription recurs. */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Current Period Start
        * Format: date-time
@@ -17747,7 +17739,7 @@ export interface components {
        * @description The interval at which the subscription recurs.
        * @example month
        */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
@@ -17991,9 +17983,7 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
@@ -19331,9 +19321,7 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
@@ -20587,7 +20575,7 @@ export interface components {
        */
       type: 'recurring'
       /** @description The recurring interval of the price. */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Minimum Amount
        * @description The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'.
@@ -20665,7 +20653,7 @@ export interface components {
        */
       type: 'recurring'
       /** @description The recurring interval of the price. */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Price Amount
        * @description The price in cents.
@@ -23453,9 +23441,7 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
@@ -23643,7 +23629,7 @@ export interface components {
        * @description The interval at which the subscription recurs.
        * @example month
        */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
@@ -27418,9 +27404,7 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
@@ -27623,7 +27607,7 @@ export interface components {
        */
       trial_interval_count?: number | null
       /** @description The recurring interval of the product. */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
@@ -28620,9 +28604,7 @@ export interface components {
        */
       description?: string | null
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.** */
-      recurring_interval?:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval?: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**
@@ -28703,6 +28685,11 @@ export interface components {
         [key: string]: string
       }
     }
+    /**
+     * RecurringInterval
+     * @enum {string}
+     */
+    RecurringInterval: 'day' | 'week' | 'month' | 'year'
     /** Refund */
     Refund: {
       /**
@@ -29658,7 +29645,7 @@ export interface components {
        * @description The interval at which the subscription recurs.
        * @example month
        */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
@@ -30750,11 +30737,6 @@ export interface components {
       /** Recurring Interval Count */
       recurring_interval_count?: number
     }
-    /**
-     * SubscriptionRecurringInterval
-     * @enum {string}
-     */
-    SubscriptionRecurringInterval: 'day' | 'week' | 'month' | 'year'
     /** SubscriptionRevoke */
     SubscriptionRevoke: {
       /**
@@ -32054,9 +32036,7 @@ export interface components {
       id: string
       /** Name */
       name: string
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /** Organization Id */
       organization_id: string | null
       organization: components['schemas']['TransactionOrganization'] | null
@@ -59782,6 +59762,9 @@ export const productVisibilityValues: ReadonlyArray<
 export const propertyAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PropertyAggregation']['func']
 > = ['avg', 'max', 'min', 'sum']
+export const recurringIntervalValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['RecurringInterval']
+> = ['day', 'week', 'month', 'year']
 export const refundReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RefundReason']
 > = [
@@ -60033,9 +60016,6 @@ export const subscriptionProrationBehaviorValues: ReadonlyArray<
 export const subscriptionReactivatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionReactivatedEvent']['name']
 > = ['subscription.reactivated']
-export const subscriptionRecurringIntervalValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['SubscriptionRecurringInterval']
-> = ['day', 'week', 'month', 'year']
 export const subscriptionRevokedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionRevokedEvent']['name']
 > = ['subscription.revoked']

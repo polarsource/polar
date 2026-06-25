@@ -5,7 +5,7 @@ import { useMemo } from 'react'
 interface AmountLabelProps {
   amount: number
   currency: string
-  interval?: schemas['SubscriptionRecurringInterval']
+  interval?: schemas['RecurringInterval']
   intervalCount?: number | null
 }
 

@@ -15,7 +15,7 @@ import { SubscriptionStatus } from './SubscriptionStatus'
 import { twMerge } from 'tailwind-merge'
 
 const formatRecurringSchedule = (
-  interval: schemas['SubscriptionRecurringInterval'],
+  interval: schemas['RecurringInterval'],
   intervalCount: number | null,
 ): string => {
   const count = intervalCount && intervalCount > 1 ? intervalCount : null

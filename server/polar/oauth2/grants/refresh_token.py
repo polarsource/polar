@@ -70,7 +70,9 @@ class RefreshTokenGrant(_RefreshTokenGrant):
                 UserOrganization.is_deleted.is_(False),
             )
         )
-        members = self.server.session.execute(statement).unique().scalars().all()
+        members = (
+            self.server.session.execute(statement.limit(2)).unique().scalars().all()
+        )
         if len(members) == 1:
             return members[0]
         return None

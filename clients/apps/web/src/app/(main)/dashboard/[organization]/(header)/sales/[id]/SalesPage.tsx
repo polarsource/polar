@@ -33,8 +33,7 @@ import { ArrowUpRightIcon } from 'lucide-react'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
-import { DataTable, type DataTableColumnDef } from '@polar-sh/orbit'
-import type { Row } from '@tanstack/react-table'
+import { DataTable, Truncated, type DataTableColumnDef } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Status } from '@polar-sh/orbit'
@@ -59,9 +58,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
     organization.id,
     { order_id: _order.id },
   )
-  const hasDeclinedPayment = (payments?.items ?? []).some(
-    (payment) => payment.decline_reason || payment.decline_message,
-  )
   const { data: refunds, isLoading: refundsLoading } = useRefunds(_order.id)
   const { data: disputes, isLoading: disputesLoading } = useDisputes(
     organization.id,
@@ -79,6 +75,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   // Seat management for seat-based orders (view-only)
   const hasSeatBasedOrder = !!order?.seats && order.seats > 0
+
+  const hasDeclinedPayment = (payments?.items ?? []).some(
+    (payment) => payment.decline_reason || payment.decline_message,
+  )
 
   const { data: seatsData, isLoading: isLoadingSeats } = useOrganizationSeats(
     hasSeatBasedOrder ? { orderId: order?.id } : undefined,
@@ -419,35 +419,25 @@ const ClientPage: React.FC<ClientPageProps> = ({
               ),
             },
             ...(hasDeclinedPayment
-              ? [
+              ? ([
                   {
                     accessorKey: 'decline_reason',
-                    header: 'Decline Reason',
-                    cell: ({
-                      row: {
-                        original: { decline_message, decline_reason },
-                      },
-                    }: {
-                      row: Row<schemas['Payment']>
-                    }) => {
-                      const reason = decline_message || decline_reason
+                    header: 'Bank Decline Reason',
+                    cell: ({ row: { original } }) => {
+                      const reason =
+                        original.decline_message || original.decline_reason
                       return reason ? (
-                        <span
-                          className="block max-w-xs truncate text-sm"
-                          title={reason}
-                        >
-                          {reason}
-                        </span>
+                        <Truncated>
+                          <span className="text-sm">{reason}</span>
+                        </Truncated>
                       ) : (
-                        <span className="text-gray-400 dark:text-polar-500">
-                          —
-                        </span>
+                        '—'
                       )
                     },
                   },
-                ]
+                ] satisfies DataTableColumnDef<schemas['Payment']>[])
               : []),
-          ] satisfies DataTableColumnDef<schemas['Payment']>[]}
+          ]}
           data={payments?.items ?? []}
         />
       </div>

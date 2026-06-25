@@ -46,6 +46,9 @@ interface FormSchema {
   currentlySellingOn: string[]
 }
 
+const MIN_LENGTH = 30
+const MAX_LENGTH = 3000
+
 export function ProductDetailsStep() {
   const router = useRouter()
   const { setUserOrganizations } = useAuth()
@@ -230,6 +233,14 @@ export function ProductDetailsStep() {
     }
   }
 
+  const charCount = productDescription?.length ?? 0
+
+  const counterColor = useMemo(() => {
+    if (charCount > MAX_LENGTH) return 'danger'
+    if (charCount > 0 && charCount < MIN_LENGTH) return 'warning'
+    return 'muted'
+  }, [charCount])
+
   return (
     <OnboardingShell
       title="Product Details"
@@ -272,7 +283,12 @@ export function ProductDetailsStep() {
                     style={{ fieldSizing: 'content' } as React.CSSProperties}
                   />
                 </FormControl>
-                <FormMessage />
+                <Box alignItems="center" justifyContent="between" columnGap="s">
+                  <FormMessage />
+                  <Text variant="caption" color={counterColor}>
+                    {charCount}/{MAX_LENGTH} (min {MIN_LENGTH})
+                  </Text>
+                </Box>
               </FormItem>
             )}
           />
@@ -387,7 +403,7 @@ export function ProductDetailsStep() {
                 blockedSelected.length > 0 ||
                 sellingCategories.length === 0 ||
                 pricingModel.length === 0 ||
-                productDescription.trim().length < 30
+                productDescription.trim().length < MIN_LENGTH
               }
               fullWidth
             >
@@ -396,7 +412,7 @@ export function ProductDetailsStep() {
 
             {aup.verdict &&
               aup.history.length >= 2 &&
-              productDescription.trim().length > 30 &&
+              productDescription.trim().length >= MIN_LENGTH &&
               !aup.isValidating && (
                 <>
                   <Button

@@ -236,7 +236,7 @@ module "sandbox" {
 
   worker_sqs_config = {
     enabled               = "true"
-    actors                = jsonencode(["dummy"])
+    actors                = var.worker_sqs_actors
     queue_prefix          = "polar-sandbox-tasks"
     aws_access_key_id     = aws_iam_access_key.tasks_producer.id
     aws_secret_access_key = aws_iam_access_key.tasks_producer.secret

@@ -1,3 +1,7 @@
+data "aws_iam_policy" "permission_boundary" {
+  name = "PolarPermissionBoundary"
+}
+
 module "lambda_worker_ecr" {
   source = "../modules/ecr_repository"
 
@@ -23,14 +27,15 @@ resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
 module "dummy_lambda_worker" {
   source = "../modules/aws_task_worker"
 
-  environment          = "sandbox"
-  name                 = "dummy"
-  queue_name           = "polar-sandbox-tasks-dummy"
-  image_uri            = "${module.lambda_worker_ecr.repository_url}:latest"
-  enabled              = true
-  reserved_concurrency = null
-  subnet_ids           = local.lambda_subnet_ids
-  security_group_ids   = local.lambda_security_group_ids
+  environment              = "sandbox"
+  name                     = "dummy"
+  queue_name               = "polar-sandbox-tasks-dummy"
+  image_uri                = "${module.lambda_worker_ecr.repository_url}:latest"
+  enabled                  = true
+  reserved_concurrency     = null
+  subnet_ids               = local.lambda_subnet_ids
+  security_group_ids       = local.lambda_security_group_ids
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
 
   environment_variables = {
     POLAR_ENV                     = "sandbox"
@@ -142,4 +147,5 @@ module "github_oidc_lambda_worker" {
   policy_arns = {
     deploy = aws_iam_policy.lambda_worker_deploy.arn
   }
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
 }

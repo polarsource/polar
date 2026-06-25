@@ -5,6 +5,7 @@ locals {
     "arn:aws:iam::*:role/${var.member_account_bootstrap_role_name}",
     "arn:aws:iam::*:role/${local.terraform_cloud.role_name}",
     "arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/*AWSReservedSSO_PolarAdmin*",
+    "arn:aws:iam::*:role/aws-service-role/sso.amazonaws.com/AWSServiceRoleForSSO",
   ]
 
   service_control_policies = {
@@ -130,10 +131,10 @@ locals {
         Version = "2012-10-17"
         Statement = [
           {
-            Sid         = "RequireBoundaryOnRoleCreation"
-            Effect      = "Deny"
-            Action      = "iam:CreateRole"
-            NotResource = ["arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/*"]
+            Sid      = "RequireBoundaryOnRoleCreation"
+            Effect   = "Deny"
+            Action   = "iam:CreateRole"
+            Resource = "*"
             Condition = {
               ArnNotLike = {
                 "iam:PermissionsBoundary" = "arn:aws:iam::*:policy/${local.permission_boundary_policy_name}"

@@ -56,7 +56,6 @@ data "aws_iam_policy_document" "boundary" {
       "iam:AttachRolePolicy",
       "iam:DeleteRolePolicy",
       "iam:DetachRolePolicy",
-      "iam:PassRole",
       "iam:PutRolePolicy",
       "iam:UpdateAssumeRolePolicy",
     ]
@@ -70,9 +69,12 @@ data "aws_iam_policy_document" "boundary" {
   }
 
   statement {
-    sid           = "DenyAssumingNonPolarRoles"
-    effect        = "Deny"
-    actions       = ["sts:AssumeRole"]
+    sid    = "DenyAssumingOrPassingNonPolarRoles"
+    effect = "Deny"
+    actions = [
+      "sts:AssumeRole",
+      "iam:PassRole",
+    ]
     not_resources = ["arn:${data.aws_partition.current.partition}:iam::*:role/polar-*"]
   }
 

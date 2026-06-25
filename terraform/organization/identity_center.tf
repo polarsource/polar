@@ -26,8 +26,8 @@ locals {
     }
     engineering = {
       base_name          = "PolarEngineering"
-      description        = "Administrator access confined by the Polar permission boundary."
-      managed_policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+      description        = "Power-user access (no IAM/Organizations management) confined by the Polar permission boundary."
+      managed_policy_arn = "arn:aws:iam::aws:policy/PowerUserAccess"
       boundary           = true
       groups             = ["awsengineers", "engineering"]
     }

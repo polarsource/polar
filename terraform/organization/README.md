@@ -62,7 +62,7 @@ across all accounts:
 | Group                                            | Permission set              | Access                                              |
 | ------------------------------------------------ | --------------------------- | --------------------------------------------------- |
 | `awsadmins@polar.sh`                             | `PolarAdmin<Account>`       | Unrestricted administrator                          |
-| `awsengineers@polar.sh`, `engineering@polar.sh`  | `PolarEngineering<Account>` | Administrator, bounded by `PolarPermissionBoundary` |
+| `awsengineers@polar.sh`, `engineering@polar.sh`  | `PolarEngineering<Account>` | Power-user (no IAM/Organizations), bounded by `PolarPermissionBoundary` |
 | `awsaccess@polar.sh`                             | `PolarReadOnly<Account>`    | Read-only                                           |
 
 Group membership is not managed here; manage it in the Identity Center console or via SCIM from

@@ -426,14 +426,10 @@ class TestOAuth2Authorize:
         assert response.status_code == 400
 
     @pytest.mark.auth
-    @pytest.mark.parametrize(
-        ("input_sub_type", "expected_sub_type"),
-        [("user", "user"), (None, "organization"), ("organization", "organization")],
-    )
+    @pytest.mark.parametrize("input_sub_type", [None, "user", "organization"])
     async def test_authenticated(
         self,
         input_sub_type: str | None,
-        expected_sub_type: str,
         client: AsyncClient,
         oauth2_client: OAuth2Client,
     ) -> None:
@@ -452,7 +448,8 @@ class TestOAuth2Authorize:
         json = response.json()
         assert json["client"]["client_id"] == oauth2_client.client_id
         assert set(json["scopes"]) == {"openid", "profile", "email"}
-        assert json["sub_type"] == expected_sub_type
+        # The OAuth server only issues user tokens now, regardless of sub_type.
+        assert json["sub_type"] == "user"
 
     @pytest.mark.auth
     async def test_dynamically_registered_client_defaults_to_user(
@@ -693,121 +690,6 @@ class TestOAuth2Authorize:
         assert "error=consent_required" in location
 
     @pytest.mark.auth
-    @pytest.mark.parametrize("scope", ["openid", "openid profile email"])
-    async def test_granted_organization(
-        self,
-        scope: str,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-        oauth2_client: OAuth2Client,
-    ) -> None:
-        await create_oauth2_grant(
-            save_fixture,
-            client=oauth2_client,
-            organization=organization,
-            scopes=["openid", "profile", "email"],
-        )
-        params = {
-            "client_id": oauth2_client.client_id,
-            "response_type": "code",
-            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
-            "scope": scope,
-            "sub_type": "organization",
-            "sub": str(organization.id),
-        }
-        response = await client.get("/v1/oauth2/authorize", params=params)
-
-        assert response.status_code == 302
-        location = response.headers["location"]
-        assert location.startswith(params["redirect_uri"])
-        assert "code=" in location
-
-    @pytest.mark.auth
-    async def test_granted_organization_prompt_consent(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-        oauth2_client: OAuth2Client,
-    ) -> None:
-        await create_oauth2_grant(
-            save_fixture,
-            client=oauth2_client,
-            organization=organization,
-            scopes=["openid", "profile", "email"],
-        )
-        params = {
-            "client_id": oauth2_client.client_id,
-            "response_type": "code",
-            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
-            "scope": "openid profile email",
-            "sub_type": "organization",
-            "sub": str(organization.id),
-            "prompt": "consent",
-        }
-        response = await client.get("/v1/oauth2/authorize", params=params)
-
-        json = response.json()
-        assert json["client"]["client_id"] == oauth2_client.client_id
-        assert set(json["scopes"]) == {"openid", "profile", "email"}
-
-    @pytest.mark.auth
-    async def test_not_granted_organization_prompt_none(
-        self,
-        client: AsyncClient,
-        oauth2_client: OAuth2Client,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        params = {
-            "client_id": oauth2_client.client_id,
-            "response_type": "code",
-            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
-            "scope": "openid profile email",
-            "prompt": "none",
-            "sub_type": "organization",
-            "sub": str(organization.id),
-        }
-        response = await client.get("/v1/oauth2/authorize", params=params)
-
-        assert response.status_code == 302
-        location = response.headers["location"]
-        assert "error=consent_required" in location
-
-    @pytest.mark.auth
-    async def test_organization_list_excludes_member_without_manage(
-        self,
-        client: AsyncClient,
-        user: User,
-        organization: Organization,
-        oauth2_client: OAuth2Client,
-        save_fixture: SaveFixture,
-    ) -> None:
-        await save_fixture(
-            UserOrganization(
-                user=user,
-                organization=organization,
-                role=OrganizationRole.member,
-            )
-        )
-        params = {
-            "client_id": oauth2_client.client_id,
-            "response_type": "code",
-            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
-            "scope": "openid profile email",
-            "sub_type": "organization",
-        }
-        response = await client.get("/v1/oauth2/authorize", params=params)
-
-        assert response.status_code == 200
-        json = response.json()
-        org_ids = {o["id"] for o in (json.get("organizations") or [])}
-        assert str(organization.id) not in org_ids
-
-    @pytest.mark.auth
     async def test_user_response_includes_organizations_field(
         self,
         client: AsyncClient,
@@ -981,56 +863,7 @@ class TestOAuth2Consent:
         ] == [organization.id]
 
     @pytest.mark.auth
-    async def test_organization_missing_sub(
-        self,
-        client: AsyncClient,
-        user: User,
-        organization: Organization,
-        oauth2_client: OAuth2Client,
-        sync_session: Session,
-    ) -> None:
-        params = {
-            "client_id": oauth2_client.client_id,
-            "response_type": "code",
-            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
-            "scope": "openid profile email",
-            "sub_type": "organization",
-        }
-        response = await client.post(
-            "/v1/oauth2/consent", params=params, data={"action": "allow"}
-        )
-
-        assert response.status_code == 400
-        json = response.json()
-        assert json["error"] == "invalid_sub"
-
-    @pytest.mark.auth
-    async def test_organization_not_member(
-        self,
-        client: AsyncClient,
-        user: User,
-        organization: Organization,
-        oauth2_client: OAuth2Client,
-        sync_session: Session,
-    ) -> None:
-        params = {
-            "client_id": oauth2_client.client_id,
-            "response_type": "code",
-            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
-            "scope": "openid profile email",
-            "sub_type": "organization",
-            "sub": str(organization.id),
-        }
-        response = await client.post(
-            "/v1/oauth2/consent", params=params, data={"action": "allow"}
-        )
-
-        assert response.status_code == 400
-        json = response.json()
-        assert json["error"] == "invalid_sub"
-
-    @pytest.mark.auth
-    async def test_organization_member_without_manage_forbidden(
+    async def test_organization_sub_type_issues_user_down_scope(
         self,
         client: AsyncClient,
         user: User,
@@ -1039,6 +872,8 @@ class TestOAuth2Consent:
         save_fixture: SaveFixture,
         sync_session: Session,
     ) -> None:
+        # sub_type=organization now mints a USER code down-scoped to the picked
+        # org (chosen via `organizations`, not `sub`), not an organization code.
         await save_fixture(
             UserOrganization(
                 user=user,
@@ -1052,18 +887,32 @@ class TestOAuth2Consent:
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
             "scope": "openid profile email",
             "sub_type": "organization",
-            "sub": str(organization.id),
+            "organizations": str(organization.id),
         }
         response = await client.post(
             "/v1/oauth2/consent", params=params, data={"action": "allow"}
         )
 
-        assert response.status_code == 400
-        json = response.json()
-        assert json["error"] == "invalid_sub"
+        assert response.status_code == 302
+        code = parse_qs(urlparse(response.headers["location"]).query)["code"][0]
+
+        authorization_code = (
+            sync_session.execute(
+                select(OAuth2AuthorizationCode).where(
+                    OAuth2AuthorizationCode.code
+                    == get_token_hash(code, secret=settings.SECRET)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert authorization_code.sub_type == SubType.user
+        assert [
+            scope.organization_id for scope in authorization_code.organization_scopes
+        ] == [organization.id]
 
     @pytest.mark.auth
-    async def test_organization_manage_in_other_org_forbidden(
+    async def test_organization_sub_type_keeps_single_org_on_multiple(
         self,
         client: AsyncClient,
         user: User,
@@ -1073,28 +922,41 @@ class TestOAuth2Consent:
         save_fixture: SaveFixture,
         sync_session: Session,
     ) -> None:
-        await save_fixture(
-            UserOrganization(
-                user=user,
-                organization=organization_second,
-                role=OrganizationRole.owner,
+        # Defensive fallback: sub_type=organization with >1 orgs (URL tampering)
+        # keeps only one.
+        for org in (organization, organization_second):
+            await save_fixture(
+                UserOrganization(
+                    user=user, organization=org, role=OrganizationRole.member
+                )
             )
-        )
         params = {
             "client_id": oauth2_client.client_id,
             "response_type": "code",
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
             "scope": "openid profile email",
             "sub_type": "organization",
-            "sub": str(organization.id),
+            "organizations": [str(organization.id), str(organization_second.id)],
         }
         response = await client.post(
             "/v1/oauth2/consent", params=params, data={"action": "allow"}
         )
 
-        assert response.status_code == 400
-        json = response.json()
-        assert json["error"] == "invalid_sub"
+        assert response.status_code == 302
+        code = parse_qs(urlparse(response.headers["location"]).query)["code"][0]
+
+        authorization_code = (
+            sync_session.execute(
+                select(OAuth2AuthorizationCode).where(
+                    OAuth2AuthorizationCode.code
+                    == get_token_hash(code, secret=settings.SECRET)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert authorization_code.sub_type == SubType.user
+        assert len(authorization_code.organization_scopes) == 1
 
     @pytest.mark.auth
     async def test_organization_deny(
@@ -1120,41 +982,6 @@ class TestOAuth2Consent:
         assert response.status_code == 302
         location = response.headers["location"]
         assert "error=access_denied" in location
-
-    @pytest.mark.auth
-    async def test_organization_allow(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-        oauth2_client: OAuth2Client,
-        sync_session: Session,
-    ) -> None:
-        params = {
-            "client_id": oauth2_client.client_id,
-            "response_type": "code",
-            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
-            "scope": "openid profile email",
-            "sub_type": "organization",
-            "sub": str(organization.id),
-        }
-        response = await client.post(
-            "/v1/oauth2/consent", params=params, data={"action": "allow"}
-        )
-
-        assert response.status_code == 302
-        location = response.headers["location"]
-        assert location.startswith(params["redirect_uri"])
-        assert "code=" in location
-
-        grant = oauth2_grant_service._get_by_sub_and_client_id(
-            sync_session,
-            sub_type=SubType.organization,
-            sub_id=organization.id,
-            client_id=oauth2_client.client_id,
-        )
-        assert grant is not None
-        assert grant.scopes == ["openid", "profile", "email"]
 
 
 @pytest.mark.asyncio

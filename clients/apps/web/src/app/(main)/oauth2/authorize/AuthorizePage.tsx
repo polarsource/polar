@@ -9,18 +9,6 @@ import { useState } from 'react'
 import OrganizationSelector from './OrganizationSelector'
 import SharedLayout from './components/SharedLayout'
 
-const isSubTypeOrganization = (
-  sub_type: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _sub: schemas['AuthorizeUser'] | schemas['AuthorizeOrganization'],
-): _sub is schemas['AuthorizeOrganization'] => sub_type === 'organization'
-
-const isSubTypeUser = (
-  sub_type: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _sub: schemas['AuthorizeUser'] | schemas['AuthorizeOrganization'],
-): _sub is schemas['AuthorizeUser'] => sub_type === 'user'
-
 const groupScopes = (scopes: schemas['Scope'][]) => {
   return scopes.reduce<Record<string, schemas['Scope'][]>>((acc, scope) => {
     const key = scope.split(':')[0]
@@ -36,16 +24,13 @@ const AuthorizePage = ({
   authorizeResponse: {
     client,
     scopes,
-    sub_type,
     sub,
     scope_display_names,
     organizations,
   },
   searchParams,
 }: {
-  authorizeResponse:
-    | schemas['AuthorizeResponseUser']
-    | schemas['AuthorizeResponseOrganization']
+  authorizeResponse: schemas['AuthorizeResponseUser']
   searchParams: Record<string, string>
 }) => {
   const serializedSearchParams = new URLSearchParams(searchParams).toString()
@@ -54,46 +39,32 @@ const AuthorizePage = ({
   const clientName = client.client_name || client.client_id
   const hasTerms = client.policy_uri || client.tos_uri
 
+  // sub_type=organization keeps working, but now issues a user token forced to a
+  // single org — surfaced here as a single-select picker.
+  const singleOrganization = searchParams.sub_type === 'organization'
+
   const [canSubmit, setCanSubmit] = useState(true)
 
   return (
     <SharedLayout
       client={client}
       introduction={
-        <>
-          {sub && isSubTypeOrganization(sub_type, sub) && (
-            <>
-              <div className="dark:text-polar-400 w-full text-center text-lg text-gray-600">
-                <span className="font-medium">{clientName}</span> requests the
-                following permissions to your Polar organization.
-              </div>
-              <div className="dark:border-polar-700 dark:bg-polar-800 mt-6 mb-0 inline-flex flex-row items-center justify-start gap-2 rounded-2xl border border-gray-100 bg-gray-50 p-2 pr-4 text-sm">
-                <Avatar
-                  className="h-8 w-8"
-                  avatar_url={sub.avatar_url}
-                  name={sub.slug}
-                />
-                {sub.slug}
-              </div>
-            </>
-          )}
-          {sub && isSubTypeUser(sub_type, sub) && (
-            <>
-              <div className="dark:text-polar-400 w-full text-center text-lg text-gray-600">
-                <span className="font-medium">{clientName}</span> requests the
-                following permissions to your personal Polar account.
-              </div>
-              <div className="dark:border-polar-700 dark:bg-polar-800 mt-6 mb-0 inline-flex flex-row items-center justify-start gap-2 rounded-2xl border border-gray-100 bg-gray-50 p-2 pr-4 text-sm">
-                <Avatar
-                  className="h-8 w-8"
-                  avatar_url={sub.avatar_url}
-                  name={sub.email}
-                />
-                {sub.email}
-              </div>
-            </>
-          )}
-        </>
+        sub && (
+          <>
+            <div className="dark:text-polar-400 w-full text-center text-lg text-gray-600">
+              <span className="font-medium">{clientName}</span> requests the
+              following permissions to your personal Polar account.
+            </div>
+            <div className="dark:border-polar-700 dark:bg-polar-800 mt-6 mb-0 inline-flex flex-row items-center justify-start gap-2 rounded-2xl border border-gray-100 bg-gray-50 p-2 pr-4 text-sm">
+              <Avatar
+                className="h-8 w-8"
+                avatar_url={sub.avatar_url}
+                name={sub.email}
+              />
+              {sub.email}
+            </div>
+          </>
+        )
       }
     >
       <form method="post" action={actionURL}>
@@ -123,12 +94,11 @@ const AuthorizePage = ({
           </List>
         </div>
 
-        {sub_type === 'user' && (
-          <OrganizationSelector
-            organizations={organizations}
-            onValidityChange={setCanSubmit}
-          />
-        )}
+        <OrganizationSelector
+          organizations={organizations}
+          singleSelect={singleOrganization}
+          onValidityChange={setCanSubmit}
+        />
 
         <div className="flex w-full flex-col gap-3">
           <Button

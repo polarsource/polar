@@ -9,15 +9,21 @@ type AccessMode = 'all' | 'specific'
 
 const OrganizationSelector = ({
   organizations,
+  singleSelect = false,
   onValidityChange,
 }: {
   organizations: schemas['AuthorizeOrganization'][]
+  // sub_type=organization issues a user token forced to one org: lock to
+  // "specific", pick exactly one with radios, and require a selection.
+  singleSelect?: boolean
   onValidityChange?: (valid: boolean) => void
 }) => {
-  const [mode, setMode] = useState<AccessMode>('all')
+  const [mode, setMode] = useState<AccessMode>(
+    singleSelect ? 'specific' : 'all',
+  )
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
-  // "Specific" requires at least one organization; "All" is always valid.
+  // "All" is always valid; "specific" (and single-select) requires a selection.
   useEffect(() => {
     onValidityChange?.(mode === 'all' || selected.size > 0)
   }, [mode, selected, onValidityChange])
@@ -26,7 +32,11 @@ const OrganizationSelector = ({
     return null
   }
 
-  const toggle = (id: string) => {
+  const select = (id: string) => {
+    if (singleSelect) {
+      setSelected(new Set([id]))
+      return
+    }
     setSelected((previous) => {
       const next = new Set(previous)
       if (next.has(id)) {
@@ -43,20 +53,24 @@ const OrganizationSelector = ({
       <Box flexDirection="column" rowGap="xs">
         <Text variant="label">Organization access</Text>
         <Text variant="caption" color="muted">
-          {mode === 'all'
-            ? 'This token can access every organization you belong to, including ones you join later.'
-            : 'This token can access only the organizations you select below.'}
+          {singleSelect
+            ? 'This token is limited to the organization you select below.'
+            : mode === 'all'
+              ? 'This token can access every organization you belong to, including ones you join later.'
+              : 'This token can access only the organizations you select below.'}
         </Text>
       </Box>
 
-      <SegmentedControl
-        value={mode}
-        onChange={setMode}
-        options={[
-          { value: 'all', label: 'All organizations' },
-          { value: 'specific', label: 'Specific organizations' },
-        ]}
-      />
+      {!singleSelect && (
+        <SegmentedControl
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: 'all', label: 'All organizations' },
+            { value: 'specific', label: 'Specific organizations' },
+          ]}
+        />
+      )}
 
       {mode === 'specific' && (
         <Box
@@ -84,12 +98,23 @@ const OrganizationSelector = ({
               transitionDuration="fast"
               cursor={{ hover: 'pointer' }}
             >
-              <Checkbox
-                name="organizations"
-                value={organization.id}
-                checked={selected.has(organization.id)}
-                onCheckedChange={() => toggle(organization.id)}
-              />
+              {singleSelect ? (
+                <input
+                  type="radio"
+                  name="organizations"
+                  value={organization.id}
+                  checked={selected.has(organization.id)}
+                  onChange={() => select(organization.id)}
+                  className="h-4 w-4 accent-black dark:accent-white"
+                />
+              ) : (
+                <Checkbox
+                  name="organizations"
+                  value={organization.id}
+                  checked={selected.has(organization.id)}
+                  onCheckedChange={() => select(organization.id)}
+                />
+              )}
               <Avatar
                 className="h-6 w-6"
                 avatar_url={organization.avatar_url}

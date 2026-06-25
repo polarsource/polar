@@ -29,6 +29,7 @@ from polar.organization_review.appeal_case import (
 from polar.postgres import AsyncSession
 from polar.support_case.repository import SupportCaseMessageRepository
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_organization_review
 
 REASON = "Please reconsider — here is the additional context for the review."
 
@@ -48,19 +49,14 @@ async def denied_review_with_case(
     organization.status = OrganizationStatus.DENIED
     await save_fixture(organization)
 
-    review = OrganizationReview(
-        organization_id=organization.id,
-        verdict=OrganizationReview.Verdict.FAIL,
-        risk_score=90.0,
-        violated_sections=[],
-        reason="Automated review denied.",
-        model_used="test",
+    review = await create_organization_review(
+        save_fixture,
+        organization,
         appeal_submitted_at=datetime.now(UTC),
         appeal_reason="My earlier appeal text.",
         appeal_reviewed_at=datetime.now(UTC),
         appeal_decision=OrganizationReview.AppealDecision.REJECTED,
     )
-    await save_fixture(review)
 
     case = await appeal_case_service.request_human_review(
         session,

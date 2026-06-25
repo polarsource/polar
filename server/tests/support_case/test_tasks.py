@@ -9,13 +9,10 @@ from pytest_mock import MockerFixture
 from polar.models import (
     Customer,
     Organization,
-    OrganizationReview,
     Product,
     UserOrganization,
 )
 from polar.models.support_case import (
-    DisputeSupportCase,
-    ReviewAppealSupportCase,
     SupportCase,
     SupportCaseAudience,
     SupportCaseMessage,
@@ -26,9 +23,8 @@ from polar.postgres import AsyncSession
 from polar.support_case.tasks import notify_organization_of_new_message
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    create_dispute,
-    create_order,
-    create_payment,
+    create_appeal_case,
+    create_dispute_case,
 )
 
 # Unwrap to bypass the actor decorator (which needs the Dramatiq broker).
@@ -38,39 +34,6 @@ _notify = notify_organization_of_new_message.__wrapped__  # type: ignore[attr-de
 @contextlib.asynccontextmanager
 async def _session_maker(session: AsyncSession) -> AsyncIterator[AsyncSession]:
     yield session
-
-
-async def _appeal_case(
-    save_fixture: SaveFixture, organization: Organization
-) -> ReviewAppealSupportCase:
-    review = OrganizationReview(
-        organization_id=organization.id,
-        verdict=OrganizationReview.Verdict.FAIL,
-        risk_score=90.0,
-        violated_sections=[],
-        reason="denied",
-        model_used="test",
-    )
-    await save_fixture(review)
-    case = ReviewAppealSupportCase(
-        organization_review=review, organization=organization
-    )
-    await save_fixture(case)
-    return case
-
-
-async def _dispute_case(
-    save_fixture: SaveFixture,
-    organization: Organization,
-    customer: Customer,
-    product: Product,
-) -> DisputeSupportCase:
-    order = await create_order(save_fixture, customer=customer, product=product)
-    payment = await create_payment(save_fixture, organization, order=order)
-    dispute = await create_dispute(save_fixture, order, payment)
-    case = DisputeSupportCase(dispute=dispute, organization=organization)
-    await save_fixture(case)
-    return case
 
 
 async def _message(
@@ -102,7 +65,7 @@ class TestNotifyOrganization:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        case = await _appeal_case(save_fixture, organization)
+        case = await create_appeal_case(save_fixture, organization)
         message = await _message(
             save_fixture,
             case,
@@ -136,7 +99,7 @@ class TestNotifyOrganization:
         user_organization: UserOrganization,
     ) -> None:
         # No merchant-facing dispute thread yet, so its emails are gated off.
-        case = await _dispute_case(save_fixture, organization, customer, product)
+        case = await create_dispute_case(save_fixture, organization, customer, product)
         message = await _message(
             save_fixture,
             case,
@@ -161,7 +124,7 @@ class TestNotifyOrganization:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        case = await _appeal_case(save_fixture, organization)
+        case = await create_appeal_case(save_fixture, organization)
         message = await _message(
             save_fixture,
             case,

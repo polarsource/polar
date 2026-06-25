@@ -3,12 +3,14 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, Request
 from tagflow import tag, text
 
+from polar.exceptions import PolarError
 from polar.observability.http_metrics import exclude_app_from_metrics
 
 from .benefits.endpoints import router as benefits_router
 from .customers.endpoints import router as customers_router
 from .dependencies import get_admin
 from .email_logs.endpoints import router as email_logs_router
+from .exception_handlers import backoffice_polar_exception_handler
 from .external_events.endpoints import router as external_events_router
 from .feedbacks.endpoints import router as feedbacks_router
 from .impersonation.endpoints import router as impersonation_router
@@ -38,6 +40,8 @@ app = FastAPI(
 exclude_app_from_metrics(app)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(TagflowMiddleware)
+
+app.add_exception_handler(PolarError, backoffice_polar_exception_handler)
 
 
 app.mount(

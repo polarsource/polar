@@ -23,13 +23,14 @@ from polar.config import settings
 from polar.kit.crypto import generate_token, get_token_hash
 from polar.models import (
     OAuth2AuthorizationCode,
+    OAuth2AuthorizationCodeOrganization,
     OAuth2Client,
     Organization,
     User,
 )
 
 from ..constants import AUTHORIZATION_CODE_PREFIX, JWT_CONFIG
-from ..requests import StarletteOAuth2Request
+from ..requests import StarletteOAuth2Payload, StarletteOAuth2Request
 from ..service.oauth2_grant import oauth2_grant as oauth2_grant_service
 from ..sub_type import SubType, SubTypeValue
 from ..userinfo import UserInfo, generate_user_info
@@ -52,6 +53,9 @@ def _exists_nonce(
 class SubTypeGrantMixin:
     sub_type: SubType | None = None
     sub: User | Organization | None = None
+    # Down-scope of the session authenticating the consent; bounds the orgs the
+    # issued token may be scoped to. ``None`` means an unrestricted session.
+    session_organization_ids: frozenset[uuid.UUID] | None = None
 
 
 class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
@@ -121,9 +125,59 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
         )
         authorization_code.sub = self.sub
 
+        if self.sub_type == SubType.user:
+            authorization_code.organization_scopes = [
+                OAuth2AuthorizationCodeOrganization(organization_id=organization_id)
+                for organization_id in self._resolve_organization_ids(
+                    typing.cast(User, self.sub), payload
+                )
+            ]
+
         self.server.session.add(authorization_code)
         self.server.session.flush()
         return authorization_code
+
+    def _resolve_organization_ids(
+        self, user: User, payload: StarletteOAuth2Payload
+    ) -> list[uuid.UUID]:
+        """Organizations the issued token is down-scoped to.
+
+        The consent-time selection, validated against the orgs the
+        authenticating session can access (membership intersected with the
+        session's own down-scope). An empty selection inherits the session's
+        down-scope, so a token can never be broader than its session.
+        """
+        member_organization_ids = set(
+            self.server.session.execute(select_user_org_ids(user.id)).scalars().all()
+        )
+        if self.session_organization_ids is not None:
+            member_organization_ids &= self.session_organization_ids
+            # A scoped session with no accessible organizations can't be
+            # represented as a down-scope (no rows == unrestricted), so refuse
+            # to issue rather than silently widen the token.
+            if not member_organization_ids:
+                raise InvalidRequestError("The session has no accessible organizations")
+
+        try:
+            selected = {
+                uuid.UUID(value) for value in payload.datalist.get("organizations", [])
+            }
+        except ValueError as e:
+            raise InvalidRequestError("Invalid 'organizations' UUID") from e
+
+        for organization_id in selected:
+            if organization_id not in member_organization_ids:
+                raise InvalidRequestError(
+                    f"You are not a member of organization {organization_id}"
+                )
+
+        if selected:
+            return list(selected)
+        # No explicit selection: inherit the session's down-scope (if any) so
+        # the token is never broader than the session.
+        if self.session_organization_ids is not None:
+            return list(member_organization_ids)
+        return []
 
     def query_authorization_code(
         self, code: str, client: OAuth2Client
@@ -151,6 +205,9 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
     def authenticate_user(
         self, authorization_code: OAuth2AuthorizationCode
     ) -> SubTypeValue | None:
+        self.request.organization_ids = [
+            scope.organization_id for scope in authorization_code.organization_scopes
+        ]
         return authorization_code.get_sub_type_value()
 
 

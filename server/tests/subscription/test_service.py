@@ -57,7 +57,7 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.customer import CustomerType
 from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
-from polar.models.order import OrderBillingReasonInternal
+from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.product_price import ProductPriceAmountType, ProductPriceSeatUnit
 from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
@@ -107,6 +107,7 @@ from tests.fixtures.random_objects import (
     create_event,
     create_legacy_recurring_product_price,
     create_meter,
+    create_order,
     create_payment_method,
     create_product,
     create_product_fixed_and_seat,
@@ -6848,6 +6849,51 @@ class TestCancelCustomer:
         assert len(benefit_grant_calls) == 0, (
             "Expected no calls to 'benefit.enqueue_benefits_grants', "
             f"but found {len(benefit_grant_calls)} call(s)"
+        )
+
+    async def test_past_due_subscription_is_canceled_and_voids_pending_orders(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """A past_due subscription is canceled on customer deletion, and its
+        pending orders are voided instead of being retried by dunning."""
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+            started_at=utc_now(),
+            past_due_at=utc_now(),
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=utc_now(),
+        )
+
+        await subscription_service.cancel_customer(session, customer.id)
+
+        await session.refresh(subscription)
+        assert subscription.status == SubscriptionStatus.canceled
+        assert subscription.canceled_at is not None
+        assert subscription.ended_at is not None
+
+        void_calls = [
+            call_args
+            for call_args in enqueue_job_mock.call_args_list
+            if call_args[0][0] == "order.void_pending_orders_for_subscription"
+            and call_args[0][1] == subscription.id
+        ]
+        assert len(void_calls) == 1, (
+            "Expected the past_due subscription's pending orders to be voided, "
+            f"but found {len(void_calls)} void call(s)"
         )
 
 

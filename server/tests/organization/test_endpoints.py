@@ -21,8 +21,10 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_account,
+    create_appeal_case,
     create_customer,
     create_order,
+    create_organization_review,
     create_payout_account,
     create_subscription,
     create_user,
@@ -521,7 +523,7 @@ class TestUpdateOrganization:
         error_locations = {tuple(error["loc"]) for error in response.json()["detail"]}
         assert ("body", "website") in error_locations
         assert ("body", "email") in error_locations
-        assert ("body", "socials") in error_locations
+        assert ("body", "socials") not in error_locations
         assert ("body", "details", "product_description") in error_locations
 
     @pytest.mark.auth
@@ -1321,3 +1323,41 @@ class TestCheckSlugAvailability:
 
         assert response.status_code == 200
         assert response.json() == {"available": False}
+
+
+@pytest.mark.asyncio
+class TestGetReviewStatus:
+    @pytest.mark.auth
+    async def test_appeal_case_id_present_when_case_exists(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        review = await create_organization_review(save_fixture, organization)
+        case = await create_appeal_case(save_fixture, organization, review=review)
+
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/review-status"
+        )
+
+        assert response.status_code == 200
+        assert response.json()["appeal_case_id"] == str(case.id)
+
+    @pytest.mark.auth
+    async def test_appeal_case_id_null_without_case(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_organization_review(save_fixture, organization)
+
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/review-status"
+        )
+
+        assert response.status_code == 200
+        assert response.json()["appeal_case_id"] is None

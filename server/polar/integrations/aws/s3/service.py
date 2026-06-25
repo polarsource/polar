@@ -6,6 +6,7 @@ import botocore
 import structlog
 from botocore.client import ClientError
 
+from polar.kit.http import get_content_disposition
 from polar.kit.utils import generate_uuid, utc_now
 
 from .client import client, get_client
@@ -18,7 +19,6 @@ from .schemas import (
     S3FileUploadCompleted,
     S3FileUploadMultipart,
     S3FileUploadPart,
-    get_downloadable_content_disposition,
 )
 
 if TYPE_CHECKING:
@@ -224,9 +224,7 @@ class S3Service:
             Params=dict(
                 Bucket=self.bucket,
                 Key=path,
-                ResponseContentDisposition=get_downloadable_content_disposition(
-                    filename
-                ),
+                ResponseContentDisposition=get_content_disposition(filename),
                 ResponseContentType=mime_type,
             ),
             ExpiresIn=expires_in,

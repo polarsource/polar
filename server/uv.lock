@@ -7,7 +7,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-06-15T15:30:35.004792Z"
+exclude-newer = "2026-06-17T07:51:38.371259Z"
 exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
@@ -2494,7 +2494,7 @@ requires-dist = [
     { name = "dramatiq", extras = ["redis", "watch"], git = "https://github.com/frankie567/dramatiq?rev=memory-leak-asyncio-ter" },
     { name = "email-validator", specifier = ">=2.1.0.post1" },
     { name = "exponent-server-sdk", specifier = ">=2.1.0" },
-    { name = "fastapi", specifier = ">=0.136.3" },
+    { name = "fastapi", specifier = "==0.136.3" },
     { name = "firecrawl-py", specifier = ">=4.28.2" },
     { name = "fpdf2", specifier = ">=2.8.3" },
     { name = "genai-prices", specifier = ">=0.0.66" },

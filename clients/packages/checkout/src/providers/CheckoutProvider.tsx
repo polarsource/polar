@@ -20,16 +20,26 @@ import {
 
 // Mimicking the SDK error handling pattern, for now.
 // Extract non-200 status codes from a responses object
-type ResponseMap = Record<number, { content?: { 'application/json': unknown } }>
+type ResponseMap = Record<number, { content?: Record<string, unknown> }>
 
 type ErrorCodes<T extends ResponseMap> = Exclude<keyof T, 200 | 201 | 202 | 204>
 
-type ErrorTypes<T extends ResponseMap> = Extract<
-  T[ErrorCodes<T>] extends { content: { 'application/json': infer R } }
-    ? R
-    : never,
-  { error: string }
->['error']
+// Filter error codes to only those with application/json content
+type JsonErrorCodes<T extends ResponseMap> = {
+  [K in ErrorCodes<T>]: T[K] extends {
+    content: { 'application/json': unknown }
+  }
+    ? K
+    : never
+}[ErrorCodes<T>]
+
+type ErrorTypes<T extends ResponseMap> = {
+  [K in JsonErrorCodes<T>]: T[K] extends {
+    content: { 'application/json': { error: infer E } }
+  }
+    ? E
+    : never
+}[JsonErrorCodes<T>]
 
 type SuccessBody<T extends ResponseMap> = T[200] extends {
   content: { 'application/json': infer R }

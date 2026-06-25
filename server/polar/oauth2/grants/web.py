@@ -94,6 +94,11 @@ class WebGrant(BaseGrant, TokenEndpointMixin):
         sub_value: User | Organization | None = None
         if sub_type == SubType.user:
             sub_value = user
+            # Inherit the session's down-scope so the token can't be broader
+            # than the session it's exchanged from.
+            self.request.organization_ids = [
+                scope.organization_id for scope in user_session.organization_scopes
+            ]
         elif sub_type == SubType.organization:
             assert sub is not None
             try:

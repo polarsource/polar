@@ -221,6 +221,8 @@ jobs:
           context: ./server
           target: production
           platforms: linux/amd64
+          cache-from: type=registry,ref=ghcr.io/polarsource/polar:buildcache
+          cache-to: type=registry,ref=ghcr.io/polarsource/polar:buildcache,mode=max
           build-args: |
             RELEASE_VERSION=${{ github.sha }}
           secrets: |
@@ -247,7 +249,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6.2.0
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-to-assume: ${{ secrets.SANDBOX_AWS_ROLE_ARN }}
           aws-region: us-east-2
 
       - name: Log in to Amazon ECR
@@ -285,7 +287,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6.2.0
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-to-assume: ${{ secrets.SANDBOX_AWS_ROLE_ARN }}
           aws-region: us-east-2
       - name: Log in to Amazon ECR
         id: login-ecr

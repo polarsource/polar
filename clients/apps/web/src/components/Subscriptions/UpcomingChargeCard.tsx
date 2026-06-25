@@ -50,7 +50,8 @@ const UpcomingChargeCard = ({
   const isFreeProduct = subscription.prices.some(isFreePrice)
 
   const hasMeters = subscription.meters.length > 0
-  const hasProrations = chargePreview && chargePreview.prorations.length > 0
+  const prorations = chargePreview?.prorations ?? []
+  const hasProrations = prorations.length > 0
   const hasTaxes = chargePreview && chargePreview.tax_amount > 0
   const hasDiscount = chargePreview && chargePreview.discount_amount > 0
 
@@ -123,7 +124,7 @@ const UpcomingChargeCard = ({
                 <span className="font-medium">Prorations</span>
               </div>
 
-              {chargePreview.prorations.map((proration, index) => (
+              {prorations.map((proration, index) => (
                 <DetailRow
                   key={index}
                   label={proration.label}

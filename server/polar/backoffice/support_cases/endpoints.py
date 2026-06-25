@@ -155,7 +155,8 @@ def _render_table(request: Request, rows: Sequence[Row], sort: str) -> None:
                     organization,
                     is_open,
                     assignee_email,
-                    awaiting_platform,
+                    _awaiting_platform,
+                    unread,
                 ) in rows:
                     case_url = str(
                         request.url_for("support_cases:detail", case_id=case.id)
@@ -165,7 +166,10 @@ def _render_table(request: Request, rows: Sequence[Row], sort: str) -> None:
                         _=f"on click set window.location to '{case_url}'",
                     ):
                         with tag.td():
-                            with tag.a(href=case_url, classes="link"):
+                            link_classes = "no-underline"
+                            if unread:
+                                link_classes += " font-semibold"
+                            with tag.a(href=case_url, classes=link_classes):
                                 text(organization.name)
                         with tag.td():
                             support_tier_badge(organization.support_tier)
@@ -174,10 +178,10 @@ def _render_table(request: Request, rows: Sequence[Row], sort: str) -> None:
                         with tag.td():
                             with tag.div(classes="flex items-center gap-2"):
                                 _status_badge(is_open)
-                                if awaiting_platform:
+                                if unread:
                                     with tag.span(
                                         classes="tooltip text-warning",
-                                        data_tip="Awaiting reply",
+                                        data_tip="Unread",
                                     ):
                                         text("●")
                         with tag.td():
@@ -326,10 +330,12 @@ async def case_detail(
     request: Request,
     case_id: UUID4,
     return_to: Annotated[str | None, Query()] = None,
-    session: AsyncSession = Depends(get_db_read_session),
+    session: AsyncSession = Depends(get_db_session),
     user_session: UserSession = Depends(get_admin),
 ) -> None:
     case, organization = await _load_case_and_organization(session, case_id)
+
+    await support_case_service.mark_read(session, case, user=user_session.user)
 
     message_repository = SupportCaseMessageRepository.from_session(session)
     is_open = await message_repository.is_open(case.id)
@@ -411,6 +417,7 @@ async def list_cases(
         status=status,
         assigned=assigned,
         assigned_user_id=user_session.user_id,
+        viewer_user_id=user_session.user_id,
         case_type=type,
         sort=sort,
     )

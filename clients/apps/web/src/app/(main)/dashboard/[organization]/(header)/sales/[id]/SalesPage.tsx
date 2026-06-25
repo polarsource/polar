@@ -39,7 +39,7 @@ import { ArrowUpRightIcon } from 'lucide-react'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
-import { DataTable } from '@polar-sh/orbit'
+import { DataTable, Truncated, type DataTableColumnDef } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Status } from '@polar-sh/orbit'
@@ -81,6 +81,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   // Seat management for seat-based orders (view-only)
   const hasSeatBasedOrder = !!order?.seats && order.seats > 0
+
+  const hasDeclinedPayment = (payments?.items ?? []).some(
+    (payment) => payment.status === 'failed',
+  )
 
   const { data: seatsData, isLoading: isLoadingSeats } = useOrganizationSeats(
     hasSeatBasedOrder ? { orderId: order?.id } : undefined,
@@ -445,6 +449,25 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 <PaymentStatus payment={original} />
               ),
             },
+            ...(hasDeclinedPayment
+              ? ([
+                  {
+                    accessorKey: 'decline_reason',
+                    header: 'Bank Decline Reason',
+                    cell: ({ row: { original } }) => {
+                      const reason =
+                        original.decline_message || original.decline_reason
+                      return reason ? (
+                        <Truncated>
+                          <span className="text-sm">{reason}</span>
+                        </Truncated>
+                      ) : (
+                        '—'
+                      )
+                    },
+                  },
+                ] satisfies DataTableColumnDef<schemas['Payment']>[])
+              : []),
           ]}
           data={payments?.items ?? []}
         />

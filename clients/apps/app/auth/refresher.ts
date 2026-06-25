@@ -1,5 +1,10 @@
+import { getStorageItemAsync } from '@/hooks/storage'
 import { refreshAsync } from 'expo-auth-session'
 import { CLIENT_ID, discovery } from './oauthConfig'
+
+export const ACCESS_TOKEN_KEY = 'session'
+export const REFRESH_TOKEN_KEY = 'session_refresh_token'
+export const EXPIRES_AT_KEY = 'session_expires_at'
 
 export type SessionData = {
   accessToken: string
@@ -91,6 +96,37 @@ export function isAccessTokenStale(): boolean {
   return state.expiresAt - Date.now() < marginMs
 }
 
+async function adoptRotatedSession(
+  usedRefreshToken: string,
+): Promise<string | null> {
+  const latestRefreshToken = await getStorageItemAsync(REFRESH_TOKEN_KEY)
+  if (!latestRefreshToken || latestRefreshToken === usedRefreshToken) {
+    return null
+  }
+
+  const accessToken = await getStorageItemAsync(ACCESS_TOKEN_KEY)
+  if (!accessToken) {
+    return null
+  }
+
+  const expiresAtRaw = await getStorageItemAsync(EXPIRES_AT_KEY)
+  const parsedExpiresAt = expiresAtRaw
+    ? Number.parseInt(expiresAtRaw, 10)
+    : null
+
+  const next: SessionData = {
+    accessToken,
+    refreshToken: latestRefreshToken,
+    expiresAt: Number.isFinite(parsedExpiresAt) ? parsedExpiresAt : null,
+  }
+
+  state.accessToken = next.accessToken
+  state.refreshToken = next.refreshToken ?? null
+  state.expiresAt = next.expiresAt ?? null
+  state.setSession?.(next)
+  return next.accessToken
+}
+
 export async function refreshAccessToken(): Promise<string | null> {
   if (!state.refreshToken || !state.setSession) {
     return null
@@ -131,6 +167,12 @@ export async function refreshAccessToken(): Promise<string | null> {
       if (!shouldClearSessionAfterTokenRefreshFailure(error)) {
         return null
       }
+
+      const adoptedAccessToken = await adoptRotatedSession(currentRefreshToken)
+      if (adoptedAccessToken) {
+        return adoptedAccessToken
+      }
+
       state.accessToken = null
       state.refreshToken = null
       state.expiresAt = null

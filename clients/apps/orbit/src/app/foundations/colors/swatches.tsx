@@ -14,6 +14,7 @@ export const BACKGROUND_TOKENS: {
   { token: 'background-secondary', note: 'Sectioned / raised surface' },
   { token: 'background-card', note: 'Card / inset panel surface' },
   { token: 'background-inverse', note: 'Inverted, high-contrast surface' },
+  { token: 'background-accent', note: 'Accent / brand / info surface' },
   { token: 'background-warning', note: 'Warning surface' },
   { token: 'background-success', note: 'Success surface' },
   { token: 'background-danger', note: 'Danger surface' },

@@ -43,10 +43,12 @@ from .metric_dashboard import MetricDashboard
 from .notification import Notification
 from .notification_recipient import NotificationRecipient
 from .oauth2_authorization_code import OAuth2AuthorizationCode
+from .oauth2_authorization_code_organization import OAuth2AuthorizationCodeOrganization
 from .oauth2_client import OAuth2Client
 from .oauth2_grant import OAuth2Grant
 from .oauth2_state import OAuth2State
 from .oauth2_token import OAuth2Token
+from .oauth2_token_organization import OAuth2TokenOrganization
 from .order import Order
 from .order_item import OrderItem
 from .organization import Organization
@@ -157,10 +159,12 @@ __all__ = [
     "Notification",
     "NotificationRecipient",
     "OAuth2AuthorizationCode",
+    "OAuth2AuthorizationCodeOrganization",
     "OAuth2Client",
     "OAuth2Grant",
     "OAuth2State",
     "OAuth2Token",
+    "OAuth2TokenOrganization",
     "OAuthAccount",
     "Order",
     "OrderItem",

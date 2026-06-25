@@ -749,6 +749,26 @@ class TestClientGet:
 
         assert response.status_code == 410
 
+    async def test_expired_blocked_organization(
+        self,
+        api_prefix: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        product: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.expired,
+            expires_at=utc_now() - timedelta(days=1),
+        )
+        checkout.organization.set_status(OrganizationStatus.BLOCKED)
+        await save_fixture(checkout.organization)
+
+        response = await client.get(f"{api_prefix}/client/{checkout.client_secret}")
+
+        assert response.status_code == 410
+
     async def test_valid(
         self, api_prefix: str, client: AsyncClient, checkout_open: Checkout
     ) -> None:

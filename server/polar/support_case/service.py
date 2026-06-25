@@ -1,6 +1,9 @@
 from collections.abc import Sequence
+from datetime import UTC, datetime
+from uuid import UUID
 
-from polar.models import Customer, File, Organization, User
+from polar.auth.models import AuthSubject, Organization, User
+from polar.models import Customer, File
 from polar.models.support_case import (
     SupportCase,
     SupportCaseAttachment,
@@ -11,7 +14,7 @@ from polar.models.support_case import (
     SupportCaseParticipant,
     SupportCaseParticipantKind,
 )
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import (
     SupportCaseAttachmentRepository,
@@ -43,6 +46,72 @@ class SupportCaseService:
             audience=audience,
         )
         return case
+
+    async def get(
+        self,
+        session: AsyncSession | AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        case_id: UUID,
+    ) -> SupportCase | None:
+        """A case the subject is allowed to read, by id. Org-manage scoped."""
+        repository = SupportCaseRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(
+            SupportCase.id == case_id
+        )
+        return await repository.get_one_or_none(statement)
+
+    async def get_thread(
+        self,
+        session: AsyncSession | AsyncReadSession,
+        case: SupportCase,
+        *,
+        visible_to: SupportCaseAudience | None,
+    ) -> tuple[bool, Sequence[SupportCaseMessage]]:
+        """A case's open state and its messages visible to ``visible_to``."""
+        message_repository = SupportCaseMessageRepository.from_session(session)
+        is_open = await message_repository.is_open(case.id)
+        messages = await message_repository.list_by_case(case.id, visible_to=visible_to)
+        return is_open, messages
+
+    async def list_attachments(
+        self,
+        session: AsyncSession | AsyncReadSession,
+        case: SupportCase,
+        *,
+        visible_to: SupportCaseAudience | None,
+    ) -> Sequence[SupportCaseAttachment]:
+        repository = SupportCaseAttachmentRepository.from_session(session)
+        return await repository.list_by_case(case.id, visible_to=visible_to)
+
+    async def get_attachment(
+        self,
+        session: AsyncSession | AsyncReadSession,
+        case: SupportCase,
+        attachment_id: UUID,
+        *,
+        visible_to: SupportCaseAudience | None,
+    ) -> SupportCaseAttachment | None:
+        repository = SupportCaseAttachmentRepository.from_session(session)
+        attachment = await repository.get_by_id_for_case(attachment_id, case.id)
+        if attachment is None:
+            return None
+        if visible_to is not None and visible_to not in attachment.audience:
+            return None
+        return attachment
+
+    async def mark_read(
+        self, session: AsyncSession, case: SupportCase, *, user: User
+    ) -> SupportCaseParticipant:
+        """Record that a staff member has read the case up to now.
+
+        Upserts the staff member's ``platform`` participant and stamps
+        ``last_read_at``. Per-staff: each viewer tracks their own read state,
+        and the latest reader across staff is shown in the list.
+        """
+        repository = SupportCaseParticipantRepository.from_session(session)
+        return await repository.upsert_platform_read(
+            case.id, user.id, read_at=datetime.now(UTC)
+        )
 
     async def add_participant(
         self,

@@ -68,6 +68,9 @@ from polar.tax.tax_id import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
         ("12345678901", "GE", ("12345678901", TaxIDFormat.ge_vat)),
         ("GE12345678901", "GE", ("12345678901", TaxIDFormat.ge_vat)),
         ("28392339", "MU", ("28392339", TaxIDFormat.mu_tan)),
+        # CR TIN: cédula jurídica (business)
+        ("3-101-356876", "CR", ("3101356876", TaxIDFormat.cr_tin)),
+        ("3101356876", "CR", ("3101356876", TaxIDFormat.cr_tin)),
     ],
 )
 def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> None:
@@ -101,6 +104,8 @@ def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> No
         ("123456789012", "GE"),  # Too long
         ("12345678A", "GE"),  # Non-digit
         ("88392339", "MU"),  # Wrong leading digit
+        ("9999999999", "CR"),  # Invalid CR TIN
+        ("1-1000-0001", "CR"),  # cédula física (individual), not accepted
     ],
 )
 def test_validate_tax_id_invalid(number: str, country: str) -> None:

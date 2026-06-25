@@ -83,7 +83,7 @@ export const SocialLinksSection = ({ organization: initialOrg }: Props) => {
             </Button>
           }
         >
-          <SocialLinksField required />
+          <SocialLinksField />
         </SectionLayout>
       </form>
     </Form>

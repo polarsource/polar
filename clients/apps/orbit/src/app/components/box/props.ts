@@ -62,19 +62,18 @@ export const boxProps: PropRow[] = [
     name: 'backgroundColor',
     type: 'BackgroundColorToken',
     description:
-      'background-primary | background-secondary | background-card | background-inverse | background-warning | background-success | background-danger | background-pending | background-card-raised.',
+      'background-primary | background-secondary | background-card | background-inverse | background-warning | background-success | background-danger.',
   },
   {
     name: 'color',
     type: 'TextColorToken',
     description:
-      'text-primary | text-secondary | text-tertiary | text-success | text-danger | text-warning | text-pending.',
+      'text-primary | text-secondary | text-tertiary | text-success | text-danger | text-warning.',
   },
   {
     name: 'borderColor',
     type: 'BorderColorToken',
-    description:
-      'border-primary | border-secondary | border-warning | border-card.',
+    description: 'border-primary | border-secondary | border-warning.',
   },
   {
     name: 'borderRadius',

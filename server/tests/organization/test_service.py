@@ -63,6 +63,7 @@ from polar.support_case.repository import SupportCaseMessageRepository
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
@@ -402,7 +403,7 @@ class TestUpdateReviewSubmission:
         error_locations = {tuple(error["loc"]) for error in exc_info.value.errors()}
         assert ("body", "website") in error_locations
         assert ("body", "email") in error_locations
-        assert ("body", "socials") in error_locations
+        assert ("body", "socials") not in error_locations
         assert ("body", "details", "product_description") in error_locations
 
     @pytest.mark.auth
@@ -1717,6 +1718,36 @@ class TestGetReviewState:
                 for reasons in reason_lists
             )
 
+    @pytest.mark.auth
+    async def test_identity_owner_viewer_sees_not_started(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        state = await organization_service.get_review_state(
+            session, organization, auth_subject
+        )
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_STRIPE_VERIFICATION)
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert OrganizationReviewCheckReason.NOT_STARTED in step.reasons
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
+    async def test_identity_non_owner_viewer_sees_not_authorized(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        state = await organization_service.get_review_state(
+            session, organization, auth_subject
+        )
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_STRIPE_VERIFICATION)
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert step.reasons == [OrganizationReviewCheckReason.NOT_AUTHORIZED]
+
     async def test_email_set_passes(
         self,
         save_fixture: SaveFixture,
@@ -2115,11 +2146,25 @@ class TestGetReviewState:
             assert sub.status == OrganizationReviewCheckStatus.PENDING
             assert OrganizationReviewCheckReason.NOT_STARTED in sub.reasons
 
+    @pytest.mark.parametrize(
+        "benefit_type",
+        [
+            BenefitType.downloadables,
+            BenefitType.license_keys,
+            BenefitType.github_repository,
+            BenefitType.discord,
+            BenefitType.slack_shared_channel,
+            # `custom` is a free-form note, but the customer still sees it in
+            # their portal post-purchase — no API integration required.
+            BenefitType.custom,
+        ],
+    )
     async def test_setup_readiness_checkout_link_with_eligible_benefit_passes(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
+        benefit_type: BenefitType,
     ) -> None:
         product = await create_product(
             save_fixture, organization=organization, recurring_interval=None
@@ -2127,7 +2172,7 @@ class TestGetReviewState:
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
-            type=BenefitType.license_keys,
+            type=benefit_type,
         )
         await set_product_benefits(save_fixture, product=product, benefits=[benefit])
         await create_checkout_link(save_fixture, products=[product])
@@ -2152,10 +2197,12 @@ class TestGetReviewState:
     @pytest.mark.parametrize(
         "benefit_type",
         [
+            # Benefits a checkout link can't fulfill on its own — they only mean
+            # something once the merchant integrates the API. `feature_flag`:
+            # the merchant's app reads the flag. `meter_credit`: the credit is
+            # consumed via usage events the merchant ingests.
             BenefitType.feature_flag,
             BenefitType.meter_credit,
-            # `custom` is a free-form note with no automated fulfillment.
-            BenefitType.custom,
         ],
     )
     async def test_setup_readiness_ineligible_benefit_does_not_count(
@@ -2339,6 +2386,23 @@ class TestGetReviewState:
             step.status == OrganizationReviewCheckStatus.PASSED
             for step in state.preliminary_steps
         )
+
+    async def test_missing_socials_does_not_block_submission(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        await _setup_passing_org(save_fixture, organization, user)
+        organization.socials = []
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+
+        socials_step = _step(state, OrganizationReviewCheckKey.IDENTITY_SOCIAL_LINKS)
+        assert socials_step.status == OrganizationReviewCheckStatus.PENDING
+        assert state.can_submit is True
 
     async def test_submitted_blocks_resubmission(
         self,

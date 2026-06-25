@@ -24,7 +24,6 @@ class DownloadableCreate(Schema):
     file_id: UUID4
     customer_id: UUID4
     benefit_id: BenefitID
-    member_id: UUID4 | None = None
     status: DownloadableStatus
 
 
@@ -32,5 +31,4 @@ class DownloadableUpdate(Schema):
     file_id: UUID4
     customer_id: UUID4
     benefit_id: BenefitID
-    member_id: UUID4 | None = None
     status: DownloadableStatus

@@ -80,31 +80,13 @@ class DownloadableService(
             )
             return None
 
-        create_schema = DownloadableCreate(
+        repository = DownloadableRepository.from_session(session)
+        instance = await repository.upsert_granted(
             file_id=file.id,
             customer_id=customer.id,
             benefit_id=benefit_id,
             member_id=member_id,
-            status=DownloadableStatus.granted,
         )
-        records = await self.upsert_many(
-            session,
-            create_schemas=[create_schema],
-            constraints=[
-                Downloadable.customer_id,
-                Downloadable.member_id,
-                Downloadable.file_id,
-                Downloadable.benefit_id,
-            ],
-            mutable_keys={
-                "status",
-            },
-            autocommit=False,
-            # Matches the partial unique index ix_downloadables_scope_unique.
-            index_where=Downloadable.deleted_at.is_(None),
-        )
-        await session.flush()
-        instance = records[0]
         assert instance.id is not None
 
         log.info(

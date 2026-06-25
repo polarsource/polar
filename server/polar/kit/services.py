@@ -4,7 +4,6 @@ from collections.abc import Sequence
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import ColumnElement
 from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.sql.base import ExecutableOption
 
@@ -71,7 +70,6 @@ class ResourceService[
         constraints: list[InstrumentedAttribute[Any]],
         mutable_keys: set[str],
         autocommit: bool = True,
-        index_where: ColumnElement[bool] | None = None,
     ) -> Sequence[ModelType]:
         return await self._db_upsert_many(
             session,
@@ -79,7 +77,6 @@ class ResourceService[
             constraints=constraints,
             mutable_keys=mutable_keys,
             autocommit=autocommit,
-            index_where=index_where,
         )
 
     async def _db_upsert_many(
@@ -89,7 +86,6 @@ class ResourceService[
         constraints: list[InstrumentedAttribute[Any]],
         mutable_keys: set[str],
         autocommit: bool = True,
-        index_where: ColumnElement[bool] | None = None,
     ) -> Sequence[ModelType]:
         values = [obj.model_dump(by_alias=True) for obj in objects]
         if not values:
@@ -98,12 +94,9 @@ class ResourceService[
         insert_stmt = sql.insert(self.model).values(values)
 
         # Update the insert statement with what to update on conflict, i.e mutable keys.
-        # `index_where` must match the predicate of a partial unique index for the
-        # ON CONFLICT arbiter to be inferred.
         upsert_stmt = (
             insert_stmt.on_conflict_do_update(
                 index_elements=constraints,
-                index_where=index_where,
                 set_={k: getattr(insert_stmt.excluded, k) for k in mutable_keys},
             )
             .returning(self.model)

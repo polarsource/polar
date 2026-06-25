@@ -1,5 +1,22 @@
 server/polar/enums.py
   s_055272d137234c::t_e8c5a126dceac9 88-93
+  s_055272d137234c::t_d7f400d8d1e810 58,69,71,73,79,87,94
+clients/apps/web/src/components/Subscriptions/SubscriptionDetails.tsx
+  s_055272d137234c::t_d7f400d8d1e810 18
+clients/packages/checkout/src/components/CheckoutProductSwitcher.tsx
+  s_055272d137234c::t_d7f400d8d1e810 152
+clients/apps/app/components/Products/AmountLabel.tsx
+  s_055272d137234c::t_d7f400d8d1e810 10
+clients/packages/checkout/src/components/SeatDetailRow.tsx
+  s_055272d137234c::t_d7f400d8d1e810 11
+clients/apps/web/src/components/Customer/CustomerContextView.tsx
+  s_055272d137234c::t_13bc0a757ceb3b 1-17,20-21,24,29,31,36,44,48,63-65,95,97-98,137-138,140,147-160,168,170-175,177-182,184-185,188-189,192,196,200,202-203,214,219-220,225,228-229
+clients/apps/web/src/components/Shared/AmountLabel.tsx
+  s_055272d137234c::t_d7f400d8d1e810 8
+clients/packages/checkout/src/components/AmountLabel.tsx
+  s_055272d137234c::t_d7f400d8d1e810 12
+clients/apps/app/components/Products/ProductRow.tsx
+  s_055272d137234c::t_d7f400d8d1e810 18
 ---
 {
   "schema_version": "authorship/3.0.0",

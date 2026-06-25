@@ -3,7 +3,7 @@ import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
 import { List, ListItem } from '@polar-sh/orbit'
-import OrganizationDownScopeSelector from './OrganizationDownScopeSelector'
+import OrganizationSelector from './OrganizationSelector'
 import SharedLayout from './components/SharedLayout'
 
 const isSubTypeOrganization = (
@@ -119,7 +119,7 @@ const AuthorizePage = ({
         </div>
 
         {sub_type === 'user' && (
-          <OrganizationDownScopeSelector organizations={organizations} />
+          <OrganizationSelector organizations={organizations} />
         )}
 
         <div className="flex w-full flex-col gap-3">

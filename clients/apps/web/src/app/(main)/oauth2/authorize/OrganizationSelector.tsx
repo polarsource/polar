@@ -5,7 +5,7 @@ import { Box } from '@polar-sh/orbit/Box'
 const CHECKBOX_CLASS =
   'border-border data-[state=checked]:border-black data-[state=checked]:bg-black data-[state=checked]:text-white dark:data-[state=checked]:border-white dark:data-[state=checked]:bg-white dark:data-[state=checked]:text-black'
 
-const OrganizationDownScopeSelector = ({
+const OrganizationSelector = ({
   organizations,
 }: {
   organizations: schemas['AuthorizeOrganization'][]
@@ -66,4 +66,4 @@ const OrganizationDownScopeSelector = ({
   )
 }
 
-export default OrganizationDownScopeSelector
+export default OrganizationSelector

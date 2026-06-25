@@ -1,0 +1,19 @@
+server/polar/enums.py
+  s_055272d137234c::t_e8c5a126dceac9 88-93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.9",
+  "base_commit_sha": "ec4a1a6e1f8b8cb46259ae705f919c4b5fb06b14",
+  "prompts": {},
+  "sessions": {
+    "s_055272d137234c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee94dbe5-c15a-44e2-9fb8-aed3888c188f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

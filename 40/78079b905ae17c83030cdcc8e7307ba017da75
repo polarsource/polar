@@ -1,0 +1,21 @@
+server/polar/customer_portal/service/downloadables.py
+  s_993e379d6d5a27::t_bf33bec810a6ce 83-84
+server/polar/customer_portal/repository/downloadable.py
+  s_993e379d6d5a27::t_19cbca70a25fd9 1-2,4,16-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.13",
+  "base_commit_sha": "4078079b905ae17c83030cdcc8e7307ba017da75",
+  "prompts": {},
+  "sessions": {
+    "s_993e379d6d5a27": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1c31ca18-7baa-4be9-94ec-c9317093b7c4",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

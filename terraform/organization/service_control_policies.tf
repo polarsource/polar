@@ -1,4 +1,17 @@
 locals {
+  permission_boundary_policy_name = "PolarPermissionBoundary"
+
+  permission_boundary_exempt_principals = [
+    "arn:aws:iam::*:role/${var.member_account_bootstrap_role_name}",
+    "arn:aws:iam::*:role/${local.terraform_cloud.role_name}",
+    "arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/*AWSReservedSSO_PolarAdmin*",
+  ]
+
+  permission_boundary_role_creation_exempt_principals = concat(
+    local.permission_boundary_exempt_principals,
+    ["arn:aws:iam::*:role/aws-service-role/sso.amazonaws.com/AWSServiceRoleForSSO"],
+  )
+
   service_control_policies = {
     workloads_baseline = {
       name        = "WorkloadsBaseline"
@@ -109,6 +122,73 @@ locals {
               "savingsplans:CreateSavingsPlan",
             ]
             Resource = "*"
+          },
+        ]
+      }
+    }
+
+    require_permissions_boundary = {
+      name        = "RequirePermissionsBoundary"
+      description = "Require the Polar permission boundary on IAM roles and users created in workload accounts, and protect it from removal."
+      target_ids  = [aws_organizations_organizational_unit.workloads.id]
+      content = {
+        Version = "2012-10-17"
+        Statement = [
+          {
+            Sid      = "RequireBoundaryOnRoleCreation"
+            Effect   = "Deny"
+            Action   = "iam:CreateRole"
+            Resource = "*"
+            Condition = {
+              ArnNotLike = {
+                "iam:PermissionsBoundary" = "arn:aws:iam::*:policy/${local.permission_boundary_policy_name}"
+                "aws:PrincipalArn"        = local.permission_boundary_role_creation_exempt_principals
+              }
+            }
+          },
+          {
+            Sid      = "RequireBoundaryOnUserCreation"
+            Effect   = "Deny"
+            Action   = "iam:CreateUser"
+            Resource = "*"
+            Condition = {
+              ArnNotLike = {
+                "iam:PermissionsBoundary" = "arn:aws:iam::*:policy/${local.permission_boundary_policy_name}"
+                "aws:PrincipalArn"        = local.permission_boundary_exempt_principals
+              }
+            }
+          },
+          {
+            Sid    = "DenyRemovingPermissionBoundary"
+            Effect = "Deny"
+            Action = [
+              "iam:PutRolePermissionsBoundary",
+              "iam:DeleteRolePermissionsBoundary",
+              "iam:PutUserPermissionsBoundary",
+              "iam:DeleteUserPermissionsBoundary",
+            ]
+            Resource = "*"
+            Condition = {
+              ArnNotLike = {
+                "aws:PrincipalArn" = local.permission_boundary_exempt_principals
+              }
+            }
+          },
+          {
+            Sid    = "ProtectBoundaryPolicy"
+            Effect = "Deny"
+            Action = [
+              "iam:CreatePolicyVersion",
+              "iam:DeletePolicy",
+              "iam:DeletePolicyVersion",
+              "iam:SetDefaultPolicyVersion",
+            ]
+            Resource = "arn:aws:iam::*:policy/${local.permission_boundary_policy_name}"
+            Condition = {
+              ArnNotLike = {
+                "aws:PrincipalArn" = local.permission_boundary_exempt_principals
+              }
+            }
           },
         ]
       }

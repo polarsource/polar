@@ -36,6 +36,12 @@ variable "policy_arns" {
   default     = {}
 }
 
+variable "permissions_boundary_arn" {
+  description = "Optional permissions boundary ARN to attach to the role."
+  type        = string
+  default     = null
+}
+
 resource "aws_iam_openid_connect_provider" "github" {
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
@@ -43,7 +49,8 @@ resource "aws_iam_openid_connect_provider" "github" {
 }
 
 resource "aws_iam_role" "github_actions" {
-  name = var.role_name
+  name                 = var.role_name
+  permissions_boundary = var.permissions_boundary_arn
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"

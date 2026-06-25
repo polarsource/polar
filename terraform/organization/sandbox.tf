@@ -37,11 +37,12 @@ module "sandbox_image_resizer" {
     aws = aws
   }
 
-  function_name     = "polar-sandbox-image-resizer"
-  s3_bucket         = aws_s3_bucket.production_lambda_artifacts.id
-  s3_key            = data.aws_s3_object.sandbox_image_resizer_package.key
-  s3_object_version = data.aws_s3_object.sandbox_image_resizer_package.version_id
-  source_bucket_arn = module.sandbox_s3_buckets.public_files_bucket_arn
+  function_name            = "polar-sandbox-image-resizer"
+  s3_bucket                = aws_s3_bucket.production_lambda_artifacts.id
+  s3_key                   = data.aws_s3_object.sandbox_image_resizer_package.key
+  s3_object_version        = data.aws_s3_object.sandbox_image_resizer_package.version_id
+  source_bucket_arn        = module.sandbox_s3_buckets.public_files_bucket_arn
+  permissions_boundary_arn = module.permission_boundary_management.policy_arn
 }
 
 module "sandbox_cloudfront_assets" {

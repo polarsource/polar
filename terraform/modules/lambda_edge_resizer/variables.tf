@@ -34,3 +34,9 @@ variable "timeout" {
   type        = number
   default     = 30
 }
+
+variable "permissions_boundary_arn" {
+  description = "Optional permissions boundary ARN to attach to the Lambda IAM role."
+  type        = string
+  default     = null
+}

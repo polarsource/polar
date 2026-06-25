@@ -16,7 +16,11 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { Label } from '@polar-sh/ui/components/ui/label'
-import { useEffect, useState } from 'react'
+import {
+  type KeyboardEvent as ReactKeyboardEvent,
+  useEffect,
+  useState,
+} from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import slugify from 'slugify'
 import SupportedUseCases from './SupportedUseCases'
@@ -91,6 +95,14 @@ const CreateOrganizationForm = ({
     onCreated(organization)
   }
 
+  // The inputs live inside the OAuth consent <form>; without this, Enter would
+  // submit it (Allow) instead of staying on the create step.
+  const blockEnterSubmit = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+    }
+  }
+
   return (
     <Form {...form}>
       <div className="flex flex-col gap-y-4">
@@ -109,7 +121,11 @@ const CreateOrganizationForm = ({
               <FormItem className="w-full">
                 <Label htmlFor="name">Organization Name</Label>
                 <FormControl>
-                  <Input {...field} placeholder="Acme Inc." />
+                  <Input
+                    {...field}
+                    placeholder="Acme Inc."
+                    onKeyDown={blockEnterSubmit}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -135,6 +151,7 @@ const CreateOrganizationForm = ({
                     {...field}
                     placeholder="acme-inc"
                     onFocus={() => setEditedSlug(true)}
+                    onKeyDown={blockEnterSubmit}
                   />
                 </FormControl>
                 <FormMessage />

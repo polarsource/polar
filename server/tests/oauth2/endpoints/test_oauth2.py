@@ -807,6 +807,27 @@ class TestOAuth2Authorize:
         org_ids = {o["id"] for o in (json.get("organizations") or [])}
         assert str(organization.id) not in org_ids
 
+    @pytest.mark.auth
+    async def test_user_response_includes_organizations_field(
+        self,
+        client: AsyncClient,
+        user: User,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "user",
+        }
+        response = await client.get("/v1/oauth2/authorize", params=params)
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["sub_type"] == "user"
+        assert isinstance(json["organizations"], list)
+
 
 @pytest.mark.asyncio
 class TestOAuth2Consent:

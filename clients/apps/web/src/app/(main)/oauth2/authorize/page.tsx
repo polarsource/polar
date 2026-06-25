@@ -1,10 +1,15 @@
 import { getServerURL } from '@/utils/api'
+import { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import AuthorizeErrorPage from './AuthorizeErrorPage'
 import AuthorizePage from './AuthorizePage'
 import OrganizationSelectionPage from './OrganizationSelectionPage'
 import { AuthorizeResponse } from './types'
+
+export const metadata: Metadata = {
+  title: 'Authorize',
+}
 
 const getAuthorizeResponse = async (
   searchParams: Record<string, string>,

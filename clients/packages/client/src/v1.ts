@@ -7093,6 +7093,8 @@ export interface components {
       sub: components['schemas']['AuthorizeOrganization'] | null
       /** Scopes */
       scopes: components['schemas']['Scope'][]
+      /** Organizations */
+      organizations: components['schemas']['AuthorizeOrganization'][]
       /**
        * Scope Display Names
        * @default {
@@ -7163,8 +7165,6 @@ export interface components {
       scope_display_names: {
         [key: string]: string
       }
-      /** Organizations */
-      organizations: components['schemas']['AuthorizeOrganization'][]
     }
     /** AuthorizeResponseUser */
     AuthorizeResponseUser: {
@@ -7177,6 +7177,8 @@ export interface components {
       sub: components['schemas']['AuthorizeUser'] | null
       /** Scopes */
       scopes: components['schemas']['Scope'][]
+      /** Organizations */
+      organizations: components['schemas']['AuthorizeOrganization'][]
       /**
        * Scope Display Names
        * @default {

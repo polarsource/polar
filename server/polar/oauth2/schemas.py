@@ -101,6 +101,7 @@ class AuthorizeResponseBase(Schema):
     sub_type: SubType
     sub: AuthorizeUser | AuthorizeOrganization | None
     scopes: Scopes
+    organizations: list[AuthorizeOrganization]
     scope_display_names: dict[str, str] = Field(
         default={s.value: name for s, name in SCOPES_SUPPORTED_DISPLAY_NAMES.items()}
     )
@@ -114,7 +115,6 @@ class AuthorizeResponseUser(AuthorizeResponseBase):
 class AuthorizeResponseOrganization(AuthorizeResponseBase):
     sub_type: Literal[SubType.organization]
     sub: AuthorizeOrganization | None
-    organizations: list[AuthorizeOrganization]
 
 
 AuthorizeResponse = Annotated[

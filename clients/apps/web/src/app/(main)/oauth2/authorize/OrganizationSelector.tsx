@@ -2,9 +2,6 @@ import { schemas } from '@polar-sh/client'
 import { Avatar, Checkbox, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 
-const CHECKBOX_CLASS =
-  'border-border data-[state=checked]:border-black data-[state=checked]:bg-black data-[state=checked]:text-white dark:data-[state=checked]:border-white dark:data-[state=checked]:bg-white dark:data-[state=checked]:text-black'
-
 const OrganizationSelector = ({
   organizations,
 }: {
@@ -48,11 +45,7 @@ const OrganizationSelector = ({
             transitionDuration="fast"
             cursor={{ hover: 'pointer' }}
           >
-            <Checkbox
-              name="organizations"
-              value={organization.id}
-              className={CHECKBOX_CLASS}
-            />
+            <Checkbox name="organizations" value={organization.id} />
             <Avatar
               className="h-6 w-6"
               avatar_url={organization.avatar_url}

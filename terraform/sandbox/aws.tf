@@ -97,6 +97,8 @@ resource "aws_iam_user_policy" "tasks_producer" {
 # GitHub Actions OIDC role (builds the task-worker image and deploys it)
 # =============================================================================
 
+data "aws_caller_identity" "current" {}
+
 data "aws_iam_policy_document" "lambda_worker_deploy" {
   statement {
     sid       = "EcrAuthorization"
@@ -121,7 +123,7 @@ data "aws_iam_policy_document" "lambda_worker_deploy" {
   statement {
     sid       = "UpdateFunctionCode"
     actions   = ["lambda:UpdateFunctionCode"]
-    resources = [module.dummy_lambda_worker.function_arn]
+    resources = ["arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:${module.dummy_lambda_worker.function_name}"]
   }
 }
 

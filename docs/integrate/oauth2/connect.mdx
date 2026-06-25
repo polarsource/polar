@@ -36,22 +36,13 @@ The parameters are the one described in the [OpenID Connect specification](https
   of the scopes you declared when creating the OAuth2 client.
 </ParamField>
 
-If you redirect the user to this URL, they'll see a page asking them to grant access to their data, corresponding to the scopes you asked for. By default, Polar generates user-scoped access tokens, so the token will be tied to the user granting access.
+If you redirect the user to this URL, they'll see a page asking them to grant access to their data, corresponding to the scopes you asked for.
 
 <img src="/assets/integrate/oauth2/connect.png" />
 
+Polar issues **user-scoped** access tokens, tied to the user granting access. On the consent screen, the user can optionally **limit the token to specific organizations**: by default it can access all of their organizations (including ones they join later), but if they select specific ones, it's restricted to those. Access always intersects with the user's current membership, so it adjusts automatically if they leave an organization. You can check which organizations a token is limited to by [introspecting it](/api-reference/oauth2/connect/introspect-token) — the response includes an `organizations` array (an empty array means all of them).
+
 If they allow it, they'll be redirected to your `redirect_uri` with a `code` parameter in the query string. This code is a one-time code that you can exchange for an access token.
-
-To get an organization-scoped token instead, you can add `sub_type=organization` to the authorization URL. The user will then be prompted to select one of the organizations they have management permissions for:
-
-```
-https://polar.sh/oauth2/authorize?
-  response_type=code
-  &client_id=CLIENT_ID
-  &redirect_uri=https%3A%2F%2Fexample.com%2Fcallback
-  &scope=openid%20email
-  &sub_type=organization
-```
 
 #### Exchange code token
 
@@ -79,22 +70,6 @@ You should get the following response:
 ```
 
 The `access_token` will allow you to make authenticated API requests on behalf of the user. The `refresh_token` is a long-lived token that you can use to get new access tokens when the current one expires. The `id_token` is a signed JWT token containing information about the user, as per the [OpenID Connect specification](https://openid.net/specs/openid-connect-core-1_0.html#IDToken).
-
-#### Organization vs User Access Tokens
-
-By default, Polar OAuth2 flow generates **user-scoped** access tokens. These tokens are tied to the user granting access, allowing requests to operate on the data of the organizations they are a member of.
-
-```
-https://polar.sh/oauth2/authorize?response_type=code&client_id=polar_ci_j3X95_MgfdSCeCd2qkFnUw&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&scope=openid%20email
-```
-
-To request an **organization-scoped** access token instead, you need to explicitly add the parameter `sub_type=organization` to the authorization URL. These tokens are tied to a specific organization rather than a user, allowing requests to operate only on that organization's data. The user will be prompted to select one of the organizations they have management permissions for:
-
-```
-https://polar.sh/oauth2/authorize?response_type=code&client_id=polar_ci_j3X95_MgfdSCeCd2qkFnUw&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&scope=openid%20email&sub_type=organization
-```
-
-The rest of the flow remains unchanged. The access token you'll get will be tied to either the user (default) or the selected organization (when explicitly requested).
 
 #### Public Clients
 

@@ -39,9 +39,11 @@ class RefreshTokenGrant(_RefreshTokenGrant):
         # Migrate legacy organization tokens to user tokens down-scoped to the
         # org when the org has a single, unambiguous member. Multi-member orgs
         # can't be disambiguated, so they stay org-bound and age out.
-        if refresh_token.sub_type == SubType.organization:
-            organization_id = refresh_token.organization_id
-            assert organization_id is not None
+        organization_id = refresh_token.organization_id
+        if (
+            refresh_token.sub_type == SubType.organization
+            and organization_id is not None
+        ):
             member = self._single_member(organization_id)
             if member is not None:
                 log.info(

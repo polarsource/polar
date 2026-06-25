@@ -21,22 +21,22 @@ export interface BrandColor {
 export const brandColors: BrandColor[] = [
   {
     name: 'Night',
-    hex: '#070708',
-    oklch: '12.9% 0.003 286',
+    hex: '#171717',
+    oklch: '20.5% 0 0',
     role: 'Surface',
     flex: 3,
   },
   {
     name: 'Ash',
-    hex: '#171717',
-    oklch: '20.5% 0 0',
     role: 'Raised',
+    hex: '#1D1D1D',
+    oklch: '23% 0 0',
     flex: 1,
   },
   {
     name: 'Mist',
-    hex: '#575757',
-    oklch: '45.7% 0 0',
+    hex: '#7b7b7b',
+    oklch: '58.3% 0 0',
     role: 'Secondary',
     flex: 1,
   },
@@ -49,8 +49,8 @@ export const brandColors: BrandColor[] = [
   },
   {
     name: 'Ether',
-    hex: '#625FFF',
-    oklch: '58.3% 0.231 277',
+    hex: '#3619CC',
+    oklch: '41.6% 0.244 275',
     role: 'Accent',
     flex: 1,
   },
@@ -66,5 +66,6 @@ export const brandSections: BrandSectionMeta[] = [
   { id: 'logo', index: '001', label: 'Logo' },
   { id: 'color', index: '002', label: 'Color' },
   { id: 'typography', index: '003', label: 'Typography' },
-  { id: 'voice', index: '004', label: 'Voice' },
+  { id: 'illustration', index: '004', label: 'Illustration' },
+  { id: 'voice', index: '005', label: 'Voice' },
 ]

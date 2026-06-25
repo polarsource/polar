@@ -17,18 +17,16 @@ function ColorColumn({ color }: { color: BrandColor }) {
 
   return (
     <div
-      className="flex min-h-[60vh] flex-col justify-between p-8 md:min-h-[80vh] md:p-10"
+      className="flex min-h-[40vh] flex-col justify-between p-8 md:min-h-[60vh] md:p-10"
       style={{ flex: color.flex, backgroundColor: color.hex, color: fg }}
     >
       <div className="flex items-baseline justify-between gap-x-8">
-        <span className="text-base font-medium tracking-tight">
-          {color.name}
-        </span>
-        <span className="text-base" style={{ color: muted }}>
+        <span className="text-lg font-medium tracking-tight">{color.name}</span>
+        <span className="text-lg" style={{ color: muted }}>
           {color.role}
         </span>
       </div>
-      <div className="flex flex-col gap-3 font-mono text-xs leading-snug">
+      <div className="flex flex-col gap-3 font-mono text-sm leading-snug">
         <div className="flex flex-col gap-0.5">
           <span style={{ color: muted }}>HEX</span>
           <span>{color.hex}</span>
@@ -49,7 +47,7 @@ export function ColorSection() {
       title="A monochrome color system"
       lead="The palette runs from Night to Snow in a single neutral hue. Ether is the only accent, reserved for moments that need to carry energy."
     >
-      <div className="flex w-full flex-col overflow-hidden md:flex-row">
+      <div className="border-brand-line/20 flex w-full flex-col overflow-hidden border md:flex-row">
         {brandColors.map((color) => (
           <ColorColumn key={color.name} color={color} />
         ))}

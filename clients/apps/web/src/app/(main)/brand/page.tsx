@@ -3,6 +3,7 @@ import {
   BrandHero,
   BrandNav,
   ColorSection,
+  IllustrationSection,
   LogoSection,
   TypographySection,
   VoiceSection,
@@ -11,18 +12,20 @@ import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Brand',
-  description: 'The Polar brand system: logo, color, typography, and voice.',
+  description:
+    'The Polar brand system: logo, color, typography, illustration, and voice.',
 }
 
 export default function BrandPage() {
   return (
-    <div className="font-neue-montreal min-h-screen bg-[#070708] text-[#575757] antialiased">
+    <div className="font-neue-montreal bg-brand-surface text-brand-muted min-h-screen antialiased">
       <BrandNav />
       <main>
         <BrandHero />
         <LogoSection />
         <ColorSection />
         <TypographySection />
+        <IllustrationSection />
         <VoiceSection />
       </main>
       <BrandFooter />

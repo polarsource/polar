@@ -5,6 +5,7 @@ import { BrandSection } from './BrandSection'
 import { brandSections } from './brand'
 import LogoIcon from './logos/LogoIcon'
 import LogoType from './logos/LogoType'
+import { Body } from './primitives'
 
 const LOGO_ICON_SVG = `<svg width="29" height="29" viewBox="0 0 29 29" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path fillRule="evenodd" clipRule="evenodd" d="M9.07727 23.0572C13.8782 26.307 20.4046 25.0496 23.6545 20.2487C26.9043 15.4478 25.6469 8.92133 20.846 5.67149C16.0451 2.42165 9.51862 3.67905 6.26878 8.47998C3.01894 13.2809 4.27634 19.8073 9.07727 23.0572ZM10.4703 23.1428C14.862 25.3897 20.433 23.2807 22.9135 18.4322C25.394 13.5838 23.8447 7.83194 19.4531 5.58511C15.0614 3.33829 9.49042 5.4473 7.00991 10.2957C4.52939 15.1442 6.07867 20.896 10.4703 23.1428Z" fill="currentColor"/>
@@ -16,7 +17,7 @@ const panelClass =
   'flex aspect-[4/3] items-center justify-center transition-colors'
 
 const actionClass =
-  'rounded-full border border-[#1D1E22] px-5 py-2.5 text-sm text-[#575757] transition-colors hover:border-[#575757] hover:text-[#F5F6FA]'
+  'rounded-full border border-brand-line px-5 py-2.5 text-sm text-brand-muted transition-colors hover:border-brand-muted hover:text-brand-bright'
 
 export function LogoSection() {
   const [copied, setCopied] = useState(false)
@@ -30,29 +31,29 @@ export function LogoSection() {
   return (
     <BrandSection
       meta={brandSections[0]}
-      title="One mark, in any context"
+      title="The mark, held constant"
       lead="The icon and wordmark are the fixed core of the identity. Reproduce them in full white on dark or full black on light. Never recolor, rotate, or distort the mark."
     >
       <div className="flex flex-col gap-12 md:gap-16">
         <div className="grid grid-cols-1 gap-8 overflow-hidden md:grid-cols-2">
-          <div className={`${panelClass} bg-[#171717]`}>
-            <LogoIcon size={88} className="text-[#adadad]" />
+          <div className={`${panelClass} bg-brand-raised`}>
+            <LogoIcon size={88} className="text-brand-foreground" />
           </div>
-          <div className={`${panelClass} bg-[#adadad]`}>
-            <LogoIcon size={88} className="text-[#171717]" />
+          <div className={`${panelClass} bg-brand-foreground`}>
+            <LogoIcon size={88} className="text-brand-surface" />
           </div>
-          <div className={`${panelClass} bg-[#adadad]`}>
-            <LogoType width={240} className="text-[#171717]" />
+          <div className={`${panelClass} bg-brand-foreground`}>
+            <LogoType width={240} className="text-brand-surface" />
           </div>
-          <div className={`${panelClass} bg-[#171717]`}>
-            <LogoType width={240} className="text-[#adadad]" />
+          <div className={`${panelClass} bg-brand-raised`}>
+            <LogoType width={240} className="text-brand-foreground" />
           </div>
         </div>
         <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
-          <p className="max-w-md text-sm leading-relaxed text-[#575757]">
+          <Body className="max-w-md">
             Keep clear space around the mark equal to the height of the icon.
             Minimum icon size is 16px.
-          </p>
+          </Body>
           <div className="flex flex-wrap gap-3">
             <button type="button" onClick={copyIcon} className={actionClass}>
               {copied ? 'Copied' : 'Copy icon SVG'}

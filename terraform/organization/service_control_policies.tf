@@ -5,8 +5,12 @@ locals {
     "arn:aws:iam::*:role/${var.member_account_bootstrap_role_name}",
     "arn:aws:iam::*:role/${local.terraform_cloud.role_name}",
     "arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/*AWSReservedSSO_PolarAdmin*",
-    "arn:aws:iam::*:role/aws-service-role/sso.amazonaws.com/AWSServiceRoleForSSO",
   ]
+
+  permission_boundary_role_creation_exempt_principals = concat(
+    local.permission_boundary_exempt_principals,
+    ["arn:aws:iam::*:role/aws-service-role/sso.amazonaws.com/AWSServiceRoleForSSO"],
+  )
 
   service_control_policies = {
     workloads_baseline = {
@@ -138,7 +142,7 @@ locals {
             Condition = {
               ArnNotLike = {
                 "iam:PermissionsBoundary" = "arn:aws:iam::*:policy/${local.permission_boundary_policy_name}"
-                "aws:PrincipalArn"        = local.permission_boundary_exempt_principals
+                "aws:PrincipalArn"        = local.permission_boundary_role_creation_exempt_principals
               }
             }
           },

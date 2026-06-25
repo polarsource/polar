@@ -1,8 +1,11 @@
+'use client'
+
 import { getServerURL } from '@/utils/api'
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
 import { List, ListItem } from '@polar-sh/orbit'
+import { useState } from 'react'
 import OrganizationSelector from './OrganizationSelector'
 import SharedLayout from './components/SharedLayout'
 
@@ -50,6 +53,8 @@ const AuthorizePage = ({
 
   const clientName = client.client_name || client.client_id
   const hasTerms = client.policy_uri || client.tos_uri
+
+  const [canSubmit, setCanSubmit] = useState(true)
 
   return (
     <SharedLayout
@@ -119,11 +124,20 @@ const AuthorizePage = ({
         </div>
 
         {sub_type === 'user' && (
-          <OrganizationSelector organizations={organizations} />
+          <OrganizationSelector
+            organizations={organizations}
+            onValidityChange={setCanSubmit}
+          />
         )}
 
         <div className="flex w-full flex-col gap-3">
-          <Button className="grow" type="submit" name="action" value="allow">
+          <Button
+            className="grow"
+            type="submit"
+            name="action"
+            value="allow"
+            disabled={!canSubmit}
+          >
             Allow
           </Button>
           <Button

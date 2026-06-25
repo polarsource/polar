@@ -1,0 +1,41 @@
+# Depot CI Migration
+# Source: .github/workflows/terraform.yaml
+#
+# Changes made:
+# - Rewrote .github/ path references to .depot/
+# - Changed runs-on from "blacksmith-2vcpu-ubuntu-2404" to "depot-ubuntu-latest" in job "fmt"
+
+name: Terraform
+on:
+  # Auto-run disabled during Depot trial to avoid colliding with GitHub Actions. Manual dispatch only.
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fmt:
+    name: "Terraform: Lint \U0001F4DD"
+    runs-on: depot-ubuntu-24.04 # was: blacksmith-2vcpu-ubuntu-2404 (2 vCPU)
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+      - name: Terraform Format Check
+        working-directory: ./terraform
+        run: terraform fmt -check -recursive -diff
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v6
+        with:
+          tflint_version: latest
+          cache: true
+      - name: Cache TFLint plugins
+        uses: actions/cache@v5
+        with:
+          path: ~/.tflint.d/plugins
+          key: tflint-plugins-${{ hashFiles('terraform/.tflint.hcl') }}
+      - name: Init TFLint
+        working-directory: ./terraform
+        run: tflint --init
+      - name: Run TFLint
+        working-directory: ./terraform
+        run: tflint --recursive --format=compact

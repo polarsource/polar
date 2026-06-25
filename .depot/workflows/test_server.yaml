@@ -1,0 +1,267 @@
+# Depot CI Migration
+# Source: .github/workflows/test_server.yaml
+#
+# Changes made:
+# - Rewrote .github/ path references to .depot/
+# - Changed runs-on from "blacksmith-4vcpu-ubuntu-2404" to "depot-ubuntu-latest" throughout
+
+name: Server
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    types: [opened, synchronize, edited]
+  merge_group:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  changes:
+    name: "Detect changes"
+    runs-on: depot-ubuntu-24.04-4 # was: blacksmith-4vcpu-ubuntu-2404 (4 vCPU)
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+      migrations: ${{ steps.filter.outputs.migrations }}
+      tinybird: ${{ steps.filter.outputs.tinybird }}
+      server_files: ${{ steps.filter.outputs.server_files }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          list-files: json
+          filters: |
+            server:
+              - 'server/**'
+              - '.depot/workflows/test_server.yaml'
+            migrations:
+              - 'server/migrations/versions/**'
+            tinybird:
+              - 'server/tinybird/**'
+  linters:
+    name: "Server: Linters \U0001F4DD"
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    timeout-minutes: 15
+    runs-on:
+      size: 4x16
+      image: pkpmg8f64v.registry.depot.dev/ci-server-snapshot:v1
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          clean: false
+      # - uses: actions/cache@v4
+      #   with:
+      #     path: |
+      #       server/.mypy_cache
+      #     key: mypy-${{ runner.os }}-${{ github.sha }}
+      #     restore-keys: |
+      #       mypy-${{ runner.os }}-
+      #       mypy-
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "server/pyproject.toml"
+      - name: "\U0001F527 uv install"
+        working-directory: ./server
+        run: uv sync --dev --frozen
+      - name: "\U0001F436 Lint Server (ruff)"
+        working-directory: ./server
+        run: uv run task lint_check
+      - name: "\U0001F6DF Type Check Server (mypy)"
+        working-directory: ./server
+        run: MYPY_CACHE_DIR="$HOME/.mypy_cache" uv run task lint_types
+  tinybird-check:
+    name: "Server: Tinybird Schema \U0001F426"
+    needs: changes
+    if: needs.changes.outputs.tinybird == 'true'
+    runs-on: depot-ubuntu-24.04-4 # was: blacksmith-4vcpu-ubuntu-2404 (4 vCPU)
+    services:
+      tinybird:
+        image: tinybirdco/tinybird-local:latest
+        ports:
+          - 7181:7181
+        options: >-
+          --health-cmd "curl -sf http://127.0.0.1:7181/tokens || exit 1" --health-interval 2s --health-timeout 5s --health-retries 10 --health-start-period 40s
+    steps:
+      - uses: actions/checkout@v6
+      - name: "\U0001F426 Install Tinybird CLI"
+        run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: "\U0001F426 Validate Tinybird schema"
+        working-directory: ./server/tinybird
+        run: |
+          export TB_HOST=http://localhost:7181
+          export TB_ADMIN_TOKEN=$(curl -s http://localhost:7181/tokens | jq -r .admin_token)
+          tb fmt --diff --no-color datasources/*.datasource pipes/*.pipe endpoints/*.pipe
+          tb build
+          tb test run
+  migration-check:
+    name: "Server: Migration Check \U0001F4DA"
+    needs: changes
+    if: needs.changes.outputs.migrations == 'true' && github.event_name == 'pull_request'
+    runs-on: depot-ubuntu-24.04-4 # was: blacksmith-4vcpu-ubuntu-2404 (4 vCPU)
+    steps:
+      - name: Check for disallowed files
+        id: check
+        env:
+          SERVER_FILES: ${{ needs.changes.outputs.server_files }}
+        run: |
+          DISALLOWED=""
+          for file in $(echo "$SERVER_FILES" | jq -r '.[]'); do
+            # Allow: migrations, models, scripts, and the workflow file itself
+            if [[ "$file" == server/migrations/* ]]; then
+              continue
+            fi
+            if [[ "$file" == server/polar/models/* ]]; then
+              continue
+            fi
+            if [[ "$file" == server/scripts/* ]]; then
+              continue
+            fi
+            if [[ "$file" == .github/* ]]; then
+              continue
+            fi
+            DISALLOWED="$DISALLOWED$file\n"
+          done
+
+          if [ -n "$DISALLOWED" ]; then
+            echo "has_disallowed=true" >> $GITHUB_OUTPUT
+            FILES_LIST=$(echo -e "$DISALLOWED" | sed '/^$/d' | sed 's/^/- `/' | sed 's/$/`/')
+            echo "files_list<<EOF" >> $GITHUB_OUTPUT
+            echo "$FILES_LIST" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "has_disallowed=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Find existing comment
+        uses: peter-evans/find-comment@v4
+        id: fc
+        with:
+          issue-number: ${{ github.event.number }}
+          body-includes: "<!-- __MIGRATION_CHECK -->"
+      - name: Create or update failure comment
+        if: steps.check.outputs.has_disallowed == 'true'
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          issue-number: ${{ github.event.number }}
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            <!-- __MIGRATION_CHECK -->
+            ## ⚠️ Migration Isolation Check Failed
+
+            This PR contains database migrations along with other code changes. To ensure safe deployments, please split this into separate PRs,
+            or verify that your changes will not break. Keep in mind that the API is deployed before the workers.
+
+            1. **Migration PR**: Only model changes and the migration file
+            2. **Code PR**: All other changes (can be merged after migration PR)
+
+            ### Files that should be in a separate PR:
+            ${{ steps.check.outputs.files_list }}
+
+            ### Why?
+            Migrations are deployed separately and run before code changes. Mixing them can cause deployment issues if the new code depends on the migration.
+      - name: Delete resolved comment
+        if: steps.check.outputs.has_disallowed == 'false' && steps.fc.outputs.comment-id != ''
+        uses: actions/github-script@v9
+        with:
+          script: |
+            github.rest.issues.deleteComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: ${{ steps.fc.outputs.comment-id }}
+            })
+      - name: Fail check
+        if: steps.check.outputs.has_disallowed == 'true'
+        run: exit 1
+  test:
+    name: "Server: Tests \U0001F40D"
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    runs-on:
+      size: 4x16
+      image: pkpmg8f64v.registry.depot.dev/ci-server-snapshot:v1 # pre-warmed deps; built by snapshot_server.yaml
+    timeout-minutes: 15
+    env:
+      POLAR_ENV: testing
+      POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
+    services:
+      postgres:
+        image: postgres:15.1-bullseye
+        env:
+          POSTGRES_USER: polar
+          POSTGRES_PASSWORD: polar
+          POSTGRES_DB: polar_test
+          POSTGRES_PORT: 5432
+        options: >-
+          --health-cmd pg_isready --health-interval 1s --health-timeout 5s --health-retries 5 --health-start-period 10s
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7.4-alpine
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 1s --health-timeout 5s --health-retries 5 --health-start-period 10s
+        ports:
+          - 6379:6379
+      minio:
+        image: bitnamilegacy/minio:2024.5.28
+        ports:
+          - 9000:9000
+          - 9001:9001
+        env:
+          MINIO_ROOT_USER: polar
+          MINIO_ROOT_PASSWORD: polarpolar
+        options: >-
+          --health-cmd "curl -I http://127.0.0.1:9000/minio/health/live" --health-interval 1s --health-timeout 5s --health-retries 5 --health-start-period 20s
+      tinybird:
+        image: tinybirdco/tinybird-local:latest
+        ports:
+          - 7181:7181
+          - 7182:7182
+        options: >-
+          --health-cmd "curl -s http://127.0.0.1:7181/tokens || exit 1" --health-interval 2s --health-timeout 5s --health-retries 10 --health-start-period 40s
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          clean: false
+      - name: "\U0001F4BF MinIO Setup"
+        working-directory: ./server/.minio
+        env:
+          MINIO_HOST: 127.0.0.1
+          MINIO_ROOT_USER: polar
+          MINIO_ROOT_PASSWORD: polarpolar
+          ACCESS_KEY: polar-development
+          SECRET_ACCESS_KEY: polar123456789
+          BUCKET_NAME: polar-s3
+          BUCKET_TESTING_NAME: testing-polar-s3
+          POLICY_FILE: policy.json
+        run: bash github.sh
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "server/pyproject.toml"
+      - name: "\U0001F527 uv install"
+        working-directory: ./server
+        run: |
+          uv sync --dev --frozen
+          uv run task generate_dev_jwks
+      - name: ⚗️ alembic migrate
+        working-directory: ./server
+        run: uv run task db_migrate
+      - name: ⚗️ alembic check
+        working-directory: ./server
+        run: uv run alembic check
+      - name: "\U0001F40D Run tests (pytest)"
+        working-directory: ./server
+        run: uv run pytest -n logical --dist=loadgroup --no-cov --durations=0

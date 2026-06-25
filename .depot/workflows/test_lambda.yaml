@@ -1,0 +1,96 @@
+# Depot CI Migration
+# Source: .github/workflows/test_lambda.yaml
+#
+# Changes made:
+# - Rewrote .github/ path references to .depot/
+# - Changed runs-on from "blacksmith-4vcpu-ubuntu-2404" to "depot-ubuntu-latest" in job "changes"
+# - Changed runs-on from "blacksmith-2vcpu-ubuntu-2404" to "depot-ubuntu-latest" throughout
+
+name: Lambda
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "lambda/**"
+      - ".depot/workflows/test_lambda.yaml"
+  pull_request:
+    types: [opened, synchronize, edited]
+    paths:
+      - "lambda/**"
+      - ".depot/workflows/test_lambda.yaml"
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  changes:
+    name: "Detect changes"
+    runs-on: depot-ubuntu-24.04-4 # was: blacksmith-4vcpu-ubuntu-2404 (4 vCPU)
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+      migrations: ${{ steps.filter.outputs.migrations }}
+      tinybird: ${{ steps.filter.outputs.tinybird }}
+      server_files: ${{ steps.filter.outputs.server_files }}
+      lambda: ${{ steps.filter.outputs.lambda }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          list-files: json
+          filters: |
+            lambda:
+              - 'lambda/**'
+              - '.depot/workflows/test_lambda.yaml'
+  lambda-linters:
+    name: "Lambda: Linters"
+    needs: changes
+    if: needs.changes.outputs.lambda == 'true'
+    timeout-minutes: 10
+    runs-on: depot-ubuntu-24.04 # was: blacksmith-2vcpu-ubuntu-2404 (2 vCPU)
+    strategy:
+      matrix:
+        lambda: [image-resizer]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "lambda/${{ matrix.lambda }}/pyproject.toml"
+      - name: Install dependencies
+        working-directory: ./lambda/${{ matrix.lambda }}
+        run: uv sync --frozen
+      - name: Lint
+        working-directory: ./lambda/${{ matrix.lambda }}
+        run: uv run task lint_check
+      - name: Type check
+        working-directory: ./lambda/${{ matrix.lambda }}
+        run: uv run task lint_types
+  lambda-tests:
+    name: "Lambda: Tests"
+    needs: changes
+    if: needs.changes.outputs.lambda == 'true'
+    timeout-minutes: 10
+    runs-on: depot-ubuntu-24.04 # was: blacksmith-2vcpu-ubuntu-2404 (2 vCPU)
+    strategy:
+      matrix:
+        lambda: [image-resizer]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "lambda/${{ matrix.lambda }}/pyproject.toml"
+      - name: Install dependencies
+        working-directory: ./lambda/${{ matrix.lambda }}
+        run: uv sync --frozen
+      - name: Test
+        working-directory: ./lambda/${{ matrix.lambda }}
+        run: uv run task test

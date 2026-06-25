@@ -1,0 +1,65 @@
+# Depot CI Migration
+# Source: .github/workflows/link_pr_to_issue.yaml
+#
+# Changes made:
+# - Changed GitHub runs-on labels to their Depot equivalents
+
+name: Link PR to GitHub Issue
+on:
+  pull_request:
+    types: [opened]
+permissions:
+  pull-requests: write
+  contents: read
+env:
+  TICKET_PREFIX: "pol-"
+jobs:
+  link-pr-to-issue:
+    runs-on: depot-ubuntu-latest # was: ubuntu-latest. Mapped standard GitHub runner to Depot equivalent.
+    steps:
+      - name: Extract ticket number from branch name
+        id: extract-ticket
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          echo "Branch name: $BRANCH_NAME"
+
+          # Extract ticket number (digits only) from TICKET_PREFIX-XXX pattern at the start of branch name
+          TICKET_NUMBER=$(echo $BRANCH_NAME | sed -nE "s/^${TICKET_PREFIX}([0-9]+).*/\1/p")
+          echo "ticket_number=$TICKET_NUMBER" >> $GITHUB_OUTPUT
+
+          if [ -z "$TICKET_NUMBER" ]; then
+            echo "No ticket number found in branch name - skipping workflow"
+            exit 0
+          fi
+
+          echo "Found ticket number: $TICKET_NUMBER"
+      - name: Update PR description
+        if: steps.extract-ticket.outputs.ticket_number
+        env:
+          GITHUB_ISSUE_NUMBER: ${{ steps.extract-ticket.outputs.ticket_number }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          CURRENT_BODY: ${{ github.event.pull_request.body }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          # Check if the fix reference already exists in the description
+          if echo "$CURRENT_BODY" | grep -q "Fix #$GITHUB_ISSUE_NUMBER"; then
+            echo "PR description already contains fix reference for issue #$GITHUB_ISSUE_NUMBER"
+            exit 0
+          fi
+
+          # Prepare the new body with fix reference at the top
+          if [ -n "$CURRENT_BODY" ] && [ "$CURRENT_BODY" != "null" ]; then
+            NEW_BODY=$(printf "Fix #%s\n\n%s" "$GITHUB_ISSUE_NUMBER" "$CURRENT_BODY")
+          else
+            NEW_BODY="Fix #$GITHUB_ISSUE_NUMBER"
+          fi
+
+          # Update the PR description
+          curl -s -X PATCH \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -d "{\"body\":$(echo "$NEW_BODY" | jq -Rs .)}" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" > /dev/null
+
+          echo "Updated PR #$PR_NUMBER description to include fix reference for GitHub issue #$GITHUB_ISSUE_NUMBER"

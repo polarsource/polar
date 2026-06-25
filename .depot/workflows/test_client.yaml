@@ -1,0 +1,81 @@
+# Depot CI Migration
+# Source: .github/workflows/test_client.yaml
+#
+# Changes made:
+# - Rewrote .github/ path references to .depot/
+# - Changed runs-on from "blacksmith-4vcpu-ubuntu-2404" to "depot-ubuntu-latest" throughout
+
+name: Client
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    types: [opened, synchronize, edited]
+  merge_group:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+defaults:
+  run:
+    working-directory: ./clients
+permissions:
+  contents: read
+jobs:
+  changes:
+    name: "Detect changes"
+    runs-on: depot-ubuntu-24.04-4 # was: blacksmith-4vcpu-ubuntu-2404 (4 vCPU)
+    outputs:
+      clients: ${{ steps.filter.outputs.clients }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            clients:
+              - 'clients/**'
+              - '.depot/workflows/test_client.yaml'
+  build:
+    name: "Client: Tests \U0001F3A8"
+    needs: changes
+    if: needs.changes.outputs.clients == 'true'
+    timeout-minutes: 15
+    runs-on: depot-ubuntu-24.04-4 # was: blacksmith-4vcpu-ubuntu-2404 (4 vCPU)
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      VERCEL_ENV: "testing"
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6.0.8
+        with:
+          package_json_file: clients/package.json
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version-file: clients/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+      - name: "\U0001F4E6 Install dependencies"
+        run: pnpm install
+      - name: "\U0001F485 Format check"
+        run: pnpm run format:check
+      - name: "\U0001F485 Lint"
+        run: pnpm run lint
+      - name: "\U0001F30D Validate i18n"
+        run: pnpm --filter @polar-sh/i18n validate
+      - name: "\U0001F440 Typecheck"
+        run: pnpm run typecheck
+      - name: "\U0001F9EA Test: App"
+        run: pnpm --filter @polar-sh/app test
+      - name: "\U0001F9EA Test: Web"
+        run: pnpm --filter web test
+      - name: "\U0001F9EA Test: @polar-sh/currency"
+        run: pnpm --filter @polar-sh/currency test
+      - name: "\U0001F9EA Test: @polar-sh/checkout"
+        run: pnpm --filter @polar-sh/checkout test
+      - name: "\U0001F9EA Test: @polar-sh/orbit"
+        run: pnpm --filter @polar-sh/orbit test
+      - name: "\U0001F6E0️ Build"
+        run: pnpm build

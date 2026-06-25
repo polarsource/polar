@@ -1,0 +1,25 @@
+# Depot CI Migration
+# Source: .github/workflows/database_backup.yml
+#
+# Changes made:
+# - Changed GitHub runs-on labels to their Depot equivalents
+
+name: Trigger a database backup
+on:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+permissions:
+  contents: none
+jobs:
+  backup:
+    runs-on: depot-ubuntu-latest # was: ubuntu-latest. Mapped standard GitHub runner to Depot equivalent.
+    steps:
+      - name: Trigger the backup
+        run: |
+          curl -X POST "https://api.render.com/v1/postgres/${{ secrets.RENDER_DATABASE_ID }}/backup" \
+          -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+          -H "Content-Type: application/json" \
+          --fail \
+          --silent \
+          --output /dev/null

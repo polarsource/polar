@@ -15,6 +15,7 @@ PASSTHROUGH_ENV_VARS = {
     "LANG",
     "LC_ALL",
     "LC_CTYPE",
+    "LD_LIBRARY_PATH",
     "PATH",
     "PYTHONHOME",
     "PYTHONPATH",

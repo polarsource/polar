@@ -1,0 +1,27 @@
+# Depot CI Migration
+# Source: .github/workflows/docs_images.yaml
+#
+# Changes made:
+# - Changed GitHub runs-on labels to their Depot equivalents
+
+name: Compress docs images
+on:
+  pull_request:
+    paths:
+      - "docs/**.png"
+      - "docs/**.jpg"
+      - "docs/**.jpeg"
+      - "docs/**.webp"
+jobs:
+  compress:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    name: calibreapp/image-actions
+    permissions: write-all
+    runs-on: depot-ubuntu-latest # was: ubuntu-latest. Mapped standard GitHub runner to Depot equivalent.
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v6
+      - name: Compress Images
+        uses: calibreapp/image-actions@1.5.0
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

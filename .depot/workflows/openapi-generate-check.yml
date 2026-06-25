@@ -1,0 +1,159 @@
+# Depot CI Migration
+# Source: .github/workflows/openapi-generate-check.yml
+#
+# Changes made:
+# - Rewrote .github/ path references to .depot/
+# - Changed runs-on from "blacksmith-4vcpu-ubuntu-2404" to "depot-ubuntu-latest" throughout
+
+name: OpenAPI Client Regeneration Check
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  merge_group:
+concurrency:
+  group: openapi-generate-check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  changes:
+    name: "Detect changes"
+    runs-on: depot-ubuntu-24.04-4 # was: blacksmith-4vcpu-ubuntu-2404 (4 vCPU)
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      relevant: ${{ steps.filter.outputs.relevant }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            relevant:
+              - 'server/polar/**'
+              - 'clients/packages/client/src/v1.ts'
+              - 'clients/packages/client/package.json'
+              - '.depot/workflows/openapi-generate-check.yml'
+  check:
+    name: "Check generated client"
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true'
+    runs-on: depot-ubuntu-24.04-4 # was: blacksmith-4vcpu-ubuntu-2404 (4 vCPU)
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      POLAR_EMAIL_RENDERER_BINARY_PATH: "/tmp/email-renderer"
+      POLAR_PYDANTIC_AI_GATEWAY_API_KEY: "POLAR_PYDANTIC_AI_GATEWAY_API_KEY"
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 100
+          filter: blob:none
+      - name: Merge base branch
+        if: github.event_name == 'pull_request'
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "github-actions"
+          git fetch --depth=100 origin ${{ github.event.pull_request.base.ref }}
+          if ! git merge --no-edit origin/${{ github.event.pull_request.base.ref }}; then
+            git merge --abort
+            echo "::error::Could not merge ${{ github.event.pull_request.base.ref }} into the PR cleanly. Please update your branch locally and push."
+            exit 1
+          fi
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "server/pyproject.toml"
+      - uses: pnpm/action-setup@v6.0.8
+        with:
+          package_json_file: clients/package.json
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version-file: clients/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+      - name: Create mock email renderer binary
+        run: touch /tmp/email-renderer
+      - name: Install server dependencies
+        working-directory: ./server
+        run: |
+          uv sync --frozen
+          uv run task generate_dev_jwks
+      - name: Install client dependencies
+        working-directory: ./clients
+        run: pnpm install --ignore-scripts
+      - name: Regenerate OpenAPI client
+        working-directory: ./clients
+        run: pnpm generate
+      - name: Build PR comment body
+        id: body
+        run: |
+          stale=false
+          if [[ -n "$(git status --porcelain clients/packages/client/src/v1.ts)" ]]; then
+            stale=true
+            echo "::warning::Generated client (clients/packages/client/src/v1.ts) is out of date. Run 'pnpm generate' in clients/."
+          fi
+          echo "stale=$stale" >> "$GITHUB_OUTPUT"
+          if [[ "$stale" == "true" ]]; then
+            {
+              echo 'body<<COMMENT_EOF'
+              echo '<!-- __OPENAPI_CLIENT_REGEN -->'
+              echo '## Generated OpenAPI Client'
+              echo ''
+              echo '⚠️ **`clients/packages/client/src/v1.ts` is out of date.**'
+              echo ''
+              echo 'The OpenAPI schema has changed but the generated client has not been regenerated. Please run:'
+              echo ''
+              echo '```bash'
+              echo 'cd clients && pnpm generate'
+              echo '```'
+              echo ''
+              echo 'and commit the updated `clients/packages/client/src/v1.ts`.'
+              echo ''
+              echo '<details><summary>Diff stat</summary>'
+              echo ''
+              echo '```'
+              git diff -- clients/packages/client/src/v1.ts
+              echo '```'
+              echo ''
+              echo '</details>'
+              echo 'COMMENT_EOF'
+            } >> "$GITHUB_OUTPUT"
+          fi
+      - name: Find existing comment
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/find-comment@v4
+        id: fc
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: "<!-- __OPENAPI_CLIENT_REGEN -->"
+      - name: Create or update PR comment
+        if: github.event_name == 'pull_request' && steps.body.outputs.stale == 'true'
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          edit-mode: replace
+          body: ${{ steps.body.outputs.body }}
+      - name: Delete stale comment
+        if: steps.body.outputs.stale == 'false' && steps.fc.outputs.comment-id != ''
+        uses: actions/github-script@v9
+        with:
+          script: |
+            await github.rest.issues.deleteComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: ${{ steps.fc.outputs.comment-id }},
+            });
+      - name: Fail if generated client is out of date
+        if: steps.body.outputs.stale == 'true'
+        run: |
+          echo "Generated OpenAPI client is out of date. Run 'pnpm generate' in clients/ and commit the result."
+          exit 1

@@ -7,7 +7,6 @@ import { OrbitingSpheres } from '../Landing/graphics/OrbitingSpheres'
 import { VennCluster } from '../Landing/graphics/VennCluster'
 import { BrandSection } from './BrandSection'
 import { brandSections } from './brand'
-import { Label } from './primitives'
 
 const illustrations: { name: string; Graphic: React.ComponentType }[] = [
   { name: 'Concentric', Graphic: ConcentricDraw },

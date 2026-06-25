@@ -15,13 +15,15 @@ const navColumns: NavLink[][] = [
   [
     { label: 'Logo', href: '#logo' },
     { label: 'Color', href: '#color' },
-  ],
-  [
     { label: 'Typography', href: '#typography' },
-    { label: 'Illustration', href: '#illustration' },
   ],
   [
+    { label: 'Illustration', href: '#illustration' },
     { label: 'Voice', href: '#voice' },
+    { label: 'Marketing', href: '#marketing' },
+  ],
+  [
+    { label: 'Design', href: '#design' },
     {
       label: 'Assets',
       href: '/assets/brand/polar_brand.zip',

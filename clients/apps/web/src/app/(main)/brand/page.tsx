@@ -3,8 +3,10 @@ import {
   BrandHero,
   BrandNav,
   ColorSection,
+  DesignSection,
   IllustrationSection,
   LogoSection,
+  MarketingSection,
   TypographySection,
   VoiceSection,
 } from '@/components/Brand'
@@ -13,7 +15,7 @@ import { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'Brand',
   description:
-    'The Polar brand system: logo, color, typography, illustration, and voice.',
+    'The Polar brand system: design principles, logo, color, typography, illustration, and voice.',
 }
 
 export default function BrandPage() {
@@ -27,6 +29,8 @@ export default function BrandPage() {
         <TypographySection />
         <IllustrationSection />
         <VoiceSection />
+        <MarketingSection />
+        <DesignSection />
       </main>
       <BrandFooter />
     </div>

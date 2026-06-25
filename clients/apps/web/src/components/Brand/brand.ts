@@ -42,8 +42,8 @@ export const brandColors: BrandColor[] = [
   },
   {
     name: 'Snow',
-    hex: '#ADADAD',
-    oklch: '74.8% 0 0',
+    hex: '#BDBDBD',
+    oklch: '79.8% 0 0',
     role: 'Foreground',
     flex: 3,
   },
@@ -68,4 +68,6 @@ export const brandSections: BrandSectionMeta[] = [
   { id: 'typography', index: '003', label: 'Typography' },
   { id: 'illustration', index: '004', label: 'Illustration' },
   { id: 'voice', index: '005', label: 'Voice' },
+  { id: 'marketing', index: '006', label: 'Marketing' },
+  { id: 'design', index: '007', label: 'Design' },
 ]

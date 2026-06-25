@@ -63,7 +63,7 @@ export function Heading({
   )
 }
 
-const TRAIT = 'text-4xl leading-tight tracking-[-0.01em] md:text-6xl'
+const TRAIT = 'text-4xl tracking-[-0.01em] md:text-7xl'
 export function Trait({
   as: Tag = 'h3',
   tone = 'foreground',

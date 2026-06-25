@@ -570,7 +570,9 @@ BillingEntry(
 | `discord` | Server role | Assign Discord role |
 | `license_keys` | License distribution | Generate key |
 | `downloadables` | File access | Grant download permission |
-| `custom` | Webhook-based | Call external URL |
+| `slack_shared_channel` | Slack Connect channel | Create/invite to shared channel |
+| `feature_flag` | Feature toggle (API-only) | None — merchant reads via API |
+| `custom` | Customer-visible note | None — displayed in customer portal |
 
 ### Benefit Grant Flow
 

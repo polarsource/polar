@@ -410,8 +410,8 @@ export function ProductDetailsStep() {
                     Continue anyway
                   </Button>
                   <Text variant="caption" color="muted" align="center">
-                    You can continue setting up your account, but it will
-                    require manual review before you can accept payments.
+                    You can continue setting up your account, but it may require
+                    manual review before you can accept payments.
                   </Text>
                 </>
               )}

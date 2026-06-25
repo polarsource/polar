@@ -53,12 +53,22 @@ export function OnboardingShell({
         gap="l"
         color="text-tertiary"
       >
+        {hadOrgs && (
+          <Link
+            href="/dashboard"
+            className="dark:hover:text-polar-200 text-sm hover:text-gray-900"
+          >
+            Back to dashboard
+          </Link>
+        )}
+
         <Link
           href="/dashboard/account/preferences"
           className="dark:hover:text-polar-200 text-sm hover:text-gray-900"
         >
           User settings
         </Link>
+
         <a
           href={`${CONFIG.BASE_URL}/v1/auth/logout`}
           className="dark:hover:text-polar-200 text-sm hover:text-gray-900"
@@ -130,14 +140,6 @@ export function OnboardingShell({
                 )}
               </Box>
               {children}
-              {hadOrgs && (
-                <Link
-                  href="/dashboard"
-                  className="dark:text-polar-400 dark:hover:text-polar-200 text-center text-sm text-gray-500 hover:text-gray-900"
-                >
-                  Back to dashboard
-                </Link>
-              )}
             </Box>
           </motion.div>
         </Box>

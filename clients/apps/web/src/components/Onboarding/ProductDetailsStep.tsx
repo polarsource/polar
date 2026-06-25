@@ -2,10 +2,10 @@
 
 import { useAuth } from '@/hooks'
 import { useCreateOrganization } from '@/hooks/queries'
-import { useAupValidation } from '@/hooks/useAupValidation'
+import { AupVerdict, useAupValidation } from '@/hooks/useAupValidation'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import { TextArea } from '@polar-sh/orbit'
 import {
@@ -107,7 +107,10 @@ export function ProductDetailsStep() {
     [sellingCategories],
   )
 
-  const submitOrg = async (formData: FormSchema) => {
+  const submitOrg = async (
+    formData: FormSchema,
+    verdict: AupVerdict | null,
+  ) => {
     setApiLoading(true)
 
     if (!data.orgName || !data.orgSlug) {
@@ -186,7 +189,10 @@ export function ProductDetailsStep() {
       orgSlug: organization.slug,
     })
 
-    trackStepCompleted('product', { organization_id: organization.id })
+    trackStepCompleted('product', {
+      organization_id: organization.id,
+      ...(verdict && { aup_verdict: verdict }),
+    })
     await showApiResponse(201, 'Created')
     router.push('/onboarding/complete')
     return true
@@ -209,7 +215,7 @@ export function ProductDetailsStep() {
     if (result.verdict === 'DENY' || result.verdict === 'CLARIFY') return
 
     setLoading('submitting')
-    const success = await submitOrg(formData)
+    const success = await submitOrg(formData, result.verdict)
     if (!success) {
       setLoading(null)
     }
@@ -218,7 +224,7 @@ export function ProductDetailsStep() {
   const onContinueAnyway = async () => {
     setLoading('submitting-anyway')
     const formData = form.getValues()
-    const success = await submitOrg(formData)
+    const success = await submitOrg(formData, aup.verdict)
     if (!success) {
       setLoading(null)
     }
@@ -381,27 +387,33 @@ export function ProductDetailsStep() {
                 blockedSelected.length > 0 ||
                 sellingCategories.length === 0 ||
                 pricingModel.length === 0 ||
-                productDescription.trim().length === 0
+                productDescription.trim().length < 30
               }
               fullWidth
             >
               {aup.verdict ? 'Review again' : 'Launch Dashboard'}
             </Button>
 
-            {aup.verdict === 'CLARIFY' &&
-              aup.history.length >= 3 &&
+            {aup.verdict &&
+              aup.history.length >= 2 &&
               productDescription.trim().length > 30 &&
               !aup.isValidating && (
-                <Button
-                  variant="ghost"
-                  type="button"
-                  fullWidth
-                  onClick={onContinueAnyway}
-                  disabled={loading === 'submitting'}
-                  loading={loading === 'submitting-anyway'}
-                >
-                  Continue without review
-                </Button>
+                <>
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    fullWidth
+                    onClick={onContinueAnyway}
+                    disabled={loading === 'submitting'}
+                    loading={loading === 'submitting-anyway'}
+                  >
+                    Continue anyway
+                  </Button>
+                  <Text variant="caption" color="muted" align="center">
+                    You can continue setting up your account, but it will
+                    require manual review before you can accept payments.
+                  </Text>
+                </>
               )}
             {form.formState.errors.root && (
               <p className="text-sm text-red-500 dark:text-red-500">

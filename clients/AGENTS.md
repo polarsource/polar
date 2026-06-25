@@ -41,7 +41,6 @@ clients/
 │   │       ├── molecules/      # Composite components (Banner)
 │   │       └── ui/             # shadcn/ui base components
 │   ├── client/                 # Generated API client
-│   ├── sdk/                    # Published SDK
 │   ├── checkout/               # Checkout package
 │   └── orbit/                  # Polar's design system containing components, design tokens, etc.
 ```

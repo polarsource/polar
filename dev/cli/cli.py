@@ -365,4 +365,11 @@ register_commands()
 
 
 if __name__ == "__main__":
+    try:
+        import analytics
+
+        analytics.track(sys.argv)
+    except Exception:
+        pass
+
     app()

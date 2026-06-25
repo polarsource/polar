@@ -77,7 +77,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const hasSeatBasedOrder = !!order?.seats && order.seats > 0
 
   const hasDeclinedPayment = (payments?.items ?? []).some(
-    (payment) => payment.decline_reason || payment.decline_message,
+    (payment) => payment.status === 'failed',
   )
 
   const { data: seatsData, isLoading: isLoadingSeats } = useOrganizationSeats(

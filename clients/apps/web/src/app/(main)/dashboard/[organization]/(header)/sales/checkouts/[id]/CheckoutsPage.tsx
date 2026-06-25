@@ -27,7 +27,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, checkout }) => {
   )
 
   const hasDeclinedPayment = (payments?.items ?? []).some(
-    (payment) => payment.decline_reason || payment.decline_message,
+    (payment) => payment.status === 'failed',
   )
 
   return (

@@ -78,6 +78,3 @@ export function groupEmptyDates(
   return groups
 }
 
-export function formatEventId(eventId: string) {
-  return eventId.split('-')[0]
-}

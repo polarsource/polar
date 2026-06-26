@@ -63,12 +63,13 @@ export const createBenefits = (client: ClientBase) => {
    *
    * **Scopes**: `benefits:write`
    *
-   * @param body - Request body* @returns {Benefit}
+   * @param body - Request body
+   * @returns {Benefit}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: BenefitCreate): Promise<Benefit> => {
+  return async (body: BenefitCreate): Promise<Benefit> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest("POST", "/v1/benefits/", pathParams, queryParams, body);
@@ -84,7 +85,7 @@ export const getBenefits = (client: ClientBase) => {
    *
    * **Scopes**: `benefits:read` `benefits:write`
    *
-   * @param id - id
+   * @param id
    * @returns {Benefit}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
@@ -120,7 +121,7 @@ export const deleteBenefits = (client: ClientBase) => {
    *
    * **Scopes**: `benefits:write`
    *
-   * @param id - id
+   * @param id
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
@@ -154,8 +155,9 @@ export const updateBenefits = (client: ClientBase) => {
    *
    * **Scopes**: `benefits:write`
    *
-   * @param id - id
-   * @param body - Request body* @returns {Benefit}
+   * @param id
+   * @param body - Request body
+   * @returns {Benefit}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Benefit not found.
@@ -163,7 +165,7 @@ export const updateBenefits = (client: ClientBase) => {
    */
   return async (
     id: string,
-    body?:
+    body:
       | BenefitCustomUpdate
       | BenefitDiscordUpdate
       | BenefitGitHubRepositoryUpdate
@@ -199,7 +201,7 @@ export const grantsBenefits = (client: ClientBase) => {
    *
    * **Scopes**: `benefits:read` `benefits:write`
    *
-   * @param id - id
+   * @param id
    * @param query - Query parameters
    * @returns {ListResourceBenefitGrant}
    * @throws {PolarNetworkError} When a network error occurs

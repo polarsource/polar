@@ -15,13 +15,14 @@ export const createCustomerSessions = (client: ClientBase) => {
    *
    * **Scopes**: `customer_sessions:write`
    *
-   * @param body - Request body* @returns {CustomerSession}
+   * @param body - Request body
+   * @returns {CustomerSession}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
   return async (
-    body?: CustomerSessionCustomerIDCreate | CustomerSessionCustomerExternalIDCreate,
+    body: CustomerSessionCustomerIDCreate | CustomerSessionCustomerExternalIDCreate,
   ): Promise<CustomerSession> => {
     const pathParams = {};
     const queryParams = {};

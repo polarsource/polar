@@ -50,12 +50,13 @@ export const createDiscounts = (client: ClientBase) => {
    *
    * **Scopes**: `discounts:write`
    *
-   * @param body - Request body* @returns {Discount}
+   * @param body - Request body
+   * @returns {Discount}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: DiscountCreate): Promise<Discount> => {
+  return async (body: DiscountCreate): Promise<Discount> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest("POST", "/v1/discounts/", pathParams, queryParams, body);
@@ -136,13 +137,14 @@ export const updateDiscounts = (client: ClientBase) => {
    * **Scopes**: `discounts:write`
    *
    * @param id - The discount ID.
-   * @param body - Request body* @returns {Discount}
+   * @param body - Request body
+   * @returns {Discount}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Discount not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: DiscountUpdate): Promise<Discount> => {
+  return async (id: string, body: DiscountUpdate): Promise<Discount> => {
     const pathParams = {
       id: id,
     };

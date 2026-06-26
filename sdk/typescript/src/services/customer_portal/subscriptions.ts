@@ -120,7 +120,8 @@ export const updateSubscriptions = (client: ClientBase) => {
    * Update a subscription of the authenticated customer.
    *
    * @param id - The subscription ID.
-   * @param body - Request body* @returns {CustomerSubscription}
+   * @param body - Request body
+   * @returns {CustomerSubscription}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {PaymentFailed} Payment required to apply the subscription update.
@@ -128,7 +129,7 @@ export const updateSubscriptions = (client: ClientBase) => {
    * @throws {ResourceNotFound} Customer subscription was not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: CustomerSubscriptionUpdate): Promise<CustomerSubscription> => {
+  return async (id: string, body: CustomerSubscriptionUpdate): Promise<CustomerSubscription> => {
     const pathParams = {
       id: id,
     };

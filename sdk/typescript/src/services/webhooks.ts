@@ -50,12 +50,13 @@ export const createWebhookEndpointWebhooks = (client: ClientBase) => {
    *
    * **Scopes**: `webhooks:write`
    *
-   * @param body - Request body* @returns {WebhookEndpoint}
+   * @param body - Request body
+   * @returns {WebhookEndpoint}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: WebhookEndpointCreate): Promise<WebhookEndpoint> => {
+  return async (body: WebhookEndpointCreate): Promise<WebhookEndpoint> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest(
@@ -142,13 +143,14 @@ export const updateWebhookEndpointWebhooks = (client: ClientBase) => {
    * **Scopes**: `webhooks:write`
    *
    * @param id - The webhook endpoint ID.
-   * @param body - Request body* @returns {WebhookEndpoint}
+   * @param body - Request body
+   * @returns {WebhookEndpoint}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Webhook endpoint not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: WebhookEndpointUpdate): Promise<WebhookEndpoint> => {
+  return async (id: string, body: WebhookEndpointUpdate): Promise<WebhookEndpoint> => {
     const pathParams = {
       id: id,
     };

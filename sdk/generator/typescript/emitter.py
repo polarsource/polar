@@ -114,7 +114,7 @@ class TypeScriptEmitter(EmitterBase):
             self.templates_dir / "tsconfig.json", root_directory / "tsconfig.json"
         )
         self.copy_file(
-            self.templates_dir / "tsup.config.ts", root_directory / "tsup.config.ts"
+            self.templates_dir / "tsdown.config.ts", root_directory / "tsdown.config.ts"
         )
         self.copy_file(self.templates_dir / "justfile", root_directory / "justfile")
         self.copy_file(self.templates_dir / "README.md", root_directory / "README.md")
@@ -175,6 +175,7 @@ class TypeScriptEmitter(EmitterBase):
         self.run_command("just install", cwd=root_directory)
         self.run_command("just lint-fix", cwd=root_directory)
         self.run_command("just typecheck", cwd=root_directory)
+        self.run_command("just build", cwd=root_directory)
 
     def _emit_models(self, src_dir: pathlib.Path) -> None:
         """Emit all model files (inputs.ts, outputs.ts, literals.ts)."""

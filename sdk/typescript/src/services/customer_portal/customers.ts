@@ -51,12 +51,13 @@ export const updateCustomers = (client: ClientBase) => {
   /**
    * Update authenticated customer.
    *
-   * @param body - Request body* @returns {CustomerPortalCustomer}
+   * @param body - Request body
+   * @returns {CustomerPortalCustomer}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: CustomerPortalCustomerUpdate): Promise<CustomerPortalCustomer> => {
+  return async (body: CustomerPortalCustomerUpdate): Promise<CustomerPortalCustomer> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest(
@@ -108,14 +109,15 @@ export const addPaymentMethodCustomers = (client: ClientBase) => {
   /**
    * Add a payment method to the authenticated customer.
    *
-   * @param body - Request body* @returns {CustomerPaymentMethodCreateResponse}
+   * @param body - Request body
+   * @returns {CustomerPaymentMethodCreateResponse}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {PaymentMethodSetupFailed} The card was declined while setting up the payment method.
    * @throws {HTTPValidationError} Validation Error
    */
   return async (
-    body?: CustomerPaymentMethodCreate,
+    body: CustomerPaymentMethodCreate,
   ): Promise<CustomerPaymentMethodCreateResponse> => {
     const pathParams = {};
     const queryParams = {};
@@ -137,14 +139,15 @@ export const confirmPaymentMethodCustomers = (client: ClientBase) => {
   /**
    * Confirm a payment method for the authenticated customer.
    *
-   * @param body - Request body* @returns {CustomerPaymentMethodCreateResponse}
+   * @param body - Request body
+   * @returns {CustomerPaymentMethodCreateResponse}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {CustomerNotReady} Customer is not ready to confirm a payment method.
    * @throws {HTTPValidationError} Validation Error
    */
   return async (
-    body?: CustomerPaymentMethodConfirm,
+    body: CustomerPaymentMethodConfirm,
   ): Promise<CustomerPaymentMethodCreateResponse> => {
     const pathParams = {};
     const queryParams = {};
@@ -166,7 +169,7 @@ export const deletePaymentMethodCustomers = (client: ClientBase) => {
   /**
    * Delete a payment method from the authenticated customer.
    *
-   * @param id - id
+   * @param id
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
@@ -198,12 +201,13 @@ export const requestEmailUpdateCustomers = (client: ClientBase) => {
   /**
    * Request an email change for the authenticated customer.
    *
-   * @param body - Request body* @returns {unknown}
+   * @param body - Request body
+   * @returns {unknown}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: CustomerEmailUpdateRequest): Promise<unknown> => {
+  return async (body: CustomerEmailUpdateRequest): Promise<unknown> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest(
@@ -253,14 +257,15 @@ export const verifyEmailUpdateCustomers = (client: ClientBase) => {
   /**
    * Verify an email change using the token from the verification email.
    *
-   * @param body - Request body* @returns {CustomerEmailUpdateVerifyResponse}
+   * @param body - Request body
+   * @returns {CustomerEmailUpdateVerifyResponse}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {VerifyEmailUpdate401Error} Invalid or expired verification token.
    * @throws {VerifyEmailUpdate422Error} Email address is already in use.
    */
   return async (
-    body?: CustomerEmailUpdateVerifyRequest,
+    body: CustomerEmailUpdateVerifyRequest,
   ): Promise<CustomerEmailUpdateVerifyResponse> => {
     const pathParams = {};
     const queryParams = {};

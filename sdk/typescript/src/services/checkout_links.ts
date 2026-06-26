@@ -50,12 +50,13 @@ export const createCheckoutLinks = (client: ClientBase) => {
    *
    * **Scopes**: `checkout_links:write`
    *
-   * @param body - Request body* @returns {CheckoutLink}
+   * @param body - Request body
+   * @returns {CheckoutLink}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: CheckoutLinkCreate): Promise<CheckoutLink> => {
+  return async (body: CheckoutLinkCreate): Promise<CheckoutLink> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest(
@@ -142,13 +143,14 @@ export const updateCheckoutLinks = (client: ClientBase) => {
    * **Scopes**: `checkout_links:write`
    *
    * @param id - The checkout link ID.
-   * @param body - Request body* @returns {CheckoutLink}
+   * @param body - Request body
+   * @returns {CheckoutLink}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Checkout link not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: CheckoutLinkUpdate): Promise<CheckoutLink> => {
+  return async (id: string, body: CheckoutLinkUpdate): Promise<CheckoutLink> => {
     const pathParams = {
       id: id,
     };

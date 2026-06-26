@@ -143,13 +143,8 @@ export class ClientBase {
     if (response.status >= 400 && response.status < 500) {
       if (errors?.[statusCode]) {
         const ErrorClass = errors[statusCode];
-        try {
-          const errorData = await response.json();
-          throw new ErrorClass(statusCode, errorData);
-        } catch {
-          const text = await response.text().catch(() => "");
-          throw new ErrorClass(statusCode, text || null);
-        }
+        const errorData = await response.json();
+        throw new ErrorClass(statusCode, errorData);
       } else {
         const text = await response.text().catch(() => "");
         throw new PolarClientError(statusCode, text || "Client error");

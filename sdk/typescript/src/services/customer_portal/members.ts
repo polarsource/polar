@@ -66,7 +66,8 @@ export const addMemberMembers = (client: ClientBase) => {
    * - Cannot add a member with the owner role (there must be exactly one owner)
    * - If a member with this email already exists, the existing member is returned
    *
-   * @param body - Request body* @returns {CustomerPortalMember}
+   * @param body - Request body
+   * @returns {CustomerPortalMember}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {AddMember400Error} Invalid request or member already exists.
@@ -74,7 +75,7 @@ export const addMemberMembers = (client: ClientBase) => {
    * @throws {AddMember403Error} Not permitted - requires owner or billing manager role
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: CustomerPortalMemberCreate): Promise<CustomerPortalMember> => {
+  return async (body: CustomerPortalMemberCreate): Promise<CustomerPortalMember> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest(
@@ -103,7 +104,7 @@ export const removeMemberMembers = (client: ClientBase) => {
    * - Cannot remove yourself
    * - Cannot remove the only owner
    *
-   * @param id - id
+   * @param id
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
@@ -145,8 +146,9 @@ export const updateMemberMembers = (client: ClientBase) => {
    * - Cannot modify your own role (to prevent self-demotion)
    * - Customer must have exactly one owner at all times
    *
-   * @param id - id
-   * @param body - Request body* @returns {CustomerPortalMember}
+   * @param id
+   * @param body - Request body
+   * @returns {CustomerPortalMember}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {UpdateMember400Error} Invalid role change.
@@ -155,7 +157,7 @@ export const updateMemberMembers = (client: ClientBase) => {
    * @throws {UpdateMember404Error} Member not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: CustomerPortalMemberUpdate): Promise<CustomerPortalMember> => {
+  return async (id: string, body: CustomerPortalMemberUpdate): Promise<CustomerPortalMember> => {
     const pathParams = {
       id: id,
     };

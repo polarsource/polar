@@ -15,30 +15,30 @@
     "url": "https://github.com/polar-sh/polar"
   },
   "type": "module",
-  "main": "dist/index.js",
-  "module": "dist/esm/index.js",
+  "sideEffects": false,
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "require": "./dist/index.js",
-      "import": "./dist/esm/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs"
     }
   },
   "scripts": {
-    "build": "tsup src",
+    "build": "tsdown",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
-    "test": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "postbuild": "cp dist/index.d.mts dist/index.d.ts"
   },
   "devDependencies": {
     "oxfmt": "^0.56.0",
     "oxlint": "^1.71.0",
-    "tsup": "^8.0.0",
-    "typescript": "^5.0.0",
-    "vitest": "^1.0.0"
+    "tsdown": "^0.22.3",
+    "typescript": "^6.0.3"
   }
 }

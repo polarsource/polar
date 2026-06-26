@@ -66,12 +66,13 @@ export const createCustomers = (client: ClientBase) => {
    *
    * **Scopes**: `customers:write`
    *
-   * @param body - Request body* @returns {Customer}
+   * @param body - Request body
+   * @returns {Customer}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: CustomerCreate): Promise<Customer> => {
+  return async (body: CustomerCreate): Promise<Customer> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest("POST", "/v1/customers/", pathParams, queryParams, body);
@@ -204,13 +205,14 @@ export const updateCustomers = (client: ClientBase) => {
    * **Scopes**: `customers:write`
    *
    * @param id - The customer ID.
-   * @param body - Request body* @returns {Customer}
+   * @param body - Request body
+   * @returns {Customer}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Customer not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: CustomerUpdate): Promise<Customer> => {
+  return async (id: string, body: CustomerUpdate): Promise<Customer> => {
     const pathParams = {
       id: id,
     };
@@ -312,13 +314,14 @@ export const updateExternalCustomers = (client: ClientBase) => {
    * **Scopes**: `customers:write`
    *
    * @param external_id - The customer external ID.
-   * @param body - Request body* @returns {Customer}
+   * @param body - Request body
+   * @returns {Customer}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Customer not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (external_id: string, body?: CustomerUpdateExternalID): Promise<Customer> => {
+  return async (external_id: string, body: CustomerUpdateExternalID): Promise<Customer> => {
     const pathParams = {
       external_id: external_id,
     };

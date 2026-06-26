@@ -76,12 +76,13 @@ export const createCheckouts = (client: ClientBase) => {
    *
    * **Scopes**: `checkouts:write`
    *
-   * @param body - Request body* @returns {Checkout}
+   * @param body - Request body
+   * @returns {Checkout}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: CheckoutCreate): Promise<Checkout> => {
+  return async (body: CheckoutCreate): Promise<Checkout> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest("POST", "/v1/checkouts/", pathParams, queryParams, body);
@@ -130,14 +131,15 @@ export const updateCheckouts = (client: ClientBase) => {
    * **Scopes**: `checkouts:write`
    *
    * @param id - The checkout session ID.
-   * @param body - Request body* @returns {Checkout}
+   * @param body - Request body
+   * @returns {Checkout}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {Update403Error} The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
    * @throws {ResourceNotFound} Checkout session not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: CheckoutUpdate): Promise<Checkout> => {
+  return async (id: string, body: CheckoutUpdate): Promise<Checkout> => {
     const pathParams = {
       id: id,
     };
@@ -194,7 +196,8 @@ export const clientUpdateCheckouts = (client: ClientBase) => {
    * Update a checkout session by client secret.
    *
    * @param client_secret - The checkout session client secret.
-   * @param body - Request body* @returns {CheckoutPublic}
+   * @param body - Request body
+   * @returns {CheckoutPublic}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ClientUpdate403Error} The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
@@ -202,7 +205,7 @@ export const clientUpdateCheckouts = (client: ClientBase) => {
    * @throws {ExpiredCheckoutError} The checkout session is expired.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (client_secret: string, body?: CheckoutUpdatePublic): Promise<CheckoutPublic> => {
+  return async (client_secret: string, body: CheckoutUpdatePublic): Promise<CheckoutPublic> => {
     const pathParams = {
       client_secret: client_secret,
     };
@@ -230,7 +233,8 @@ export const clientConfirmCheckouts = (client: ClientBase) => {
    * Orders and subscriptions will be processed.
    *
    * @param client_secret - The checkout session client secret.
-   * @param body - Request body* @returns {CheckoutPublicConfirmed}
+   * @param body - Request body
+   * @returns {CheckoutPublicConfirmed}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {PaymentError} The payment failed.
@@ -241,7 +245,7 @@ export const clientConfirmCheckouts = (client: ClientBase) => {
    */
   return async (
     client_secret: string,
-    body?: CheckoutConfirmStripe,
+    body: CheckoutConfirmStripe,
   ): Promise<CheckoutPublicConfirmed> => {
     const pathParams = {
       client_secret: client_secret,

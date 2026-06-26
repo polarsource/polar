@@ -95,13 +95,14 @@ export const updateOrders = (client: ClientBase) => {
    * Update an order for the authenticated customer.
    *
    * @param id - The order ID.
-   * @param body - Request body* @returns {CustomerOrder}
+   * @param body - Request body
+   * @returns {CustomerOrder}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Order not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: CustomerOrderUpdate): Promise<CustomerOrder> => {
+  return async (id: string, body: CustomerOrderUpdate): Promise<CustomerOrder> => {
     const pathParams = {
       id: id,
     };
@@ -245,7 +246,8 @@ export const confirmRetryPaymentOrders = (client: ClientBase) => {
    * Confirm a retry payment using a Stripe confirmation token.
    *
    * @param id - The order ID.
-   * @param body - Request body* @returns {CustomerOrderPaymentConfirmation}
+   * @param body - Request body
+   * @returns {CustomerOrderPaymentConfirmation}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Order not found.
@@ -255,7 +257,7 @@ export const confirmRetryPaymentOrders = (client: ClientBase) => {
    */
   return async (
     id: string,
-    body?: CustomerOrderConfirmPayment,
+    body: CustomerOrderConfirmPayment,
   ): Promise<CustomerOrderPaymentConfirmation> => {
     const pathParams = {
       id: id,

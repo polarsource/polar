@@ -52,12 +52,13 @@ export const createCustomFields = (client: ClientBase) => {
    *
    * **Scopes**: `custom_fields:write`
    *
-   * @param body - Request body* @returns {CustomField}
+   * @param body - Request body
+   * @returns {CustomField}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: CustomFieldCreate): Promise<CustomField> => {
+  return async (body: CustomFieldCreate): Promise<CustomField> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest(
@@ -144,13 +145,14 @@ export const updateCustomFields = (client: ClientBase) => {
    * **Scopes**: `custom_fields:write`
    *
    * @param id - The custom field ID.
-   * @param body - Request body* @returns {CustomField}
+   * @param body - Request body
+   * @returns {CustomField}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Custom field not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: CustomFieldUpdate): Promise<CustomField> => {
+  return async (id: string, body: CustomFieldUpdate): Promise<CustomField> => {
     const pathParams = {
       id: id,
     };

@@ -61,13 +61,14 @@ export const updateEventTypes = (client: ClientBase) => {
    * **Scopes**: `events:write`
    *
    * @param id - The event type ID.
-   * @param body - Request body* @returns {EventType}
+   * @param body - Request body
+   * @returns {EventType}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {Update404Error} Not Found
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: EventTypeUpdate): Promise<EventType> => {
+  return async (id: string, body: EventTypeUpdate): Promise<EventType> => {
     const pathParams = {
       id: id,
     };

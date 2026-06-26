@@ -9,12 +9,13 @@ export const createClientOauth2 = (client: ClientBase) => {
   /**
    * Create an OAuth2 client.
    *
-   * @param body - Request body* @returns {unknown}
+   * @param body - Request body
+   * @returns {unknown}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: OAuth2ClientConfiguration): Promise<unknown> => {
+  return async (body: OAuth2ClientConfiguration): Promise<unknown> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest(
@@ -34,7 +35,7 @@ export const getClientOauth2 = (client: ClientBase) => {
   /**
    * Get an OAuth2 client by Client ID.
    *
-   * @param client_id - client_id
+   * @param client_id
    * @returns {unknown}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
@@ -62,15 +63,19 @@ export const updateClientOauth2 = (client: ClientBase) => {
   /**
    * Update an OAuth2 client.
    *
-   * @param client_id - client_id
-   * @param body - Request body* @returns {unknown}
+   * @param client_id_path
+   * @param body - Request body
+   * @returns {unknown}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (client_id: string, body?: OAuth2ClientConfigurationUpdate): Promise<unknown> => {
+  return async (
+    client_id_path: string,
+    body: OAuth2ClientConfigurationUpdate,
+  ): Promise<unknown> => {
     const pathParams = {
-      client_id_path: client_id,
+      client_id: client_id_path,
     };
     const queryParams = {};
     const request = client.buildRequest(
@@ -90,7 +95,7 @@ export const deleteClientOauth2 = (client: ClientBase) => {
   /**
    * Delete an OAuth2 client.
    *
-   * @param client_id - client_id
+   * @param client_id
    * @returns {unknown}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error

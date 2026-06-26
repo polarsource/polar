@@ -54,13 +54,14 @@ export const createRefunds = (client: ClientBase) => {
    *
    * **Scopes**: `refunds:write`
    *
-   * @param body - Request body* @returns {Refund}
+   * @param body - Request body
+   * @returns {Refund}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {RefundedAlready} Order is already fully refunded.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: RefundCreate): Promise<Refund> => {
+  return async (body: RefundCreate): Promise<Refund> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest("POST", "/v1/refunds/", pathParams, queryParams, body);

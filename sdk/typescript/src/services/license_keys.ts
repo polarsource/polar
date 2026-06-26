@@ -65,7 +65,7 @@ export const getLicenseKeys = (client: ClientBase) => {
    *
    * **Scopes**: `license_keys:read` `license_keys:write`
    *
-   * @param id - id
+   * @param id
    * @returns {LicenseKeyWithActivations}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
@@ -99,15 +99,16 @@ export const updateLicenseKeys = (client: ClientBase) => {
    *
    * **Scopes**: `license_keys:write`
    *
-   * @param id - id
-   * @param body - Request body* @returns {LicenseKeyRead}
+   * @param id
+   * @param body - Request body
+   * @returns {LicenseKeyRead}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {Unauthorized} Not authorized to manage license key.
    * @throws {ResourceNotFound} License key not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: LicenseKeyUpdate): Promise<LicenseKeyRead> => {
+  return async (id: string, body: LicenseKeyUpdate): Promise<LicenseKeyRead> => {
     const pathParams = {
       id: id,
     };
@@ -133,8 +134,8 @@ export const getActivationLicenseKeys = (client: ClientBase) => {
    *
    * **Scopes**: `license_keys:read` `license_keys:write`
    *
-   * @param id - id
-   * @param activation_id - activation_id
+   * @param id
+   * @param activation_id
    * @returns {LicenseKeyActivationRead}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
@@ -169,13 +170,14 @@ export const validateLicenseKeys = (client: ClientBase) => {
    *
    * **Scopes**: `license_keys:write`
    *
-   * @param body - Request body* @returns {ValidatedLicenseKey}
+   * @param body - Request body
+   * @returns {ValidatedLicenseKey}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} License key not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: LicenseKeyValidate): Promise<ValidatedLicenseKey> => {
+  return async (body: LicenseKeyValidate): Promise<ValidatedLicenseKey> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest(
@@ -198,14 +200,15 @@ export const activateLicenseKeys = (client: ClientBase) => {
    *
    * **Scopes**: `license_keys:write`
    *
-   * @param body - Request body* @returns {LicenseKeyActivationRead}
+   * @param body - Request body
+   * @returns {LicenseKeyActivationRead}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.
    * @throws {ResourceNotFound} License key not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: LicenseKeyActivate): Promise<LicenseKeyActivationRead> => {
+  return async (body: LicenseKeyActivate): Promise<LicenseKeyActivationRead> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest(
@@ -229,13 +232,14 @@ export const deactivateLicenseKeys = (client: ClientBase) => {
    *
    * **Scopes**: `license_keys:write`
    *
-   * @param body - Request body* @returns {void}
+   * @param body - Request body
+   * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} License key not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: LicenseKeyDeactivate): Promise<void> => {
+  return async (body: LicenseKeyDeactivate): Promise<void> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest(

@@ -25,13 +25,13 @@ export const {{ method.name | camel }}{{ service.name }} = (
 {% endif %}
 *
 {% for param in method.path_params %}
-* @param {{ param.name }} - {{ param.description or param.name }}
+* @param {{ param.parameter_name }}{% if param.description %} - {{ param.description }}{% endif +%}
 {% endfor %}
 {% if method.query_params %}
 * @param query - Query parameters
 {% endif %}
 {% if method.body %}
-* @param body - Request body{% if method.body.description %}: {{ method.body.description }}{% endif %}
+* @param body - Request body{% if method.body.description %}: {{ method.body.description }}{% endif +%}
 {% endif %}
 {% if method.response_type == 'json' %}
 * @returns {{'{'}}{{ method.response | ts_type }}{{'}'}}
@@ -48,7 +48,7 @@ export const {{ method.name | camel }}{{ service.name }} = (
 */
   return async (
     {% for param in method.path_params %}
-    {{ param.name }}: {{ param.type | ts_type }},
+    {{ param.parameter_name }}: {{ param.type | ts_type }},
     {% endfor %}
     {% if method.query_params %}
     query{{ "?" if not method.query_params | selectattr("required", "eq", true) | list else "" }}: {
@@ -61,10 +61,10 @@ export const {{ method.name | camel }}{{ service.name }} = (
     {% endif %}
   ): Promise<{{ method.response | ts_type if method.response_type == 'json' else 'string' if method.response_type == 'text' else 'void' }}> => {
     const pathParams = {
-      {% for param in method.path_params %}"{{ param.parameter_name }}": {{ param.name }},{% endfor %}
+      {% for param in method.path_params %}"{{ param.name }}": {{ param.parameter_name }},{% endfor %}
     };
     const queryParams = {% if method.query_params %}{
-      {% for param in method.query_params %}"{{ param.parameter_name }}": query{{ "" if param.required else "?" }}.{{ param.name }}{% if param.default %} || {{ param.default | format_default }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}
+      {% for param in method.query_params %}"{{ param.name }}": query{{ "" if param.required else "?" }}.{{ param.name }}{% if param.default %} || {{ param.default | format_default }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}
       }{% else %}{}{% endif %};
     const request = client.buildRequest(
       "{{ method.http_method | upper }}",

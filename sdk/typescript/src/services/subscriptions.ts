@@ -90,13 +90,14 @@ export const createSubscriptions = (client: ClientBase) => {
    *
    * **Scopes**: `subscriptions:write`
    *
-   * @param body - Request body* @returns {Subscription}
+   * @param body - Request body
+   * @returns {Subscription}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
   return async (
-    body?: SubscriptionCreateCustomer | SubscriptionCreateExternalCustomer,
+    body: SubscriptionCreateCustomer | SubscriptionCreateExternalCustomer,
   ): Promise<Subscription> => {
     const pathParams = {};
     const queryParams = {};
@@ -218,7 +219,8 @@ export const updateSubscriptions = (client: ClientBase) => {
    * **Scopes**: `subscriptions:write`
    *
    * @param id - The subscription ID.
-   * @param body - Request body* @returns {Subscription}
+   * @param body - Request body
+   * @returns {Subscription}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {PaymentFailed} Payment required to apply the subscription update.
@@ -227,7 +229,7 @@ export const updateSubscriptions = (client: ClientBase) => {
    * @throws {SubscriptionLocked} Subscription is pending an update.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: SubscriptionUpdate): Promise<Subscription> => {
+  return async (id: string, body: SubscriptionUpdate): Promise<Subscription> => {
     const pathParams = {
       id: id,
     };

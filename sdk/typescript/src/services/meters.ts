@@ -53,12 +53,13 @@ export const createMeters = (client: ClientBase) => {
    *
    * **Scopes**: `meters:write`
    *
-   * @param body - Request body* @returns {Meter}
+   * @param body - Request body
+   * @returns {Meter}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: MeterCreate): Promise<Meter> => {
+  return async (body: MeterCreate): Promise<Meter> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest("POST", "/v1/meters/", pathParams, queryParams, body);
@@ -107,13 +108,14 @@ export const updateMeters = (client: ClientBase) => {
    * **Scopes**: `meters:write`
    *
    * @param id - The meter ID.
-   * @param body - Request body* @returns {Meter}
+   * @param body - Request body
+   * @returns {Meter}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Meter not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: MeterUpdate): Promise<Meter> => {
+  return async (id: string, body: MeterUpdate): Promise<Meter> => {
     const pathParams = {
       id: id,
     };

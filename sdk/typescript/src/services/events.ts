@@ -154,12 +154,13 @@ export const ingestEvents = (client: ClientBase) => {
    *
    * **Scopes**: `events:write`
    *
-   * @param body - Request body* @returns {EventsIngestResponse}
+   * @param body - Request body
+   * @returns {EventsIngestResponse}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: EventsIngest): Promise<EventsIngestResponse> => {
+  return async (body: EventsIngest): Promise<EventsIngestResponse> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest("POST", "/v1/events/ingest", pathParams, queryParams, body);

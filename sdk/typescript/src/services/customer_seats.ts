@@ -71,7 +71,8 @@ export const assignSeatCustomerSeats = (client: ClientBase) => {
   /**
    * **Scopes**: `customer_seats:write`
    *
-   * @param body - Request body* @returns {CustomerSeat}
+   * @param body - Request body
+   * @returns {CustomerSeat}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {AssignSeat400Error} No available seats or customer already has a seat
@@ -80,7 +81,7 @@ export const assignSeatCustomerSeats = (client: ClientBase) => {
    * @throws {AssignSeat404Error} Subscription, order, or customer not found
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: SeatAssign): Promise<CustomerSeat> => {
+  return async (body: SeatAssign): Promise<CustomerSeat> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest(
@@ -104,7 +105,7 @@ export const revokeSeatCustomerSeats = (client: ClientBase) => {
   /**
    * **Scopes**: `customer_seats:write`
    *
-   * @param seat_id - seat_id
+   * @param seat_id
    * @returns {CustomerSeat}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
@@ -138,7 +139,7 @@ export const resendInvitationCustomerSeats = (client: ClientBase) => {
   /**
    * **Scopes**: `customer_seats:write`
    *
-   * @param seat_id - seat_id
+   * @param seat_id
    * @returns {CustomerSeat}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
@@ -173,7 +174,7 @@ export const resendInvitationCustomerSeats = (client: ClientBase) => {
 export const getClaimInfoCustomerSeats = (client: ClientBase) => {
   /**
    *
-   * @param invitation_token - invitation_token
+   * @param invitation_token
    * @returns {SeatClaimInfo}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
@@ -206,14 +207,15 @@ export const getClaimInfoCustomerSeats = (client: ClientBase) => {
 export const claimSeatCustomerSeats = (client: ClientBase) => {
   /**
    *
-   * @param body - Request body* @returns {CustomerSeatClaimResponse}
+   * @param body - Request body
+   * @returns {CustomerSeatClaimResponse}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ClaimSeat400Error} Invalid, expired, or already claimed token
    * @throws {ClaimSeat403Error} Seat-based pricing not enabled for organization
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: SeatClaim): Promise<CustomerSeatClaimResponse> => {
+  return async (body: SeatClaim): Promise<CustomerSeatClaimResponse> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest(

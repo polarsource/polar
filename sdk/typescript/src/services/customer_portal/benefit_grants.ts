@@ -93,14 +93,15 @@ export const updateBenefitGrants = (client: ClientBase) => {
    * **Scopes**: `customer_portal:write`
    *
    * @param id - The benefit grant ID.
-   * @param body - Request body* @returns {CustomerBenefitGrant}
+   * @param body - Request body
+   * @returns {CustomerBenefitGrant}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} The benefit grant is revoked and cannot be updated.
    * @throws {ResourceNotFound} Benefit grant not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: CustomerBenefitGrantUpdate): Promise<CustomerBenefitGrant> => {
+  return async (id: string, body: CustomerBenefitGrantUpdate): Promise<CustomerBenefitGrant> => {
     const pathParams = {
       id: id,
     };

@@ -49,14 +49,15 @@ export const createMemberMembers = (client: ClientBase) => {
    *
    * **Scopes**: `members:write`
    *
-   * @param body - Request body* @returns {Member}
+   * @param body - Request body
+   * @returns {Member}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {CreateMember403Error} Not permitted to add members.
    * @throws {ResourceNotFound} Member not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: MemberCreate): Promise<Member> => {
+  return async (body: MemberCreate): Promise<Member> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest("POST", "/v1/members/", pathParams, queryParams, body);
@@ -76,7 +77,7 @@ export const getMemberMembers = (client: ClientBase) => {
    *
    * **Scopes**: `members:read` `members:write`
    *
-   * @param id - id
+   * @param id
    * @returns {Member}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
@@ -110,7 +111,7 @@ export const deleteMemberMembers = (client: ClientBase) => {
    *
    * **Scopes**: `members:write`
    *
-   * @param id - id
+   * @param id
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
@@ -145,14 +146,15 @@ export const updateMemberMembers = (client: ClientBase) => {
    *
    * **Scopes**: `members:write`
    *
-   * @param id - id
-   * @param body - Request body* @returns {Member}
+   * @param id
+   * @param body - Request body
+   * @returns {Member}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Member not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: MemberUpdate): Promise<Member> => {
+  return async (id: string, body: MemberUpdate): Promise<Member> => {
     const pathParams = {
       id: id,
     };
@@ -257,7 +259,8 @@ export const updateMemberByExternalIdMembers = (client: ClientBase) => {
    *
    * @param external_id - The member external ID.
    * @param query - Query parameters
-   * @param body - Request body* @returns {Member}
+   * @param body - Request body
+   * @returns {Member}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Member not found.
@@ -269,7 +272,7 @@ export const updateMemberByExternalIdMembers = (client: ClientBase) => {
       customer_id?: string | null;
       external_customer_id?: string | null;
     },
-    body?: MemberUpdate,
+    body: MemberUpdate,
   ): Promise<Member> => {
     const pathParams = {
       external_id: external_id,

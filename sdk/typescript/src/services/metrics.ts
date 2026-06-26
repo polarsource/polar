@@ -158,12 +158,13 @@ export const createDashboardMetrics = (client: ClientBase) => {
    *
    * **Scopes**: `metrics:write`
    *
-   * @param body - Request body* @returns {MetricDashboardSchema}
+   * @param body - Request body
+   * @returns {MetricDashboardSchema}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: MetricDashboardCreate): Promise<MetricDashboardSchema> => {
+  return async (body: MetricDashboardCreate): Promise<MetricDashboardSchema> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest(
@@ -246,12 +247,13 @@ export const updateDashboardMetrics = (client: ClientBase) => {
    * **Scopes**: `metrics:write`
    *
    * @param id - The metric dashboard ID.
-   * @param body - Request body* @returns {MetricDashboardSchema}
+   * @param body - Request body
+   * @returns {MetricDashboardSchema}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: MetricDashboardUpdate): Promise<MetricDashboardSchema> => {
+  return async (id: string, body: MetricDashboardUpdate): Promise<MetricDashboardSchema> => {
     const pathParams = {
       id: id,
     };

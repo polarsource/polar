@@ -99,13 +99,13 @@ def convert_type_to_typescript(
 
 
 def collect_type_imports(type_ref: TypeRef | None, ir: OpenAPIIR) -> set[str]:
-    """Collect all model, enum, and union names from a TypeRef."""
+    """Collect all model and union names from a TypeRef."""
     if type_ref is None:
         return set()
 
     names: set[str] = set()
 
-    if isinstance(type_ref, (ModelRef, EnumRef, UnionRef)):
+    if isinstance(type_ref, (ModelRef, UnionRef)):
         names.add(type_ref.name)
     elif isinstance(type_ref, NullableType):
         names.update(collect_type_imports(type_ref.inner, ir))

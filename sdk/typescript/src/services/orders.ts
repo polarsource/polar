@@ -69,12 +69,13 @@ export const createOrders = (client: ClientBase) => {
    *
    * **Scopes**: `orders:write`
    *
-   * @param body - Request body* @returns {Order}
+   * @param body - Request body
+   * @returns {Order}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: OrderCreate): Promise<Order> => {
+  return async (body: OrderCreate): Promise<Order> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest("POST", "/v1/orders/", pathParams, queryParams, body);
@@ -157,13 +158,14 @@ export const updateOrders = (client: ClientBase) => {
    * **Scopes**: `orders:write`
    *
    * @param id - The order ID.
-   * @param body - Request body* @returns {Order}
+   * @param body - Request body
+   * @returns {Order}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Order not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: OrderUpdate): Promise<Order> => {
+  return async (id: string, body: OrderUpdate): Promise<Order> => {
     const pathParams = {
       id: id,
     };
@@ -189,7 +191,8 @@ export const finalizeOrders = (client: ClientBase) => {
    * **Scopes**: `orders:write`
    *
    * @param id - The order ID.
-   * @param body - Request body* @returns {Order}
+   * @param body - Request body
+   * @returns {Order}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {Finalize402Error} The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session.
@@ -198,7 +201,7 @@ export const finalizeOrders = (client: ClientBase) => {
    * @throws {OrderNotDraft} The order is not in `draft` status.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: OrderFinalize): Promise<Order> => {
+  return async (id: string, body: OrderFinalize): Promise<Order> => {
     const pathParams = {
       id: id,
     };

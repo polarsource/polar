@@ -65,7 +65,8 @@ export const listSeatsSeats = (client: ClientBase) => {
 export const assignSeatSeats = (client: ClientBase) => {
   /**
    *
-   * @param body - Request body* @returns {CustomerSeat}
+   * @param body - Request body
+   * @returns {CustomerSeat}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {AssignSeat400Error} No available seats or customer already has a seat
@@ -74,7 +75,7 @@ export const assignSeatSeats = (client: ClientBase) => {
    * @throws {AssignSeat404Error} Subscription, order, or customer not found
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: CustomerSeatAssign): Promise<CustomerSeat> => {
+  return async (body: CustomerSeatAssign): Promise<CustomerSeat> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest(
@@ -97,7 +98,7 @@ export const assignSeatSeats = (client: ClientBase) => {
 export const revokeSeatSeats = (client: ClientBase) => {
   /**
    *
-   * @param seat_id - seat_id
+   * @param seat_id
    * @returns {CustomerSeat}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
@@ -130,7 +131,7 @@ export const revokeSeatSeats = (client: ClientBase) => {
 export const resendInvitationSeats = (client: ClientBase) => {
   /**
    *
-   * @param seat_id - seat_id
+   * @param seat_id
    * @returns {CustomerSeat}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error

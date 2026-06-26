@@ -48,12 +48,13 @@ export const createOrganizations = (client: ClientBase) => {
    *
    * **Scopes**: `organizations:write`
    *
-   * @param body - Request body* @returns {Organization}
+   * @param body - Request body
+   * @returns {Organization}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: OrganizationCreate): Promise<Organization> => {
+  return async (body: OrganizationCreate): Promise<Organization> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest(
@@ -75,7 +76,7 @@ export const getOrganizations = (client: ClientBase) => {
    *
    * **Scopes**: `organizations:read` `organizations:write`
    *
-   * @param id - id
+   * @param id
    * @returns {Organization}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
@@ -107,15 +108,16 @@ export const updateOrganizations = (client: ClientBase) => {
    *
    * **Scopes**: `organizations:write`
    *
-   * @param id - id
-   * @param body - Request body* @returns {Organization}
+   * @param id
+   * @param body - Request body
+   * @returns {Organization}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} You don't have the permission to update this organization.
    * @throws {ResourceNotFound} Organization not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: OrganizationUpdate): Promise<Organization> => {
+  return async (id: string, body: OrganizationUpdate): Promise<Organization> => {
     const pathParams = {
       id: id,
     };

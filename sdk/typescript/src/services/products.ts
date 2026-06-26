@@ -61,12 +61,13 @@ export const createProducts = (client: ClientBase) => {
    *
    * **Scopes**: `products:write`
    *
-   * @param body - Request body* @returns {Product}
+   * @param body - Request body
+   * @returns {Product}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: ProductCreate): Promise<Product> => {
+  return async (body: ProductCreate): Promise<Product> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest("POST", "/v1/products/", pathParams, queryParams, body);
@@ -82,7 +83,7 @@ export const getProducts = (client: ClientBase) => {
    *
    * **Scopes**: `products:read` `products:write`
    *
-   * @param id - id
+   * @param id
    * @returns {Product}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
@@ -114,15 +115,16 @@ export const updateProducts = (client: ClientBase) => {
    *
    * **Scopes**: `products:write`
    *
-   * @param id - id
-   * @param body - Request body* @returns {Product}
+   * @param id
+   * @param body - Request body
+   * @returns {Product}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} You don't have the permission to update this product.
    * @throws {ResourceNotFound} Product not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: ProductUpdate): Promise<Product> => {
+  return async (id: string, body: ProductUpdate): Promise<Product> => {
     const pathParams = {
       id: id,
     };
@@ -148,15 +150,16 @@ export const updateBenefitsProducts = (client: ClientBase) => {
    *
    * **Scopes**: `products:write`
    *
-   * @param id - id
-   * @param body - Request body* @returns {Product}
+   * @param id
+   * @param body - Request body
+   * @returns {Product}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} You don't have the permission to update this product.
    * @throws {ResourceNotFound} Product not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (id: string, body?: ProductBenefitsUpdate): Promise<Product> => {
+  return async (id: string, body: ProductBenefitsUpdate): Promise<Product> => {
     const pathParams = {
       id: id,
     };

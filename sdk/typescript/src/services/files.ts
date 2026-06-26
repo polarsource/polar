@@ -48,12 +48,13 @@ export const createFiles = (client: ClientBase) => {
    *
    * **Scopes**: `files:write`
    *
-   * @param body - Request body* @returns {FileUpload}
+   * @param body - Request body
+   * @returns {FileUpload}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (body?: FileCreate): Promise<FileUpload> => {
+  return async (body: FileCreate): Promise<FileUpload> => {
     const pathParams = {};
     const queryParams = {};
     const request = client.buildRequest("POST", "/v1/files/", pathParams, queryParams, body);
@@ -69,8 +70,9 @@ export const uploadedFiles = (client: ClientBase) => {
    *
    * **Scopes**: `files:write`
    *
-   * @param id - The file ID.
-   * @param body - Request body* @returns {DownloadableFileRead | ProductMediaFileRead | OrganizationAvatarFileRead | SupportCaseAttachmentFileRead}
+   * @param id_path - The file ID.
+   * @param body - Request body
+   * @returns {DownloadableFileRead | ProductMediaFileRead | OrganizationAvatarFileRead | SupportCaseAttachmentFileRead}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} You don't have the permission to update this file.
@@ -78,8 +80,8 @@ export const uploadedFiles = (client: ClientBase) => {
    * @throws {HTTPValidationError} Validation Error
    */
   return async (
-    id: string,
-    body?: FileUploadCompleted,
+    id_path: string,
+    body: FileUploadCompleted,
   ): Promise<
     | DownloadableFileRead
     | ProductMediaFileRead
@@ -87,7 +89,7 @@ export const uploadedFiles = (client: ClientBase) => {
     | SupportCaseAttachmentFileRead
   > => {
     const pathParams = {
-      id_path: id,
+      id: id_path,
     };
     const queryParams = {};
     const request = client.buildRequest(
@@ -116,7 +118,7 @@ export const deleteFiles = (client: ClientBase) => {
    *
    * **Scopes**: `files:write`
    *
-   * @param id - id
+   * @param id
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
@@ -151,7 +153,8 @@ export const updateFiles = (client: ClientBase) => {
    * **Scopes**: `files:write`
    *
    * @param id - The file ID.
-   * @param body - Request body* @returns {DownloadableFileRead | ProductMediaFileRead | OrganizationAvatarFileRead | SupportCaseAttachmentFileRead}
+   * @param body - Request body
+   * @returns {DownloadableFileRead | ProductMediaFileRead | OrganizationAvatarFileRead | SupportCaseAttachmentFileRead}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} You don't have the permission to update this file.
@@ -160,7 +163,7 @@ export const updateFiles = (client: ClientBase) => {
    */
   return async (
     id: string,
-    body?: FilePatch,
+    body: FilePatch,
   ): Promise<
     | DownloadableFileRead
     | ProductMediaFileRead

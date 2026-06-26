@@ -126,10 +126,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <div className="flex flex-col gap-4">
           <div className="flex flex-row items-center gap-4">
             <h2 className="text-xl font-normal">Order</h2>
-            <OrderStatus
-              status={order.status}
-              chargebackPrevented={!!chargebackPreventionRefund}
-            />
+            <OrderStatus status={order.status} />
           </div>
         </div>
       }
@@ -202,12 +199,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             />
             <DetailRow
               label="Status"
-              value={
-                <OrderStatus
-                  status={order.status}
-                  chargebackPrevented={!!chargebackPreventionRefund}
-                />
-              }
+              value={<OrderStatus status={order.status} />}
             />
 
             <DetailRow

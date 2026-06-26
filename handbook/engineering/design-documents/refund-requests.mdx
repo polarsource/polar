@@ -42,8 +42,9 @@ tension, and a phased plan.
 ## Non-goals (for v1)
 
 - Automatic, no-merchant-in-the-loop refunds for arbitrary products.
-- Withdrawal-right handling for benefit types we cannot track or revoke
-  (Discord, custom) beyond requiring an up-front waiver.
+- Bespoke withdrawal-right handling for **custom** benefits, where fulfillment
+  is merchant-defined (Polar records the grant lifecycle + fires webhooks, but
+  cannot know the merchant's own access semantics).
 - A full customer reputation/risk-scoring engine.
 
 ---
@@ -86,18 +87,22 @@ Everything below exists to make that rule enforceable.
 | Dispute case (the pattern to copy) | ✅ | `dispute/dispute_case.py` |
 | Customer-facing case UI | ❌ Audience plumbing exists, no UI | — |
 | Customer-facing refund path | ❌ Portal only *shows* refund status | — |
-| Access tracking — downloadables (`downloaded`, `last_downloaded_at`) | ✅ | `customer_portal/service/downloadables.py:147` |
-| Access tracking — license keys (activations) | ✅ | `models/license_key.py` |
-| Access tracking — Discord / GitHub / Slack / custom | ❌ External state only | — |
+| Grant lifecycle — `granted_at` / `revoked_at` / `properties` on **every** grant | ✅ All benefit types | `models/benefit_grant.py:112` |
+| Consumption signal — downloadables (`downloaded`, `last_downloaded_at`) | ✅ | `customer_portal/service/downloadables.py:147` |
+| Consumption signal — license keys (activations) | ✅ | `models/license_key.py` |
+| Provisioned-access identity + revoke — Discord / GitHub / Slack (`granted_account_id`, channel/invite ids; `revoke` hits the external API) | ✅ | `benefit/strategies/{discord,github_repository,slack_shared_channel}/service.py` |
+| Custom benefit grant/revoke | 🟡 Strategy is a no-op, but lifecycle is stamped + webhooks fire (fulfillment is merchant-side) | `benefit/strategies/custom/service.py` |
 | Checkout consent/waiver capture | ❌ Consent is implicit via payment | `MandateText.tsx` |
 | B2C vs B2B signal | ✅ `is_business_customer` | `models/checkout.py:223` |
 | Selective per-benefit revoke (merchant) | ❌ All-or-nothing per customer | `backoffice/customers/endpoints.py` |
 | Customer notes / tags / flags | ❌ | — |
 | Email / card blocklist | ❌ (only Stripe decline codes + `fraudulent` reason) | `models/refund.py` |
 
-**Takeaway:** the refund engine and the case primitive are done. The missing
-pieces are all *upstream of the button* — consent capture, access tracking, and
-selective revocation — which is exactly why they must land first.
+**Takeaway:** the refund engine, the case primitive, **and the grant/revoke
+lifecycle** are already done — every benefit type records `granted_at` /
+`revoked_at` and is revocable. The genuinely missing pieces are narrower:
+**consent capture** at checkout and **selective per-benefit revocation** (today
+it's all-or-nothing per customer). Those are the upstream blockers for the button.
 
 ---
 
@@ -115,10 +120,15 @@ risk before any customer can self-serve a refund.
    - Store the consent **with its text version + timestamp** on the order —
      durable-medium proof is itself a legal requirement, not just nice-to-have.
 
-2. **Unify an `accessed` predicate per benefit grant.**
-   - Wrap existing signals (download count, license activation).
-   - Explicitly classify benefit types that **cannot** report access
-     (Discord/custom) — the policy engine treats those differently.
+2. **Unify an `accessed` predicate per benefit grant.** The grant already carries
+   `granted_at` + external identity in `properties`; this just normalizes *what
+   counts as access* per type:
+   - **Consumption-style** (downloadables, license keys): access = the discrete
+     event (download / activation), already tracked separately from the grant.
+   - **Provisioned-access** (Discord, GitHub, Slack): the grant *is* the
+     supply-begun event — `granted_at` is the access signal, and revoke is real.
+   - **Custom**: fulfillment is merchant-defined, so `granted_at` is the only
+     signal Polar can assert; the policy engine treats it conservatively.
 
 3. **Selective benefit revocation** (merchant endpoint, per order/product) so a
    refund pulls back exactly what was purchased, not everything the customer owns.
@@ -159,9 +169,11 @@ trail.
 ## Open questions
 
 <OpenQuestion>
-  Benefit types we can't track or revoke (Discord, custom): require the waiver
-  **up front** before granting, or accept the refund liability? The waiver-at-access
-  model degrades here.
+  **Custom** benefits only: Polar records the grant lifecycle and fires webhooks,
+  but cannot observe the merchant's actual access semantics. Do we require the
+  waiver **up front** before granting, or accept the refund liability? (Discord /
+  GitHub / Slack are fine — `granted_at` is the access signal and revoke hits the
+  external API.)
 </OpenQuestion>
 
 <OpenQuestion>

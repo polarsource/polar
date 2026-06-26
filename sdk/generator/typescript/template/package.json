@@ -1,0 +1,44 @@
+{
+  "name": "@polar/sdk",
+  "version": "0.0.0",
+  "description": "Polar TypeScript SDK - Auto-generated from OpenAPI specification",
+  "main": "dist/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/esm/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup src",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "oxfmt": "^0.56.0",
+    "oxlint": "^1.71.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "keywords": [
+    "polar",
+    "sdk",
+    "api",
+    "typescript"
+  ],
+  "author": "Polar",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/polar-sh/polar"
+  }
+}

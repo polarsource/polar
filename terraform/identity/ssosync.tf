@@ -36,6 +36,7 @@ resource "aws_serverlessapplicationrepository_cloudformation_stack" "ssosync" {
     "CAPABILITY_IAM",
     "CAPABILITY_NAMED_IAM",
     "CAPABILITY_AUTO_EXPAND",
+    "CAPABILITY_RESOURCE_POLICY",
   ]
 
   parameters = {

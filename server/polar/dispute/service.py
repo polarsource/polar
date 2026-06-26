@@ -6,7 +6,7 @@ from typing import assert_never
 import stripe as stripe_lib
 from sqlalchemy.orm import joinedload
 
-from polar.auth.models import AuthSubject, Organization, User
+from polar.auth.models import AuthSubject, Organization, User, is_user
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
@@ -50,6 +50,12 @@ class DisputePaymentNotFoundError(DisputeError):
             f"and processor_id {processor_id}."
         )
         super().__init__(message)
+
+
+class DisputeNotOpenError(DisputeError):
+    def __init__(self, dispute_id: uuid.UUID) -> None:
+        self.dispute_id = dispute_id
+        super().__init__(f"Dispute {dispute_id} is not awaiting a response.", 409)
 
 
 class DisputeService:
@@ -104,6 +110,48 @@ class DisputeService:
             .options(*repository.get_eager_options())
             .where(Dispute.id == id)
         )
+        return await repository.get_one_or_none(statement)
+
+    async def accept(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: uuid.UUID,
+    ) -> Dispute | None:
+        """Merchant concedes the chargeback: log it on the dispute's support
+        case so staff can settle it. Requires ``sales:manage`` on the org."""
+        repository = DisputeRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.sales_manage
+        )
+        statement = (
+            repository.get_statement_by_org_ids(org_ids)
+            .options(*repository.get_eager_options())
+            .where(Dispute.id == id)
+        )
+        dispute = await repository.get_one_or_none(statement)
+        if dispute is None:
+            return None
+
+        if dispute.accepted_at is not None:
+            return dispute
+
+        if dispute.status != DisputeStatus.needs_response:
+            raise DisputeNotOpenError(dispute.id)
+
+        await repository.update(
+            dispute,
+            update_dict={
+                "status": DisputeStatus.accepted,
+                "accepted_at": datetime.now(UTC),
+            },
+        )
+
+        case = await dispute_case_service.get_case(session, dispute)
+        if case is not None:
+            actor = auth_subject.subject if is_user(auth_subject) else None
+            await dispute_case_service.accept(session, case, actor=actor)
+
         return await repository.get_one_or_none(statement)
 
     async def upsert_from_stripe(
@@ -250,8 +298,11 @@ class DisputeService:
                 )
             case DisputeStatus.prevented:
                 await dispute_case_service.prevent(session, case)
-            case DisputeStatus.needs_response | DisputeStatus.early_warning:
-                # needs_response is handled above; early_warning never has a case.
+            case (
+                DisputeStatus.needs_response
+                | DisputeStatus.early_warning
+                | DisputeStatus.accepted
+            ):
                 pass
             case _:
                 assert_never(dispute.status)

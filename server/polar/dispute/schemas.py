@@ -123,3 +123,12 @@ class Dispute(DisputeBase):
             ),
         ),
     ]
+    accepted_at: Annotated[
+        datetime | None,
+        Field(
+            description=(
+                "When the merchant accepted the dispute, conceding the chargeback. "
+                "`None` if the merchant hasn't accepted it."
+            ),
+        ),
+    ]

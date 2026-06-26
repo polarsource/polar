@@ -10,9 +10,8 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import {
-  DisputeStatusDisplayColor,
-  DisputeStatusDisplayTitle,
   type DisputeStatusFilter,
+  getDisputeDisplayStatus,
   getDisputeReasonDisplay,
 } from '@/utils/dispute'
 import { schemas } from '@polar-sh/client'
@@ -111,13 +110,10 @@ const DisputesPage = ({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Status" />
       ),
-      cell: ({ row: { original: dispute } }) => (
-        <Status
-          status={DisputeStatusDisplayTitle[dispute.status]}
-          color={DisputeStatusDisplayColor[dispute.status]}
-          size="small"
-        />
-      ),
+      cell: ({ row: { original: dispute } }) => {
+        const { title, color } = getDisputeDisplayStatus(dispute)
+        return <Status status={title} color={color} size="small" />
+      },
     },
     {
       accessorKey: 'reason',

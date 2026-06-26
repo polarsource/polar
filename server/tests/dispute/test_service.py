@@ -5,15 +5,20 @@ from unittest.mock import MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.auth.models import AuthSubject
 from polar.benefit.grant.service import BenefitGrantService
 from polar.dispute.dispute_case import dispute_case as dispute_case_service
-from polar.dispute.service import DisputePaymentNotFoundError
+from polar.dispute.service import DisputeNotOpenError, DisputePaymentNotFoundError
 from polar.dispute.service import dispute as dispute_service
 from polar.enums import PaymentProcessor, TaxProcessor
 from polar.integrations.chargeback_stop.types import ChargebackStopAlert
-from polar.models import Customer, Organization, Product
+from polar.models import Customer, Organization, Product, User, UserOrganization
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
-from polar.models.support_case import DisputeSupportCase, SupportCaseMessageType
+from polar.models.support_case import (
+    DisputeSupportCase,
+    SupportCaseMessageAuthorKind,
+    SupportCaseMessageType,
+)
 from polar.postgres import AsyncSession
 from polar.refund.service import RefundService
 from polar.support_case.repository import SupportCaseMessageRepository
@@ -23,6 +28,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_dispute,
+    create_dispute_case,
     create_order,
     create_payment,
     create_refund,
@@ -1218,3 +1224,101 @@ class TestUpsertFromChargebackStop:
             == DisputeAlertProcessor.chargeback_stop
         )
         assert updated_dispute.dispute_alert_processor_id == alert["id"]
+
+
+@pytest.mark.asyncio
+class TestAccept:
+    @pytest.mark.auth
+    async def test_logs_acceptance_on_support_case(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+        auth_subject: AuthSubject[User],
+    ) -> None:
+        case = await create_dispute_case(save_fixture, organization, customer, product)
+
+        dispute = await dispute_service.accept(session, auth_subject, case.dispute_id)
+
+        assert dispute is not None
+        assert dispute.accepted_at is not None
+        assert dispute.status == DisputeStatus.accepted
+        messages = await SupportCaseMessageRepository.from_session(
+            session
+        ).list_by_case(case.id, visible_to=None)
+        accept_messages = [
+            message
+            for message in messages
+            if message.author_kind == SupportCaseMessageAuthorKind.merchant
+            and message.body is not None
+            and "accepted this dispute" in message.body
+        ]
+        assert len(accept_messages) == 1
+        assert accept_messages[0].author_user_id == auth_subject.subject.id
+
+    @pytest.mark.auth
+    async def test_is_idempotent(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+        auth_subject: AuthSubject[User],
+    ) -> None:
+        case = await create_dispute_case(save_fixture, organization, customer, product)
+
+        first = await dispute_service.accept(session, auth_subject, case.dispute_id)
+        second = await dispute_service.accept(session, auth_subject, case.dispute_id)
+
+        assert first is not None
+        assert second is not None
+        assert second.accepted_at == first.accepted_at
+        messages = await SupportCaseMessageRepository.from_session(
+            session
+        ).list_by_case(case.id, visible_to=None)
+        accept_messages = [
+            message
+            for message in messages
+            if message.body is not None and "accepted this dispute" in message.body
+        ]
+        assert len(accept_messages) == 1
+
+    @pytest.mark.auth
+    async def test_raises_when_not_awaiting_response(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+        auth_subject: AuthSubject[User],
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer, product=product)
+        payment = await create_payment(save_fixture, organization, order=order)
+        dispute = await create_dispute(
+            save_fixture, order, payment, status=DisputeStatus.under_review
+        )
+
+        with pytest.raises(DisputeNotOpenError):
+            await dispute_service.accept(session, auth_subject, dispute.id)
+
+    @pytest.mark.auth
+    async def test_returns_none_for_inaccessible_dispute(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        auth_subject: AuthSubject[User],
+    ) -> None:
+        case = await create_dispute_case(save_fixture, organization, customer, product)
+        dispute = await dispute_service.accept(session, auth_subject, case.dispute_id)
+
+        assert dispute is None

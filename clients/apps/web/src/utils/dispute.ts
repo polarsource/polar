@@ -11,6 +11,7 @@ export const DisputeStatusDisplayTitle: Record<
   under_review: 'Under Review',
   won: 'Won',
   lost: 'Lost',
+  accepted: 'Accepted',
 }
 
 export const DisputeStatusDisplayColor: Record<
@@ -23,6 +24,7 @@ export const DisputeStatusDisplayColor: Record<
   under_review: 'yellow',
   won: 'green',
   lost: 'red',
+  accepted: 'gray',
 }
 
 export type DisputeStatusFilter = schemas['DisputeStatus'] | 'any'
@@ -30,6 +32,13 @@ export type DisputeStatusFilter = schemas['DisputeStatus'] | 'any'
 export const isDisputeStatus = (
   value: string,
 ): value is schemas['DisputeStatus'] => value in DisputeStatusDisplayTitle
+
+export const getDisputeDisplayStatus = (
+  dispute: schemas['Dispute'],
+): { title: string; color: StatusColor } => ({
+  title: DisputeStatusDisplayTitle[dispute.status],
+  color: DisputeStatusDisplayColor[dispute.status],
+})
 
 export const DisputeReasonDisplay: Record<string, string> = {
   bank_cannot_process: 'Bank cannot process',

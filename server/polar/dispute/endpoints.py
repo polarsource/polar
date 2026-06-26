@@ -8,12 +8,18 @@ from polar.models.dispute import DisputeStatus
 from polar.openapi import APITag
 from polar.order.schemas import OrderID
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncReadSession, get_db_read_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.routing import APIRouter
 
 from . import auth, sorting
 from .schemas import Dispute as DisputeSchema
 from .schemas import DisputeID, DisputeNotFound
+from .service import DisputeNotOpenError
 from .service import dispute as dispute_service
 
 router = APIRouter(prefix="/disputes", tags=["disputes", APITag.public])
@@ -66,6 +72,33 @@ async def get(
 ) -> Dispute:
     """Get a dispute by ID."""
     dispute = await dispute_service.get(session, auth_subject, id)
+
+    if dispute is None:
+        raise ResourceNotFound()
+
+    return dispute
+
+
+@router.post(
+    "/{id}/accept",
+    summary="Accept Dispute",
+    response_model=DisputeSchema,
+    responses={
+        404: DisputeNotFound,
+        409: {"model": DisputeNotOpenError.schema()},
+    },
+)
+async def accept(
+    id: DisputeID,
+    auth_subject: auth.DisputesWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Dispute:
+    """Accept a dispute, conceding the chargeback.
+
+    Records the merchant's decision on the dispute's support case so staff can
+    settle the chargeback with the processor.
+    """
+    dispute = await dispute_service.accept(session, auth_subject, id)
 
     if dispute is None:
         raise ResourceNotFound()

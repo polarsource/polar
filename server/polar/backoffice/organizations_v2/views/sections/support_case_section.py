@@ -13,7 +13,6 @@ from tagflow import attr, tag, text
 
 from polar.enums import PaymentProcessor
 from polar.models import Dispute, Organization
-from polar.models.dispute import DisputeStatus
 from polar.models.support_case import (
     SupportCase,
     SupportCaseAttachment,
@@ -24,7 +23,7 @@ from polar.models.support_case import (
 )
 
 from .... import formatters
-from ....components import button, card
+from ....components import button, card, dispute_status_badge
 from ....support_cases.urls import append_return_to
 
 _AUTHOR_LABELS: dict[SupportCaseMessageAuthorKind, str] = {
@@ -108,17 +107,6 @@ _EVENT_NODES: dict[SupportCaseMessageType, tuple[str, str]] = {
     ),
     SupportCaseMessageType.assigned: ("icon-user-check", _MUTED_NODE),
     SupportCaseMessageType.released: ("icon-user-x", _MUTED_NODE),
-}
-
-# Dispute lifecycle status surfaced in the details panel: (badge classes, label).
-# A dispute case only exists from `needs_response` onward — `early_warning`
-# never has a case (see DisputeService._sync_support_case).
-_DISPUTE_STATUS_BADGES: dict[DisputeStatus, tuple[str, str]] = {
-    DisputeStatus.needs_response: ("badge-warning", "Needs response"),
-    DisputeStatus.under_review: ("badge-info", "Under review"),
-    DisputeStatus.prevented: ("badge-success", "Prevented"),
-    DisputeStatus.won: ("badge-success", "Won"),
-    DisputeStatus.lost: ("badge-error", "Lost"),
 }
 
 Thread = tuple[SupportCase, bool, Sequence[SupportCaseMessage]]
@@ -325,9 +313,7 @@ class SupportCaseSection:
                         pass
                     with tag.span(classes="text-sm font-medium"):
                         text("Dispute details")
-                badge, label = _DISPUTE_STATUS_BADGES[dispute.status]
-                with tag.div(classes=f"badge {badge} badge-sm"):
-                    text(label)
+                dispute_status_badge(dispute.status)
             with tag.div(
                 classes="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 px-4 py-4"
             ):
@@ -341,6 +327,9 @@ class SupportCaseSection:
                     text(self._dispute_reason(dispute))
                 with self._fact("Evidence due"):
                     self._render_evidence_due(dispute)
+                if dispute.accepted_at is not None:
+                    with self._fact("Accepted"):
+                        text(dispute.accepted_at.strftime("%b %-d, %Y %H:%M UTC"))
                 with self._fact("Evidence"):
                     if dispute.has_evidence:
                         text(f"Submitted ({dispute.submission_count})")

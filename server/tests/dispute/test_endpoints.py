@@ -152,3 +152,32 @@ class TestGetDispute:
         assert json["id"] == str(dispute.id)
         assert json["customer"]["id"] == str(customer.id)
         assert json["customer"]["email"] == customer.email
+
+
+@pytest.mark.asyncio
+class TestAcceptDispute:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post(f"/v1/disputes/{uuid.uuid4()}/accept")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_accept(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        case = await create_dispute_case(save_fixture, organization, customer, product)
+
+        response = await client.post(f"/v1/disputes/{case.dispute_id}/accept")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["id"] == str(case.dispute_id)
+        assert json["status"] == "accepted"
+        assert json["accepted_at"] is not None
+        assert json["case_id"] == str(case.id)

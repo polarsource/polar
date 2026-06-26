@@ -2519,7 +2519,7 @@ export interface paths {
      * List Disputes
      * @description List disputes.
      *
-     *     **Scopes**: `disputes:read`
+     *     **Scopes**: `disputes:read` `disputes:write`
      */
     get: operations['disputes:list']
     put?: never
@@ -2541,11 +2541,36 @@ export interface paths {
      * Get Dispute
      * @description Get a dispute by ID.
      *
-     *     **Scopes**: `disputes:read`
+     *     **Scopes**: `disputes:read` `disputes:write`
      */
     get: operations['disputes:get']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/disputes/{id}/accept': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Accept Dispute
+     * @description Accept a dispute, conceding the chargeback.
+     *
+     *     Records the merchant's decision on the dispute's support case so staff can
+     *     settle the chargeback with the processor.
+     *
+     *     **Scopes**: `disputes:write`
+     */
+    post: operations['disputes:accept']
     delete?: never
     options?: never
     head?: never
@@ -7071,6 +7096,7 @@ export interface components {
        *       "wallets:read": "Read wallets",
        *       "wallets:write": "Create or modify wallets",
        *       "disputes:read": "Read disputes",
+       *       "disputes:write": "Create or modify disputes",
        *       "customer_meters:read": "Read customer meters",
        *       "customer_sessions:write": "Create or modify customer sessions",
        *       "member_sessions:write": "Create or modify member sessions",
@@ -7160,6 +7186,7 @@ export interface components {
        *       "wallets:read": "Read wallets",
        *       "wallets:write": "Create or modify wallets",
        *       "disputes:read": "Read disputes",
+       *       "disputes:write": "Create or modify disputes",
        *       "customer_meters:read": "Read customer meters",
        *       "customer_sessions:write": "Create or modify customer sessions",
        *       "member_sessions:write": "Create or modify member sessions",
@@ -7248,6 +7275,7 @@ export interface components {
       | 'wallets:read'
       | 'wallets:write'
       | 'disputes:read'
+      | 'disputes:write'
       | 'customer_meters:read'
       | 'customer_sessions:write'
       | 'member_sessions:write'
@@ -19483,6 +19511,11 @@ export interface components {
        * @description The ID of the support case for this dispute, if one was opened.
        */
       case_id: string | null
+      /**
+       * Accepted At
+       * @description When the merchant accepted the dispute, conceding the chargeback. `None` if the merchant hasn't accepted it.
+       */
+      accepted_at: string | null
     }
     /** DisputeCustomer */
     DisputeCustomer: {
@@ -19568,6 +19601,17 @@ export interface components {
        */
       avatar_url: string | null
     }
+    /** DisputeNotOpenError */
+    DisputeNotOpenError: {
+      /**
+       * Error
+       * @example DisputeNotOpenError
+       * @constant
+       */
+      error: 'DisputeNotOpenError'
+      /** Detail */
+      detail: string
+    }
     /**
      * DisputeSortProperty
      * @enum {string}
@@ -19584,6 +19628,7 @@ export interface components {
       | 'under_review'
       | 'lost'
       | 'won'
+      | 'accepted'
     /**
      * DownloadableFileCreate
      * @description Schema to create a file to be associated with the downloadables benefit.
@@ -22723,7 +22768,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read disputes:write customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -22788,7 +22833,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read disputes:write customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -22834,7 +22879,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read disputes:write customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -29134,6 +29179,7 @@ export interface components {
       | 'wallets:read'
       | 'wallets:write'
       | 'disputes:read'
+      | 'disputes:write'
       | 'customer_meters:read'
       | 'customer_sessions:write'
       | 'member_sessions:write'
@@ -39541,6 +39587,56 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'disputes:accept': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The dispute ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Dispute']
+        }
+      }
+      /** @description Dispute not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['DisputeNotOpenError']
         }
       }
       /** @description Validation Error */
@@ -56932,6 +57028,7 @@ export const availableScopeValues: ReadonlyArray<
   'wallets:read',
   'wallets:write',
   'disputes:read',
+  'disputes:write',
   'customer_meters:read',
   'customer_sessions:write',
   'member_sessions:write',
@@ -57876,6 +57973,7 @@ export const disputeStatusValues: ReadonlyArray<
   'under_review',
   'lost',
   'won',
+  'accepted',
 ]
 export const downloadableFileCreateServiceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DownloadableFileCreate']['service']
@@ -59806,6 +59904,7 @@ export const scopeValues: ReadonlyArray<
   'wallets:read',
   'wallets:write',
   'disputes:read',
+  'disputes:write',
   'customer_meters:read',
   'customer_sessions:write',
   'member_sessions:write',

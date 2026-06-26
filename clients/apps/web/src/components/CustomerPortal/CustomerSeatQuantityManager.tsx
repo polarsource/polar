@@ -178,7 +178,6 @@ export const CustomerSeatQuantityManager = ({
           </div>
         </div>
       )}
-
     </form>
   )
 }

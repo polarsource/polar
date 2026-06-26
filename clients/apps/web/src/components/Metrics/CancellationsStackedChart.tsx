@@ -198,14 +198,12 @@ export default function CancellationsStackedChart({
 }
 
 const StackedChartTooltip = ({
-  ref,
   active,
   label,
   payload,
   tickFormatter,
 }: TooltipContentProps & {
   tickFormatter: (timestamp: Date) => string
-  ref?: React.RefObject<HTMLDivElement>
 }) => {
   const formattedLabel = useMemo(() => {
     if (label) {
@@ -225,7 +223,6 @@ const StackedChartTooltip = ({
 
   return (
     <div
-      ref={ref}
       className="border-border/50 bg-background grid min-w-32 items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl"
     >
       <div className="flex items-center justify-between">

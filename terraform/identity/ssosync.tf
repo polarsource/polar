@@ -27,6 +27,33 @@ resource "aws_secretsmanager_secret_version" "scim_access_token" {
   secret_string = var.ssosync_scim_access_token
 }
 
+resource "aws_secretsmanager_secret" "google_admin_email" {
+  name = "SSOSyncGoogleAdminEmail"
+}
+
+resource "aws_secretsmanager_secret_version" "google_admin_email" {
+  secret_id     = aws_secretsmanager_secret.google_admin_email.id
+  secret_string = var.ssosync_google_admin_email
+}
+
+resource "aws_secretsmanager_secret" "scim_endpoint" {
+  name = "SSOSyncSCIMEndpointUrl"
+}
+
+resource "aws_secretsmanager_secret_version" "scim_endpoint" {
+  secret_id     = aws_secretsmanager_secret.scim_endpoint.id
+  secret_string = var.ssosync_scim_endpoint
+}
+
+resource "aws_secretsmanager_secret" "google_customer_id" {
+  name = "SSOSyncGoogleCustomerId"
+}
+
+resource "aws_secretsmanager_secret_version" "google_customer_id" {
+  secret_id     = aws_secretsmanager_secret.google_customer_id.id
+  secret_string = "my_customer"
+}
+
 resource "aws_serverlessapplicationrepository_cloudformation_stack" "ssosync" {
   name             = "ssosync"
   application_id   = local.ssosync_application_id
@@ -42,8 +69,9 @@ resource "aws_serverlessapplicationrepository_cloudformation_stack" "ssosync" {
   parameters = {
     DeployPattern           = "App only"
     GoogleCredentials       = aws_secretsmanager_secret.google_credentials.arn
-    GoogleAdminEmail        = var.ssosync_google_admin_email
-    SCIMEndpointUrl         = var.ssosync_scim_endpoint
+    GoogleAdminEmail        = aws_secretsmanager_secret.google_admin_email.arn
+    GoogleCustomerId        = aws_secretsmanager_secret.google_customer_id.arn
+    SCIMEndpointUrl         = aws_secretsmanager_secret.scim_endpoint.arn
     SCIMEndpointAccessToken = aws_secretsmanager_secret.scim_access_token.arn
     SyncMethod              = "groups"
     IncludeGroups           = join(",", local.staff_group_emails)

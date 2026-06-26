@@ -70,7 +70,9 @@ class DisputeService:
         org_ids = await get_accessible_org_ids(
             session, auth_subject, permission=OrganizationPermission.sales_read
         )
-        statement = repository.get_statement_by_org_ids(org_ids)
+        statement = repository.get_statement_by_org_ids(org_ids).options(
+            *repository.get_eager_options()
+        )
 
         if organization_id is not None:
             statement = statement.where(Payment.organization_id.in_(organization_id))
@@ -97,7 +99,11 @@ class DisputeService:
         org_ids = await get_accessible_org_ids(
             session, auth_subject, permission=OrganizationPermission.sales_read
         )
-        statement = repository.get_statement_by_org_ids(org_ids).where(Dispute.id == id)
+        statement = (
+            repository.get_statement_by_org_ids(org_ids)
+            .options(*repository.get_eager_options())
+            .where(Dispute.id == id)
+        )
         return await repository.get_one_or_none(statement)
 
     async def upsert_from_stripe(

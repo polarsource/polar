@@ -4,12 +4,12 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import UUID4, Field
 
+from polar.customer.schemas.customer import CustomerBase
 from polar.exceptions import ResourceNotFound
 from polar.kit.schemas import (
     ORDER_ID_EXAMPLE,
     PAYMENT_ID_EXAMPLE,
     IDSchema,
-    Schema,
     TimestampedSchema,
 )
 from polar.models.dispute import DisputeStatus
@@ -17,14 +17,7 @@ from polar.models.dispute import DisputeStatus
 DisputeID = Annotated[UUID4, Path(description="The dispute ID.")]
 
 
-class DisputeCustomer(Schema):
-    id: UUID4
-    email: Annotated[
-        str, Field(description="The email of the disputed payment's customer.")
-    ]
-    name: Annotated[
-        str | None, Field(description="The name of the disputed payment's customer.")
-    ]
+class DisputeCustomer(CustomerBase): ...
 
 
 DisputeNotFound = {
@@ -74,7 +67,7 @@ class DisputeBase(IDSchema, TimestampedSchema):
             description=(
                 "The reason for the dispute as reported by the card network "
                 "(e.g. `fraudulent`, `product_not_received`). "
-                "`null` until the processor reports it."
+                "`None` until the processor reports it."
             ),
             examples=["fraudulent"],
         ),
@@ -84,7 +77,7 @@ class DisputeBase(IDSchema, TimestampedSchema):
         Field(
             description=(
                 "Deadline to submit evidence in response to the dispute. "
-                "`null` when no response is required."
+                "`None` when no response is required."
             ),
         ),
     ]

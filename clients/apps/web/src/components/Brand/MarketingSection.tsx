@@ -14,14 +14,14 @@ interface MarketingSample {
 
 const samples: MarketingSample[] = [
   {
-    src: '/assets/brand/marketing/billboard_02.jpg',
-    alt: "Polar billboard reading 'Your best customer is losing you money. Polar shows you which one.'",
-    caption: 'Out-of-home, cost insights',
-  },
-  {
     src: '/assets/brand/marketing/billboard_01.jpg',
     alt: "Polar billboard reading 'Your customers 10x'd their usage overnight. Polar already invoiced for it.'",
     caption: 'Out-of-home, usage billing',
+  },
+  {
+    src: '/assets/brand/marketing/billboard_02.jpg',
+    alt: "Polar billboard reading 'Your best customer is losing you money. Polar shows you which one.'",
+    caption: 'Out-of-home, cost insights',
   },
 ]
 

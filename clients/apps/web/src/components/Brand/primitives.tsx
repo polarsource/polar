@@ -88,7 +88,7 @@ export function Specimen({
   )
 }
 
-const LEAD = 'text-xl leading-relaxed md:text-2xl max-w-2xl'
+const LEAD = 'text-xl leading-relaxed text-pretty md:text-2xl max-w-2xl'
 export function Lead({
   as: Tag = 'p',
   tone = 'muted',

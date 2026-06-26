@@ -82,7 +82,9 @@ const OrganizationSelector = ({
         <Text variant="label">Organization access</Text>
         <Text variant="caption" color="muted">
           {singleSelect
-            ? 'This token is limited to the organization you select below.'
+            ? creating
+              ? 'This token will be limited to the organization you create below.'
+              : 'This token is limited to the organization you select below.'
             : mode === 'all'
               ? 'This token can access every organization you belong to, including ones you join later.'
               : 'This token can access only the organizations you select below.'}

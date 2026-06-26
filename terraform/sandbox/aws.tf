@@ -24,15 +24,27 @@ resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
   ip_protocol                  = "tcp"
 }
 
-module "dummy_lambda_worker" {
-  source = "../modules/aws_task_worker"
+locals {
+  lambda_workers = {
+    dummy = {
+      reserved_concurrency = null
+    }
+    "email-send" = {
+      reserved_concurrency = null
+    }
+  }
+}
+
+module "lambda_worker" {
+  source   = "../modules/aws_task_worker"
+  for_each = local.lambda_workers
 
   environment              = "sandbox"
-  name                     = "dummy"
-  queue_name               = "polar-sandbox-tasks-dummy"
+  name                     = each.key
+  queue_name               = "polar-sandbox-tasks-${each.key}"
   image_uri                = "${module.lambda_worker_ecr.repository_url}:latest"
   enabled                  = true
-  reserved_concurrency     = null
+  reserved_concurrency     = each.value.reserved_concurrency
   subnet_ids               = local.lambda_subnet_ids
   security_group_ids       = local.lambda_security_group_ids
   permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
@@ -69,6 +81,11 @@ module "dummy_lambda_worker" {
   }
 }
 
+moved {
+  from = module.dummy_lambda_worker
+  to   = module.lambda_worker["dummy"]
+}
+
 # =============================================================================
 # Task producer IAM user (SQS send-only, used by the Render backend)
 # =============================================================================
@@ -88,7 +105,7 @@ data "aws_iam_policy_document" "tasks_producer" {
       "sqs:SendMessage",
       "sqs:GetQueueUrl",
     ]
-    resources = [module.dummy_lambda_worker.queue_arn]
+    resources = [for worker in module.lambda_worker : worker.queue_arn]
   }
 }
 
@@ -126,9 +143,12 @@ data "aws_iam_policy_document" "lambda_worker_deploy" {
   }
 
   statement {
-    sid       = "UpdateFunctionCode"
-    actions   = ["lambda:UpdateFunctionCode"]
-    resources = ["arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:${module.dummy_lambda_worker.function_name}"]
+    sid     = "UpdateFunctionCode"
+    actions = ["lambda:UpdateFunctionCode"]
+    resources = [
+      for worker in module.lambda_worker :
+      "arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:${worker.function_name}"
+    ]
   }
 }
 

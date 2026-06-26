@@ -33,6 +33,17 @@ async def dispute_organization_second(
     return await create_dispute(save_fixture, order, payment)
 
 
+@pytest_asyncio.fixture
+async def dispute(
+    save_fixture: SaveFixture,
+    product: Product,
+    customer: Customer,
+) -> Dispute:
+    order = await create_order(save_fixture, product=product, customer=customer)
+    payment = await create_payment(save_fixture, customer.organization, order=order)
+    return await create_dispute(save_fixture, order, payment)
+
+
 @pytest.mark.asyncio
 class TestListDisputes:
     async def test_anonymous(self, client: AsyncClient) -> None:
@@ -52,6 +63,24 @@ class TestListDisputes:
         assert response.status_code == 200
         json = response.json()
         assert json["pagination"]["total_count"] == 0
+
+    @pytest.mark.auth
+    async def test_user_sees_own_dispute_with_customer(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        dispute: Dispute,
+        customer: Customer,
+    ) -> None:
+        response = await client.get("/v1/disputes/")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        item = json["items"][0]
+        assert item["id"] == str(dispute.id)
+        assert item["customer"]["id"] == str(customer.id)
+        assert item["customer"]["email"] == customer.email
 
 
 @pytest.mark.asyncio
@@ -107,3 +136,19 @@ class TestGetDispute:
 
         assert response.status_code == 200
         assert response.json()["case_id"] is None
+
+    @pytest.mark.auth
+    async def test_user_gets_own_dispute_with_customer(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        dispute: Dispute,
+        customer: Customer,
+    ) -> None:
+        response = await client.get(f"/v1/disputes/{dispute.id}")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["id"] == str(dispute.id)
+        assert json["customer"]["id"] == str(customer.id)
+        assert json["customer"]["email"] == customer.email

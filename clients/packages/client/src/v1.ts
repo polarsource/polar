@@ -19446,6 +19446,23 @@ export interface components {
        */
       currency: string
       /**
+       * Reason
+       * @description The reason for the dispute as reported by the card network (e.g. `fraudulent`, `product_not_received`). `None` until the processor reports it.
+       * @example fraudulent
+       */
+      reason: string | null
+      /**
+       * Evidence Due By
+       * @description Deadline to submit evidence in response to the dispute. `None` when no response is required.
+       */
+      evidence_due_by: string | null
+      /**
+       * Past Due
+       * @description Whether the evidence submission deadline has passed.
+       * @example false
+       */
+      past_due: boolean
+      /**
        * Order Id
        * Format: uuid4
        * @description The ID of the order associated with the dispute.
@@ -19459,11 +19476,97 @@ export interface components {
        * @example 42b94870-36b9-4573-96b6-b90b1c99a353
        */
       payment_id: string
+      /** @description The customer who was charged for the disputed payment. */
+      customer: components['schemas']['DisputeCustomer']
       /**
        * Case Id
        * @description The ID of the support case for this dispute, if one was opened.
        */
       case_id: string | null
+    }
+    /** DisputeCustomer */
+    DisputeCustomer: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * External Id
+       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
+       */
+      external_id?: string | null
+      /**
+       * Email
+       * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
+       */
+      email?: string | null
+      /**
+       * Email Verified
+       * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+       * @example true
+       */
+      email_verified: boolean
+      /**
+       * @description The type of customer: 'individual' for single users, 'team' for customers with multiple members.
+       * @example individual
+       */
+      type: components['schemas']['CustomerType']
+      /**
+       * Name
+       * @description The name of the customer.
+       * @example John Doe
+       */
+      name: string | null
+      /**
+       * Billing Name
+       * @description The name that should appear on the customer's invoices. Falls back to the customer name when not explicitly set.
+       * @example John Doe
+       */
+      billing_name: string | null
+      billing_address: components['schemas']['Address'] | null
+      /** Tax Id */
+      tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the customer.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Default Payment Method Id
+       * @description The ID of the customer's default payment method, if any. Use the payment methods endpoint to retrieve its details.
+       */
+      default_payment_method_id?: string | null
+      /**
+       * Deleted At
+       * @description Timestamp for when the customer was soft deleted.
+       */
+      deleted_at: string | null
+      /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
+      avatar_url: string | null
     }
     /**
      * DisputeSortProperty
@@ -24960,6 +25063,12 @@ export interface components {
        * @default false
        */
       preview_access_enabled: boolean
+      /**
+       * Disputes Enabled
+       * @description If this organization has the disputes dashboard enabled
+       * @default false
+       */
+      disputes_enabled: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate
@@ -28828,6 +28937,23 @@ export interface components {
        * @example usd
        */
       currency: string
+      /**
+       * Reason
+       * @description The reason for the dispute as reported by the card network (e.g. `fraudulent`, `product_not_received`). `None` until the processor reports it.
+       * @example fraudulent
+       */
+      reason: string | null
+      /**
+       * Evidence Due By
+       * @description Deadline to submit evidence in response to the dispute. `None` when no response is required.
+       */
+      evidence_due_by: string | null
+      /**
+       * Past Due
+       * @description Whether the evidence submission deadline has passed.
+       * @example false
+       */
+      past_due: boolean
       /**
        * Order Id
        * Format: uuid4

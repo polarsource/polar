@@ -211,7 +211,11 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                       className="focus:outline-none sm:hidden"
                       asChild
                     >
-                      <Button size="icon" variant="secondary">
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        aria-label="Account actions"
+                      >
                         <MoreVertOutlined fontSize="inherit" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -240,6 +244,7 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             destructive
+                            disabled={deletePayoutAccount.isPending}
                             onClick={() => handleDelete(account.id)}
                           >
                             Delete

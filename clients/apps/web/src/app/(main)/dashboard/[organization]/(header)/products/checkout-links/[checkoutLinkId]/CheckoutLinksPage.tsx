@@ -10,7 +10,7 @@ import { extractApiErrorMessage } from '@/utils/api/errors'
 import { usePushRouteWithoutCache } from '@/utils/router'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
-import { Button, Text } from '@polar-sh/orbit'
+import { Button, Text, Truncated } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
   DropdownMenu,
@@ -67,11 +67,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
     <MasterDetailLayoutContent
       header={
         <Box width="100%" alignItems="center" justifyContent="between" gap="l">
-          <Text variant="heading-xs" as="p" truncate>
-            {(checkoutLink.label?.length ?? 0) > 0
-              ? checkoutLink.label
-              : 'Untitled'}
-          </Text>
+          <Truncated>
+            <Text variant="heading-xs" as="p">
+              {(checkoutLink.label?.length ?? 0) > 0
+                ? checkoutLink.label
+                : 'Untitled'}
+            </Text>
+          </Truncated>
 
           <Box flexShrink={0} alignItems="center" gap="s">
             <DropdownMenu>

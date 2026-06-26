@@ -5,6 +5,7 @@ import CustomFieldValue from '@/components/CustomFields/CustomFieldValue'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
+import { ChargebackPreventionBanner } from '@/components/Orders/ChargebackPreventionBanner'
 import { DownloadInvoiceDashboard } from '@/components/Orders/DownloadInvoice'
 import { OrderCalloutBanner } from '@/components/Orders/OrderCalloutBanner'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
@@ -30,6 +31,7 @@ import {
 } from '@/utils/dispute'
 import { formatCountry } from '@/utils/formatters'
 import {
+  getChargebackPreventionRefund,
   isOrderDunningFailed,
   isOrderInDunning,
   isOrderInDunningLifecycle,
@@ -110,6 +112,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
     (isOrderInDunning(order, orderPayments) ||
       isOrderDunningFailed(order, dunningSubscription, orderPayments))
 
+  const chargebackPreventionRefund = order
+    ? getChargebackPreventionRefund(order, refunds?.items ?? [])
+    : null
+
   if (!order) {
     return null
   }
@@ -120,7 +126,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <div className="flex flex-col gap-4">
           <div className="flex flex-row items-center gap-4">
             <h2 className="text-xl font-normal">Order</h2>
-            <OrderStatus status={order.status} />
+            <OrderStatus
+              status={order.status}
+              chargebackPrevented={!!chargebackPreventionRefund}
+            />
           </div>
         </div>
       }
@@ -150,6 +159,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
           subscription={dunningSubscription}
           payments={orderPayments}
         />
+      ) : null}
+
+      {chargebackPreventionRefund ? (
+        <ChargebackPreventionBanner refund={chargebackPreventionRefund} />
       ) : null}
 
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
@@ -189,7 +202,12 @@ const ClientPage: React.FC<ClientPageProps> = ({
             />
             <DetailRow
               label="Status"
-              value={<OrderStatus status={order.status} />}
+              value={
+                <OrderStatus
+                  status={order.status}
+                  chargebackPrevented={!!chargebackPreventionRefund}
+                />
+              }
             />
 
             <DetailRow

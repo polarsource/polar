@@ -22,11 +22,17 @@ const OrderStatusDisplayColor: Record<schemas['Order']['status'], StatusColor> =
 
 export const OrderStatus = ({
   status,
+  chargebackPrevented = false,
   size,
 }: {
   status: schemas['Order']['status']
+  chargebackPrevented?: boolean
   size?: 'small' | 'medium'
 }) => {
+  if (chargebackPrevented) {
+    return <Status color="purple" status="Chargeback Prevented" size={size} />
+  }
+
   return (
     <Status
       color={OrderStatusDisplayColor[status]}

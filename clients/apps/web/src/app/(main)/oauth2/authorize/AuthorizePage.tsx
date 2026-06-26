@@ -27,6 +27,7 @@ const AuthorizePage = ({
     sub,
     scope_display_names,
     organizations,
+    requires_single_organization,
   },
   searchParams,
 }: {
@@ -39,9 +40,10 @@ const AuthorizePage = ({
   const clientName = client.client_name || client.client_id
   const hasTerms = client.policy_uri || client.tos_uri
 
-  // sub_type=organization keeps working, but now issues a user token forced to a
-  // single org — surfaced here as a single-select picker.
-  const singleOrganization = searchParams.sub_type === 'organization'
+  // Org mode is resolved server-side (explicit param or the client's default)
+  // and surfaced here, so the picker forces a single org even when the client
+  // omits sub_type.
+  const singleOrganization = requires_single_organization
 
   const [canSubmit, setCanSubmit] = useState(true)
 

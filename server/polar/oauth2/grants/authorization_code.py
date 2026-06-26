@@ -60,7 +60,7 @@ class SubTypeGrantMixin:
     session_organization_ids: frozenset[uuid.UUID] | None = None
     # The OAuth server only issues user tokens now. ``sub_type=organization``
     # is kept as a hint that forces the token to a single org down-scope.
-    organization_request: bool = False
+    requires_single_organization: bool = False
 
 
 class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
@@ -188,7 +188,7 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
         # sub_type=organization must yield exactly one org. The radio UI enforces
         # this client-side; defend it server-side too rather than silently
         # widening (empty) or picking arbitrarily (>1).
-        if self.organization_request:
+        if self.requires_single_organization:
             if not result:
                 raise InvalidRequestError(
                     "sub_type=organization requires selecting an organization"
@@ -308,7 +308,7 @@ class ValidateSubAndPrompt:
         # The OAuth server only issues user tokens now; sub_type=organization
         # just forces a single-org down-scope (resolved from `organizations` at
         # consent). The legacy `sub` param is ignored.
-        grant.organization_request = requested_sub_type == SubType.organization
+        grant.requires_single_organization = requested_sub_type == SubType.organization
         grant.sub_type = SubType.user
         grant.sub = grant.request.user
 

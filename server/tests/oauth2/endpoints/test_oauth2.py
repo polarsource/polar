@@ -450,6 +450,10 @@ class TestOAuth2Authorize:
         assert set(json["scopes"]) == {"openid", "profile", "email"}
         # The OAuth server only issues user tokens now, regardless of sub_type.
         assert json["sub_type"] == "user"
+        # Org mode resolves from the param OR the client's default_sub_type
+        # (here "organization"), and is surfaced so the consent UI can force a
+        # single-org selection.
+        assert json["requires_single_organization"] is (input_sub_type != "user")
 
     @pytest.mark.auth
     async def test_dynamically_registered_client_defaults_to_user(

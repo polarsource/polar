@@ -194,6 +194,7 @@ async def authorize(
             "sub_type": grant.sub_type,
             "sub": grant.sub,
             "organizations": organizations,
+            "requires_single_organization": grant.requires_single_organization,
         }
     )
 

@@ -69,7 +69,7 @@ export const usePayoutAccountSetup = (
       <Modal
         title="Manage Payout Accounts"
         isShown={isManageShown}
-        className="min-w-[560px]"
+        className="sm:min-w-[560px]"
         hide={hideManage}
         modalContent={
           <ManagePayoutAccountModal

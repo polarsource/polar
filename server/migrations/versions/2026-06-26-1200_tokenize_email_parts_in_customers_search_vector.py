@@ -38,21 +38,6 @@ def upgrade() -> None:
         )
     )
 
-    op.execute(
-        text(
-            """
-            UPDATE customers
-            SET search_vector =
-                setweight(to_tsvector('simple', coalesce(name, '')), 'A') ||
-                setweight(to_tsvector('simple', coalesce(email, '')), 'A') ||
-                setweight(to_tsvector('simple', coalesce(
-                    regexp_replace(email, '[@._-]', ' ', 'g'), ''
-                )), 'B')
-            WHERE email IS NOT NULL OR name IS NOT NULL
-            """
-        )
-    )
-
 
 def downgrade() -> None:
     # No downgrade: rolling back the function definition would leave the

@@ -150,10 +150,12 @@ async def list(
         except ValueError:
             ts_query_simple = func.websearch_to_tsquery("simple", query)
             ts_query_english = func.websearch_to_tsquery("english", query)
+            ilike_term = f"%{query}%"
             statement = statement.where(
                 or_(
                     Order.search_vector.op("@@")(ts_query_simple),
                     Customer.search_vector.op("@@")(ts_query_simple),
+                    Customer.email.ilike(ilike_term),
                     Product.search_vector.op("@@")(ts_query_english),
                 )
             )

@@ -57,12 +57,6 @@ export const ActiveSubscriptionsOverview = ({
   )
 }
 
-interface SubscriptionsOverviewProps {
-  organization: schemas['CustomerOrganization']
-  subscriptions: schemas['CustomerSubscription'][]
-  products: schemas['CustomerProduct'][]
-}
-
 export const InactiveSubscriptionsOverview = ({
   subscriptions,
   products,

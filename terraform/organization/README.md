@@ -61,11 +61,12 @@ The HCP Terraform workspace variables that point each workspace at its AWS role 
 `Polar<Tier><Account>` (e.g. `PolarReadOnlySandbox`). Sets are assigned to Google Workspace groups
 across all accounts:
 
-| Group                                            | Permission set              | Access                                              |
-| ------------------------------------------------ | --------------------------- | --------------------------------------------------- |
-| `awsadmins@polar.sh`                             | `PolarAdmin<Account>`       | Unrestricted administrator                          |
-| `awsengineers@polar.sh`, `engineering@polar.sh`  | `PolarEngineering<Account>` | Power-user (no IAM/Organizations), bounded by `PolarPermissionBoundary` |
-| `awsaccess@polar.sh`                             | `PolarReadOnly<Account>`    | Read-only                                           |
+| Group                | Permission set              | Access                                              |
+| -------------------- | --------------------------- | --------------------------------------------------- |
+| `AWS Access`         | `PolarAdmin<Account>`       | Unrestricted administrator                          |
+| `AWS Engineers`      | `PolarEngineering<Account>` | Power-user (no IAM/Organizations), bounded by `PolarPermissionBoundary` |
+| `Engineering`        | `PolarEngineering<Account>` | Power-user (no IAM/Organizations), bounded by `PolarPermissionBoundary` |
+| `AWS Read Only Access` | `PolarReadOnly<Account>`    | Read-only                                         |
 
 Group membership comes from Google Workspace via ssosync (`terraform/identity`), not from here.
 

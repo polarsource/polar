@@ -71,7 +71,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
   })
 
   const pendingOrder =
-    orders?.items.findLast((order) => order.status === 'pending') ?? null
+    orders?.items.findLast(
+      (order) => order.status === 'pending' || order.status === 'void',
+    ) ?? null
 
   const hasSeatBasedSubscription =
     !!subscription?.seats && subscription.seats > 0

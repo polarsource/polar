@@ -5,6 +5,7 @@ import CustomFieldValue from '@/components/CustomFields/CustomFieldValue'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
+import { OrderCalloutBanner } from '@/components/Orders/OrderCalloutBanner'
 import { SeatViewOnlyTable } from '@/components/Seats/SeatViewOnlyTable'
 import { DetailRow } from '@/components/Shared/DetailRow'
 import CancelSubscriptionModal from '@/components/Subscriptions/CancelSubscriptionModal'
@@ -20,6 +21,7 @@ import {
 } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { useOrganizationSeats } from '@/hooks/queries/seats'
+import { useOrders } from '@/hooks/queries/orders'
 import SubscriptionOrdersSection from '@/components/Subscriptions/SubscriptionOrdersSection'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
@@ -61,6 +63,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
   } = useModal()
 
   const uncancelSubscription = useUncancelSubscription(_subscription.id)
+
+  const { data: orders } = useOrders(organization.id, {
+    subscription_id: [_subscription.id],
+    sorting: ['-created_at'],
+    limit: 100,
+  })
+
+  const pendingOrder =
+    orders?.items.findLast((order) => order.status === 'pending') ?? null
 
   const hasSeatBasedSubscription =
     !!subscription?.seats && subscription.seats > 0
@@ -147,6 +158,14 @@ const ClientPage: React.FC<ClientPageProps> = ({
         />
       }
     >
+      {pendingOrder && (
+        <OrderCalloutBanner
+          organization={organization}
+          order={pendingOrder}
+          subscription={subscription}
+        />
+      )}
+
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
         <div className="flex flex-col gap-6 p-8">
           <div className="flex flex-col gap-2">

@@ -14,7 +14,7 @@ REFRESH_TOKEN_PREFIX: dict[SubType, str] = {
     SubType.user: "polar_rt_u_",
     SubType.organization: "polar_rt_o_",
 }
-WEBHOOK_SECRET_PREFIX = "polar_whs_"
+WEBHOOK_SECRET_PREFIX = "whsec_"
 
 ISSUER = "https://polar.sh"
 SERVICE_DOCUMENTATION = "https://polar.sh/docs"

@@ -28,7 +28,12 @@ const OrganizationSelector = ({
   const [mode, setMode] = useState<AccessMode>(
     singleSelect ? 'specific' : 'all',
   )
-  const [selected, setSelected] = useState<Set<string>>(new Set())
+  // A single radio option leaves nothing to choose, so preselect it.
+  const [selected, setSelected] = useState<Set<string>>(() =>
+    singleSelect && organizations.length === 1
+      ? new Set([organizations[0].id])
+      : new Set(),
+  )
   const [createdOrganizations, setCreatedOrganizations] = useState<
     schemas['AuthorizeOrganization'][]
   >([])
@@ -36,7 +41,12 @@ const OrganizationSelector = ({
     singleSelect && organizations.length === 0,
   )
 
-  const allOrganizations = [...organizations, ...createdOrganizations]
+  // A just-created org can also reappear in `organizations` once the page
+  // refreshes after creation, so dedupe by id to avoid showing it twice.
+  const allOrganizations = [...organizations, ...createdOrganizations].filter(
+    (organization, index, list) =>
+      list.findIndex((other) => other.id === organization.id) === index,
+  )
 
   // Offer creation only when the user has no organization yet — in either flow
   // (e.g. a first-time user discovering Polar through a third-party app).

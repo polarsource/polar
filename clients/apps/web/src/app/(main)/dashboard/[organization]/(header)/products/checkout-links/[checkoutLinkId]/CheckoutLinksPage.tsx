@@ -66,12 +66,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   return (
     <MasterDetailLayoutContent
       header={
-        <Box
-          width="100%"
-          alignItems="center"
-          justifyContent="between"
-          gap="l"
-        >
+        <Box width="100%" alignItems="center" justifyContent="between" gap="l">
           <Text variant="heading-xs" as="p" truncate>
             {(checkoutLink.label?.length ?? 0) > 0
               ? checkoutLink.label

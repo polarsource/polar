@@ -112,12 +112,18 @@ export const ProductListItem = ({
             ) : (
               <>
                 {isUsageBasedProduct && (
-                  <Pill color="green" className="hidden px-3 py-1 text-xs md:block">
+                  <Pill
+                    color="green"
+                    className="hidden px-3 py-1 text-xs md:block"
+                  >
                     Metered Pricing
                   </Pill>
                 )}
                 {isSeatBasedProduct && (
-                  <Pill color="blue" className="hidden px-3 py-1 text-xs md:block">
+                  <Pill
+                    color="blue"
+                    className="hidden px-3 py-1 text-xs md:block"
+                  >
                     Seat Pricing
                   </Pill>
                 )}

@@ -4,18 +4,10 @@ import { JSX } from 'react'
 import { MiddayWordmark, Speakeasy, StillaAIWordmark, Tailwind } from './Logos'
 
 const items = [
-  /* {
-    icon: <Spotify size={34} />,
-    link: 'https://confidence.spotify.com/',
-  }, */
   {
     icon: <Tailwind size={24} />,
     link: 'https://tailwindcss.com',
   },
-  /* {
-    icon: <Goals size={20} />,
-    link: 'https://playgoals.com',
-  }, */
   {
     icon: <Speakeasy />,
     link: 'https://speakeasy.com',

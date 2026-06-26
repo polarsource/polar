@@ -7,13 +7,15 @@ This Terraform root manages Polar's AWS Organizations structure.
 ```text
 AWS Organization
 ├── Management account: polar
-└── Workloads
-    ├── Production
-    │   └── production
-    ├── Sandbox
-    │   └── sandbox
-    └── Test
-        └── test
+├── Workloads
+│   ├── Production
+│   │   └── production
+│   ├── Sandbox
+│   │   └── sandbox
+│   └── Test
+│       └── test
+└── Security
+    └── identity
 ```
 
 The management account owns the AWS Organization control plane. It should stay limited to
@@ -65,8 +67,7 @@ across all accounts:
 | `awsengineers@polar.sh`, `engineering@polar.sh`  | `PolarEngineering<Account>` | Power-user (no IAM/Organizations), bounded by `PolarPermissionBoundary` |
 | `awsaccess@polar.sh`                             | `PolarReadOnly<Account>`    | Read-only                                           |
 
-Group membership is not managed here; manage it in the Identity Center console or via SCIM from
-Google Workspace.
+Group membership comes from Google Workspace via ssosync (`terraform/identity`), not from here.
 
 ## Permission boundary
 

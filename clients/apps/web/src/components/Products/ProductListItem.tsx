@@ -112,12 +112,12 @@ export const ProductListItem = ({
             ) : (
               <>
                 {isUsageBasedProduct && (
-                  <Pill color="green" className="px-3 py-1 text-xs">
+                  <Pill color="green" className="hidden px-3 py-1 text-xs md:block">
                     Metered Pricing
                   </Pill>
                 )}
                 {isSeatBasedProduct && (
-                  <Pill color="blue" className="px-3 py-1 text-xs">
+                  <Pill color="blue" className="hidden px-3 py-1 text-xs md:block">
                     Seat Pricing
                   </Pill>
                 )}
@@ -131,6 +131,7 @@ export const ProductListItem = ({
                 <Button
                   size="sm"
                   variant="secondary"
+                  className="hidden md:inline-flex"
                   onClick={(e) => {
                     e.preventDefault()
                     router.push(

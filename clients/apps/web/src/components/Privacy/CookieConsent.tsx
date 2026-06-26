@@ -73,10 +73,6 @@ export function CookieConsent({ countryCode }: { countryCode: string | null }) {
     setConsentGiven('yes')
   }
 
-  const handleDeclineCookies = () => {
-    declineCookies()
-  }
-
   if (!isEU || doNotTrackParameter) {
     return null
   }
@@ -99,7 +95,7 @@ export function CookieConsent({ countryCode }: { countryCode: string | null }) {
             </button>
             <button
               className="cursor-pointer text-gray-500 transition-colors hover:text-gray-600 dark:hover:text-gray-600"
-              onClick={handleDeclineCookies}
+              onClick={declineCookies}
               type="button"
             >
               Decline

@@ -225,7 +225,6 @@ const CustomerSubscriptionDetails = ({
             Change plan
           </Button>
         )}
-
       </div>
 
       <InlineModal

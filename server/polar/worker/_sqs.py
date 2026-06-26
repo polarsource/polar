@@ -1,5 +1,4 @@
 import asyncio
-import functools
 import itertools
 import json
 from collections import defaultdict
@@ -35,7 +34,6 @@ class SQSSendError(Exception):
         super().__init__(f"Failed to send {len(failed)} message(s) to {queue_name}")
 
 
-@functools.lru_cache(maxsize=1)
 def get_sqs_client() -> "SQSClient":
     return boto3.client(
         "sqs",
@@ -56,7 +54,6 @@ def get_sqs_client() -> "SQSClient":
     )
 
 
-@functools.lru_cache(maxsize=1)
 def get_consumer_sqs_client() -> "SQSClient":
     """SQS client authenticated by the Lambda execution role (no static keys)."""
     return boto3.client(
@@ -70,6 +67,9 @@ def get_consumer_sqs_client() -> "SQSClient":
             retries={"max_attempts": 2, "mode": "standard"},
         ),
     )
+
+
+sqs_client = get_sqs_client()
 
 
 def actor_to_queue_name(_actor_name: str) -> str:
@@ -117,9 +117,11 @@ def parse_envelope(body: str) -> tuple[str, list[Any], dict[str, Any], str | Non
 
 
 def set_message_visibility(
-    queue_arn: str, receipt_handle: str, timeout_seconds: int
+    client: "SQSClient",
+    queue_arn: str,
+    receipt_handle: str,
+    timeout_seconds: int,
 ) -> None:
-    client = get_consumer_sqs_client()
     queue_name = queue_arn.rsplit(":", 1)[-1]
     queue_url = get_queue_url(client, queue_name)
     client.change_message_visibility(
@@ -179,4 +181,5 @@ __all__ = [
     "send_jobs",
     "send_jobs_sync",
     "set_message_visibility",
+    "sqs_client",
 ]

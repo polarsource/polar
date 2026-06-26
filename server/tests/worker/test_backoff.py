@@ -57,10 +57,10 @@ class TestSetMessageVisibility:
     def test_changes_visibility_for_queue(self, mocker: MockerFixture) -> None:
         client = mocker.MagicMock()
         client.get_queue_url.return_value = {"QueueUrl": "https://sqs/queue"}
-        mocker.patch.object(_sqs, "get_consumer_sqs_client", return_value=client)
         _sqs._queue_url_cache.clear()
 
         _sqs.set_message_visibility(
+            client,
             "arn:aws:sqs:us-east-2:123456789012:polar-sandbox-tasks-dummy",
             "receipt-handle",
             42,

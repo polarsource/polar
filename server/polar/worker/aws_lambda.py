@@ -10,7 +10,7 @@ from polar.logging import configure as configure_logging
 from polar.sentry import configure_sentry
 
 from ._runner import bootstrap, compute_retry_backoff, run_task
-from ._sqs import parse_envelope, set_message_visibility
+from ._sqs import get_consumer_sqs_client, parse_envelope, set_message_visibility
 
 configure_sentry()
 configure_logfire("worker")
@@ -24,6 +24,8 @@ log: Logger = structlog.get_logger()
 _loop = asyncio.new_event_loop()
 asyncio.set_event_loop(_loop)
 bootstrap()
+
+consumer_sqs_client = get_consumer_sqs_client()
 
 
 def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
@@ -67,7 +69,10 @@ def _apply_retry_backoff(record: dict[str, Any], exception: BaseException) -> No
         )
         backoff_seconds = compute_retry_backoff(actor, receive_count, exception)
         set_message_visibility(
-            record["eventSourceARN"], record["receiptHandle"], backoff_seconds
+            consumer_sqs_client,
+            record["eventSourceARN"],
+            record["receiptHandle"],
+            backoff_seconds,
         )
         log.info(
             "polar.worker.sqs_retry_scheduled",

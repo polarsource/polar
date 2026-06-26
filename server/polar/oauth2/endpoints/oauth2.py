@@ -6,7 +6,6 @@ from fastapi.openapi.constants import REF_TEMPLATE
 
 from polar.auth.dependencies import WebUserOrAnonymous
 from polar.auth.models import is_user
-from polar.auth.permission import OrganizationPermission
 from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWrite
 from polar.authz.service import get_accessible_org_ids
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -39,7 +38,6 @@ from ..schemas import (
     UserInfo as UserInfoSchema,
 )
 from ..service.oauth2_client import oauth2_client as oauth2_client_service
-from ..sub_type import SubType
 from ..userinfo import UserInfo, generate_user_info
 
 router = APIRouter(prefix="/oauth2", tags=["oauth2"])
@@ -173,16 +171,9 @@ async def authorize(
 
     organizations: Sequence[Organization] = []
     if is_user(auth_subject):
-        # org sub_type needs manage permission (authorize as the org); user
-        # sub_type offers any membership as an optional down-scope target.
-        permission = (
-            OrganizationPermission.organization_manage
-            if grant.sub_type == SubType.organization
-            else None
-        )
-        accessible_org_ids = await get_accessible_org_ids(
-            session, auth_subject, permission=permission
-        )
+        # Any organization the user belongs to can be a down-scope target (the
+        # token is the user's own access narrowed, not full-org access).
+        accessible_org_ids = await get_accessible_org_ids(session, auth_subject)
         organization_repository = OrganizationRepository.from_session(session)
         all_organizations = await organization_repository.get_all_by_user(
             auth_subject.subject.id
@@ -203,6 +194,7 @@ async def authorize(
             "sub_type": grant.sub_type,
             "sub": grant.sub,
             "organizations": organizations,
+            "requires_single_organization": grant.requires_single_organization,
         }
     )
 

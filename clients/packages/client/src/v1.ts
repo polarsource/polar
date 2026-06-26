@@ -7026,6 +7026,11 @@ export interface components {
       /** Organizations */
       organizations: components['schemas']['AuthorizeOrganization'][]
       /**
+       * Requires Single Organization
+       * @default false
+       */
+      requires_single_organization: boolean
+      /**
        * Scope Display Names
        * @default {
        *       "openid": "OpenID",
@@ -7109,6 +7114,11 @@ export interface components {
       scopes: components['schemas']['Scope'][]
       /** Organizations */
       organizations: components['schemas']['AuthorizeOrganization'][]
+      /**
+       * Requires Single Organization
+       * @default false
+       */
+      requires_single_organization: boolean
       /**
        * Scope Display Names
        * @default {

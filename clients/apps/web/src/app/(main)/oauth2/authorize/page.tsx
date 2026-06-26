@@ -4,8 +4,6 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import AuthorizeErrorPage from './AuthorizeErrorPage'
 import AuthorizePage from './AuthorizePage'
-import OrganizationSelectionPage from './OrganizationSelectionPage'
-import { AuthorizeResponse } from './types'
 
 export const metadata: Metadata = {
   title: 'Authorize',
@@ -69,18 +67,8 @@ export default async function Page(props: {
   }
 
   if (response.ok) {
-    const { sub_type } = data as AuthorizeResponse
-    if (sub_type === 'organization' && !searchParams['sub']) {
-      return (
-        <OrganizationSelectionPage
-          authorizeResponse={data}
-          searchParams={searchParams}
-        />
-      )
-    } else {
-      return (
-        <AuthorizePage authorizeResponse={data} searchParams={searchParams} />
-      )
-    }
+    return (
+      <AuthorizePage authorizeResponse={data} searchParams={searchParams} />
+    )
   }
 }

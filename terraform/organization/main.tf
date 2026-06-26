@@ -9,7 +9,7 @@ provider "aws" {
 
 resource "aws_organizations_organization" "current" {
   feature_set                   = "ALL"
-  aws_service_access_principals = ["sso.amazonaws.com"]
+  aws_service_access_principals = ["account.amazonaws.com", "sso.amazonaws.com"]
   enabled_policy_types          = ["SERVICE_CONTROL_POLICY"]
 
   lifecycle {

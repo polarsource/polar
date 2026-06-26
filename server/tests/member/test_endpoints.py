@@ -1521,6 +1521,52 @@ class TestCreateCustomerMember:
         )
         assert response.status_code == 404
 
+    @pytest.mark.auth
+    async def test_different_organization(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+    ) -> None:
+        other_account = await create_account(save_fixture, user)
+        other_org = await create_organization(save_fixture, other_account)
+        other_org.feature_settings = {"member_model_enabled": True}
+        await save_fixture(other_org)
+        customer = await create_customer(
+            save_fixture, organization=other_org, email="customer@example.com"
+        )
+
+        # The customer exists but belongs to an org the subject can't access.
+        response = await client.post(
+            f"/v1/customers/{customer.id}/members",
+            json={"email": "member@example.com"},
+        )
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_external_different_organization(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+    ) -> None:
+        other_account = await create_account(save_fixture, user)
+        other_org = await create_organization(save_fixture, other_account)
+        other_org.feature_settings = {"member_model_enabled": True}
+        await save_fixture(other_org)
+        await create_customer(
+            save_fixture,
+            organization=other_org,
+            external_id="cus_ext_other_org",
+            email="customer@example.com",
+        )
+
+        response = await client.post(
+            "/v1/customers/external/cus_ext_other_org/members",
+            json={"email": "member@example.com"},
+        )
+        assert response.status_code == 404
+
 
 @pytest.mark.asyncio
 class TestGetCustomerMember:

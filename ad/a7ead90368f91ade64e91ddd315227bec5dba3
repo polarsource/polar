@@ -1,0 +1,19 @@
+server/tests/member/test_endpoints.py
+  s_92e571d8ebe6ac::t_08e3012787e067 1524-1569
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "ada7ead90368f91ade64e91ddd315227bec5dba3",
+  "prompts": {},
+  "sessions": {
+    "s_92e571d8ebe6ac": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6e321c43-66b5-4140-8c71-c5d20484975d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -25,31 +25,7 @@ resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
 }
 
 locals {
-  lambda_workers = {
-    dummy = {
-      reserved_concurrency = null
-    }
-    "email-send" = {
-      reserved_concurrency = null
-    }
-  }
-}
-
-module "lambda_worker" {
-  source   = "../modules/aws_task_worker"
-  for_each = local.lambda_workers
-
-  environment              = "sandbox"
-  name                     = each.key
-  queue_name               = "polar-sandbox-tasks-${each.key}"
-  image_uri                = "${module.lambda_worker_ecr.repository_url}:latest"
-  enabled                  = true
-  reserved_concurrency     = each.value.reserved_concurrency
-  subnet_ids               = local.lambda_subnet_ids
-  security_group_ids       = local.lambda_security_group_ids
-  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
-
-  environment_variables = {
+  lambda_worker_environment = {
     POLAR_ENV                     = "sandbox"
     POLAR_BASE_URL                = "https://sandbox-api.polar.sh"
     POLAR_FRONTEND_BASE_URL       = "https://sandbox.polar.sh"
@@ -70,7 +46,7 @@ module "lambda_worker" {
     POLAR_WORKER_SQS_QUEUE_PREFIX = "polar-sandbox-tasks"
   }
 
-  secret_environment_variables = {
+  lambda_worker_secrets = {
     POLAR_CURRENT_JWK_KID = var.backend_current_jwk_kid_sandbox
     POLAR_JWKS_CONTENT    = var.backend_jwks_sandbox
     POLAR_LOGFIRE_TOKEN   = var.logfire_token
@@ -79,6 +55,43 @@ module "lambda_worker" {
     POLAR_SENTRY_DSN      = var.backend_sentry_dsn_sandbox
     TAILSCALE_AUTHKEY     = var.lambda_worker_tailscale_token
   }
+
+  lambda_workers = {
+    dummy = {
+      reserved_concurrency         = null
+      environment_variables        = {}
+      secret_environment_variables = {}
+    }
+    "email-send" = {
+      reserved_concurrency = null
+      environment_variables = {
+        POLAR_EMAIL_SENDER      = "resend"
+        POLAR_EMAIL_FROM_NAME   = "[SANDBOX] Polar"
+        POLAR_EMAIL_FROM_DOMAIN = "notifications.sandbox.polar.sh"
+      }
+      secret_environment_variables = {
+        POLAR_RESEND_API_KEY = var.backend_resend_api_key_sandbox
+      }
+    }
+  }
+}
+
+module "lambda_worker" {
+  source   = "../modules/aws_task_worker"
+  for_each = local.lambda_workers
+
+  environment              = "sandbox"
+  name                     = each.key
+  queue_name               = "polar-sandbox-tasks-${each.key}"
+  image_uri                = "${module.lambda_worker_ecr.repository_url}:latest"
+  enabled                  = true
+  reserved_concurrency     = each.value.reserved_concurrency
+  subnet_ids               = local.lambda_subnet_ids
+  security_group_ids       = local.lambda_security_group_ids
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+
+  environment_variables        = merge(local.lambda_worker_environment, each.value.environment_variables)
+  secret_environment_variables = merge(local.lambda_worker_secrets, each.value.secret_environment_variables)
 }
 
 moved {

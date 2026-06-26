@@ -53,8 +53,4 @@ export const EU_COUNTRY_CODES = [
   'IM',
   'JE',
   'GG',
-  'RS',
-  'ME',
-  'XK',
-  'RS',
 ]

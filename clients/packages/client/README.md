@@ -1,3 +1,3 @@
-# `@polar-sh/checkout`
+# `@polar-sh/client`
 
-This package contains JavaScript utilities to easily integrate Polar Checkout into your website or application.
+This package contains the generated API client used internally by Polar's frontend applications. It is generated from the backend's OpenAPI schema.

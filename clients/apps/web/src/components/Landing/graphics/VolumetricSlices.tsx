@@ -47,7 +47,6 @@ void main() {
   float x1 = xy.x * cY + xy.y * sY;
   float y1 = -xy.x * sY + xy.y * cY;
   float y2 = y1 * cP - u_sliceZ * sP;
-  float z2 = y1 * sP + u_sliceZ * cP;
 
   // Depth uses ONLY slice Z so every pixel within a slice shares one
   // depth value. Otherwise adjacent slices' per-pixel depths overlap

@@ -10,7 +10,8 @@ import { extractApiErrorMessage } from '@/utils/api/errors'
 import { usePushRouteWithoutCache } from '@/utils/router'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,18 +66,19 @@ const ClientPage: React.FC<ClientPageProps> = ({
   return (
     <MasterDetailLayoutContent
       header={
-        <>
-          <div className="flex flex-row items-center gap-6">
-            <div className="flex flex-col">
-              <p className="text-xl">
-                {(checkoutLink.label?.length ?? 0) > 0
-                  ? checkoutLink.label
-                  : 'Untitled'}
-              </p>
-            </div>
-          </div>
+        <Box
+          width="100%"
+          alignItems="center"
+          justifyContent="between"
+          gap="l"
+        >
+          <Text variant="heading-xs" as="p" truncate>
+            {(checkoutLink.label?.length ?? 0) > 0
+              ? checkoutLink.label
+              : 'Untitled'}
+          </Text>
 
-          <div className="flex flex-row items-center gap-x-2">
+          <Box flexShrink={0} alignItems="center" gap="s">
             <DropdownMenu>
               <DropdownMenuTrigger className="focus:outline-none" asChild>
                 <Button
@@ -96,8 +98,8 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
-        </>
+          </Box>
+        </Box>
       }
     >
       <div className="flex h-full w-full flex-col">

@@ -57,6 +57,7 @@ class EmailTemplate(StrEnum):
     notification_new_subscription = "notification_new_subscription"
     notification_credits_granted = "notification_credits_granted"
     chargeback_prevention_refund = "chargeback_prevention_refund"
+    polar_self_subscription_cancellation = "polar_self_subscription_cancellation"
     polar_self_subscription_confirmation = "polar_self_subscription_confirmation"
     polar_self_subscription_cycled = "polar_self_subscription_cycled"
     polar_self_subscription_past_due = "polar_self_subscription_past_due"
@@ -459,6 +460,18 @@ class PolarSelfSubscriptionCycledEmail(BaseModel):
     props: PolarSelfSubscriptionCycledProps
 
 
+class PolarSelfSubscriptionCancellationProps(EmailProps):
+    product_name: str
+    ends_at: str | None = None
+
+
+class PolarSelfSubscriptionCancellationEmail(BaseModel):
+    template: Literal[EmailTemplate.polar_self_subscription_cancellation] = (
+        EmailTemplate.polar_self_subscription_cancellation
+    )
+    props: PolarSelfSubscriptionCancellationProps
+
+
 class PolarSelfSubscriptionPastDueProps(EmailProps):
     product_name: str
 
@@ -549,6 +562,7 @@ Email = Annotated[
     | NotificationNewSubscriptionEmail
     | NotificationCreditsGrantedEmail
     | ChargebackPreventionRefundEmail
+    | PolarSelfSubscriptionCancellationEmail
     | PolarSelfSubscriptionConfirmationEmail
     | PolarSelfSubscriptionCycledEmail
     | PolarSelfSubscriptionPastDueEmail

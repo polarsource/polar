@@ -9,6 +9,7 @@ from polar_sdk.models import (
     WebhookBenefitGrantRevokedPayload,
     WebhookBenefitGrantUpdatedPayload,
     WebhookOrderCreatedPayload,
+    WebhookSubscriptionCanceledPayload,
     WebhookSubscriptionPastDuePayload,
     WebhookSubscriptionRevokedPayload,
 )
@@ -246,6 +247,16 @@ async def webhook_order_created(event_id: uuid.UUID) -> None:
                 if can_retry():
                     raise Retry() from e
                 raise
+
+
+@actor(actor_name="polar_self.webhook.subscription.canceled", priority=TaskPriority.LOW)
+async def webhook_subscription_canceled(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle(
+            session, ExternalEventSource.polar, event_id
+        ) as event:
+            payload = WebhookSubscriptionCanceledPayload.model_validate(event.data)
+            await polar_self.handle_subscription_canceled_event(payload)
 
 
 @actor(actor_name="polar_self.webhook.subscription.past_due", priority=TaskPriority.LOW)

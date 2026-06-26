@@ -2208,6 +2208,28 @@ export interface components {
       /** Billing Url */
       billing_url: string
     }
+    /** PolarSelfSubscriptionCancellationEmail */
+    PolarSelfSubscriptionCancellationEmail: {
+      /**
+       * Template
+       * @default polar_self_subscription_cancellation
+       * @constant
+       */
+      template: 'polar_self_subscription_cancellation'
+      props: components['schemas']['PolarSelfSubscriptionCancellationProps']
+    }
+    /** PolarSelfSubscriptionCancellationProps */
+    PolarSelfSubscriptionCancellationProps: {
+      /** Email */
+      email: string
+      /** Product Name */
+      product_name: string
+      /**
+       * Ends At
+       * @default null
+       */
+      ends_at: string | null
+    }
     /** PolarSelfSubscriptionConfirmationEmail */
     PolarSelfSubscriptionConfirmationEmail: {
       /**

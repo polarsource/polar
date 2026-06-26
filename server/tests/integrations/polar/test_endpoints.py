@@ -264,9 +264,9 @@ class TestWebhook:
     async def test_unhandled_event_type_is_ignored(
         self, client: AsyncClient, enqueue_mock: AsyncMock
     ) -> None:
-        # subscription.canceled is a valid (parseable) Polar event type, but
+        # subscription.uncanceled is a valid (parseable) Polar event type, but
         # not in IMPLEMENTED_WEBHOOKS.
-        body, headers = _sign(_subscription_event("subscription.canceled"))
+        body, headers = _sign(_subscription_event("subscription.uncanceled"))
 
         response = await client.post(WEBHOOK_URL, content=body, headers=headers)
 
@@ -335,6 +335,7 @@ class TestWebhook:
     @pytest.mark.parametrize(
         "event_type",
         [
+            "subscription.canceled",
             "subscription.past_due",
             "subscription.revoked",
         ],

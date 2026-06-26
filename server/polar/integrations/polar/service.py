@@ -16,6 +16,7 @@ from polar_sdk.models import (
     WebhookBenefitGrantRevokedPayload,
     WebhookBenefitGrantUpdatedPayload,
     WebhookOrderCreatedPayload,
+    WebhookSubscriptionCanceledPayload,
     WebhookSubscriptionPastDuePayload,
     WebhookSubscriptionRevokedPayload,
 )
@@ -24,6 +25,7 @@ from polar.account.repository import AccountRepository
 from polar.config import settings
 from polar.email.schemas import (
     EmailAdapter,
+    PolarSelfSubscriptionCancellationProps,
     PolarSelfSubscriptionConfirmationProps,
     PolarSelfSubscriptionCycledProps,
     PolarSelfSubscriptionPastDueProps,
@@ -785,6 +787,37 @@ class PolarSelfService:
                     to_email_addr=recipient,
                     subject=subject,
                     attachments=attachments,
+                )
+
+    async def handle_subscription_canceled_event(
+        self, payload: WebhookSubscriptionCanceledPayload
+    ) -> None:
+        subscription = payload.data
+        context = await self._resolve_subscription_email_context(subscription)
+        if context is None:
+            return
+        recipients, product_name = context
+        ends_at = subscription.ends_at.isoformat() if subscription.ends_at else None
+
+        with logfire.span(
+            "polar_self.webhook.subscription_canceled",
+            subscription_id=subscription.id,
+        ):
+            for recipient in recipients:
+                email = EmailAdapter.validate_python(
+                    {
+                        "template": "polar_self_subscription_cancellation",
+                        "props": PolarSelfSubscriptionCancellationProps(
+                            email=recipient,
+                            product_name=product_name,
+                            ends_at=ends_at,
+                        ).model_dump(),
+                    }
+                )
+                enqueue_email_template(
+                    email,
+                    to_email_addr=recipient,
+                    subject=f"Your {product_name} subscription has been canceled",
                 )
 
     async def handle_subscription_past_due_event(

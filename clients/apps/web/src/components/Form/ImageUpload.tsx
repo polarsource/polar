@@ -71,12 +71,7 @@ const ImageUpload = ({
   }, [height, width, validate, imageRef])
 
   return (
-    <form
-      onSubmit={async (event) => {
-        event.preventDefault()
-        await handleUpload()
-      }}
-    >
+    <div>
       <input
         style={{ display: 'none', height: 0 }}
         name="file"
@@ -158,7 +153,7 @@ const ImageUpload = ({
           <div className="text-sm text-red-500">{errorMessage}</div>
         ) : null}
       </div>
-    </form>
+    </div>
   )
 }
 

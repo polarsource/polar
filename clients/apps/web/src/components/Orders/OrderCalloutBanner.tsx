@@ -1,16 +1,16 @@
 'use client'
 
-import { useSubscription } from '@/hooks/queries'
 import { usePayments } from '@/hooks/queries/payments'
-import { getOrderDunningState, getBenefitsRevocationSchedule } from '@/utils/order'
+import {
+  getOrderDunningState,
+  getBenefitsRevocationSchedule,
+} from '@/utils/order'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { addDays, isPast, min, parseISO } from 'date-fns'
 import { ExternalLinkIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
-
 
 const FAILED_PAYMENTS_DOCS_URL =
   'https://docs.polar.sh/features/subscriptions/failed-payments'
@@ -55,8 +55,6 @@ const ColumnHeading = ({
   </Box>
 )
 
-
-
 const BenefitsRevocationText = ({
   benefitsRevocationDate,
   benefitsRevoked,
@@ -75,7 +73,6 @@ const BenefitsRevocationText = ({
     .
   </Text>
 )
-
 
 interface OrderCalloutBannerProps {
   organization: schemas['Organization']
@@ -115,7 +112,6 @@ export const OrderCalloutBanner = ({
     return null
   }
 
-
   return (
     <Box
       flexDirection="column"
@@ -132,7 +128,9 @@ export const OrderCalloutBanner = ({
         paddingVertical="l"
       >
         <Text variant="body">
-          {dunningState === 'failed' ? "Payment couldn't be recovered" : 'Payment Failed'}
+          {dunningState === 'failed'
+            ? "Payment couldn't be recovered"
+            : 'Payment Failed'}
         </Text>
       </Box>
 
@@ -187,7 +185,8 @@ export const OrderCalloutBanner = ({
                 datetime={order.next_payment_attempt_at ?? null}
               />
               <Text>
-                Polar always tries to recover failed subscription payments for you.
+                Polar always tries to recover failed subscription payments for
+                you.
               </Text>
               <a
                 href={FAILED_PAYMENTS_DOCS_URL}
@@ -210,9 +209,13 @@ export const OrderCalloutBanner = ({
             </BannerColumn>
 
             <BannerColumn divided>
-              <ColumnHeading label="What happens next" datetime={revocationDeadline} />
+              <ColumnHeading
+                label="What happens next"
+                datetime={revocationDeadline}
+              />
               <Text>
-                If we can&apos;t recover the payment, the subscription will be canceled
+                If we can&apos;t recover the payment, the subscription will be
+                canceled
                 {revocationDeadline ? (
                   <>
                     {' on '}

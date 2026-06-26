@@ -22,7 +22,6 @@ const _getOrderById = async (
   )
 }
 
-
 // Tell React to memoize it for the duration of the request
 export const getOrderById = cache(_getOrderById)
 
@@ -89,10 +88,10 @@ export function getBenefitsRevocationSchedule(
 
   const benefitsRevocationDate = pastDueAt
     ? min(
-      [addDays(pastDueAt, gracePeriodDays), revocationDeadline].filter(
-        (date) => date !== null,
-      ),
-    )
+        [addDays(pastDueAt, gracePeriodDays), revocationDeadline].filter(
+          (date) => date !== null,
+        ),
+      )
     : null
 
   const benefitsRevoked = benefitsRevocationDate

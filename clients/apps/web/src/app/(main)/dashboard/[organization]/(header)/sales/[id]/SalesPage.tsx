@@ -64,11 +64,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
     organization.id,
     { order_id: _order.id },
   )
-  const { data: subscription, isLoading: subscriptionLoading } = useSubscription(
-    _order.subscription_id ?? '',
-    undefined,
-    { enabled: !!_order.subscription_id }
-  )
+  const { data: subscription, isLoading: subscriptionLoading } =
+    useSubscription(_order.subscription_id ?? '', undefined, {
+      enabled: !!_order.subscription_id,
+    })
 
   const {
     isShown: isRefundModalShown,
@@ -127,9 +126,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
       }
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:shadow-none"
     >
-      {subscription && (
-        <OrderCalloutBanner organization={organization} order={order} subscription={subscription} />
-      )}
+      {subscription && !subscriptionLoading ? (
+        <OrderCalloutBanner
+          organization={organization}
+          order={order}
+          subscription={subscription}
+        />
+      ) : null}
 
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
         <div className="flex flex-col gap-6 p-4 md:p-8">
@@ -243,9 +246,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
               value={
                 order.discount_amount
                   ? formatCurrency('accounting')(
-                    -order.discount_amount,
-                    order.currency,
-                  )
+                      -order.discount_amount,
+                      order.currency,
+                    )
                   : '—'
               }
             />
@@ -290,8 +293,8 @@ const ClientPage: React.FC<ClientPageProps> = ({
             )}
 
             {order.billing_address ||
-              order.billing_name ||
-              order.customer.tax_id ? (
+            order.billing_name ||
+            order.customer.tax_id ? (
               <>
                 <Separator className="dark:bg-polar-700 my-4 h-px bg-gray-300" />
                 {order.billing_name ? (
@@ -359,8 +362,8 @@ const ClientPage: React.FC<ClientPageProps> = ({
                       value={
                         order.custom_field_data
                           ? order.custom_field_data[
-                          field.slug as keyof typeof order.custom_field_data
-                          ]
+                              field.slug as keyof typeof order.custom_field_data
+                            ]
                           : undefined
                       }
                     />
@@ -430,22 +433,22 @@ const ClientPage: React.FC<ClientPageProps> = ({
             },
             ...(hasDeclinedPayment
               ? ([
-                {
-                  accessorKey: 'decline_reason',
-                  header: 'Bank Decline Reason',
-                  cell: ({ row: { original } }) => {
-                    const reason =
-                      original.decline_message || original.decline_reason
-                    return reason ? (
-                      <Truncated>
-                        <span className="text-sm">{reason}</span>
-                      </Truncated>
-                    ) : (
-                      '—'
-                    )
+                  {
+                    accessorKey: 'decline_reason',
+                    header: 'Bank Decline Reason',
+                    cell: ({ row: { original } }) => {
+                      const reason =
+                        original.decline_message || original.decline_reason
+                      return reason ? (
+                        <Truncated>
+                          <span className="text-sm">{reason}</span>
+                        </Truncated>
+                      ) : (
+                        '—'
+                      )
+                    },
                   },
-                },
-              ] satisfies DataTableColumnDef<schemas['Payment']>[])
+                ] satisfies DataTableColumnDef<schemas['Payment']>[])
               : []),
           ]}
           data={payments?.items ?? []}

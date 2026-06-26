@@ -158,13 +158,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
         />
       }
     >
-      {pendingOrder && (
+      {pendingOrder ? (
         <OrderCalloutBanner
           organization={organization}
           order={pendingOrder}
           subscription={subscription}
         />
-      )}
+      ) : null}
 
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
         <div className="flex flex-col gap-6 p-8">

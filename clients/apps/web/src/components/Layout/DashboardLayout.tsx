@@ -8,7 +8,6 @@ import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { CONFIG } from '@/utils/config'
 import { setLastVisitedEnv, setLastVisitedOrg } from '@/utils/cookies'
 import ViewSidebarOutlined from '@mui/icons-material/ViewSidebarOutlined'
-import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import {
   SidebarTrigger,
@@ -23,7 +22,6 @@ import {
   useContext,
   useEffect,
   useRef,
-  useState,
   type JSX,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -51,11 +49,7 @@ const DashboardLayout = (
   return (
     <DashboardProvider organization={organization}>
       <div className="relative flex h-full w-full flex-col bg-white md:flex-row md:bg-gray-100 md:p-2 dark:bg-transparent">
-        <MobileNav
-          organization={organization}
-          organizations={organizations ?? []}
-          type={props.type}
-        />
+        <MobileNav />
         <div className="hidden md:flex">
           <DashboardSidebar
             organization={organization}
@@ -81,24 +75,8 @@ const DashboardLayout = (
 
 export default DashboardLayout
 
-const MobileNav = ({
-  type = 'organization',
-  organization,
-  organizations,
-}: {
-  type?: 'organization' | 'account'
-  organization?: schemas['Organization']
-  organizations: schemas['Organization'][]
-}) => {
-  const [mobileNavOpen, setMobileNavOpen] = useState(false)
-  const pathname = usePathname()
+const MobileNav = () => {
   const { currentUser } = useAuth()
-
-  /* eslint-disable react-hooks/set-state-in-effect -- close mobile nav on route change */
-  useEffect(() => {
-    setMobileNavOpen(false)
-  }, [pathname])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const header = (
     <div className="dark:bg-polar-900 sticky top-0 right-0 left-0 flex w-full flex-row items-center justify-between bg-gray-50 p-4">
@@ -119,20 +97,7 @@ const MobileNav = ({
 
   return (
     <div className="dark:bg-polar-900 relative z-20 flex w-screen flex-col items-center justify-between bg-gray-50 md:hidden">
-      {mobileNavOpen ? (
-        <div className="relative flex h-full w-full flex-col">
-          {header}
-          <div className="dark:bg-polar-900 flex h-full flex-col bg-gray-50 px-4">
-            <DashboardSidebar
-              organization={organization}
-              organizations={organizations}
-              type={type}
-            />
-          </div>
-        </div>
-      ) : (
-        header
-      )}
+      {header}
     </div>
   )
 }

@@ -557,56 +557,6 @@ class OrganizationService:
         await self._after_update(session, organization)
         return organization
 
-    async def delete(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> Organization:
-        """Anonymizes fields on the Organization that can contain PII and then
-        soft-deletes the Organization.
-
-        DOES NOT:
-        - Delete or anonymize Users related Organization
-        - Delete or anonymize Account of the Organization
-        - Delete or anonymize Customers, Products, Discounts, Benefits, Checkouts of the Organization
-        - Revoke Benefits granted
-        - Remove API tokens (organization or personal)
-        """
-        repository = OrganizationRepository.from_session(session)
-
-        update_dict: dict[str, Any] = {}
-
-        pii_fields = ["name", "slug", "website", "customer_invoice_prefix"]
-        github_fields = ["bio", "company", "blog", "location", "twitter_username"]
-        for pii_field in pii_fields + github_fields:
-            value = getattr(organization, pii_field)
-            if value:
-                update_dict[pii_field] = anonymize_for_deletion(
-                    value, organization.created_at
-                )
-
-        if organization.email:
-            update_dict["email"] = anonymize_email_for_deletion(
-                organization.email, organization.created_at
-            )
-
-        if organization._avatar_url:
-            # Anonymize by setting to Polar logo
-            update_dict["avatar_url"] = (
-                "https://avatars.githubusercontent.com/u/105373340?s=48&v=4"
-            )
-        if organization.details:
-            update_dict["details"] = {}
-
-        if organization.socials:
-            update_dict["socials"] = []
-
-        organization = await repository.update(organization, update_dict=update_dict)
-        await repository.soft_delete(organization)
-        polar_self_service.enqueue_delete_customer(organization_id=organization.id)
-
-        return organization
-
     async def check_can_delete(
         self,
         session: AsyncReadSession,
@@ -700,8 +650,8 @@ class OrganizationService:
             )
             return check_result
 
-        # Soft delete the organization
-        await self.soft_delete_organization(session, organization)
+        # Soft delete the organization, releasing its slug for reuse
+        await self.soft_delete_organization(session, organization, release_slug=True)
 
         return OrganizationDeletionCheckResult(
             can_delete_immediately=True,
@@ -712,25 +662,31 @@ class OrganizationService:
         self,
         session: AsyncSession,
         organization: Organization,
+        *,
+        release_slug: bool = False,
     ) -> Organization:
-        """Soft-delete an organization, releasing its slug for reuse.
+        """Soft-delete an organization, anonymizing its PII.
 
-        Anonymizes PII fields, archives the previous slug to ``slug_history``,
-        and rewrites the live slug to a tombstone so a new organization can
-        claim the original.
+        When ``release_slug`` is set, the previous slug is archived to
+        ``slug_history`` and the live slug is rewritten to a tombstone so a new
+        organization can claim the original. Otherwise the slug is scrubbed like
+        any other PII field, leaving no recoverable trace.
         """
         repository = OrganizationRepository.from_session(session)
 
-        now = datetime.now(UTC)
-        update_dict: dict[str, Any] = {
-            "slug_history": [
+        update_dict: dict[str, Any] = {}
+        pii_fields = ["name", "website", "customer_invoice_prefix"]
+
+        if release_slug:
+            now = datetime.now(UTC)
+            update_dict["slug_history"] = [
                 *organization.slug_history,
                 {"slug": organization.slug, "deleted_at": now.isoformat()},
-            ],
-            "slug": f"__deleted__-{organization.slug}-{organization.id}",
-        }
+            ]
+            update_dict["slug"] = f"__deleted__-{organization.slug}-{organization.id}"
+        else:
+            pii_fields = ["name", "slug", "website", "customer_invoice_prefix"]
 
-        pii_fields = ["name", "website", "customer_invoice_prefix"]
         github_fields = ["bio", "company", "blog", "location", "twitter_username"]
         for pii_field in pii_fields + github_fields:
             value = getattr(organization, pii_field)

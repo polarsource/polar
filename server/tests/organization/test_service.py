@@ -3263,7 +3263,7 @@ class TestSoftDeleteOrganization:
         await save_fixture(organization)
 
         result = await organization_service.soft_delete_organization(
-            session, organization
+            session, organization, release_slug=True
         )
 
         # The live slug should no longer be the original, freeing it for reuse.
@@ -3295,7 +3295,9 @@ class TestSoftDeleteOrganization:
         organization: Organization,
     ) -> None:
         original_slug = organization.slug
-        await organization_service.soft_delete_organization(session, organization)
+        await organization_service.soft_delete_organization(
+            session, organization, release_slug=True
+        )
         await session.flush()
 
         repository = OrganizationRepository.from_session(session)
@@ -3317,7 +3319,7 @@ class TestSoftDeleteOrganization:
         await save_fixture(organization)
 
         result = await organization_service.soft_delete_organization(
-            session, organization
+            session, organization, release_slug=True
         )
 
         assert len(result.slug_history) == 2
@@ -3344,24 +3346,24 @@ class TestSoftDeleteOrganization:
         assert result.details == {}
         assert result.socials == []
 
-
-@pytest.mark.asyncio
-class TestDelete:
-    async def test_enqueues_polar_self_customer_deletion(
+    async def test_scrubs_slug_without_releasing(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        enqueue_delete_customer_mock = mocker.patch(
-            "polar.organization.service.polar_self_service.enqueue_delete_customer"
+        # Backoffice/erasure deletions scrub the slug as PII rather than
+        # archiving it for reuse, leaving no recoverable trace of the original.
+        mocker.patch("polar.organization.service.polar_self_service")
+        original_slug = organization.slug
+
+        result = await organization_service.soft_delete_organization(
+            session, organization
         )
 
-        await organization_service.delete(session, organization)
-
-        enqueue_delete_customer_mock.assert_called_once_with(
-            organization_id=organization.id
-        )
+        assert result.slug != original_slug
+        assert original_slug not in result.slug
+        assert result.slug_history == []
 
 
 @pytest.mark.asyncio

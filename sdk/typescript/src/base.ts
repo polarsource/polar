@@ -50,15 +50,23 @@ const buildUrl = (url: string, pathParams?: PathParams, queryParams?: QueryParam
   }
 
   if (queryParams) {
-    const searchParams = new URLSearchParams();
+    const params: [string, string][] = [];
     for (const [key, value] of Object.entries(queryParams)) {
       if (value !== null && value !== undefined) {
         if (Array.isArray(value)) {
           for (const item of value) {
-            searchParams.append(key, String(item));
+            params.push([key, encodeURIComponent(String(item))]);
+          }
+        } else if (typeof value === "object") {
+          // Handle deepObject style parameters (e.g., metadata)
+          for (const [subKey, subValue] of Object.entries(value)) {
+            if (subValue !== null && subValue !== undefined) {
+              // Don't encode brackets - they have special meaning in query params
+              params.push([`${key}[${subKey}]`, encodeURIComponent(String(subValue))]);
+            }
           }
         } else {
-          searchParams.set(key, String(value));
+          params.push([key, encodeURIComponent(String(value))]);
         }
       }
     }

@@ -179,12 +179,6 @@ export const CustomerSeatQuantityManager = ({
         </div>
       )}
 
-      {!canDecrease && seats !== undefined && seats < assignedSeats && (
-        <p className="text-xs text-red-500 dark:text-red-400">
-          Cannot decrease below {assignedSeats} assigned seats. Revoke seats
-          first.
-        </p>
-      )}
     </form>
   )
 }

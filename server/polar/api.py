@@ -38,6 +38,7 @@ from polar.integrations.resend.endpoints import router as resend_router
 from polar.integrations.slack.endpoints import router as slack_router
 from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.license_key.endpoints import router as license_key_router
+from polar.member.endpoints import customer_members_router
 from polar.member.endpoints import router as member_router
 from polar.meter.endpoints import router as meter_router
 from polar.metrics.endpoints import router as metrics_router
@@ -134,6 +135,8 @@ router.include_router(discount_router)
 router.include_router(customer_router)
 # /members
 router.include_router(member_router)
+# /customers/{id}/members (nested member CRUD; defined in the member module)
+router.include_router(customer_members_router)
 # /customer-portal
 router.include_router(customer_portal_router)
 # /seats

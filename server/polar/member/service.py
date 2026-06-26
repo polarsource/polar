@@ -83,6 +83,19 @@ class MemberService:
         statement = repository.get_statement_by_org_ids(org_ids).where(Member.id == id)
         return await repository.get_one_or_none(statement)
 
+    async def get_for_customer(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        customer_id: UUID,
+        member_id: UUID,
+    ) -> Member | None:
+        """Get a member by ID, scoped to a customer the auth subject can access."""
+        member = await self.get(session, auth_subject, member_id)
+        if member is None or member.customer_id != customer_id:
+            return None
+        return member
+
     async def get_by_external_id(
         self,
         session: AsyncReadSession,
@@ -527,7 +540,8 @@ class MemberService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         *,
-        customer_id: UUID,
+        customer_id: UUID | None = None,
+        external_customer_id: str | None = None,
         email: str,
         name: str | None = None,
         external_id: str | None = None,
@@ -537,10 +551,14 @@ class MemberService:
         """
         Create a new member for a customer.
 
+        The customer is resolved by either its internal ID (`customer_id`) or its
+        external ID (`external_customer_id`); exactly one must be provided.
+
         Args:
             session: Database session
             auth_subject: Authenticated user/organization
             customer_id: ID of the customer to add member to
+            external_customer_id: External ID of the customer to add member to
             email: Email address of the member
             name: Optional name of the member
             external_id: Optional external ID of the member
@@ -555,12 +573,23 @@ class MemberService:
         """
         customer_repository = CustomerRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        customer = await customer_repository.get_readable_by_id(
-            org_ids, customer_id, options=(joinedload(Customer.organization),)
-        )
+        if customer_id is not None:
+            customer = await customer_repository.get_readable_by_id(
+                org_ids, customer_id, options=(joinedload(Customer.organization),)
+            )
+        elif external_customer_id is not None:
+            customer = await customer_repository.get_readable_by_external_id(
+                org_ids,
+                external_customer_id,
+                options=(joinedload(Customer.organization),),
+            )
+        else:
+            raise ResourceNotFound("Customer not found")
 
         if customer is None:
             raise ResourceNotFound("Customer not found")
+
+        customer_id = customer.id
 
         member_model = customer.organization.feature_settings.get(
             "member_model_enabled", False

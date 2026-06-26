@@ -101,7 +101,14 @@ export default {
         minimum: 'Minimum {min} stanowisk',
         maximum: 'Maksimum {max} stanowisk',
         updateFailed: 'Nie udało się zaktualizować liczby stanowisk',
+        included: {
+          '=1': 'Jedno miejsce w cenie',
+          other: '# miejsc w cenie',
+          _mode: 'plural',
+        },
       },
+      inclTax: 'Podatki (w cenie)',
+      basePrice: 'Cena bazowa',
     },
     trial: {
       ends: 'Okres próbny kończy się {endDate}',
@@ -226,6 +233,26 @@ export default {
         activationDeletedDescription: 'Aktywacja została pomyślnie usunięta',
         activationDeactivationFailed: 'Dezaktywacja nie powiodła się',
       },
+      slackSharedChannel: {
+        connected: 'Połączono z Twoim obszarem roboczym Slack.',
+        connectedChannel:
+          'Połączono z Twoim obszarem roboczym Slack w kanale {channel}.',
+        inviteSent: 'Zaproszenie wysłane na {email}.',
+        channel: 'Kanał: {channel}.',
+        openLinkToAccept: 'Otwórz link, aby zaakceptować w Slacku.',
+        acceptFromEmail:
+          'Zaakceptuj w e-mailu z zaproszeniem albo w prośbach Slack Connect.',
+        openInvite: 'Otwórz zaproszenie Slack',
+        provisioning:
+          'Konfigurujemy Twój kanał Slack dla {email}... Wkrótce powinieneś otrzymać zaproszenie na skrzynkę odbiorczą.',
+        setupFailed:
+          'Nie udało się skonfigurować kanału Slack dla {email}. Sprawdź adres e-mail i spróbuj ponownie, albo skontaktuj się ze sprzedawcą, jeśli problem nadal występuje.',
+        enterEmail:
+          'Wprowadź adres e-mail administratora w swoim obszarze roboczym Slack. Otrzyma on zaproszenie Slack Connect do prywatnego kanału.',
+        emailPlaceholder: 'slack-admin@yourcompany.com',
+        tryAgain: 'Spróbuj ponownie',
+        requestInvite: 'Poproś o zaproszenie Slack',
+      },
     },
     confirmation: {
       confirmPayment: 'Potwierdź płatność',
@@ -273,6 +300,7 @@ export default {
     downloadables: 'Pliki do pobrania',
     meter_credit: 'Kredyty',
     feature_flag: 'Flaga funkcji',
+    slack_shared_channel: 'Wspólny kanał Slack',
   },
   ordinal: {
     zero: '.',
@@ -281,5 +309,19 @@ export default {
     few: '.',
     many: '.',
     other: '.',
+  },
+  embedPaymentMethod: {
+    title: 'Dodaj metodę płatności',
+    close: 'Zamknij',
+    submit: 'Dodaj metodę płatności',
+    processing: 'Dodawanie metody płatności…',
+    fallbackError: 'Coś poszło nie tak. Spróbuj ponownie.',
+    errors: {
+      invalidRequest: 'Brak wymaganych parametrów.',
+      unauthorized: 'Sesja wygasła.',
+      processingFailed:
+        'Nie udało się przetworzyć metody płatności. Spróbuj ponownie.',
+      unknown: 'Coś poszło nie tak.',
+    },
   },
 } as const

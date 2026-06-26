@@ -489,3 +489,16 @@ resource "tfe_variable" "vercel_next_public_stripe_payment_method_configuration_
   sensitive       = true
   variable_set_id = tfe_variable_set.sandbox.id
 }
+
+resource "tfe_variable" "worker_sqs_actors_sandbox" {
+  key             = "worker_sqs_actors"
+  category        = "terraform"
+  description     = "JSON array of Dramatiq actor names routed to the SQS execution engine for sandbox"
+  sensitive       = false
+  value           = "[\"dummy\"]"
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}

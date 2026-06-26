@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import Select
+from sqlalchemy import Select, select
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import (
@@ -16,7 +16,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import LicenseKey
+from polar.models import BenefitGrant, LicenseKey
 
 
 class LicenseKeyRepository(
@@ -80,6 +80,21 @@ class LicenseKeyRepository(
             .options(*options)
         )
         return await self.get_one_or_none(statement)
+
+    async def is_granted_through_subscription(self, license_key: LicenseKey) -> bool:
+        statement = (
+            select(BenefitGrant.id)
+            .where(
+                BenefitGrant.benefit_id == license_key.benefit_id,
+                BenefitGrant.customer_id == license_key.customer_id,
+                BenefitGrant.member_id == license_key.member_id,
+                BenefitGrant.subscription_id.is_not(None),
+                BenefitGrant.deleted_at.is_(None),
+            )
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.first() is not None
 
     def get_eager_options(self) -> Options:
         return (

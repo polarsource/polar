@@ -16,6 +16,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
     create_benefit_grant,
+    create_order,
     create_subscription,
 )
 
@@ -68,6 +69,29 @@ class TestLicenseKey:
             customer,
             benefit,
             subscription=subscription,
+        )
+        return await cls.run_grant_task(session, redis, benefit, customer)
+
+    @classmethod
+    async def create_order_grant(
+        cls,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        benefit: Benefit,
+        customer: Customer,
+        product: Product,
+    ) -> tuple[Benefit, BenefitGrantLicenseKeysProperties]:
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit,
+            order=order,
         )
         return await cls.run_grant_task(session, redis, benefit, customer)
 

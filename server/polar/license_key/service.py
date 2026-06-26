@@ -172,8 +172,9 @@ class LicenseKeyService:
             bound_logger.info("license_key.validate.invalid_status")
             raise ResourceNotFound("License key is no longer active.")
 
-        if license_key.expires_at:
-            if utc_now() >= license_key.expires_at:
+        if license_key.expires_at and utc_now() >= license_key.expires_at:
+            repository = LicenseKeyRepository.from_session(session)
+            if not await repository.is_granted_through_subscription(license_key):
                 bound_logger.info("license_key.validate.invalid_ttl")
                 raise ResourceNotFound("License key has expired.")
 
@@ -251,8 +252,9 @@ class LicenseKeyService:
                 "This license key can not be activated."
             )
 
-        if license_key.expires_at:
-            if utc_now() >= license_key.expires_at:
+        if license_key.expires_at and utc_now() >= license_key.expires_at:
+            repository = LicenseKeyRepository.from_session(session)
+            if not await repository.is_granted_through_subscription(license_key):
                 raise NotPermitted("License key has expired.")
 
         if not license_key.limit_activations:

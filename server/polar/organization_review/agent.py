@@ -119,9 +119,6 @@ async def run_organization_review(
 async def _collect_products(
     organization_id: UUID, context: ReviewContext
 ) -> ProductsData:
-    if context == ReviewContext.SUBMISSION:
-        return ProductsData()
-
     async with AsyncReadSessionMaker() as session:
         repo = OrganizationReviewRepository.from_session(session)
         products = await repo.get_products_with_prices(organization_id)
@@ -130,13 +127,6 @@ async def _collect_products(
 
 
 async def _collect_setup(organization_id: UUID, context: ReviewContext) -> SetupData:
-    if context not in (
-        ReviewContext.THRESHOLD,
-        ReviewContext.MANUAL,
-        ReviewContext.PRODUCT_CHANGED,
-    ):
-        return SetupData()
-
     async with AsyncReadSessionMaker() as session:
         repo = OrganizationReviewRepository.from_session(session)
         checkout_links = await repo.get_checkout_links_with_benefits(organization_id)
@@ -229,9 +219,6 @@ async def _collect_history(organization: Organization) -> HistoryData:
 async def _collect_account_identity(
     organization: Organization, context: ReviewContext
 ) -> tuple[PayoutAccountData, IdentityData]:
-    if context == ReviewContext.SUBMISSION:
-        return PayoutAccountData(), IdentityData()
-
     async with AsyncReadSessionMaker() as session:
         repo = OrganizationReviewRepository.from_session(session)
         payout_account = await repo.get_payout_account_with_admin(organization.id)

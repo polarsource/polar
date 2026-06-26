@@ -50,13 +50,17 @@ export const CustomerContextView = ({
             name={customer.name || customer.email || '—'}
             className="size-12 text-sm"
           />
-          <div className="flex flex-col">
-            {(customer.name?.length ?? 0) > 0 ? customer.name : '—'}
-            {customer.deleted_at && (
-              <Pill className="ml-2 text-xs" color="red">
-                Deleted
-              </Pill>
-            )}
+          <div className="flex flex-col items-start">
+            <div className="flex flex-row items-center gap-2">
+              <span>
+                {(customer.name?.length ?? 0) > 0 ? customer.name : '—'}
+              </span>
+              {customer.deleted_at && (
+                <Pill className="text-xs" color="red">
+                  Deleted
+                </Pill>
+              )}
+            </div>
 
             <div className="dark:text-polar-500 flex flex-row items-center gap-1 text-sm text-gray-500">
               {customer.email}

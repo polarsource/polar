@@ -59,6 +59,8 @@ class EmailTemplate(StrEnum):
     chargeback_prevention_refund = "chargeback_prevention_refund"
     polar_self_subscription_confirmation = "polar_self_subscription_confirmation"
     polar_self_subscription_cycled = "polar_self_subscription_cycled"
+    polar_self_subscription_past_due = "polar_self_subscription_past_due"
+    polar_self_subscription_revoked = "polar_self_subscription_revoked"
     polar_self_startup_program_welcome = "polar_self_startup_program_welcome"
 
 
@@ -457,6 +459,28 @@ class PolarSelfSubscriptionCycledEmail(BaseModel):
     props: PolarSelfSubscriptionCycledProps
 
 
+class PolarSelfSubscriptionPastDueProps(EmailProps):
+    product_name: str
+
+
+class PolarSelfSubscriptionPastDueEmail(BaseModel):
+    template: Literal[EmailTemplate.polar_self_subscription_past_due] = (
+        EmailTemplate.polar_self_subscription_past_due
+    )
+    props: PolarSelfSubscriptionPastDueProps
+
+
+class PolarSelfSubscriptionRevokedProps(EmailProps):
+    product_name: str
+
+
+class PolarSelfSubscriptionRevokedEmail(BaseModel):
+    template: Literal[EmailTemplate.polar_self_subscription_revoked] = (
+        EmailTemplate.polar_self_subscription_revoked
+    )
+    props: PolarSelfSubscriptionRevokedProps
+
+
 class PolarSelfStartupProgramWelcomeProps(EmailProps):
     organization_name: str
     billing_url: str
@@ -527,6 +551,8 @@ Email = Annotated[
     | ChargebackPreventionRefundEmail
     | PolarSelfSubscriptionConfirmationEmail
     | PolarSelfSubscriptionCycledEmail
+    | PolarSelfSubscriptionPastDueEmail
+    | PolarSelfSubscriptionRevokedEmail
     | PolarSelfStartupProgramWelcomeEmail,
     Discriminator("template"),
 ]

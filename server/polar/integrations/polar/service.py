@@ -16,6 +16,8 @@ from polar_sdk.models import (
     WebhookBenefitGrantRevokedPayload,
     WebhookBenefitGrantUpdatedPayload,
     WebhookOrderCreatedPayload,
+    WebhookSubscriptionPastDuePayload,
+    WebhookSubscriptionRevokedPayload,
 )
 
 from polar.account.repository import AccountRepository
@@ -24,6 +26,8 @@ from polar.email.schemas import (
     EmailAdapter,
     PolarSelfSubscriptionConfirmationProps,
     PolarSelfSubscriptionCycledProps,
+    PolarSelfSubscriptionPastDueProps,
+    PolarSelfSubscriptionRevokedProps,
 )
 from polar.email.sender import Attachment, enqueue_email_template
 from polar.integrations.plain.service import plain as plain_service
@@ -782,6 +786,88 @@ class PolarSelfService:
                     subject=subject,
                     attachments=attachments,
                 )
+
+    async def handle_subscription_past_due_event(
+        self, payload: WebhookSubscriptionPastDuePayload
+    ) -> None:
+        subscription = payload.data
+        context = await self._resolve_subscription_email_context(subscription)
+        if context is None:
+            return
+        recipients, product_name = context
+
+        with logfire.span(
+            "polar_self.webhook.subscription_past_due",
+            subscription_id=subscription.id,
+        ):
+            for recipient in recipients:
+                email = EmailAdapter.validate_python(
+                    {
+                        "template": "polar_self_subscription_past_due",
+                        "props": PolarSelfSubscriptionPastDueProps(
+                            email=recipient,
+                            product_name=product_name,
+                        ).model_dump(),
+                    }
+                )
+                enqueue_email_template(
+                    email,
+                    to_email_addr=recipient,
+                    subject=f"Your {product_name} subscription payment failed",
+                )
+
+    async def handle_subscription_revoked_event(
+        self, payload: WebhookSubscriptionRevokedPayload
+    ) -> None:
+        subscription = payload.data
+        context = await self._resolve_subscription_email_context(subscription)
+        if context is None:
+            return
+        recipients, product_name = context
+
+        with logfire.span(
+            "polar_self.webhook.subscription_revoked",
+            subscription_id=subscription.id,
+        ):
+            for recipient in recipients:
+                email = EmailAdapter.validate_python(
+                    {
+                        "template": "polar_self_subscription_revoked",
+                        "props": PolarSelfSubscriptionRevokedProps(
+                            email=recipient,
+                            product_name=product_name,
+                        ).model_dump(),
+                    }
+                )
+                enqueue_email_template(
+                    email,
+                    to_email_addr=recipient,
+                    subject=f"Your {product_name} subscription has ended",
+                )
+
+    async def _resolve_subscription_email_context(
+        self, subscription: "Subscription"
+    ) -> tuple[list[str], str] | None:
+        """Resolve ``(recipients, product_name)`` for a subscription email.
+
+        Returns ``None`` when no email should be sent: free ($0) subscriptions
+        never have a payment to fail, and a subscription with no billing
+        contacts has nobody to notify.
+        """
+        if subscription.amount == 0:
+            return None
+
+        contacts = await get_client().list_billing_contacts(
+            customer_id=subscription.customer_id
+        )
+        recipients = sorted({contact.email for contact in contacts if contact.email})
+        if not recipients:
+            return None
+
+        product_name = (
+            subscription.product.name if subscription.product is not None else "Polar"
+        )
+        return recipients, product_name
 
     async def _require_approval(
         self,

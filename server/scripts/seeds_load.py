@@ -93,7 +93,6 @@ from polar.models.webhook_endpoint import (
     WebhookEventType,
     WebhookFormat,
 )
-from polar.oauth2.constants import WEBHOOK_SECRET_PREFIX
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
@@ -113,6 +112,7 @@ from polar.redis import Redis, create_redis
 from polar.support_case.service import support_case as support_case_service
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
+from polar.webhook.constants import WEBHOOK_SECRET_PREFIX
 from polar.worker import JobQueueManager
 from scripts.seed_polar_for_polar import (
     BENEFITS as POLAR_SELF_BENEFITS,

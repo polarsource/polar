@@ -50,7 +50,6 @@ from polar.models.webhook_endpoint import (
     WebhookEventType,
     WebhookFormat,
 )
-from polar.oauth2.constants import WEBHOOK_SECRET_PREFIX
 from polar.organization.resolver import get_payload_organization
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -62,6 +61,7 @@ from polar.webhook.repository import (
 )
 from polar.worker import enqueue_job
 
+from .constants import WEBHOOK_SECRET_PREFIX
 from .eventstream import publish_webhook_event
 from .schemas import (
     WebhookEndpointCreate,

@@ -11,16 +11,16 @@ import {
 } from './Logos'
 
 const items = [
-  {
+  /*  {
     icon: <Spotify size={32} />,
     link: 'https://confidence.spotify.com/',
-  },
+  }, */
   {
-    icon: <Tailwind size={20} />,
+    icon: <Tailwind size={22} />,
     link: 'https://tailwindcss.com',
   },
   {
-    icon: <FastAPICloud size={26} />,
+    icon: <FastAPICloud size={28} />,
     link: 'https://fastapicloud.com/',
   },
   /* {
@@ -32,8 +32,12 @@ const items = [
     link: 'https://speakeasy.com',
   },
   {
-    icon: <StillaAIWordmark size={26} />,
+    icon: <StillaAIWordmark size={28} />,
     link: 'https://stilla.ai',
+  },
+  {
+    icon: <MiddayWordmark size={32} />,
+    link: 'https://midday.ai',
   },
 ]
 

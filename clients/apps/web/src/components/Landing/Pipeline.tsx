@@ -144,7 +144,7 @@ export const Pipeline = () => {
         display="grid"
         gridTemplateColumns={{ base: '1fr', lg: '1fr 1fr' }}
         gap={{ base: '2xl', lg: '4xl' }}
-        alignItems="start"
+        alignItems="center"
       >
         {/* Accordion */}
         <Box flexDirection="column" rowGap="2xl">
@@ -152,46 +152,10 @@ export const Pipeline = () => {
             <Text variant="heading-l" as="h2" wrap="balance">
               Everything between usage & revenue
             </Text>
-          </Box>
-
-          <Box
-            as="ul"
-            display={{ base: 'none', md: 'flex' }}
-            rowGap="xl"
-            flexDirection="column"
-          >
-            {ASPECTS.map((aspect) => {
-              return (
-                <Box
-                  as="li"
-                  key={aspect.title}
-                  display="flex"
-                  flexDirection="column"
-                >
-                  <Link href={aspect.href}>
-                    <Box
-                      display="flex"
-                      flexDirection="column"
-                      rowGap="s"
-                      borderLeftWidth={4}
-                      borderStyle="solid"
-                      paddingLeft="xl"
-                    >
-                      <Box alignItems="center" justifyContent="between">
-                        <Box flexDirection="row" columnGap="s">
-                          <Text variant="heading-xxs">{aspect.title}</Text>
-                        </Box>
-                      </Box>
-                      <Box flexDirection="column" rowGap="m">
-                        <Text variant="body" color="muted">
-                          {aspect.desc}
-                        </Text>
-                      </Box>
-                    </Box>
-                  </Link>
-                </Box>
-              )
-            })}
+            <Text variant="heading-xxs" wrap="balance" color="muted">
+              Raw usage goes in. Revenue comes out. We handle everything in
+              between.
+            </Text>
           </Box>
         </Box>
 

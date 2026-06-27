@@ -3,6 +3,7 @@
 import { RadialSpinner } from './graphics/RadialSpinner'
 import { GaugeSweep } from './graphics/GaugeSweep'
 import { OrbitingSpheres } from './graphics/OrbitingSpheres'
+import { ConcentricDraw } from './graphics/ConcentricDraw'
 
 const LAYERS = [
   {
@@ -33,7 +34,7 @@ export const Usage = () => (
         <div className="aspect-square">
           {i === 0 && <RadialSpinner />}
           {i === 1 && <GaugeSweep />}
-          {i === 2 && <OrbitingSpheres />}
+          {i === 2 && <ConcentricDraw />}
         </div>
         {/* Label */}
         <div className="flex flex-col px-8 py-8">

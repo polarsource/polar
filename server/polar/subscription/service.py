@@ -1533,6 +1533,16 @@ class SubscriptionService:
                 subscription.status = SubscriptionStatus.trialing
                 subscription.trial_end = subscription.current_period_end = trial_end
 
+        # Keep any pending update's cycle end in sync with the new period end,
+        # otherwise apply_update() will clobber current_period_end back to the
+        # stale value when cycle() next runs.
+        if subscription.pending_update is not None:
+            subscription_update_repository = SubscriptionUpdateRepository.from_session(
+                session
+            )
+            subscription.pending_update.new_cycle_end = subscription.current_period_end
+            await subscription_update_repository.update(subscription.pending_update)
+
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(subscription)
 

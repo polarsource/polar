@@ -87,6 +87,7 @@ class AuthenticationSessionService(AuthenticationSessionServiceBase):
                 step=authentication_session.step,
                 authentication_method_references=authentication_session.amr,
                 used_factors=authentication_session.used_factors,
+                context=authentication_session.context,
                 identity_id=authentication_session.identity_id,
             )
         )

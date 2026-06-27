@@ -33303,7 +33303,7 @@ export interface components {
       /**
        * Secret
        * @description The secret used to sign the webhook events.
-       * @example polar_whs_ovyN6cPrTv56AApvzCaJno08SSmGJmgbWilb33N2JuK
+       * @example whsec_ovyN6cPrTv56AApvzCaJno08SSmGJmgbWilb33N2JuK
        */
       secret: string
       /**

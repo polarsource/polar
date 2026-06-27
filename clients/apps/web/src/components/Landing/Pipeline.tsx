@@ -2,7 +2,6 @@
 
 import { Avatar, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import Link from 'next/link'
 
 interface Aspect {
   title: string

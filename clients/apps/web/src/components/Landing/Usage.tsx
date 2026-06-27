@@ -2,7 +2,6 @@
 
 import { RadialSpinner } from './graphics/RadialSpinner'
 import { GaugeSweep } from './graphics/GaugeSweep'
-import { OrbitingSpheres } from './graphics/OrbitingSpheres'
 import { ConcentricDraw } from './graphics/ConcentricDraw'
 
 const LAYERS = [

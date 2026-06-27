@@ -5,7 +5,6 @@ import {
   FastAPICloud,
   MiddayWordmark,
   Speakeasy,
-  Spotify,
   StillaAIWordmark,
   Tailwind,
 } from './Logos'

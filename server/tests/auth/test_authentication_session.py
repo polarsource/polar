@@ -24,9 +24,9 @@ class TestUpdate:
 
         service = AuthenticationSessionService(session, set())
         dataclass = authentication_session.to_dataclass()
-        dataclass.context = {"sso_organization_id": "org-123"}
+        dataclass.context = {"foo": "bar"}
 
         await service.update(dataclass)
         await session.refresh(authentication_session)
 
-        assert authentication_session.context == {"sso_organization_id": "org-123"}
+        assert authentication_session.context == {"foo": "bar"}

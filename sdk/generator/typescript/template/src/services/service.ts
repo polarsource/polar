@@ -64,7 +64,7 @@ export const {{ method.name | camel }}{{ service.name }} = (
       {% for param in method.path_params %}"{{ param.name }}": {{ param.parameter_name }},{% endfor %}
     };
     const queryParams = {% if method.query_params %}{
-      {% for param in method.query_params %}"{{ param.name }}": query{{ "" if param.required else "?" }}.{{ param.name }}{% if param.default %} || {{ param.default | format_default }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}
+      {% for param in method.query_params %}"{{ param.name }}": query{{ "" if param.required else "?" }}.{{ param.name }}{% if param.default %} ?? {{ param.default | format_default }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}
       }{% else %}{}{% endif %};
     const request = client.buildRequest(
       "{{ method.http_method | upper }}",

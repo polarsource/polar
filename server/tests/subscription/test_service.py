@@ -4555,6 +4555,86 @@ class TestUpdateTrial:
         assert updated_subscription.seats == 5
         assert updated_subscription.amount == 5000
 
+    async def test_update_trial_end_now_with_pending_update_keeps_period_start_in_past(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        assert subscription.trial_end is not None
+        original_trial_end = subscription.trial_end
+
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=product_second,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        assert subscription_update.new_cycle_end == original_trial_end
+
+        time_before_update = utc_now()
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_trial(
+                session, ctx, subscription, trial_end="now"
+            )
+        time_after_update = utc_now()
+
+        assert subscription.current_period_start < original_trial_end
+        assert time_before_update <= subscription.current_period_start
+        assert subscription.current_period_start <= time_after_update
+
+    async def test_update_trial_end_extended_with_pending_update_keeps_correct_period_start(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        assert subscription.trial_end is not None
+        original_trial_end = subscription.trial_end
+        new_trial_end = original_trial_end + timedelta(days=30)
+
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=product_second,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        assert subscription_update.new_cycle_end == original_trial_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_trial(
+                session, ctx, subscription, trial_end=new_trial_end
+            )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.current_period_start == new_trial_end
+
 
 @pytest.mark.asyncio
 async def test_send_past_due_email(

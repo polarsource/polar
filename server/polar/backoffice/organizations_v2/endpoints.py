@@ -17,6 +17,7 @@ from typing import Any, cast
 import stripe as stripe_lib
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.datastructures import FormData
 from pydantic import UUID4, BaseModel, Field, ValidationError, field_validator
 from pydantic_core import PydanticCustomError, SchemaSerializer, core_schema
 from sqlalchemy import Select, and_, func, or_, select
@@ -83,6 +84,8 @@ from polar.organization_review.appeal_case import (
 )
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import (
+    AUP_SECTION_LABELS,
+    AUPSection,
     DecisionType,
     ReviewAgentReport,
     ReviewContext,
@@ -103,7 +106,7 @@ from polar.support_case.repository import (
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.worker import enqueue_job
 
-from ..components import button, modal
+from ..components import button, input, modal
 from ..dependencies import get_admin
 from ..layout import layout
 from ..responses import HXRedirectResponse
@@ -147,6 +150,39 @@ from .views.sections.team_section import TeamSection
 router = APIRouter(prefix="/organizations", tags=["organizations"])
 
 logger = structlog.getLogger(__name__)
+
+_AUP_SECTION_OPTIONS = [
+    (label, member.value) for member, label in AUP_SECTION_LABELS.items()
+]
+
+
+def _parse_violated_aup_section(
+    form_data: FormData, *, required_error: str
+) -> tuple[str | None, AUPSection | None, str | None]:
+    raw_section = str(form_data.get("violated_aup_section", "")).strip() or None
+    if raw_section is None:
+        return None, None, required_error
+    try:
+        return raw_section, AUPSection(raw_section), None
+    except ValueError:
+        return raw_section, None, "Invalid AUP section."
+
+
+def _render_violated_aup_section_field(selected_section: str | None) -> None:
+    with tag.div(classes="form-control"):
+        with tag.label(classes="label"):
+            with tag.span(classes="label-text"):
+                text("Violated AUP section (required)")
+        with input.select(
+            _AUP_SECTION_OPTIONS,
+            selected_section,
+            name="violated_aup_section",
+            placeholder="Select the violated AUP section…",
+            classes="select-bordered w-full",
+            required=True,
+        ):
+            pass
+
 
 REVIEW_TICKET_TITLE_PREFIX = "Ongoing organization review"
 
@@ -1256,20 +1292,29 @@ async def deny_dialog(
     review_report = _get_review_report(agent_review)
 
     error_message: str | None = None
+    selected_section: str | None = None
 
     if request.method == "POST":
         form_data = await request.form()
         override_reason = str(form_data.get("override_reason", "")).strip() or None
 
+        selected_section, violated_aup_section, error_message = (
+            _parse_violated_aup_section(
+                form_data,
+                required_error="An AUP section is required when denying an organization.",
+            )
+        )
         if not override_reason:
             error_message = "A reason is required when denying an organization."
-        else:
+
+        if error_message is None:
             # Record review decision before denying
             await review_repo.record_human_decision(
                 organization_id=organization_id,
                 reviewer_id=user_session.user.id,
                 decision=DecisionType.DENY,
                 reason=override_reason,
+                violated_aup_section=violated_aup_section,
             )
 
             # Deny the organization
@@ -1320,6 +1365,8 @@ async def deny_dialog(
                         "Denying this organization will prevent them from receiving payments. "
                         "This action can be reversed, but the organization will need to be reviewed again."
                     )
+
+            _render_violated_aup_section_field(selected_section)
 
             with tag.div(classes="form-control"):
                 with tag.label(classes="label"):
@@ -1526,32 +1573,44 @@ async def deny_appeal_dialog(
     review_report = _get_review_report(agent_review)
 
     error_message: str | None = None
+    selected_section: str | None = None
 
     if request.method == "POST":
         form_data = await request.form()
         reason = str(form_data.get("reason", "")).strip() or None
 
-        # Record review decision
-        await review_repo.record_human_decision(
-            organization_id=organization_id,
-            reviewer_id=user_session.user.id,
-            decision=DecisionType.DENY,
-            review_context=ReviewContext.APPEAL,
-            reason=reason,
+        selected_section, violated_aup_section, error_message = (
+            _parse_violated_aup_section(
+                form_data,
+                required_error="An AUP section is required when denying an appeal.",
+            )
         )
 
-        # Deny the appeal (also closes any open appeal case as denied)
-        await organization_service.deny_appeal(
-            session, organization, staff_user=user_session.user, reason=reason
-        )
+        if error_message is None:
+            # Record review decision
+            await review_repo.record_human_decision(
+                organization_id=organization_id,
+                reviewer_id=user_session.user.id,
+                decision=DecisionType.DENY,
+                review_context=ReviewContext.APPEAL,
+                reason=reason,
+                violated_aup_section=violated_aup_section,
+            )
 
-        return HXRedirectResponse(
-            request,
-            str(
-                request.url_for("organizations:detail", organization_id=organization_id)
-            ),
-            303,
-        )
+            # Deny the appeal (also closes any open appeal case as denied)
+            await organization_service.deny_appeal(
+                session, organization, staff_user=user_session.user, reason=reason
+            )
+
+            return HXRedirectResponse(
+                request,
+                str(
+                    request.url_for(
+                        "organizations:detail", organization_id=organization_id
+                    )
+                ),
+                303,
+            )
 
     # Show appeal reason if available
     appeal_reason = None
@@ -1591,8 +1650,11 @@ async def deny_appeal_dialog(
                         organization_id=organization_id,
                     )
                 ),
+                hx_target="#modal",
                 classes="flex flex-col gap-4",
             ):
+                _render_violated_aup_section_field(selected_section)
+
                 with tag.div(classes="form-control"):
                     with tag.label(classes="label"):
                         with tag.span(classes="label-text"):
@@ -1791,36 +1853,47 @@ async def appeal_case_deny_dialog(
     return_to = request.query_params.get("return_to")
 
     error_message: str | None = None
+    selected_section: str | None = None
 
     if request.method == "POST":
         form_data = await request.form()
         reason = str(form_data.get("reason", "")).strip() or None
-        review_repo = OrganizationReviewRepository.from_session(session)
-        try:
-            await review_repo.record_human_decision(
-                organization_id=organization_id,
-                reviewer_id=user_session.user.id,
-                decision=DecisionType.DENY,
-                review_context=ReviewContext.APPEAL,
-                reason=reason,
+
+        selected_section, violated_aup_section, error_message = (
+            _parse_violated_aup_section(
+                form_data,
+                required_error="An AUP section is required when denying an appeal.",
             )
-            await appeal_case_service.record_decision(
-                session,
-                case,
-                approved=False,
-                staff_user=user_session.user,
-                reason=reason,
-            )
-            await organization_service.add_internal_note(
-                session, organization, "Appeal denied — see support case."
-            )
-        except AppealCaseError as e:
-            # Discard the recorded decision so a failure can't commit it
-            # without the case actually being closed.
-            await session.rollback()
-            error_message = e.args[0]
-        else:
-            return _support_case_redirect(request, case.id, return_to)
+        )
+
+        if error_message is None:
+            review_repo = OrganizationReviewRepository.from_session(session)
+            try:
+                await review_repo.record_human_decision(
+                    organization_id=organization_id,
+                    reviewer_id=user_session.user.id,
+                    decision=DecisionType.DENY,
+                    review_context=ReviewContext.APPEAL,
+                    reason=reason,
+                    violated_aup_section=violated_aup_section,
+                )
+                await appeal_case_service.record_decision(
+                    session,
+                    case,
+                    approved=False,
+                    staff_user=user_session.user,
+                    reason=reason,
+                )
+                await organization_service.add_internal_note(
+                    session, organization, "Appeal denied — see support case."
+                )
+            except AppealCaseError as e:
+                # Discard the recorded decision so a failure can't commit it
+                # without the case actually being closed.
+                await session.rollback()
+                error_message = e.args[0]
+            else:
+                return _support_case_redirect(request, case.id, return_to)
 
     with modal("Deny Appeal", open=True):
         with tag.form(
@@ -1841,6 +1914,7 @@ async def appeal_case_deny_dialog(
                     text(error_message)
             with tag.p(classes="font-semibold text-error"):
                 text("This keeps the organization denied and closes the case.")
+            _render_violated_aup_section_field(selected_section)
             with tag.div(classes="form-control"):
                 with tag.label(classes="label"):
                     with tag.span(classes="label-text"):
@@ -2570,29 +2644,43 @@ async def offboard_dialog(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
+    error_message: str | None = None
+    selected_section: str | None = None
+
     if request.method == "POST":
         form_data = await request.form()
         reason = str(form_data.get("reason", "")).strip() or None
 
-        review_repo = OrganizationReviewRepository.from_session(session)
-        await review_repo.record_human_decision(
-            organization_id=organization_id,
-            reviewer_id=user_session.user.id,
-            decision=DecisionType.DENY,
-            reason=reason,
+        selected_section, violated_aup_section, error_message = (
+            _parse_violated_aup_section(
+                form_data,
+                required_error="An AUP section is required when offboarding an organization.",
+            )
         )
 
-        await organization_service.set_organization_offboarding(
-            session, organization, reason=reason
-        )
+        if error_message is None:
+            review_repo = OrganizationReviewRepository.from_session(session)
+            await review_repo.record_human_decision(
+                organization_id=organization_id,
+                reviewer_id=user_session.user.id,
+                decision=DecisionType.DENY,
+                reason=reason,
+                violated_aup_section=violated_aup_section,
+            )
 
-        return HXRedirectResponse(
-            request,
-            str(
-                request.url_for("organizations:detail", organization_id=organization_id)
-            ),
-            303,
-        )
+            await organization_service.set_organization_offboarding(
+                session, organization, reason=reason
+            )
+
+            return HXRedirectResponse(
+                request,
+                str(
+                    request.url_for(
+                        "organizations:detail", organization_id=organization_id
+                    )
+                ),
+                303,
+            )
 
     with modal("Set Offboarding", open=True):
         with tag.form(
@@ -2602,8 +2690,13 @@ async def offboard_dialog(
                     organization_id=organization_id,
                 )
             ),
+            hx_target="#modal",
             classes="flex flex-col gap-4",
         ):
+            if error_message:
+                with tag.div(classes="alert alert-error"):
+                    text(error_message)
+
             with tag.p(classes="font-semibold text-warning"):
                 text("Set Organization to Offboarding")
 
@@ -2617,6 +2710,8 @@ async def offboard_dialog(
                         text("Change the organization status to Offboarding")
                     with tag.li():
                         text("Block payouts while the organization is offboarding")
+
+            _render_violated_aup_section_field(selected_section)
 
             with tag.div(classes="form-control"):
                 with tag.label(classes="label"):

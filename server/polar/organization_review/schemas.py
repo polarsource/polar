@@ -27,6 +27,156 @@ class DecisionType(StrEnum):
     SNOOZE = "SNOOZE"
 
 
+class AUPSection(StrEnum):
+    """Acceptable Use Policy 'Prohibited Products' (1-36), plus a catch-all `other`.
+
+    The stored value is the *code*, decoupled from the doc's display number,
+    so policy renumbering never invalidates historical rows or Metabase queries.
+    """
+
+    PP_01_PHYSICAL_PRODUCTS = "pp_01_physical_products"
+    PP_02_HUMAN_SERVICES = "pp_02_human_services"
+    PP_03_DONATIONS_CROWDFUNDING_COMMUNITY_ADVERTISING_SPONSORSHIP = (
+        "pp_03_donations_crowdfunding_community_advertising_sponsorship"
+    )
+    PP_04_MARKETPLACES = "pp_04_marketplaces"
+    PP_05_INTELLECTUAL_PROPERTY_INFRINGEMENT = (
+        "pp_05_intellectual_property_infringement"
+    )
+    PP_06_UNAUTHORIZED_DATA_ACCESS = "pp_06_unauthorized_data_access"
+    PP_07_NON_POLAR_SELLERS = "pp_07_non_polar_sellers"
+    PP_08_ADVERTISING_UNSOLICITED_MARKETING = "pp_08_advertising_unsolicited_marketing"
+    PP_09_ADULT_CONTENT = "pp_09_adult_content"
+    PP_10_MINORS = "pp_10_minors"
+    PP_11_GAMBLING_BETTING = "pp_11_gambling_betting"
+    PP_12_ILLEGAL_AGE_RESTRICTED = "pp_12_illegal_age_restricted"
+    PP_13_RESELLING_CUSTOMER_DATA = "pp_13_reselling_customer_data"
+    PP_14_LOW_QUALITY_COUNTERFEIT = "pp_14_low_quality_counterfeit"
+    PP_15_FAKE_TESTIMONIALS_REVIEWS = "pp_15_fake_testimonials_reviews"
+    PP_16_REGULATED = "pp_16_regulated"
+    PP_17_RESELLING_SOFTWARE_LICENSES = "pp_17_reselling_software_licenses"
+    PP_18_CIRCUMVENTION = "pp_18_circumvention"
+    PP_19_TRADING_FINANCIAL = "pp_19_trading_financial"
+    PP_20_GET_RICH_SCHEMES = "pp_20_get_rich_schemes"
+    PP_21_GOVERNMENT_SERVICES = "pp_21_government_services"
+    PP_22_CHEATING = "pp_22_cheating"
+    PP_23_JOB_BOARDS = "pp_23_job_boards"
+    PP_24_TRAVEL_SERVICES = "pp_24_travel_services"
+    PP_25_IPTV = "pp_25_iptv"
+    PP_26_VIRUSES_SPYWARE = "pp_26_viruses_spyware"
+    PP_27_API_IP_CLOAKING = "pp_27_api_ip_cloaking"
+    PP_28_TRADEMARK_REMOVAL = "pp_28_trademark_removal"
+    PP_29_TELECOM_ESIM = "pp_29_telecom_esim"
+    PP_30_CONTENT_DOWNLOADERS = "pp_30_content_downloaders"
+    PP_31_PSEUDO_SCIENCE = "pp_31_pseudo_science"
+    PP_32_MEDICAL_HEALTH_ADVICE = "pp_32_medical_health_advice"
+    PP_33_CONTENT_GENERATION_INFRINGING = "pp_33_content_generation_infringing"
+    PP_34_TECH_SUPPORT_REPAIR = "pp_34_tech_support_repair"
+    PP_35_TEST_PREP_PLATFORMS = "pp_35_test_prep_platforms"
+    PP_36_OSINT = "pp_36_osint"
+    OTHER = "other"
+
+
+AUP_SECTION_LABELS: dict[AUPSection, str] = {
+    AUPSection.PP_01_PHYSICAL_PRODUCTS: "1. Physical products",
+    AUPSection.PP_02_HUMAN_SERVICES: "2. Human services",
+    AUPSection.PP_03_DONATIONS_CROWDFUNDING_COMMUNITY_ADVERTISING_SPONSORSHIP: (
+        "3. Donations, crowdfunding, community access, advertising, and sponsorship"
+    ),
+    AUPSection.PP_04_MARKETPLACES: (
+        "4. Marketplaces. Selling others' products or services using Polar against an "
+        "upfront payment or with an agreed upon revenue share"
+    ),
+    AUPSection.PP_05_INTELLECTUAL_PROPERTY_INFRINGEMENT: (
+        "5. Any product or service that infringes upon, or enables the infringement of, "
+        "the intellectual property rights of another party or that you do not own or do "
+        "not have a license to"
+    ),
+    AUPSection.PP_06_UNAUTHORIZED_DATA_ACCESS: (
+        "6. Any product or service that enables unauthorized access to data belonging to "
+        "another party"
+    ),
+    AUPSection.PP_07_NON_POLAR_SELLERS: (
+        "7. Any product or service that enables non-Polar Sellers to sell products and "
+        "services to customers"
+    ),
+    AUPSection.PP_08_ADVERTISING_UNSOLICITED_MARKETING: (
+        "8. Advertising and unsolicited marketing services, including, but not limited "
+        "to, lead generation, bulk SMS and automated outreach"
+    ),
+    AUPSection.PP_09_ADULT_CONTENT: (
+        "9. Adult content and services including, but not limited to, OnlyFans-related "
+        "and similar services, adult AI-generated content and AI relationship services"
+    ),
+    AUPSection.PP_10_MINORS: (
+        "10. Services used by, intended for, or advertised towards minors"
+    ),
+    AUPSection.PP_11_GAMBLING_BETTING: (
+        "11. Gambling and betting services, including, but not limited to loot boxes and "
+        "mystery boxes"
+    ),
+    AUPSection.PP_12_ILLEGAL_AGE_RESTRICTED: (
+        "12. Illegal or age-restricted products, including, but not limited to, drugs, "
+        "alcohol, tobacco and vaping"
+    ),
+    AUPSection.PP_13_RESELLING_CUSTOMER_DATA: "13. Reselling or distributing customer data",
+    AUPSection.PP_14_LOW_QUALITY_COUNTERFEIT: (
+        "14. Low-quality or counterfeit products or services"
+    ),
+    AUPSection.PP_15_FAKE_TESTIMONIALS_REVIEWS: (
+        "15. Fake testimonials, reviews, social proof, and review inflation platforms"
+    ),
+    AUPSection.PP_16_REGULATED: "16. Regulated services or products",
+    AUPSection.PP_17_RESELLING_SOFTWARE_LICENSES: (
+        "17. Reselling software licenses without authorization"
+    ),
+    AUPSection.PP_18_CIRCUMVENTION: (
+        "18. Services to circumvent the rules, paywalls or terms of other services"
+    ),
+    AUPSection.PP_19_TRADING_FINANCIAL: (
+        "19. Trading and Financial Services (transactions/investments, trading "
+        "bots/brokerage/advisory, financial advice, NFTs and Crypto)"
+    ),
+    AUPSection.PP_20_GET_RICH_SCHEMES: '20. "Get Rich" schemes or content',
+    AUPSection.PP_21_GOVERNMENT_SERVICES: "21. Government Services",
+    AUPSection.PP_22_CHEATING: (
+        "22. Cheating, including but not limited to macros, cheat codes and hacks"
+    ),
+    AUPSection.PP_23_JOB_BOARDS: "23. Job boards",
+    AUPSection.PP_24_TRAVEL_SERVICES: "24. Travel Services",
+    AUPSection.PP_25_IPTV: (
+        "25. IPTV services, including software or platforms that enable IPTV service "
+        "delivery"
+    ),
+    AUPSection.PP_26_VIRUSES_SPYWARE: "26. Viruses and Spyware",
+    AUPSection.PP_27_API_IP_CLOAKING: "27. API and IP cloaking services",
+    AUPSection.PP_28_TRADEMARK_REMOVAL: "28. Third-party trademark removal services",
+    AUPSection.PP_29_TELECOM_ESIM: "29. Telecommunication and eSIM Services",
+    AUPSection.PP_30_CONTENT_DOWNLOADERS: (
+        "30. Third-party content downloaders (YouTube, Instagram, Snapchat, …)"
+    ),
+    AUPSection.PP_31_PSEUDO_SCIENCE: (
+        "31. Digital services associated with pseudo-science (clairvoyance, horoscopes, "
+        "fortune-telling)"
+    ),
+    AUPSection.PP_32_MEDICAL_HEALTH_ADVICE: "32. Medical and Health advice",
+    AUPSection.PP_33_CONTENT_GENERATION_INFRINGING: (
+        "33. Content generation infringing trademarks/copyrights, face swaps/deep fakes, "
+        "or adult content"
+    ),
+    AUPSection.PP_34_TECH_SUPPORT_REPAIR: "34. Technical support and repair services",
+    AUPSection.PP_35_TEST_PREP_PLATFORMS: (
+        "35. Standardized test prep platforms reselling real/past exam questions (IELTS, "
+        "SAT, GMAT)"
+    ),
+    AUPSection.PP_36_OSINT: (
+        "36. Open Source Intelligence (OSINT) platforms aggregating/exposing personal "
+        "data"
+    ),
+    AUPSection.OTHER: "37. Other",
+}
+
+
 class ReviewContext(StrEnum):
     SUBMISSION = "submission"  # First review at details submission time
     SETUP_COMPLETE = "setup_complete"  # Review when account setup is complete

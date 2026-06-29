@@ -1,3 +1,4 @@
+import uuid
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -530,6 +531,21 @@ class TestCreate:
         assert second_member is not None
         assert second_member.email == "second@example.com"
         assert second_member.role == MemberRole.member
+
+    @pytest.mark.auth
+    async def test_rejects_both_customer_identifiers(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+    ) -> None:
+        with pytest.raises(ValueError, match="not both"):
+            await member_service.create(
+                session,
+                auth_subject,
+                customer_id=uuid.uuid4(),
+                external_customer_id="ext_123",
+                email="member@example.com",
+            )
 
 
 @pytest.mark.asyncio

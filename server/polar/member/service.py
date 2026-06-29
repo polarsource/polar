@@ -5,14 +5,19 @@ from uuid import UUID
 
 import structlog
 from sqlalchemy import UnaryExpression, asc, desc
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.authz.service import get_accessible_org_ids
 from polar.customer.repository import CustomerRepository
 from polar.customer_seat.repository import CustomerSeatRepository
-from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
+from polar.exceptions import (
+    NotPermitted,
+    PolarError,
+    PolarRequestValidationError,
+    ResourceNotFound,
+)
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models.customer import Customer, CustomerType
@@ -28,6 +33,16 @@ from .repository import MemberRepository
 from .sorting import MemberSortProperty
 
 log = structlog.get_logger()
+
+
+class AmbiguousExternalCustomerID(PolarError):
+    def __init__(self, external_customer_id: str) -> None:
+        self.external_customer_id = external_customer_id
+        super().__init__(
+            "Several customers across your organizations share this external ID. "
+            "Use the customer ID instead.",
+            409,
+        )
 
 
 class MemberService:
@@ -119,7 +134,12 @@ class MemberService:
         if customer_id is not None:
             statement = statement.where(Member.customer_id == customer_id)
 
-        return await repository.get_one_or_none(statement)
+        try:
+            return await repository.get_one_or_none(statement)
+        except MultipleResultsFound as e:
+            if external_customer_id is not None:
+                raise AmbiguousExternalCustomerID(external_customer_id) from e
+            raise
 
     async def delete(
         self,
@@ -571,6 +591,11 @@ class MemberService:
             ResourceNotFound: If customer not found or not accessible
             NotPermitted: If feature flag disabled or no permission to add members
         """
+        if customer_id is not None and external_customer_id is not None:
+            raise ValueError(
+                "Provide either customer_id or external_customer_id, not both."
+            )
+
         customer_repository = CustomerRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
         if customer_id is not None:
@@ -578,11 +603,14 @@ class MemberService:
                 org_ids, customer_id, options=(joinedload(Customer.organization),)
             )
         elif external_customer_id is not None:
-            customer = await customer_repository.get_readable_by_external_id(
-                org_ids,
-                external_customer_id,
-                options=(joinedload(Customer.organization),),
-            )
+            try:
+                customer = await customer_repository.get_readable_by_external_id(
+                    org_ids,
+                    external_customer_id,
+                    options=(joinedload(Customer.organization),),
+                )
+            except MultipleResultsFound as e:
+                raise AmbiguousExternalCustomerID(external_customer_id) from e
         else:
             raise ResourceNotFound("Customer not found")
 

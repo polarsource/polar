@@ -7043,6 +7043,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** AmbiguousExternalCustomerID */
+    AmbiguousExternalCustomerID: {
+      /**
+       * Error
+       * @example AmbiguousExternalCustomerID
+       * @constant
+       */
+      error: 'AmbiguousExternalCustomerID'
+      /** Detail */
+      detail: string
+    }
     /**
      * AppealDecision
      * @enum {string}
@@ -43759,6 +43770,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description The external customer ID matches customers in several accessible organizations. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AmbiguousExternalCustomerID']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -43930,6 +43950,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description The external customer ID matches customers in several accessible organizations. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AmbiguousExternalCustomerID']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -43969,6 +43998,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The external customer ID matches customers in several accessible organizations. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AmbiguousExternalCustomerID']
         }
       }
       /** @description Validation Error */
@@ -44016,6 +44054,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The external customer ID matches customers in several accessible organizations. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AmbiguousExternalCustomerID']
         }
       }
       /** @description Validation Error */

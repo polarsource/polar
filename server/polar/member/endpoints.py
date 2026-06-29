@@ -23,7 +23,7 @@ from .schemas import (
     MemberCreateFromCustomer,
     MemberUpdate,
 )
-from .service import member_service
+from .service import AmbiguousExternalCustomerID, member_service
 
 router = APIRouter(
     prefix="/members",
@@ -51,6 +51,12 @@ CustomerNotFound = {
 NotPermittedToAddMembers = {
     "description": "Not permitted to add members.",
     "model": NotPermitted.schema(),
+}
+
+AmbiguousExternalCustomer = {
+    "description": "The external customer ID matches customers in several "
+    "accessible organizations.",
+    "model": AmbiguousExternalCustomerID.schema(),
 }
 
 
@@ -170,6 +176,7 @@ async def create(
         201: {"description": "Member created."},
         403: NotPermittedToAddMembers,
         404: CustomerNotFound,
+        409: AmbiguousExternalCustomer,
     },
 )
 async def create_external(
@@ -222,6 +229,7 @@ async def get(
     responses={
         200: {"description": "Member retrieved."},
         404: MemberNotFound,
+        409: AmbiguousExternalCustomer,
     },
 )
 async def get_external(
@@ -287,6 +295,7 @@ async def update(
     responses={
         200: {"description": "Member updated."},
         404: MemberNotFound,
+        409: AmbiguousExternalCustomer,
     },
 )
 async def update_external(
@@ -348,6 +357,7 @@ async def delete(
     responses={
         204: {"description": "Member deleted."},
         404: MemberNotFound,
+        409: AmbiguousExternalCustomer,
     },
 )
 async def delete_external(

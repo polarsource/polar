@@ -1567,6 +1567,44 @@ class TestCreateCustomerMember:
         )
         assert response.status_code == 404
 
+    @pytest.mark.auth
+    async def test_external_ambiguous_across_organizations(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            external_id="cus_dup",
+            email="a@example.com",
+        )
+
+        # A second org the same user belongs to has a customer with the same
+        # external ID, making the external lookup ambiguous.
+        other_account = await create_account(save_fixture, user)
+        other_org = await create_organization(save_fixture, other_account)
+        other_org.feature_settings = {"member_model_enabled": True}
+        await save_fixture(other_org)
+        await save_fixture(UserOrganization(user=user, organization=other_org))
+        await create_customer(
+            save_fixture,
+            organization=other_org,
+            external_id="cus_dup",
+            email="b@example.com",
+        )
+
+        response = await client.post(
+            "/v1/customers/external/cus_dup/members",
+            json={"email": "member@example.com"},
+        )
+        assert response.status_code == 409
+
 
 @pytest.mark.asyncio
 class TestGetCustomerMember:
@@ -1727,6 +1765,55 @@ class TestGetCustomerMember:
 
         response = await client.get(f"/v1/customers/{customer.id}/members/{member.id}")
         assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_external_ambiguous_across_organizations(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            external_id="cus_dup_get",
+            email="a@example.com",
+        )
+        await save_fixture(
+            Member(
+                customer_id=customer.id,
+                organization_id=organization.id,
+                email="m1@example.com",
+                external_id="mem_dup",
+                role="owner",
+            )
+        )
+
+        other_account = await create_account(save_fixture, user)
+        other_org = await create_organization(save_fixture, other_account)
+        await save_fixture(UserOrganization(user=user, organization=other_org))
+        other_customer = await create_customer(
+            save_fixture,
+            organization=other_org,
+            external_id="cus_dup_get",
+            email="b@example.com",
+        )
+        await save_fixture(
+            Member(
+                customer_id=other_customer.id,
+                organization_id=other_org.id,
+                email="m2@example.com",
+                external_id="mem_dup",
+                role="owner",
+            )
+        )
+
+        response = await client.get(
+            "/v1/customers/external/cus_dup_get/members/external/mem_dup"
+        )
+        assert response.status_code == 409
 
 
 @pytest.mark.asyncio

@@ -29,7 +29,14 @@ from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
     from polar.benefit.strategies import BenefitGrantProperties
-    from polar.models import Benefit, Customer, Member, Order, Subscription
+    from polar.models import (
+        Benefit,
+        Customer,
+        ManualGrant,
+        Member,
+        Order,
+        Subscription,
+    )
 
 
 class BenefitGrantError(TypedDict):
@@ -41,6 +48,7 @@ class BenefitGrantError(TypedDict):
 class BenefitGrantScope(TypedDict, total=False):
     subscription: "Subscription"
     order: "Order"
+    manual_grant: "ManualGrant"
 
 
 if TYPE_CHECKING:
@@ -48,22 +56,34 @@ if TYPE_CHECKING:
     class BenefitGrantScopeArgs(TypedDict, total=False):
         subscription_id: UUID
         order_id: UUID
+        manual_grant_id: UUID
 
 else:
 
     class BenefitGrantScopeArgs(dict):
         def __init__(
-            self, subscription_id: UUID | None = None, order_id: UUID | None = None
+            self,
+            subscription_id: UUID | None = None,
+            order_id: UUID | None = None,
+            manual_grant_id: UUID | None = None,
         ) -> None:
             d = {}
             if subscription_id is not None:
                 d["subscription_id"] = subscription_id
             if order_id is not None:
                 d["order_id"] = order_id
+            if manual_grant_id is not None:
+                d["manual_grant_id"] = manual_grant_id
             super().__init__(d)
 
-        def __composite_values__(self) -> tuple[UUID | None, UUID | None]:
-            return self.get("subscription_id"), self.get("order_id")
+        def __composite_values__(
+            self,
+        ) -> tuple[UUID | None, UUID | None, UUID | None]:
+            return (
+                self.get("subscription_id"),
+                self.get("order_id"),
+                self.get("manual_grant_id"),
+            )
 
 
 class BenefitGrantScopeComparator(CompositeProperty.Comparator[BenefitGrantScopeArgs]):
@@ -103,6 +123,7 @@ class BenefitGrant(RecordModel):
             "member_id",
             "subscription_id",
             "order_id",
+            "manual_grant_id",
             unique=True,
             postgresql_nulls_not_distinct=True,
             postgresql_where=text("deleted_at IS NULL"),
@@ -170,8 +191,22 @@ class BenefitGrant(RecordModel):
     def order(cls) -> Mapped["Order | None"]:
         return relationship("Order", lazy="raise")
 
+    manual_grant_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("manual_grants.id", ondelete="cascade"),
+        nullable=True,
+        index=True,
+    )
+
+    @declared_attr
+    def manual_grant(cls) -> Mapped["ManualGrant | None"]:
+        return relationship("ManualGrant", lazy="raise")
+
     scope: Mapped[BenefitGrantScopeArgs] = composite(
-        "subscription_id", "order_id", comparator_factory=BenefitGrantScopeComparator
+        "subscription_id",
+        "order_id",
+        "manual_grant_id",
+        comparator_factory=BenefitGrantScopeComparator,
     )
 
     @declared_attr

@@ -220,6 +220,7 @@ export const useBenefitGrants = (
     NonNullable<operations['benefit-grants:list']['parameters']['query']>,
     'organization_id'
   >,
+  pollWhile?: (grants: schemas['BenefitGrant'][]) => boolean,
 ) =>
   useQuery({
     queryKey: ['benefit-grants', { organizationId, ...(parameters || {}) }],
@@ -236,4 +237,33 @@ export const useBenefitGrants = (
       ),
     retry: defaultRetry,
     enabled: !!organizationId,
+    refetchInterval: pollWhile
+      ? (query) => (pollWhile(query.state.data?.items ?? []) ? 2000 : false)
+      : undefined,
+  })
+
+export const useCreateManualGrant = () =>
+  useMutation({
+    mutationFn: (body: schemas['ManualGrantCreate']) =>
+      api.POST('/v1/manual-grants/', { body }),
+    onSuccess: (result) => {
+      if (result.error) {
+        return
+      }
+      getQueryClient().invalidateQueries({ queryKey: ['benefit-grants'] })
+    },
+  })
+
+export const useRevokeManualGrant = () =>
+  useMutation({
+    mutationFn: ({ id, grantId }: { id: string; grantId: string }) =>
+      api.POST('/v1/manual-grants/{id}/grants/{grant_id}/revoke', {
+        params: { path: { id, grant_id: grantId } },
+      }),
+    onSuccess: (result) => {
+      if (result.error) {
+        return
+      }
+      getQueryClient().invalidateQueries({ queryKey: ['benefit-grants'] })
+    },
   })

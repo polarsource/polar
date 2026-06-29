@@ -3,6 +3,7 @@ from uuid import UUID
 import structlog
 from sqlalchemy.orm import joinedload
 
+from polar.benefit.manual_grant.repository import ManualGrantRepository
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarError
 from polar.logging import Logger
@@ -74,6 +75,12 @@ async def resolve_scope(
         if order is None:
             raise InvalidScopeError(scope)
         resolved_scope["order"] = order
+    if manual_grant_id := scope.get("manual_grant_id"):
+        manual_grant_repository = ManualGrantRepository.from_session(session)
+        manual_grant = await manual_grant_repository.get_by_id(manual_grant_id)
+        if manual_grant is None:
+            raise InvalidScopeError(scope)
+        resolved_scope["manual_grant"] = manual_grant
     return resolved_scope
 
 
@@ -83,6 +90,8 @@ def scope_to_args(scope: BenefitGrantScope) -> BenefitGrantScopeArgs:
         args["subscription_id"] = subscription.id
     if order := scope.get("order"):
         args["order_id"] = order.id
+    if manual_grant := scope.get("manual_grant"):
+        args["manual_grant_id"] = manual_grant.id
     return args
 
 

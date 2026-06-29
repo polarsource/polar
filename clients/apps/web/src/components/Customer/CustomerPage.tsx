@@ -1,6 +1,6 @@
 'use client'
 
-import { BenefitGrantStatus } from '@/components/Benefit/BenefitGrantStatus'
+import { CustomerBenefitGrantsSection } from '@/components/Customer/CustomerBenefitGrants'
 import { CustomerEventsView } from '@/components/Customer/CustomerEventsView'
 import { CustomerUsageView } from '@/components/Customer/CustomerUsageView'
 import { MembersSection } from '@/components/Customer/MembersSection'
@@ -13,7 +13,6 @@ import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import {
   ParsedMetricsResponse,
-  useBenefitGrants,
   useMetrics,
   useSubscriptions,
   useWallets,
@@ -33,7 +32,6 @@ import { Status } from '@polar-sh/orbit'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import Link from 'next/link'
 import React, { useMemo } from 'react'
-import { benefitsDisplayNames } from '../Benefit/utils'
 import MetricChartBox from '../Metrics/MetricChartBox'
 import { DetailRow } from '../Shared/DetailRow'
 import { CustomerTrendStatBox } from './CustomerTrendStatBox'
@@ -82,13 +80,6 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       sorting: ['-started_at'],
     })
 
-  const { data: benefitGrants, isLoading: benefitGrantsLoading } =
-    useBenefitGrants(customer.organization_id, {
-      customer_id: [customer.id],
-      limit: 999,
-      sorting: ['-granted_at'],
-    })
-
   const { data: billingWallets } = useWallets(organization.id, {
     customer_id: customer.id,
     type: 'billing',
@@ -124,11 +115,11 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       metricKey: keyof schemas['MetricsTotals'],
     ):
       | {
-          value: number
-          direction: 'up' | 'down' | 'none'
-          metric: schemas['Metric']
-          previousValue: number
-        }
+        value: number
+        direction: 'up' | 'down' | 'none'
+        metric: schemas['Metric']
+        previousValue: number
+      }
       | undefined => {
       if (!metricsData?.totals || !previousPeriodMetrics?.totals) {
         return undefined
@@ -256,9 +247,9 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           >
             {typeof metricsData?.totals.gross_margin === 'number'
               ? formatCurrency('statistics')(
-                  metricsData.totals.gross_margin,
-                  'usd',
-                )
+                metricsData.totals.gross_margin,
+                'usd',
+              )
               : '—'}
           </CustomerTrendStatBox>
           <CustomerTrendStatBox
@@ -273,13 +264,13 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           <StatisticCard title="Customer Balance" size="lg">
             {billingWallets && billingWallets.items.length > 0
               ? billingWallets.items.map((wallet) => (
-                  <div key={wallet.id}>
-                    {formatCurrency('statistics')(
-                      wallet.balance,
-                      wallet.currency,
-                    )}
-                  </div>
-                ))
+                <div key={wallet.id}>
+                  {formatCurrency('statistics')(
+                    wallet.balance,
+                    wallet.currency,
+                  )}
+                </div>
+              ))
               : '—'}
           </StatisticCard>
         </div>
@@ -469,82 +460,10 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           />
         </div>
 
-        <div className="flex flex-col gap-4">
-          <h3 className="text-lg">Benefit Grants</h3>
-          <DataTable
-            data={benefitGrants?.items ?? []}
-            columns={[
-              {
-                header: 'Benefit Name',
-                accessorKey: 'benefit.description',
-                cell: ({ row: { original } }) => (
-                  <div className="flex flex-col gap-0.5">
-                    <span>{original.benefit.description}</span>
-
-                    <span className="dark:text-polar-500 text-xs text-gray-500">
-                      {benefitsDisplayNames[original.benefit.type]}
-                    </span>
-                  </div>
-                ),
-              },
-              {
-                header: 'Status',
-                accessorKey: 'status',
-                cell: ({ row: { original: grant } }) => (
-                  <BenefitGrantStatus grant={grant} />
-                ),
-              },
-              {
-                header: 'Granted At',
-                accessorKey: 'granted_at',
-                cell: ({ row: { original } }) =>
-                  original.granted_at ? (
-                    <FormattedDateTime datetime={original.granted_at} />
-                  ) : (
-                    <span>—</span>
-                  ),
-              },
-              {
-                header: 'Revoked At',
-                accessorKey: 'revoked_at',
-                cell: ({ row: { original } }) =>
-                  original.revoked_at ? (
-                    <FormattedDateTime datetime={original.revoked_at} />
-                  ) : (
-                    <span className="dark:text-polar-800 text-gray-400">—</span>
-                  ),
-              },
-              {
-                header: '',
-                accessorKey: 'benefit_action',
-                cell: ({ row: { original } }) => {
-                  if (original.benefit.is_deleted) {
-                    return null
-                  }
-                  const licenseKeyId =
-                    original.benefit.type === 'license_keys' &&
-                    'license_key_id' in original.properties
-                      ? original.properties.license_key_id
-                      : undefined
-                  const href = licenseKeyId
-                    ? `/dashboard/${organization.slug}/products/benefits/${original.benefit.id}?license_key_id=${licenseKeyId}`
-                    : `/dashboard/${organization.slug}/products/benefits/${original.benefit.id}`
-                  return (
-                    <div className="flex justify-end">
-                      <Link href={href}>
-                        <Button variant="secondary" size="sm">
-                          View Benefit
-                        </Button>
-                      </Link>
-                    </div>
-                  )
-                },
-              },
-            ]}
-            isLoading={benefitGrantsLoading}
-            className="text-sm"
-          />
-        </div>
+        <CustomerBenefitGrantsSection
+          organization={organization}
+          customer={customer}
+        />
 
         <ShadowBox className="flex flex-col gap-8">
           <div className="flex flex-col gap-4">

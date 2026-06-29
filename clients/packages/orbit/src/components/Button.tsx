@@ -7,7 +7,7 @@ import {
 } from './ui/button'
 
 const buttonVariants = cva(
-  'relative font-normal inline-flex items-center cursor-pointer font-display font-semibold select-none justify-center rounded-full text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap',
+  'relative font-normal inline-flex items-center cursor-pointer font-display font-medium select-none justify-center rounded-full text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap',
   {
     variants: {
       variant: {

@@ -1,6 +1,5 @@
 'use client'
 
-import { X } from 'lucide-react'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import { brandSections } from './brand'
@@ -100,7 +99,6 @@ function NavItem({
 
 export function BrandNav() {
   const activeSection = useActiveSection(sectionIds)
-  const [open, setOpen] = useState(false)
 
   return (
     <header className="bg-brand-raised sticky top-0 z-50">

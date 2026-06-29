@@ -273,7 +273,7 @@ const MetricChartBox = ({
           )}
           <h2
             className={
-              compact ? 'text-base' : 'text-3xl xl:text-5xl xl:font-light'
+              compact ? 'text-base' : 'text-3xl xl:text-5xl xl:font-[350]'
             }
           >
             {metricValue}

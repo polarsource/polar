@@ -278,7 +278,7 @@ const CheckoutSeatSelector = ({
       {/* Total Amount Display */}
       <div className="flex flex-col gap-2">
         <h1
-          className="text-3xl font-light text-gray-900 dark:text-white"
+          className="text-3xl font-[350] text-gray-900 dark:text-white"
           data-testid="headline-price"
         >
           {formatCurrency('compact', locale)(netAmount, currency)}
@@ -291,7 +291,7 @@ const CheckoutSeatSelector = ({
           {t('checkout.pricing.seats.numberOfSeats')}
         </label>
         {isFixedSeats ? (
-          <span className="min-w-[3.5rem] text-2xl font-light text-gray-900 dark:text-white">
+          <span className="min-w-[3.5rem] text-2xl font-[350] text-gray-900 dark:text-white">
             {displaySeats}
           </span>
         ) : (
@@ -329,14 +329,14 @@ const CheckoutSeatSelector = ({
                 autoFocus
                 min={minimumSeats}
                 max={hasMaximumLimit ? maximumSeats : undefined}
-                className="h-auto max-w-[4.5rem] min-w-[3.5rem] py-1.5 text-center text-2xl font-light tabular-nums"
+                className="h-auto max-w-[4.5rem] min-w-[3.5rem] py-1.5 text-center text-2xl font-[350] tabular-nums"
               />
             ) : (
               <button
                 type="button"
                 onClick={handleSeatClick}
                 disabled={isUpdating}
-                className="dark:hover:bg-polar-800 group relative min-w-[3.5rem] rounded-xl px-3 py-1.5 text-center text-2xl font-light text-gray-900 tabular-nums transition-all hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-white"
+                className="dark:hover:bg-polar-800 group relative min-w-[3.5rem] rounded-xl px-3 py-1.5 text-center text-2xl font-[350] text-gray-900 tabular-nums transition-all hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-white"
                 aria-label="Click to edit seat count"
                 title="Click to edit"
               >

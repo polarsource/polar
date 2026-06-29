@@ -140,8 +140,8 @@ export const letterSpacings = stylex.defineVars({
 } as const)
 
 export const fontFamilies = stylex.defineVars({
-  sans: "'Inter', sans-serif",
-  display: "'InterDisplay', sans-serif",
+  sans: "'PP Neue Montreal', 'Inter', sans-serif",
+  display: "'PP Neue Montreal', 'InterDisplay', sans-serif",
   mono: "'GeistMono', monospace",
 } as const)
 

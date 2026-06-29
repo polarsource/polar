@@ -26,7 +26,7 @@ function ColorColumn({ color }: { color: BrandColor }) {
           {color.role}
         </span>
       </div>
-      <div className="flex flex-col gap-3 font-mono text-sm leading-snug">
+      <div className="flex flex-col gap-3 text-sm leading-snug tabular-nums">
         <div className="flex flex-col gap-0.5">
           <span style={{ color: muted }}>HEX</span>
           <span>{color.hex}</span>

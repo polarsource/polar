@@ -1,5 +1,5 @@
 import React from 'react'
-import { Body, BrandContainer, Display, Label, Mono } from './primitives'
+import { Body, BrandContainer, Caption, Display, Label } from './primitives'
 
 export function BrandHero() {
   return (
@@ -12,7 +12,7 @@ export function BrandHero() {
       <BrandContainer>
         <div className="border-brand-muted grid grid-cols-1 gap-12 border-t pt-12 md:grid-cols-3 md:gap-8 md:pt-16">
           <div className="flex flex-col gap-3">
-            <Mono>000</Mono>
+            <Caption>000</Caption>
             <Label>Brand System</Label>
           </div>
           <Body className="max-w-md">

@@ -90,7 +90,10 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
-from polar.organization.repository import OrganizationRepository
+from polar.organization.repository import (
+    SUBSCRIPTION_CANCELLATION_STATUSES,
+    OrganizationRepository,
+)
 from polar.product.guard import (
     is_custom_price,
     is_recurring_product,
@@ -240,6 +243,8 @@ class SubscriptionUpdateContext:
         session: AsyncSession,
         subscription: Subscription,
         service: "SubscriptionService",
+        *,
+        notify_customer: bool = True,
     ) -> None:
         self.session = session
         self.service = service
@@ -247,6 +252,7 @@ class SubscriptionUpdateContext:
         self.subscription = subscription
         self._previous_status = subscription.status
         self._previous_is_canceled = subscription.canceled
+        self._notify_customer = notify_customer
 
         self._billing_effect: Literal["invoice", "cycle"] | None = None
         self._event_metadata: SubscriptionUpdatedMetadataFields = {}
@@ -291,6 +297,7 @@ class SubscriptionUpdateContext:
             self.subscription,
             previous_status=self._previous_status,
             previous_is_canceled=self._previous_is_canceled,
+            notify_customer=self._notify_customer,
         )
 
     def set_billing_effect(self, effect: Literal["invoice", "cycle"]) -> None:
@@ -1816,6 +1823,55 @@ class SubscriptionService:
                     revoke_benefits=False,
                 )
 
+    async def cancel_for_organization(
+        self, session: AsyncSession, organization_id: uuid.UUID
+    ) -> None:
+        """Immediately cancel all billable subscriptions of an organization,
+        without notifying its customers.
+
+        Used when an organization has been denied, blocked, or offboarded for
+        long enough that its customers' subscriptions must be wound down. The
+        customers are intentionally not emailed, as the cancellation results
+        from the merchant being shut down rather than a customer-initiated or
+        merchant-initiated action.
+
+        Re-checks the organization status at execution time: this runs as a
+        deferred job enqueued by a daily scan, so an admin may have reactivated
+        the org in between. If it is no longer in a wind-down status, this is a
+        no-op — we must not cancel subscriptions of a reinstated org.
+        ``include_blocked=True`` is required because ``blocked`` is itself one
+        of the wind-down statuses.
+
+        Idempotent at the subscription level: a duplicate or concurrent run
+        (e.g. the cron firing from more than one scheduler replica) may have
+        already cancelled some subscriptions. Such a subscription is skipped
+        rather than aborting the whole batch.
+        """
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            organization_id, include_blocked=True
+        )
+        if (
+            organization is None
+            or organization.status not in SUBSCRIPTION_CANCELLATION_STATUSES
+        ):
+            return
+
+        subscription_repository = SubscriptionRepository.from_session(session)
+        subscriptions = await subscription_repository.list_billable_by_organization(
+            organization_id, options=subscription_repository.get_eager_options()
+        )
+        for subscription in subscriptions:
+            try:
+                async with SubscriptionUpdateContext(
+                    session, subscription, self, notify_customer=False
+                ) as ctx:
+                    await self._perform_cancellation(
+                        session, ctx, subscription, immediately=True
+                    )
+            except AlreadyCanceledSubscription:
+                continue
+
     async def _perform_cancellation(
         self,
         session: AsyncSession,
@@ -2042,6 +2098,7 @@ class SubscriptionService:
         *,
         previous_status: SubscriptionStatus,
         previous_is_canceled: bool,
+        notify_customer: bool = True,
     ) -> None:
         await self._on_subscription_updated(session, subscription)
 
@@ -2074,12 +2131,18 @@ class SubscriptionService:
 
         if became_canceled or (became_revoked and previous_is_canceled):
             await self._on_subscription_canceled(
-                session, subscription, revoked=became_revoked
+                session,
+                subscription,
+                revoked=became_revoked,
+                notify_customer=notify_customer,
             )
 
         if became_revoked:
             await self._on_subscription_revoked(
-                session, subscription, past_due=became_past_due
+                session,
+                subscription,
+                past_due=became_past_due,
+                notify_customer=notify_customer,
             )
 
         enqueue_job("customer.state_changed", subscription.customer_id)
@@ -2187,6 +2250,7 @@ class SubscriptionService:
         session: AsyncSession,
         subscription: Subscription,
         revoked: bool,
+        notify_customer: bool = True,
     ) -> None:
         await self._send_webhook(
             session, subscription, WebhookEventType.subscription_canceled
@@ -2226,7 +2290,7 @@ class SubscriptionService:
 
         # Only send cancellation email if the subscription is not revoked,
         # as revocation has its own email.
-        if not revoked:
+        if not revoked and notify_customer:
             await self.send_cancellation_email(session, subscription)
 
     async def _on_subscription_revoked(
@@ -2234,6 +2298,7 @@ class SubscriptionService:
         session: AsyncSession,
         subscription: Subscription,
         past_due: bool,
+        notify_customer: bool = True,
     ) -> None:
         await self._send_webhook(
             session, subscription, WebhookEventType.subscription_revoked
@@ -2257,7 +2322,7 @@ class SubscriptionService:
         )
         # Only send revoked email if the subscription is not past due,
         # as past due has its own email.
-        if not past_due:
+        if not past_due and notify_customer:
             await self.send_revoked_email(session, subscription)
 
         # Void all pending orders for this subscription

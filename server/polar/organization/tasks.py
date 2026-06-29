@@ -97,6 +97,19 @@ async def organization_offboard_expired() -> None:
         await organization_service.offboard_expired_organizations(session)
 
 
+@actor(
+    actor_name="organization.cancel_expired_subscriptions",
+    cron_trigger=CronTrigger.from_crontab("0 5 * * *"),
+    priority=TaskPriority.LOW,
+    max_retries=0,
+)
+async def organization_cancel_expired_subscriptions() -> None:
+    """Cancel customer subscriptions of orgs denied/blocked/offboarded past the
+    cancellation delay. Customers are not notified."""
+    async with AsyncSessionMaker() as session:
+        await organization_service.cancel_expired_organizations_subscriptions(session)
+
+
 @actor(actor_name="organization.offboarded", priority=TaskPriority.LOW)
 async def organization_offboarded(organization_id: uuid.UUID) -> None:
     """Notify an organization's members that it has been offboarded."""

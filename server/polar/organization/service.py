@@ -1454,6 +1454,29 @@ class OrganizationService:
             transitioned.append(organization)
         return transitioned
 
+    async def cancel_expired_organizations_subscriptions(
+        self, session: AsyncSession
+    ) -> Sequence[Organization]:
+        """Cancel customer subscriptions of orgs stuck in a terminal-bad status.
+
+        Run periodically by a worker. Picks up organizations that have been
+        denied, blocked, or offboarded for longer than the cancellation delay
+        and still have billable subscriptions, then enqueues a per-org job that
+        cancels them without notifying the customers. Returns the orgs whose
+        cancellation was enqueued.
+        """
+        repository = OrganizationRepository.from_session(session)
+        cutoff = (
+            datetime.now(UTC) - settings.ORGANIZATION_SUBSCRIPTION_CANCELLATION_DELAY
+        )
+        organizations = await repository.get_status_cancellation_expired(cutoff)
+        for organization in organizations:
+            enqueue_job(
+                "subscription.cancel_for_organization",
+                organization_id=organization.id,
+            )
+        return organizations
+
     async def set_organization_offboarded(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:

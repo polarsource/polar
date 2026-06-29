@@ -248,6 +248,11 @@ class Settings(BaseSettings):
     # (not fully refunded) order, i.e. the post-chargeback-risk wind-down window.
     ORGANIZATION_OFFBOARDING_PERIOD: timedelta = timedelta(days=120)
 
+    # How long an organization stays denied, blocked, or offboarded before its
+    # customers' subscriptions are automatically cancelled (silently, without
+    # notifying the customers). Measured from when the org entered the status.
+    ORGANIZATION_SUBSCRIPTION_CANCELLATION_DELAY: timedelta = timedelta(days=7)
+
     # Stripe
     STRIPE_SECRET_KEY: str = ""
     STRIPE_PUBLISHABLE_KEY: str = ""

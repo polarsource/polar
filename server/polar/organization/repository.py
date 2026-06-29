@@ -49,6 +49,20 @@ UNSNOOZE_EXPIRED_BATCH_SIZE = 500
 # Maximum orgs the auto-offboard cron processes per run.
 OFFBOARD_EXPIRED_BATCH_SIZE = 500
 
+# Maximum orgs the subscription-cancellation cron processes per run.
+CANCEL_SUBSCRIPTIONS_BATCH_SIZE = 500
+
+# Statuses after which an org's customer subscriptions are auto-cancelled
+# once the cancellation delay has elapsed. ``offboarded`` (not ``offboarding``)
+# is the terminal state: ``offboarding`` is the graceful wind-down period during
+# which renewals intentionally continue, so subscriptions are only cancelled once
+# that period has completed.
+SUBSCRIPTION_CANCELLATION_STATUSES = (
+    OrganizationStatus.DENIED,
+    OrganizationStatus.BLOCKED,
+    OrganizationStatus.OFFBOARDED,
+)
+
 
 class OrganizationRepository(
     RepositorySortingMixin[Organization, OrganizationSortProperty],
@@ -253,6 +267,41 @@ class OrganizationRepository(
             .order_by(anchor.asc())
             .limit(limit)
             .with_for_update(of=Organization)
+        )
+        return await self.get_all(statement)
+
+    async def get_status_cancellation_expired(
+        self, cutoff: datetime, *, limit: int = CANCEL_SUBSCRIPTIONS_BATCH_SIZE
+    ) -> Sequence[Organization]:
+        """Orgs that have been denied, blocked, or offboarded past the cutoff
+        and still have at least one billable subscription to cancel.
+
+        Anchored on ``status_updated_at``, which records when the org last
+        changed status. The ``EXISTS`` gate keeps the scan idempotent: once an
+        org's subscriptions are all cancelled it falls out of the result set,
+        so it is not re-enqueued on subsequent runs.
+        """
+        has_billable_subscription = (
+            select(Subscription.id)
+            .where(
+                Subscription.organization_id == Organization.id,
+                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+                Subscription.ended_at.is_(None),
+                Subscription.deleted_at.is_(None),
+            )
+            .correlate(Organization)
+            .exists()
+        )
+        statement = (
+            self.get_base_statement()
+            .where(
+                Organization.status.in_(SUBSCRIPTION_CANCELLATION_STATUSES),
+                Organization.status_updated_at.is_not(None),
+                Organization.status_updated_at <= cutoff,
+                has_billable_subscription,
+            )
+            .order_by(Organization.status_updated_at.asc())
+            .limit(limit)
         )
         return await self.get_all(statement)
 

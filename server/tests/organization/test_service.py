@@ -66,6 +66,7 @@ from polar.user_organization.service import (
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_active_subscription,
     create_benefit,
     create_checkout_link,
     create_dispute,
@@ -4919,3 +4920,57 @@ class TestAddUser:
             role=expected_member_role,
             delay=None,
         )
+
+
+@pytest.mark.asyncio
+class TestCancelExpiredOrganizationsSubscriptions:
+    async def test_enqueues_for_expired_org(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        organization.status = OrganizationStatus.DENIED
+        organization.status_updated_at = datetime.now(UTC) - timedelta(days=8)
+        await save_fixture(organization)
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        result = await organization_service.cancel_expired_organizations_subscriptions(
+            session
+        )
+
+        assert organization.id in {org.id for org in result}
+        enqueue_job_mock.assert_called_once_with(
+            "subscription.cancel_for_organization",
+            organization_id=organization.id,
+        )
+
+    async def test_skips_recent_org(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        organization.status = OrganizationStatus.DENIED
+        organization.status_updated_at = datetime.now(UTC) - timedelta(days=1)
+        await save_fixture(organization)
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        result = await organization_service.cancel_expired_organizations_subscriptions(
+            session
+        )
+
+        assert organization.id not in {org.id for org in result}
+        enqueue_job_mock.assert_not_called()

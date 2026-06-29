@@ -49,6 +49,7 @@ x-common-backend-env: &common-backend-env
   POLAR_FRONTEND_BASE_URL: http://localhost:${WEB_PORT:-3000}
   POLAR_CHECKOUT_BASE_URL: http://localhost:${API_PORT:-8000}/v1/checkout-links/{client_secret}/redirect
   POLAR_USER_SESSION_COOKIE_DOMAIN: localhost
+  POLAR_AUTHENTICATION_SESSION_COOKIE_DOMAIN: localhost
   # Tinybird — shared instance. Queries filter by organization_id and each
   # instance has its own postgres DB, so org UUIDs are globally disjoint and
   # cross-instance leakage is impossible. Tokens are auto-discovered from the

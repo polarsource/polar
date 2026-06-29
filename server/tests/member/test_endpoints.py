@@ -1815,6 +1815,49 @@ class TestGetCustomerMember:
         )
         assert response.status_code == 409
 
+    @pytest.mark.auth
+    async def test_external_ambiguous_customer_single_member(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        # Two accessible customers share the external ID, but only one has a
+        # member with the requested member external ID. The ambiguity must still
+        # surface as 409 (resolved from the customer, not from member count).
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            external_id="cus_dup_single",
+            email="a@example.com",
+        )
+        await save_fixture(
+            Member(
+                customer_id=customer.id,
+                organization_id=organization.id,
+                email="m1@example.com",
+                external_id="mem_single",
+                role="owner",
+            )
+        )
+
+        other_account = await create_account(save_fixture, user)
+        other_org = await create_organization(save_fixture, other_account)
+        await save_fixture(UserOrganization(user=user, organization=other_org))
+        await create_customer(
+            save_fixture,
+            organization=other_org,
+            external_id="cus_dup_single",
+            email="b@example.com",
+        )
+
+        response = await client.get(
+            "/v1/customers/external/cus_dup_single/members/external/mem_single"
+        )
+        assert response.status_code == 409
+
 
 @pytest.mark.asyncio
 class TestUpdateCustomerMember:

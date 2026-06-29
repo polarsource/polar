@@ -123,23 +123,28 @@ class MemberService:
         """Get a member by external ID if the auth subject has access to it."""
         repository = MemberRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
+
+        # Resolve the customer first so an ambiguous external customer ID always
+        # surfaces as a 409, regardless of how many members happen to match.
+        if external_customer_id is not None:
+            customer_repository = CustomerRepository.from_session(session)
+            try:
+                customer = await customer_repository.get_readable_by_external_id(
+                    org_ids, external_customer_id
+                )
+            except MultipleResultsFound as e:
+                raise AmbiguousExternalCustomerID(external_customer_id) from e
+            if customer is None:
+                return None
+            customer_id = customer.id
+
         statement = repository.get_statement_by_org_ids(org_ids).where(
             Member.external_id == external_id
         )
-
-        if external_customer_id is not None:
-            statement = statement.join(Customer).where(
-                Customer.external_id == external_customer_id
-            )
         if customer_id is not None:
             statement = statement.where(Member.customer_id == customer_id)
 
-        try:
-            return await repository.get_one_or_none(statement)
-        except MultipleResultsFound as e:
-            if external_customer_id is not None:
-                raise AmbiguousExternalCustomerID(external_customer_id) from e
-            raise
+        return await repository.get_one_or_none(statement)
 
     async def delete(
         self,

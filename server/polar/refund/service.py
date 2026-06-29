@@ -516,7 +516,7 @@ class RefundService:
             )
             if customer_balance > 0:
                 reduction_amount = min(
-                    customer_balance, order.refunded_amount + order.refunded_tax_amount
+                    customer_balance, refund.amount + refund.tax_amount
                 )
                 await wallet_service.create_balance_transaction(
                     session,

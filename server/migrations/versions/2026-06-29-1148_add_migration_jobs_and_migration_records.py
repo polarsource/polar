@@ -1,7 +1,7 @@
 """add migration_jobs and migration_records
 
 Revision ID: 2ccabcca866d
-Revises: 66438a5cfc91
+Revises: e7118c4ae5d8
 Create Date: 2026-06-29 11:48:08.998494
 
 """

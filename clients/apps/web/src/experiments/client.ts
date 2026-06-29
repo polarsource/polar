@@ -33,7 +33,7 @@ export interface UseExperimentOptions {
 
 /**
  * Read experiment override from URL query params (dev only).
- * Usage: ?experiment_test_experiment=treatment
+ * Usage: ?experiment_onboarding_flow_v1=treatment
  */
 function getUrlOverride<T extends ExperimentName>(
   experimentName: T,

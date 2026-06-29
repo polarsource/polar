@@ -2,9 +2,14 @@ import { BrandFooter } from '@/components/Brand'
 import {
   ChangesSection,
   DirectorySection,
+  EditorialSection,
   PricingDirectoryNav,
   PricingHero,
 } from '@/components/PricingDirectory'
+import {
+  fetchCompanies,
+  fetchRecentChanges,
+} from '@/components/PricingDirectory/api'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -13,14 +18,20 @@ export const metadata: Metadata = {
     'A living database of how companies price and how those prices change over time, to inspire your own pricing.',
 }
 
-export default function PricingDirectoryPage() {
+export default async function PricingDirectoryPage() {
+  const [companies, changes] = await Promise.all([
+    fetchCompanies(),
+    fetchRecentChanges(),
+  ])
+
   return (
     <div className="font-neue-montreal bg-brand-surface text-brand-muted min-h-screen antialiased">
       <PricingDirectoryNav />
       <main>
         <PricingHero />
-        <DirectorySection />
-        <ChangesSection />
+        <DirectorySection companies={companies} />
+        <ChangesSection changes={changes} />
+        <EditorialSection />
       </main>
       <BrandFooter />
     </div>

@@ -1,11 +1,17 @@
 import { BrandFooter } from '@/components/Brand'
 import {
-  CompanyDetail,
+  ArticleDetail,
   PricingDirectoryNav,
 } from '@/components/PricingDirectory'
-import { fetchCompany } from '@/components/PricingDirectory/api'
+import { articles, getArticleBySlug } from '@/components/PricingDirectory/editorial'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+
+export const dynamicParams = false
+
+export function generateStaticParams() {
+  return articles.map((article) => ({ slug: article.slug }))
+}
 
 export async function generateMetadata({
   params,
@@ -13,23 +19,20 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const company = await fetchCompany(slug)
-  if (!company) return {}
-  return {
-    title: `${company.name} pricing`,
-    description: `How ${company.name} prices its products, and how those prices have changed over time.`,
-  }
+  const article = getArticleBySlug(slug)
+  if (!article) return {}
+  return { title: article.title, description: article.dek }
 }
 
-export default async function CompanyPage({
+export default async function ArticlePage({
   params,
 }: {
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const company = await fetchCompany(slug)
+  const article = getArticleBySlug(slug)
 
-  if (!company) {
+  if (!article) {
     notFound()
   }
 
@@ -37,7 +40,7 @@ export default async function CompanyPage({
     <div className="font-neue-montreal bg-brand-surface text-brand-muted min-h-screen antialiased">
       <PricingDirectoryNav />
       <main>
-        <CompanyDetail company={company} />
+        <ArticleDetail article={article} />
       </main>
       <BrandFooter />
     </div>

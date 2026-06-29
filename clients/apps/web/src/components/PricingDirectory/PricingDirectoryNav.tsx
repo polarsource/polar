@@ -5,7 +5,8 @@ import { BrandContainer } from '../Brand/primitives'
 const links = [
   { label: 'Directory', href: '/pricing-directory#directory' },
   { label: 'Changes', href: '/pricing-directory#changes' },
-  { label: 'polar.sh', href: '/' },
+  { label: 'Reading', href: '/pricing-directory#reading' },
+  { label: 'Submit', href: '/' },
 ]
 
 export function PricingDirectoryNav() {

@@ -19,7 +19,7 @@ def _to_stored_configuration(
     configuration: OIDCConfigurationSchema,
 ) -> OIDCConfiguration:
     stored: OIDCConfiguration = {
-        "issuer": configuration.issuer,
+        "issuer": str(configuration.issuer),
         "client_id": configuration.client_id,
         "auth_method": configuration.auth_method,
     }

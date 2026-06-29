@@ -9,6 +9,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.checkout.eventstream import CheckoutEvent
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
+from polar.kit.schemas import HttpsUrl
 from polar.kit.utils import utc_now
 from polar.models import (
     Organization,
@@ -19,7 +20,7 @@ from polar.models import (
 )
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.postgres import AsyncSession
-from polar.webhook.schemas import HttpsUrl, WebhookEndpointCreate, WebhookEndpointUpdate
+from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.webhook.service import EventDoesNotExist, EventNotSuccessul
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookCheckoutUpdatedPayload

@@ -8,6 +8,7 @@ from annotated_types import Ge, Le
 from pydantic import (
     UUID4,
     AfterValidator,
+    AnyUrl,
     BaseModel,
     ConfigDict,
     Field,
@@ -15,6 +16,7 @@ from pydantic import (
     GetJsonSchemaHandler,
     HttpUrl,
     PlainSerializer,
+    UrlConstraints,
 )
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, core_schema
@@ -67,6 +69,15 @@ SlugValidator = AfterValidator(_validate_slug)
 
 UUID4ToStr = Annotated[UUID4, PlainSerializer(lambda v: str(v), return_type=str)]
 HttpUrlToStr = Annotated[HttpUrl, PlainSerializer(lambda v: str(v), return_type=str)]
+HttpsUrl = Annotated[
+    AnyUrl,
+    UrlConstraints(
+        max_length=2083,
+        allowed_schemes=["https"],
+        host_required=True,
+    ),
+    PlainSerializer(lambda v: str(v), return_type=str),
+]
 
 StripValidator = AfterValidator(lambda v: v.strip())
 

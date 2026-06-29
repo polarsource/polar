@@ -2,16 +2,12 @@ from typing import Annotated, Literal, Self
 
 from pydantic import (
     UUID4,
-    AfterValidator,
-    AnyUrl,
     Field,
     StringConstraints,
-    TypeAdapter,
-    ValidationError,
     model_validator,
 )
 
-from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.schemas import HttpsUrl, IDSchema, Schema, TimestampedSchema
 from polar.models.organization_sso_connection import (
     OIDCAuthMethod,
     OrganizationSSOConnectionType,
@@ -19,28 +15,13 @@ from polar.models.organization_sso_connection import (
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
-_url_adapter: TypeAdapter[AnyUrl] = TypeAdapter(AnyUrl)
-
-
-def _validate_https_url(value: str) -> str:
-    try:
-        url = _url_adapter.validate_python(value)
-    except ValidationError as e:
-        raise ValueError("must be a valid URL") from e
-    if url.scheme != "https":
-        raise ValueError("must be an HTTPS URL")
-    return value.rstrip("/")
-
-
-IssuerURL = Annotated[NonEmptyStr, AfterValidator(_validate_https_url)]
-
 
 class OIDCConfiguration(Schema):
     type: Literal[OrganizationSSOConnectionType.oidc] = Field(
         default=OrganizationSSOConnectionType.oidc,
         description="Type of the SSO connection.",
     )
-    issuer: IssuerURL = Field(description="OIDC issuer URL of the identity provider.")
+    issuer: HttpsUrl = Field(description="OIDC issuer URL of the identity provider.")
     client_id: NonEmptyStr = Field(
         description="OAuth client ID registered with the identity provider."
     )

@@ -6930,9 +6930,13 @@ class TestCancelForOrganization:
         # No customer-facing email is sent for an org-driven cancellation.
         enqueue_email_mock.assert_not_called()
 
-        # Merchant side effects still happen (pending orders are voided).
+        # Merchant side effects still happen (pending orders are voided and the
+        # customer state is recomputed).
         enqueue_job_mock.assert_any_call(
             "order.void_pending_orders_for_subscription", subscription.id
+        )
+        enqueue_job_mock.assert_any_call(
+            "customer.state_changed", subscription.customer_id
         )
 
     async def test_skips_already_ended_subscriptions(
@@ -7051,6 +7055,39 @@ class TestCancelForOrganization:
         await subscription_service.cancel_for_organization(
             session, product.organization_id
         )
+
+    async def test_cancels_across_batches(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        # Batch size of 1 forces the keyset drain to span multiple iterations;
+        # every billable subscription must still be cancelled.
+        mocker.patch(
+            "polar.subscription.service.ORGANIZATION_CANCELLATION_BATCH_SIZE", 1
+        )
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        first = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        second = await create_active_subscription(
+            save_fixture, product=product, customer=customer_second
+        )
+
+        await subscription_service.cancel_for_organization(
+            session, product.organization_id
+        )
+
+        await session.refresh(first)
+        await session.refresh(second)
+        assert first.status == SubscriptionStatus.canceled
+        assert second.status == SubscriptionStatus.canceled
 
 
 @pytest.mark.asyncio

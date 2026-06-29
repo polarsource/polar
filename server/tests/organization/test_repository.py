@@ -212,3 +212,28 @@ class TestGetStatusCancellationExpired:
         )
 
         assert organization.id not in {org.id for org in results}
+
+    async def test_falls_back_to_created_at_when_status_updated_at_null(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Legacy terminal org with no status_updated_at must still be picked up,
+        # anchored on created_at.
+        organization.status = OrganizationStatus.DENIED
+        organization.status_updated_at = None
+        organization.created_at = datetime.now(UTC) - timedelta(days=8)
+        await save_fixture(organization)
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        repo = OrganizationRepository.from_session(session)
+        results = await repo.get_status_cancellation_expired(
+            datetime.now(UTC) - timedelta(days=7)
+        )
+
+        assert organization.id in {org.id for org in results}

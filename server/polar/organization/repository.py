@@ -275,6 +275,8 @@ class OrganizationRepository(
 
         The ``EXISTS`` gate makes the scan idempotent: once an org's
         subscriptions are all cancelled it drops out and is not re-enqueued.
+        Falls back to ``created_at`` when ``status_updated_at`` is unset, so a
+        terminal org with a legacy null timestamp is still wound down.
         """
         has_billable_subscription = (
             select(Subscription.id)
@@ -287,15 +289,17 @@ class OrganizationRepository(
             .correlate(Organization)
             .exists()
         )
+        status_entered_at = func.coalesce(
+            Organization.status_updated_at, Organization.created_at
+        )
         statement = (
             self.get_base_statement()
             .where(
                 Organization.status.in_(SUBSCRIPTION_CANCELLATION_STATUSES),
-                Organization.status_updated_at.is_not(None),
-                Organization.status_updated_at <= cutoff,
+                status_entered_at <= cutoff,
                 has_billable_subscription,
             )
-            .order_by(Organization.status_updated_at.asc())
+            .order_by(status_entered_at.asc())
             .limit(limit)
         )
         return await self.get_all(statement)

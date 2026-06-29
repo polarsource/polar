@@ -127,6 +127,10 @@ from .update import generate_subscription_update
 
 log: Logger = structlog.get_logger()
 
+# How many subscriptions the org wind-down cancels per batch, so a large
+# merchant doesn't materialize its entire subscription set in one go.
+ORGANIZATION_CANCELLATION_BATCH_SIZE = 100
+
 
 class SubscriptionError(PolarError): ...
 
@@ -1830,17 +1834,21 @@ class SubscriptionService:
         without notifying its customers (the cancellation follows the merchant
         being shut down, not a customer or merchant action).
 
-        Re-checks the org status, since this runs as a deferred job: an admin
-        may have reactivated the org after the scan enqueued it, in which case
-        this is a no-op. ``include_blocked=True`` because ``blocked`` is itself
-        a wind-down status.
+        Locks the org row (``for_update``) before re-checking its status, since
+        this runs as a deferred job: it serializes against a concurrent admin
+        reactivation (we must not cancel a reinstated org) and against another
+        copy of this job for the same org (which would otherwise duplicate
+        cancellation side effects). If the org is no longer in a wind-down
+        status, this is a no-op. ``include_blocked=True`` because ``blocked`` is
+        itself a wind-down status.
 
-        Idempotent at the subscription level: an already-cancelled subscription
-        (from a duplicate or concurrent run) is skipped, not treated as an error.
+        Subscriptions are cancelled in bounded batches so a large merchant
+        doesn't materialize its whole subscription set at once. An
+        already-cancelled subscription is skipped, not treated as an error.
         """
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(
-            organization_id, include_blocked=True
+            organization_id, include_blocked=True, for_update=True
         )
         if (
             organization is None
@@ -1849,19 +1857,31 @@ class SubscriptionService:
             return
 
         subscription_repository = SubscriptionRepository.from_session(session)
-        subscriptions = await subscription_repository.list_billable_by_organization(
-            organization_id, options=subscription_repository.get_eager_options()
-        )
-        for subscription in subscriptions:
-            try:
-                async with SubscriptionUpdateContext(
-                    session, subscription, self, notify_customer=False
-                ) as ctx:
-                    await self._perform_cancellation(
-                        session, ctx, subscription, immediately=True
-                    )
-            except AlreadyCanceledSubscription:
-                continue
+        # Keyset pagination by id: advances past each batch regardless of whether
+        # a subscription was cancelled, so the loop always terminates (even if a
+        # subscription is skipped) and never re-materializes the whole set.
+        after_id: uuid.UUID | None = None
+        while True:
+            subscriptions = await subscription_repository.list_billable_by_organization(
+                organization_id,
+                options=subscription_repository.get_eager_options(),
+                limit=ORGANIZATION_CANCELLATION_BATCH_SIZE,
+                after_id=after_id,
+            )
+            if not subscriptions:
+                break
+            for subscription in subscriptions:
+                try:
+                    async with SubscriptionUpdateContext(
+                        session, subscription, self, notify_customer=False
+                    ) as ctx:
+                        await self._perform_cancellation(
+                            session, ctx, subscription, immediately=True
+                        )
+                except AlreadyCanceledSubscription:
+                    continue
+            after_id = subscriptions[-1].id
+            await session.flush()
 
     async def _perform_cancellation(
         self,

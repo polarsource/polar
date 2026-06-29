@@ -4,7 +4,7 @@ import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { useCheckoutClientSSE } from '@/hooks/sse'
 import { getServerURL } from '@/utils/api'
 import { hasProductCheckout } from '@polar-sh/checkout/guards'
-import { ClientResponseError, createClient, unwrap, type schemas } from '@polar-sh/client'
+import { createClient, unwrap, type schemas } from '@polar-sh/client'
 import {
   DEFAULT_LOCALE,
   useTranslations,
@@ -15,7 +15,7 @@ import { Button } from '@polar-sh/orbit'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
 import { Stripe } from '@stripe/stripe-js'
-import { notFound, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import LogoType from '../Brand/logos/LogoType'
 import { SpinnerNoMargin } from '@polar-sh/orbit'
@@ -136,14 +136,8 @@ export const CheckoutConfirmation = ({
         }),
       )
       setCheckout(value)
-    } catch (error) {
-      if (
-        error instanceof ClientResponseError &&
-        error.response.status === 403
-      ) {
-        notFound()
-      }
-      // Silently ignore other errors - will retry on next interval/event
+    } catch {
+      // Silently ignore - will retry on next interval/event
     }
   }, [client, checkout])
   const checkoutConfirmedRedirect = useCheckoutConfirmedRedirect(embed, theme)

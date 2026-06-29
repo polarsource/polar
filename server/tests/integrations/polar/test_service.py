@@ -15,6 +15,9 @@ from polar_sdk.models import (
     WebhookBenefitGrantRevokedPayload,
     WebhookBenefitGrantUpdatedPayload,
     WebhookOrderCreatedPayload,
+    WebhookSubscriptionCanceledPayload,
+    WebhookSubscriptionPastDuePayload,
+    WebhookSubscriptionRevokedPayload,
 )
 from pytest_mock import MockerFixture
 
@@ -2262,3 +2265,210 @@ class TestHandleOrderCreatedEvent:
 
         order_webhook_client_mock.get_order.assert_awaited_once_with(order_id="ord_1")
         enqueue_email_mock.assert_not_called()
+
+
+def _make_subscription_canceled_payload(
+    *, ends_at: str | None = "2026-02-01T00:00:00Z", **kwargs: Any
+) -> WebhookSubscriptionCanceledPayload:
+    data = _make_subscription(**kwargs).model_dump(mode="json")
+    data["ends_at"] = ends_at
+    return WebhookSubscriptionCanceledPayload.model_validate(
+        {
+            "type": "subscription.canceled",
+            "timestamp": "2026-01-01T00:00:00Z",
+            "data": data,
+        }
+    )
+
+
+def _make_subscription_past_due_payload(
+    **kwargs: Any,
+) -> WebhookSubscriptionPastDuePayload:
+    return WebhookSubscriptionPastDuePayload.model_validate(
+        {
+            "type": "subscription.past_due",
+            "timestamp": "2026-01-01T00:00:00Z",
+            "data": _make_subscription(**kwargs).model_dump(mode="json"),
+        }
+    )
+
+
+def _make_subscription_revoked_payload(
+    **kwargs: Any,
+) -> WebhookSubscriptionRevokedPayload:
+    return WebhookSubscriptionRevokedPayload.model_validate(
+        {
+            "type": "subscription.revoked",
+            "timestamp": "2026-01-01T00:00:00Z",
+            "data": _make_subscription(**kwargs).model_dump(mode="json"),
+        }
+    )
+
+
+@pytest.fixture
+def subscription_webhook_client_mock(mocker: MockerFixture) -> MagicMock:
+    client = MagicMock()
+    client.list_billing_contacts = AsyncMock(
+        return_value=[_make_contact("billing@example.com")]
+    )
+    mocker.patch("polar.integrations.polar.service.get_client", return_value=client)
+    return client
+
+
+@pytest.mark.asyncio
+class TestHandleSubscriptionCanceledEvent:
+    async def test_skips_free_subscription(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        payload = _make_subscription_canceled_payload(amount=0)
+
+        await polar_self.handle_subscription_canceled_event(payload)
+
+        subscription_webhook_client_mock.list_billing_contacts.assert_not_awaited()
+        enqueue_email_mock.assert_not_called()
+
+    async def test_skips_when_no_billing_contacts(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        subscription_webhook_client_mock.list_billing_contacts.return_value = []
+        payload = _make_subscription_canceled_payload(amount=2000)
+
+        await polar_self.handle_subscription_canceled_event(payload)
+
+        enqueue_email_mock.assert_not_called()
+
+    async def test_sends_email_with_end_date(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        payload = _make_subscription_canceled_payload(
+            amount=2000, ends_at="2026-02-01T00:00:00Z"
+        )
+
+        await polar_self.handle_subscription_canceled_event(payload)
+
+        subscription_webhook_client_mock.list_billing_contacts.assert_awaited_once_with(
+            customer_id=_CUSTOMER_ID
+        )
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args.args[0]
+        assert email.template == "polar_self_subscription_cancellation"
+        assert email.props.product_name == "Pro"
+        assert email.props.ends_at is not None
+        assert email.props.ends_at.startswith("2026-02-01")
+        kwargs = enqueue_email_mock.call_args.kwargs
+        assert kwargs["to_email_addr"] == "billing@example.com"
+        assert kwargs["subject"] == "Your Pro subscription has been canceled"
+
+    async def test_sends_email_without_end_date(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        payload = _make_subscription_canceled_payload(amount=2000, ends_at=None)
+
+        await polar_self.handle_subscription_canceled_event(payload)
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args.args[0]
+        assert email.props.ends_at is None
+
+
+@pytest.mark.asyncio
+class TestHandleSubscriptionPastDueEvent:
+    async def test_skips_free_subscription(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        # A $0 subscription has no payment to fail, so there's nothing to notify.
+        payload = _make_subscription_past_due_payload(amount=0)
+
+        await polar_self.handle_subscription_past_due_event(payload)
+
+        subscription_webhook_client_mock.list_billing_contacts.assert_not_awaited()
+        enqueue_email_mock.assert_not_called()
+
+    async def test_skips_when_no_billing_contacts(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        subscription_webhook_client_mock.list_billing_contacts.return_value = []
+        payload = _make_subscription_past_due_payload(amount=2000)
+
+        await polar_self.handle_subscription_past_due_event(payload)
+
+        enqueue_email_mock.assert_not_called()
+
+    async def test_sends_email_to_billing_contacts(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        payload = _make_subscription_past_due_payload(amount=2000)
+
+        await polar_self.handle_subscription_past_due_event(payload)
+
+        subscription_webhook_client_mock.list_billing_contacts.assert_awaited_once_with(
+            customer_id=_CUSTOMER_ID
+        )
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args.args[0]
+        assert email.template == "polar_self_subscription_past_due"
+        assert email.props.product_name == "Pro"
+        kwargs = enqueue_email_mock.call_args.kwargs
+        assert kwargs["to_email_addr"] == "billing@example.com"
+        assert kwargs["subject"] == "Your Pro subscription payment failed"
+
+
+@pytest.mark.asyncio
+class TestHandleSubscriptionRevokedEvent:
+    async def test_skips_free_subscription(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        payload = _make_subscription_revoked_payload(amount=0)
+
+        await polar_self.handle_subscription_revoked_event(payload)
+
+        subscription_webhook_client_mock.list_billing_contacts.assert_not_awaited()
+        enqueue_email_mock.assert_not_called()
+
+    async def test_skips_when_no_billing_contacts(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        subscription_webhook_client_mock.list_billing_contacts.return_value = []
+        payload = _make_subscription_revoked_payload(amount=2000)
+
+        await polar_self.handle_subscription_revoked_event(payload)
+
+        enqueue_email_mock.assert_not_called()
+
+    async def test_sends_email_to_billing_contacts(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        payload = _make_subscription_revoked_payload(amount=2000)
+
+        await polar_self.handle_subscription_revoked_event(payload)
+
+        subscription_webhook_client_mock.list_billing_contacts.assert_awaited_once_with(
+            customer_id=_CUSTOMER_ID
+        )
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args.args[0]
+        assert email.template == "polar_self_subscription_revoked"
+        assert email.props.product_name == "Pro"
+        kwargs = enqueue_email_mock.call_args.kwargs
+        assert kwargs["to_email_addr"] == "billing@example.com"
+        assert kwargs["subject"] == "Your Pro subscription has ended"

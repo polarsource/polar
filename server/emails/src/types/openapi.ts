@@ -2208,6 +2208,28 @@ export interface components {
       /** Billing Url */
       billing_url: string
     }
+    /** PolarSelfSubscriptionCancellationEmail */
+    PolarSelfSubscriptionCancellationEmail: {
+      /**
+       * Template
+       * @default polar_self_subscription_cancellation
+       * @constant
+       */
+      template: 'polar_self_subscription_cancellation'
+      props: components['schemas']['PolarSelfSubscriptionCancellationProps']
+    }
+    /** PolarSelfSubscriptionCancellationProps */
+    PolarSelfSubscriptionCancellationProps: {
+      /** Email */
+      email: string
+      /** Product Name */
+      product_name: string
+      /**
+       * Ends At
+       * @default null
+       */
+      ends_at: string | null
+    }
     /** PolarSelfSubscriptionConfirmationEmail */
     PolarSelfSubscriptionConfirmationEmail: {
       /**
@@ -2237,6 +2259,40 @@ export interface components {
     }
     /** PolarSelfSubscriptionCycledProps */
     PolarSelfSubscriptionCycledProps: {
+      /** Email */
+      email: string
+      /** Product Name */
+      product_name: string
+    }
+    /** PolarSelfSubscriptionPastDueEmail */
+    PolarSelfSubscriptionPastDueEmail: {
+      /**
+       * Template
+       * @default polar_self_subscription_past_due
+       * @constant
+       */
+      template: 'polar_self_subscription_past_due'
+      props: components['schemas']['PolarSelfSubscriptionPastDueProps']
+    }
+    /** PolarSelfSubscriptionPastDueProps */
+    PolarSelfSubscriptionPastDueProps: {
+      /** Email */
+      email: string
+      /** Product Name */
+      product_name: string
+    }
+    /** PolarSelfSubscriptionRevokedEmail */
+    PolarSelfSubscriptionRevokedEmail: {
+      /**
+       * Template
+       * @default polar_self_subscription_revoked
+       * @constant
+       */
+      template: 'polar_self_subscription_revoked'
+      props: components['schemas']['PolarSelfSubscriptionRevokedProps']
+    }
+    /** PolarSelfSubscriptionRevokedProps */
+    PolarSelfSubscriptionRevokedProps: {
       /** Email */
       email: string
       /** Product Name */

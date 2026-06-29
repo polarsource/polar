@@ -3528,6 +3528,7 @@ export interface paths {
     put?: never
     /**
      * Create Member
+     * @deprecated
      * @description Create a new member for a customer.
      *
      *     Only B2B customers with the member management feature enabled can add members.
@@ -3551,6 +3552,7 @@ export interface paths {
     }
     /**
      * Get Member
+     * @deprecated
      * @description Get a member by ID.
      *
      *     The authenticated user or organization must have access to the member's organization.
@@ -3562,6 +3564,7 @@ export interface paths {
     post?: never
     /**
      * Delete Member
+     * @deprecated
      * @description Delete a member.
      *
      *     The authenticated user or organization must have access to the member's organization.
@@ -3573,6 +3576,7 @@ export interface paths {
     head?: never
     /**
      * Update Member
+     * @deprecated
      * @description Update a member.
      *
      *     Only name, email and role can be updated.
@@ -3592,6 +3596,7 @@ export interface paths {
     }
     /**
      * Get Member by External ID
+     * @deprecated
      * @description Get a member by external ID. One of customer_id or external_customer_id must be specified.
      *
      *     **Scopes**: `members:read` `members:write`
@@ -3601,6 +3606,7 @@ export interface paths {
     post?: never
     /**
      * Delete Member by External ID
+     * @deprecated
      * @description Delete a member by external ID. One of customer_id or external_customer_id must be specified.
      *
      *     **Scopes**: `members:write`
@@ -3610,11 +3616,129 @@ export interface paths {
     head?: never
     /**
      * Update Member by External ID
+     * @deprecated
      * @description Update a member by external ID. One of customer_id or external_customer_id must be specified.
      *
      *     **Scopes**: `members:write`
      */
     patch: operations['members:update_member_by_external_id']
+    trace?: never
+  }
+  '/v1/customers/{id}/members': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Create Member
+     * @description Create a new member for a customer.
+     *
+     *     Only B2B customers with the member management feature enabled can add members.
+     *     The authenticated user or organization must have access to the customer's organization.
+     *
+     *     **Scopes**: `members:write`
+     */
+    post: operations['customers:members:create']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customers/external/{external_id}/members': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Create Member by Customer External ID
+     * @description Create a new member for a customer identified by its external ID.
+     *
+     *     **Scopes**: `members:write`
+     */
+    post: operations['customers:members:create_external']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customers/{id}/members/{member_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Member
+     * @description Get a member of a customer by its ID.
+     *
+     *     **Scopes**: `members:read` `members:write`
+     */
+    get: operations['customers:members:get']
+    put?: never
+    post?: never
+    /**
+     * Delete Member
+     * @description Delete a member of a customer.
+     *
+     *     **Scopes**: `members:write`
+     */
+    delete: operations['customers:members:delete']
+    options?: never
+    head?: never
+    /**
+     * Update Member
+     * @description Update a member of a customer.
+     *
+     *     Only name, email and role can be updated.
+     *
+     *     **Scopes**: `members:write`
+     */
+    patch: operations['customers:members:update']
+    trace?: never
+  }
+  '/v1/customers/external/{external_id}/members/{member_external_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Member by External ID
+     * @description Get a member by external ID for a customer identified by its external ID.
+     *
+     *     **Scopes**: `members:read` `members:write`
+     */
+    get: operations['customers:members:get_external']
+    put?: never
+    post?: never
+    /**
+     * Delete Member by External ID
+     * @description Delete a member by external ID for a customer identified by its external ID.
+     *
+     *     **Scopes**: `members:write`
+     */
+    delete: operations['customers:members:delete_external']
+    options?: never
+    head?: never
+    /**
+     * Update Member by External ID
+     * @description Update a member by external ID for a customer identified by its external ID.
+     *
+     *     **Scopes**: `members:write`
+     */
+    patch: operations['customers:members:update_external']
     trace?: never
   }
   '/v1/customer-portal/benefit-grants/': {
@@ -6923,6 +7047,17 @@ export interface components {
        * @constant
        */
       error: 'AlreadyCanceledSubscription'
+      /** Detail */
+      detail: string
+    }
+    /** AmbiguousExternalCustomerID */
+    AmbiguousExternalCustomerID: {
+      /**
+       * Error
+       * @example AmbiguousExternalCustomerID
+       * @constant
+       */
+      error: 'AmbiguousExternalCustomerID'
       /** Detail */
       detail: string
     }
@@ -21664,15 +21799,46 @@ export interface components {
     }
     /**
      * MemberCreate
-     * @description Schema for creating a new member.
+     * @description Schema for creating a new member (deprecated; customer in the body).
      */
     MemberCreate: {
+      /**
+       * Email
+       * Format: email
+       * @description The email address of the member.
+       * @example member@example.com
+       */
+      email: string
+      /** Name */
+      name?: string | null
+      /**
+       * External Id
+       * @description The ID of the member in your system. This must be unique within the customer.
+       * @example usr_1337
+       */
+      external_id?: string | null
+      /**
+       * Role
+       * @description The role of the member within the customer. To assign or transfer ownership, use the member update endpoint.
+       * @default member
+       * @example member
+       * @enum {string}
+       */
+      role: 'member' | 'billing_manager'
       /**
        * Customer Id
        * Format: uuid4
        * @description The ID of the customer this member belongs to.
        */
       customer_id: string
+    }
+    /**
+     * MemberCreateFromCustomer
+     * @description Schema for creating a new member nested under a customer.
+     *
+     *     The customer is taken from the URL path, so it's not part of the body.
+     */
+    MemberCreateFromCustomer: {
       /**
        * Email
        * Format: email
@@ -43663,6 +43829,409 @@ export interface operations {
       }
     }
   }
+  'customers:members:create': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The customer ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MemberCreateFromCustomer']
+      }
+    }
+    responses: {
+      /** @description Member created. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Member']
+        }
+      }
+      /** @description Not permitted to add members. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Customer not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:members:create_external': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The customer external ID. */
+        external_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MemberCreateFromCustomer']
+      }
+    }
+    responses: {
+      /** @description Member created. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Member']
+        }
+      }
+      /** @description Not permitted to add members. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Customer not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The external customer ID matches customers in several accessible organizations. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AmbiguousExternalCustomerID']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:members:get': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The customer ID. */
+        id: string
+        member_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Member retrieved. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Member']
+        }
+      }
+      /** @description Member not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:members:delete': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The customer ID. */
+        id: string
+        member_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Member deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Member not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:members:update': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The customer ID. */
+        id: string
+        member_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MemberUpdate']
+      }
+    }
+    responses: {
+      /** @description Member updated. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Member']
+        }
+      }
+      /** @description Member not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:members:get_external': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The customer external ID. */
+        external_id: string
+        /** @description The member external ID. */
+        member_external_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Member retrieved. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Member']
+        }
+      }
+      /** @description Member not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The external customer ID matches customers in several accessible organizations. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AmbiguousExternalCustomerID']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:members:delete_external': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The customer external ID. */
+        external_id: string
+        /** @description The member external ID. */
+        member_external_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Member deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Member not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The external customer ID matches customers in several accessible organizations. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AmbiguousExternalCustomerID']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:members:update_external': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The customer external ID. */
+        external_id: string
+        /** @description The member external ID. */
+        member_external_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MemberUpdate']
+      }
+    }
+    responses: {
+      /** @description Member updated. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Member']
+        }
+      }
+      /** @description Member not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The external customer ID matches customers in several accessible organizations. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AmbiguousExternalCustomerID']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'customer_portal:benefit-grants:list': {
     parameters: {
       query?: {
@@ -57996,6 +58565,9 @@ export const maintainerNewProductSaleNotificationTypeValues: ReadonlyArray<
 > = ['MaintainerNewProductSaleNotification']
 export const memberCreateRoleValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberCreate']['role']
+> = ['member', 'billing_manager']
+export const memberCreateFromCustomerRoleValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MemberCreateFromCustomer']['role']
 > = ['member', 'billing_manager']
 export const memberRoleValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberRole']

@@ -60,44 +60,19 @@ locals {
     TAILSCALE_AUTHKEY     = var.lambda_worker_tailscale_token
   }
 
-  lambda_workers = {
-    "high-priority" = {
-      queue_name           = "high_priority"
-      reserved_concurrency = null
-    }
-    "medium-priority" = {
-      queue_name           = "medium_priority"
-      reserved_concurrency = null
-    }
-    "low-priority" = {
-      queue_name           = "low_priority"
-      reserved_concurrency = null
-    }
-    webhook = {
-      queue_name           = "webhooks"
-      reserved_concurrency = null
-    }
-    tinybird = {
-      queue_name           = "tinybird"
-      reserved_concurrency = null
-    }
-    "invoices-receipts" = {
-      queue_name           = "invoices_and_receipts"
-      reserved_concurrency = null
-    }
-  }
+  lambda_worker_name                 = "default"
+  lambda_worker_reserved_concurrency = null
 }
 
 module "lambda_worker" {
-  source   = "../modules/aws_task_worker"
-  for_each = local.lambda_workers
+  source = "../modules/aws_task_worker"
 
   environment              = "sandbox"
-  name                     = each.key
-  queue_name               = "polar-sandbox-tasks-${each.value.queue_name}"
+  name                     = local.lambda_worker_name
+  queue_name               = "polar-sandbox-tasks-${local.lambda_worker_name}"
   image_uri                = "${module.lambda_worker_ecr.repository_url}:latest"
   enabled                  = true
-  reserved_concurrency     = each.value.reserved_concurrency
+  reserved_concurrency     = local.lambda_worker_reserved_concurrency
   subnet_ids               = local.lambda_subnet_ids
   security_group_ids       = local.lambda_security_group_ids
   permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
@@ -109,6 +84,11 @@ module "lambda_worker" {
 moved {
   from = module.dummy_lambda_worker
   to   = module.lambda_worker["low-priority"]
+}
+
+moved {
+  from = module.lambda_worker["low-priority"]
+  to   = module.lambda_worker
 }
 
 # =============================================================================
@@ -130,7 +110,7 @@ data "aws_iam_policy_document" "tasks_producer" {
       "sqs:SendMessage",
       "sqs:GetQueueUrl",
     ]
-    resources = [for worker in module.lambda_worker : worker.queue_arn]
+    resources = [module.lambda_worker.queue_arn]
   }
 }
 
@@ -168,12 +148,9 @@ data "aws_iam_policy_document" "lambda_worker_deploy" {
   }
 
   statement {
-    sid     = "UpdateFunctionCode"
-    actions = ["lambda:UpdateFunctionCode"]
-    resources = [
-      for worker in module.lambda_worker :
-      "arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:${worker.function_name}"
-    ]
+    sid       = "UpdateFunctionCode"
+    actions   = ["lambda:UpdateFunctionCode"]
+    resources = ["arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:${module.lambda_worker.function_name}"]
   }
 }
 

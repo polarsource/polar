@@ -3,14 +3,14 @@ output "lambda_worker_ecr_repository_url" {
   value       = module.lambda_worker_ecr.repository_url
 }
 
-output "lambda_worker_function_names" {
-  description = "Sandbox Lambda worker function names, keyed by worker."
-  value       = { for key, worker in module.lambda_worker : key => worker.function_name }
+output "lambda_worker_function_name" {
+  description = "Sandbox Lambda worker function name."
+  value       = module.lambda_worker.function_name
 }
 
-output "lambda_worker_queue_urls" {
-  description = "Sandbox Lambda worker SQS queue URLs, keyed by worker."
-  value       = { for key, worker in module.lambda_worker : key => worker.queue_url }
+output "lambda_worker_queue_url" {
+  description = "Sandbox Lambda worker SQS queue URL."
+  value       = module.lambda_worker.queue_url
 }
 
 output "egress_ip" {

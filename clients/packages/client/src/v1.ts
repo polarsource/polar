@@ -23175,6 +23175,8 @@ export interface components {
        * @enum {string}
        */
       auth_method: 'private_key_jwt'
+      /** Client Secret */
+      client_secret?: null
     }
     /** OIDCConfigurationRead */
     OIDCConfigurationRead: {

@@ -31,6 +31,7 @@ class OIDCConfigurationPrivateKeyJWT(OIDCConfigurationBase):
     auth_method: Literal[OIDCAuthMethod.private_key_jwt] = Field(
         description="Authentication method used against the identity provider."
     )
+    client_secret: None = Field(default=None, exclude=True)
 
 
 OIDCConfiguration = Annotated[

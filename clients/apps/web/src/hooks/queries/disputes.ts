@@ -1,6 +1,6 @@
 import { api } from '@/utils/client'
 import { operations, unwrap } from '@polar-sh/client'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useDispute = (id: string) =>
@@ -11,6 +11,19 @@ export const useDispute = (id: string) =>
     retry: defaultRetry,
     enabled: !!id,
   })
+
+export const useAcceptDispute = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      unwrap(
+        api.POST('/v1/disputes/{id}/accept', { params: { path: { id } } }),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['disputes'] })
+    },
+  })
+}
 
 export const useDisputes = (
   organizationId: string,

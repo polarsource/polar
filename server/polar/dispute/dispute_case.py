@@ -102,6 +102,23 @@ class DisputeCaseService:
             audience=[SupportCaseAudience.merchant],
         )
 
+    async def accept(
+        self, session: AsyncSession, case: DisputeSupportCase
+    ) -> SupportCaseMessage:
+        """Record the merchant's acceptance (concede) on the thread.
+
+        A ``system`` lifecycle event, like the other ``dispute_*`` events —
+        merchant/platform/customer author kinds are reserved for chat.
+        """
+        await self._assert_open(session, case)
+        return await support_case_service.post_message(
+            session,
+            case,
+            type=SupportCaseMessageType.merchant_accepted,
+            author_kind=SupportCaseMessageAuthorKind.system,
+            audience=[SupportCaseAudience.merchant],
+        )
+
     async def resolve(
         self, session: AsyncSession, case: DisputeSupportCase, *, won: bool
     ) -> SupportCaseMessage:

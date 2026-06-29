@@ -12,6 +12,7 @@ from polar.backoffice.support_cases.queries import (
     open_case_organization_ids,
 )
 from polar.models import Customer, Organization, Product, User
+from polar.models.dispute import DisputeStatus
 from polar.models.support_case import (
     SupportCaseAudience,
     SupportCaseMessage,
@@ -60,6 +61,8 @@ class TestCasesStatement:
             assert is_open is True
         assert by_id[appeal.id][0].type == SupportCaseType.review_appeal
         assert by_id[dispute.id][0].type == SupportCaseType.dispute
+        assert by_id[dispute.id][6] == DisputeStatus.needs_response
+        assert by_id[appeal.id][6] is None
 
     async def test_type_filter_narrows_to_disputes(
         self,
@@ -135,7 +138,7 @@ class TestCasesStatement:
         rows = await _rows(
             session, organization_id=organization.id, viewer_user_id=user.id
         )
-        *_, unread = rows[0]
+        *_, unread, _dispute_status = rows[0]
         assert unread is True
 
         await save_fixture(
@@ -149,13 +152,13 @@ class TestCasesStatement:
         rows = await _rows(
             session, organization_id=organization.id, viewer_user_id=user.id
         )
-        *_, unread = rows[0]
+        *_, unread, _dispute_status = rows[0]
         assert unread is False
 
         rows = await _rows(
             session, organization_id=organization.id, viewer_user_id=uuid4()
         )
-        *_, unread = rows[0]
+        *_, unread, _dispute_status = rows[0]
         assert unread is True
 
         await save_fixture(
@@ -171,7 +174,7 @@ class TestCasesStatement:
         rows = await _rows(
             session, organization_id=organization.id, viewer_user_id=user.id
         )
-        *_, unread = rows[0]
+        *_, unread, _dispute_status = rows[0]
         assert unread is True
 
 

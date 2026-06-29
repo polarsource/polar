@@ -81,6 +81,8 @@ class SupportCaseMessageType(StrEnum):
     dispute_won = "dispute_won"
     dispute_lost = "dispute_lost"
     dispute_prevented = "dispute_prevented"
+    # the merchant's decision on a dispute (records the lifecycle in the thread)
+    merchant_accepted = "merchant_accepted"
 
 
 class SupportCase(RecordModel):

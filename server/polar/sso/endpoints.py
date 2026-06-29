@@ -43,7 +43,7 @@ SSOConnectionNotFound = {
 
 
 @router.get(
-    "",
+    "/",
     summary="List SSO Connections",
     response_model=ListResource[OrganizationSSOConnectionSchema],
     responses={404: OrganizationNotFound},
@@ -83,7 +83,7 @@ async def get_sso_connection(
 
 
 @router.post(
-    "",
+    "/",
     summary="Create SSO Connection",
     response_model=OrganizationSSOConnectionSchema,
     status_code=201,

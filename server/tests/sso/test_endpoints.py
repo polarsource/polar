@@ -51,7 +51,7 @@ class TestListSSOConnections:
         self, client: AsyncClient, organization: Organization
     ) -> None:
         response = await client.get(
-            f"/v1/organizations/{organization.id}/sso-connections"
+            f"/v1/organizations/{organization.id}/sso-connections/"
         )
         assert response.status_code == 401
 
@@ -60,7 +60,7 @@ class TestListSSOConnections:
         self, client: AsyncClient, organization: Organization
     ) -> None:
         response = await client.get(
-            f"/v1/organizations/{organization.id}/sso-connections"
+            f"/v1/organizations/{organization.id}/sso-connections/"
         )
         assert response.status_code == 404
 
@@ -73,7 +73,7 @@ class TestListSSOConnections:
         sso_connection: OrganizationSSOConnection,
     ) -> None:
         response = await client.get(
-            f"/v1/organizations/{organization.id}/sso-connections"
+            f"/v1/organizations/{organization.id}/sso-connections/"
         )
         assert response.status_code == 200
 
@@ -157,7 +157,7 @@ class TestCreateSSOConnection:
         self, client: AsyncClient, organization: Organization
     ) -> None:
         response = await client.post(
-            f"/v1/organizations/{organization.id}/sso-connections",
+            f"/v1/organizations/{organization.id}/sso-connections/",
             json={
                 "configuration": {
                     "type": "oidc",
@@ -175,7 +175,7 @@ class TestCreateSSOConnection:
         self, client: AsyncClient, organization: Organization
     ) -> None:
         response = await client.post(
-            f"/v1/organizations/{organization.id}/sso-connections",
+            f"/v1/organizations/{organization.id}/sso-connections/",
             json={
                 "configuration": {
                     "type": "oidc",
@@ -196,7 +196,7 @@ class TestCreateSSOConnection:
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
-            f"/v1/organizations/{organization.id}/sso-connections",
+            f"/v1/organizations/{organization.id}/sso-connections/",
             json={
                 "configuration": {
                     "type": "oidc",
@@ -222,7 +222,7 @@ class TestCreateSSOConnection:
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
-            f"/v1/organizations/{organization.id}/sso-connections",
+            f"/v1/organizations/{organization.id}/sso-connections/",
             json={
                 "configuration": {
                     "type": "oidc",
@@ -242,7 +242,7 @@ class TestCreateSSOConnection:
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
-            f"/v1/organizations/{organization.id}/sso-connections",
+            f"/v1/organizations/{organization.id}/sso-connections/",
             json={
                 "configuration": {
                     "type": "oidc",

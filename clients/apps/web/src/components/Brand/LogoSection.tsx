@@ -1,5 +1,6 @@
 'use client'
 
+import { Button } from '@polar-sh/orbit'
 import React, { useCallback, useState } from 'react'
 import { BrandSection } from './BrandSection'
 import { brandSections } from './brand'
@@ -15,9 +16,6 @@ const LOGO_ICON_SVG = `<svg width="29" height="29" viewBox="0 0 29 29" fill="non
 
 const panelClass =
   'flex aspect-[4/3] items-center justify-center transition-colors'
-
-const actionClass =
-  'rounded-full border border-brand-line px-5 py-2.5 text-sm text-brand-muted transition-colors hover:border-brand-muted hover:text-brand-bright'
 
 export function LogoSection() {
   const [copied, setCopied] = useState(false)
@@ -55,16 +53,14 @@ export function LogoSection() {
             Minimum icon size is 16px.
           </Body>
           <div className="flex flex-wrap gap-3">
-            <button type="button" onClick={copyIcon} className={actionClass}>
+            <Button variant="secondary" onClick={copyIcon}>
               {copied ? 'Copied' : 'Copy icon SVG'}
-            </button>
-            <a
-              href="/assets/brand/polar_brand.zip"
-              download
-              className={actionClass}
-            >
-              Download assets
-            </a>
+            </Button>
+            <Button variant="secondary" asChild>
+              <a href="/assets/brand/polar_brand.zip" download>
+                Download assets
+              </a>
+            </Button>
           </div>
         </div>
       </div>

@@ -37,8 +37,7 @@ export function BrandContainer({
   )
 }
 
-const DISPLAY =
-  'text-[clamp(3rem,10vw,11rem)] leading-[0.92] tracking-[-0.01em]'
+const DISPLAY = 'text-[clamp(3rem,10vw,11rem)] leading-[0.92]'
 export function Display({
   as: Tag = 'h1',
   tone = 'foreground',
@@ -50,8 +49,7 @@ export function Display({
   )
 }
 
-const HEADING =
-  'text-[clamp(2.75rem,7vw,7rem)] leading-[0.95] tracking-[-0.01em] text-balance'
+const HEADING = 'text-[clamp(2.75rem,7vw,7rem)] leading-[0.95] text-balance'
 export function Heading({
   as: Tag = 'h2',
   tone = 'foreground',
@@ -63,7 +61,7 @@ export function Heading({
   )
 }
 
-const TRAIT = 'text-4xl tracking-[-0.01em] md:text-7xl'
+const TRAIT = 'text-4xl md:text-7xl'
 export function Trait({
   as: Tag = 'h3',
   tone = 'foreground',
@@ -75,8 +73,7 @@ export function Trait({
   )
 }
 
-const SPECIMEN =
-  'text-[clamp(3rem,12vw,11rem)] leading-[0.85] tracking-[-0.01em] '
+const SPECIMEN = 'text-7xl leading-[0.85]'
 export function Specimen({
   as: Tag = 'span',
   tone = 'foreground',

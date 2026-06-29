@@ -3,11 +3,10 @@ import { BrandSection } from './BrandSection'
 import { brandSections } from './brand'
 import { Label, Specimen } from './primitives'
 
-const weights = [
-  { name: 'Light', className: 'font-light' },
-  { name: 'Regular', className: 'font-normal' },
-  { name: 'Medium', className: 'font-medium' },
-  { name: 'SemiBold', className: 'font-semibold' },
+const invoice = [
+  { label: 'Tokens', value: '1,284,302' },
+  { label: 'Rate', value: '$0.0032' },
+  { label: 'Total', value: '$4,109.77', total: true },
 ]
 
 export function TypographySection() {
@@ -15,28 +14,30 @@ export function TypographySection() {
     <BrandSection
       meta={brandSections[2]}
       title="PP Neue Montreal"
-      lead="PP Neue Montreal is the single typeface of the identity, chosen for its clarity and structured geometry. GeistMono carries technical detail like code and data."
+      lead="PP Neue Montreal is the single typeface of the identity, chosen for its clarity and structured geometry. Geist Mono carries technical detail like code and data."
     >
-      <div className="flex flex-col gap-12 md:gap-16">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
         <div className="bg-brand-raised flex flex-col gap-8 overflow-hidden p-8 md:p-16">
-          <Specimen>Montreal</Specimen>
-          <Specimen tone="muted">AaBbCc</Specimen>
-          <Specimen tone="muted">0123456789</Specimen>
+          <Label>PP Neue Montreal</Label>
+          <Specimen>Usage billing</Specimen>
+          <span className="text-brand-muted text-3xl md:text-4xl">
+            Meter every token. Invoice every cent.
+          </span>
         </div>
-        <div className="grid grid-cols-1 gap-8 overflow-hidden sm:grid-cols-2 md:grid-cols-4">
-          {weights.map((weight) => (
-            <div
-              key={weight.name}
-              className="bg-brand-raised flex flex-col justify-between gap-12 p-8 md:p-10"
-            >
-              <Label>{weight.name}</Label>
-              <span
-                className={`text-brand-foreground text-7xl tracking-tight ${weight.className}`}
+        <div className="bg-brand-raised flex flex-col gap-8 overflow-hidden p-8 md:p-16">
+          <Label>Geist Mono</Label>
+          <Specimen>Usage</Specimen>
+          <div className="md:text2xl flex flex-col gap-2 font-mono text-xl tabular-nums">
+            {invoice.map((row) => (
+              <div
+                key={row.label}
+                className={`flex items-baseline justify-between gap-6 ${row.total ? 'border-brand-line text-brand-foreground border-t pt-3' : 'text-brand-muted'}`}
               >
-                Ag
-              </span>
-            </div>
-          ))}
+                <span>{row.label}</span>
+                <span className="text-brand-foreground">{row.value}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </BrandSection>

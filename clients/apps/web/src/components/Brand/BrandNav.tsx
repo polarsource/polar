@@ -1,5 +1,6 @@
 'use client'
 
+import { X } from 'lucide-react'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import { brandSections } from './brand'
@@ -64,21 +65,34 @@ function useActiveSection(ids: string[]): string | null {
   return active
 }
 
-function NavItem({ link, active }: { link: NavLink; active: boolean }) {
+function NavItem({
+  link,
+  active,
+  onSelect,
+}: {
+  link: NavLink
+  active: boolean
+  onSelect?: () => void
+}) {
   const className = `text-xl transition-colors hover:text-brand-foreground ${
     active ? 'text-brand-foreground' : 'text-brand-muted'
   }`
 
   if (link.href.startsWith('#')) {
     return (
-      <a href={link.href} className={className}>
+      <a href={link.href} className={className} onClick={onSelect}>
         {link.label}
       </a>
     )
   }
 
   return (
-    <Link href={link.href} download={link.download} className={className}>
+    <Link
+      href={link.href}
+      download={link.download}
+      className={className}
+      onClick={onSelect}
+    >
       {link.label}
     </Link>
   )
@@ -86,15 +100,18 @@ function NavItem({ link, active }: { link: NavLink; active: boolean }) {
 
 export function BrandNav() {
   const activeSection = useActiveSection(sectionIds)
+  const [open, setOpen] = useState(false)
 
   return (
     <header className="bg-brand-raised sticky top-0 z-50">
-      <BrandContainer className="flex items-start justify-between py-6 md:py-12">
-        <Link href="/" className="flex flex-col text-xl tracking-tight">
-          <span className="text-brand-foreground">— Polar</span>
-          <span className="text-brand-muted">The Billing Company</span>
-        </Link>
-        <nav className="grid grid-cols-3 gap-x-12 md:gap-x-24">
+      <BrandContainer className="flex flex-col py-6 md:flex-row md:items-start md:justify-between md:py-12">
+        <div className="flex items-start justify-between">
+          <Link href="/" className="flex flex-col text-xl">
+            <span className="text-brand-foreground">— Polar</span>
+            <span className="text-brand-muted">The Billing Company</span>
+          </Link>
+        </div>
+        <nav className="hidden grid-cols-3 gap-x-12 md:grid md:gap-x-24">
           {navColumns.map((column, columnIndex) => (
             <div key={columnIndex} className="flex flex-col gap-1">
               {column.map((link, index) => (

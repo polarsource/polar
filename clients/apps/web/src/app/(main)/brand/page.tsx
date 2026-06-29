@@ -3,7 +3,6 @@ import {
   BrandHero,
   BrandNav,
   ColorSection,
-  DesignSection,
   IllustrationSection,
   LogoSection,
   MarketingSection,
@@ -30,7 +29,6 @@ export default function BrandPage() {
         <IllustrationSection />
         <VoiceSection />
         <MarketingSection />
-        <DesignSection />
       </main>
       <BrandFooter />
     </div>

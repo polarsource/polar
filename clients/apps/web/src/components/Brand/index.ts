@@ -1,6 +1,5 @@
 export { BrandNav } from './BrandNav'
 export { BrandHero } from './BrandHero'
-export { DesignSection } from './DesignSection'
 export { LogoSection } from './LogoSection'
 export { ColorSection } from './ColorSection'
 export { TypographySection } from './TypographySection'

@@ -1,9 +1,13 @@
+'use client'
+
 import { StaticImage } from '@/components/Image/StaticImage'
-import React from 'react'
+import { Stream } from '@cloudflare/stream-react'
+import React, { useState } from 'react'
 import { BrandSection } from './BrandSection'
 import { brandSections } from './brand'
 import { Label } from './primitives'
-
+import VolumeOff from '@mui/icons-material/VolumeOff'
+import VolumeUp from '@mui/icons-material/VolumeUp'
 interface MarketingSample {
   src: string
   alt: string
@@ -26,6 +30,8 @@ const samples: MarketingSample[] = [
 ]
 
 export function MarketingSection() {
+  const [muted, setMuted] = useState(true)
+
   return (
     <BrandSection
       meta={brandSections[5]}
@@ -33,7 +39,7 @@ export function MarketingSection() {
       lead="Selected campaigns and marketing surfaces, showing the system applied across real touchpoints."
     >
       {samples.length === 0 ? (
-        <div className="bg-brand-raised flex aspect-[16/9] w-full items-center justify-center">
+        <div className="bg-brand-raised flex aspect-video w-full items-center justify-center">
           <Label>Marketing samples coming soon</Label>
         </div>
       ) : (
@@ -43,7 +49,7 @@ export function MarketingSection() {
               key={sample.src}
               className={`flex flex-col gap-4 ${sample.wide ? 'md:col-span-2' : ''}`}
             >
-              <div className="bg-brand-raised relative aspect-[4/3] w-full overflow-hidden">
+              <div className="bg-brand-raised relative aspect-4/3 w-full overflow-hidden">
                 <StaticImage
                   src={sample.src}
                   alt={sample.alt}
@@ -57,6 +63,32 @@ export function MarketingSection() {
           ))}
         </div>
       )}
+      <figure className="flex flex-col gap-4">
+        <div className="bg-brand-raised relative w-full overflow-hidden">
+          <Stream
+            src="591d4d347421834ad050551a2566f1d5"
+            controls={false}
+            autoplay
+            muted={muted}
+            loop
+          />
+          <button
+            type="button"
+            onClick={() => setMuted((value) => !value)}
+            aria-label={muted ? 'Unmute video' : 'Mute video'}
+            aria-pressed={!muted}
+            className="text-brand-foreground absolute top-4 right-4 z-10 flex h-16 w-16 cursor-pointer items-center justify-center text-4xl md:top-12 md:right-12 md:text-5xl"
+          >
+            {muted ? (
+              <VolumeOff fontSize="inherit" />
+            ) : (
+              <VolumeUp fontSize="inherit" />
+            )}
+          </button>
+        </div>
+
+        <Label>Video, usage billing</Label>
+      </figure>
     </BrandSection>
   )
 }

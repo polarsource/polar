@@ -56,6 +56,7 @@ from .organization_access_token import OrganizationAccessToken
 from .organization_agent_review import OrganizationAgentReview
 from .organization_review import OrganizationReview
 from .organization_review_feedback import OrganizationReviewFeedback
+from .organization_sso_connection import OrganizationSSOConnection
 from .payment import Payment
 from .payment_method import PaymentMethod
 from .payout import Payout
@@ -173,6 +174,7 @@ __all__ = [
     "OrganizationAgentReview",
     "OrganizationReview",
     "OrganizationReviewFeedback",
+    "OrganizationSSOConnection",
     "Payment",
     "PaymentMethod",
     "Payout",

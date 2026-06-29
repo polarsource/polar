@@ -6,7 +6,13 @@ import {
 import { toast } from '@/components/Toast/use-toast'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import {
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/orbit'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { ExternalLink, Plus, Trash2 } from 'lucide-react'
 import React, { useCallback, useState } from 'react'
 import { useOrganization } from '@/hooks/queries'
@@ -153,9 +159,24 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
               >
                 <div className="flex flex-row items-center justify-between gap-x-4">
                   <div className="flex flex-row items-center gap-x-3">
-                    <span className="font-medium capitalize">
-                      {account.type}
-                    </span>
+                    {account.processor_id ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="font-medium capitalize">
+                            {account.type}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <span className="font-mono text-xs">
+                            {account.processor_id}
+                          </span>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <span className="font-medium capitalize">
+                        {account.type}
+                      </span>
+                    )}
                     {isActive && (
                       <span className="dark:bg-polar-700 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-300">
                         Active
@@ -202,7 +223,8 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                 <div className="dark:border-polar-700 flex flex-row items-center gap-x-4 border-t border-gray-100 pt-3">
                   <span className="dark:text-polar-400 text-xs text-gray-500">
                     {account.country.toUpperCase()} ·{' '}
-                    {account.currency.toUpperCase()}
+                    {account.currency.toUpperCase()} · Added{' '}
+                    <FormattedDateTime datetime={account.created_at} />
                   </span>
                   <span
                     className={`inline-flex items-center gap-x-1.5 text-xs ${

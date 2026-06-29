@@ -27038,6 +27038,8 @@ export interface components {
        */
       modified_at: string | null
       type: components['schemas']['PayoutAccountType']
+      /** Processor Id */
+      processor_id: string | null
       /** Country */
       country: string
       /** Currency */

@@ -140,6 +140,7 @@ class PayoutAccountCreate(Schema):
 
 class PayoutAccount(TimestampedSchema, IDSchema):
     type: PayoutAccountType
+    processor_id: str | None = Field(validation_alias="stripe_id")
     country: str
     currency: str
     is_payout_ready: bool

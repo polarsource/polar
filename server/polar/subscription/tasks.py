@@ -82,9 +82,20 @@ async def subscription_cycle(subscription_id: uuid.UUID, force: bool = False) ->
 async def subscription_cancel_for_organization(organization_id: uuid.UUID) -> None:
     """Cancel all billable subscriptions of a denied/blocked/offboarded org,
     enqueued per-organization by ``organization.cancel_expired_subscriptions``.
+
+    Cancels one batch per run and re-enqueues itself while subscriptions remain,
+    so a large org winds down across several short jobs instead of one that would
+    exceed the worker's 60s time limit and roll back without progress.
     """
     async with AsyncSessionMaker() as session:
-        await subscription_service.cancel_for_organization(session, organization_id)
+        has_more = await subscription_service.cancel_for_organization(
+            session, organization_id
+        )
+
+    if has_more:
+        enqueue_job(
+            "subscription.cancel_for_organization", organization_id=organization_id
+        )
 
 
 @actor(

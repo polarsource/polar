@@ -47,6 +47,45 @@ class TestSubscriptionCancelForOrganization:
         assert refreshed is not None
         assert refreshed.status == SubscriptionStatus.canceled
 
+    async def test_reenqueues_when_work_remains(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+    ) -> None:
+        organization_id = uuid.uuid4()
+        mocker.patch.object(
+            subscription_service,
+            "cancel_for_organization",
+            return_value=True,
+        )
+        enqueue_job_mock = mocker.patch("polar.subscription.tasks.enqueue_job")
+
+        session.expunge_all()
+
+        await subscription_cancel_for_organization(organization_id)
+
+        enqueue_job_mock.assert_called_once_with(
+            "subscription.cancel_for_organization", organization_id=organization_id
+        )
+
+    async def test_does_not_reenqueue_when_done(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service,
+            "cancel_for_organization",
+            return_value=False,
+        )
+        enqueue_job_mock = mocker.patch("polar.subscription.tasks.enqueue_job")
+
+        session.expunge_all()
+
+        await subscription_cancel_for_organization(uuid.uuid4())
+
+        enqueue_job_mock.assert_not_called()
+
 
 @pytest.mark.asyncio
 class TestSubscriptionUpdateProductBenefitsGrants:

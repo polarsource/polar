@@ -127,6 +127,11 @@ from .update import generate_subscription_update
 
 log: Logger = structlog.get_logger()
 
+SUBSCRIPTION_CANCELLATION_BATCH_SIZE = 50
+"""Max subscriptions cancelled per ``cancel_for_organization`` job, so a large
+merchant winds down across several short jobs that each stay under the worker's
+60s time limit."""
+
 
 class SubscriptionError(PolarError): ...
 
@@ -1834,11 +1839,25 @@ class SubscriptionService:
                 )
 
     async def cancel_for_organization(
-        self, session: AsyncSession, organization_id: uuid.UUID
-    ) -> None:
-        """Immediately cancel all billable subscriptions of an organization,
-        without notifying its customers (the cancellation follows the merchant
-        being shut down, not a customer or merchant action).
+        self,
+        session: AsyncSession,
+        organization_id: uuid.UUID,
+        *,
+        batch_size: int = SUBSCRIPTION_CANCELLATION_BATCH_SIZE,
+    ) -> bool:
+        """Immediately cancel a batch of an organization's billable
+        subscriptions, without notifying its customers (the cancellation follows
+        the merchant being shut down, not a customer or merchant action).
+
+        Returns ``True`` when more subscriptions may remain and the caller should
+        re-enqueue the job, ``False`` once the organization is fully wound down.
+
+        Cancels at most ``batch_size`` subscriptions per call so a large merchant
+        completes across several short jobs instead of one long one: the worker
+        enforces a 60s time limit, and a single transaction exceeding it is
+        rolled back wholesale, making no progress on retry. Each cancelled
+        subscription leaves the billable set, so the next call naturally resumes
+        where this one stopped; the work is idempotent and resumable.
 
         Locks the org row (``for_update``) before re-checking its status, since
         this runs as a deferred job: it serializes against a concurrent admin
@@ -1846,11 +1865,8 @@ class SubscriptionService:
         copy of this job for the same org (which would otherwise duplicate
         cancellation side effects). If the org is no longer in a wind-down
         status, this is a no-op. ``include_blocked=True`` because ``blocked`` is
-        itself a wind-down status.
-
-        Streams the billable subscriptions so a large merchant doesn't
-        materialize its whole subscription set at once. An already-cancelled
-        subscription is skipped, not treated as an error.
+        itself a wind-down status. An already-cancelled subscription is skipped,
+        not treated as an error.
         """
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(
@@ -1860,13 +1876,18 @@ class SubscriptionService:
             organization is None
             or organization.status not in SUBSCRIPTION_CANCELLATION_STATUSES
         ):
-            return
+            return False
 
         subscription_repository = SubscriptionRepository.from_session(session)
-        statement = subscription_repository.get_billable_by_organization_statement(
-            organization_id, options=subscription_repository.get_eager_options()
+        statement = (
+            subscription_repository.get_billable_by_organization_statement(
+                organization_id, options=subscription_repository.get_eager_options()
+            )
+            .order_by(Subscription.created_at)
+            .limit(batch_size)
         )
-        async for subscription in subscription_repository.stream(statement):
+        subscriptions = await subscription_repository.get_all(statement)
+        for subscription in subscriptions:
             try:
                 async with SubscriptionUpdateContext(
                     session, subscription, self, notify_customer=False
@@ -1876,6 +1897,8 @@ class SubscriptionService:
                     )
             except AlreadyCanceledSubscription:
                 continue
+
+        return len(subscriptions) == batch_size
 
     async def _perform_cancellation(
         self,

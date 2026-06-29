@@ -92,7 +92,7 @@ class DisputeRepository(
 
     def get_eager_options(self) -> Options:
         return (
-            joinedload(Dispute.payment).joinedload(Payment.organization),
+            joinedload(Dispute.order).joinedload(Order.organization),
             joinedload(Dispute.order).joinedload(Order.customer),
         )
 

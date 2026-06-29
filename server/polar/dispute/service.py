@@ -227,7 +227,7 @@ class DisputeService:
         if dispute.status == DisputeStatus.needs_response:
             if case is None:
                 await dispute_case_service.open_case(
-                    session, dispute, organization=dispute.payment.organization
+                    session, dispute, organization=dispute.order.organization
                 )
             elif not await dispute_case_service.is_open(session, case):
                 # Dispute reopened after we'd closed the case (e.g. a prevented
@@ -320,7 +320,10 @@ class DisputeService:
         payment = await payment_repository.get_by_processor_id(
             PaymentProcessor.stripe,
             processor_id,
-            options=(joinedload(Payment.order), joinedload(Payment.organization)),
+            options=(
+                joinedload(Payment.order).joinedload(Order.organization),
+                joinedload(Payment.organization),
+            ),
         )
         if payment is None or payment.order is None:
             raise DisputePaymentNotFoundError(processor, processor_id)

@@ -374,7 +374,6 @@ jobs:
     uses: ./.github/workflows/deploy-environment.yml
     with:
       environment: test
-      docker-digest: ${{ needs.build.outputs.digest }}
       render-api-service-id: "srv-d8ffbc42m8qs73e7lv30"
       render-worker-service-ids: "srv-d8ffbbvavr4c73a79u00"
       has-migrations: ${{ needs.changes.outputs.migrations-sandbox == 'true' || github.event_name == 'workflow_dispatch' }}

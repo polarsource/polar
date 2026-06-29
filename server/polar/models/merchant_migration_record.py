@@ -10,11 +10,11 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
-    from polar.models.migration_job import MigrationJob
+    from polar.models.merchant_migration import MerchantMigration
     from polar.models.organization import Organization
 
 
-class MigrationRecordType(StrEnum):
+class MerchantMigrationRecordType(StrEnum):
     customer = "customer"
     product = "product"
     subscription = "subscription"
@@ -22,14 +22,14 @@ class MigrationRecordType(StrEnum):
     discount = "discount"
 
 
-class MigrationRecordStatus(StrEnum):
+class MerchantMigrationRecordStatus(StrEnum):
     pending = "pending"
     imported = "imported"
     skipped = "skipped"
     failed = "failed"
 
 
-class MigrationRecord(RecordModel):
+class MerchantMigrationRecord(RecordModel):
     """One imported thing, mapping a source object to its Polar counterpart.
 
     The idempotency layer: scoped per organization by (type, source_id), so a
@@ -37,10 +37,10 @@ class MigrationRecord(RecordModel):
     records safely.
     """
 
-    __tablename__ = "migration_records"
+    __tablename__ = "merchant_migration_records"
     __table_args__ = (
         Index(
-            "ix_migration_records_organization_id_type_source_id",
+            "ix_merchant_migration_records_organization_id_type_source_id",
             "organization_id",
             "type",
             "source_id",
@@ -49,9 +49,9 @@ class MigrationRecord(RecordModel):
         ),
     )
 
-    migration_job_id: Mapped[UUID] = mapped_column(
+    merchant_migration_id: Mapped[UUID] = mapped_column(
         Uuid,
-        ForeignKey("migration_jobs.id", ondelete="cascade"),
+        ForeignKey("merchant_migrations.id", ondelete="cascade"),
         nullable=False,
         index=True,
     )
@@ -61,13 +61,13 @@ class MigrationRecord(RecordModel):
         nullable=False,
         index=True,
     )
-    type: Mapped[MigrationRecordType] = mapped_column(
-        StringEnum(MigrationRecordType, length=32), nullable=False
+    type: Mapped[MerchantMigrationRecordType] = mapped_column(
+        StringEnum(MerchantMigrationRecordType, length=32), nullable=False
     )
-    status: Mapped[MigrationRecordStatus] = mapped_column(
-        StringEnum(MigrationRecordStatus, length=32),
+    status: Mapped[MerchantMigrationRecordStatus] = mapped_column(
+        StringEnum(MerchantMigrationRecordStatus, length=32),
         nullable=False,
-        default=MigrationRecordStatus.pending,
+        default=MerchantMigrationRecordStatus.pending,
     )
     source_id: Mapped[str] = mapped_column(String, nullable=False)
     # The Polar object created or reused for this record, once imported.
@@ -80,8 +80,8 @@ class MigrationRecord(RecordModel):
     error: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
 
     @declared_attr
-    def migration_job(cls) -> Mapped["MigrationJob"]:
-        return relationship("MigrationJob", lazy="raise")
+    def merchant_migration(cls) -> Mapped["MerchantMigration"]:
+        return relationship("MerchantMigration", lazy="raise")
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:

@@ -13,13 +13,13 @@ if TYPE_CHECKING:
     from polar.models.organization import Organization
 
 
-class MigrationSourcePlatform(StrEnum):
+class MerchantMigrationSourcePlatform(StrEnum):
     stripe = "stripe"
     lemon_squeezy = "lemon_squeezy"
     paddle = "paddle"
 
 
-class MigrationStep(StrEnum):
+class MerchantMigrationStep(StrEnum):
     source_setup = "source_setup"
     pre_check = "pre_check"
     create_catalog = "create_catalog"
@@ -29,14 +29,14 @@ class MigrationStep(StrEnum):
     completed = "completed"
 
 
-class MigrationJob(RecordModel):
-    """One migration run for an organization.
+class MerchantMigration(RecordModel):
+    """One merchant migration to Polar.
 
     The root of a migration: which provider we import from, how far the run has
     progressed, and the PAN transfer checklist tracking the card move.
     """
 
-    __tablename__ = "migration_jobs"
+    __tablename__ = "merchant_migrations"
 
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,
@@ -44,13 +44,13 @@ class MigrationJob(RecordModel):
         nullable=False,
         index=True,
     )
-    source_platform: Mapped[MigrationSourcePlatform] = mapped_column(
-        StringEnum(MigrationSourcePlatform, length=32), nullable=False
+    source_platform: Mapped[MerchantMigrationSourcePlatform] = mapped_column(
+        StringEnum(MerchantMigrationSourcePlatform, length=32), nullable=False
     )
-    step: Mapped[MigrationStep] = mapped_column(
-        StringEnum(MigrationStep, length=32),
+    step: Mapped[MerchantMigrationStep] = mapped_column(
+        StringEnum(MerchantMigrationStep, length=32),
         nullable=False,
-        default=MigrationStep.source_setup,
+        default=MerchantMigrationStep.source_setup,
     )
     # Provider-specific credentials used to read the source; the shape depends
     # on source_platform: a Stripe OAuth refresh token, a Lemon Squeezy / Paddle

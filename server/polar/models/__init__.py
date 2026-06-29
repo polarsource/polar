@@ -37,15 +37,19 @@ from .license_key import LicenseKey
 from .license_key_activation import LicenseKeyActivation
 from .member import Member, MemberRole
 from .member_session import MemberSession
+from .merchant_migration import (
+    MerchantMigration,
+    MerchantMigrationSourcePlatform,
+    MerchantMigrationStep,
+)
+from .merchant_migration_record import (
+    MerchantMigrationRecord,
+    MerchantMigrationRecordStatus,
+    MerchantMigrationRecordType,
+)
 from .meter import Meter
 from .meter_event import MeterEvent
 from .metric_dashboard import MetricDashboard
-from .migration_job import MigrationJob, MigrationSourcePlatform, MigrationStep
-from .migration_record import (
-    MigrationRecord,
-    MigrationRecordStatus,
-    MigrationRecordType,
-)
 from .notification import Notification
 from .notification_recipient import NotificationRecipient
 from .oauth2_authorization_code import OAuth2AuthorizationCode
@@ -159,15 +163,15 @@ __all__ = [
     "Member",
     "MemberRole",
     "MemberSession",
+    "MerchantMigration",
+    "MerchantMigrationRecord",
+    "MerchantMigrationRecordStatus",
+    "MerchantMigrationRecordType",
+    "MerchantMigrationSourcePlatform",
+    "MerchantMigrationStep",
     "Meter",
     "MeterEvent",
     "MetricDashboard",
-    "MigrationJob",
-    "MigrationRecord",
-    "MigrationRecordStatus",
-    "MigrationRecordType",
-    "MigrationSourcePlatform",
-    "MigrationStep",
     "Model",
     "Notification",
     "NotificationRecipient",

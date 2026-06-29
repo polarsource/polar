@@ -1,4 +1,4 @@
-"""add migration_jobs and migration_records
+"""add merchant_migrations and merchant_migration_records
 
 Revision ID: 2ccabcca866d
 Revises: e7118c4ae5d8
@@ -23,7 +23,7 @@ def upgrade() -> None:
     # Ensures we don't break app by applying a deadlock-inducing migration
     op.execute("SET LOCAL lock_timeout = '5s'")
     op.create_table(
-        "migration_jobs",
+        "merchant_migrations",
         sa.Column("organization_id", sa.Uuid(), nullable=False),
         sa.Column("source_platform", sa.String(length=32), nullable=False),
         sa.Column("step", sa.String(length=32), nullable=False),
@@ -44,32 +44,32 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["organization_id"],
             ["organizations.id"],
-            name=op.f("migration_jobs_organization_id_fkey"),
+            name=op.f("merchant_migrations_organization_id_fkey"),
             ondelete="cascade",
         ),
-        sa.PrimaryKeyConstraint("id", name=op.f("migration_jobs_pkey")),
+        sa.PrimaryKeyConstraint("id", name=op.f("merchant_migrations_pkey")),
     )
     op.create_index(
-        op.f("ix_migration_jobs_created_at"),
-        "migration_jobs",
+        op.f("ix_merchant_migrations_created_at"),
+        "merchant_migrations",
         ["created_at"],
         unique=False,
     )
     op.create_index(
-        op.f("ix_migration_jobs_deleted_at"),
-        "migration_jobs",
+        op.f("ix_merchant_migrations_deleted_at"),
+        "merchant_migrations",
         ["deleted_at"],
         unique=False,
     )
     op.create_index(
-        op.f("ix_migration_jobs_organization_id"),
-        "migration_jobs",
+        op.f("ix_merchant_migrations_organization_id"),
+        "merchant_migrations",
         ["organization_id"],
         unique=False,
     )
     op.create_table(
-        "migration_records",
-        sa.Column("migration_job_id", sa.Uuid(), nullable=False),
+        "merchant_migration_records",
+        sa.Column("merchant_migration_id", sa.Uuid(), nullable=False),
         sa.Column("organization_id", sa.Uuid(), nullable=False),
         sa.Column("type", sa.String(length=32), nullable=False),
         sa.Column("status", sa.String(length=32), nullable=False),
@@ -82,46 +82,46 @@ def upgrade() -> None:
         sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("deleted_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.ForeignKeyConstraint(
-            ["migration_job_id"],
-            ["migration_jobs.id"],
-            name=op.f("migration_records_migration_job_id_fkey"),
+            ["merchant_migration_id"],
+            ["merchant_migrations.id"],
+            name=op.f("merchant_migration_records_merchant_migration_id_fkey"),
             ondelete="cascade",
         ),
         sa.ForeignKeyConstraint(
             ["organization_id"],
             ["organizations.id"],
-            name=op.f("migration_records_organization_id_fkey"),
+            name=op.f("merchant_migration_records_organization_id_fkey"),
             ondelete="cascade",
         ),
-        sa.PrimaryKeyConstraint("id", name=op.f("migration_records_pkey")),
+        sa.PrimaryKeyConstraint("id", name=op.f("merchant_migration_records_pkey")),
     )
     op.create_index(
-        op.f("ix_migration_records_created_at"),
-        "migration_records",
+        op.f("ix_merchant_migration_records_created_at"),
+        "merchant_migration_records",
         ["created_at"],
         unique=False,
     )
     op.create_index(
-        op.f("ix_migration_records_deleted_at"),
-        "migration_records",
+        op.f("ix_merchant_migration_records_deleted_at"),
+        "merchant_migration_records",
         ["deleted_at"],
         unique=False,
     )
     op.create_index(
-        op.f("ix_migration_records_migration_job_id"),
-        "migration_records",
-        ["migration_job_id"],
+        op.f("ix_merchant_migration_records_merchant_migration_id"),
+        "merchant_migration_records",
+        ["merchant_migration_id"],
         unique=False,
     )
     op.create_index(
-        op.f("ix_migration_records_organization_id"),
-        "migration_records",
+        op.f("ix_merchant_migration_records_organization_id"),
+        "merchant_migration_records",
         ["organization_id"],
         unique=False,
     )
     op.create_index(
-        "ix_migration_records_organization_id_type_source_id",
-        "migration_records",
+        "ix_merchant_migration_records_organization_id_type_source_id",
+        "merchant_migration_records",
         ["organization_id", "type", "source_id"],
         unique=True,
         postgresql_where=sa.text("deleted_at IS NULL"),
@@ -132,36 +132,36 @@ def downgrade() -> None:
     # Ensures we don't break app by applying a deadlock-inducing migration
     op.execute("SET LOCAL lock_timeout = '5s'")
     op.drop_index(
-        "ix_migration_records_organization_id_type_source_id",
-        table_name="migration_records",
+        "ix_merchant_migration_records_organization_id_type_source_id",
+        table_name="merchant_migration_records",
     )
     op.drop_index(
-        op.f("ix_migration_records_organization_id"),
-        table_name="migration_records",
+        op.f("ix_merchant_migration_records_organization_id"),
+        table_name="merchant_migration_records",
     )
     op.drop_index(
-        op.f("ix_migration_records_migration_job_id"),
-        table_name="migration_records",
+        op.f("ix_merchant_migration_records_merchant_migration_id"),
+        table_name="merchant_migration_records",
     )
     op.drop_index(
-        op.f("ix_migration_records_deleted_at"),
-        table_name="migration_records",
+        op.f("ix_merchant_migration_records_deleted_at"),
+        table_name="merchant_migration_records",
     )
     op.drop_index(
-        op.f("ix_migration_records_created_at"),
-        table_name="migration_records",
+        op.f("ix_merchant_migration_records_created_at"),
+        table_name="merchant_migration_records",
     )
-    op.drop_table("migration_records")
+    op.drop_table("merchant_migration_records")
     op.drop_index(
-        op.f("ix_migration_jobs_organization_id"),
-        table_name="migration_jobs",
-    )
-    op.drop_index(
-        op.f("ix_migration_jobs_deleted_at"),
-        table_name="migration_jobs",
+        op.f("ix_merchant_migrations_organization_id"),
+        table_name="merchant_migrations",
     )
     op.drop_index(
-        op.f("ix_migration_jobs_created_at"),
-        table_name="migration_jobs",
+        op.f("ix_merchant_migrations_deleted_at"),
+        table_name="merchant_migrations",
     )
-    op.drop_table("migration_jobs")
+    op.drop_index(
+        op.f("ix_merchant_migrations_created_at"),
+        table_name="merchant_migrations",
+    )
+    op.drop_table("merchant_migrations")

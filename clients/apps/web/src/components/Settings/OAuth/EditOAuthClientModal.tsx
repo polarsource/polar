@@ -11,7 +11,7 @@ import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Form } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import {
   FieldClientID,
@@ -63,9 +63,6 @@ export const EditOAuthClientModal = ({
 
   const { handleSubmit } = form
 
-  const [updated, setUpdated] =
-    useState<schemas['OAuth2ClientConfigurationUpdate']>()
-
   const updateOAuth2Client = useUpdateOAuth2Client()
 
   const onSubmit = useCallback(
@@ -92,10 +89,9 @@ export const EditOAuthClientModal = ({
         title: 'OAuth App Updated',
         description: `OAuth App ${client.client_name} was updated successfully`,
       })
-      setUpdated(res)
       onSuccess(res)
     },
-    [onSuccess, updateOAuth2Client, setUpdated, client],
+    [onSuccess, updateOAuth2Client, client],
   )
 
   const deleteOAuthClient = useDeleteOAuthClient()
@@ -177,11 +173,7 @@ export const EditOAuthClientModal = ({
               />
             </ShadowBoxOnMd>
 
-            <Button
-              type="submit"
-              loading={updateOAuth2Client.isPending}
-              disabled={Boolean(updated)}
-            >
+            <Button type="submit" loading={updateOAuth2Client.isPending}>
               Update
             </Button>
           </form>

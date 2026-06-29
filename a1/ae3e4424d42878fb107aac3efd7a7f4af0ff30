@@ -1,0 +1,26 @@
+server/polar/config.py
+  s_ed565e6ac65dd0::t_782933ebdb6120 327-332
+server/polar/kit/encryption.py
+  s_ed565e6ac65dd0::t_24acda30a3ea74 16,19,21,35-38,41-44,63,138,166
+  s_ed565e6ac65dd0::t_3c4667e4f3d7ea 1-15,17-18,20,22-34,39-40,45-62,64-120,122-137,139-165,167-187
+  s_ed565e6ac65dd0::t_3bd5d0fd0b3c37 121
+server/tests/kit/test_encryption.py
+  s_ed565e6ac65dd0::t_dacb9aba026e80 1-29,35,37-38,40-41,43-102
+  s_ed565e6ac65dd0::t_0e2f70c745b131 30-34,36,39,42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "a1ae3e4424d42878fb107aac3efd7a7f4af0ff30",
+  "prompts": {},
+  "sessions": {
+    "s_ed565e6ac65dd0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3fd4c630-4cf5-4ce9-b011-ffba6871c737",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

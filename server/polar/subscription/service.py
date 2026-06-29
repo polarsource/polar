@@ -127,10 +127,6 @@ from .update import generate_subscription_update
 
 log: Logger = structlog.get_logger()
 
-# How many subscriptions the org wind-down cancels per batch, so a large
-# merchant doesn't materialize its entire subscription set in one go.
-ORGANIZATION_CANCELLATION_BATCH_SIZE = 100
-
 
 class SubscriptionError(PolarError): ...
 
@@ -1842,9 +1838,9 @@ class SubscriptionService:
         status, this is a no-op. ``include_blocked=True`` because ``blocked`` is
         itself a wind-down status.
 
-        Subscriptions are cancelled in bounded batches so a large merchant
-        doesn't materialize its whole subscription set at once. An
-        already-cancelled subscription is skipped, not treated as an error.
+        Streams the billable subscriptions so a large merchant doesn't
+        materialize its whole subscription set at once. An already-cancelled
+        subscription is skipped, not treated as an error.
         """
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(
@@ -1857,31 +1853,19 @@ class SubscriptionService:
             return
 
         subscription_repository = SubscriptionRepository.from_session(session)
-        # Keyset pagination by id: advances past each batch regardless of whether
-        # a subscription was cancelled, so the loop always terminates (even if a
-        # subscription is skipped) and never re-materializes the whole set.
-        after_id: uuid.UUID | None = None
-        while True:
-            subscriptions = await subscription_repository.list_billable_by_organization(
-                organization_id,
-                options=subscription_repository.get_eager_options(),
-                limit=ORGANIZATION_CANCELLATION_BATCH_SIZE,
-                after_id=after_id,
-            )
-            if not subscriptions:
-                break
-            for subscription in subscriptions:
-                try:
-                    async with SubscriptionUpdateContext(
-                        session, subscription, self, notify_customer=False
-                    ) as ctx:
-                        await self._perform_cancellation(
-                            session, ctx, subscription, immediately=True
-                        )
-                except AlreadyCanceledSubscription:
-                    continue
-            after_id = subscriptions[-1].id
-            await session.flush()
+        statement = subscription_repository.get_billable_by_organization_statement(
+            organization_id, options=subscription_repository.get_eager_options()
+        )
+        async for subscription in subscription_repository.stream(statement):
+            try:
+                async with SubscriptionUpdateContext(
+                    session, subscription, self, notify_customer=False
+                ) as ctx:
+                    await self._perform_cancellation(
+                        session, ctx, subscription, immediately=True
+                    )
+            except AlreadyCanceledSubscription:
+                continue
 
     async def _perform_cancellation(
         self,

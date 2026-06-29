@@ -7056,9 +7056,8 @@ class TestCancelForOrganization:
             session, product.organization_id
         )
 
-    async def test_cancels_across_batches(
+    async def test_cancels_multiple_subscriptions(
         self,
-        mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -7066,11 +7065,8 @@ class TestCancelForOrganization:
         customer: Customer,
         customer_second: Customer,
     ) -> None:
-        # Batch size of 1 forces the keyset drain to span multiple iterations;
-        # every billable subscription must still be cancelled.
-        mocker.patch(
-            "polar.subscription.service.ORGANIZATION_CANCELLATION_BATCH_SIZE", 1
-        )
+        # Every billable subscription of the org is cancelled by the streaming
+        # loop, not just the first one.
         organization.status = OrganizationStatus.DENIED
         await save_fixture(organization)
         first = await create_active_subscription(

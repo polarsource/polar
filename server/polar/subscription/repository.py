@@ -106,23 +106,18 @@ class SubscriptionRepository(
         )
         return await self.get_all(statement)
 
-    async def list_billable_by_organization(
-        self,
-        organization_id: UUID,
-        *,
-        options: Options = (),
-        limit: int | None = None,
-        after_id: UUID | None = None,
-    ) -> Sequence[Subscription]:
-        statement = self.get_base_statement().where(
-            Subscription.organization_id == organization_id,
-            Subscription.status.in_(SubscriptionStatus.billable_statuses()),
-            Subscription.ended_at.is_(None),
+    def get_billable_by_organization_statement(
+        self, organization_id: UUID, *, options: Options = ()
+    ) -> Select[tuple[Subscription]]:
+        return (
+            self.get_base_statement()
+            .where(
+                Subscription.organization_id == organization_id,
+                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+                Subscription.ended_at.is_(None),
+            )
+            .options(*options)
         )
-        if after_id is not None:
-            statement = statement.where(Subscription.id > after_id)
-        statement = statement.order_by(Subscription.id).options(*options).limit(limit)
-        return await self.get_all(statement)
 
     async def get_all_by_customer(
         self, customer_id: UUID, *, options: Options = ()

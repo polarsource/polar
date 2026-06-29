@@ -2168,12 +2168,9 @@ class CheckoutService:
                         ]
                     ) from e
 
-        if (
-            has_product_checkout(checkout)
-            and (
-                isinstance(checkout_update, CheckoutConfirm)
-                or "custom_field_data" in checkout_update.model_fields_set
-            )
+        if has_product_checkout(checkout) and (
+            isinstance(checkout_update, CheckoutConfirm)
+            or "custom_field_data" in checkout_update.model_fields_set
         ):
             custom_field_data = validate_custom_field_data(
                 checkout.product.attached_custom_fields,

@@ -10,7 +10,7 @@ locals {
     identity   = local.identity_account.id
   }
 
-  staff_default_accounts = ["management", "production", "sandbox", "test"]
+  staff_default_accounts = setsubtract(keys(local.staff_target_accounts), ["identity"])
 
   identity_center_groups = {
     awsadmins    = { display_name = "AWS Access" }

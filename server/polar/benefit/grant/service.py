@@ -213,20 +213,11 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         )
 
         repository = BenefitGrantRepository.from_session(session)
-        grant = await repository.get_by_benefit_and_scope(
+        grant = await repository.get_or_create_by_benefit_and_scope(
             customer, benefit, member=member, **scope
         )
 
-        if grant is None:
-            grant = BenefitGrant(
-                customer=customer,
-                benefit=benefit,
-                member=member,
-                properties={},
-                **scope,
-            )
-            session.add(grant)
-        elif grant.is_granted:
+        if grant.is_granted:
             return grant
 
         previous_properties = grant.properties

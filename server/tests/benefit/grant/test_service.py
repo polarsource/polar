@@ -117,6 +117,55 @@ class TestGrantBenefit:
         assert updated_grant.is_granted
         benefit_strategy_mock.grant.assert_not_called()
 
+    async def test_concurrent_grant_recovers_from_integrity_error(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        benefit_strategy_mock: MagicMock,
+        mocker: MockerFixture,
+    ) -> None:
+        # Simulate the race: a concurrent task already inserted and granted the
+        # grant for this (subscription, member, benefit), but our initial lookup
+        # doesn't see it yet. Our insert then hits the unique index;
+        # grant_benefit must recover by reusing the existing grant, not raise.
+        existing = BenefitGrant(
+            subscription=subscription, customer=customer, benefit=benefit_organization
+        )
+        existing.set_granted()
+        await save_fixture(existing)
+
+        real_lookup = BenefitGrantRepository.get_by_benefit_and_scope
+        calls = 0
+
+        async def lookup_side_effect(
+            self: BenefitGrantRepository, *args: Any, **kwargs: Any
+        ) -> BenefitGrant | None:
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                return None
+            return await real_lookup(self, *args, **kwargs)
+
+        mocker.patch.object(
+            BenefitGrantRepository,
+            "get_by_benefit_and_scope",
+            autospec=True,
+            side_effect=lookup_side_effect,
+        )
+
+        grant = await benefit_grant_service.grant_benefit(
+            session, redis, customer, benefit_organization, subscription=subscription
+        )
+
+        assert grant.id == existing.id
+        assert grant.is_granted
+        # The recovered grant was already granted, so we must not grant again.
+        benefit_strategy_mock.grant.assert_not_called()
+
     async def test_action_required_error(
         self,
         session: AsyncSession,

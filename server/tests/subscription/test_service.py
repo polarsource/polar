@@ -4052,6 +4052,63 @@ class TestUpdateProduct:
         assert len(claimed) == 1
         assert claimed[0].customer_id == customer.id
 
+    async def test_non_seat_to_seat_upgrade_enqueues_single_benefit_grant(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization)
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1500, "usd")],
+        )
+
+        enqueue_job_mock = mocker.patch("polar.customer_seat.service.enqueue_job")
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=seat_product.id,
+                proration_behavior=SubscriptionProrationBehavior.invoice,
+            )
+
+        # The auto-claimed billing-customer seat must enqueue exactly one grant
+        # job. A second enqueue would race two benefit.grant tasks on the same
+        # (subscription, member, benefit) and raise a duplicate-key IntegrityError.
+        benefit_grant_calls = [
+            c
+            for c in enqueue_job_mock.call_args_list
+            if c.args and c.args[0] == "benefit.enqueue_benefits_grants"
+        ]
+        assert len(benefit_grant_calls) == 1
+        call_kwargs = benefit_grant_calls[0].kwargs
+        assert call_kwargs["task"] == "grant"
+        assert call_kwargs["customer_id"] == customer.id
+        assert call_kwargs["product_id"] == seat_product.id
+        assert call_kwargs["subscription_id"] == updated.id
+
     async def test_non_seat_to_seat_upgrade_promotes_customer_to_team(
         self,
         session: AsyncSession,

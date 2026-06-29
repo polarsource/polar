@@ -67,7 +67,6 @@ export interface PolarHog {
     options?: CaptureOptions,
   ) => void
   identify: (user: schemas['UserRead']) => void
-  logout: () => void
 }
 
 export const usePostHog = (): PolarHog => {
@@ -103,19 +102,13 @@ export const usePostHog = (): PolarHog => {
     [posthog],
   )
 
-  const logout: PolarHog['logout'] = useCallback(() => {
-    capture('global:user:logout:done')
-    posthog?.reset()
-  }, [capture, posthog])
-
   const context = useMemo(
     () => ({
       setPersistence,
       capture,
       identify,
-      logout,
     }),
-    [setPersistence, capture, identify, logout],
+    [setPersistence, capture, identify],
   )
 
   return context

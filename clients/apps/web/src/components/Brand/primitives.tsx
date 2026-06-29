@@ -119,12 +119,14 @@ export function Label({
   )
 }
 
-const MONO = 'font-mono text-xl'
-export function Mono({
+const CAPTION = 'text-xl'
+export function Caption({
   as: Tag = 'span',
   tone = 'muted',
   className,
   children,
 }: TextProps) {
-  return <Tag className={twMerge(MONO, tones[tone], className)}>{children}</Tag>
+  return (
+    <Tag className={twMerge(CAPTION, tones[tone], className)}>{children}</Tag>
+  )
 }

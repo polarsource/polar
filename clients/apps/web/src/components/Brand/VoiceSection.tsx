@@ -1,7 +1,7 @@
 import React from 'react'
 import { BrandSection } from './BrandSection'
 import { brandSections } from './brand'
-import { Lead, Mono, Trait } from './primitives'
+import { Caption, Lead, Trait } from './primitives'
 
 const traits = [
   {
@@ -39,7 +39,7 @@ export function VoiceSection() {
             key={item.trait}
             className="border-brand-line grid grid-cols-1 gap-6 border-t py-12 first:border-t-0 first:pt-0 md:grid-cols-12 md:gap-8 md:py-16"
           >
-            <Mono className="md:col-span-1">0{index + 1}</Mono>
+            <Caption className="md:col-span-1">0{index + 1}</Caption>
             <Trait className="md:col-span-5">{item.trait}</Trait>
             <Lead className="md:col-span-6">{item.description}</Lead>
           </div>

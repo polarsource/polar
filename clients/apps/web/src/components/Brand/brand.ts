@@ -1,15 +1,3 @@
-// Dark-only brand microsite palette. These are the canonical Polar brand
-// colors and are intentionally hard-coded here (exact values are the content of
-// the Color section), rather than resolved from theme-aware Orbit tokens.
-export const palette = {
-  night: '#070708',
-  ash: '#1D1E22',
-  stone: '#7E8090',
-  mist: '#C7C8CE',
-  snow: '#F5F6FA',
-  ether: '#7B8FD4',
-} as const
-
 export interface BrandColor {
   name: string
   hex: string

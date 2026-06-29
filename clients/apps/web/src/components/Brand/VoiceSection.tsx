@@ -37,7 +37,7 @@ export function VoiceSection() {
         {traits.map((item, index) => (
           <div
             key={item.trait}
-            className="grid grid-cols-1 gap-6 border-t border-brand-line py-12 first:border-t-0 first:pt-0 md:grid-cols-12 md:gap-8 md:py-16"
+            className="border-brand-line grid grid-cols-1 gap-6 border-t py-12 first:border-t-0 first:pt-0 md:grid-cols-12 md:gap-8 md:py-16"
           >
             <Mono className="md:col-span-1">0{index + 1}</Mono>
             <Trait className="md:col-span-5">{item.trait}</Trait>

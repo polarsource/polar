@@ -2,6 +2,7 @@ import json
 import secrets
 import time
 import typing
+import uuid
 
 import structlog
 from authlib.oauth2 import AuthorizationServer as _AuthorizationServer
@@ -28,6 +29,7 @@ from polar.config import settings
 from polar.kit.crypto import generate_token, get_token_hash
 from polar.logging import Logger
 from polar.models import OAuth2Client, OAuth2Token, User
+from polar.models.oauth2_token_organization import OAuth2TokenOrganization
 from polar.oauth2.sub_type import SubTypeValue
 
 from .constants import (
@@ -353,6 +355,15 @@ class AuthorizationServer(_AuthorizationServer):
             **token_data, client_id=client.client_id, sub_type=sub_type
         )
         oauth2_token.sub = sub
+
+        organization_ids: list[uuid.UUID] = (
+            getattr(request, "organization_ids", None) or []
+        )
+        oauth2_token.organization_scopes = [
+            OAuth2TokenOrganization(organization_id=organization_id)
+            for organization_id in organization_ids
+        ]
+
         self.session.add(oauth2_token)
         self.session.flush()
 
@@ -402,6 +413,7 @@ class AuthorizationServer(_AuthorizationServer):
         request: Request,
         grant_user: User | None = None,
         save_consent: bool = False,
+        session_organization_ids: frozenset[uuid.UUID] | None = None,
     ) -> typing.Any:
         if not isinstance(request, StarletteOAuth2Request):
             oauth2_request = self.create_oauth2_request(request)
@@ -412,6 +424,8 @@ class AuthorizationServer(_AuthorizationServer):
             grant: AuthorizationCodeGrant = self.get_authorization_grant(oauth2_request)
         except UnsupportedResponseTypeError as error:
             return self.handle_error_response(oauth2_request, error)
+
+        grant.session_organization_ids = session_organization_ids
 
         try:
             redirect_uri = grant.validate_authorization_request()

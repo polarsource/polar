@@ -1,5 +1,7 @@
-import Alert from '@polar-sh/ui/components/atoms/Alert'
-import { Button } from '@polar-sh/orbit'
+'use client'
+
+import { Alert } from '@polar-sh/orbit'
+import { useRouter } from 'next/navigation'
 import SharedLayout from './components/SharedLayout'
 
 const AuthorizeErrorPage = ({
@@ -11,21 +13,27 @@ const AuthorizeErrorPage = ({
   error_description?: string
   error_uri?: string
 }) => {
+  const router = useRouter()
+
   return (
     <SharedLayout>
-      <Alert color="red">
-        <div className="flex flex-col items-center gap-2 p-2 text-center">
-          <div className="text-base font-medium">An error occured</div>
-          <div className="text-sm">
-            {error_description ? error_description : error}
-          </div>
-          {error_uri && (
-            <a href={error_uri}>
-              <Button variant="default">Read more</Button>
-            </a>
-          )}
-        </div>
-      </Alert>
+      <Alert
+        variant="danger"
+        title="An error occurred"
+        description={error_description ?? error}
+        actions={
+          error_uri
+            ? [
+                {
+                  text: 'Read more',
+                  onClick: () => {
+                    router.push(error_uri)
+                  },
+                },
+              ]
+            : undefined
+        }
+      />
     </SharedLayout>
   )
 }

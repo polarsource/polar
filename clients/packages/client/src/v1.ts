@@ -1021,76 +1021,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/organizations/{id}/appeal/case': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get Appeal Case
-     * @description Get the merchant's human-review case and its visible timeline.
-     *
-     *     **Scopes**: `organizations:read` `organizations:write`
-     */
-    get: operations['organizations:get_appeal_case']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/organizations/{id}/appeal/case/messages': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Reply to Appeal Case
-     * @description Post a merchant reply to the human-review case.
-     *
-     *     The reply may carry free text, attachments, or both. Attachments must
-     *     first be uploaded through the files API with service
-     *     ``support_case_attachment``.
-     *
-     *     **Scopes**: `organizations:write`
-     */
-    post: operations['organizations:reply_to_appeal_case']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/organizations/{id}/appeal/case/attachments/{attachment_id}/download': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Download Appeal Case Attachment
-     * @description Redirect to a short-lived presigned URL for a merchant-visible attachment.
-     *
-     *     **Scopes**: `organizations:read` `organizations:write`
-     */
-    get: operations['organizations:download_appeal_case_attachment']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/organizations/{id}/ai-onboarding-complete': {
     parameters: {
       query?: never
@@ -2614,6 +2544,75 @@ export interface paths {
      *     **Scopes**: `disputes:read`
      */
     get: operations['disputes:get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/support-cases/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Support Case
+     * @description Get a support case and its merchant-visible timeline.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['support-cases:get_support_case']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/support-cases/{id}/messages': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Reply to Support Case
+     * @description Post a merchant reply to a support case.
+     *
+     *     The reply may carry free text, attachments, or both. Attachments must first
+     *     be uploaded through the files API with service ``support_case_attachment``.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['support-cases:reply_to_support_case']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/support-cases/{id}/attachments/{attachment_id}/download': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Download Support Case Attachment
+     * @description Redirect to a short-lived presigned URL for a merchant-visible attachment.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['support-cases:download_support_case_attachment']
     put?: never
     post?: never
     delete?: never
@@ -4572,7 +4571,7 @@ export interface paths {
     }
     /**
      * List Seats
-     * @description **Scopes**: `customer_seats:write`
+     * @description **Scopes**: `customer_seats:read`
      */
     get: operations['customer-seats:list_seats']
     put?: never
@@ -7024,6 +7023,13 @@ export interface components {
       sub: components['schemas']['AuthorizeOrganization'] | null
       /** Scopes */
       scopes: components['schemas']['Scope'][]
+      /** Organizations */
+      organizations: components['schemas']['AuthorizeOrganization'][]
+      /**
+       * Requires Single Organization
+       * @default false
+       */
+      requires_single_organization: boolean
       /**
        * Scope Display Names
        * @default {
@@ -7094,8 +7100,6 @@ export interface components {
       scope_display_names: {
         [key: string]: string
       }
-      /** Organizations */
-      organizations: components['schemas']['AuthorizeOrganization'][]
     }
     /** AuthorizeResponseUser */
     AuthorizeResponseUser: {
@@ -7108,6 +7112,13 @@ export interface components {
       sub: components['schemas']['AuthorizeUser'] | null
       /** Scopes */
       scopes: components['schemas']['Scope'][]
+      /** Organizations */
+      organizations: components['schemas']['AuthorizeOrganization'][]
+      /**
+       * Requires Single Organization
+       * @default false
+       */
+      requires_single_organization: boolean
       /**
        * Scope Display Names
        * @default {
@@ -11011,6 +11022,11 @@ export interface components {
        */
       method: 'card'
       /**
+       * @description What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry.
+       * @example subscription_cycle
+       */
+      trigger?: components['schemas']['PaymentTrigger'] | null
+      /**
        * Decline Reason
        * @description Error code, if the payment was declined.
        * @example insufficient_funds
@@ -11089,6 +11105,17 @@ export interface components {
        * @constant
        */
       error: 'CaseClosedError'
+      /** Detail */
+      detail: string
+    }
+    /** CaseRepliesNotSupportedError */
+    CaseRepliesNotSupportedError: {
+      /**
+       * Error
+       * @example CaseRepliesNotSupportedError
+       * @constant
+       */
+      error: 'CaseRepliesNotSupportedError'
       /** Detail */
       detail: string
     }
@@ -12103,9 +12130,7 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
@@ -12464,9 +12489,7 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
@@ -16002,6 +16025,11 @@ export interface components {
       subscription_id: string | null
       /** Checkout Id */
       checkout_id: string | null
+      /**
+       * Next Payment Attempt At
+       * @description When the next automatic payment retry is scheduled. `null` if the order is not in dunning or all retries have been exhausted.
+       */
+      next_payment_attempt_at?: string | null
       product: components['schemas']['CustomerOrderProduct'] | null
       subscription: components['schemas']['CustomerOrderSubscription'] | null
       /**
@@ -16015,11 +16043,6 @@ export interface components {
        * @example Pro Plan
        */
       description: string
-      /**
-       * Next Payment Attempt At
-       * @description When the next payment retry is scheduled
-       */
-      next_payment_attempt_at?: string | null
       /**
        * Refundable Amount
        * @description Amount in cents that can still be refunded (net, before taxes). Accounts for any applied customer balance and previous refunds.
@@ -16141,9 +16164,7 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
@@ -16246,7 +16267,7 @@ export interface components {
        * @description The interval at which the subscription recurs.
        * @example month
        */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
@@ -16304,6 +16325,11 @@ export interface components {
        * @description The timestamp when the subscription ended.
        */
       ended_at: string | null
+      /**
+       * Past Due At
+       * @description The timestamp when the subscription entered `past_due` status.
+       */
+      past_due_at?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -16726,9 +16752,7 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
@@ -17408,7 +17432,7 @@ export interface components {
        */
       currency: string
       /** @description The interval at which the subscription recurs. */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Current Period Start
        * Format: date-time
@@ -17667,7 +17691,7 @@ export interface components {
        * @description The interval at which the subscription recurs.
        * @example month
        */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
@@ -17725,6 +17749,11 @@ export interface components {
        * @description The timestamp when the subscription ended.
        */
       ended_at: string | null
+      /**
+       * Past Due At
+       * @description The timestamp when the subscription entered `past_due` status.
+       */
+      past_due_at?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -17911,9 +17940,7 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
@@ -19251,9 +19278,7 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
@@ -19421,6 +19446,23 @@ export interface components {
        */
       currency: string
       /**
+       * Reason
+       * @description The reason for the dispute as reported by the card network (e.g. `fraudulent`, `product_not_received`). `None` until the processor reports it.
+       * @example fraudulent
+       */
+      reason: string | null
+      /**
+       * Evidence Due By
+       * @description Deadline to submit evidence in response to the dispute. `None` when no response is required.
+       */
+      evidence_due_by: string | null
+      /**
+       * Past Due
+       * @description Whether the evidence submission deadline has passed.
+       * @example false
+       */
+      past_due: boolean
+      /**
        * Order Id
        * Format: uuid4
        * @description The ID of the order associated with the dispute.
@@ -19434,6 +19476,97 @@ export interface components {
        * @example 42b94870-36b9-4573-96b6-b90b1c99a353
        */
       payment_id: string
+      /** @description The customer who was charged for the disputed payment. */
+      customer: components['schemas']['DisputeCustomer']
+      /**
+       * Case Id
+       * @description The ID of the support case for this dispute, if one was opened.
+       */
+      case_id: string | null
+    }
+    /** DisputeCustomer */
+    DisputeCustomer: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * External Id
+       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
+       */
+      external_id?: string | null
+      /**
+       * Email
+       * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
+       */
+      email?: string | null
+      /**
+       * Email Verified
+       * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+       * @example true
+       */
+      email_verified: boolean
+      /**
+       * @description The type of customer: 'individual' for single users, 'team' for customers with multiple members.
+       * @example individual
+       */
+      type: components['schemas']['CustomerType']
+      /**
+       * Name
+       * @description The name of the customer.
+       * @example John Doe
+       */
+      name: string | null
+      /**
+       * Billing Name
+       * @description The name that should appear on the customer's invoices. Falls back to the customer name when not explicitly set.
+       * @example John Doe
+       */
+      billing_name: string | null
+      billing_address: components['schemas']['Address'] | null
+      /** Tax Id */
+      tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the customer.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Default Payment Method Id
+       * @description The ID of the customer's default payment method, if any. Use the payment methods endpoint to retrieve its details.
+       */
+      default_payment_method_id?: string | null
+      /**
+       * Deleted At
+       * @description Timestamp for when the customer was soft deleted.
+       */
+      deleted_at: string | null
+      /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
+      avatar_url: string | null
     }
     /**
      * DisputeSortProperty
@@ -20266,6 +20399,11 @@ export interface components {
        */
       method: string
       /**
+       * @description What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry.
+       * @example subscription_cycle
+       */
+      trigger?: components['schemas']['PaymentTrigger'] | null
+      /**
        * Decline Reason
        * @description Error code, if the payment was declined.
        * @example insufficient_funds
@@ -20371,6 +20509,8 @@ export interface components {
       sub_type: components['schemas']['SubType']
       /** Sub */
       sub: string
+      /** Organizations */
+      organizations: string[]
       /** Aud */
       aud: string
       /** Iss */
@@ -20500,7 +20640,7 @@ export interface components {
        */
       type: 'recurring'
       /** @description The recurring interval of the price. */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Minimum Amount
        * @description The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'.
@@ -20578,7 +20718,7 @@ export interface components {
        */
       type: 'recurring'
       /** @description The recurring interval of the price. */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Price Amount
        * @description The price in cents.
@@ -22476,17 +22616,6 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /** NotPaidOrder */
-    NotPaidOrder: {
-      /**
-       * Error
-       * @example NotPaidOrder
-       * @constant
-       */
-      error: 'NotPaidOrder'
-      /** Detail */
-      detail: string
-    }
     /** NotPermitted */
     NotPermitted: {
       /**
@@ -22912,6 +23041,11 @@ export interface components {
       subscription_id: string | null
       /** Checkout Id */
       checkout_id: string | null
+      /**
+       * Next Payment Attempt At
+       * @description When the next automatic payment retry is scheduled. `null` if the order is not in dunning or all retries have been exhausted.
+       */
+      next_payment_attempt_at?: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Custom Field Data
@@ -23377,9 +23511,7 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
@@ -23567,7 +23699,7 @@ export interface components {
        * @description The interval at which the subscription recurs.
        * @example month
        */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
@@ -23625,6 +23757,11 @@ export interface components {
        * @description The timestamp when the subscription ended.
        */
       ended_at: string | null
+      /**
+       * Past Due At
+       * @description The timestamp when the subscription entered `past_due` status.
+       */
+      past_due_at?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -24926,6 +25063,12 @@ export interface components {
        * @default false
        */
       preview_access_enabled: boolean
+      /**
+       * Disputes Enabled
+       * @description If this organization has the disputes dashboard enabled
+       * @default false
+       */
+      disputes_enabled: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate
@@ -25595,6 +25738,7 @@ export interface components {
      */
     OrganizationReviewCheckReason:
       | 'not_started'
+      | 'not_authorized'
       | 'in_progress'
       | 'external_pending'
       | 'identity.rejected'
@@ -25657,6 +25801,11 @@ export interface components {
        * @description When appeal was reviewed
        */
       appeal_reviewed_at?: string | null
+      /**
+       * Appeal Case Id
+       * @description ID of the human-review support case, if one was opened
+       */
+      appeal_case_id?: string | null
     }
     /**
      * OrganizationReviewSubCheck
@@ -26804,6 +26953,17 @@ export interface components {
      * @enum {string}
      */
     PaymentStatus: 'pending' | 'succeeded' | 'failed'
+    /**
+     * PaymentTrigger
+     * @enum {string}
+     */
+    PaymentTrigger:
+      | 'purchase'
+      | 'subscription_cycle'
+      | 'retry_dunning'
+      | 'retry_customer'
+      | 'retry_payment_method_update'
+      | 'retry_admin'
     /** Payout */
     Payout: {
       /**
@@ -27336,9 +27496,7 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
@@ -27541,7 +27699,7 @@ export interface components {
        */
       trial_interval_count?: number | null
       /** @description The recurring interval of the product. */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
@@ -28538,9 +28696,7 @@ export interface components {
        */
       description?: string | null
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.** */
-      recurring_interval?:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval?: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**
@@ -28621,6 +28777,11 @@ export interface components {
         [key: string]: string
       }
     }
+    /**
+     * RecurringInterval
+     * @enum {string}
+     */
+    RecurringInterval: 'day' | 'week' | 'month' | 'year'
     /** Refund */
     Refund: {
       /**
@@ -28776,6 +28937,23 @@ export interface components {
        * @example usd
        */
       currency: string
+      /**
+       * Reason
+       * @description The reason for the dispute as reported by the card network (e.g. `fraudulent`, `product_not_received`). `None` until the processor reports it.
+       * @example fraudulent
+       */
+      reason: string | null
+      /**
+       * Evidence Due By
+       * @description Deadline to submit evidence in response to the dispute. `None` when no response is required.
+       */
+      evidence_due_by: string | null
+      /**
+       * Past Due
+       * @description Whether the evidence submission deadline has passed.
+       * @example false
+       */
+      past_due: boolean
       /**
        * Order Id
        * Format: uuid4
@@ -29576,7 +29754,7 @@ export interface components {
        * @description The interval at which the subscription recurs.
        * @example month
        */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
@@ -29634,6 +29812,11 @@ export interface components {
        * @description The timestamp when the subscription ended.
        */
       ended_at: string | null
+      /**
+       * Past Due At
+       * @description The timestamp when the subscription entered `past_due` status.
+       */
+      past_due_at?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -30668,11 +30851,6 @@ export interface components {
       /** Recurring Interval Count */
       recurring_interval_count?: number
     }
-    /**
-     * SubscriptionRecurringInterval
-     * @enum {string}
-     */
-    SubscriptionRecurringInterval: 'day' | 'week' | 'month' | 'year'
     /** SubscriptionRevoke */
     SubscriptionRevoke: {
       /**
@@ -31972,9 +32150,7 @@ export interface components {
       id: string
       /** Name */
       name: string
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /** Organization Id */
       organization_id: string | null
       organization: components['schemas']['TransactionOrganization'] | null
@@ -35853,147 +36029,6 @@ export interface operations {
       }
     }
   }
-  'organizations:get_appeal_case': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Appeal case thread returned. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['SupportCaseThread']
-        }
-      }
-      /** @description Support case not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'organizations:reply_to_appeal_case': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['SupportCaseMessageCreate']
-      }
-    }
-    responses: {
-      /** @description Reply posted. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['SupportCaseMessage']
-        }
-      }
-      /** @description Support case not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description The case is closed. */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CaseClosedError']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'organizations:download_appeal_case_attachment': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        attachment_id: string
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
-        }
-      }
-      /** @description Redirect to a presigned download URL. */
-      302: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Support case not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
   'organizations:mark_ai_onboarding_complete': {
     parameters: {
       query?: never
@@ -36954,7 +36989,6 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
           'text/csv': string
         }
       }
@@ -39036,7 +39070,6 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
           'text/csv': string
         }
       }
@@ -39275,15 +39308,22 @@ export interface operations {
           'application/json': unknown
         }
       }
-      /** @description Order is not paid or is missing billing name or address. */
+      /** @description Order not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Order is missing billing name or address. */
       422: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['MissingInvoiceBillingDetails']
-            | components['schemas']['NotPaidOrder']
+          'application/json': components['schemas']['MissingInvoiceBillingDetails']
         }
       }
     }
@@ -39495,6 +39535,153 @@ export interface operations {
         }
       }
       /** @description Dispute not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'support-cases:get_support_case': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The support case ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Support case thread returned. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SupportCaseThread']
+        }
+      }
+      /** @description Support case not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'support-cases:reply_to_support_case': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The support case ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SupportCaseMessageCreate']
+      }
+    }
+    responses: {
+      /** @description Reply posted. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SupportCaseMessage']
+        }
+      }
+      /** @description Support case not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The case is closed, or its type does not accept replies. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['CaseClosedError']
+            | components['schemas']['CaseRepliesNotSupportedError']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'support-cases:download_support_case_attachment': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The support case ID. */
+        id: string
+        /** @description The attachment ID. */
+        attachment_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Redirect to a presigned download URL. */
+      302: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Support case not found. */
       404: {
         headers: {
           [name: string]: unknown
@@ -41427,7 +41614,6 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
           'text/csv': string
         }
       }
@@ -42667,7 +42853,6 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
           'text/csv': string
         }
       }
@@ -45239,15 +45424,22 @@ export interface operations {
           'application/json': unknown
         }
       }
-      /** @description Order is not paid or is missing billing name or address. */
+      /** @description Order not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Order is missing billing name or address. */
       422: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['MissingInvoiceBillingDetails']
-            | components['schemas']['NotPaidOrder']
+          'application/json': components['schemas']['MissingInvoiceBillingDetails']
         }
       }
     }
@@ -50346,8 +50538,16 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
           'text/csv': string
+        }
+      }
+      /** @description Payout not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'text/csv': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -58704,6 +58904,7 @@ export const organizationReviewCheckReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationReviewCheckReason']
 > = [
   'not_started',
+  'not_authorized',
   'in_progress',
   'external_pending',
   'identity.rejected',
@@ -59296,6 +59497,16 @@ export const paymentSortPropertyValues: ReadonlyArray<
 export const paymentStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PaymentStatus']
 > = ['pending', 'succeeded', 'failed']
+export const paymentTriggerValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PaymentTrigger']
+> = [
+  'purchase',
+  'subscription_cycle',
+  'retry_dunning',
+  'retry_customer',
+  'retry_payment_method_update',
+  'retry_admin',
+]
 export const payoutAccountTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PayoutAccountType']
 > = ['stripe', 'manual']
@@ -59534,6 +59745,9 @@ export const productVisibilityValues: ReadonlyArray<
 export const propertyAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PropertyAggregation']['func']
 > = ['avg', 'max', 'min', 'sum']
+export const recurringIntervalValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['RecurringInterval']
+> = ['day', 'week', 'month', 'year']
 export const refundReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RefundReason']
 > = [
@@ -59785,9 +59999,6 @@ export const subscriptionProrationBehaviorValues: ReadonlyArray<
 export const subscriptionReactivatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionReactivatedEvent']['name']
 > = ['subscription.reactivated']
-export const subscriptionRecurringIntervalValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['SubscriptionRecurringInterval']
-> = ['day', 'week', 'month', 'year']
 export const subscriptionRevokedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionRevokedEvent']['name']
 > = ['subscription.revoked']

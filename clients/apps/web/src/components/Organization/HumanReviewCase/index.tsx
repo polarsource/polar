@@ -3,9 +3,10 @@
 import { Chat } from '@/components/Chat/Chat'
 import { type ChatMessage } from '@/components/Chat/types'
 import {
-  useAppealCase,
-  useReplyToAppealCase,
+  useOrganizationReviewStatus,
+  useReplyToSupportCase,
   useRequestHumanReview,
+  useSupportCase,
 } from '@/hooks/queries/org'
 import { useOrganizationSSE } from '@/hooks/sse'
 import { schemas } from '@polar-sh/client'
@@ -31,24 +32,32 @@ interface Props {
 }
 
 const HumanReviewCase = ({ organization }: Props) => {
-  const { data: thread, isLoading, isError } = useAppealCase(organization.id)
+  const { data: reviewStatus, isLoading: statusLoading } =
+    useOrganizationReviewStatus(organization.id)
+  const caseId = reviewStatus?.appeal_case_id ?? undefined
+  const { data: thread, isLoading: threadLoading } = useSupportCase(caseId)
+  const isLoading = statusLoading || (!!caseId && threadLoading)
   const [started, setStarted] = useState(false)
   const requestReview = useRequestHumanReview(organization.id)
-  const reply = useReplyToAppealCase(organization.id)
+  const reply = useReplyToSupportCase()
   useUnreadTitleBadge(organization.id, thread?.messages)
 
   const queryClient = useQueryClient()
   const eventEmitter = useOrganizationSSE(organization.id)
   useEffect(() => {
-    const handler = () =>
+    const handler = () => {
       queryClient.invalidateQueries({
-        queryKey: ['appealCase', organization.id],
+        queryKey: ['organizationReviewStatus', organization.id],
       })
+      if (caseId) {
+        queryClient.invalidateQueries({ queryKey: ['supportCase', caseId] })
+      }
+    }
     eventEmitter.on('appeal_case.updated', handler)
     return () => {
       eventEmitter.off('appeal_case.updated', handler)
     }
-  }, [eventEmitter, queryClient, organization.id])
+  }, [eventEmitter, queryClient, organization.id, caseId])
 
   const messages = useMemo(() => thread?.messages ?? [], [thread])
   const messageById = useMemo(
@@ -57,8 +66,8 @@ const HumanReviewCase = ({ organization }: Props) => {
   )
   const chatMessages = useMemo(() => toChatMessages(messages), [messages])
   const chatAttachments = useMemo(
-    () => toChatAttachments(organization.id, thread?.attachments ?? []),
-    [organization.id, thread?.attachments],
+    () => toChatAttachments(caseId, thread?.attachments ?? []),
+    [caseId, thread?.attachments],
   )
   const uploader = useMemo(
     () => supportCaseUploader(organization),
@@ -97,7 +106,7 @@ const HumanReviewCase = ({ organization }: Props) => {
     )
   }
 
-  const hasCase = !isError && !!thread
+  const hasCase = !!caseId
 
   if (!hasCase && !started) {
     return (
@@ -148,8 +157,8 @@ const HumanReviewCase = ({ organization }: Props) => {
           ? 'Write a reply…'
           : 'Tell us why your organization should be approved…',
         onSend: (text, fileIds) =>
-          hasCase
-            ? reply.mutateAsync({ body: text, file_ids: fileIds })
+          caseId
+            ? reply.mutateAsync({ caseId, body: text, file_ids: fileIds })
             : requestReview.mutateAsync({ reason: text }),
       }}
     />

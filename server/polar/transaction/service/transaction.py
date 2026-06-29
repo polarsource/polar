@@ -7,8 +7,9 @@ from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import joinedload, subqueryload
 
+from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
-from polar.authz.repository import select_user_org_ids
+from polar.authz.repository import select_accessible_org_ids
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
@@ -39,7 +40,7 @@ class TransactionService(BaseTransactionService):
     async def search(
         self,
         session: AsyncReadSession,
-        user: User,
+        auth_subject: AuthSubject[User],
         *,
         type: TransactionType | None = None,
         account_id: uuid.UUID | None = None,
@@ -52,7 +53,7 @@ class TransactionService(BaseTransactionService):
             (TransactionSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Transaction], int]:
-        statement = self._get_readable_transactions_statement(user)
+        statement = self._get_readable_transactions_statement(auth_subject)
 
         statement = statement.options(
             # Incurred transactions
@@ -100,10 +101,13 @@ class TransactionService(BaseTransactionService):
         return results, count
 
     async def lookup(
-        self, session: AsyncReadSession, id: uuid.UUID, user: User
+        self,
+        session: AsyncReadSession,
+        id: uuid.UUID,
+        auth_subject: AuthSubject[User],
     ) -> Transaction:
         statement = (
-            self._get_readable_transactions_statement(user)
+            self._get_readable_transactions_statement(auth_subject)
             .options(
                 # Incurred transactions
                 subqueryload(Transaction.account_incurred_transactions),
@@ -272,9 +276,11 @@ class TransactionService(BaseTransactionService):
         result = await session.execute(statement)
         return int(result.scalar_one())
 
-    def _get_readable_transactions_statement(self, user: User) -> Select[Any]:
-        readable_org_ids = select_user_org_ids(
-            user.id, permission=OrganizationPermission.finance_read
+    def _get_readable_transactions_statement(
+        self, auth_subject: AuthSubject[User]
+    ) -> Select[Any]:
+        readable_org_ids = select_accessible_org_ids(
+            auth_subject, permission=OrganizationPermission.finance_read
         )
         statement = (
             select(Transaction)
@@ -287,9 +293,9 @@ class TransactionService(BaseTransactionService):
             .join(User, onclause=User.account_id == Account.id, isouter=True)
             .where(
                 or_(
-                    User.id == user.id,
+                    User.id == auth_subject.subject.id,
                     Organization.id.in_(readable_org_ids),
-                    Transaction.payment_user_id == user.id,
+                    Transaction.payment_user_id == auth_subject.subject.id,
                     Transaction.payment_organization_id.in_(readable_org_ids),
                 )
             )

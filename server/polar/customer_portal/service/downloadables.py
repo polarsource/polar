@@ -80,33 +80,14 @@ class DownloadableService(
             )
             return None
 
-        create_schema = DownloadableCreate(
+        repository = DownloadableRepository.from_session(session)
+        instance = await repository.upsert_granted(
             file_id=file.id,
             customer_id=customer.id,
             benefit_id=benefit_id,
-            status=DownloadableStatus.granted,
+            member_id=member_id,
         )
-        records = await self.upsert_many(
-            session,
-            create_schemas=[create_schema],
-            constraints=[
-                Downloadable.file_id,
-                Downloadable.customer_id,
-                Downloadable.benefit_id,
-            ],
-            mutable_keys={
-                "status",
-            },
-            autocommit=False,
-        )
-        await session.flush()
-        instance = records[0]
         assert instance.id is not None
-
-        if member_id is not None and instance.member_id is None:
-            instance.member_id = member_id
-            session.add(instance)
-            await session.flush()
 
         log.info(
             "downloadables.grant",
@@ -123,6 +104,8 @@ class DownloadableService(
         session: AsyncSession,
         customer: CustomerModel,
         benefit_id: UUID,
+        *,
+        member_id: UUID | None = None,
     ) -> None:
         statement = (
             sql.update(Downloadable)
@@ -137,10 +120,17 @@ class DownloadableService(
                 modified_at=utc_now(),
             )
         )
+        # Scope the revoke to the grant being revoked: a member-level grant only
+        # revokes that member's rows, a customer-level grant only the shared ones.
+        if member_id is not None:
+            statement = statement.where(Downloadable.member_id == member_id)
+        else:
+            statement = statement.where(Downloadable.member_id.is_(None))
         log.info(
             "downloadables.revoked",
             customer_id=customer.id,
             benefit_id=benefit_id,
+            member_id=member_id,
         )
         await session.execute(statement)
 

@@ -1,12 +1,10 @@
 import asyncio
-from collections.abc import Awaitable, Callable
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
 
-from polar.config import settings
 from polar.kit.http import SSRFBlockedError
 from polar.organization_review.collectors.firecrawl_client import ScrapeResult
 from polar.organization_review.collectors.website import (
@@ -416,53 +414,6 @@ class TestCollectWebsiteData:
 
 
 # ---------------------------------------------------------------------------
-# WebsiteDeps cleanup
-# ---------------------------------------------------------------------------
-
-
-class TestWebsiteDepsCleanup:
-    @pytest.mark.asyncio
-    async def test_cleanup_when_browser_not_initialized(self) -> None:
-        """Cleanup should be a no-op when browser was never started."""
-        client = AsyncMock(spec=httpx.AsyncClient)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-
-        # Should not raise
-        await deps.cleanup()
-
-    @pytest.mark.asyncio
-    async def test_cleanup_closes_browser_and_playwright(self) -> None:
-        client = AsyncMock(spec=httpx.AsyncClient)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-
-        mock_browser = AsyncMock()
-        mock_playwright = AsyncMock()
-        deps._browser = mock_browser
-        deps._playwright = mock_playwright
-
-        await deps.cleanup()
-
-        mock_browser.close.assert_called_once()
-        mock_playwright.stop.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_cleanup_handles_browser_close_error(self) -> None:
-        """Playwright stop should still be called even if browser.close fails."""
-        client = AsyncMock(spec=httpx.AsyncClient)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-
-        mock_browser = AsyncMock()
-        mock_browser.close.side_effect = RuntimeError("close failed")
-        mock_playwright = AsyncMock()
-        deps._browser = mock_browser
-        deps._playwright = mock_playwright
-
-        await deps.cleanup()
-
-        mock_playwright.stop.assert_called_once()
-
-
-# ---------------------------------------------------------------------------
 # fetch_page — SSRF & redirect tests
 # ---------------------------------------------------------------------------
 
@@ -626,174 +577,7 @@ class TestFetchPageSSRF:
 
 
 # ---------------------------------------------------------------------------
-# browse_page — SSRF tests
-# ---------------------------------------------------------------------------
-
-
-class TestBrowsePageSSRF:
-    @pytest.fixture(autouse=True)
-    def _use_playwright(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(settings, "ORGANIZATION_REVIEW_SCRAPER", "playwright")
-
-    @pytest.mark.asyncio
-    async def test_blocks_initial_ssrf(self) -> None:
-        """browse_page should block a URL that resolves to a private IP."""
-        client = AsyncMock(spec=httpx.AsyncClient)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-        ctx = MagicMock()
-        ctx.deps = deps
-
-        with patch(
-            "polar.organization_review.collectors.website.resolve_and_validate_ip",
-            new_callable=AsyncMock,
-            side_effect=SSRFBlockedError("resolves to private IP 10.0.0.1"),
-        ):
-            result = await browse_page(ctx, "https://example.com/")
-
-        assert "private IP" in result
-        assert deps.pages_navigated == 0
-
-    @pytest.mark.asyncio
-    async def test_detects_post_navigation_off_origin_redirect(self) -> None:
-        """browse_page should detect when the browser ended up on a different domain."""
-        mock_page = AsyncMock()
-        mock_page.goto = AsyncMock(return_value=MagicMock(status=200))
-        mock_page.wait_for_load_state = AsyncMock()
-        mock_page.wait_for_timeout = AsyncMock()
-        mock_page.url = "https://evil.com/phished"  # JS redirect happened
-
-        client = AsyncMock(spec=httpx.AsyncClient)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-        deps._browser_page = mock_page
-        ctx = MagicMock()
-        ctx.deps = deps
-
-        with _PATCH_SSRF:
-            result = await browse_page(ctx, "https://example.com/")
-
-        assert "off-origin" in result
-        assert "evil.com" in result
-
-
-# ---------------------------------------------------------------------------
-# Playwright route interceptor
-# ---------------------------------------------------------------------------
-
-
-class TestPlaywrightRouteInterceptor:
-    @pytest.mark.asyncio
-    async def test_route_installed_on_page(self) -> None:
-        """get_browser_page should install the route handler."""
-        mock_page = AsyncMock()
-        mock_context = AsyncMock()
-        mock_context.new_page.return_value = mock_page
-        mock_browser = AsyncMock()
-        mock_browser.new_context.return_value = mock_context
-        mock_pw = AsyncMock()
-        mock_pw.chromium.launch.return_value = mock_browser
-
-        with patch(
-            "polar.organization_review.collectors.website.async_playwright"
-        ) as mock_apw:
-            mock_apw.return_value.start = AsyncMock(return_value=mock_pw)
-
-            client = AsyncMock(spec=httpx.AsyncClient)
-            deps = WebsiteDeps(client=client, allowed_domain="example.com")
-            page = await deps.get_browser_page()
-
-        assert page is mock_page
-        mock_page.route.assert_called_once()
-        call_args = mock_page.route.call_args[0]
-        assert call_args[0] == "**/*"
-        assert callable(call_args[1])
-
-    @pytest.mark.asyncio
-    async def test_blocks_off_origin_document_request(self) -> None:
-        """Route handler should block document requests to different domains."""
-        client = AsyncMock(spec=httpx.AsyncClient)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-
-        # Capture the handler
-        mock_page = AsyncMock()
-        handler: dict[str, Callable[[Any], Awaitable[Any]]] = {}
-
-        async def capture_route(
-            pattern: str, h: Callable[[Any], Awaitable[Any]]
-        ) -> None:
-            handler["handler"] = h
-
-        mock_page.route = capture_route
-        await deps._install_request_interceptor(mock_page)
-
-        route = AsyncMock()
-        route.request.url = "https://evil.com/page"
-        route.request.resource_type = "document"
-
-        with _PATCH_SSRF:
-            await handler["handler"](route)
-
-        route.abort.assert_called_once_with("blockedbyclient")
-
-    @pytest.mark.asyncio
-    async def test_allows_cdn_subresources(self) -> None:
-        """Route handler should allow image/script/stylesheet from CDN domains."""
-        client = AsyncMock(spec=httpx.AsyncClient)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-
-        mock_page = AsyncMock()
-        handler: dict[str, Callable[[Any], Awaitable[Any]]] = {}
-
-        async def capture_route(
-            pattern: str, h: Callable[[Any], Awaitable[Any]]
-        ) -> None:
-            handler["handler"] = h
-
-        mock_page.route = capture_route
-        await deps._install_request_interceptor(mock_page)
-
-        route = AsyncMock()
-        route.request.url = "https://cdn.jsdelivr.net/some-lib.js"
-        route.request.resource_type = "script"
-
-        with _PATCH_SSRF:
-            await handler["handler"](route)
-
-        route.continue_.assert_called_once()
-        route.abort.assert_not_called()
-
-    @pytest.mark.asyncio
-    async def test_blocks_ssrf_on_any_resource_type(self) -> None:
-        """Route handler should block any request resolving to a private IP."""
-        client = AsyncMock(spec=httpx.AsyncClient)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-
-        mock_page = AsyncMock()
-        handler: dict[str, Callable[[Any], Awaitable[Any]]] = {}
-
-        async def capture_route(
-            pattern: str, h: Callable[[Any], Awaitable[Any]]
-        ) -> None:
-            handler["handler"] = h
-
-        mock_page.route = capture_route
-        await deps._install_request_interceptor(mock_page)
-
-        route = AsyncMock()
-        route.request.url = "https://example.com/api/data"
-        route.request.resource_type = "image"
-
-        with patch(
-            "polar.organization_review.collectors.website.resolve_and_validate_ip",
-            new_callable=AsyncMock,
-            side_effect=SSRFBlockedError("private IP"),
-        ):
-            await handler["handler"](route)
-
-        route.abort.assert_called_once_with("blockedbyclient")
-
-
-# ---------------------------------------------------------------------------
-# browse_page — Firecrawl branch
+# browse_page — Firecrawl rendering
 # ---------------------------------------------------------------------------
 
 
@@ -813,10 +597,6 @@ def _patch_scrape_markdown(result: ScrapeResult | Exception) -> Any:
 
 
 class TestBrowsePageFirecrawl:
-    @pytest.fixture(autouse=True)
-    def _use_firecrawl(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(settings, "ORGANIZATION_REVIEW_SCRAPER", "firecrawl")
-
     @pytest.mark.asyncio
     async def test_successful_scrape(self) -> None:
         client = AsyncMock(spec=httpx.AsyncClient)
@@ -946,90 +726,3 @@ class TestBrowsePageFirecrawl:
         assert deps.pages_visited[0].content_truncated is True
         assert len(deps.pages_visited[0].content) <= MAX_CHARS_PER_PAGE
         assert "(content truncated)" in response
-
-
-# ---------------------------------------------------------------------------
-# browse_page — shadow mode
-# ---------------------------------------------------------------------------
-
-
-class TestBrowsePageShadow:
-    @pytest.mark.asyncio
-    async def test_uses_playwright_result_and_runs_firecrawl(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """Shadow mode returns Playwright's result but still invokes Firecrawl."""
-        monkeypatch.setattr(settings, "ORGANIZATION_REVIEW_SCRAPER", "shadow")
-
-        mock_page = AsyncMock()
-        mock_page.goto = AsyncMock(return_value=MagicMock(status=200))
-        mock_page.wait_for_load_state = AsyncMock()
-        mock_page.wait_for_timeout = AsyncMock()
-        mock_page.url = "https://example.com/"
-        mock_page.content = AsyncMock(
-            return_value=(
-                "<html><head><title>PW Title</title></head>"
-                "<body><p>Playwright content here</p></body></html>"
-            )
-        )
-        mock_page.title = AsyncMock(return_value="PW Title")
-        mock_page.evaluate = AsyncMock(return_value=[])
-
-        client = AsyncMock(spec=httpx.AsyncClient)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-        deps._browser_page = mock_page
-        ctx = MagicMock()
-        ctx.deps = deps
-
-        firecrawl_result = ScrapeResult(
-            markdown="firecrawl content",
-            url="https://example.com/",
-            status_code=200,
-            title="FC Title",
-        )
-        with (
-            _patch_scrape_markdown(firecrawl_result) as mock_scrape,
-            _PATCH_SSRF,
-        ):
-            response = await browse_page(ctx, "https://example.com/")
-
-        # Playwright's result is the live one
-        assert "Page: PW Title" in response
-        assert deps.pages_navigated == 1
-        assert len(deps.pages_visited) == 1
-        assert deps.pages_visited[0].title == "PW Title"
-        # Firecrawl was still run for comparison
-        mock_scrape.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_firecrawl_failure_does_not_break_playwright(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """A Firecrawl error in shadow mode must not affect the Playwright result."""
-        monkeypatch.setattr(settings, "ORGANIZATION_REVIEW_SCRAPER", "shadow")
-
-        mock_page = AsyncMock()
-        mock_page.goto = AsyncMock(return_value=MagicMock(status=200))
-        mock_page.wait_for_load_state = AsyncMock()
-        mock_page.wait_for_timeout = AsyncMock()
-        mock_page.url = "https://example.com/"
-        mock_page.content = AsyncMock(
-            return_value="<html><head><title>PW</title></head><body><p>ok</p></body></html>"
-        )
-        mock_page.title = AsyncMock(return_value="PW")
-        mock_page.evaluate = AsyncMock(return_value=[])
-
-        client = AsyncMock(spec=httpx.AsyncClient)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-        deps._browser_page = mock_page
-        ctx = MagicMock()
-        ctx.deps = deps
-
-        with (
-            _patch_scrape_markdown(RuntimeError("firecrawl exploded")),
-            _PATCH_SSRF,
-        ):
-            response = await browse_page(ctx, "https://example.com/")
-
-        assert "Page: PW" in response
-        assert deps.pages_navigated == 1

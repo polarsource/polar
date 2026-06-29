@@ -259,19 +259,6 @@ jobs:
             --sha "$SHA" \
             --github-output "$GITHUB_OUTPUT"
 
-  # --- E2E Tests ---
-  e2e:
-    name: "Preview: E2E"
-    needs: preview
-    if: |
-      github.event_name == 'pull_request' &&
-      needs.preview.result == 'success' &&
-      needs.preview.outputs.preview_url != ''
-    uses: ./.github/workflows/test_e2e.yaml
-    with:
-      preview_url: ${{ needs.preview.outputs.preview_url }}
-    secrets: inherit
-
   # --- PR Comment ---
   preview_comment:
     name: "Preview: Comment"

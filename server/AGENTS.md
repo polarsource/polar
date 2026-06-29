@@ -59,7 +59,7 @@ class ResourceRepository(
         if is_user(auth_subject):
             statement = statement.where(
                 Resource.organization_id.in_(
-                    select_user_org_ids(auth_subject.subject.id)
+                    select_accessible_org_ids(auth_subject)
                 )
             )
         elif is_organization(auth_subject):
@@ -74,12 +74,13 @@ class ResourceRepository(
         return await self.get_one_or_none(statement)
 ```
 
-**Always resolve a user's organizations via `select_user_org_ids(auth_subject.subject.id)`**
+**Always resolve a user's accessible organizations via `select_accessible_org_ids(auth_subject)`**
 (`polar.authz.repository`) for subqueries, or `get_accessible_org_ids(...)`
-(`polar.authz.service`) at the service layer. Never inline a
-`UserOrganization.user_id == auth_subject...` filter — those helpers are the
-single point where session/token org-scoping is enforced, so an inline subquery
-silently bypasses it. Enforced by `uv run task lint_org_scope`.
+(`polar.authz.service`) at the service layer. Use `select_user_org_ids(user_id)`
+only when you need raw membership (e.g., OAuth consent) without session scope.
+Never inline a `UserOrganization.user_id == auth_subject...` filter — those
+helpers are the single point where session/token org-scoping is enforced, so an
+inline subquery silently bypasses it. Enforced by `uv run task lint_org_scope`.
 
 **Key methods from base:**
 - `get_base_statement()` - Returns `select(self.model)`
@@ -290,6 +291,12 @@ class TestCreate:
         enqueue_job_mock.assert_called_once()
 ```
 
+Get an `AuthSubject` from the `@pytest.mark.auth` marker + the `auth_subject` fixture — never
+hand-roll one with a local helper like `AuthSubject(user, set(), None)`. Use `@pytest.mark.auth`
+(default `user`) or `@pytest.mark.auth(AuthSubjectFixture(subject="user_second"))`, take
+`auth_subject: AuthSubject[User]`, and pass it straight to the service. Keep an explicit `user`
+fixture param only when the body still needs it (e.g. `user.id`).
+
 ### API Tests (Integration)
 
 ```python
@@ -382,5 +389,5 @@ When adding or modifying tax ID validators in `polar/tax/tax_id.py`:
 - Repository base: `polar/kit/repository/base.py`
 - Auth models: `polar/auth/models.py`
 - Pagination: `polar/kit/pagination.py`
-- Worker: `polar/worker.py`
+- Worker: `polar/worker/`
 - Example module: `polar/organization/`

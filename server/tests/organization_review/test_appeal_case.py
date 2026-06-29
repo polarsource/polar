@@ -9,7 +9,6 @@ from pytest_mock import MockerFixture
 from polar.models import OrganizationReview
 from polar.models.organization import Organization
 from polar.models.support_case import (
-    SupportCaseAudience,
     SupportCaseMessageAuthorKind,
     SupportCaseMessageType,
     SupportCaseParticipant,
@@ -33,6 +32,7 @@ from polar.support_case.repository import (
     SupportCaseParticipantRepository,
 )
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_organization_review
 
 _post_appeal_greeting = post_appeal_greeting.__wrapped__  # type: ignore[attr-defined]
 
@@ -46,17 +46,11 @@ async def _session_maker(session: AsyncSession) -> AsyncIterator[AsyncSession]:
 async def denied_review(
     save_fixture: SaveFixture, organization: Organization
 ) -> OrganizationReview:
-    review = OrganizationReview(
-        organization_id=organization.id,
-        verdict=OrganizationReview.Verdict.FAIL,
-        risk_score=90.0,
-        violated_sections=[],
-        reason="Automated review denied.",
-        model_used="test",
+    return await create_organization_review(
+        save_fixture,
+        organization,
         appeal_decision=OrganizationReview.AppealDecision.REJECTED,
     )
-    await save_fixture(review)
-    return review
 
 
 async def _participants(
@@ -186,46 +180,6 @@ class TestReplyAndLock:
                 author_user=user,
                 body="please reconsider again",
             )
-
-
-@pytest.mark.asyncio
-class TestThreadAudience:
-    async def test_internal_note_hidden_from_merchant(
-        self,
-        session: AsyncSession,
-        denied_review: OrganizationReview,
-        organization: Organization,
-        user: User,
-    ) -> None:
-        case = await appeal_case_service.request_human_review(
-            session,
-            denied_review,
-            reason="reason",
-            requested_by_user=user,
-            organization=organization,
-        )
-        await appeal_case_service.add_reply(
-            session,
-            case,
-            author_kind=SupportCaseMessageAuthorKind.platform,
-            author_user=user,
-            body="internal staff note",
-            internal=True,
-        )
-
-        merchant_thread = await appeal_case_service.get_thread(
-            session, denied_review, visible_to=SupportCaseAudience.merchant
-        )
-        assert merchant_thread is not None
-        _case, _is_open, merchant_messages = merchant_thread
-        assert "internal staff note" not in [m.body for m in merchant_messages]
-
-        full_thread = await appeal_case_service.get_thread(
-            session, denied_review, visible_to=None
-        )
-        assert full_thread is not None
-        _c, _o, all_messages = full_thread
-        assert "internal staff note" in [m.body for m in all_messages]
 
 
 @pytest.mark.asyncio

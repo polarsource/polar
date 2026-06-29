@@ -15,7 +15,7 @@ output "dlq_arn" {
 
 output "function_name" {
   description = "Lambda function name (used by CI to update-function-code)."
-  value       = aws_lambda_function.task.function_name
+  value       = local.function_name
 }
 
 output "function_arn" {

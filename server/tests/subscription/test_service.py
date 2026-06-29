@@ -57,7 +57,7 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.customer import CustomerType
 from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
-from polar.models.order import OrderBillingReasonInternal
+from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.product_price import ProductPriceAmountType, ProductPriceSeatUnit
 from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
@@ -107,6 +107,7 @@ from tests.fixtures.random_objects import (
     create_event,
     create_legacy_recurring_product_price,
     create_meter,
+    create_order,
     create_payment_method,
     create_product,
     create_product_fixed_and_seat,
@@ -4554,6 +4555,86 @@ class TestUpdateTrial:
         assert updated_subscription.seats == 5
         assert updated_subscription.amount == 5000
 
+    async def test_update_trial_end_now_with_pending_update_keeps_period_start_in_past(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        assert subscription.trial_end is not None
+        original_trial_end = subscription.trial_end
+
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=product_second,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        assert subscription_update.new_cycle_end == original_trial_end
+
+        time_before_update = utc_now()
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_trial(
+                session, ctx, subscription, trial_end="now"
+            )
+        time_after_update = utc_now()
+
+        assert subscription.current_period_start < original_trial_end
+        assert time_before_update <= subscription.current_period_start
+        assert subscription.current_period_start <= time_after_update
+
+    async def test_update_trial_end_extended_with_pending_update_keeps_correct_period_start(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        assert subscription.trial_end is not None
+        original_trial_end = subscription.trial_end
+        new_trial_end = original_trial_end + timedelta(days=30)
+
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=product_second,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        assert subscription_update.new_cycle_end == original_trial_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_trial(
+                session, ctx, subscription, trial_end=new_trial_end
+            )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.current_period_start == new_trial_end
+
 
 @pytest.mark.asyncio
 async def test_send_past_due_email(
@@ -6848,6 +6929,51 @@ class TestCancelCustomer:
         assert len(benefit_grant_calls) == 0, (
             "Expected no calls to 'benefit.enqueue_benefits_grants', "
             f"but found {len(benefit_grant_calls)} call(s)"
+        )
+
+    async def test_past_due_subscription_is_canceled_and_voids_pending_orders(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """A past_due subscription is canceled on customer deletion, and its
+        pending orders are voided instead of being retried by dunning."""
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+            started_at=utc_now(),
+            past_due_at=utc_now(),
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=utc_now(),
+        )
+
+        await subscription_service.cancel_customer(session, customer.id)
+
+        await session.refresh(subscription)
+        assert subscription.status == SubscriptionStatus.canceled
+        assert subscription.canceled_at is not None
+        assert subscription.ended_at is not None
+
+        void_calls = [
+            call_args
+            for call_args in enqueue_job_mock.call_args_list
+            if call_args[0][0] == "order.void_pending_orders_for_subscription"
+            and call_args[0][1] == subscription.id
+        ]
+        assert len(void_calls) == 1, (
+            "Expected the past_due subscription's pending orders to be voided, "
+            f"but found {len(void_calls)} void call(s)"
         )
 
 

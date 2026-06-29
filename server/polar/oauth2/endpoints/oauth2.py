@@ -6,7 +6,6 @@ from fastapi.openapi.constants import REF_TEMPLATE
 
 from polar.auth.dependencies import WebUserOrAnonymous
 from polar.auth.models import is_user
-from polar.auth.permission import OrganizationPermission
 from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWrite
 from polar.authz.service import get_accessible_org_ids
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -39,7 +38,6 @@ from ..schemas import (
     UserInfo as UserInfoSchema,
 )
 from ..service.oauth2_client import oauth2_client as oauth2_client_service
-from ..sub_type import SubType
 from ..userinfo import UserInfo, generate_user_info
 
 router = APIRouter(prefix="/oauth2", tags=["oauth2"])
@@ -165,17 +163,17 @@ async def authorize(
         raise HTTPException(status_code=401)
     elif grant.prompt == "none":
         return authorization_server.create_authorization_response(
-            request=request, grant_user=user, save_consent=False
+            request=request,
+            grant_user=user,
+            save_consent=False,
+            session_organization_ids=auth_subject.organization_ids,
         )
 
-    organizations: Sequence[Organization] | None = None
-    if grant.sub_type == SubType.organization:
-        assert is_user(auth_subject)
-        manageable_org_ids = await get_accessible_org_ids(
-            session,
-            auth_subject,
-            permission=OrganizationPermission.organization_manage,
-        )
+    organizations: Sequence[Organization] = []
+    if is_user(auth_subject):
+        # Any organization the user belongs to can be a down-scope target (the
+        # token is the user's own access narrowed, not full-org access).
+        accessible_org_ids = await get_accessible_org_ids(session, auth_subject)
         organization_repository = OrganizationRepository.from_session(session)
         all_organizations = await organization_repository.get_all_by_user(
             auth_subject.subject.id
@@ -183,7 +181,7 @@ async def authorize(
         organizations = [
             organization
             for organization in all_organizations
-            if organization.id in manageable_org_ids
+            if organization.id in accessible_org_ids
         ]
 
     payload = grant.request.payload
@@ -196,6 +194,7 @@ async def authorize(
             "sub_type": grant.sub_type,
             "sub": grant.sub,
             "organizations": organizations,
+            "requires_single_organization": grant.requires_single_organization,
         }
     )
 
@@ -210,7 +209,10 @@ async def consent(
     await request.form()
     grant_user = auth_subject.subject if action == "allow" else None
     return authorization_server.create_authorization_response(
-        request=request, grant_user=grant_user, save_consent=True
+        request=request,
+        grant_user=grant_user,
+        save_consent=True,
+        session_organization_ids=auth_subject.organization_ids,
     )
 
 

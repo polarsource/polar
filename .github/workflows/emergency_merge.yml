@@ -10,6 +10,9 @@ jobs:
       github.event.issue.pull_request &&
       startsWith(github.event.comment.body, '/emergency')
     runs-on: ubuntu-latest
+    concurrency:
+      group: emergency-merge-${{ github.event.issue.number }}
+      cancel-in-progress: false
     permissions:
       pull-requests: write
       contents: write
@@ -51,6 +54,7 @@ jobs:
           private-key: ${{ secrets.EMERGENCY_MERGE_APP_PRIVATE_KEY }}
 
       - name: Merge PR
+        id: merge
         uses: actions/github-script@v9
         with:
           github-token: ${{ steps.app-token.outputs.token }}
@@ -64,7 +68,12 @@ jobs:
             });
 
             if (pr.state !== 'open') {
-              core.setFailed('PR is not open');
+              if (pr.merged) {
+                core.info(`PR #${prNumber} is already merged — nothing to do`);
+                core.setOutput('outcome', 'already_merged');
+                return;
+              }
+              core.setFailed('PR is closed but not merged');
               return;
             }
 
@@ -101,6 +110,7 @@ jobs:
             try {
               await mergeDirectly();
               core.info(`PR #${prNumber} merged via ${method}`);
+              core.setOutput('outcome', 'merged');
             } catch (error) {
               if (!isInMergeQueue(error)) {
                 core.setFailed(`Failed to merge: ${error.message}`);
@@ -120,6 +130,7 @@ jobs:
               try {
                 await mergeAfterDequeue();
                 core.info(`PR #${prNumber} dequeued and merged via ${method}`);
+                core.setOutput('outcome', 'merged');
               } catch (retryError) {
                 core.setFailed(`Failed to merge: ${retryError.message}`);
               }
@@ -127,7 +138,7 @@ jobs:
 
       - name: Eject other PRs from the merge queue
         id: eject
-        if: success()
+        if: steps.merge.outputs.outcome == 'merged'
         uses: actions/github-script@v9
         with:
           github-token: ${{ steps.app-token.outputs.token }}
@@ -198,6 +209,11 @@ jobs:
         with:
           script: |
             const prNumber = context.payload.issue.number;
+            const outcome = '${{ steps.merge.outputs.outcome }}';
+            if (outcome === 'already_merged') {
+              core.info('PR was already merged by another run — skipping comment');
+              return;
+            }
             const success = '${{ job.status }}' === 'success';
             const body = success
               ? '🚀 Shipped! PR merged successfully.'
@@ -210,7 +226,7 @@ jobs:
             });
 
       - name: Notify Slack
-        if: success()
+        if: steps.merge.outputs.outcome == 'merged'
         uses: actions/github-script@v9
         env:
           SLACK_BOT_TOKEN: ${{ secrets.E2E_SLACK_BOT_TOKEN }}

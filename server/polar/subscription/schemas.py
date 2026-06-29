@@ -114,6 +114,10 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     ended_at: datetime | None = Field(
         description="The timestamp when the subscription ended."
     )
+    past_due_at: datetime | None = Field(
+        None,
+        description=("The timestamp when the subscription entered `past_due` status."),
+    )
 
     customer_id: UUID4 = Field(description="The ID of the subscribed customer.")
     product_id: UUID4 = Field(description="The ID of the subscribed product.")

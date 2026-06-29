@@ -33,11 +33,6 @@ on:
         required: false
         type: boolean
         default: false
-      render-playwright-worker-service-ids:
-        description: "Comma-separated list of Render playwright worker service IDs"
-        required: false
-        type: string
-        default: ""
     secrets:
       RENDER_API_TOKEN:
         required: true
@@ -90,7 +85,6 @@ jobs:
     concurrency:
       group: deploy-backend-${{ inputs.environment }}
       cancel-in-progress: false
-    needs: build-frontend
     if: always() && inputs.skip-backend != true
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
@@ -104,9 +98,7 @@ jobs:
             "$TAG" \
             "${{ inputs.has-migrations }}" \
             "${{ inputs.render-api-service-id }}" \
-            "${{ inputs.render-worker-service-ids }}" \
-            "$TAG" \
-            "${{ inputs.render-playwright-worker-service-ids }}"
+            "${{ inputs.render-worker-service-ids }}"
         env:
           RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
 

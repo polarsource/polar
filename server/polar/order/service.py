@@ -180,13 +180,6 @@ class AlreadyBalancedOrder(OrderError):
         super().__init__(message)
 
 
-class NotPaidOrder(OrderError):
-    def __init__(self, order: Order) -> None:
-        self.order = order
-        message = f"Order {order.id} is not paid, so an invoice cannot be generated."
-        super().__init__(message, 422)
-
-
 class MissingInvoiceBillingDetails(OrderError):
     def __init__(self, order: Order) -> None:
         self.order = order
@@ -528,9 +521,6 @@ class OrderService:
     async def trigger_invoice_generation(
         self, session: AsyncSession, order: Order
     ) -> None:
-        if not order.paid:
-            raise NotPaidOrder(order)
-
         if order.billing_name is None or order.billing_address is None:
             raise MissingInvoiceBillingDetails(order)
 
@@ -824,6 +814,9 @@ class OrderService:
             ),
             flush=True,
         )
+
+        if subscription is not None:
+            subscription.update_net_amount_from(checkout)
 
         # Link payment and balance transaction to the order
         if payment is not None:
@@ -1410,6 +1403,8 @@ class OrderService:
                 flush=True,
             )
 
+            subscription.update_net_amount_from(order)
+
             # Impact customer's balance
             if balance_change != 0:
                 await wallet_service.create_balance_transaction(
@@ -1535,6 +1530,9 @@ class OrderService:
             ),
             flush=True,
         )
+
+        if checkout is not None:
+            subscription.update_net_amount_from(checkout)
 
         await self._on_order_created(session, order)
 

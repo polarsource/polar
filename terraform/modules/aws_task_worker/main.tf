@@ -35,9 +35,10 @@ data "aws_iam_policy_document" "lambda_assume" {
 }
 
 resource "aws_iam_role" "lambda" {
-  name               = local.function_name
-  assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
-  tags               = var.tags
+  name                 = local.function_name
+  assume_role_policy   = data.aws_iam_policy_document.lambda_assume.json
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = var.tags
 }
 
 data "aws_iam_policy_document" "lambda" {
@@ -106,6 +107,7 @@ resource "aws_lambda_function" "task" {
       var.environment_variables,
       var.secret_environment_variables,
       { POLAR_DATABASE_POOL_SIZE = "1" },
+      { SERVICE_NAME = local.function_name },
     )
   }
 

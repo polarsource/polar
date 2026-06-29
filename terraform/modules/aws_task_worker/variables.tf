@@ -105,3 +105,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "permissions_boundary_arn" {
+  description = "Optional permissions boundary ARN to attach to the Lambda IAM role."
+  type        = string
+  default     = null
+}

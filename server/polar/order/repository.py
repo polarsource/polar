@@ -15,7 +15,7 @@ from polar.auth.models import (
     is_user,
 )
 from polar.auth.permission import OrganizationPermission
-from polar.authz.repository import select_user_org_ids
+from polar.authz.repository import select_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
     Options,
@@ -285,9 +285,8 @@ class OrderRepository(
         if is_user(auth_subject):
             statement = statement.where(
                 Order.organization_id.in_(
-                    select_user_org_ids(
-                        auth_subject.subject.id,
-                        permission=OrganizationPermission.sales_read,
+                    select_accessible_org_ids(
+                        auth_subject, permission=OrganizationPermission.sales_read
                     )
                 )
             )

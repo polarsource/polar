@@ -158,7 +158,12 @@ async def get_auth_subject(
         if is_access_token_prefix(token):
             oauth2_token = await get_oauth2_token(session, token)
             if oauth2_token:
-                return AuthSubject(oauth2_token.sub, oauth2_token.scopes, oauth2_token)
+                return AuthSubject(
+                    oauth2_token.sub,
+                    oauth2_token.scopes,
+                    oauth2_token,
+                    oauth2_token.organization_ids,
+                )
             raise InvalidTokenError()
 
         if token.startswith(PERSONAL_ACCESS_TOKEN_PREFIX):
@@ -175,7 +180,18 @@ async def get_auth_subject(
 
     user_session = await get_user_session(request, session)
     if user_session is not None:
-        return AuthSubject(user_session.user, set(user_session.scopes), user_session)
+        organization_ids = (
+            frozenset(
+                scope.organization_id for scope in user_session.organization_scopes
+            )
+            or None
+        )
+        return AuthSubject(
+            user_session.user,
+            set(user_session.scopes),
+            user_session,
+            organization_ids,
+        )
 
     return AuthSubject(Anonymous(), set(), None)
 

@@ -63,6 +63,7 @@ from polar.support_case.repository import SupportCaseMessageRepository
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
@@ -402,7 +403,7 @@ class TestUpdateReviewSubmission:
         error_locations = {tuple(error["loc"]) for error in exc_info.value.errors()}
         assert ("body", "website") in error_locations
         assert ("body", "email") in error_locations
-        assert ("body", "socials") in error_locations
+        assert ("body", "socials") not in error_locations
         assert ("body", "details", "product_description") in error_locations
 
     @pytest.mark.auth
@@ -1717,6 +1718,36 @@ class TestGetReviewState:
                 for reasons in reason_lists
             )
 
+    @pytest.mark.auth
+    async def test_identity_owner_viewer_sees_not_started(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        state = await organization_service.get_review_state(
+            session, organization, auth_subject
+        )
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_STRIPE_VERIFICATION)
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert OrganizationReviewCheckReason.NOT_STARTED in step.reasons
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
+    async def test_identity_non_owner_viewer_sees_not_authorized(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        state = await organization_service.get_review_state(
+            session, organization, auth_subject
+        )
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_STRIPE_VERIFICATION)
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert step.reasons == [OrganizationReviewCheckReason.NOT_AUTHORIZED]
+
     async def test_email_set_passes(
         self,
         save_fixture: SaveFixture,
@@ -1794,6 +1825,54 @@ class TestGetReviewState:
 
         assert step.status == OrganizationReviewCheckStatus.PASSED
         assert step.reasons == []
+
+    @pytest.mark.parametrize(
+        "website",
+        [
+            "https://bolt.example.com",
+            "https://www.bolt.example.com",
+        ],
+    )
+    async def test_email_matching_website_subdomain_passes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        website: str,
+    ) -> None:
+        # The merchant's support email lives on the apex domain while the
+        # product is hosted on a subdomain — they still belong to the same
+        # organization, so this must not be flagged as a mismatch.
+        organization.email = "support@example.com"
+        organization.website = website
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
+
+        assert step.status == OrganizationReviewCheckStatus.PASSED
+        assert (
+            OrganizationReviewCheckReason.IDENTITY_DOMAIN_MISMATCH not in step.reasons
+        )
+
+    async def test_email_subdomain_matching_website_apex_passes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Reverse relationship: support email on a subdomain, website on the apex.
+        organization.email = "support@mail.example.com"
+        organization.website = "https://example.com"
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
+
+        assert step.status == OrganizationReviewCheckStatus.PASSED
+        assert (
+            OrganizationReviewCheckReason.IDENTITY_DOMAIN_MISMATCH not in step.reasons
+        )
 
     @pytest.mark.parametrize(
         "website",
@@ -2115,11 +2194,25 @@ class TestGetReviewState:
             assert sub.status == OrganizationReviewCheckStatus.PENDING
             assert OrganizationReviewCheckReason.NOT_STARTED in sub.reasons
 
+    @pytest.mark.parametrize(
+        "benefit_type",
+        [
+            BenefitType.downloadables,
+            BenefitType.license_keys,
+            BenefitType.github_repository,
+            BenefitType.discord,
+            BenefitType.slack_shared_channel,
+            # `custom` is a free-form note, but the customer still sees it in
+            # their portal post-purchase — no API integration required.
+            BenefitType.custom,
+        ],
+    )
     async def test_setup_readiness_checkout_link_with_eligible_benefit_passes(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
+        benefit_type: BenefitType,
     ) -> None:
         product = await create_product(
             save_fixture, organization=organization, recurring_interval=None
@@ -2127,7 +2220,7 @@ class TestGetReviewState:
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
-            type=BenefitType.license_keys,
+            type=benefit_type,
         )
         await set_product_benefits(save_fixture, product=product, benefits=[benefit])
         await create_checkout_link(save_fixture, products=[product])
@@ -2152,10 +2245,12 @@ class TestGetReviewState:
     @pytest.mark.parametrize(
         "benefit_type",
         [
+            # Benefits a checkout link can't fulfill on its own — they only mean
+            # something once the merchant integrates the API. `feature_flag`:
+            # the merchant's app reads the flag. `meter_credit`: the credit is
+            # consumed via usage events the merchant ingests.
             BenefitType.feature_flag,
             BenefitType.meter_credit,
-            # `custom` is a free-form note with no automated fulfillment.
-            BenefitType.custom,
         ],
     )
     async def test_setup_readiness_ineligible_benefit_does_not_count(
@@ -2339,6 +2434,23 @@ class TestGetReviewState:
             step.status == OrganizationReviewCheckStatus.PASSED
             for step in state.preliminary_steps
         )
+
+    async def test_missing_socials_does_not_block_submission(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        await _setup_passing_org(save_fixture, organization, user)
+        organization.socials = []
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+
+        socials_step = _step(state, OrganizationReviewCheckKey.IDENTITY_SOCIAL_LINKS)
+        assert socials_step.status == OrganizationReviewCheckStatus.PENDING
+        assert state.can_submit is True
 
     async def test_submitted_blocks_resubmission(
         self,
@@ -3199,7 +3311,7 @@ class TestSoftDeleteOrganization:
         await save_fixture(organization)
 
         result = await organization_service.soft_delete_organization(
-            session, organization
+            session, organization, release_slug=True
         )
 
         # The live slug should no longer be the original, freeing it for reuse.
@@ -3231,7 +3343,9 @@ class TestSoftDeleteOrganization:
         organization: Organization,
     ) -> None:
         original_slug = organization.slug
-        await organization_service.soft_delete_organization(session, organization)
+        await organization_service.soft_delete_organization(
+            session, organization, release_slug=True
+        )
         await session.flush()
 
         repository = OrganizationRepository.from_session(session)
@@ -3253,7 +3367,7 @@ class TestSoftDeleteOrganization:
         await save_fixture(organization)
 
         result = await organization_service.soft_delete_organization(
-            session, organization
+            session, organization, release_slug=True
         )
 
         assert len(result.slug_history) == 2
@@ -3280,24 +3394,24 @@ class TestSoftDeleteOrganization:
         assert result.details == {}
         assert result.socials == []
 
-
-@pytest.mark.asyncio
-class TestDelete:
-    async def test_enqueues_polar_self_customer_deletion(
+    async def test_scrubs_slug_without_releasing(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        enqueue_delete_customer_mock = mocker.patch(
-            "polar.organization.service.polar_self_service.enqueue_delete_customer"
+        # Backoffice/erasure deletions scrub the slug as PII rather than
+        # archiving it for reuse, leaving no recoverable trace of the original.
+        mocker.patch("polar.organization.service.polar_self_service")
+        original_slug = organization.slug
+
+        result = await organization_service.soft_delete_organization(
+            session, organization
         )
 
-        await organization_service.delete(session, organization)
-
-        enqueue_delete_customer_mock.assert_called_once_with(
-            organization_id=organization.id
-        )
+        assert result.slug != original_slug
+        assert original_slug not in result.slug
+        assert result.slug_history == []
 
 
 @pytest.mark.asyncio
@@ -3671,6 +3785,54 @@ class TestSetOrganizationOffboarding:
             "payout.cancel_account_payouts",
             account_id=organization.account_id,
         )
+
+
+@pytest.mark.asyncio
+class TestSetOrganizationOffboarded:
+    async def test_from_offboarding(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.OFFBOARDING
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.set_organization_offboarded(
+            session, organization
+        )
+
+        assert result.status == OrganizationStatus.OFFBOARDED
+        assert result.status_updated_at is not None
+        assert result.internal_notes is not None
+        assert "Manually offboarded" in result.internal_notes
+        enqueue_job_mock.assert_called_once_with(
+            "organization.offboarded", organization_id=organization.id
+        )
+
+    @pytest.mark.parametrize(
+        "status",
+        [
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.SNOOZED,
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.CREATED,
+            OrganizationStatus.OFFBOARDED,
+        ],
+    )
+    async def test_from_non_offboarding_raises(
+        self,
+        status: OrganizationStatus,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = status
+
+        with pytest.raises(Exception, match="Only organizations that are offboarding"):
+            await organization_service.set_organization_offboarded(
+                session, organization
+            )
 
 
 @pytest.mark.asyncio

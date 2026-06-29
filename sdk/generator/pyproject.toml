@@ -1,0 +1,22 @@
+[project]
+name = "generator"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = ["jinja2>=3.1.6", "openapi-pydantic>=0.5.1"]
+
+[dependency-groups]
+dev = [
+    "adaptix==3.0.0b12",
+    "httpx>=0.28.1",
+    "pytest>=9.0.3",
+    "ruff>=0.15.16",
+    "ty>=0.0.44",
+]
+
+[tool.ruff]
+exclude = ["python/template"]
+
+[tool.ty.src]
+exclude = ["python/template"]

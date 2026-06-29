@@ -1,7 +1,6 @@
 from collections.abc import AsyncGenerator
 
 from fastapi import Depends, Query, Response
-from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
 from polar.auth.permission import OrganizationPermission
@@ -11,7 +10,7 @@ from polar.authz.service import (
 )
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.exceptions import ResourceNotFound
-from polar.kit.csv import IterableCSVWriter
+from polar.kit.csv import CSVStreamingResponse, IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -43,7 +42,6 @@ from .schemas import (
 )
 from .service import (
     MissingInvoiceBillingDetails,
-    NotPaidOrder,
     OffSessionChargesNotEnabled,
     OrderNotDraft,
     OrganizationNotReadyForPayments,
@@ -125,15 +123,7 @@ async def list(
     )
 
 
-@router.get(
-    "/export",
-    summary="Export Orders",
-    responses={
-        200: {
-            "content": {"text/csv": {"schema": {"type": "string"}}},
-        },
-    },
-)
+@router.get("/export", summary="Export Orders", response_class=CSVStreamingResponse)
 async def export(
     auth_subject: auth.OrdersRead,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
@@ -143,7 +133,7 @@ async def export(
         None, title="ProductID Filter", description="Filter by product ID."
     ),
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> Response:
+) -> CSVStreamingResponse:
     """Export orders as a CSV file."""
 
     async def create_csv() -> AsyncGenerator[str, None]:
@@ -182,12 +172,7 @@ async def export(
                 )
             )
 
-    filename = "polar-orders.csv"
-    return StreamingResponse(
-        create_csv(),
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
-    )
+    return CSVStreamingResponse(create_csv(), "polar-orders.csv")
 
 
 @router.get(
@@ -305,9 +290,10 @@ async def finalize(
     status_code=202,
     summary="Generate Order Invoice",
     responses={
+        404: OrderNotFound,
         422: {
-            "description": "Order is not paid or is missing billing name or address.",
-            "model": MissingInvoiceBillingDetails.schema() | NotPaidOrder.schema(),
+            "description": "Order is missing billing name or address.",
+            "model": MissingInvoiceBillingDetails.schema(),
         },
     },
 )

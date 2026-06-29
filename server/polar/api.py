@@ -55,6 +55,7 @@ from polar.personal_access_token.endpoints import router as pat_router
 from polar.product.endpoints import router as product_router
 from polar.refund.endpoints import router as refund_router
 from polar.subscription.endpoints import router as subscription_router
+from polar.support_case.endpoints import router as support_case_router
 from polar.tax.endpoints import router as tax_router
 from polar.transaction.endpoints import router as transaction_router
 from polar.user.endpoints import router as user_router
@@ -111,6 +112,8 @@ router.include_router(order_router)
 router.include_router(refund_router)
 # /disputes
 router.include_router(dispute_router)
+# /support-cases
+router.include_router(support_case_router)
 # /checkouts
 router.include_router(checkout_router)
 # /cli

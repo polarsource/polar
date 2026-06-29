@@ -110,6 +110,7 @@ const DownloadablesBenefitGrant = ({
   } = benefitGrant
   const { data: downloadables, isLoading } = useCustomerDownloadables(api, {
     benefit_id: benefitGrant.benefit.id,
+    limit: 100,
   })
 
   const sortedDownloadables = useMemo(() => {

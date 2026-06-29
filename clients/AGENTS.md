@@ -41,7 +41,6 @@ clients/
 │   │       ├── molecules/      # Composite components (Banner)
 │   │       └── ui/             # shadcn/ui base components
 │   ├── client/                 # Generated API client
-│   ├── sdk/                    # Published SDK
 │   ├── checkout/               # Checkout package
 │   └── orbit/                  # Polar's design system containing components, design tokens, etc.
 ```
@@ -133,8 +132,10 @@ DOM props for the chosen element are typed and forwarded (e.g. `onClick`, `htmlF
 
 ### Design Tokens
 
-Tokens live in `packages/orbit/src/tokens/tokens.stylex.ts`. Box accepts token **names**,
-not raw values.
+Tokens are split across two tiers: `packages/orbit/src/tokens/value.stylex.ts` defines
+primitive values (literal colors, sizes), and `packages/orbit/src/tokens/semantics.stylex.ts`
+defines semantic tokens (background-primary, text-secondary, etc.) that reference them.
+Box accepts token **names**, not raw values.
 
 **Spacing** (`SpacingToken`) — used for padding, margin, gap:
 
@@ -162,14 +163,12 @@ auto-resolves light vs dark.
 | `background-warning`   | Warning surface               |
 | `background-success`   | Success surface               |
 | `background-danger`    | Danger surface                |
-| `background-pending`   | Pending/neutral surface       |
 | `text-primary`         | Primary copy                  |
 | `text-secondary`       | De-emphasised copy            |
 | `text-tertiary`        | Hints, captions, placeholders |
 | `text-success`         | Success text                  |
 | `text-danger`          | Danger text                   |
 | `text-warning`         | Warning text                  |
-| `text-pending`         | Pending/neutral text          |
 | `border-primary`       | Default borders & dividers    |
 | `border-secondary`     | Subtle/secondary dividers     |
 | `border-warning`       | Warning borders               |
@@ -505,7 +504,16 @@ Use these instead of hand-rolled tailwind components:
 import { Text } from '@polar-sh/orbit' // typography (variant-driven)
 import { Button, Grid } from '@polar-sh/orbit'
 import { Avatar, SegmentedControl } from '@polar-sh/orbit'
+import { Alert } from '@polar-sh/orbit' // tinted callout (info/warning/danger/success)
+import { ButtonGroup } from '@polar-sh/orbit' // one or two primary/ghost actions
 ```
+
+`Alert` takes a `variant` (`info` | `warning` | `danger` | `success`, default `info`), a
+`title`, and an optional `description`; the variant abstracts away the icon and all colors.
+It also accepts `loading` (swaps the icon for a spinner), `onDismiss` (renders a dismiss
+button), and `actions` (one or two `ButtonGroup` CTAs, rendered bottom-right). `ButtonGroup`
+takes an `actions` tuple of at most two `{ text, onClick, loading?, disabled? }` — the first
+renders as the primary button, the second as a ghost button.
 
 Prefer `Box` when you need full control; prefer the named primitive when one exists for
 your use case (Text for any text node, Button for actions, Grid for grid layouts).
@@ -682,7 +690,7 @@ Translation files live in `packages/i18n/src/locales/`. When adding new translat
 
 - Box component: `packages/orbit/src/components/Box.tsx`
 - Box prop types: `packages/orbit/src/utils/types.ts`
-- Design tokens (spacing, color, radius, shadow, breakpoints): `packages/orbit/src/tokens/tokens.stylex.ts`
+- Design tokens (spacing, color, radius, shadow, breakpoints): `packages/orbit/src/tokens/value.stylex.ts` (primitives) and `packages/orbit/src/tokens/semantics.stylex.ts` (semantic colors)
 - Orbit barrel exports: `packages/orbit/src/index.ts`
 - Legacy Card: `packages/ui/src/components/atoms/Card.tsx`
 - Global styles: `apps/web/src/styles/globals.css`

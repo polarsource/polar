@@ -3,13 +3,18 @@ import { nanoid } from 'nanoid'
 import { RequestCookiesAdapter } from 'next/dist/server/web/spec-extension/adapters/request-cookies'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { COOKIE_MAX_AGE, DISTINCT_ID_COOKIE } from './experiments/constants'
+import {
+  COOKIE_MAX_AGE,
+  DISTINCT_ID_COOKIE,
+  DISTINCT_ID_HEADER,
+} from './experiments/constants'
 import { createServerSideAPI } from './utils/client'
 import { CONFIG } from './utils/config'
 import { POLAR_ENV_COOKIE } from './utils/cookies'
 
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
+const POLAR_USER_HEADER = 'x-polar-user'
 
 const IS_SANDBOX =
   (process.env.NEXT_PUBLIC_ENVIRONMENT ||
@@ -44,6 +49,7 @@ const AUTHENTICATED_ROUTES = [
   new RegExp('^/finance(/.*)?$'),
   new RegExp('^/settings(/.*)?$'),
   new RegExp('^/oauth2(/.*)?$'),
+  new RegExp('^/feedback(/.*)?$'),
   new RegExp('^/to(/.*)?$'),
 ]
 
@@ -97,11 +103,18 @@ const getLoginResponse = (request: NextRequest): NextResponse => {
 }
 
 export async function proxy(request: NextRequest) {
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.delete(POLAR_USER_HEADER)
+
   // Do not run middleware for forwarded routes
   // @pieterbeulque added this because the `config.matcher` behavior below
   // doesn't appear to be working consistently with Vercel rewrites
   if (isForwardedRoute(request)) {
-    return NextResponse.next()
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    })
   }
 
   if (request.nextUrl.pathname.startsWith('/to/')) {
@@ -267,16 +280,19 @@ export async function proxy(request: NextRequest) {
   const { id: distinctId, isNew: isNewDistinctId } =
     getOrCreateDistinctId(request)
 
-  const headers: Record<string, string> = {
-    'x-polar-distinct-id': distinctId,
-  }
+  requestHeaders.set(DISTINCT_ID_HEADER, distinctId)
   if (user) {
-    headers['x-polar-user'] = Buffer.from(JSON.stringify(user)).toString(
-      'base64',
+    requestHeaders.set(
+      POLAR_USER_HEADER,
+      Buffer.from(JSON.stringify(user)).toString('base64'),
     )
   }
 
-  const response = NextResponse.next({ headers })
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
 
   if (isNewDistinctId) {
     response.cookies.set(DISTINCT_ID_COOKIE, distinctId, {

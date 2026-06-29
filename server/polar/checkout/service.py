@@ -1475,11 +1475,11 @@ class CheckoutService:
         if checkout is None:
             raise ResourceNotFound()
 
-        if not checkout.organization.can_authenticate:
-            raise NotPermitted()
-
         if checkout.is_expired:
             raise ExpiredCheckoutError()
+
+        if not checkout.organization.can_authenticate:
+            raise NotPermitted()
         return checkout
 
     async def mark_opened(
@@ -2168,16 +2168,22 @@ class CheckoutService:
                         ]
                     ) from e
 
-        if (
-            has_product_checkout(checkout)
-            and checkout_update.custom_field_data is not None
+        if has_product_checkout(checkout) and (
+            isinstance(checkout_update, CheckoutConfirm)
+            or "custom_field_data" in checkout_update.model_fields_set
         ):
             custom_field_data = validate_custom_field_data(
                 checkout.product.attached_custom_fields,
                 checkout_update.custom_field_data,
                 validate_required=isinstance(checkout_update, CheckoutConfirm),
             )
-            checkout.custom_field_data = custom_field_data
+            if isinstance(checkout_update, CheckoutConfirm):
+                checkout.custom_field_data = custom_field_data
+            else:
+                checkout.custom_field_data = {
+                    **(checkout.custom_field_data or {}),
+                    **custom_field_data,
+                }
 
         ip_country = self._get_ip_country(
             ip_geolocation_client, checkout.customer_ip_address

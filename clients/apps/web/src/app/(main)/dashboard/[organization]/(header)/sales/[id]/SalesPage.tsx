@@ -6,6 +6,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { DownloadInvoiceDashboard } from '@/components/Orders/DownloadInvoice'
+import { OrderCalloutBanner } from '@/components/Orders/OrderCalloutBanner'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
 import PaymentMethod from '@/components/PaymentMethod/PaymentMethod'
 import PaymentStatus from '@/components/PaymentStatus/PaymentStatus'
@@ -17,7 +18,7 @@ import {
 } from '@/components/Refunds/utils'
 import { SeatViewOnlyTable } from '@/components/Seats/SeatViewOnlyTable'
 import { DetailRow } from '@/components/Shared/DetailRow'
-import { useCustomFields, useProduct } from '@/hooks/queries'
+import { useCustomFields, useProduct, useSubscription } from '@/hooks/queries'
 import { useDisputes } from '@/hooks/queries/disputes'
 import { useOrder } from '@/hooks/queries/orders'
 import { usePayments } from '@/hooks/queries/payments'
@@ -28,12 +29,17 @@ import {
   DisputeStatusDisplayTitle,
 } from '@/utils/dispute'
 import { formatCountry } from '@/utils/formatters'
+import {
+  isOrderDunningFailed,
+  isOrderInDunning,
+  isOrderInDunningLifecycle,
+} from '@/utils/order'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { ArrowUpRightIcon } from 'lucide-react'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
-import { DataTable } from '@polar-sh/orbit'
+import { DataTable, Truncated, type DataTableColumnDef } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Status } from '@polar-sh/orbit'
@@ -76,6 +82,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
   // Seat management for seat-based orders (view-only)
   const hasSeatBasedOrder = !!order?.seats && order.seats > 0
 
+  const hasDeclinedPayment = (payments?.items ?? []).some(
+    (payment) => payment.status === 'failed',
+  )
+
   const { data: seatsData, isLoading: isLoadingSeats } = useOrganizationSeats(
     hasSeatBasedOrder ? { orderId: order?.id } : undefined,
   )
@@ -83,6 +93,22 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const totalSeats = seatsData?.total_seats || 0
   const availableSeats = seatsData?.available_seats || 0
   const seats = seatsData?.seats || []
+
+  const orderPayments = payments?.items ?? []
+  const inDunningLifecycle =
+    !!order && isOrderInDunningLifecycle(order, orderPayments)
+
+  const { data: dunningSubscription } = useSubscription(
+    order?.subscription_id ?? '',
+    undefined,
+    { enabled: inDunningLifecycle },
+  )
+
+  const showDunningBanner =
+    !!order &&
+    !!dunningSubscription &&
+    (isOrderInDunning(order, orderPayments) ||
+      isOrderDunningFailed(order, dunningSubscription, orderPayments))
 
   if (!order) {
     return null
@@ -117,6 +143,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
       }
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:shadow-none"
     >
+      {showDunningBanner && dunningSubscription ? (
+        <OrderCalloutBanner
+          organization={organization}
+          order={order}
+          subscription={dunningSubscription}
+          payments={orderPayments}
+        />
+      ) : null}
+
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
         <div className="flex flex-col gap-6 p-4 md:p-8">
           <div className="flex flex-col gap-1">
@@ -414,6 +449,25 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 <PaymentStatus payment={original} />
               ),
             },
+            ...(hasDeclinedPayment
+              ? ([
+                  {
+                    accessorKey: 'decline_reason',
+                    header: 'Bank Decline Reason',
+                    cell: ({ row: { original } }) => {
+                      const reason =
+                        original.decline_message || original.decline_reason
+                      return reason ? (
+                        <Truncated>
+                          <span className="text-sm">{reason}</span>
+                        </Truncated>
+                      ) : (
+                        '—'
+                      )
+                    },
+                  },
+                ] satisfies DataTableColumnDef<schemas['Payment']>[])
+              : []),
           ]}
           data={payments?.items ?? []}
         />

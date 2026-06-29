@@ -75,7 +75,6 @@ from polar.order.service import (
     MissingCheckoutCustomer,
     MissingInvoiceBillingDetails,
     NoPendingBillingEntries,
-    NotPaidOrder,
     NotRecurringProduct,
     OffSessionChargesNotEnabled,
     OrderNotDraft,
@@ -1140,6 +1139,15 @@ class TestCreateSubscriptionOrder:
         assert order.status == OrderStatus.pending
         assert order.billing_reason == OrderBillingReasonInternal.subscription_cycle
         assert order.subscription == subscription
+
+        if tax_behavior == TaxBehavior.inclusive:
+            assert subscription.net_amount == round(
+                subscription.amount
+                * order.net_amount
+                / (order.net_amount + order.tax_amount)
+            )
+        else:
+            assert subscription.net_amount == subscription.amount
 
         calculate_tax_mock.assert_called_once_with(
             str(order.id),
@@ -2571,7 +2579,7 @@ class TestSendConfirmationEmail:
 
 @pytest.mark.asyncio
 class TestTriggerInvoiceGeneration:
-    async def test_not_paid(
+    async def test_not_paid_triggers_generation(
         self,
         enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
@@ -2588,10 +2596,9 @@ class TestTriggerInvoiceGeneration:
             billing_address=Address(country=CountryAlpha2("US")),
         )
 
-        with pytest.raises(NotPaidOrder):
-            await order_service.trigger_invoice_generation(session, order)
+        await order_service.trigger_invoice_generation(session, order)
 
-        enqueue_job_mock.assert_not_called()
+        enqueue_job_mock.assert_called_once_with("order.invoice", order_id=order.id)
 
     async def test_missing_billing(
         self,

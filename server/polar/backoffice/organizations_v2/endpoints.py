@@ -8,6 +8,7 @@ This module provides a modern, three-column layout with:
 - Keyboard shortcuts and accessibility improvements
 """
 
+import math
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
@@ -61,6 +62,7 @@ from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.organization_review import OrganizationReview
 from polar.models.support_case import (
     ReviewAppealSupportCase,
+    SupportCaseMessageAuthorKind,
 )
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
@@ -1664,10 +1666,17 @@ async def appeal_case_approve_dialog(
 
     if request.method == "POST":
         form_data = await request.form()
-        reason = str(form_data.get("reason", "")).strip() or None
+        # Approving overrides the AI's denial: the internal note is mandatory and
+        # staff-only, so a later re-flag shows who overrode and why. The merchant
+        # message is optional and the only part the merchant sees.
+        internal_note = str(form_data.get("internal_note", "")).strip() or None
+        merchant_message = str(form_data.get("merchant_message", "")).strip() or None
         message_repository = SupportCaseMessageRepository.from_session(session)
-        if not reason:
-            error_message = "A reason is required to approve the appeal."
+        if not internal_note:
+            error_message = (
+                "An internal note is required to approve — it overrides the AI's "
+                "denial."
+            )
         elif not await message_repository.is_open(case.id):
             error_message = "This appeal case is already closed."
         else:
@@ -1678,12 +1687,20 @@ async def appeal_case_approve_dialog(
                     reviewer_id=user_session.user.id,
                     decision=DecisionType.APPROVE,
                     review_context=ReviewContext.APPEAL,
-                    reason=reason,
+                    reason=internal_note,
+                )
+                await appeal_case_service.add_reply(
+                    session,
+                    case,
+                    author_kind=SupportCaseMessageAuthorKind.platform,
+                    author_user=user_session.user,
+                    body=internal_note,
+                    internal=True,
                 )
                 await organization_service.backoffice_approve(
                     session,
                     organization,
-                    reason=reason,
+                    reason=merchant_message,
                     internal_note="Appeal approved — see support case.",
                     staff_user=user_session.user,
                 )
@@ -1714,19 +1731,32 @@ async def appeal_case_approve_dialog(
                     text(error_message)
             with tag.p():
                 text(
-                    "Approving reactivates the organization and closes the "
-                    "support case. The merchant is notified of the decision."
+                    "Approving overrides the AI's denial, reactivates the "
+                    "organization and closes the support case. The merchant is "
+                    "notified of the decision."
                 )
             with tag.div(classes="form-control"):
                 with tag.label(classes="label"):
                     with tag.span(classes="label-text"):
-                        text("Reason (required, shared with the merchant)")
+                        text("Internal note (required, not shared with the merchant)")
                 with tag.textarea(
-                    name="reason",
+                    name="internal_note",
                     classes="textarea textarea-bordered w-full",
-                    placeholder="Why are you approving this appeal?",
+                    placeholder="Why are you overriding the AI's denial? "
+                    "Staff-only — recorded for future reviews.",
                     rows="3",
                     required=True,
+                ):
+                    pass
+            with tag.div(classes="form-control"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text"):
+                        text("Message to the merchant (optional, shared with them)")
+                with tag.textarea(
+                    name="merchant_message",
+                    classes="textarea textarea-bordered w-full",
+                    placeholder="Optional note included with the approval.",
+                    rows="3",
                 ):
                     pass
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
@@ -2606,6 +2636,137 @@ async def offboard_dialog(
                         text("Cancel")
                 with button(variant="warning", type="submit"):
                     text("Set Offboarding")
+
+    return None
+
+
+@router.api_route(
+    "/{organization_id}/offboarded-dialog",
+    name="organizations:offboarded_dialog",
+    methods=["GET", "POST"],
+    response_model=None,
+    dependencies=[Depends(get_admin)],
+)
+async def offboarded_dialog(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    """Manually complete offboarding: move the org to the terminal offboarded state."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    if request.method == "POST":
+        try:
+            await organization_service.set_organization_offboarded(
+                session, organization
+            )
+        except OrganizationError as e:
+            await add_toast(request, e.message, "error")
+        else:
+            await add_toast(request, "Organization offboarded", "success")
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for("organizations:detail", organization_id=organization_id)
+            ),
+            303,
+        )
+
+    # Surface how much of the wind-down period remains. The auto-offboard cron
+    # anchors on the later of the last paid order (chargeback risk) and the
+    # offboarding-entry date (merchant wind-down floor); mirror that here so the
+    # admin sees whether they're completing offboarding early.
+    now = datetime.now(UTC)
+    last_paid_order_at = await repository.get_last_paid_order_at(organization_id)
+    offboarding_since = organization.status_updated_at
+    anchors = [d for d in (last_paid_order_at, offboarding_since) if d is not None]
+    anchor = max(anchors) if anchors else None
+    completes_at = (
+        anchor + settings.ORGANIZATION_OFFBOARDING_PERIOD
+        if anchor is not None
+        else None
+    )
+    period_elapsed = completes_at is not None and now >= completes_at
+    remaining_days = (
+        math.ceil((completes_at - now) / timedelta(days=1))
+        if completes_at is not None and not period_elapsed
+        else None
+    )
+
+    def date_row(label: str, value: datetime | None) -> None:
+        with tag.div(classes="flex justify-between gap-4 text-sm"):
+            with tag.span(classes="text-base-content/70"):
+                text(label)
+            with tag.span(classes="font-medium"):
+                text(value.strftime("%Y-%m-%d") if value is not None else "—")
+
+    with modal("Complete Offboarding", open=True):
+        with tag.form(
+            hx_post=str(
+                request.url_for(
+                    "organizations:offboarded_dialog",
+                    organization_id=organization_id,
+                )
+            ),
+            classes="flex flex-col gap-4",
+        ):
+            with tag.p(classes="font-semibold"):
+                text("Set Organization to Offboarded")
+
+            with tag.div(classes="bg-base-200 border border-base-300 p-4 rounded-lg"):
+                with tag.p(classes="font-semibold mb-2"):
+                    text("This action will:")
+                with tag.ul(classes="list-disc list-inside space-y-1 text-sm"):
+                    with tag.li():
+                        text(
+                            "Email all organization members that the organization "
+                            "has been offboarded."
+                        )
+                    with tag.li():
+                        text(
+                            "Move the organization to Offboarded (terminal). New "
+                            "payments stay blocked and payouts are released so the "
+                            "merchant can withdraw their remaining balance."
+                        )
+
+            with tag.div(
+                classes="bg-base-200 border border-base-300 p-4 rounded-lg space-y-1"
+            ):
+                date_row("Last paid order", last_paid_order_at)
+                date_row("Offboarding since", offboarding_since)
+                date_row("Offboarding period completes", completes_at)
+
+            if not period_elapsed:
+                with tag.div(
+                    classes="bg-warning/10 border border-warning/20 p-4 rounded-lg"
+                ):
+                    with tag.p(classes="font-semibold text-warning mb-1"):
+                        text("Offboarding period has not fully elapsed")
+                    with tag.p(classes="text-sm"):
+                        if remaining_days is not None:
+                            text(
+                                f"{remaining_days} day(s) remain since the latest of "
+                                "the offboarding date and the last paid order. "
+                                "Completing now skips the rest of the wind-down "
+                                "period (chargeback and withdrawal window)."
+                            )
+                        else:
+                            text(
+                                "The offboarding date is unknown, so the wind-down "
+                                "period can't be verified. Completing now skips any "
+                                "remaining chargeback and withdrawal window."
+                            )
+
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(variant="warning", type="submit"):
+                    text("Complete Offboarding")
 
     return None
 
@@ -3714,7 +3875,7 @@ async def delete_dialog(
         raise HTTPException(status_code=404, detail="Organization not found")
 
     if request.method == "POST":
-        await organization_service.delete(session, organization)
+        await organization_service.soft_delete_organization(session, organization)
 
         return HXRedirectResponse(
             request,

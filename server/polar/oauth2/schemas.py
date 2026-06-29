@@ -101,6 +101,10 @@ class AuthorizeResponseBase(Schema):
     sub_type: SubType
     sub: AuthorizeUser | AuthorizeOrganization | None
     scopes: Scopes
+    organizations: list[AuthorizeOrganization]
+    # Whether the resolved request (param or client default) is for an
+    # organization, so the consent screen forces a single-org selection.
+    requires_single_organization: bool = False
     scope_display_names: dict[str, str] = Field(
         default={s.value: name for s, name in SCOPES_SUPPORTED_DISPLAY_NAMES.items()}
     )
@@ -114,7 +118,6 @@ class AuthorizeResponseUser(AuthorizeResponseBase):
 class AuthorizeResponseOrganization(AuthorizeResponseBase):
     sub_type: Literal[SubType.organization]
     sub: AuthorizeOrganization | None
-    organizations: list[AuthorizeOrganization]
 
 
 AuthorizeResponse = Annotated[
@@ -186,6 +189,7 @@ class IntrospectTokenResponse(Schema):
     scope: str
     sub_type: SubType
     sub: str
+    organizations: list[str]
     aud: str
     iss: str
     exp: int

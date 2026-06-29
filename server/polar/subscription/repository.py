@@ -23,7 +23,7 @@ from polar.auth.models import (
     Customer as AuthCustomer,
 )
 from polar.auth.permission import OrganizationPermission
-from polar.authz.repository import select_user_org_ids
+from polar.authz.repository import select_accessible_org_ids
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.repository import (
     Options,
@@ -87,6 +87,20 @@ class SubscriptionRepository(
             .where(
                 Subscription.customer_id == customer_id,
                 Subscription.active.is_(True),
+            )
+            .options(*options)
+        )
+        return await self.get_all(statement)
+
+    async def list_billable_by_customer(
+        self, customer_id: UUID, *, options: Options = ()
+    ) -> Sequence[Subscription]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Subscription.customer_id == customer_id,
+                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+                Subscription.ended_at.is_(None),
             )
             .options(*options)
         )
@@ -191,9 +205,8 @@ class SubscriptionRepository(
         if is_user(auth_subject):
             statement = statement.where(
                 Subscription.organization_id.in_(
-                    select_user_org_ids(
-                        auth_subject.subject.id,
-                        permission=OrganizationPermission.sales_read,
+                    select_accessible_org_ids(
+                        auth_subject, permission=OrganizationPermission.sales_read
                     )
                 )
             )

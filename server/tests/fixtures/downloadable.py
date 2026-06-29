@@ -2,6 +2,8 @@ from collections.abc import Sequence
 
 from sqlalchemy.orm import contains_eager
 
+from polar.auth.models import AuthSubject
+from polar.auth.scope import Scope
 from polar.benefit.strategies.downloadables.properties import (
     BenefitGrantDownloadablesProperties,
 )
@@ -9,7 +11,16 @@ from polar.benefit.strategies.downloadables.schemas import (
     BenefitDownloadablesCreateProperties,
 )
 from polar.benefit.strategies.downloadables.service import BenefitDownloadablesService
-from polar.models import Benefit, Customer, Downloadable, File, Organization, Product
+from polar.customer_portal.repository.downloadable import DownloadableRepository
+from polar.models import (
+    Benefit,
+    Customer,
+    Downloadable,
+    File,
+    Member,
+    Organization,
+    Product,
+)
 from polar.models.benefit import BenefitType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession, sql
@@ -80,9 +91,10 @@ class TestDownloadable:
         redis: Redis,
         benefit: Benefit,
         customer: Customer,
+        member: Member | None = None,
     ) -> tuple[Benefit, BenefitGrantDownloadablesProperties]:
         service = BenefitDownloadablesService(session, redis)
-        granted = await service.grant(benefit, customer, {})
+        granted = await service.grant(benefit, customer, {}, member=member)
         return benefit, granted
 
     @classmethod
@@ -105,10 +117,24 @@ class TestDownloadable:
         redis: Redis,
         benefit: Benefit,
         customer: Customer,
+        member: Member | None = None,
     ) -> tuple[Benefit, BenefitGrantDownloadablesProperties]:
         service = BenefitDownloadablesService(session, redis)
-        revoked = await service.revoke(benefit, customer, {})
+        revoked = await service.revoke(benefit, customer, {}, member=member)
         return benefit, revoked
+
+    @classmethod
+    async def get_member_downloadables(
+        cls, session: AsyncSession, member: Member
+    ) -> Sequence[Downloadable]:
+        auth_subject: AuthSubject[Member] = AuthSubject(
+            member, {Scope.customer_portal_read}, None
+        )
+        repository = DownloadableRepository.from_session(session)
+        statement = repository.get_customer_statement(auth_subject).options(
+            contains_eager(Downloadable.file)
+        )
+        return await repository.get_all(statement)
 
     @classmethod
     async def get_customer_downloadables(

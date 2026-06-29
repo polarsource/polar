@@ -14,7 +14,7 @@ from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
-from polar.authz.repository import select_user_org_ids
+from polar.authz.repository import select_accessible_org_ids
 from polar.authz.service import get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
 from polar.customer.repository import CustomerRepository
@@ -1222,7 +1222,7 @@ class EventService:
             if is_user(auth_subject):
                 statement = statement.where(
                     Customer.organization_id.in_(
-                        select_user_org_ids(auth_subject.subject.id)
+                        select_accessible_org_ids(auth_subject)
                     )
                 )
             else:
@@ -1264,9 +1264,7 @@ class EventService:
             )
             if is_user(auth_subject):
                 statement = statement.where(
-                    Member.organization_id.in_(
-                        select_user_org_ids(auth_subject.subject.id)
-                    )
+                    Member.organization_id.in_(select_accessible_org_ids(auth_subject))
                 )
             else:
                 statement = statement.where(

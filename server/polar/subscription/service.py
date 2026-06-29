@@ -1533,6 +1533,16 @@ class SubscriptionService:
                 subscription.status = SubscriptionStatus.trialing
                 subscription.trial_end = subscription.current_period_end = trial_end
 
+        # Keep any pending update's cycle end in sync with the new period end,
+        # otherwise apply_update() will clobber current_period_end back to the
+        # stale value when cycle() next runs.
+        if subscription.pending_update is not None:
+            subscription_update_repository = SubscriptionUpdateRepository.from_session(
+                session
+            )
+            subscription.pending_update.new_cycle_end = subscription.current_period_end
+            await subscription_update_repository.update(subscription.pending_update)
+
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(subscription)
 
@@ -1795,8 +1805,14 @@ class SubscriptionService:
     async def cancel_customer(
         self, session: AsyncSession, customer_id: uuid.UUID
     ) -> None:
+        """Immediately cancel all billable subscriptions of a customer.
+
+        Used when a customer is deleted. This includes ``past_due`` subscriptions,
+        whose pending orders would otherwise keep being retried by dunning. Revoking
+        them voids any pending order through ``_on_subscription_revoked``.
+        """
         subscription_repository = SubscriptionRepository.from_session(session)
-        subscriptions = await subscription_repository.list_active_by_customer(
+        subscriptions = await subscription_repository.list_billable_by_customer(
             customer_id, options=subscription_repository.get_eager_options()
         )
         for subscription in subscriptions:

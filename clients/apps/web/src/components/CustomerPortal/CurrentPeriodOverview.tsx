@@ -52,8 +52,8 @@ export const CurrentPeriodOverview = ({
   }
 
   const hasMeters = subscription.meters.length > 0
-  const hasProrations =
-    subscriptionPreview && subscriptionPreview.prorations.length > 0
+  const prorations = subscriptionPreview?.prorations ?? []
+  const hasProrations = prorations.length > 0
   const hasTaxes = subscriptionPreview && subscriptionPreview.tax_amount > 0
   const hasDiscount =
     subscriptionPreview && subscriptionPreview.discount_amount > 0
@@ -129,7 +129,7 @@ export const CurrentPeriodOverview = ({
         <>
           <span className="font-medium">Prorations</span>
 
-          {subscriptionPreview.prorations.map((proration, index) => (
+          {prorations.map((proration, index) => (
             <div key={index} className="flex items-center justify-between">
               <span className="dark:text-polar-400 text-gray-600">
                 {proration.label}

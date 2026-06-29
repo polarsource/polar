@@ -98,7 +98,9 @@ Recurring billing relationship.
 | Field | Type | Description |
 |-------|------|-------------|
 | `status` | SubscriptionStatus | incomplete, trialing, active, past_due, canceled, unpaid |
-| `amount`, `currency` | int, str | Subscription price |
+| `amount`, `currency` | int, str | Subscription gross price |
+| `net_amount` | int | Net amount (gross minus inclusive tax, equal to gross if tax-exclusive) |
+| `tax_behavior` | TaxBehavior \| None | Inclusive, exclusive, or null (set at creation) |
 | `recurring_interval` | Interval | month, year |
 | `current_period_start/end` | datetime | Billing period |
 | `trial_start/end` | datetime | Trial period |
@@ -137,6 +139,7 @@ Individual payment transaction.
 | `status` | PaymentStatus | pending, succeeded, failed |
 | `processor_id` | str | Stripe charge ID |
 | `method` | str | card, bank_transfer, etc. |
+| `trigger` | PaymentTrigger \| None | What initiated payment: purchase, subscription_cycle, retry_dunning, retry_customer, retry_payment_method_update, retry_admin |
 | `decline_reason` | str | Why payment failed |
 | `risk_level`, `risk_score` | str, int | Fraud assessment |
 
@@ -309,7 +312,7 @@ revoke_benefit(customer, benefit)
 |------|---------|--------|
 | `subscription.cycle` | Scheduler at period end | Renew subscription, create order |
 | `subscription.update_product_benefits_grants` | Product benefits changed | Update all grants |
-| `subscription.cancel_customer` | Customer deleted | Cancel all subscriptions |
+| `subscription.cancel_customer` | Customer deleted | Cancel all billable subscriptions (trialing, active, past_due) |
 
 ### Order Tasks
 **File:** `server/polar/order/tasks.py`
@@ -362,7 +365,7 @@ revoke_benefit(customer, benefit)
 | `payout.created` | Payout created | Event hook (fires for held payouts too) |
 | `payout.transfer` | After payout.created | Stripe transfer (skipped for held) |
 | `payout.release_held_payouts` | Org approved | Move held → pending, enqueue transfers |
-| `payout.cancel_account_payouts` | Org denied/blocked | Cancel held+pending payouts |
+| `payout.cancel_account_payouts` | Org denied/blocked/offboarding | Cancel held+pending payouts |
 | `payout.cancel_held_payouts` | Payout account swap | Cancel only held payouts on old account |
 
 ### Refund Tasks
@@ -568,7 +571,9 @@ BillingEntry(
 | `discord` | Server role | Assign Discord role |
 | `license_keys` | License distribution | Generate key |
 | `downloadables` | File access | Grant download permission |
-| `custom` | Webhook-based | Call external URL |
+| `slack_shared_channel` | Slack Connect channel | Create/invite to shared channel |
+| `feature_flag` | Feature toggle (API-only) | None — merchant reads via API |
+| `custom` | Customer-visible note | None — displayed in customer portal |
 
 ### Benefit Grant Flow
 
@@ -701,7 +706,7 @@ payment fails → status=past_due, past_due_at=now
 2. payout.trigger_stripe_payouts (daily)
 3. Calculate available balance
 4. Create Payout record
-   - ACTIVE org: status=pending, enqueue payout.created + payout.transfer
+   - ACTIVE/OFFBOARDED org: status=pending, enqueue payout.created + payout.transfer
    - REVIEW/SNOOZED org: status=held, enqueue payout.created only
 5. stripe_service.transfer() to Connect account (skipped for held)
 6. stripe_service.create_payout() to bank
@@ -709,7 +714,7 @@ payment fails → status=past_due, past_due_at=now
 
 Held payout lifecycle:
 - When org approved: payout.release_held_payouts → status=pending, enqueue transfer
-- When org denied/blocked: payout.cancel_account_payouts → cancel + refund
+- When org denied/blocked/offboarding: payout.cancel_account_payouts → cancel + refund
 - When payout account swapped: payout.cancel_held_payouts (old account only)
 ```
 

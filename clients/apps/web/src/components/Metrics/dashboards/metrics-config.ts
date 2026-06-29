@@ -12,10 +12,6 @@ export const METRIC_TYPES = [
 
 export type MetricType = (typeof METRIC_TYPES)[number]
 
-export function isValidMetricType(value: string): value is MetricType {
-  return METRIC_TYPES.includes(value as MetricType)
-}
-
 const SUBSCRIPTION_METRICS: (keyof schemas['Metrics'])[] = [
   'monthly_recurring_revenue',
   'committed_monthly_recurring_revenue',

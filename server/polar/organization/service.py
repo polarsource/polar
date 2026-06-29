@@ -13,7 +13,7 @@ from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.exc import IntegrityError
 
 from polar.account.service import account as account_service
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, is_user
 from polar.authz.service import get_accessible_org_ids
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.config import settings
@@ -113,14 +113,20 @@ _MIN_REVIEW_THRESHOLD = 10_000
 SNOOZE_MIN_DAYS = 1
 SNOOZE_MAX_DAYS = 7
 
-# Benefit types Polar fulfills without merchant API integration.
-_CHECKOUT_FULFILLABLE_BENEFITS: frozenset[BenefitType] = frozenset(
-    {
-        BenefitType.downloadables,
-        BenefitType.license_keys,
-        BenefitType.github_repository,
-        BenefitType.discord,
-    }
+# Benefit types that deliver nothing to the customer without a merchant API
+# integration: `feature_flag` (the merchant's app has to read the flag via the
+# API) and `meter_credit` (the credit is only meaningful once the merchant
+# ingests usage events via the API).
+_CHECKOUT_API_ONLY_BENEFITS: frozenset[BenefitType] = frozenset(
+    {BenefitType.feature_flag, BenefitType.meter_credit}
+)
+
+# Every other benefit delivers something on
+# its own — Polar grants it automatically (downloadables, license_keys,
+# github_repository, discord, slack_shared_channel) or the customer sees it in
+# their portal (custom note).
+_CHECKOUT_FULFILLABLE_BENEFITS: frozenset[BenefitType] = (
+    frozenset(BenefitType) - _CHECKOUT_API_ONLY_BENEFITS
 )
 
 # Hosting domains where it's unreasonable to expect the organization's support email to
@@ -147,6 +153,20 @@ def _is_hosted_website_domain(website_domain: str) -> bool:
     return any(
         website_domain == d or website_domain.endswith(f".{d}")
         for d in _HOSTED_WEBSITE_DOMAINS
+    )
+
+
+def _email_domain_matches_website(email_domain: str, website_domain: str) -> bool:
+    """Whether the support email domain belongs to the website's domain.
+
+    A subdomain relationship in either direction counts as a match, so a
+    `support@example.com` email is accepted for a website hosted on a subdomain
+    like `app.example.com`, and vice versa.
+    """
+    if email_domain == website_domain:
+        return True
+    return website_domain.endswith(f".{email_domain}") or email_domain.endswith(
+        f".{website_domain}"
     )
 
 
@@ -551,56 +571,6 @@ class OrganizationService:
         await self._after_update(session, organization)
         return organization
 
-    async def delete(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> Organization:
-        """Anonymizes fields on the Organization that can contain PII and then
-        soft-deletes the Organization.
-
-        DOES NOT:
-        - Delete or anonymize Users related Organization
-        - Delete or anonymize Account of the Organization
-        - Delete or anonymize Customers, Products, Discounts, Benefits, Checkouts of the Organization
-        - Revoke Benefits granted
-        - Remove API tokens (organization or personal)
-        """
-        repository = OrganizationRepository.from_session(session)
-
-        update_dict: dict[str, Any] = {}
-
-        pii_fields = ["name", "slug", "website", "customer_invoice_prefix"]
-        github_fields = ["bio", "company", "blog", "location", "twitter_username"]
-        for pii_field in pii_fields + github_fields:
-            value = getattr(organization, pii_field)
-            if value:
-                update_dict[pii_field] = anonymize_for_deletion(
-                    value, organization.created_at
-                )
-
-        if organization.email:
-            update_dict["email"] = anonymize_email_for_deletion(
-                organization.email, organization.created_at
-            )
-
-        if organization._avatar_url:
-            # Anonymize by setting to Polar logo
-            update_dict["avatar_url"] = (
-                "https://avatars.githubusercontent.com/u/105373340?s=48&v=4"
-            )
-        if organization.details:
-            update_dict["details"] = {}
-
-        if organization.socials:
-            update_dict["socials"] = []
-
-        organization = await repository.update(organization, update_dict=update_dict)
-        await repository.soft_delete(organization)
-        polar_self_service.enqueue_delete_customer(organization_id=organization.id)
-
-        return organization
-
     async def check_can_delete(
         self,
         session: AsyncReadSession,
@@ -694,8 +664,8 @@ class OrganizationService:
             )
             return check_result
 
-        # Soft delete the organization
-        await self.soft_delete_organization(session, organization)
+        # Soft delete the organization, releasing its slug for reuse
+        await self.soft_delete_organization(session, organization, release_slug=True)
 
         return OrganizationDeletionCheckResult(
             can_delete_immediately=True,
@@ -706,25 +676,31 @@ class OrganizationService:
         self,
         session: AsyncSession,
         organization: Organization,
+        *,
+        release_slug: bool = False,
     ) -> Organization:
-        """Soft-delete an organization, releasing its slug for reuse.
+        """Soft-delete an organization, anonymizing its PII.
 
-        Anonymizes PII fields, archives the previous slug to ``slug_history``,
-        and rewrites the live slug to a tombstone so a new organization can
-        claim the original.
+        When ``release_slug`` is set, the previous slug is archived to
+        ``slug_history`` and the live slug is rewritten to a tombstone so a new
+        organization can claim the original. Otherwise the slug is scrubbed like
+        any other PII field, leaving no recoverable trace.
         """
         repository = OrganizationRepository.from_session(session)
 
-        now = datetime.now(UTC)
-        update_dict: dict[str, Any] = {
-            "slug_history": [
+        update_dict: dict[str, Any] = {}
+        pii_fields = ["name", "website", "customer_invoice_prefix"]
+
+        if release_slug:
+            now = datetime.now(UTC)
+            update_dict["slug_history"] = [
                 *organization.slug_history,
                 {"slug": organization.slug, "deleted_at": now.isoformat()},
-            ],
-            "slug": f"__deleted__-{organization.slug}-{organization.id}",
-        }
+            ]
+            update_dict["slug"] = f"__deleted__-{organization.slug}-{organization.id}"
+        else:
+            pii_fields = ["name", "slug", "website", "customer_invoice_prefix"]
 
-        pii_fields = ["name", "website", "customer_invoice_prefix"]
         github_fields = ["bio", "company", "blog", "location", "twitter_username"]
         for pii_field in pii_fields + github_fields:
             value = getattr(organization, pii_field)
@@ -1223,7 +1199,7 @@ class OrganizationService:
         organization: Organization,
         next_review_threshold: int | None = None,
         *,
-        reason: str,
+        reason: str | None = None,
         internal_note: str | None = None,
         staff_user: User,
     ) -> Organization:
@@ -1241,6 +1217,11 @@ class OrganizationService:
         ``internal_note`` overrides the default reactivation note (and omits the
         reason line) so callers can record a context-specific note instead — the
         appeal flow points to the support case rather than repeating its reason.
+
+        ``reason`` is optional and, when set, becomes the merchant-facing body of
+        the appeal decision message on the support case. The appeal flow keeps it
+        optional (the staff-facing override reason is recorded separately); the
+        org-level reactivation passes its required override reason through here.
         """
         notes = {
             OrganizationStatus.DENIED: "Organization reactivated from denied.",
@@ -1435,15 +1416,40 @@ class OrganizationService:
         candidates = await repository.get_offboarding_past_period(cutoff)
         transitioned: list[Organization] = []
         for organization in candidates:
-            organization.set_status(OrganizationStatus.OFFBOARDED)
-            _append_internal_note(
+            self._transition_to_offboarded(
+                session,
                 organization,
                 "Automatically offboarded after the offboarding period elapsed.",
             )
-            session.add(organization)
-            enqueue_job("organization.offboarded", organization_id=organization.id)
             transitioned.append(organization)
         return transitioned
+
+    async def set_organization_offboarded(
+        self, session: AsyncSession, organization: Organization
+    ) -> Organization:
+        """Manually transition an offboarding org to the terminal offboarded state.
+
+        Same effect as the auto-offboard cron, but triggered from the
+        backoffice — used to complete offboarding before the wind-down period
+        has fully elapsed.
+        """
+        if organization.status != OrganizationStatus.OFFBOARDING:
+            raise OrganizationError(
+                "Only organizations that are offboarding can be set to offboarded.",
+                403,
+            )
+        self._transition_to_offboarded(
+            session, organization, "Manually offboarded from the backoffice."
+        )
+        return organization
+
+    def _transition_to_offboarded(
+        self, session: AsyncSession, organization: Organization, note: str
+    ) -> None:
+        organization.set_status(OrganizationStatus.OFFBOARDED)
+        _append_internal_note(organization, note)
+        session.add(organization)
+        enqueue_job("organization.offboarded", organization_id=organization.id)
 
     async def _exit_snooze_to_review(
         self, session: AsyncSession, organization: Organization
@@ -1520,6 +1526,7 @@ class OrganizationService:
         self,
         session: AsyncReadSession,
         organization: Organization,
+        auth_subject: AuthSubject[User | Organization] | None = None,
     ) -> OrganizationReviewState:
         """Build the merchant self-review checklist state.
 
@@ -1536,6 +1543,17 @@ class OrganizationService:
 
         organization_repository = OrganizationRepository.from_session(session)
         owner_user = await organization_repository.get_owner_user(organization)
+
+        # Identity verification is the owner's to complete. When a non-owner
+        # member is viewing, surface that they can't action it
+        current_user = (
+            auth_subject.subject
+            if auth_subject is not None and is_user(auth_subject)
+            else None
+        )
+        identity_restricted = current_user is not None and not (
+            owner_user is not None and current_user.id == owner_user.id
+        )
 
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
@@ -1556,7 +1574,9 @@ class OrganizationService:
             self._build_product_description_check(organization),
             product_configuration_check,
             setup_readiness_check,
-            self._build_identity_verification_check(owner_user),
+            self._build_identity_verification_check(
+                owner_user, restricted=identity_restricted
+            ),
             self._build_payout_account_check(payout_account),
             self._build_socials_check(organization),
             await product_url_task,
@@ -1564,6 +1584,7 @@ class OrganizationService:
         ]
 
         submitted_at = organization.details_submitted_at
+        optional_keys = {OrganizationReviewCheckKey.IDENTITY_SOCIAL_LINKS}
         is_blocked = any(
             step.status
             in (
@@ -1571,6 +1592,7 @@ class OrganizationService:
                 OrganizationReviewCheckStatus.PENDING,
             )
             for step in preliminary_steps
+            if step.key not in optional_keys
         )
         can_submit = submitted_at is None and not is_blocked
 
@@ -1632,7 +1654,7 @@ class OrganizationService:
 
         if (
             website_domain
-            and email_domain != website_domain
+            and not _email_domain_matches_website(email_domain, website_domain)
             and not _is_hosted_website_domain(website_domain)
         ):
             reasons.append(OrganizationReviewCheckReason.IDENTITY_DOMAIN_MISMATCH)
@@ -1676,9 +1698,21 @@ class OrganizationService:
         return self._passed_check(key)
 
     def _build_identity_verification_check(
-        self, owner_user: User | None
+        self, owner_user: User | None, *, restricted: bool = False
     ) -> OrganizationReviewCheck:
         key = OrganizationReviewCheckKey.IDENTITY_STRIPE_VERIFICATION
+        check = self._owner_identity_check(owner_user, key)
+        if restricted and check.status != OrganizationReviewCheckStatus.PASSED:
+            return OrganizationReviewCheck(
+                key=key,
+                status=check.status,
+                reasons=[OrganizationReviewCheckReason.NOT_AUTHORIZED],
+            )
+        return check
+
+    def _owner_identity_check(
+        self, owner_user: User | None, key: OrganizationReviewCheckKey
+    ) -> OrganizationReviewCheck:
         if owner_user is None:
             return self._not_started_check(key)
 

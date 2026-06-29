@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 from enum import StrEnum
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 from urllib.parse import urlparse
 
 from pydantic import (
@@ -39,6 +39,7 @@ from polar.models.organization import (
     OrganizationSubscriptionSettings,
 )
 from polar.models.organization_review import OrganizationReview
+from polar.models.support_case import ReviewAppealSupportCase
 from polar.models.user_organization import (
     OrganizationNotificationSettings,
     OrganizationRole,
@@ -172,6 +173,10 @@ class OrganizationFeatureSettings(Schema):
     preview_access_enabled: bool = Field(
         False,
         description="If this organization has preview access to new features enabled",
+    )
+    disputes_enabled: bool = Field(
+        False,
+        description="If this organization has the disputes dashboard enabled",
     )
 
 
@@ -584,7 +589,7 @@ class OrganizationReviewSubmission(Schema):
     name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
     website: Annotated[str, StringConstraints(min_length=1)]
     email: EmailStrDNS
-    socials: list[OrganizationSocialLink] = Field(min_length=1)
+    socials: list[OrganizationSocialLink] = Field(default_factory=list)
     details: Annotated[
         OrganizationReviewSubmissionDetails,
         BeforeValidator(_empty_review_submission_details_to_dict),
@@ -635,6 +640,24 @@ class OrganizationReviewStatus(Schema):
     appeal_reviewed_at: datetime | None = Field(
         default=None, description="When appeal was reviewed"
     )
+    appeal_case_id: UUID4 | None = Field(
+        default=None,
+        description="ID of the human-review support case, if one was opened",
+    )
+
+    @classmethod
+    def from_review(
+        cls, review: OrganizationReview, case: ReviewAppealSupportCase | None
+    ) -> Self:
+        return cls(
+            verdict=review.verdict,  # type: ignore[arg-type]
+            reason=review.reason,
+            appeal_submitted_at=review.appeal_submitted_at,
+            appeal_reason=review.appeal_reason,
+            appeal_decision=review.appeal_decision,
+            appeal_reviewed_at=review.appeal_reviewed_at,
+            appeal_case_id=case.id if case is not None else None,
+        )
 
 
 class OrganizationReviewCheckKey(StrEnum):
@@ -663,6 +686,7 @@ class OrganizationReviewCheckReason(StrEnum):
 
     # Universal
     NOT_STARTED = "not_started"
+    NOT_AUTHORIZED = "not_authorized"
     IN_PROGRESS = "in_progress"
     EXTERNAL_PENDING = "external_pending"
 

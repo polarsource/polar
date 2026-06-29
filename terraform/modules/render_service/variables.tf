@@ -49,6 +49,9 @@ variable "workers" {
     plan               = optional(string, "pro")
     num_instances      = optional(number, 1)
     database_pool_size = optional(string, "5")
+    redis_host         = optional(string)
+    redis_port         = optional(string)
+    redis_db           = optional(string)
   }))
 }
 
@@ -185,6 +188,19 @@ variable "aws_s3_secrets" {
     files_download_salt   = string
     files_download_secret = string
   })
+  sensitive = true
+}
+
+variable "worker_sqs_config" {
+  description = "Worker SQS execution engine config and producer credentials (optional). null skips the env group."
+  type = object({
+    enabled               = string
+    actors                = string
+    queue_prefix          = string
+    aws_access_key_id     = string
+    aws_secret_access_key = string
+  })
+  default   = null
   sensitive = true
 }
 

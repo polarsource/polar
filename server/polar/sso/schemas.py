@@ -71,7 +71,7 @@ class OrganizationSSOConnectionCreate(Schema):
         description="Provider-specific configuration of the connection."
     )
     enabled: bool = Field(
-        default=True, description="Whether the connection can be used to sign in."
+        default=False, description="Whether the connection can be used to sign in."
     )
 
 

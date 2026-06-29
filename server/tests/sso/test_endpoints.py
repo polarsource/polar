@@ -211,7 +211,7 @@ class TestCreateSSOConnection:
 
         json = response.json()
         assert json["type"] == "oidc"
-        assert json["enabled"] is True
+        assert json["enabled"] is False
         assert "client_secret" not in json["configuration"]
 
     @pytest.mark.auth

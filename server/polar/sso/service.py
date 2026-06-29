@@ -1,32 +1,15 @@
 from collections.abc import Sequence
-from typing import Any
 from uuid import UUID
 
 from polar.kit.pagination import PaginationParams, paginate
 from polar.models import Organization, OrganizationSSOConnection
-from polar.models.organization_sso_connection import OIDCConfiguration
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import OrganizationSSOConnectionRepository
-from .schemas import OIDCConfiguration as OIDCConfigurationSchema
 from .schemas import (
     OrganizationSSOConnectionCreate,
     OrganizationSSOConnectionUpdate,
 )
-
-
-def _to_stored_configuration(
-    configuration: OIDCConfigurationSchema,
-) -> OIDCConfiguration:
-    stored: OIDCConfiguration = {
-        "issuer": str(configuration.issuer),
-        "client_id": configuration.client_id,
-        "auth_method": configuration.auth_method,
-    }
-    client_secret = getattr(configuration, "client_secret", None)
-    if client_secret is not None:
-        stored["client_secret"] = client_secret
-    return stored
 
 
 class OrganizationSSOConnectionService:
@@ -61,9 +44,7 @@ class OrganizationSSOConnectionService:
         repository = OrganizationSSOConnectionRepository.from_session(session)
         connection = OrganizationSSOConnection(
             organization=organization,
-            type=create.configuration.type,
-            configuration=_to_stored_configuration(create.configuration),
-            enabled=create.enabled,
+            **create.model_dump(),
         )
         return await repository.create(connection, flush=True)
 
@@ -74,14 +55,7 @@ class OrganizationSSOConnectionService:
         update: OrganizationSSOConnectionUpdate,
     ) -> OrganizationSSOConnection:
         repository = OrganizationSSOConnectionRepository.from_session(session)
-        update_dict: dict[str, Any] = {}
-        if update.configuration is not None:
-            update_dict["configuration"] = _to_stored_configuration(
-                update.configuration
-            )
-            update_dict["type"] = update.configuration.type
-        if update.enabled is not None:
-            update_dict["enabled"] = update.enabled
+        update_dict = update.model_dump(exclude_none=True)
         return await repository.update(connection, update_dict=update_dict)
 
     async def delete(

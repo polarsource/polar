@@ -12,10 +12,6 @@ NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length
 
 
 class OIDCConfigurationBase(Schema):
-    type: Literal[OrganizationSSOConnectionType.oidc] = Field(
-        default=OrganizationSSOConnectionType.oidc,
-        description="Type of the SSO connection.",
-    )
     issuer: HttpsUrl = Field(description="OIDC issuer URL of the identity provider.")
     client_id: NonEmptyStr = Field(
         description="OAuth client ID registered with the identity provider."
@@ -67,6 +63,10 @@ class OrganizationSSOConnection(IDSchema, TimestampedSchema):
 
 
 class OrganizationSSOConnectionCreate(Schema):
+    type: Literal[OrganizationSSOConnectionType.oidc] = Field(
+        default=OrganizationSSOConnectionType.oidc,
+        description="Type of the SSO connection.",
+    )
     configuration: OIDCConfiguration = Field(
         description="Provider-specific configuration of the connection."
     )

@@ -1,7 +1,6 @@
 'use client'
 
 import { ParsedMetricsResponse } from '@/hooks/queries'
-import { schemas } from '@polar-sh/client'
 import { useMemo, useState } from 'react'
 import { CancellationReasonModal } from './cancellations/CancellationReasonModal'
 import {
@@ -13,7 +12,6 @@ import {
 
 interface CancellationsDistributionChartProps {
   data: ParsedMetricsResponse
-  interval: schemas['TimeInterval']
   height?: number
   organizationId: string
   startDate: Date

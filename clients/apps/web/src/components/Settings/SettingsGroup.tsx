@@ -46,10 +46,3 @@ export const SettingsGroupItem: React.FC<
   </div>
 )
 
-export const SettingsGroupActions: React.FC<React.PropsWithChildren> = ({
-  children,
-}) => (
-  <div className="flex flex-col gap-4 p-4 md:flex-row md:items-center">
-    {children}
-  </div>
-)

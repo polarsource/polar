@@ -42,6 +42,9 @@ locals {
     POLAR_REDIS_PORT              = tostring(module.redis.port)
     POLAR_REDIS_DB                = "1"
     POLAR_AWS_REGION              = "us-east-2"
+    POLAR_EMAIL_SENDER            = "resend"
+    POLAR_EMAIL_FROM_NAME         = "[SANDBOX] Polar"
+    POLAR_EMAIL_FROM_DOMAIN       = "notifications.sandbox.polar.sh"
     POLAR_WORKER_SQS_ENABLED      = "true"
     POLAR_WORKER_SQS_QUEUE_PREFIX = "polar-sandbox-tasks"
   }
@@ -51,27 +54,36 @@ locals {
     POLAR_JWKS_CONTENT    = var.backend_jwks_sandbox
     POLAR_LOGFIRE_TOKEN   = var.logfire_token
     POLAR_POSTGRES_PWD    = local.db_password
+    POLAR_RESEND_API_KEY  = var.backend_resend_api_key_sandbox
     POLAR_SECRET          = var.backend_secret_sandbox
     POLAR_SENTRY_DSN      = var.backend_sentry_dsn_sandbox
     TAILSCALE_AUTHKEY     = var.lambda_worker_tailscale_token
   }
 
   lambda_workers = {
-    dummy = {
-      reserved_concurrency         = null
-      environment_variables        = {}
-      secret_environment_variables = {}
-    }
-    "email-send" = {
+    "high-priority" = {
+      queue_name           = "high_priority"
       reserved_concurrency = null
-      environment_variables = {
-        POLAR_EMAIL_SENDER      = "resend"
-        POLAR_EMAIL_FROM_NAME   = "[SANDBOX] Polar"
-        POLAR_EMAIL_FROM_DOMAIN = "notifications.sandbox.polar.sh"
-      }
-      secret_environment_variables = {
-        POLAR_RESEND_API_KEY = var.backend_resend_api_key_sandbox
-      }
+    }
+    "medium-priority" = {
+      queue_name           = "medium_priority"
+      reserved_concurrency = null
+    }
+    "low-priority" = {
+      queue_name           = "low_priority"
+      reserved_concurrency = null
+    }
+    webhook = {
+      queue_name           = "webhooks"
+      reserved_concurrency = null
+    }
+    tinybird = {
+      queue_name           = "tinybird"
+      reserved_concurrency = null
+    }
+    "invoices-receipts" = {
+      queue_name           = "invoices_and_receipts"
+      reserved_concurrency = null
     }
   }
 }
@@ -82,7 +94,7 @@ module "lambda_worker" {
 
   environment              = "sandbox"
   name                     = each.key
-  queue_name               = "polar-sandbox-tasks-${each.key}"
+  queue_name               = "polar-sandbox-tasks-${each.value.queue_name}"
   image_uri                = "${module.lambda_worker_ecr.repository_url}:latest"
   enabled                  = true
   reserved_concurrency     = each.value.reserved_concurrency
@@ -90,13 +102,13 @@ module "lambda_worker" {
   security_group_ids       = local.lambda_security_group_ids
   permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
 
-  environment_variables        = merge(local.lambda_worker_environment, each.value.environment_variables)
-  secret_environment_variables = merge(local.lambda_worker_secrets, each.value.secret_environment_variables)
+  environment_variables        = local.lambda_worker_environment
+  secret_environment_variables = local.lambda_worker_secrets
 }
 
 moved {
   from = module.dummy_lambda_worker
-  to   = module.lambda_worker["dummy"]
+  to   = module.lambda_worker["low-priority"]
 }
 
 # =============================================================================

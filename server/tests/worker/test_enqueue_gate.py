@@ -9,6 +9,16 @@ from polar.config import settings
 from polar.logging import CorrelationID
 from polar.redis import Redis
 from polar.worker import JobQueueManager
+from polar.worker._sqs import actor_to_queue_name
+
+
+def test_actor_to_queue_name_uses_worker_queue(mocker: MockerFixture) -> None:
+    mocker.patch.object(settings, "WORKER_SQS_QUEUE_PREFIX", "polar-test-tasks")
+
+    assert actor_to_queue_name("customer.state_changed") == (
+        "polar-test-tasks-high_priority"
+    )
+    assert actor_to_queue_name("dummy") == "polar-test-tasks-low_priority"
 
 
 @pytest.mark.asyncio
@@ -26,7 +36,7 @@ class TestFlushGate:
         send_jobs.assert_not_called()
         assert await redis.llen("dramatiq:high_priority") == 1
 
-    async def test_allowlisted_actor_routes_to_sqs(
+    async def test_allowlisted_actor_routes_to_worker_queue_sqs(
         self, redis: Redis, mocker: MockerFixture
     ) -> None:
         mocker.patch.object(settings, "WORKER_SQS_ENABLED", True)

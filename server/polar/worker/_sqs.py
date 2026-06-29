@@ -6,6 +6,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Any
 
 import boto3
+import dramatiq
 import structlog
 from botocore.config import Config
 
@@ -55,9 +56,14 @@ def get_sqs_client() -> "SQSClient":
     )
 
 
-def actor_to_queue_name(actor_name: str) -> str:
-    sanitized = actor_name.replace(".", "-").replace("_", "-")
+def worker_queue_to_sqs_queue_name(worker_queue_name: str) -> str:
+    sanitized = worker_queue_name.replace(".", "-")
     return f"{settings.WORKER_SQS_QUEUE_PREFIX}-{sanitized}"
+
+
+def actor_to_queue_name(actor_name: str) -> str:
+    actor = dramatiq.get_broker().get_actor(actor_name)
+    return worker_queue_to_sqs_queue_name(actor.queue_name)
 
 
 _queue_url_cache: dict[str, str] = {}
@@ -143,4 +149,5 @@ __all__ = [
     "get_sqs_client",
     "parse_envelope",
     "send_jobs",
+    "worker_queue_to_sqs_queue_name",
 ]

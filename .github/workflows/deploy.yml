@@ -294,7 +294,14 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
       - name: Update sandbox Lambda function code
         run: |
-          for function in polar-sandbox-worker-dummy polar-sandbox-worker-email-send; do
+          for function in \
+            polar-sandbox-worker-high-priority \
+            polar-sandbox-worker-medium-priority \
+            polar-sandbox-worker-low-priority \
+            polar-sandbox-worker-webhook \
+            polar-sandbox-worker-tinybird \
+            polar-sandbox-worker-invoices-receipts
+          do
             aws lambda update-function-code \
               --function-name "$function" \
               --image-uri "${{ steps.login-ecr.outputs.registry }}/polar-sandbox-lambda-worker:sha-${{ github.sha }}" \

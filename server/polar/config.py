@@ -325,8 +325,8 @@ class Settings(BaseSettings):
     AWS_SIGNATURE_VERSION: str = "v4"
 
     # Worker SQS/Lambda execution engine (POC)
-    # When enabled, jobs enqueued for an allowlisted actor are routed to a
-    # per-actor SQS queue (consumed by a Lambda) instead of the Redis broker.
+    # When enabled, jobs enqueued for an allowlisted actor are routed to an
+    # SQS queue matching the actor's Dramatiq worker queue instead of Redis.
     WORKER_SQS_ENABLED: bool = False
     WORKER_SQS_ACTORS: set[str] = {"dummy"}
     WORKER_SQS_QUEUE_PREFIX: str = "polar-tasks"

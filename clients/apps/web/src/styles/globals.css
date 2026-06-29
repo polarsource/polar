@@ -246,6 +246,10 @@
     @apply text-gray-200;
   }
 
+  #polar-embed-layout {
+    color-scheme: normal;
+  }
+
   html:not(.dark) {
     --lightningcss-light: initial;
     --lightningcss-dark: ;

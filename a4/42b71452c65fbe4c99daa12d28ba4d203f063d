@@ -1,0 +1,35 @@
+server/polar/kit/encryption.py
+  s_ed565e6ac65dd0::t_24acda30a3ea74 16,19,21,35-38,41-44,63,141,168
+  s_ed565e6ac65dd0::t_3c4667e4f3d7ea 1-15,17-18,20,22-34,39-40,45-48,50-52,54-62,64,66-70,72-92,99-101,105-123,125-127,129-134,136-140,142-150,152-157,159,162-167,169-189
+  s_ed565e6ac65dd0::t_0b49a0445d4c51 65,71
+  s_ed565e6ac65dd0::t_880c68f062b724 93-98,102-104
+  s_ed565e6ac65dd0::t_3bd5d0fd0b3c37 124
+  s_ed565e6ac65dd0::t_f7f9798d9ef76d 128,135,151,158,160-161
+  s_ed565e6ac65dd0::t_66a4130e7f54ca 49,53
+server/tests/kit/test_encryption.py
+  s_ed565e6ac65dd0::t_b30966fe72614e 111-117,122-125,127-135
+  s_ed565e6ac65dd0::t_1f74e507c8d0e2 126
+  s_ed565e6ac65dd0::t_0e2f70c745b131 32-36,38,41,44
+  s_ed565e6ac65dd0::t_dacb9aba026e80 1-3,6-31,37,39-40,42-43,45-65,68,72-73,83,85,87-110
+  s_ed565e6ac65dd0::t_4aca86dbd9d03d 4-5
+  s_ed565e6ac65dd0::t_78c881567e0008 66-67,69-71,74-82,84,86
+  s_ed565e6ac65dd0::t_d8c5ba0f96beac 118-121
+server/polar/config.py
+  s_ed565e6ac65dd0::t_782933ebdb6120 327-332
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "a442b71452c65fbe4c99daa12d28ba4d203f063d",
+  "prompts": {},
+  "sessions": {
+    "s_ed565e6ac65dd0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3fd4c630-4cf5-4ce9-b011-ffba6871c737",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

@@ -1,0 +1,20 @@
+server/migrations/versions/2026-06-29-1148_add_merchant_migration_tables.py
+  s_5b6c091dc91776::t_0368c300de4ab5 4
+  s_5b6c091dc91776::t_2d9156a9b94bf5 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "9fc78eba17228e9359c1cf5a558ab269a37ac5e6",
+  "prompts": {},
+  "sessions": {
+    "s_5b6c091dc91776": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "625cc146-48a6-444d-94b1-11bf8c52669e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

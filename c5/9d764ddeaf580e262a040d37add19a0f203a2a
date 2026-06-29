@@ -1,0 +1,23 @@
+server/polar/customer_seat/service.py
+  s_de1e5f9fa30efc::t_e47a02d60e4037 226-228
+server/tests/customer_seat/test_service.py
+  s_de1e5f9fa30efc::t_47aca6d91dd455 2662,2668,2671-2673,2688-2690
+  s_de1e5f9fa30efc::t_c2f5819617817b 32
+  s_de1e5f9fa30efc::t_3552feb778f4ae 2661,2663-2667,2669-2670,2674-2687,2691-2704
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "c59d764ddeaf580e262a040d37add19a0f203a2a",
+  "prompts": {},
+  "sessions": {
+    "s_de1e5f9fa30efc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c36c0862-52ed-4639-9db2-e7d6bcadc3f4",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

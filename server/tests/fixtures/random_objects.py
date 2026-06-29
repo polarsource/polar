@@ -45,6 +45,7 @@ from polar.models import (
     IssueReward,
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
+    ManualGrant,
     Member,
     Meter,
     Order,
@@ -1900,6 +1901,20 @@ async def create_benefit_grant(
         grant.properties = properties
     await save_fixture(grant)
     return grant
+
+
+async def create_manual_grant(
+    save_fixture: SaveFixture,
+    *,
+    customer: Customer,
+    expires_at: datetime | None = None,
+) -> ManualGrant:
+    manual_grant = ManualGrant(
+        customer=customer,
+        expires_at=expires_at,
+    )
+    await save_fixture(manual_grant)
+    return manual_grant
 
 
 async def create_refund(

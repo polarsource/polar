@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime
 from typing import Literal
 from unittest.mock import MagicMock
@@ -7,7 +8,12 @@ from pytest_mock import MockerFixture
 
 from polar.benefit.grant.service import BenefitGrantService
 from polar.dispute.dispute_case import dispute_case as dispute_case_service
-from polar.dispute.service import DisputeNotOpenError, DisputePaymentNotFoundError
+from polar.dispute.schemas import DisputeCounter
+from polar.dispute.service import (
+    DisputeEvidenceFileNotFoundError,
+    DisputeNotOpenError,
+    DisputePaymentNotFoundError,
+)
 from polar.dispute.service import dispute as dispute_service
 from polar.enums import PaymentProcessor, TaxProcessor
 from polar.integrations.chargeback_stop.types import ChargebackStopAlert
@@ -15,11 +21,15 @@ from polar.models import Customer, Organization, Product
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
 from polar.models.support_case import (
     DisputeSupportCase,
+    SupportCaseMessageAuthorKind,
     SupportCaseMessageType,
 )
 from polar.postgres import AsyncSession
 from polar.refund.service import RefundService
-from polar.support_case.repository import SupportCaseMessageRepository
+from polar.support_case.repository import (
+    SupportCaseAttachmentRepository,
+    SupportCaseMessageRepository,
+)
 from polar.tax.calculation.base import AlreadyRevertedError
 from polar.transaction.service.dispute import DisputeTransactionService
 from tests.fixtures.database import SaveFixture
@@ -29,6 +39,7 @@ from tests.fixtures.random_objects import (
     create_order,
     create_payment,
     create_refund,
+    create_support_case_attachment_file,
 )
 from tests.fixtures.stripe import (
     build_stripe_balance_transaction,
@@ -1283,3 +1294,101 @@ class TestAccept:
             await dispute_service.accept(session, dispute)
 
         close_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+class TestCounter:
+    async def test_records_evidence_on_case(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer, product=product)
+        payment = await create_payment(save_fixture, organization, order=order)
+        dispute = await create_dispute(save_fixture, order, payment)
+        case = await dispute_case_service.open_case(
+            session, dispute, organization=organization
+        )
+        file = await create_support_case_attachment_file(save_fixture, organization)
+
+        result = await dispute_service.counter(
+            session,
+            dispute,
+            DisputeCounter(
+                explanation="The customer received the product as described.",
+                product_description="A digital course.",
+                evidence_file_ids=[file.id],
+            ),
+        )
+
+        # No processor contact: the dispute stays awaiting a response.
+        assert result.status == DisputeStatus.needs_response
+
+        messages = await SupportCaseMessageRepository.from_session(
+            session
+        ).list_by_case(case.id, visible_to=None)
+        countered = [
+            message
+            for message in messages
+            if message.type == SupportCaseMessageType.merchant_countered
+        ]
+        assert len(countered) == 1
+        message = countered[0]
+        assert message.author_kind == SupportCaseMessageAuthorKind.merchant
+        assert message.body is not None
+        assert "received the product" in message.body
+        assert "A digital course" in message.body
+
+        # The uploaded file is attached to the merchant's message.
+        attachments = await SupportCaseAttachmentRepository.from_session(
+            session
+        ).list_by_case(case.id)
+        assert [attachment.file_id for attachment in attachments] == [file.id]
+        assert attachments[0].message_id == message.id
+
+    async def test_raises_when_not_awaiting_response(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer, product=product)
+        payment = await create_payment(save_fixture, organization, order=order)
+        dispute = await create_dispute(
+            save_fixture, order, payment, status=DisputeStatus.under_review
+        )
+
+        with pytest.raises(DisputeNotOpenError):
+            await dispute_service.counter(
+                session, dispute, DisputeCounter(explanation="x" * 20)
+            )
+
+    async def test_raises_when_evidence_file_not_found(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer, product=product)
+        payment = await create_payment(save_fixture, organization, order=order)
+        dispute = await create_dispute(save_fixture, order, payment)
+        await dispute_case_service.open_case(
+            session, dispute, organization=organization
+        )
+
+        with pytest.raises(DisputeEvidenceFileNotFoundError):
+            await dispute_service.counter(
+                session,
+                dispute,
+                DisputeCounter(
+                    explanation="The customer received the product as described.",
+                    evidence_file_ids=[uuid.uuid4()],
+                ),
+            )

@@ -1,7 +1,8 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 from polar.exceptions import PolarError
-from polar.models import Dispute, Organization
+from polar.models import Dispute, File, Organization
 from polar.models.support_case import (
     DisputeSupportCase,
     SupportCaseAudience,
@@ -118,6 +119,40 @@ class DisputeCaseService:
             author_kind=SupportCaseMessageAuthorKind.system,
             audience=[SupportCaseAudience.merchant],
         )
+
+    async def counter(
+        self,
+        session: AsyncSession,
+        case: DisputeSupportCase,
+        *,
+        body: str,
+        files: Sequence[File],
+    ) -> SupportCaseMessage:
+        """Record the merchant's evidence on the thread.
+
+        Unlike the ``dispute_*`` system markers, this carries the merchant's
+        own content — their explanation and any supporting files — so it is
+        authored by the merchant. Support reviews it and submits it to the
+        processor manually.
+        """
+        await self._assert_open(session, case)
+        message = await support_case_service.post_message(
+            session,
+            case,
+            type=SupportCaseMessageType.merchant_countered,
+            author_kind=SupportCaseMessageAuthorKind.merchant,
+            body=body,
+            audience=[SupportCaseAudience.merchant],
+        )
+        for file in files:
+            await support_case_service.add_attachment(
+                session,
+                case,
+                file=file,
+                message=message,
+                audience=[SupportCaseAudience.merchant],
+            )
+        return message
 
     async def resolve(
         self, session: AsyncSession, case: DisputeSupportCase, *, won: bool

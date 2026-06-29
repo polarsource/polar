@@ -6,12 +6,14 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.models import Customer, Dispute, Organization, Product, UserOrganization
+from polar.models.dispute import DisputeStatus
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_dispute,
     create_dispute_case,
     create_order,
     create_payment,
+    create_support_case_attachment_file,
 )
 from tests.fixtures.stripe import build_stripe_dispute
 
@@ -195,3 +197,66 @@ class TestAcceptDispute:
         # by the status UPDATE and lazily loaded mid-serialization).
         assert json["case_id"] == str(case.id)
         close_mock.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+class TestCounterDispute:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post(
+            f"/v1/disputes/{uuid.uuid4()}/counter",
+            json={"explanation": "x" * 20},
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_counter(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        case = await create_dispute_case(save_fixture, organization, customer, product)
+        file = await create_support_case_attachment_file(save_fixture, organization)
+
+        response = await client.post(
+            f"/v1/disputes/{case.dispute_id}/counter",
+            json={
+                "explanation": "The customer received the product as described.",
+                "product_description": "A digital course.",
+                "evidence_file_ids": [str(file.id)],
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["id"] == str(case.dispute_id)
+        # No processor contact: the dispute still awaits a response.
+        assert json["status"] == "needs_response"
+        assert json["case_id"] == str(case.id)
+
+    @pytest.mark.auth
+    async def test_counter_requires_open_dispute(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer, product=product)
+        payment = await create_payment(save_fixture, organization, order=order)
+        dispute = await create_dispute(
+            save_fixture, order, payment, status=DisputeStatus.under_review
+        )
+
+        response = await client.post(
+            f"/v1/disputes/{dispute.id}/counter",
+            json={"explanation": "The customer received the product as described."},
+        )
+
+        assert response.status_code == 409

@@ -1,5 +1,5 @@
 import { api } from '@/utils/client'
-import { operations, unwrap } from '@polar-sh/client'
+import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -18,6 +18,28 @@ export const useAcceptDispute = () => {
     mutationFn: (id: string) =>
       unwrap(
         api.POST('/v1/disputes/{id}/accept', { params: { path: { id } } }),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['disputes'] })
+    },
+  })
+}
+
+export const useCounterDispute = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      id,
+      body,
+    }: {
+      id: string
+      body: schemas['DisputeCounter']
+    }) =>
+      unwrap(
+        api.POST('/v1/disputes/{id}/counter', {
+          params: { path: { id } },
+          body,
+        }),
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['disputes'] })

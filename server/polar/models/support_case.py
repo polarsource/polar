@@ -83,6 +83,9 @@ class SupportCaseMessageType(StrEnum):
     dispute_prevented = "dispute_prevented"
     # the merchant's decision on a dispute (records the lifecycle in the thread)
     merchant_accepted = "merchant_accepted"
+    # the merchant's evidence submission to counter a dispute, carrying their
+    # own explanation and supporting files for support to submit to the processor
+    merchant_countered = "merchant_countered"
 
 
 class SupportCase(RecordModel):

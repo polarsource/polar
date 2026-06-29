@@ -75,6 +75,7 @@ _EVENT_TITLES: dict[SupportCaseMessageType, str] = {
     SupportCaseMessageType.dispute_lost: "Dispute lost",
     SupportCaseMessageType.dispute_prevented: "Dispute prevented",
     SupportCaseMessageType.merchant_accepted: "Merchant accepted the dispute",
+    SupportCaseMessageType.merchant_countered: "Merchant submitted evidence",
     SupportCaseMessageType.assigned: "Case assigned",
     SupportCaseMessageType.released: "Case unassigned",
 }
@@ -107,6 +108,10 @@ _EVENT_NODES: dict[SupportCaseMessageType, tuple[str, str]] = {
         "bg-success text-success-content",
     ),
     SupportCaseMessageType.merchant_accepted: ("icon-x", _MUTED_NODE),
+    SupportCaseMessageType.merchant_countered: (
+        "icon-file-text",
+        "bg-info text-info-content",
+    ),
     SupportCaseMessageType.assigned: ("icon-user-check", _MUTED_NODE),
     SupportCaseMessageType.released: ("icon-user-x", _MUTED_NODE),
 }

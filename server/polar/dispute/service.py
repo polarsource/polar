@@ -14,13 +14,15 @@ from polar.customer.repository import CustomerRepository
 from polar.dispute.dispute_case import dispute_case as dispute_case_service
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
+from polar.file.repository import FileRepository
 from polar.integrations.chargeback_stop.types import ChargebackStopAlert
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.models import Dispute, Order, Payment
+from polar.models import Dispute, File, Order, Payment
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
+from polar.models.file import FileServiceTypes
 from polar.payment.repository import PaymentRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.repository import ProductRepository
@@ -33,6 +35,7 @@ from polar.transaction.service.dispute import (
 )
 
 from .repository import DisputeRepository
+from .schemas import DisputeCounter
 from .sorting import DisputeSortProperty
 from .stripe import get_dispute_balance_transaction, is_rapid_resolution_dispute
 
@@ -56,6 +59,13 @@ class DisputeNotOpenError(DisputeError):
     def __init__(self, dispute_id: uuid.UUID) -> None:
         self.dispute_id = dispute_id
         super().__init__(f"Dispute {dispute_id} is not awaiting a response.", 409)
+
+
+class DisputeEvidenceFileNotFoundError(DisputeError):
+    def __init__(self, file_ids: Sequence[uuid.UUID]) -> None:
+        self.file_ids = list(file_ids)
+        joined = ", ".join(str(file_id) for file_id in file_ids)
+        super().__init__(f"Evidence file(s) not found or not uploaded: {joined}.", 404)
 
 
 class DisputeService:
@@ -139,6 +149,71 @@ class DisputeService:
         )
         assert reloaded is not None
         return reloaded
+
+    async def counter(
+        self, session: AsyncSession, dispute: Dispute, counter: DisputeCounter
+    ) -> Dispute:
+        """Merchant submits evidence to contest the chargeback.
+
+        First iteration: we capture the response (explanation + supporting
+        files) on the dispute's support case for our team to review and submit
+        to the processor manually — we do not contact Stripe here. The dispute
+        stays ``needs_response`` until the processor acknowledges the
+        submission, which then flows back through ``upsert_from_stripe``.
+        """
+        if dispute.status != DisputeStatus.needs_response:
+            raise DisputeNotOpenError(dispute.id)
+
+        case = await dispute_case_service.get_case(session, dispute)
+        assert case is not None
+
+        files = await self._get_evidence_files(
+            session,
+            organization_id=dispute.payment.organization_id,
+            file_ids=counter.evidence_file_ids,
+        )
+        body = self._format_counter_body(counter)
+        await dispute_case_service.counter(session, case, body=body, files=files)
+
+        repository = DisputeRepository.from_session(session)
+        reloaded = await repository.get_by_id(
+            dispute.id, options=repository.get_eager_options()
+        )
+        assert reloaded is not None
+        return reloaded
+
+    async def _get_evidence_files(
+        self,
+        session: AsyncSession,
+        *,
+        organization_id: uuid.UUID,
+        file_ids: Sequence[uuid.UUID],
+    ) -> Sequence[File]:
+        if not file_ids:
+            return []
+        repository = FileRepository.from_session(session)
+        statement = repository.get_base_statement().where(
+            File.organization_id == organization_id,
+            File.service == FileServiceTypes.support_case_attachment,
+            File.is_uploaded.is_(True),
+            File.id.in_(file_ids),
+        )
+        files = await repository.get_all(statement)
+        files_by_id = {file.id: file for file in files}
+        missing = [file_id for file_id in file_ids if file_id not in files_by_id]
+        if missing:
+            raise DisputeEvidenceFileNotFoundError(missing)
+        # Preserve the order the merchant provided.
+        return [files_by_id[file_id] for file_id in file_ids]
+
+    @staticmethod
+    def _format_counter_body(counter: DisputeCounter) -> str:
+        sections = [counter.explanation.strip()]
+        if counter.product_description:
+            sections.append(
+                f"Product or service description:\n{counter.product_description.strip()}"
+            )
+        return "\n\n".join(sections)
 
     async def upsert_from_stripe(
         self, session: AsyncSession, stripe_dispute: stripe_lib.Dispute

@@ -2577,6 +2577,31 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/disputes/{id}/counter': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Counter Dispute
+     * @description Counter a dispute by submitting evidence.
+     *
+     *     Records the merchant's evidence on the dispute's support case for our team
+     *     to review and submit to the card network. Does not contact the processor.
+     *
+     *     **Scopes**: `disputes:write`
+     */
+    post: operations['disputes:counter']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/support-cases/{id}': {
     parameters: {
       query?: never
@@ -19512,6 +19537,30 @@ export interface components {
        */
       case_id: string | null
     }
+    /**
+     * DisputeCounter
+     * @description Merchant's evidence to counter a dispute.
+     *
+     *     Captured on the dispute's support case for our team to review and submit to
+     *     the card network. The shape will grow as the response form does.
+     */
+    DisputeCounter: {
+      /**
+       * Explanation
+       * @description Why the payment is legitimate — the core of the response to the card network.
+       */
+      explanation: string
+      /**
+       * Product Description
+       * @description Description of the product or service the customer purchased.
+       */
+      product_description?: string | null
+      /**
+       * Evidence File Ids
+       * @description IDs of uploaded files to attach as supporting evidence.
+       */
+      evidence_file_ids?: string[]
+    }
     /** DisputeCustomer */
     DisputeCustomer: {
       /**
@@ -31682,6 +31731,7 @@ export interface components {
       | 'dispute_lost'
       | 'dispute_prevented'
       | 'merchant_accepted'
+      | 'merchant_countered'
     /** SupportCaseThread */
     SupportCaseThread: {
       case: components['schemas']['SupportCase']
@@ -39606,6 +39656,60 @@ export interface operations {
       cookie?: never
     }
     requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Dispute']
+        }
+      }
+      /** @description Dispute not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['DisputeNotOpenError']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'disputes:counter': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The dispute ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DisputeCounter']
+      }
+    }
     responses: {
       /** @description Successful Response */
       200: {
@@ -60165,6 +60269,7 @@ export const supportCaseMessageTypeValues: ReadonlyArray<
   'dispute_lost',
   'dispute_prevented',
   'merchant_accepted',
+  'merchant_countered',
 ]
 export const supportCaseTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SupportCaseType']

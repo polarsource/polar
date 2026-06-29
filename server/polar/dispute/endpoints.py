@@ -18,7 +18,7 @@ from polar.routing import APIRouter
 
 from . import auth, sorting
 from .schemas import Dispute as DisputeSchema
-from .schemas import DisputeID, DisputeNotFound
+from .schemas import DisputeCounter, DisputeID, DisputeNotFound
 from .service import DisputeNotOpenError
 from .service import dispute as dispute_service
 
@@ -104,3 +104,31 @@ async def accept(
         raise ResourceNotFound()
 
     return await dispute_service.accept(session, dispute)
+
+
+@router.post(
+    "/{id}/counter",
+    summary="Counter Dispute",
+    response_model=DisputeSchema,
+    responses={
+        404: DisputeNotFound,
+        409: {"model": DisputeNotOpenError.schema()},
+    },
+)
+async def counter(
+    id: DisputeID,
+    counter: DisputeCounter,
+    auth_subject: auth.DisputesWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Dispute:
+    """Counter a dispute by submitting evidence.
+
+    Records the merchant's evidence on the dispute's support case for our team
+    to review and submit to the card network. Does not contact the processor.
+    """
+    dispute = await dispute_service.get(session, auth_subject, id)
+
+    if dispute is None:
+        raise ResourceNotFound()
+
+    return await dispute_service.counter(session, dispute, counter)

@@ -173,10 +173,7 @@ export const EditOAuthClientModal = ({
               />
             </ShadowBoxOnMd>
 
-            <Button
-              type="submit"
-              loading={updateOAuth2Client.isPending}
-            >
+            <Button type="submit" loading={updateOAuth2Client.isPending}>
               Update
             </Button>
           </form>

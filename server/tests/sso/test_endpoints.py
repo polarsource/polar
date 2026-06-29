@@ -160,7 +160,6 @@ class TestCreateSSOConnection:
             f"/v1/organizations/{organization.id}/sso-connections/",
             json={
                 "configuration": {
-                    "type": "oidc",
                     "issuer": "https://idp.example.com",
                     "client_id": "client-id",
                     "auth_method": "client_secret",
@@ -178,7 +177,6 @@ class TestCreateSSOConnection:
             f"/v1/organizations/{organization.id}/sso-connections/",
             json={
                 "configuration": {
-                    "type": "oidc",
                     "issuer": "https://idp.example.com",
                     "client_id": "client-id",
                     "auth_method": "client_secret",
@@ -199,7 +197,6 @@ class TestCreateSSOConnection:
             f"/v1/organizations/{organization.id}/sso-connections/",
             json={
                 "configuration": {
-                    "type": "oidc",
                     "issuer": "https://idp.example.com",
                     "client_id": "client-id",
                     "auth_method": "client_secret",
@@ -225,7 +222,6 @@ class TestCreateSSOConnection:
             f"/v1/organizations/{organization.id}/sso-connections/",
             json={
                 "configuration": {
-                    "type": "oidc",
                     "issuer": "https://idp.example.com",
                     "client_id": "client-id",
                     "auth_method": "client_secret",
@@ -245,7 +241,6 @@ class TestCreateSSOConnection:
             f"/v1/organizations/{organization.id}/sso-connections/",
             json={
                 "configuration": {
-                    "type": "oidc",
                     "issuer": "http://idp.example.com",
                     "client_id": "client-id",
                     "auth_method": "client_secret",

@@ -1423,7 +1423,7 @@ export interface paths {
     patch: operations['organizations:update_benefit_grant']
     trace?: never
   }
-  '/v1/organizations/{id}/sso-connections': {
+  '/v1/organizations/{id}/sso-connections/': {
     parameters: {
       query?: never
       header?: never
@@ -23133,17 +23133,11 @@ export interface components {
      * @enum {string}
      */
     OIDCAuthMethod: 'client_secret' | 'private_key_jwt'
-    /** OIDCConfiguration */
-    OIDCConfiguration: {
-      /**
-       * Type
-       * @description Type of the SSO connection.
-       * @default oidc
-       * @constant
-       */
-      type: 'oidc'
+    /** OIDCConfigurationClientSecret */
+    OIDCConfigurationClientSecret: {
       /**
        * Issuer
+       * Format: uri
        * @description OIDC issuer URL of the identity provider.
        */
       issuer: string
@@ -23152,13 +23146,35 @@ export interface components {
        * @description OAuth client ID registered with the identity provider.
        */
       client_id: string
-      /** @description Authentication method used against the identity provider. */
-      auth_method: components['schemas']['OIDCAuthMethod']
+      /**
+       * @description Authentication method used against the identity provider. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      auth_method: 'client_secret'
       /**
        * Client Secret
-       * @description Client secret; required for the `client_secret` auth method.
+       * @description Client secret used to authenticate against the identity provider.
        */
-      client_secret?: string | null
+      client_secret: string
+    }
+    /** OIDCConfigurationPrivateKeyJWT */
+    OIDCConfigurationPrivateKeyJWT: {
+      /**
+       * Issuer
+       * Format: uri
+       * @description OIDC issuer URL of the identity provider.
+       */
+      issuer: string
+      /**
+       * Client Id
+       * @description OAuth client ID registered with the identity provider.
+       */
+      client_id: string
+      /**
+       * @description Authentication method used against the identity provider. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      auth_method: 'private_key_jwt'
     }
     /** OIDCConfigurationRead */
     OIDCConfigurationRead: {
@@ -26176,12 +26192,24 @@ export interface components {
     }
     /** OrganizationSSOConnectionCreate */
     OrganizationSSOConnectionCreate: {
-      /** @description Provider-specific configuration of the connection. */
-      configuration: components['schemas']['OIDCConfiguration']
+      /**
+       * Type
+       * @description Type of the SSO connection.
+       * @default oidc
+       * @constant
+       */
+      type: 'oidc'
+      /**
+       * Configuration
+       * @description Provider-specific configuration of the connection.
+       */
+      configuration:
+        | components['schemas']['OIDCConfigurationClientSecret']
+        | components['schemas']['OIDCConfigurationPrivateKeyJWT']
       /**
        * Enabled
        * @description Whether the connection can be used to sign in.
-       * @default true
+       * @default false
        */
       enabled: boolean
     }
@@ -26192,8 +26220,16 @@ export interface components {
     OrganizationSSOConnectionType: 'oidc'
     /** OrganizationSSOConnectionUpdate */
     OrganizationSSOConnectionUpdate: {
-      /** @description Provider-specific configuration of the connection. */
-      configuration?: components['schemas']['OIDCConfiguration'] | null
+      /**
+       * Configuration
+       * @description Provider-specific configuration of the connection.
+       */
+      configuration?:
+        | (
+            | components['schemas']['OIDCConfigurationClientSecret']
+            | components['schemas']['OIDCConfigurationPrivateKeyJWT']
+          )
+        | null
       /**
        * Enabled
        * @description Whether the connection can be used to sign in.
@@ -59026,6 +59062,12 @@ export const oAuthPlatformValues: ReadonlyArray<
 export const oIDCAuthMethodValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OIDCAuthMethod']
 > = ['client_secret', 'private_key_jwt']
+export const oIDCConfigurationClientSecretAuth_methodValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OIDCConfigurationClientSecret']['auth_method']
+> = ['client_secret']
+export const oIDCConfigurationPrivateKeyJWTAuth_methodValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OIDCConfigurationPrivateKeyJWT']['auth_method']
+> = ['private_key_jwt']
 export const orderBillingReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrderBillingReason']
 > = [

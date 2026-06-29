@@ -27,7 +27,7 @@ export function TypographySection() {
         <div className="bg-brand-raised flex flex-col gap-8 overflow-hidden p-8 md:p-16">
           <Label>Geist Mono</Label>
           <Specimen>Usage</Specimen>
-          <div className="md:text2xl flex flex-col gap-2 font-mono text-xl tabular-nums">
+          <div className="flex flex-col gap-2 font-mono text-xl tabular-nums md:text-2xl">
             {invoice.map((row) => (
               <div
                 key={row.label}

@@ -8,6 +8,7 @@ from polar.models import Organization, User, UserOrganization
 from polar.models.organization import OrganizationStatus
 from polar.organization.tasks import (
     OrganizationDoesNotExist,
+    organization_cancel_expired_subscriptions,
     organization_created,
     organization_offboarded,
     organization_under_review,
@@ -120,3 +121,20 @@ class TestOrganizationOffboarded:
         assert organization.name in kwargs["subject"]
         email = args[0]
         assert email.props.account_url == organization.account_url
+
+
+@pytest.mark.asyncio
+class TestOrganizationCancelExpiredSubscriptions:
+    async def test_invokes_service(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+    ) -> None:
+        cancel_mock = mocker.patch(
+            "polar.organization.tasks.organization_service."
+            "cancel_expired_organizations_subscriptions"
+        )
+
+        await organization_cancel_expired_subscriptions()
+
+        cancel_mock.assert_called_once()

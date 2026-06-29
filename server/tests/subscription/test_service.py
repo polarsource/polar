@@ -58,6 +58,7 @@ from polar.models.customer import CustomerType
 from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
+from polar.models.organization import OrganizationStatus
 from polar.models.product_price import ProductPriceAmountType, ProductPriceSeatUnit
 from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
@@ -6975,6 +6976,194 @@ class TestCancelCustomer:
             "Expected the past_due subscription's pending orders to be voided, "
             f"but found {len(void_calls)} void call(s)"
         )
+
+
+@pytest.mark.asyncio
+class TestCancelForOrganization:
+    async def test_cancels_billable_without_email(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_email_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        await subscription_service.cancel_for_organization(
+            session, product.organization_id
+        )
+
+        await session.refresh(subscription)
+        assert subscription.status == SubscriptionStatus.canceled
+        assert subscription.canceled_at is not None
+        assert subscription.ended_at is not None
+
+        # No customer-facing email is sent for an org-driven cancellation.
+        enqueue_email_mock.assert_not_called()
+
+        # Merchant side effects still happen (pending orders are voided and the
+        # customer state is recomputed).
+        enqueue_job_mock.assert_any_call(
+            "order.void_pending_orders_for_subscription", subscription.id
+        )
+        enqueue_job_mock.assert_any_call(
+            "customer.state_changed", subscription.customer_id
+        )
+
+    async def test_skips_already_ended_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_email_mock: MagicMock,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            revoke=True,
+        )
+        ended_at = subscription.ended_at
+
+        await subscription_service.cancel_for_organization(
+            session, product.organization_id
+        )
+
+        await session.refresh(subscription)
+        assert subscription.ended_at == ended_at
+        enqueue_email_mock.assert_not_called()
+
+    async def test_skips_org_not_in_cancellation_status(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_email_mock: MagicMock,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # The org was reactivated (ACTIVE) after the daily scan enqueued the
+        # job: the deferred cancellation must be a no-op.
+        organization.status = OrganizationStatus.ACTIVE
+        await save_fixture(organization)
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        await subscription_service.cancel_for_organization(
+            session, product.organization_id
+        )
+
+        await session.refresh(subscription)
+        assert subscription.status == SubscriptionStatus.active
+        enqueue_email_mock.assert_not_called()
+
+    async def test_only_cancels_target_organization(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+        product: Product,
+        product_organization_second: Product,
+        customer: Customer,
+    ) -> None:
+        # Both orgs are denied; only the targeted org's subscriptions are
+        # cancelled, proving the scoping is by organization id.
+        organization.status = OrganizationStatus.DENIED
+        organization_second.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        await save_fixture(organization_second)
+        other_customer = await create_customer(
+            save_fixture,
+            organization=organization_second,
+        )
+        target_subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        other_subscription = await create_active_subscription(
+            save_fixture,
+            product=product_organization_second,
+            customer=other_customer,
+        )
+
+        await subscription_service.cancel_for_organization(
+            session, product.organization_id
+        )
+
+        await session.refresh(target_subscription)
+        await session.refresh(other_subscription)
+        assert target_subscription.status == SubscriptionStatus.canceled
+        assert other_subscription.status == SubscriptionStatus.active
+
+    async def test_skips_concurrently_canceled_subscription(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # A duplicate/concurrent run already cancelled the subscription, so
+        # _perform_cancellation raises: the batch must skip it, not abort.
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        mocker.patch.object(
+            subscription_service,
+            "_perform_cancellation",
+            side_effect=AlreadyCanceledSubscription(subscription),
+        )
+
+        # Must not raise.
+        await subscription_service.cancel_for_organization(
+            session, product.organization_id
+        )
+
+    async def test_cancels_multiple_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        # Every billable subscription of the org is cancelled by the streaming
+        # loop, not just the first one.
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        first = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        second = await create_active_subscription(
+            save_fixture, product=product, customer=customer_second
+        )
+
+        await subscription_service.cancel_for_organization(
+            session, product.organization_id
+        )
+
+        await session.refresh(first)
+        await session.refresh(second)
+        assert first.status == SubscriptionStatus.canceled
+        assert second.status == SubscriptionStatus.canceled
 
 
 @pytest.mark.asyncio

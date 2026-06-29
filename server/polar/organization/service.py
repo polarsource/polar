@@ -1424,6 +1424,25 @@ class OrganizationService:
             transitioned.append(organization)
         return transitioned
 
+    async def cancel_expired_organizations_subscriptions(
+        self, session: AsyncSession
+    ) -> Sequence[Organization]:
+        """Enqueue a per-org cancellation job for each organization denied,
+        blocked, or offboarded past the cancellation delay that still has
+        billable subscriptions. Returns the organizations enqueued.
+        """
+        repository = OrganizationRepository.from_session(session)
+        cutoff = (
+            datetime.now(UTC) - settings.ORGANIZATION_SUBSCRIPTION_CANCELLATION_DELAY
+        )
+        organizations = await repository.get_status_cancellation_expired(cutoff)
+        for organization in organizations:
+            enqueue_job(
+                "subscription.cancel_for_organization",
+                organization_id=organization.id,
+            )
+        return organizations
+
     async def set_organization_offboarded(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:

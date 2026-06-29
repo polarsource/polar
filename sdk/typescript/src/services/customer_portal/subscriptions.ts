@@ -34,9 +34,9 @@ export const listSubscriptions = (client: ClientBase) => {
       product_id: query?.product_id,
       active: query?.active,
       query: query?.query,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["-started_at"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["-started_at"],
     };
     const request = client.buildRequest(
       "GET",

@@ -37,9 +37,9 @@ export const listBenefitGrants = (client: ClientBase) => {
       order_id: query?.order_id,
       subscription_id: query?.subscription_id,
       member_id: query?.member_id,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["product_benefit", "-granted_at"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["product_benefit", "-granted_at"],
     };
     const request = client.buildRequest(
       "GET",

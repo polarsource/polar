@@ -13,6 +13,7 @@ import {
   HTTPValidationError,
   ManualRetryLimitExceeded,
   MissingInvoiceBillingDetails,
+  OrderNotEligibleForInvoice,
   OrderNotEligibleForRetry,
   PaymentAlreadyInProgress,
   ResourceNotFound,
@@ -43,9 +44,9 @@ export const listOrders = (client: ClientBase) => {
       product_billing_type: query?.product_billing_type,
       subscription_id: query?.subscription_id,
       query: query?.query,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["-created_at"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["-created_at"],
     };
     const request = client.buildRequest(
       "GET",
@@ -160,6 +161,7 @@ export const generateInvoiceOrders = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Order not found.
+   * @throws {OrderNotEligibleForInvoice} Order is not eligible for invoice generation (invalid status).
    * @throws {MissingInvoiceBillingDetails} Order is missing billing name or address.
    */
   return async (id: string): Promise<unknown> => {
@@ -177,6 +179,7 @@ export const generateInvoiceOrders = (client: ClientBase) => {
     const response = await client.sendRequest(request);
     return client.parseResponse<unknown>(response, "json", {
       404: ResourceNotFound,
+      409: OrderNotEligibleForInvoice,
       422: MissingInvoiceBillingDetails,
     });
   };

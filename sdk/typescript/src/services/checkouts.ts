@@ -53,9 +53,9 @@ export const listCheckouts = (client: ClientBase) => {
       external_customer_id: query?.external_customer_id,
       status: query?.status,
       query: query?.query,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["-created_at"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["-created_at"],
     };
     const request = client.buildRequest(
       "GET",

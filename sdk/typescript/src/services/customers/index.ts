@@ -1,18 +1,19 @@
-import { ClientBase } from "../base";
+import { ClientBase } from "../../base";
 import type {
   CustomerCreate,
   CustomerUpdate,
   CustomerUpdateExternalID,
   MetadataQuery,
-} from "../models/inputs";
+} from "../../models/inputs";
 import type {
   Customer,
   CustomerState,
   ListResourceCustomer,
   ListResourcePaymentMethod,
-} from "../models/outputs";
-import type { CustomerSortProperty } from "../models/literals";
-import { HTTPValidationError, ResourceNotFound } from "../errors";
+} from "../../models/outputs";
+import type { CustomerSortProperty } from "../../models/literals";
+import { HTTPValidationError, ResourceNotFound } from "../../errors";
+import { createMembersService } from "./members";
 
 export const listCustomers = (client: ClientBase) => {
   /**
@@ -42,9 +43,9 @@ export const listCustomers = (client: ClientBase) => {
       email: query?.email,
       query: query?.query,
       active: query?.active,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["-created_at"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["-created_at"],
       metadata: query?.metadata,
     };
     const request = client.buildRequest(
@@ -441,8 +442,8 @@ export const listPaymentMethodsCustomers = (client: ClientBase) => {
       id: id,
     };
     const queryParams = {
-      page: query?.page || 1,
-      limit: query?.limit || 10,
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
     };
     const request = client.buildRequest(
       "GET",
@@ -483,8 +484,8 @@ export const listPaymentMethodsExternalCustomers = (client: ClientBase) => {
       external_id: external_id,
     };
     const queryParams = {
-      page: query?.page || 1,
-      limit: query?.limit || 10,
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
     };
     const request = client.buildRequest(
       "GET",
@@ -516,6 +517,7 @@ export function createCustomersService(client: ClientBase) {
     getStateExternal: getStateExternalCustomers(client),
     listPaymentMethods: listPaymentMethodsCustomers(client),
     listPaymentMethodsExternal: listPaymentMethodsExternalCustomers(client),
+    members: createMembersService(client),
   };
 }
 

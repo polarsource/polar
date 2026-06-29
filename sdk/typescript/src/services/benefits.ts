@@ -45,9 +45,9 @@ export const listBenefits = (client: ClientBase) => {
       id: query?.id,
       exclude_id: query?.exclude_id,
       query: query?.query,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["-created_at"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["-created_at"],
       metadata: query?.metadata,
     };
     const request = client.buildRequest("GET", "/v1/benefits/", pathParams, queryParams, undefined);
@@ -226,8 +226,8 @@ export const grantsBenefits = (client: ClientBase) => {
       is_granted: query?.is_granted,
       customer_id: query?.customer_id,
       member_id: query?.member_id,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
     };
     const request = client.buildRequest(
       "GET",

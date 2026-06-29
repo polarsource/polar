@@ -25,9 +25,9 @@ export const listOrganizations = (client: ClientBase) => {
     const pathParams = {};
     const queryParams = {
       slug: query?.slug,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["created_at"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["created_at"],
     };
     const request = client.buildRequest(
       "GET",

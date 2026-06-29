@@ -61,9 +61,9 @@ export const listSubscriptions = (client: ClientBase) => {
       customer_cancellation_reason: query?.customer_cancellation_reason,
       canceled_at_after: query?.canceled_at_after,
       canceled_at_before: query?.canceled_at_before,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["-started_at"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["-started_at"],
       metadata: query?.metadata,
     };
     const request = client.buildRequest(

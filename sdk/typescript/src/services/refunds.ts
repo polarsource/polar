@@ -37,9 +37,9 @@ export const listRefunds = (client: ClientBase) => {
       customer_id: query?.customer_id,
       external_customer_id: query?.external_customer_id,
       succeeded: query?.succeeded,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["-created_at"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["-created_at"],
     };
     const request = client.buildRequest("GET", "/v1/refunds/", pathParams, queryParams, undefined);
     const response = await client.sendRequest(request);

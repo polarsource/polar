@@ -28,9 +28,9 @@ export const listDisputes = (client: ClientBase) => {
       organization_id: query?.organization_id,
       order_id: query?.order_id,
       status: query?.status,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["-created_at"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["-created_at"],
     };
     const request = client.buildRequest("GET", "/v1/disputes/", pathParams, queryParams, undefined);
     const response = await client.sendRequest(request);

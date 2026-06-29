@@ -182,8 +182,8 @@ export const listClaimedSubscriptionsSeats = (client: ClientBase) => {
   }): Promise<ListResourceCustomerSubscription> => {
     const pathParams = {};
     const queryParams = {
-      page: query?.page || 1,
-      limit: query?.limit || 10,
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
     };
     const request = client.buildRequest(
       "GET",

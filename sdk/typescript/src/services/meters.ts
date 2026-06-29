@@ -35,9 +35,9 @@ export const listMeters = (client: ClientBase) => {
       organization_id: query?.organization_id,
       query: query?.query,
       is_archived: query?.is_archived,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["name"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["name"],
       metadata: query?.metadata,
     };
     const request = client.buildRequest("GET", "/v1/meters/", pathParams, queryParams, undefined);
@@ -162,7 +162,7 @@ export const quantitiesMeters = (client: ClientBase) => {
       start_timestamp: query.start_timestamp,
       end_timestamp: query.end_timestamp,
       interval: query.interval,
-      timezone: query?.timezone || "UTC",
+      timezone: query?.timezone ?? "UTC",
       customer_id: query?.customer_id,
       external_customer_id: query?.external_customer_id,
       customer_aggregation_function: query?.customer_aggregation_function,

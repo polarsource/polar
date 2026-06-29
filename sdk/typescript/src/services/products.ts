@@ -43,9 +43,9 @@ export const listProducts = (client: ClientBase) => {
       is_recurring: query?.is_recurring,
       benefit_id: query?.benefit_id,
       visibility: query?.visibility,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["-created_at"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["-created_at"],
       metadata: query?.metadata,
     };
     const request = client.buildRequest("GET", "/v1/products/", pathParams, queryParams, undefined);

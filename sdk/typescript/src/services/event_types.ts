@@ -37,9 +37,9 @@ export const listEventTypes = (client: ClientBase) => {
       root_events: query?.root_events,
       parent_id: query?.parent_id,
       source: query?.source,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["-last_seen"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["-last_seen"],
     };
     const request = client.buildRequest(
       "GET",

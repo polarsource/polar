@@ -29,9 +29,9 @@ export const listCustomFields = (client: ClientBase) => {
       organization_id: query?.organization_id,
       query: query?.query,
       type: query?.type,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["slug"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["slug"],
     };
     const request = client.buildRequest(
       "GET",

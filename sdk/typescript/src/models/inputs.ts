@@ -1,34 +1,34 @@
 import type {
+  SeatTierType,
+  Reason,
+  Timeframe,
+  TrialInterval,
+  WebhookEventType,
+  CustomerCancellationReason,
+  CountryAlpha2Input,
+  DiscountDuration,
+  TokenEndpointAuthMethod,
+  Func,
+  OrganizationSocialPlatforms,
+  WebhookFormat,
+  SubscriptionProrationBehavior,
+  Role,
+  LicenseKeyStatus,
+  ProductVisibility,
+  TaxBehaviorOption,
+  PresentmentCurrency,
+  PublicSubscriptionProrationBehavior,
   PaymentProcessor,
   SubType,
-  TrialInterval,
-  BenefitVisibility,
-  Permission,
-  CountryAlpha2Input,
-  WebhookEventType,
-  LicenseKeyStatus,
-  FilterConjunction,
-  WebhookFormat,
-  DiscountType,
-  PublicSubscriptionProrationBehavior,
-  DiscountDuration,
-  Role,
-  SubscriptionRecurringInterval,
-  CustomerCancellationReason,
-  TaxBehaviorOption,
-  TokenEndpointAuthMethod,
-  PresentmentCurrency,
-  SeatTierType,
-  OrganizationSocialPlatforms,
-  Timeframe,
   CustomerType,
   MeterUnit,
-  RefundReason,
-  MemberRole,
-  Func,
+  FilterConjunction,
+  DiscountType,
+  BenefitVisibility,
   FilterOperator,
-  SubscriptionProrationBehavior,
-  ProductVisibility,
+  RecurringInterval,
+  Permission,
+  MemberRole,
 } from "./literals";
 /**
  * AddressInput
@@ -3101,13 +3101,11 @@ You can store up to **50 key-value pairs**.
    */
   conditions?: Record<string, string | number | number | boolean>;
 } /**
- * Schema for creating a new member.
+ * Schema for creating a new member nested under a customer.
+
+The customer is taken from the URL path, so it's not part of the body.
  */
-export interface MemberCreate {
-  /**
-   * The ID of the customer this member belongs to.
-   */
-  customer_id: string;
+export interface MemberCreateFromCustomer {
   /**
    * The email address of the member.
    */
@@ -3915,7 +3913,7 @@ You can store up to **50 key-value pairs**.
   /**
    * recurring_interval
    */
-  recurring_interval: SubscriptionRecurringInterval;
+  recurring_interval: RecurringInterval;
   /**
    * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
    */
@@ -4519,7 +4517,7 @@ You can store up to **50 key-value pairs**.
   /**
    * The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.**
    */
-  recurring_interval?: SubscriptionRecurringInterval | null;
+  recurring_interval?: RecurringInterval | null;
   /**
    * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**
    */
@@ -4585,9 +4583,9 @@ You can store up to **50 key-value pairs**.
    */
   order_id: string;
   /**
-   * reason
+   * Reason for the refund.
    */
-  reason: RefundReason;
+  reason: Reason;
   /**
    * Amount to refund in cents. Minimum is 1.
    */

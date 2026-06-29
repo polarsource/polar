@@ -20,9 +20,9 @@ export const listWallets = (client: ClientBase) => {
   }): Promise<ListResourceCustomerWallet> => {
     const pathParams = {};
     const queryParams = {
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["-created_at"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["-created_at"],
     };
     const request = client.buildRequest(
       "GET",

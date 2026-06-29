@@ -1,50 +1,51 @@
 import type {
-  PaymentProcessor,
-  SubType,
-  CheckoutStatus,
+  SeatTierType,
+  CountryAlpha2,
+  Timeframe,
+  ProductPriceSource,
+  DisputeStatus,
   TrialInterval,
-  FileServiceTypes,
-  BenefitVisibility,
-  SubscriptionStatus,
-  Permission,
-  EventSource,
-  WebhookEventType,
-  OrganizationStatus,
-  LicenseKeyStatus,
-  FilterConjunction,
-  WebhookFormat,
-  DiscountType,
-  PublicSubscriptionProrationBehavior,
-  DiscountDuration,
-  RefundStatus,
-  SubscriptionRecurringInterval,
-  BillingAddressFieldMode,
+  Scope,
   CustomerCancellationReason,
+  RefundReason,
+  WebhookEventType,
+  DiscountDuration,
+  Func,
+  TokenType,
+  OrganizationSocialPlatforms,
+  CheckoutStatus,
+  WebhookFormat,
+  TaxBehavior,
+  Status,
+  SubscriptionProrationBehavior,
+  SeatStatus,
+  OrderBillingReason,
+  OrganizationStatus,
+  EventSource,
+  MetricType,
+  LicenseKeyStatus,
+  SubscriptionStatus,
+  OrderStatus,
+  ProductVisibility,
   TaxBehaviorOption,
   PaymentStatus,
-  Status,
-  TokenType,
-  SeatTierType,
-  ProductPriceSource,
-  OrganizationSocialPlatforms,
-  Timeframe,
-  Scope,
-  OrderBillingReason,
+  FileServiceTypes,
+  PublicSubscriptionProrationBehavior,
+  PaymentProcessor,
+  SubType,
+  BillingAddressFieldMode,
   CustomerType,
-  DisputeStatus,
-  BenefitType,
   MeterUnit,
-  RefundReason,
-  OrderStatus,
-  SeatStatus,
-  MemberRole,
-  TaxBehavior,
-  CountryAlpha2,
-  Func,
+  FilterConjunction,
+  DiscountType,
+  BenefitVisibility,
+  PaymentTrigger,
   FilterOperator,
-  SubscriptionProrationBehavior,
-  ProductVisibility,
-  MetricType,
+  RecurringInterval,
+  Permission,
+  MemberRole,
+  BenefitType,
+  RefundStatus,
 } from "./literals";
 /**
  * Address
@@ -127,6 +128,18 @@ export interface AlreadyCanceledSubscription {
    */
   detail: string;
 } /**
+ * AmbiguousExternalCustomerID
+ */
+export interface AmbiguousExternalCustomerID {
+  /**
+   * error
+   */
+  error: "AmbiguousExternalCustomerID";
+  /**
+   * detail
+   */
+  detail: string;
+} /**
  * Schema of a custom field attached to a resource.
  */
 export interface AttachedCustomField {
@@ -183,13 +196,17 @@ export interface AuthorizeResponseOrganization {
    */
   scopes: Scope[];
   /**
-   * scope_display_names
-   */
-  scope_display_names?: Record<string, string>;
-  /**
    * organizations
    */
   organizations: AuthorizeOrganization[];
+  /**
+   * requires_single_organization
+   */
+  requires_single_organization?: boolean;
+  /**
+   * scope_display_names
+   */
+  scope_display_names?: Record<string, string>;
 } /**
  * AuthorizeResponseUser
  */
@@ -210,6 +227,14 @@ export interface AuthorizeResponseUser {
    * scopes
    */
   scopes: Scope[];
+  /**
+   * organizations
+   */
+  organizations: AuthorizeOrganization[];
+  /**
+   * requires_single_organization
+   */
+  requires_single_organization?: boolean;
   /**
    * scope_display_names
    */
@@ -2480,6 +2505,10 @@ export interface CardPayment {
    */
   method: "card";
   /**
+   * What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry.
+   */
+  trigger?: PaymentTrigger | null;
+  /**
    * Error code, if the payment was declined.
    */
   decline_reason: string | null;
@@ -3138,7 +3167,7 @@ export interface CheckoutLinkProduct {
   /**
    * The recurring interval of the product. If `None`, the product is a one-time purchase.
    */
-  recurring_interval: SubscriptionRecurringInterval | null;
+  recurring_interval: RecurringInterval | null;
   /**
    * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
    */
@@ -3242,7 +3271,7 @@ export interface CheckoutProduct {
   /**
    * The recurring interval of the product. If `None`, the product is a one-time purchase.
    */
-  recurring_interval: SubscriptionRecurringInterval | null;
+  recurring_interval: RecurringInterval | null;
   /**
    * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
    */
@@ -5116,6 +5145,10 @@ export interface CustomerOrder {
    */
   checkout_id: string | null;
   /**
+   * When the next automatic payment retry is scheduled. `null` if the order is not in dunning or all retries have been exhausted.
+   */
+  next_payment_attempt_at?: string | null;
+  /**
    * product
    */
   product: CustomerOrderProduct | null;
@@ -5131,10 +5164,6 @@ export interface CustomerOrder {
    * A summary description of the order.
    */
   description: string;
-  /**
-   * When the next payment retry is scheduled
-   */
-  next_payment_attempt_at?: string | null;
   /**
    * Amount in cents that can still be refunded (net, before taxes). Accounts for any applied customer balance and previous refunds.
    */
@@ -5218,7 +5247,7 @@ export interface CustomerOrderProduct {
   /**
    * The recurring interval of the product. If `None`, the product is a one-time purchase.
    */
-  recurring_interval: SubscriptionRecurringInterval | null;
+  recurring_interval: RecurringInterval | null;
   /**
    * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
    */
@@ -5286,7 +5315,7 @@ export interface CustomerOrderSubscription {
   /**
    * recurring_interval
    */
-  recurring_interval: SubscriptionRecurringInterval;
+  recurring_interval: RecurringInterval;
   /**
    * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
    */
@@ -5331,6 +5360,10 @@ export interface CustomerOrderSubscription {
    * The timestamp when the subscription ended.
    */
   ended_at: string | null;
+  /**
+   * The timestamp when the subscription entered `past_due` status.
+   */
+  past_due_at?: string | null;
   /**
    * The ID of the subscribed customer.
    */
@@ -5682,7 +5715,7 @@ export interface CustomerProduct {
   /**
    * The recurring interval of the product. If `None`, the product is a one-time purchase.
    */
-  recurring_interval: SubscriptionRecurringInterval | null;
+  recurring_interval: RecurringInterval | null;
   /**
    * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
    */
@@ -6029,7 +6062,7 @@ export interface CustomerStateSubscription {
   /**
    * recurring_interval
    */
-  recurring_interval: SubscriptionRecurringInterval;
+  recurring_interval: RecurringInterval;
   /**
    * The start timestamp of the current billing period.
    */
@@ -6221,7 +6254,7 @@ export interface CustomerSubscription {
   /**
    * recurring_interval
    */
-  recurring_interval: SubscriptionRecurringInterval;
+  recurring_interval: RecurringInterval;
   /**
    * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
    */
@@ -6266,6 +6299,10 @@ export interface CustomerSubscription {
    * The timestamp when the subscription ended.
    */
   ended_at: string | null;
+  /**
+   * The timestamp when the subscription entered `past_due` status.
+   */
+  past_due_at?: string | null;
   /**
    * The ID of the subscribed customer.
    */
@@ -6405,7 +6442,7 @@ export interface CustomerSubscriptionProduct {
   /**
    * The recurring interval of the product. If `None`, the product is a one-time purchase.
    */
-  recurring_interval: SubscriptionRecurringInterval | null;
+  recurring_interval: RecurringInterval | null;
   /**
    * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
    */
@@ -7241,7 +7278,7 @@ export interface DiscountProduct {
   /**
    * The recurring interval of the product. If `None`, the product is a one-time purchase.
    */
-  recurring_interval: SubscriptionRecurringInterval | null;
+  recurring_interval: RecurringInterval | null;
   /**
    * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
    */
@@ -7301,6 +7338,18 @@ export interface Dispute {
    */
   currency: string;
   /**
+   * The reason for the dispute as reported by the card network (e.g. `fraudulent`, `product_not_received`). `None` until the processor reports it.
+   */
+  reason: string | null;
+  /**
+   * Deadline to submit evidence in response to the dispute. `None` when no response is required.
+   */
+  evidence_due_by: string | null;
+  /**
+   * Whether the evidence submission deadline has passed.
+   */
+  past_due: boolean;
+  /**
    * The ID of the order associated with the dispute.
    */
   order_id: string;
@@ -7309,9 +7358,85 @@ export interface Dispute {
    */
   payment_id: string;
   /**
+   * customer
+   */
+  customer: DisputeCustomer;
+  /**
    * The ID of the support case for this dispute, if one was opened.
    */
   case_id: string | null;
+} /**
+ * DisputeCustomer
+ */
+export interface DisputeCustomer {
+  /**
+   * The ID of the customer.
+   */
+  id: string;
+  /**
+   * Creation timestamp of the object.
+   */
+  created_at: string;
+  /**
+   * Last modification timestamp of the object.
+   */
+  modified_at: string | null;
+  /**
+   * metadata
+   */
+  metadata: MetadataOutputType;
+  /**
+   * The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+   */
+  external_id?: string | null;
+  /**
+   * The email address of the customer. This must be unique within the organization.
+   */
+  email?: string | null;
+  /**
+   * Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+   */
+  email_verified: boolean;
+  /**
+   * type
+   */
+  type: CustomerType;
+  /**
+   * The name of the customer.
+   */
+  name: string | null;
+  /**
+   * The name that should appear on the customer's invoices. Falls back to the customer name when not explicitly set.
+   */
+  billing_name: string | null;
+  /**
+   * billing_address
+   */
+  billing_address: Address | null;
+  /**
+   * tax_id
+   */
+  tax_id: unknown[] | null;
+  /**
+   * locale
+   */
+  locale?: string | null;
+  /**
+   * The ID of the organization owning the customer.
+   */
+  organization_id: string;
+  /**
+   * The ID of the customer's default payment method, if any. Use the payment methods endpoint to retrieve its details.
+   */
+  default_payment_method_id?: string | null;
+  /**
+   * Timestamp for when the customer was soft deleted.
+   */
+  deleted_at: string | null;
+  /**
+   * avatar_url
+   */
+  avatar_url: string | null;
 } /**
  * File to be associated with the downloadables benefit.
  */
@@ -7737,6 +7862,10 @@ export interface GenericPayment {
    */
   method: string;
   /**
+   * What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry.
+   */
+  trigger?: PaymentTrigger | null;
+  /**
    * Error code, if the payment was declined.
    */
   decline_reason: string | null;
@@ -7901,7 +8030,7 @@ export interface LegacyRecurringProductPriceCustom {
   /**
    * recurring_interval
    */
-  recurring_interval: SubscriptionRecurringInterval;
+  recurring_interval: RecurringInterval;
   /**
    * The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'.
    */
@@ -7967,7 +8096,7 @@ export interface LegacyRecurringProductPriceFixed {
   /**
    * recurring_interval
    */
-  recurring_interval: SubscriptionRecurringInterval;
+  recurring_interval: RecurringInterval;
   /**
    * The price in cents.
    */
@@ -9912,6 +10041,10 @@ export interface Order {
    */
   checkout_id: string | null;
   /**
+   * When the next automatic payment retry is scheduled. `null` if the order is not in dunning or all retries have been exhausted.
+   */
+  next_payment_attempt_at?: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -10093,6 +10226,18 @@ export interface OrderNotDraft {
    */
   detail: string;
 } /**
+ * OrderNotEligibleForInvoice
+ */
+export interface OrderNotEligibleForInvoice {
+  /**
+   * error
+   */
+  error: "OrderNotEligibleForInvoice";
+  /**
+   * detail
+   */
+  detail: string;
+} /**
  * OrderNotEligibleForRetry
  */
 export interface OrderNotEligibleForRetry {
@@ -10267,7 +10412,7 @@ export interface OrderProduct {
   /**
    * The recurring interval of the product. If `None`, the product is a one-time purchase.
    */
-  recurring_interval: SubscriptionRecurringInterval | null;
+  recurring_interval: RecurringInterval | null;
   /**
    * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
    */
@@ -10399,7 +10544,7 @@ export interface OrderSubscription {
   /**
    * recurring_interval
    */
-  recurring_interval: SubscriptionRecurringInterval;
+  recurring_interval: RecurringInterval;
   /**
    * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
    */
@@ -10444,6 +10589,10 @@ export interface OrderSubscription {
    * The timestamp when the subscription ended.
    */
   ended_at: string | null;
+  /**
+   * The timestamp when the subscription entered `past_due` status.
+   */
+  past_due_at?: string | null;
   /**
    * The ID of the subscribed customer.
    */
@@ -10852,6 +11001,10 @@ export interface OrganizationFeatureSettings {
    * If this organization has preview access to new features enabled
    */
   preview_access_enabled?: boolean;
+  /**
+   * If this organization has the disputes dashboard enabled
+   */
+  disputes_enabled?: boolean;
 } /**
  * OrganizationNotReadyForPayments
  */
@@ -11175,7 +11328,7 @@ export interface Product {
   /**
    * The recurring interval of the product. If `None`, the product is a one-time purchase.
    */
-  recurring_interval: SubscriptionRecurringInterval | null;
+  recurring_interval: RecurringInterval | null;
   /**
    * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
    */
@@ -11662,6 +11815,18 @@ export interface RefundDispute {
    */
   currency: string;
   /**
+   * The reason for the dispute as reported by the card network (e.g. `fraudulent`, `product_not_received`). `None` until the processor reports it.
+   */
+  reason: string | null;
+  /**
+   * Deadline to submit evidence in response to the dispute. `None` when no response is required.
+   */
+  evidence_due_by: string | null;
+  /**
+   * Whether the evidence submission deadline has passed.
+   */
+  past_due: boolean;
+  /**
    * The ID of the order associated with the dispute.
    */
   order_id: string;
@@ -11832,7 +11997,7 @@ export interface Subscription {
   /**
    * recurring_interval
    */
-  recurring_interval: SubscriptionRecurringInterval;
+  recurring_interval: RecurringInterval;
   /**
    * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
    */
@@ -11877,6 +12042,10 @@ export interface Subscription {
    * The timestamp when the subscription ended.
    */
   ended_at: string | null;
+  /**
+   * The timestamp when the subscription entered `past_due` status.
+   */
+  past_due_at?: string | null;
   /**
    * The ID of the subscribed customer.
    */

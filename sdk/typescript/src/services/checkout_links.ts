@@ -27,9 +27,9 @@ export const listCheckoutLinks = (client: ClientBase) => {
     const queryParams = {
       organization_id: query?.organization_id,
       product_id: query?.product_id,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["created_at"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["created_at"],
     };
     const request = client.buildRequest(
       "GET",

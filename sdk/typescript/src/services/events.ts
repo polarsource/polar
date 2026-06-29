@@ -54,9 +54,9 @@ export const listEvents = (client: ClientBase) => {
       query: query?.query,
       parent_id: query?.parent_id,
       depth: query?.depth,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["-timestamp"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["-timestamp"],
       metadata: query?.metadata,
     };
     const request = client.buildRequest("GET", "/v1/events/", pathParams, queryParams, undefined);
@@ -99,9 +99,9 @@ export const listNamesEvents = (client: ClientBase) => {
       external_customer_id: query?.external_customer_id,
       source: query?.source,
       query: query?.query,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["-last_seen"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["-last_seen"],
     };
     const request = client.buildRequest(
       "GET",

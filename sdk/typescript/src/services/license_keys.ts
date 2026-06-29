@@ -41,8 +41,8 @@ export const listLicenseKeys = (client: ClientBase) => {
       organization_id: query?.organization_id,
       benefit_id: query?.benefit_id,
       status: query?.status,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
     };
     const request = client.buildRequest(
       "GET",

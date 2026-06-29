@@ -70,8 +70,9 @@ const buildUrl = (url: string, pathParams?: PathParams, queryParams?: QueryParam
         }
       }
     }
-    const queryString = searchParams.toString();
-    if (queryString) {
+    if (params.length > 0) {
+      const searchParams = new URLSearchParams(params);
+      const queryString = searchParams.toString();
       formattedUrl = `${formattedUrl}?${queryString}`;
     }
   }

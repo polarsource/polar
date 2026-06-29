@@ -20,8 +20,8 @@ export const listDownloadables = (client: ClientBase) => {
     const pathParams = {};
     const queryParams = {
       benefit_id: query?.benefit_id,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
     };
     const request = client.buildRequest(
       "GET",

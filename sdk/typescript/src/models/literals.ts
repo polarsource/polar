@@ -906,6 +906,16 @@ export type PaymentSortProperty =
  */
 export type PaymentStatus = "pending" | "succeeded" | "failed";
 /**
+ * PaymentTrigger
+ */
+export type PaymentTrigger =
+  | "purchase"
+  | "subscription_cycle"
+  | "retry_dunning"
+  | "retry_customer"
+  | "retry_payment_method_update"
+  | "retry_admin";
+/**
  * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
@@ -1068,6 +1078,20 @@ export type ProductVisibility = "draft" | "private" | "public";
  */
 export type PublicSubscriptionProrationBehavior = "invoice" | "prorate" | "next_period";
 /**
+ * Reason for the refund.
+ */
+export type Reason =
+  | "duplicate"
+  | "fraudulent"
+  | "customer_request"
+  | "service_disruption"
+  | "satisfaction_guarantee"
+  | "other";
+/**
+ * RecurringInterval
+ */
+export type RecurringInterval = "day" | "week" | "month" | "year";
+/**
  * RefundReason
  */
 export type RefundReason =
@@ -1176,10 +1200,6 @@ export type SubType = "user" | "organization";
  * SubscriptionProrationBehavior
  */
 export type SubscriptionProrationBehavior = "invoice" | "prorate" | "next_period" | "reset";
-/**
- * SubscriptionRecurringInterval
- */
-export type SubscriptionRecurringInterval = "day" | "week" | "month" | "year";
 /**
  * SubscriptionSortProperty
  */

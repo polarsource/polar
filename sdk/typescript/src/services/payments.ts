@@ -36,9 +36,9 @@ export const listPayments = (client: ClientBase) => {
       status: query?.status,
       method: query?.method,
       customer_email: query?.customer_email,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["-created_at"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["-created_at"],
     };
     const request = client.buildRequest("GET", "/v1/payments/", pathParams, queryParams, undefined);
     const response = await client.sendRequest(request);

@@ -32,8 +32,8 @@ export const listFiles = (client: ClientBase) => {
     const queryParams = {
       organization_id: query?.organization_id,
       ids: query?.ids,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
     };
     const request = client.buildRequest("GET", "/v1/files/", pathParams, queryParams, undefined);
     const response = await client.sendRequest(request);

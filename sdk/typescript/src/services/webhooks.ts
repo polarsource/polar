@@ -28,8 +28,8 @@ export const listWebhookEndpointsWebhooks = (client: ClientBase) => {
     const pathParams = {};
     const queryParams = {
       organization_id: query?.organization_id,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
     };
     const request = client.buildRequest(
       "GET",
@@ -235,8 +235,8 @@ export const listWebhookDeliveriesWebhooks = (client: ClientBase) => {
       query: query?.query,
       http_code_class: query?.http_code_class,
       event_type: query?.event_type,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
     };
     const request = client.buildRequest(
       "GET",

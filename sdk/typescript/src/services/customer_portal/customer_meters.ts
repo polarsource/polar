@@ -29,9 +29,9 @@ export const listCustomerMeters = (client: ClientBase) => {
     const queryParams = {
       meter_id: query?.meter_id,
       query: query?.query,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["-modified_at"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["-modified_at"],
     };
     const request = client.buildRequest(
       "GET",

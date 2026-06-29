@@ -38,8 +38,8 @@ export const listMembersMembers = (client: ClientBase) => {
   }): Promise<ListResourceCustomerPortalMember> => {
     const pathParams = {};
     const queryParams = {
-      page: query?.page || 1,
-      limit: query?.limit || 10,
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
     };
     const request = client.buildRequest(
       "GET",

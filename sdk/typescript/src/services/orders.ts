@@ -8,6 +8,7 @@ import {
   HTTPValidationError,
   MissingInvoiceBillingDetails,
   OrderNotDraft,
+  OrderNotEligibleForInvoice,
   ResourceNotFound,
 } from "../errors";
 
@@ -47,9 +48,9 @@ export const listOrders = (client: ClientBase) => {
       external_customer_id: query?.external_customer_id,
       checkout_id: query?.checkout_id,
       subscription_id: query?.subscription_id,
-      page: query?.page || 1,
-      limit: query?.limit || 10,
-      sorting: query?.sorting || ["-created_at"],
+      page: query?.page ?? 1,
+      limit: query?.limit ?? 10,
+      sorting: query?.sorting ?? ["-created_at"],
       metadata: query?.metadata,
     };
     const request = client.buildRequest("GET", "/v1/orders/", pathParams, queryParams, undefined);
@@ -266,6 +267,7 @@ export const generateInvoiceOrders = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Order not found.
+   * @throws {OrderNotEligibleForInvoice} Order is not eligible for invoice generation (invalid status).
    * @throws {MissingInvoiceBillingDetails} Order is missing billing name or address.
    */
   return async (id: string): Promise<unknown> => {
@@ -283,6 +285,7 @@ export const generateInvoiceOrders = (client: ClientBase) => {
     const response = await client.sendRequest(request);
     return client.parseResponse<unknown>(response, "json", {
       404: ResourceNotFound,
+      409: OrderNotEligibleForInvoice,
       422: MissingInvoiceBillingDetails,
     });
   };

@@ -7,15 +7,17 @@ import type {
   SubscriptionLocked as SubscriptionLockedModel,
   PaymentFailed as PaymentFailedModel,
   PaymentActionRequired,
-  OffSessionChargesNotEnabled,
   OrganizationNotReadyForPayments,
+  OffSessionChargesNotEnabled,
   OrderNotDraft as OrderNotDraftModel,
+  OrderNotEligibleForInvoice as OrderNotEligibleForInvoiceModel,
   MissingInvoiceBillingDetails as MissingInvoiceBillingDetailsModel,
   RefundedAlready as RefundedAlreadyModel,
   CheckoutForbiddenError,
   ExpiredCheckoutError as ExpiredCheckoutErrorModel,
   PaymentError as PaymentErrorModel,
   Unauthorized as UnauthorizedModel,
+  AmbiguousExternalCustomerID as AmbiguousExternalCustomerIDModel,
   PaymentMethodSetupFailed as PaymentMethodSetupFailedModel,
   CustomerNotReady as CustomerNotReadyModel,
   PaymentMethodInUseByActiveSubscription as PaymentMethodInUseByActiveSubscriptionModel,
@@ -134,6 +136,18 @@ export class OrderNotDraft extends PolarClientError<OrderNotDraftModel> {
   }
 }
 /**
+ * Order is not eligible for invoice generation (invalid status).
+ */
+export class OrderNotEligibleForInvoice extends PolarClientError<OrderNotEligibleForInvoiceModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: OrderNotEligibleForInvoiceModel,
+  ) {
+    super(statusCode, error);
+    this.name = "OrderNotEligibleForInvoice";
+  }
+}
+/**
  * Order is missing billing name or address.
  */
 export class MissingInvoiceBillingDetails extends PolarClientError<MissingInvoiceBillingDetailsModel> {
@@ -230,15 +244,15 @@ export class Unauthorized extends PolarClientError<UnauthorizedModel> {
   }
 }
 /**
- * Not permitted to add members.
+ * The external customer ID matches customers in several accessible organizations.
  */
-export class CreateMember403Error extends PolarClientError<null> {
+export class AmbiguousExternalCustomerID extends PolarClientError<AmbiguousExternalCustomerIDModel> {
   constructor(
-    public readonly statusCode: 403,
-    public readonly error: null,
+    public readonly statusCode: 409,
+    public readonly error: AmbiguousExternalCustomerIDModel,
   ) {
     super(statusCode, error);
-    this.name = "CreateMember403Error";
+    this.name = "AmbiguousExternalCustomerID";
   }
 }
 /**

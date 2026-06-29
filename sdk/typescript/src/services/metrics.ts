@@ -33,7 +33,7 @@ export const getMetrics = (client: ClientBase) => {
     const queryParams = {
       start_date: query.start_date,
       end_date: query.end_date,
-      timezone: query?.timezone || "UTC",
+      timezone: query?.timezone ?? "UTC",
       interval: query.interval,
       organization_id: query?.organization_id,
       product_id: query?.product_id,
@@ -75,7 +75,7 @@ export const exportMetrics = (client: ClientBase) => {
     const queryParams = {
       start_date: query.start_date,
       end_date: query.end_date,
-      timezone: query?.timezone || "UTC",
+      timezone: query?.timezone ?? "UTC",
       interval: query.interval,
       organization_id: query?.organization_id,
       product_id: query?.product_id,

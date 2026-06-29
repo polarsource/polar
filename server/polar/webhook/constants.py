@@ -1,0 +1,1 @@
+WEBHOOK_SECRET_PREFIX = "whsec_"

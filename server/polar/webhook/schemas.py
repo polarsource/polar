@@ -53,7 +53,7 @@ EndpointSecret = Annotated[
     str,
     Field(
         description="The secret used to sign the webhook events.",
-        examples=["polar_whs_ovyN6cPrTv56AApvzCaJno08SSmGJmgbWilb33N2JuK"],
+        examples=["whsec_ovyN6cPrTv56AApvzCaJno08SSmGJmgbWilb33N2JuK"],
     ),
 ]
 EndpointEvents = Annotated[

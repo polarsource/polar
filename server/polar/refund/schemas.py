@@ -2,7 +2,7 @@ import inspect
 from typing import Annotated
 
 from fastapi import Path
-from pydantic import UUID4, Field, field_validator
+from pydantic import UUID4, Field
 
 from polar.dispute.schemas import DisputeBase
 from polar.kit.currency import format_currency
@@ -12,6 +12,7 @@ from polar.kit.metadata import (
 )
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.refund import (
+    ManualRefundReason,
     RefundReason,
     RefundStatus,
 )
@@ -45,7 +46,7 @@ class Refund(MetadataOutputMixin, IDSchema, TimestampedSchema):
 
 class RefundCreate(MetadataInputMixin, Schema):
     order_id: UUID4
-    reason: RefundReason
+    reason: ManualRefundReason = Field(description="Reason for the refund.")
     amount: int = Field(description="Amount to refund in cents. Minimum is 1.", gt=0)
     comment: str | None = Field(
         None, description="An internal comment about the refund."
@@ -63,12 +64,3 @@ class RefundCreate(MetadataInputMixin, Schema):
             """
         ),
     )
-
-    @field_validator("reason")
-    @classmethod
-    def reason_must_not_be_system_only(cls, value: RefundReason) -> RefundReason:
-        if value == RefundReason.dispute_prevention:
-            raise ValueError(
-                "dispute_prevention is reserved for system-generated refunds."
-            )
-        return value

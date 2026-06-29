@@ -1,0 +1,42 @@
+server/migrations/versions/2026-06-29-1011_drop_legacy_benefit_grants_smb_key_.py
+  s_aa5824f2cf77da::t_68d12fd6866006 19-41
+  s_890c6fdfea364d::t_ad95abceb6193c 1-18
+server/tests/benefit/grant/test_service.py
+  s_aa5824f2cf77da::t_b1b21a142fdeb4 120-168
+server/polar/benefit/grant/repository.py
+  s_aa5824f2cf77da::t_d5bbf3f83f7938 64-99
+  s_aa5824f2cf77da::t_d883644df89b6d 6
+server/polar/benefit/grant/service.py
+  s_aa5824f2cf77da::t_b39ace77b72829 216
+  s_aa5824f2cf77da::t_8915f817ef4979 220
+server/polar/subscription/service.py
+  s_aa5824f2cf77da::t_b10aee4e468b75 1331-1339
+server/polar/models/benefit_grant.py
+  s_aa5824f2cf77da::t_e7012e19ecf610 83-87
+server/tests/subscription/test_service.py
+  s_aa5824f2cf77da::t_026d4c888de86e 4055-4111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "3a26e63b2e24b5b4d0ff83c9715d1168b6c3bf9b",
+  "prompts": {},
+  "sessions": {
+    "s_890c6fdfea364d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2800dfa9-4c6d-4110-93b9-b54d03eec24e",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_aa5824f2cf77da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "19f4b5bb-8ad3-44db-afc8-29ec96bf6979",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

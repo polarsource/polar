@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import Depends
 
 from polar.authz.dependencies import AuthorizeOrgManageRead, AuthorizeOrgManageUser
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import OrganizationSSOConnection
 from polar.openapi import APITag
@@ -41,12 +41,17 @@ SSOConnectionNotFound = {
     "model": ResourceNotFound.schema(),
 }
 
+NotPermittedResponse = {
+    "description": "The user doesn't have the permission to manage the organization.",
+    "model": NotPermitted.schema(),
+}
+
 
 @router.get(
     "/",
     summary="List SSO Connections",
     response_model=ListResource[OrganizationSSOConnectionSchema],
-    responses={404: OrganizationNotFound},
+    responses={403: NotPermittedResponse, 404: OrganizationNotFound},
 )
 async def list_sso_connections(
     authz: AuthorizeOrgManageRead,
@@ -67,7 +72,7 @@ async def list_sso_connections(
     "/{connection_id}",
     summary="Get SSO Connection",
     response_model=OrganizationSSOConnectionSchema,
-    responses={404: SSOConnectionNotFound},
+    responses={403: NotPermittedResponse, 404: SSOConnectionNotFound},
 )
 async def get_sso_connection(
     connection_id: UUID,
@@ -87,7 +92,7 @@ async def get_sso_connection(
     summary="Create SSO Connection",
     response_model=OrganizationSSOConnectionSchema,
     status_code=201,
-    responses={404: OrganizationNotFound},
+    responses={403: NotPermittedResponse, 404: OrganizationNotFound},
 )
 async def create_sso_connection(
     create: OrganizationSSOConnectionCreate,
@@ -103,7 +108,7 @@ async def create_sso_connection(
     "/{connection_id}",
     summary="Update SSO Connection",
     response_model=OrganizationSSOConnectionSchema,
-    responses={404: SSOConnectionNotFound},
+    responses={403: NotPermittedResponse, 404: SSOConnectionNotFound},
 )
 async def update_sso_connection(
     connection_id: UUID,
@@ -123,7 +128,7 @@ async def update_sso_connection(
     "/{connection_id}",
     summary="Delete SSO Connection",
     status_code=204,
-    responses={404: SSOConnectionNotFound},
+    responses={403: NotPermittedResponse, 404: SSOConnectionNotFound},
 )
 async def delete_sso_connection(
     connection_id: UUID,

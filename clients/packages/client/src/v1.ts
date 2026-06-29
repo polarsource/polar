@@ -37284,6 +37284,15 @@ export interface operations {
           'application/json': components['schemas']['ListResource_OrganizationSSOConnection_']
         }
       }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
       /** @description Organization not found. */
       404: {
         headers: {
@@ -37328,6 +37337,15 @@ export interface operations {
           'application/json': components['schemas']['OrganizationSSOConnection']
         }
       }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
       /** @description Organization not found. */
       404: {
         headers: {
@@ -37369,6 +37387,15 @@ export interface operations {
           'application/json': components['schemas']['OrganizationSSOConnection']
         }
       }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
       /** @description Organization or SSO connection not found. */
       404: {
         headers: {
@@ -37407,6 +37434,15 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
       }
       /** @description Organization or SSO connection not found. */
       404: {
@@ -37451,6 +37487,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['OrganizationSSOConnection']
+        }
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
         }
       }
       /** @description Organization or SSO connection not found. */

@@ -15,6 +15,7 @@ const PRORATION_BEHAVIOR_LABELS: Record<
   invoice: 'Invoice Immediately',
   prorate: 'Next Invoice',
   next_period: 'Apply on Next Period',
+  auto: 'Automatic — Upgrade Now, Downgrade Next Period',
   reset: 'Invoice Immediately without Proration and Reset Cycle',
 }
 

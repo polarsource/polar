@@ -61,9 +61,7 @@ router = APIRouter()
 async def list(
     request: Request,
     pagination: PaginationParamsQuery,
-    query: Annotated[
-        str | None, BeforeValidator(empty_str_to_none), Query()
-    ] = None,
+    query: Annotated[str | None, BeforeValidator(empty_str_to_none), Query()] = None,
     session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
     repository = CustomerRepository.from_session(session)

@@ -48,9 +48,7 @@ class StatusColumn(datatable.DatatableColumn[EmailLog]):
 async def list_email_logs(
     request: Request,
     pagination: PaginationParamsQuery,
-    query: Annotated[
-        str | None, BeforeValidator(empty_str_to_none), Query()
-    ] = None,
+    query: Annotated[str | None, BeforeValidator(empty_str_to_none), Query()] = None,
     status: Annotated[
         EmailLogStatus | None, BeforeValidator(empty_str_to_none), Query()
     ] = None,

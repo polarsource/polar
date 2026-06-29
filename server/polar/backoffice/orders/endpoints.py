@@ -115,9 +115,7 @@ async def list(
     request: Request,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    query: Annotated[
-        str | None, BeforeValidator(empty_str_to_none), Query()
-    ] = None,
+    query: Annotated[str | None, BeforeValidator(empty_str_to_none), Query()] = None,
     organization: Annotated[
         str | None, BeforeValidator(empty_str_to_none), Query()
     ] = None,

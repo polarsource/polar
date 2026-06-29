@@ -4,7 +4,7 @@ from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
-from pydantic import UUID4, EmailStr, Field, ValidationError
+from pydantic import UUID4, BeforeValidator, EmailStr, Field, ValidationError
 from sqlalchemy import func, or_
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import document, tag, text
@@ -19,6 +19,7 @@ from polar.customer.service import customer as customer_service
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParamsQuery
+from polar.kit.schemas import empty_str_to_none
 from polar.member.repository import MemberRepository
 from polar.member_session.service import member_session as member_session_service
 from polar.models import (
@@ -60,7 +61,9 @@ router = APIRouter()
 async def list(
     request: Request,
     pagination: PaginationParamsQuery,
-    query: str | None = Query(None),
+    query: Annotated[
+        str | None, BeforeValidator(empty_str_to_none), Query()
+    ] = None,
     session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
     repository = CustomerRepository.from_session(session)

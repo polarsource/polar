@@ -33,12 +33,15 @@ def run(actor: str, body: str = typer.Argument("{}")) -> None:
 
 async def _poll_loop(actors: list[str], max_iterations: int) -> None:
     client = get_sqs_client()
-    queue_urls = {a: get_queue_url(client, actor_to_queue_name(a)) for a in actors}
+    queue_names = {actor_to_queue_name(actor) for actor in actors}
+    queue_urls = {
+        queue_name: get_queue_url(client, queue_name) for queue_name in queue_names
+    }
     iterations = 0
     try:
         while max_iterations == 0 or iterations < max_iterations:
             iterations += 1
-            for actor_name, url in queue_urls.items():
+            for url in queue_urls.values():
                 response = await asyncio.to_thread(
                     client.receive_message,
                     QueueUrl=url,

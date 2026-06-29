@@ -9,7 +9,7 @@ variable "environment" {
 }
 
 variable "name" {
-  description = "Short task name used in the Lambda function name: polar-{environment}-worker-{name}."
+  description = "Short worker profile name used in the Lambda function name: polar-{environment}-worker-{name}."
   type        = string
 
   validation {
@@ -24,12 +24,12 @@ variable "name" {
 }
 
 variable "queue_name" {
-  description = "Full task SQS queue name. The producer addresses this queue by name, so the caller must match it."
+  description = "Full worker profile SQS queue name. The producer addresses this queue by name, so the caller must match it."
   type        = string
 }
 
 variable "image_uri" {
-  description = "Container image URI the task Lambda runs."
+  description = "Container image URI the worker Lambda runs."
   type        = string
 }
 

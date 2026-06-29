@@ -55,9 +55,8 @@ def get_sqs_client() -> "SQSClient":
     )
 
 
-def actor_to_queue_name(actor_name: str) -> str:
-    sanitized = actor_name.replace(".", "-").replace("_", "-")
-    return f"{settings.WORKER_SQS_QUEUE_PREFIX}-{sanitized}"
+def actor_to_queue_name(_actor_name: str) -> str:
+    return f"{settings.WORKER_SQS_QUEUE_PREFIX}-default"
 
 
 _queue_url_cache: dict[str, str] = {}

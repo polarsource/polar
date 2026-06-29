@@ -24,20 +24,8 @@ resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
   ip_protocol                  = "tcp"
 }
 
-module "dummy_lambda_worker" {
-  source = "../modules/aws_task_worker"
-
-  environment              = "sandbox"
-  name                     = "dummy"
-  queue_name               = "polar-sandbox-tasks-dummy"
-  image_uri                = "${module.lambda_worker_ecr.repository_url}:latest"
-  enabled                  = true
-  reserved_concurrency     = null
-  subnet_ids               = local.lambda_subnet_ids
-  security_group_ids       = local.lambda_security_group_ids
-  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
-
-  environment_variables = {
+locals {
+  lambda_worker_environment = {
     POLAR_ENV                     = "sandbox"
     POLAR_BASE_URL                = "https://sandbox-api.polar.sh"
     POLAR_FRONTEND_BASE_URL       = "https://sandbox.polar.sh"
@@ -54,19 +42,53 @@ module "dummy_lambda_worker" {
     POLAR_REDIS_PORT              = tostring(module.redis.port)
     POLAR_REDIS_DB                = "1"
     POLAR_AWS_REGION              = "us-east-2"
+    POLAR_EMAIL_SENDER            = "resend"
+    POLAR_EMAIL_FROM_NAME         = "[SANDBOX] Polar"
+    POLAR_EMAIL_FROM_DOMAIN       = "notifications.sandbox.polar.sh"
     POLAR_WORKER_SQS_ENABLED      = "true"
     POLAR_WORKER_SQS_QUEUE_PREFIX = "polar-sandbox-tasks"
   }
 
-  secret_environment_variables = {
+  lambda_worker_secrets = {
     POLAR_CURRENT_JWK_KID = var.backend_current_jwk_kid_sandbox
     POLAR_JWKS_CONTENT    = var.backend_jwks_sandbox
     POLAR_LOGFIRE_TOKEN   = var.logfire_token
     POLAR_POSTGRES_PWD    = local.db_password
+    POLAR_RESEND_API_KEY  = var.backend_resend_api_key_sandbox
     POLAR_SECRET          = var.backend_secret_sandbox
     POLAR_SENTRY_DSN      = var.backend_sentry_dsn_sandbox
     TAILSCALE_AUTHKEY     = var.lambda_worker_tailscale_token
   }
+
+  lambda_worker_name                 = "default"
+  lambda_worker_reserved_concurrency = null
+}
+
+module "lambda_worker" {
+  source = "../modules/aws_task_worker"
+
+  environment              = "sandbox"
+  name                     = local.lambda_worker_name
+  queue_name               = "polar-sandbox-tasks-${local.lambda_worker_name}"
+  image_uri                = "${module.lambda_worker_ecr.repository_url}:latest"
+  enabled                  = true
+  reserved_concurrency     = local.lambda_worker_reserved_concurrency
+  subnet_ids               = local.lambda_subnet_ids
+  security_group_ids       = local.lambda_security_group_ids
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+
+  environment_variables        = local.lambda_worker_environment
+  secret_environment_variables = local.lambda_worker_secrets
+}
+
+moved {
+  from = module.dummy_lambda_worker
+  to   = module.lambda_worker["low-priority"]
+}
+
+moved {
+  from = module.lambda_worker["low-priority"]
+  to   = module.lambda_worker
 }
 
 # =============================================================================
@@ -88,7 +110,7 @@ data "aws_iam_policy_document" "tasks_producer" {
       "sqs:SendMessage",
       "sqs:GetQueueUrl",
     ]
-    resources = [module.dummy_lambda_worker.queue_arn]
+    resources = [module.lambda_worker.queue_arn]
   }
 }
 
@@ -128,7 +150,7 @@ data "aws_iam_policy_document" "lambda_worker_deploy" {
   statement {
     sid       = "UpdateFunctionCode"
     actions   = ["lambda:UpdateFunctionCode"]
-    resources = ["arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:${module.dummy_lambda_worker.function_name}"]
+    resources = ["arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:${module.lambda_worker.function_name}"]
   }
 }
 

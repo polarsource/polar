@@ -73,17 +73,9 @@ export const ChargebackPreventionBanner = ({
               />
             </Text>
           </Box>
-          <Box
-            flexDirection="column"
-            rowGap="xs"
-            backgroundColor="background-card"
-            borderRadius="m"
-            padding="l"
-          >
-            <Text variant="caption" color="muted">
-              Amount refunded
-            </Text>
-            <Text>
+          <Box flexDirection="column" rowGap="xs">
+            <Text color="muted">Amount refunded</Text>
+            <Text variant="body">
               {formatCurrency('standard')(refund.amount, refund.currency)}
             </Text>
           </Box>
@@ -91,18 +83,20 @@ export const ChargebackPreventionBanner = ({
 
         <BannerColumn divided>
           <Text color="muted">Why this happened</Text>
-          <Text>
-            Our early-warning system detected that the customer started to file
-            a chargeback for this transaction. To help you avoid the fees and
-            risks of a formal dispute, we refunded the payment before it was
-            officially filed.
-          </Text>
-          <Text>
-            A formal chargeback can mean losing the transaction amount on top of
-            extra dispute fees, and a rising dispute ratio can hurt your account
-            over time. Refunding proactively is usually the least costly
-            outcome.
-          </Text>
+          <Box flexDirection="column" rowGap="m" maxWidth={512}>
+            <Text>
+              Our early-warning system detected that the customer started to
+              file a chargeback for this transaction. To help you avoid the fees
+              and risks of a formal dispute, we refunded the payment before it
+              was officially filed.
+            </Text>
+            <Text>
+              A formal chargeback can mean losing the transaction amount on top
+              of extra dispute fees, and a rising dispute ratio can hurt your
+              account over time. Refunding proactively is usually the least
+              costly outcome.
+            </Text>
+          </Box>
           <a
             href={REFUNDS_DOCS_URL}
             target="_blank"

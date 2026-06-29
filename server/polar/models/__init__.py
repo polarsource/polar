@@ -37,6 +37,16 @@ from .license_key import LicenseKey
 from .license_key_activation import LicenseKeyActivation
 from .member import Member, MemberRole
 from .member_session import MemberSession
+from .merchant_migration import (
+    MerchantMigration,
+    MerchantMigrationSourcePlatform,
+    MerchantMigrationStep,
+)
+from .merchant_migration_record import (
+    MerchantMigrationRecord,
+    MerchantMigrationRecordStatus,
+    MerchantMigrationRecordType,
+)
 from .meter import Meter
 from .meter_event import MeterEvent
 from .metric_dashboard import MetricDashboard
@@ -153,6 +163,12 @@ __all__ = [
     "Member",
     "MemberRole",
     "MemberSession",
+    "MerchantMigration",
+    "MerchantMigrationRecord",
+    "MerchantMigrationRecordStatus",
+    "MerchantMigrationRecordType",
+    "MerchantMigrationSourcePlatform",
+    "MerchantMigrationStep",
     "Meter",
     "MeterEvent",
     "MetricDashboard",

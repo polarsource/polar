@@ -1,0 +1,23 @@
+server/tests/subscription/test_service.py
+  s_4e3eefc968081e::t_780631305faeaa 7059,7068-7069
+server/polar/subscription/service.py
+  s_4e3eefc968081e::t_20e566509971c3 1841-1843,1856-1868
+server/polar/subscription/repository.py
+  s_4e3eefc968081e::t_8e69d38d088939 109-119
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "38ba7b30e7c450e6e7c0f0acdce756a3b8dc2876",
+  "prompts": {},
+  "sessions": {
+    "s_4e3eefc968081e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ba832dda-9900-46a4-8610-d40fd5813e32",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

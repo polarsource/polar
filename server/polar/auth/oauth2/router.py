@@ -1,7 +1,7 @@
 import secrets
 import typing
 from collections.abc import Awaitable, Iterable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Form, Query, Request, Response
 from fastapi.responses import RedirectResponse
@@ -37,7 +37,7 @@ OIDC_ERROR_MESSAGE = "An authentication error occurred. Please try again."
 def _set_state_cookie(
     request: Request, response: Response, state: str, expires_at: int
 ) -> None:
-    expires_datetime = datetime.fromtimestamp(expires_at, tz=timezone.utc)
+    expires_datetime = datetime.fromtimestamp(expires_at, tz=UTC)
     response.set_cookie(
         settings.OAUTH2_SESSION_STATE_COOKIE_KEY,
         state,

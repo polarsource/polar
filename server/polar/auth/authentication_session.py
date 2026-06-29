@@ -1,6 +1,6 @@
 import typing
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import Depends, Request, Response
 from reauth.authentication_session import (
@@ -107,7 +107,7 @@ class AuthenticationSessionService(AuthenticationSessionServiceBase):
     async def set_cookie(
         self, request: Request, response: Response, value: str, expires_at: int
     ) -> None:
-        expires_datetime = datetime.fromtimestamp(expires_at, tz=timezone.utc)
+        expires_datetime = datetime.fromtimestamp(expires_at, tz=UTC)
         response.set_cookie(
             key=settings.AUTHENTICATION_SESSION_COOKIE_KEY,
             value=value,

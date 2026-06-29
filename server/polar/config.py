@@ -324,6 +324,12 @@ class Settings(BaseSettings):
     AWS_REGION: str = "us-east-2"
     AWS_SIGNATURE_VERSION: str = "v4"
 
+    # Secrets encryption. Production and sandbox wrap data keys with a KMS key
+    # (AWS_KMS_KEY_ID); local and CI use a static key instead, so tests make no
+    # cloud calls.
+    AWS_KMS_KEY_ID: str | None = None
+    ENCRYPTION_LOCAL_KEY: str = "super secret encryption key"
+
     # Worker SQS/Lambda execution engine (POC)
     # When enabled, jobs enqueued for an allowlisted actor are routed to a
     # per-actor SQS queue (consumed by a Lambda) instead of the Redis broker.

@@ -197,7 +197,7 @@ class OrderNotEligibleForInvoice(OrderError):
             f"Order {order.id} is not eligible for invoice generation "
             f"(current status: {order.status})."
         )
-        super().__init__(message, 422)
+        super().__init__(message, 409)
 
 
 class InvoiceDoesNotExist(OrderError):

@@ -42,7 +42,7 @@ export function isOrderInDunningLifecycle(
   payments: schemas['Payment'][],
 ): boolean {
   return (
-    !order.paid &&
+    (order.status === 'pending' || order.status === 'void') &&
     order.subscription_id !== null &&
     payments.some((payment) => payment.status === 'failed')
   )

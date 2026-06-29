@@ -552,10 +552,8 @@ class SupportCaseSection:
         reply_url = self._with_return_to(
             str(request.url_for("support_cases:reply", case_id=case.id))
         )
-        # The composer is internal-notes-only when there's no live merchant
-        # channel (the endpoint enforces this too): disputes have none yet, and a
-        # closed case only takes internal follow-ups after the decision.
-        internal_only = self._case_type == SupportCaseType.dispute or not is_open
+        # A closed case only takes internal follow-ups after the decision.
+        internal_only = not is_open
         with tag.div(classes="mt-8 pt-6 border-t border-base-200"):
             if not is_open:
                 with tag.div(

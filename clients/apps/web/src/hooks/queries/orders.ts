@@ -1,13 +1,17 @@
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
-import { useQuery } from '@tanstack/react-query'
+import { skipToken, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const useOrder = (id: string, initialData?: schemas['Order']) =>
+export const useOrder = (
+  id: string | undefined,
+  initialData?: schemas['Order'],
+) =>
   useQuery({
     queryKey: ['orders', { id }],
-    queryFn: () =>
-      unwrap(api.GET('/v1/orders/{id}', { params: { path: { id } } })),
+    queryFn: id
+      ? () => unwrap(api.GET('/v1/orders/{id}', { params: { path: { id } } }))
+      : skipToken,
     retry: defaultRetry,
     initialData,
   })

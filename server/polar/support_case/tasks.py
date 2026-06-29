@@ -51,12 +51,6 @@ async def notify_organization_of_new_message(message_id: UUID) -> None:
         )
         if case is None:
             return
-        # Dispute cases have no merchant-facing thread yet, so an email would
-        # point to a page with nothing to act on. Suppress it until that UI
-        # exists; the message is still recorded on the case. Remove this guard
-        # when the merchant dispute view ships.
-        if case.type == SupportCaseType.dispute:
-            return
         members = await user_organization_service.list_by_org(
             session, case.organization_id
         )

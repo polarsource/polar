@@ -88,7 +88,7 @@ class TestNotifyOrganization:
         assert kwargs["from_email_addr"].startswith("noreply@")
         assert kwargs["reply_to_email_addr"] is None
 
-    async def test_suppresses_dispute_case_until_merchant_ui(
+    async def test_notifies_dispute_case(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -98,7 +98,7 @@ class TestNotifyOrganization:
         product: Product,
         user_organization: UserOrganization,
     ) -> None:
-        # No merchant-facing dispute thread yet, so its emails are gated off.
+        # The merchant-facing dispute thread ships, so support replies notify.
         case = await create_dispute_case(save_fixture, organization, customer, product)
         message = await _message(
             save_fixture,
@@ -114,7 +114,9 @@ class TestNotifyOrganization:
 
         await _notify(message.id)
 
-        enqueue.assert_not_called()
+        enqueue.assert_called_once()
+        _, kwargs = enqueue.call_args
+        assert kwargs["to_email_addr"] == user_organization.user.email
 
     async def test_skips_non_staff_message(
         self,

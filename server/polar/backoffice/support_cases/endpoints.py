@@ -278,15 +278,9 @@ async def reply_case(
 
     form_data = await request.form()
     body = str(form_data.get("body", "")).strip()
-    # Force the message to be internal when there's no live merchant channel:
-    # disputes have no staff ↔ merchant reply channel yet, and a closed case is
-    # internal-notes-only (a merchant-facing message would email the merchant
-    # with no accessible thread to follow up in).
-    internal = (
-        bool(form_data.get("internal"))
-        or case.type == SupportCaseType.dispute
-        or not is_open
-    )
+    # A closed case is internal-notes-only: a merchant-facing message would
+    # email the merchant with no accessible thread to follow up in.
+    internal = bool(form_data.get("internal")) or not is_open
 
     if body:
         audience = [] if internal else [SupportCaseAudience.merchant]

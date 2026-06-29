@@ -1,6 +1,8 @@
 import pytest
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 
+from polar.dispute.dispute_case import DISPUTE_GREETING_DELAY_MS
 from polar.models import Customer, Organization, Product
 from polar.models.support_case import (
     SupportCaseAudience,
@@ -203,7 +205,7 @@ class TestReplyToSupportCase:
         assert response.status_code == 409
 
     @pytest.mark.auth
-    async def test_dispute_case_is_read_only(
+    async def test_dispute_case_accepts_reply(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -216,7 +218,43 @@ class TestReplyToSupportCase:
         response = await client.post(
             f"/v1/support-cases/{case.id}/messages", json={"body": "my evidence"}
         )
-        assert response.status_code == 409
+        assert response.status_code == 201
+        assert response.json()["body"] == "my evidence"
+
+    @pytest.mark.auth
+    async def test_dispute_first_reply_enqueues_greeting(
+        self,
+        client: AsyncClient,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        case = await create_dispute_case(save_fixture, organization, customer, product)
+        enqueue = mocker.patch("polar.dispute.dispute_case.enqueue_job")
+
+        await client.post(
+            f"/v1/support-cases/{case.id}/messages", json={"body": "my evidence"}
+        )
+        enqueue.assert_any_call(
+            "dispute.post_dispute_greeting",
+            case_id=case.id,
+            delay=DISPUTE_GREETING_DELAY_MS,
+        )
+
+        enqueue.reset_mock()
+        await client.post(
+            f"/v1/support-cases/{case.id}/messages",
+            json={"body": "one more thing"},
+        )
+        greeting_calls = [
+            call
+            for call in enqueue.call_args_list
+            if call.args and call.args[0] == "dispute.post_dispute_greeting"
+        ]
+        assert greeting_calls == []
 
 
 @pytest.mark.asyncio

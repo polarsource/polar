@@ -29,11 +29,6 @@ import {
   DisputeStatusDisplayTitle,
 } from '@/utils/dispute'
 import { formatCountry } from '@/utils/formatters'
-import {
-  isOrderDunningFailed,
-  isOrderInDunning,
-  isOrderInDunningLifecycle,
-} from '@/utils/order'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { ArrowUpRightIcon } from 'lucide-react'
 import { schemas } from '@polar-sh/client'
@@ -69,6 +64,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
     organization.id,
     { order_id: _order.id },
   )
+  const { data: subscription, isLoading: subscriptionLoading } =
+    useSubscription(_order.subscription_id ?? '', undefined, {
+      enabled: !!_order.subscription_id,
+    })
 
   const {
     isShown: isRefundModalShown,
@@ -93,22 +92,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const totalSeats = seatsData?.total_seats || 0
   const availableSeats = seatsData?.available_seats || 0
   const seats = seatsData?.seats || []
-
-  const orderPayments = payments?.items ?? []
-  const inDunningLifecycle =
-    !!order && isOrderInDunningLifecycle(order, orderPayments)
-
-  const { data: dunningSubscription } = useSubscription(
-    order?.subscription_id ?? '',
-    undefined,
-    { enabled: inDunningLifecycle },
-  )
-
-  const showDunningBanner =
-    !!order &&
-    !!dunningSubscription &&
-    (isOrderInDunning(order, orderPayments) ||
-      isOrderDunningFailed(order, dunningSubscription, orderPayments))
 
   if (!order) {
     return null
@@ -143,12 +126,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
       }
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:shadow-none"
     >
-      {showDunningBanner && dunningSubscription ? (
+      {subscription && !subscriptionLoading ? (
         <OrderCalloutBanner
           organization={organization}
           order={order}
-          subscription={dunningSubscription}
-          payments={orderPayments}
+          subscription={subscription}
         />
       ) : null}
 

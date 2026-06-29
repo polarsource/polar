@@ -223,7 +223,9 @@ class SeatService:
         from polar.organization.repository import OrganizationRepository
 
         organization_repository = OrganizationRepository.from_session(session)
-        organization = await organization_repository.get_by_id(organization_id)
+        organization = await organization_repository.get_by_id(
+            organization_id, include_blocked=True
+        )
         if not organization:
             raise FeatureNotEnabled()
         if not organization.feature_settings.get("seat_based_pricing_enabled", False):

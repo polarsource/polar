@@ -215,7 +215,7 @@ class TestCreateSSOConnection:
         assert "client_secret" not in json["configuration"]
 
     @pytest.mark.auth
-    async def test_private_key_jwt_rejects_client_secret(
+    async def test_client_secret_required(
         self,
         client: AsyncClient,
         organization: Organization,
@@ -228,8 +228,7 @@ class TestCreateSSOConnection:
                     "type": "oidc",
                     "issuer": "https://idp.example.com",
                     "client_id": "client-id",
-                    "auth_method": "private_key_jwt",
-                    "client_secret": "secret",
+                    "auth_method": "client_secret",
                 }
             },
         )

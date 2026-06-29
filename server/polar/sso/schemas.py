@@ -1,11 +1,6 @@
-from typing import Annotated, Literal, Self
+from typing import Annotated, Literal
 
-from pydantic import (
-    UUID4,
-    Field,
-    StringConstraints,
-    model_validator,
-)
+from pydantic import UUID4, Discriminator, Field, StringConstraints
 
 from polar.kit.schemas import HttpsUrl, IDSchema, Schema, TimestampedSchema
 from polar.models.organization_sso_connection import (
@@ -16,7 +11,7 @@ from polar.models.organization_sso_connection import (
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
 
-class OIDCConfiguration(Schema):
+class OIDCConfigurationBase(Schema):
     type: Literal[OrganizationSSOConnectionType.oidc] = Field(
         default=OrganizationSSOConnectionType.oidc,
         description="Type of the SSO connection.",
@@ -25,21 +20,27 @@ class OIDCConfiguration(Schema):
     client_id: NonEmptyStr = Field(
         description="OAuth client ID registered with the identity provider."
     )
-    auth_method: OIDCAuthMethod = Field(
+
+
+class OIDCConfigurationClientSecret(OIDCConfigurationBase):
+    auth_method: Literal[OIDCAuthMethod.client_secret] = Field(
         description="Authentication method used against the identity provider."
     )
-    client_secret: NonEmptyStr | None = Field(
-        default=None,
-        description="Client secret; required for the `client_secret` auth method.",
+    client_secret: NonEmptyStr = Field(
+        description="Client secret used to authenticate against the identity provider."
     )
 
-    @model_validator(mode="after")
-    def validate_auth_method(self) -> Self:
-        if self.auth_method == OIDCAuthMethod.client_secret and not self.client_secret:
-            raise ValueError("client_secret is required for client_secret auth method")
-        if self.auth_method == OIDCAuthMethod.private_key_jwt and self.client_secret:
-            raise ValueError("client_secret must not be set for private_key_jwt")
-        return self
+
+class OIDCConfigurationPrivateKeyJWT(OIDCConfigurationBase):
+    auth_method: Literal[OIDCAuthMethod.private_key_jwt] = Field(
+        description="Authentication method used against the identity provider."
+    )
+
+
+OIDCConfiguration = Annotated[
+    OIDCConfigurationClientSecret | OIDCConfigurationPrivateKeyJWT,
+    Discriminator("auth_method"),
+]
 
 
 class OIDCConfigurationRead(Schema):

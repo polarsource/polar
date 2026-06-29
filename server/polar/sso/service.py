@@ -23,8 +23,9 @@ def _to_stored_configuration(
         "client_id": configuration.client_id,
         "auth_method": configuration.auth_method,
     }
-    if configuration.client_secret is not None:
-        stored["client_secret"] = configuration.client_secret
+    client_secret = getattr(configuration, "client_secret", None)
+    if client_secret is not None:
+        stored["client_secret"] = client_secret
     return stored
 
 

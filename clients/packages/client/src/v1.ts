@@ -1423,6 +1423,58 @@ export interface paths {
     patch: operations['organizations:update_benefit_grant']
     trace?: never
   }
+  '/v1/organizations/{id}/sso-connections': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List SSO Connections
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['sso:list_sso_connections']
+    put?: never
+    /**
+     * Create SSO Connection
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['sso:create_sso_connection']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/sso-connections/{connection_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get SSO Connection
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['sso:get_sso_connection']
+    put?: never
+    post?: never
+    /**
+     * Delete SSO Connection
+     * @description **Scopes**: `organizations:write`
+     */
+    delete: operations['sso:delete_sso_connection']
+    options?: never
+    head?: never
+    /**
+     * Update SSO Connection
+     * @description **Scopes**: `organizations:write`
+     */
+    patch: operations['sso:update_sso_connection']
+    trace?: never
+  }
   '/v1/subscriptions/': {
     parameters: {
       query?: never
@@ -21461,6 +21513,12 @@ export interface components {
       items: components['schemas']['OrganizationOrder'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[OrganizationSSOConnection] */
+    ListResource_OrganizationSSOConnection_: {
+      /** Items */
+      items: components['schemas']['OrganizationSSOConnection'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[Organization] */
     ListResource_Organization_: {
       /** Items */
@@ -23070,6 +23128,53 @@ export interface components {
      * @enum {string}
      */
     OAuthPlatform: 'github' | 'github_repository_benefit' | 'google' | 'apple'
+    /**
+     * OIDCAuthMethod
+     * @enum {string}
+     */
+    OIDCAuthMethod: 'client_secret' | 'private_key_jwt'
+    /** OIDCConfiguration */
+    OIDCConfiguration: {
+      /**
+       * Type
+       * @description Type of the SSO connection.
+       * @default oidc
+       * @constant
+       */
+      type: 'oidc'
+      /**
+       * Issuer
+       * @description OIDC issuer URL of the identity provider.
+       */
+      issuer: string
+      /**
+       * Client Id
+       * @description OAuth client ID registered with the identity provider.
+       */
+      client_id: string
+      /** @description Authentication method used against the identity provider. */
+      auth_method: components['schemas']['OIDCAuthMethod']
+      /**
+       * Client Secret
+       * @description Client secret; required for the `client_secret` auth method.
+       */
+      client_secret?: string | null
+    }
+    /** OIDCConfigurationRead */
+    OIDCConfigurationRead: {
+      /**
+       * Issuer
+       * @description OIDC issuer URL of the identity provider.
+       */
+      issuer: string
+      /**
+       * Client Id
+       * @description OAuth client ID registered with the identity provider.
+       */
+      client_id: string
+      /** @description Authentication method used against the identity provider. */
+      auth_method: components['schemas']['OIDCAuthMethod']
+    }
     /** OffSessionChargesNotEnabled */
     OffSessionChargesNotEnabled: {
       /**
@@ -26033,6 +26138,67 @@ export interface components {
        * @description The permissions this role grants in the organization.
        */
       permissions: components['schemas']['OrganizationPermission'][]
+    }
+    /** OrganizationSSOConnection */
+    OrganizationSSOConnection: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description ID of the organization the connection belongs to.
+       */
+      organization_id: string
+      /** @description Type of the SSO connection. */
+      type: components['schemas']['OrganizationSSOConnectionType']
+      /** @description Provider-specific configuration of the connection. */
+      configuration: components['schemas']['OIDCConfigurationRead']
+      /**
+       * Enabled
+       * @description Whether the connection can be used to sign in.
+       */
+      enabled: boolean
+    }
+    /** OrganizationSSOConnectionCreate */
+    OrganizationSSOConnectionCreate: {
+      /** @description Provider-specific configuration of the connection. */
+      configuration: components['schemas']['OIDCConfiguration']
+      /**
+       * Enabled
+       * @description Whether the connection can be used to sign in.
+       * @default true
+       */
+      enabled: boolean
+    }
+    /**
+     * OrganizationSSOConnectionType
+     * @enum {string}
+     */
+    OrganizationSSOConnectionType: 'oidc'
+    /** OrganizationSSOConnectionUpdate */
+    OrganizationSSOConnectionUpdate: {
+      /** @description Provider-specific configuration of the connection. */
+      configuration?: components['schemas']['OIDCConfiguration'] | null
+      /**
+       * Enabled
+       * @description Whether the connection can be used to sign in.
+       */
+      enabled?: boolean | null
     }
     /** OrganizationSlugAvailability */
     OrganizationSlugAvailability: {
@@ -37038,6 +37204,220 @@ export interface operations {
         }
       }
       /** @description Organization or benefit grant not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'sso:list_sso_connections': {
+    parameters: {
+      query?: {
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_OrganizationSSOConnection_']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'sso:create_sso_connection': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationSSOConnectionCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationSSOConnection']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'sso:get_sso_connection': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        connection_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationSSOConnection']
+        }
+      }
+      /** @description Organization or SSO connection not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'sso:delete_sso_connection': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        connection_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Organization or SSO connection not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'sso:update_sso_connection': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        connection_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationSSOConnectionUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationSSOConnection']
+        }
+      }
+      /** @description Organization or SSO connection not found. */
       404: {
         headers: {
           [name: string]: unknown
@@ -58643,6 +59023,9 @@ export const oAuth2ClientConfigurationUpdateGrant_typesValues: ReadonlyArray<
 export const oAuthPlatformValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OAuthPlatform']
 > = ['github', 'github_repository_benefit', 'google', 'apple']
+export const oIDCAuthMethodValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OIDCAuthMethod']
+> = ['client_secret', 'private_key_jwt']
 export const orderBillingReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrderBillingReason']
 > = [
@@ -59549,6 +59932,9 @@ export const organizationReviewSubCheckKeyValues: ReadonlyArray<
 export const organizationRoleValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationRole']
 > = ['owner', 'admin', 'member']
+export const organizationSSOConnectionTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationSSOConnectionType']
+> = ['oidc']
 export const organizationSocialPlatformsValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationSocialPlatforms']
 > = [

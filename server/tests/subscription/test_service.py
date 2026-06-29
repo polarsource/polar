@@ -7145,8 +7145,8 @@ class TestCancelForOrganization:
         customer: Customer,
         customer_second: Customer,
     ) -> None:
-        # Every billable subscription of the org is cancelled by the streaming
-        # loop, not just the first one.
+        # Every billable subscription of the org is cancelled in one batch when
+        # they all fit under the batch size, not just the first one.
         organization.status = OrganizationStatus.DENIED
         await save_fixture(organization)
         first = await create_active_subscription(
@@ -7156,7 +7156,7 @@ class TestCancelForOrganization:
             save_fixture, product=product, customer=customer_second
         )
 
-        await subscription_service.cancel_for_organization(
+        has_more = await subscription_service.cancel_for_organization(
             session, product.organization_id
         )
 
@@ -7164,6 +7164,59 @@ class TestCancelForOrganization:
         await session.refresh(second)
         assert first.status == SubscriptionStatus.canceled
         assert second.status == SubscriptionStatus.canceled
+        assert has_more is False
+
+    async def test_batches_and_signals_remaining_work(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        # With more billable subscriptions than the batch size, a single call
+        # cancels only a batch and reports that work remains, so the task
+        # re-enqueues itself instead of exceeding the worker time limit.
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        first = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        second = await create_active_subscription(
+            save_fixture, product=product, customer=customer_second
+        )
+
+        has_more = await subscription_service.cancel_for_organization(
+            session, product.organization_id, batch_size=1
+        )
+        assert has_more is True
+
+        await session.refresh(first)
+        await session.refresh(second)
+        cancelled = [
+            s for s in (first, second) if s.status == SubscriptionStatus.canceled
+        ]
+        assert len(cancelled) == 1
+
+        # The next run cancels the last subscription; it still reports remaining
+        # work because it processed a full batch, so one final confirming run
+        # follows.
+        has_more = await subscription_service.cancel_for_organization(
+            session, product.organization_id, batch_size=1
+        )
+        assert has_more is True
+
+        await session.refresh(first)
+        await session.refresh(second)
+        assert first.status == SubscriptionStatus.canceled
+        assert second.status == SubscriptionStatus.canceled
+
+        # Nothing billable remains, so the loop terminates.
+        has_more = await subscription_service.cancel_for_organization(
+            session, product.organization_id, batch_size=1
+        )
+        assert has_more is False
 
 
 @pytest.mark.asyncio

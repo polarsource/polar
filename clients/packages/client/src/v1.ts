@@ -3528,6 +3528,7 @@ export interface paths {
     put?: never
     /**
      * Create Member
+     * @deprecated
      * @description Create a new member for a customer.
      *
      *     Only B2B customers with the member management feature enabled can add members.
@@ -3551,6 +3552,7 @@ export interface paths {
     }
     /**
      * Get Member
+     * @deprecated
      * @description Get a member by ID.
      *
      *     The authenticated user or organization must have access to the member's organization.
@@ -3562,6 +3564,7 @@ export interface paths {
     post?: never
     /**
      * Delete Member
+     * @deprecated
      * @description Delete a member.
      *
      *     The authenticated user or organization must have access to the member's organization.
@@ -3573,6 +3576,7 @@ export interface paths {
     head?: never
     /**
      * Update Member
+     * @deprecated
      * @description Update a member.
      *
      *     Only name, email and role can be updated.
@@ -3592,6 +3596,7 @@ export interface paths {
     }
     /**
      * Get Member by External ID
+     * @deprecated
      * @description Get a member by external ID. One of customer_id or external_customer_id must be specified.
      *
      *     **Scopes**: `members:read` `members:write`
@@ -3601,6 +3606,7 @@ export interface paths {
     post?: never
     /**
      * Delete Member by External ID
+     * @deprecated
      * @description Delete a member by external ID. One of customer_id or external_customer_id must be specified.
      *
      *     **Scopes**: `members:write`
@@ -3610,6 +3616,7 @@ export interface paths {
     head?: never
     /**
      * Update Member by External ID
+     * @deprecated
      * @description Update a member by external ID. One of customer_id or external_customer_id must be specified.
      *
      *     **Scopes**: `members:write`
@@ -3700,7 +3707,7 @@ export interface paths {
     patch: operations['customers:members:update']
     trace?: never
   }
-  '/v1/customers/external/{external_id}/members/external/{member_external_id}': {
+  '/v1/customers/external/{external_id}/members/{member_external_id}': {
     parameters: {
       query?: never
       header?: never

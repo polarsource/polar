@@ -1654,7 +1654,7 @@ class TestGetCustomerMember:
 
         # Member's external id exists, but under a different customer's external id.
         response = await client.get(
-            "/v1/customers/external/cus_ext_w_b/members/external/mem_ext_w"
+            "/v1/customers/external/cus_ext_w_b/members/mem_ext_w"
         )
         assert response.status_code == 404
 
@@ -1709,7 +1709,7 @@ class TestGetCustomerMember:
         await save_fixture(member)
 
         response = await client.get(
-            "/v1/customers/external/cus_ext_2/members/external/mem_ext_2"
+            "/v1/customers/external/cus_ext_2/members/mem_ext_2"
         )
 
         assert response.status_code == 200
@@ -1811,7 +1811,7 @@ class TestGetCustomerMember:
         )
 
         response = await client.get(
-            "/v1/customers/external/cus_dup_get/members/external/mem_dup"
+            "/v1/customers/external/cus_dup_get/members/mem_dup"
         )
         assert response.status_code == 409
 
@@ -1854,7 +1854,7 @@ class TestGetCustomerMember:
         )
 
         response = await client.get(
-            "/v1/customers/external/cus_dup_single/members/external/mem_single"
+            "/v1/customers/external/cus_dup_single/members/mem_single"
         )
         assert response.status_code == 409
 
@@ -1931,7 +1931,7 @@ class TestUpdateCustomerMember:
         await save_fixture(member)
 
         response = await client.patch(
-            "/v1/customers/external/cus_ext_3/members/external/mem_ext_3",
+            "/v1/customers/external/cus_ext_3/members/mem_ext_3",
             json={"name": "New Name"},
         )
 
@@ -2036,7 +2036,7 @@ class TestDeleteCustomerMember:
         await save_fixture(member)
 
         response = await client.delete(
-            "/v1/customers/external/cus_ext_4/members/external/mem_ext_4"
+            "/v1/customers/external/cus_ext_4/members/mem_ext_4"
         )
         assert response.status_code == 204
 

@@ -27,7 +27,7 @@ from .service import AmbiguousExternalCustomerID, member_service
 
 router = APIRouter(
     prefix="/members",
-    tags=["members", APITag.public],
+    tags=["members"],
 )
 
 # Nested router: the new customer-scoped member CRUD, mounted under
@@ -90,6 +90,7 @@ def _validate_customer_id_params(
 @router.get(
     "/",
     summary="List Members",
+    tags=[APITag.public],
     response_model=ListResource[Member],
 )
 async def list_members(
@@ -223,7 +224,7 @@ async def get(
 
 
 @customer_members_router.get(
-    "/external/{external_id}/members/external/{member_external_id}",
+    "/external/{external_id}/members/{member_external_id}",
     summary="Get Member by External ID",
     response_model=Member,
     responses={
@@ -289,7 +290,7 @@ async def update(
 
 
 @customer_members_router.patch(
-    "/external/{external_id}/members/external/{member_external_id}",
+    "/external/{external_id}/members/{member_external_id}",
     summary="Update Member by External ID",
     response_model=Member,
     responses={
@@ -351,7 +352,7 @@ async def delete(
 
 
 @customer_members_router.delete(
-    "/external/{external_id}/members/external/{member_external_id}",
+    "/external/{external_id}/members/{member_external_id}",
     status_code=204,
     summary="Delete Member by External ID",
     responses={
@@ -379,7 +380,9 @@ async def delete_external(
     await member_service.delete(session, member)
 
 
-# --- Existing customer-scoped endpoints (unchanged) -------------------------
+# --- Deprecated customer-scoped endpoints -----------------------------------
+# Superseded by the nested /v1/customers/{id}/members routes above. Kept for
+# backwards compatibility (APITag.private removes them from the public SDK).
 
 
 @router.post(
@@ -387,6 +390,8 @@ async def delete_external(
     response_model=Member,
     status_code=201,
     summary="Create Member",
+    tags=[APITag.private],
+    deprecated=True,
     responses={
         201: {"description": "Member created."},
         403: {"description": "Not permitted to add members."},
@@ -421,6 +426,8 @@ async def create_member(
     "/{id}",
     summary="Get Member",
     response_model=Member,
+    tags=[APITag.private],
+    deprecated=True,
     responses={
         200: {"description": "Member retrieved."},
         404: MemberNotFound,
@@ -448,6 +455,8 @@ async def get_member(
     "/external/{external_id}",
     summary="Get Member by External ID",
     response_model=Member,
+    tags=[APITag.private],
+    deprecated=True,
     responses={
         200: {"description": "Member retrieved."},
         404: MemberNotFound,
@@ -483,6 +492,8 @@ async def get_member_by_external_id(
     "/{id}",
     summary="Update Member",
     response_model=Member,
+    tags=[APITag.private],
+    deprecated=True,
     responses={
         200: {"description": "Member updated."},
         404: MemberNotFound,
@@ -521,6 +532,8 @@ async def update_member(
     "/external/{external_id}",
     summary="Update Member by External ID",
     response_model=Member,
+    tags=[APITag.private],
+    deprecated=True,
     responses={
         200: {"description": "Member updated."},
         404: MemberNotFound,
@@ -566,6 +579,8 @@ async def update_member_by_external_id(
     "/{id}",
     status_code=204,
     summary="Delete Member",
+    tags=[APITag.private],
+    deprecated=True,
     responses={
         204: {"description": "Member deleted."},
         404: MemberNotFound,
@@ -593,6 +608,8 @@ async def delete_member(
     "/external/{external_id}",
     status_code=204,
     summary="Delete Member by External ID",
+    tags=[APITag.private],
+    deprecated=True,
     responses={
         204: {"description": "Member deleted."},
         404: MemberNotFound,

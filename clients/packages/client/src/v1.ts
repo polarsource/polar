@@ -28857,7 +28857,18 @@ export interface components {
        * Format: uuid4
        */
       order_id: string
-      reason: components['schemas']['RefundReason']
+      /**
+       * Reason
+       * @description Reason for the refund.
+       * @enum {string}
+       */
+      reason:
+        | 'duplicate'
+        | 'fraudulent'
+        | 'customer_request'
+        | 'service_disruption'
+        | 'satisfaction_guarantee'
+        | 'other'
       /**
        * Amount
        * @description Amount to refund in cents. Minimum is 1.
@@ -59750,6 +59761,16 @@ export const propertyAggregationFuncValues: ReadonlyArray<
 export const recurringIntervalValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RecurringInterval']
 > = ['day', 'week', 'month', 'year']
+export const refundCreateReasonValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['RefundCreate']['reason']
+> = [
+  'duplicate',
+  'fraudulent',
+  'customer_request',
+  'service_disruption',
+  'satisfaction_guarantee',
+  'other',
+]
 export const refundReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RefundReason']
 > = [

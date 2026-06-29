@@ -3541,6 +3541,40 @@ class TestUpdate:
 
         assert checkout.custom_field_data == {"text": "abc"}
 
+    async def test_custom_field_data_preserved_when_unset(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_custom_fields: Checkout,
+    ) -> None:
+        checkout_custom_fields.custom_field_data = {"text": "abc", "select": "a"}
+        await save_fixture(checkout_custom_fields)
+
+        checkout = await checkout_service.update(
+            session,
+            checkout_custom_fields,
+            CheckoutUpdate(),
+        )
+
+        assert checkout.custom_field_data == {"text": "abc", "select": "a"}
+
+    async def test_custom_field_data_merged_on_partial_update(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_custom_fields: Checkout,
+    ) -> None:
+        checkout_custom_fields.custom_field_data = {"text": "abc", "select": "a"}
+        await save_fixture(checkout_custom_fields)
+
+        checkout = await checkout_service.update(
+            session,
+            checkout_custom_fields,
+            CheckoutUpdate(custom_field_data={"text": "updated"}),
+        )
+
+        assert checkout.custom_field_data == {"text": "updated", "select": "a"}
+
     async def test_valid_embed_origin(
         self,
         session: AsyncSession,

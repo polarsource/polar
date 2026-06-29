@@ -1,0 +1,19 @@
+dev/docker/docker-compose.dev.yml
+  s_890c6fdfea364d::t_4f95dd77feaf3a 52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "03935b4d32d47cf99e6389a1f3cd567b26cf341c",
+  "prompts": {},
+  "sessions": {
+    "s_890c6fdfea364d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2800dfa9-4c6d-4110-93b9-b54d03eec24e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

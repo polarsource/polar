@@ -1827,25 +1827,16 @@ class SubscriptionService:
         self, session: AsyncSession, organization_id: uuid.UUID
     ) -> None:
         """Immediately cancel all billable subscriptions of an organization,
-        without notifying its customers.
+        without notifying its customers (the cancellation follows the merchant
+        being shut down, not a customer or merchant action).
 
-        Used when an organization has been denied, blocked, or offboarded for
-        long enough that its customers' subscriptions must be wound down. The
-        customers are intentionally not emailed, as the cancellation results
-        from the merchant being shut down rather than a customer-initiated or
-        merchant-initiated action.
+        Re-checks the org status, since this runs as a deferred job: an admin
+        may have reactivated the org after the scan enqueued it, in which case
+        this is a no-op. ``include_blocked=True`` because ``blocked`` is itself
+        a wind-down status.
 
-        Re-checks the organization status at execution time: this runs as a
-        deferred job enqueued by a daily scan, so an admin may have reactivated
-        the org in between. If it is no longer in a wind-down status, this is a
-        no-op — we must not cancel subscriptions of a reinstated org.
-        ``include_blocked=True`` is required because ``blocked`` is itself one
-        of the wind-down statuses.
-
-        Idempotent at the subscription level: a duplicate or concurrent run
-        (e.g. the cron firing from more than one scheduler replica) may have
-        already cancelled some subscriptions. Such a subscription is skipped
-        rather than aborting the whole batch.
+        Idempotent at the subscription level: an already-cancelled subscription
+        (from a duplicate or concurrent run) is skipped, not treated as an error.
         """
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(

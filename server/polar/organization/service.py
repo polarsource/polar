@@ -1457,13 +1457,9 @@ class OrganizationService:
     async def cancel_expired_organizations_subscriptions(
         self, session: AsyncSession
     ) -> Sequence[Organization]:
-        """Cancel customer subscriptions of orgs stuck in a terminal-bad status.
-
-        Run periodically by a worker. Picks up organizations that have been
-        denied, blocked, or offboarded for longer than the cancellation delay
-        and still have billable subscriptions, then enqueues a per-org job that
-        cancels them without notifying the customers. Returns the orgs whose
-        cancellation was enqueued.
+        """Enqueue a per-org cancellation job for each organization denied,
+        blocked, or offboarded past the cancellation delay that still has
+        billable subscriptions. Returns the organizations enqueued.
         """
         repository = OrganizationRepository.from_session(session)
         cutoff = (

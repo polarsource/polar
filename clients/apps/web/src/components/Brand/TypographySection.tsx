@@ -14,7 +14,7 @@ export function TypographySection() {
     <BrandSection
       meta={brandSections[2]}
       title="PP Neue Montreal"
-      lead="PP Neue Montreal is the single typeface of the identity, chosen for its clarity and structured geometry. Geist Mono carries technical detail like code and data."
+      lead="PP Neue Montreal is the single typeface of the identity, chosen for its clarity and structured geometry. Its tabular figures keep columns of numbers in line."
     >
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
         <div className="bg-brand-raised flex flex-col gap-8 overflow-hidden p-8 md:p-16">
@@ -25,9 +25,9 @@ export function TypographySection() {
           </span>
         </div>
         <div className="bg-brand-raised flex flex-col gap-8 overflow-hidden p-8 md:p-16">
-          <Label>Geist Mono</Label>
-          <Specimen>Usage</Specimen>
-          <div className="md:text2xl flex flex-col gap-2 font-mono text-xl tabular-nums">
+          <Label>Numerals</Label>
+          <Specimen>1234</Specimen>
+          <div className="flex flex-col gap-2 text-xl tabular-nums md:text-2xl">
             {invoice.map((row) => (
               <div
                 key={row.label}

@@ -12,6 +12,7 @@ from tagflow import classes, tag, text
 from polar.email.react import render_from_json
 from polar.email.repository import EmailLogRepository
 from polar.kit.pagination import PaginationParamsQuery
+from polar.kit.schemas import empty_str_to_none
 from polar.logging import Logger
 from polar.models.email_log import EmailLog, EmailLogStatus
 from polar.postgres import AsyncSession, get_db_read_session
@@ -22,12 +23,6 @@ from ..layout import layout
 log: Logger = structlog.get_logger()
 
 router = APIRouter()
-
-
-def empty_str_to_none(v: str | None) -> str | None:
-    if v == "":
-        return None
-    return v
 
 
 class StatusColumn(datatable.DatatableColumn[EmailLog]):
@@ -48,7 +43,7 @@ class StatusColumn(datatable.DatatableColumn[EmailLog]):
 async def list_email_logs(
     request: Request,
     pagination: PaginationParamsQuery,
-    query: str | None = Query(None),
+    query: Annotated[str | None, BeforeValidator(empty_str_to_none), Query()] = None,
     status: Annotated[
         EmailLogStatus | None, BeforeValidator(empty_str_to_none), Query()
     ] = None,

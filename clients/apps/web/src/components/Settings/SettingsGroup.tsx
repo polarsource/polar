@@ -45,4 +45,3 @@ export const SettingsGroupItem: React.FC<
     )}
   </div>
 )
-

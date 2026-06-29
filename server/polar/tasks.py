@@ -28,6 +28,7 @@ from polar.organization_access_token import tasks as organization_access_token
 from polar.organization_review import tasks as organization_review
 from polar.payout import tasks as payout
 from polar.personal_access_token import tasks as personal_access_token
+from polar.pricing_directory import tasks as pricing_directory
 from polar.processor_transaction import tasks as processor_transaction
 from polar.receipt import tasks as receipt
 from polar.refund import tasks as refund
@@ -65,6 +66,7 @@ __all__ = [
     "payout",
     "personal_access_token",
     "polar_self",
+    "pricing_directory",
     "processor_transaction",
     "receipt",
     "refund",

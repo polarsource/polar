@@ -53,6 +53,7 @@ from polar.payment.endpoints import router as payment_router
 from polar.payout.endpoints import router as payout_router
 from polar.payout_account.endpoints import router as payout_account_router
 from polar.personal_access_token.endpoints import router as pat_router
+from polar.pricing_directory.endpoints import router as pricing_directory_router
 from polar.product.endpoints import router as product_router
 from polar.refund.endpoints import router as refund_router
 from polar.subscription.endpoints import router as subscription_router
@@ -81,6 +82,8 @@ router.include_router(slack_router)
 router.include_router(notifications_router)
 # /personal_access_tokens
 router.include_router(pat_router)
+# /pricing-directory
+router.include_router(pricing_directory_router)
 # /accounts
 router.include_router(accounts_router)
 # /stream

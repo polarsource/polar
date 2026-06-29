@@ -56,14 +56,6 @@ export const useAuthSessionStart = () =>
       api.POST('/v1/auth/start', { body: { return_to } }),
   })
 
-export const useAuthSessionStatus = () => {
-  return useQuery({
-    queryKey: ['auth', 'session'],
-    queryFn: () => api.GET('/v1/auth/status'),
-    retry: false,
-  })
-}
-
 export const useEmailOTPRequest = () =>
   useMutation({
     mutationFn: (email: string) =>

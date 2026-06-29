@@ -78,6 +78,7 @@ from polar.order.service import (
     NotRecurringProduct,
     OffSessionChargesNotEnabled,
     OrderNotDraft,
+    OrderNotEligibleForInvoice,
     OrderNotEligibleForRetry,
     OrderNotPending,
     OrganizationNotReadyForPayments,
@@ -2599,6 +2600,50 @@ class TestTriggerInvoiceGeneration:
         await order_service.trigger_invoice_generation(session, order)
 
         enqueue_job_mock.assert_called_once_with("order.invoice", order_id=order.id)
+
+    async def test_draft_order_raises(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            billing_name="John Doe",
+            billing_address=Address(country=CountryAlpha2("US")),
+        )
+
+        with pytest.raises(OrderNotEligibleForInvoice):
+            await order_service.trigger_invoice_generation(session, order)
+
+        enqueue_job_mock.assert_not_called()
+
+    async def test_void_order_raises(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.void,
+            billing_name="John Doe",
+            billing_address=Address(country=CountryAlpha2("US")),
+        )
+
+        with pytest.raises(OrderNotEligibleForInvoice):
+            await order_service.trigger_invoice_generation(session, order)
+
+        enqueue_job_mock.assert_not_called()
 
     async def test_missing_billing(
         self,

@@ -10,6 +10,7 @@ from polar.kit.schemas import (
     ORDER_ID_EXAMPLE,
     PAYMENT_ID_EXAMPLE,
     IDSchema,
+    Schema,
     TimestampedSchema,
 )
 from polar.models.dispute import DisputeStatus
@@ -18,6 +19,32 @@ DisputeID = Annotated[UUID4, Path(description="The dispute ID.")]
 
 
 class DisputeCustomer(CustomerBase): ...
+
+
+class DisputeCounter(Schema):
+    """Merchant's evidence to counter a dispute.
+
+    Captured on the dispute's support case for our team to review and submit to
+    the card network. The shape will grow as the response form does.
+    """
+
+    explanation: str = Field(
+        min_length=20,
+        max_length=5000,
+        description=(
+            "Why the payment is legitimate — the core of the response to the "
+            "card network."
+        ),
+    )
+    product_description: str | None = Field(
+        default=None,
+        max_length=5000,
+        description="Description of the product or service the customer purchased.",
+    )
+    evidence_file_ids: list[UUID4] = Field(
+        default_factory=list,
+        description="IDs of uploaded files to attach as supporting evidence.",
+    )
 
 
 DisputeNotFound = {

@@ -31,6 +31,13 @@ export const isDisputeStatus = (
   value: string,
 ): value is schemas['DisputeStatus'] => value in DisputeStatusDisplayTitle
 
+export const getDisputeDisplayStatus = (
+  dispute: schemas['Dispute'],
+): { title: string; color: StatusColor } => ({
+  title: DisputeStatusDisplayTitle[dispute.status],
+  color: DisputeStatusDisplayColor[dispute.status],
+})
+
 export const DisputeReasonDisplay: Record<string, string> = {
   bank_cannot_process: 'Bank cannot process',
   check_returned: 'Check returned',

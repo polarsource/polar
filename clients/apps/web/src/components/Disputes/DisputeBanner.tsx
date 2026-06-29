@@ -1,16 +1,29 @@
 'use client'
 
+import { ConfirmModal } from '@/components/Modal/ConfirmModal'
+import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
+import { useAcceptDispute } from '@/hooks/queries/disputes'
 import { getDisputeReasonExplanation } from '@/utils/dispute'
 import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import Link from 'next/link'
 
 const DISPUTE_DOCS_URL =
   'https://polar.sh/docs/merchant-of-record/fees#dispute/chargeback-fees'
 
-export const DisputeBanner = ({ dispute }: { dispute: schemas['Dispute'] }) => {
+export const DisputeBanner = ({
+  dispute,
+  organization,
+}: {
+  dispute: schemas['Dispute']
+  organization: schemas['Organization']
+}) => {
   const needsResponse = dispute.status === 'needs_response'
+  const acceptModal = useModal()
+  const acceptDispute = useAcceptDispute()
+  const respondPath = `/dashboard/${organization.slug}/sales/disputes/${dispute.id}/respond`
 
   return (
     <Box
@@ -29,9 +42,7 @@ export const DisputeBanner = ({ dispute }: { dispute: schemas['Dispute'] }) => {
         <Text color="muted">{getDisputeReasonExplanation(dispute.reason)}</Text>
         {needsResponse && (
           <Text color="muted">
-            You may either provide evidence that clarifies the transaction to
-            help your customer recognize it, or accept this dispute immediately
-            to refund the customer and close the dispute.
+            You can accept this dispute to refund the customer and close it.
           </Text>
         )}
       </Box>
@@ -54,31 +65,37 @@ export const DisputeBanner = ({ dispute }: { dispute: schemas['Dispute'] }) => {
           >
             Learn more about dispute fees
           </a>
-          <Box alignItems="center" columnGap="s">
+          <Box flexDirection="row" alignItems="center" columnGap="m">
             <Button
               variant="secondary"
-              onClick={() =>
-                toast({
-                  title: 'Coming soon',
-                  description: 'Accepting disputes isn’t available yet.',
-                })
-              }
+              onClick={acceptModal.show}
+              loading={acceptDispute.isPending}
             >
               Accept dispute
             </Button>
-            <Button
-              onClick={() =>
-                toast({
-                  title: 'Coming soon',
-                  description: 'Countering disputes isn’t available yet.',
-                })
-              }
-            >
-              Counter dispute
-            </Button>
+            <Link href={respondPath}>
+              <Button>Counter dispute</Button>
+            </Link>
           </Box>
         </Box>
       )}
+
+      <ConfirmModal
+        isShown={acceptModal.isShown}
+        hide={acceptModal.hide}
+        title="Accept the dispute?"
+        description="Conceding the chargeback refunds the customer. The amount and fees are deducted from your balance."
+        onConfirm={async () => {
+          try {
+            await acceptDispute.mutateAsync(dispute.id)
+          } catch {
+            toast({
+              title: 'Something went wrong',
+              description: 'Could not accept the dispute. Please try again.',
+            })
+          }
+        }}
+      />
     </Box>
   )
 }

@@ -1,9 +1,6 @@
 'use client'
 
-import {
-  DisputeStatusDisplayColor,
-  DisputeStatusDisplayTitle,
-} from '@/utils/dispute'
+import { getDisputeDisplayStatus } from '@/utils/dispute'
 import { schemas } from '@polar-sh/client'
 import { Status } from '@polar-sh/orbit'
 import { differenceInCalendarDays } from 'date-fns'
@@ -16,7 +13,9 @@ export const DisputeCountdownBadge = ({
 }) => {
   const [now] = useState(() => new Date())
 
-  if (dispute.evidence_due_by) {
+  const awaitingResponse = dispute.status === 'needs_response'
+
+  if (awaitingResponse && dispute.evidence_due_by) {
     if (dispute.past_due) {
       return <Status status="Overdue" color="red" size="small" />
     }
@@ -33,11 +32,6 @@ export const DisputeCountdownBadge = ({
     return <Status status={label} color="yellow" size="small" />
   }
 
-  return (
-    <Status
-      status={DisputeStatusDisplayTitle[dispute.status]}
-      color={DisputeStatusDisplayColor[dispute.status]}
-      size="small"
-    />
-  )
+  const { title, color } = getDisputeDisplayStatus(dispute)
+  return <Status status={title} color={color} size="small" />
 }

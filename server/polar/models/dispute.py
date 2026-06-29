@@ -39,7 +39,6 @@ class DisputeStatus(StrEnum):
     under_review = "under_review"
     lost = "lost"
     won = "won"
-    accepted = "accepted"
 
     @classmethod
     def resolved_statuses(cls) -> set["DisputeStatus"]:
@@ -117,12 +116,6 @@ class Dispute(RecordModel):
     has_evidence: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     past_due: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     submission_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-
-    # When the merchant conceded the chargeback. `status` flips
-    # to `accepted` at the same time
-    accepted_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True, default=None
-    )
 
     order_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("orders.id"), nullable=False, index=True

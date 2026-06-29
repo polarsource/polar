@@ -13,7 +13,6 @@ const DISPUTE_DOCS_URL =
   'https://polar.sh/docs/merchant-of-record/fees#dispute/chargeback-fees'
 
 export const DisputeBanner = ({ dispute }: { dispute: schemas['Dispute'] }) => {
-  const accepted = dispute.status === 'accepted'
   const needsResponse = dispute.status === 'needs_response'
   const acceptModal = useModal()
   const acceptDispute = useAcceptDispute()
@@ -30,15 +29,9 @@ export const DisputeBanner = ({ dispute }: { dispute: schemas['Dispute'] }) => {
     >
       <Box flexDirection="column" rowGap="m" padding="xl">
         <Text variant="heading-xxs" as="h3">
-          {accepted
-            ? 'You accepted this dispute'
-            : 'The customer disputed this payment'}
+          The customer disputed this payment
         </Text>
-        <Text color="muted">
-          {accepted
-            ? 'The disputed amount and the dispute fee will be deducted from your balance. No further action is needed.'
-            : getDisputeReasonExplanation(dispute.reason)}
-        </Text>
+        <Text color="muted">{getDisputeReasonExplanation(dispute.reason)}</Text>
         {needsResponse && (
           <Text color="muted">
             You can accept this dispute to refund the customer and close it.
@@ -64,7 +57,9 @@ export const DisputeBanner = ({ dispute }: { dispute: schemas['Dispute'] }) => {
           >
             Learn more about dispute fees
           </a>
-          <Button onClick={acceptModal.show}>Accept dispute</Button>
+          <Button onClick={acceptModal.show} loading={acceptDispute.isPending}>
+            Accept dispute
+          </Button>
         </Box>
       )}
 

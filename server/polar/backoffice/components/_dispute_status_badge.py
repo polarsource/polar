@@ -8,7 +8,6 @@ _DISPUTE_STATUS_BADGES: dict[DisputeStatus, tuple[str, str]] = {
     DisputeStatus.prevented: ("badge-success", "Prevented"),
     DisputeStatus.won: ("badge-success", "Won"),
     DisputeStatus.lost: ("badge-error", "Lost"),
-    DisputeStatus.accepted: ("badge-neutral", "Accepted"),
     DisputeStatus.early_warning: ("badge-ghost", "Early warning"),
 }
 

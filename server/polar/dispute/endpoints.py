@@ -95,12 +95,12 @@ async def accept(
 ) -> Dispute:
     """Accept a dispute, conceding the chargeback.
 
-    Records the merchant's decision on the dispute's support case so staff can
-    settle the chargeback with the processor.
+    Closes the dispute with the processor (settling it as `lost`) and records
+    the merchant's decision on the dispute's support case.
     """
-    dispute = await dispute_service.accept(session, auth_subject, id)
+    dispute = await dispute_service.get(session, auth_subject, id)
 
     if dispute is None:
         raise ResourceNotFound()
 
-    return dispute
+    return await dispute_service.accept(session, dispute)

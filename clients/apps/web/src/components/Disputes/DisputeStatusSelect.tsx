@@ -15,7 +15,6 @@ import React from 'react'
 
 const STATUSES: schemas['DisputeStatus'][] = [
   'needs_response',
-  'accepted',
   'under_review',
   'won',
   'lost',

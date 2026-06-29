@@ -11,7 +11,6 @@ export const DisputeStatusDisplayTitle: Record<
   under_review: 'Under Review',
   won: 'Won',
   lost: 'Lost',
-  accepted: 'Accepted',
 }
 
 export const DisputeStatusDisplayColor: Record<
@@ -24,7 +23,6 @@ export const DisputeStatusDisplayColor: Record<
   under_review: 'yellow',
   won: 'green',
   lost: 'red',
-  accepted: 'gray',
 }
 
 export type DisputeStatusFilter = schemas['DisputeStatus'] | 'any'

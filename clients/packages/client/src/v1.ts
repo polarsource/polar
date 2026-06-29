@@ -2565,8 +2565,8 @@ export interface paths {
      * Accept Dispute
      * @description Accept a dispute, conceding the chargeback.
      *
-     *     Records the merchant's decision on the dispute's support case so staff can
-     *     settle the chargeback with the processor.
+     *     Closes the dispute with the processor (settling it as `lost`) and records
+     *     the merchant's decision on the dispute's support case.
      *
      *     **Scopes**: `disputes:write`
      */
@@ -19511,11 +19511,6 @@ export interface components {
        * @description The ID of the support case for this dispute, if one was opened.
        */
       case_id: string | null
-      /**
-       * Accepted At
-       * @description When the merchant accepted the dispute, conceding the chargeback. `None` if the merchant hasn't accepted it.
-       */
-      accepted_at: string | null
     }
     /** DisputeCustomer */
     DisputeCustomer: {
@@ -19628,7 +19623,6 @@ export interface components {
       | 'under_review'
       | 'lost'
       | 'won'
-      | 'accepted'
     /**
      * DownloadableFileCreate
      * @description Schema to create a file to be associated with the downloadables benefit.
@@ -31687,6 +31681,7 @@ export interface components {
       | 'dispute_won'
       | 'dispute_lost'
       | 'dispute_prevented'
+      | 'merchant_accepted'
     /** SupportCaseThread */
     SupportCaseThread: {
       case: components['schemas']['SupportCase']
@@ -57973,7 +57968,6 @@ export const disputeStatusValues: ReadonlyArray<
   'under_review',
   'lost',
   'won',
-  'accepted',
 ]
 export const downloadableFileCreateServiceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DownloadableFileCreate']['service']
@@ -60170,6 +60164,7 @@ export const supportCaseMessageTypeValues: ReadonlyArray<
   'dispute_won',
   'dispute_lost',
   'dispute_prevented',
+  'merchant_accepted',
 ]
 export const supportCaseTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SupportCaseType']

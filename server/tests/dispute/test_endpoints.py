@@ -3,6 +3,7 @@ import uuid
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 
 from polar.models import Customer, Dispute, Organization, Product, UserOrganization
 from tests.fixtures.database import SaveFixture
@@ -12,6 +13,7 @@ from tests.fixtures.random_objects import (
     create_order,
     create_payment,
 )
+from tests.fixtures.stripe import build_stripe_dispute
 
 
 @pytest_asyncio.fixture
@@ -165,6 +167,7 @@ class TestAcceptDispute:
     async def test_accept(
         self,
         client: AsyncClient,
+        mocker: MockerFixture,
         save_fixture: SaveFixture,
         organization: Organization,
         customer: Customer,
@@ -172,12 +175,23 @@ class TestAcceptDispute:
         user_organization: UserOrganization,
     ) -> None:
         case = await create_dispute_case(save_fixture, organization, customer, product)
+        # Stub the processor call and the loss side-effects; let the rest run.
+        mocker.patch("polar.dispute.service.dispute_transaction_service.create_dispute")
+        mocker.patch(
+            "polar.dispute.service.benefit_grant_service.enqueue_benefits_grants"
+        )
+        close_mock = mocker.patch("polar.dispute.service.stripe_service.close_dispute")
+        close_mock.return_value = build_stripe_dispute(
+            status="lost", balance_transactions=[]
+        )
 
         response = await client.post(f"/v1/disputes/{case.dispute_id}/accept")
 
         assert response.status_code == 200
         json = response.json()
         assert json["id"] == str(case.dispute_id)
-        assert json["status"] == "accepted"
-        assert json["accepted_at"] is not None
+        assert json["status"] == "lost"
+        # The `case_id` column-property must serialize (regression: it was expired
+        # by the status UPDATE and lazily loaded mid-serialization).
         assert json["case_id"] == str(case.id)
+        close_mock.assert_awaited_once()

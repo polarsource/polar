@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from polar.exceptions import PolarError
-from polar.models import Dispute, Organization, User
+from polar.models import Dispute, Organization
 from polar.models.support_case import (
     DisputeSupportCase,
     SupportCaseAudience,
@@ -103,27 +103,19 @@ class DisputeCaseService:
         )
 
     async def accept(
-        self,
-        session: AsyncSession,
-        case: DisputeSupportCase,
-        *,
-        actor: User | None,
+        self, session: AsyncSession, case: DisputeSupportCase
     ) -> SupportCaseMessage:
-        """Record that the merchant chose to accept (concede) the dispute.
+        """Record the merchant's acceptance (concede) on the thread.
 
-        Surfaces on the support thread so staff see the merchant's decision; the
-        chargeback itself is still settled out-of-band with the processor.
+        A ``system`` lifecycle event, like the other ``dispute_*`` events —
+        merchant/platform/customer author kinds are reserved for chat.
         """
         await self._assert_open(session, case)
         return await support_case_service.post_message(
             session,
             case,
-            author_kind=SupportCaseMessageAuthorKind.merchant,
-            author_user=actor,
-            body=(
-                "The merchant accepted this dispute and chose to concede the "
-                "chargeback."
-            ),
+            type=SupportCaseMessageType.merchant_accepted,
+            author_kind=SupportCaseMessageAuthorKind.system,
             audience=[SupportCaseAudience.merchant],
         )
 

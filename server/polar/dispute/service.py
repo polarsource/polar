@@ -6,7 +6,7 @@ from typing import assert_never
 import stripe as stripe_lib
 from sqlalchemy.orm import joinedload
 
-from polar.auth.models import AuthSubject, Organization, User, is_user
+from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
@@ -112,47 +112,33 @@ class DisputeService:
         )
         return await repository.get_one_or_none(statement)
 
-    async def accept(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        id: uuid.UUID,
-    ) -> Dispute | None:
-        """Merchant concedes the chargeback: log it on the dispute's support
-        case so staff can settle it. Requires ``sales:manage`` on the org."""
-        repository = DisputeRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(
-            session, auth_subject, permission=OrganizationPermission.sales_manage
-        )
-        statement = (
-            repository.get_statement_by_org_ids(org_ids)
-            .options(*repository.get_eager_options())
-            .where(Dispute.id == id)
-        )
-        dispute = await repository.get_one_or_none(statement)
-        if dispute is None:
-            return None
+    async def accept(self, session: AsyncSession, dispute: Dispute) -> Dispute:
+        """Merchant concedes the chargeback.
 
-        if dispute.accepted_at is not None:
-            return dispute
-
+        Closes the dispute with the processor — which settles it as ``lost`` —
+        and records the merchant's decision on the support thread. The resulting
+        ``lost`` state is reconciled through the same path as the Stripe webhook.
+        """
         if dispute.status != DisputeStatus.needs_response:
             raise DisputeNotOpenError(dispute.id)
 
-        await repository.update(
-            dispute,
-            update_dict={
-                "status": DisputeStatus.accepted,
-                "accepted_at": datetime.now(UTC),
-            },
-        )
+        assert dispute.payment_processor_id is not None
 
         case = await dispute_case_service.get_case(session, dispute)
         if case is not None:
-            actor = auth_subject.subject if is_user(auth_subject) else None
-            await dispute_case_service.accept(session, case, actor=actor)
+            await dispute_case_service.accept(session, case)
 
-        return await repository.get_one_or_none(statement)
+        stripe_dispute = await stripe_service.close_dispute(
+            dispute.payment_processor_id
+        )
+        await self.upsert_from_stripe(session, stripe_dispute)
+
+        repository = DisputeRepository.from_session(session)
+        reloaded = await repository.get_by_id(
+            dispute.id, options=repository.get_eager_options()
+        )
+        assert reloaded is not None
+        return reloaded
 
     async def upsert_from_stripe(
         self, session: AsyncSession, stripe_dispute: stripe_lib.Dispute
@@ -298,11 +284,7 @@ class DisputeService:
                 )
             case DisputeStatus.prevented:
                 await dispute_case_service.prevent(session, case)
-            case (
-                DisputeStatus.needs_response
-                | DisputeStatus.early_warning
-                | DisputeStatus.accepted
-            ):
+            case DisputeStatus.needs_response | DisputeStatus.early_warning:
                 pass
             case _:
                 assert_never(dispute.status)

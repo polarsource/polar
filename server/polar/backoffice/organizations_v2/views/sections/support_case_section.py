@@ -74,6 +74,7 @@ _EVENT_TITLES: dict[SupportCaseMessageType, str] = {
     SupportCaseMessageType.dispute_won: "Dispute won",
     SupportCaseMessageType.dispute_lost: "Dispute lost",
     SupportCaseMessageType.dispute_prevented: "Dispute prevented",
+    SupportCaseMessageType.merchant_accepted: "Merchant accepted the dispute",
     SupportCaseMessageType.assigned: "Case assigned",
     SupportCaseMessageType.released: "Case unassigned",
 }
@@ -105,6 +106,7 @@ _EVENT_NODES: dict[SupportCaseMessageType, tuple[str, str]] = {
         "icon-shield-check",
         "bg-success text-success-content",
     ),
+    SupportCaseMessageType.merchant_accepted: ("icon-x", _MUTED_NODE),
     SupportCaseMessageType.assigned: ("icon-user-check", _MUTED_NODE),
     SupportCaseMessageType.released: ("icon-user-x", _MUTED_NODE),
 }
@@ -327,9 +329,6 @@ class SupportCaseSection:
                     text(self._dispute_reason(dispute))
                 with self._fact("Evidence due"):
                     self._render_evidence_due(dispute)
-                if dispute.accepted_at is not None:
-                    with self._fact("Accepted"):
-                        text(dispute.accepted_at.strftime("%b %-d, %Y %H:%M UTC"))
                 with self._fact("Evidence"):
                     if dispute.has_evidence:
                         text(f"Submitted ({dispute.submission_count})")

@@ -25,11 +25,10 @@ const orderStatusBadgeColor = (
 }
 
 interface OrderCardProps {
-  className?: string
   order: schemas['Order']
 }
 
-const OrderCard = ({ className, order }: OrderCardProps) => {
+const OrderCard = ({ order }: OrderCardProps) => {
   const createdAtDate = new Date(order.created_at)
 
   const displayDate = createdAtDate.toLocaleDateString('en-US', {
@@ -42,10 +41,7 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
 
   return (
     <Card
-      className={twMerge(
-        className,
-        'dark:bg-polar-800 flex flex-col gap-y-1 rounded-xl border-none bg-gray-50 px-4 py-4 transition-opacity hover:opacity-60',
-      )}
+      className="dark:bg-polar-800 flex flex-col gap-y-1 rounded-xl border-none bg-gray-50 px-4 py-4 transition-opacity hover:opacity-60"
     >
       <div className="dark:text-polar-500 flex flex-row items-baseline justify-between text-sm text-gray-500">
         <span>{displayDate}</span>

@@ -84,18 +84,35 @@
   src: url('/fonts/GeistMono-Variable.woff2') format('woff2');
 }
 
+@font-face {
+  font-family: 'PP Neue Montreal';
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/PPNeueMontreal-VariableUpright.woff2') format('woff2');
+}
+
 @theme {
   --shadow-md: 0 0px 15px rgba(0 0 0 / 0.04), 0 0px 2px rgba(0 0 0 / 0.06);
   --shadow-lg: 0 0px 20px rgba(0 0 0 / 0.04), 0 0px 5px rgba(0 0 0 / 0.06);
   --shadow-xl: 0 0px 30px rgba(0 0 0 / 0.04), 0 0px 10px rgba(0 0 0 / 0.06);
   --shadow-3xl: 0 0 50px rgba(0 0 0 / 0.02), 0 0 50px rgba(0 0 0 / 0.04);
 
-  --font-sans: 'Inter', sans-serif;
-  --font-display: 'InterDisplay', sans-serif;
+  --font-sans: 'PP Neue Montreal', 'Inter', sans-serif;
+  --font-display: 'PP Neue Montreal', 'InterDisplay', sans-serif;
   --font-mono: 'GeistMono', monospace;
-  --font-louize: 'Louize', serif;
 
   --text-xxs: 0.65rem;
+
+  /* Brand microsite palette (dark-only /brand page). Single source of truth
+     for the otherwise hard-coded hex values used across Brand components. */
+  --color-brand-surface: #171717;
+  --color-brand-raised: #1d1d1d;
+  --color-brand-line: #7b7b7b;
+  --color-brand-muted: #7b7b7b;
+  --color-brand-foreground: #bdbdbd;
+  --color-brand-bright: #f5f6fa;
+  --color-brand-accent: #625fff;
 
   --color-blue-50: oklch(0.97 0.014 254.604);
   --color-blue-100: oklch(0.932 0.032 255.585);
@@ -239,7 +256,6 @@
   html {
     color-scheme: light dark;
     @apply text-gray-900;
-    font-feature-settings: 'cv01', 'cv03', 'cv04', 'cv06', 'cv11', 'ss03';
   }
 
   html.dark {

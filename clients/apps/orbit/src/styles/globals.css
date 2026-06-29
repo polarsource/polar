@@ -76,6 +76,14 @@
   src: url('/fonts/GeistMono-Variable.woff2') format('woff2');
 }
 
+@font-face {
+  font-family: 'PP Neue Montreal';
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/PPNeueMontreal-VariableUpright.woff2') format('woff2');
+}
+
 /* ─── Tailwind theme ─────────────────────────────────────────────────────── */
 
 @theme {
@@ -83,8 +91,8 @@
   --shadow-lg: 0 0px 20px rgba(0 0 0 / 0.04), 0 0px 5px rgba(0 0 0 / 0.06);
   --shadow-xl: 0 0px 30px rgba(0 0 0 / 0.04), 0 0px 10px rgba(0 0 0 / 0.06);
 
-  --font-sans: 'Inter', sans-serif;
-  --font-display: 'InterDisplay', sans-serif;
+  --font-sans: 'PP Neue Montreal', 'Inter', sans-serif;
+  --font-display: 'PP Neue Montreal', 'InterDisplay', sans-serif;
   --font-mono: 'GeistMono', monospace;
 
   --text-xxs: 0.65rem;

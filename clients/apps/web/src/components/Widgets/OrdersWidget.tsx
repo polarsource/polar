@@ -40,9 +40,7 @@ const OrderCard = ({ order }: OrderCardProps) => {
   })
 
   return (
-    <Card
-      className="dark:bg-polar-800 flex flex-col gap-y-1 rounded-xl border-none bg-gray-50 px-4 py-4 transition-opacity hover:opacity-60"
-    >
+    <Card className="dark:bg-polar-800 flex flex-col gap-y-1 rounded-xl border-none bg-gray-50 px-4 py-4 transition-opacity hover:opacity-60">
       <div className="dark:text-polar-500 flex flex-row items-baseline justify-between text-sm text-gray-500">
         <span>{displayDate}</span>
         <Status

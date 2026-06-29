@@ -190,6 +190,16 @@ class MissingInvoiceBillingDetails(OrderError):
         super().__init__(message, 422)
 
 
+class OrderNotEligibleForInvoice(OrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = (
+            f"Order {order.id} is not eligible for invoice generation "
+            f"(current status: {order.status})."
+        )
+        super().__init__(message, 409)
+
+
 class InvoiceDoesNotExist(OrderError):
     def __init__(self, order: Order) -> None:
         self.order = order
@@ -521,6 +531,9 @@ class OrderService:
     async def trigger_invoice_generation(
         self, session: AsyncSession, order: Order
     ) -> None:
+        if order.status in (OrderStatus.draft, OrderStatus.void):
+            raise OrderNotEligibleForInvoice(order)
+
         if order.billing_name is None or order.billing_address is None:
             raise MissingInvoiceBillingDetails(order)
 

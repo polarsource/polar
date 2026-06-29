@@ -23520,6 +23520,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** OrderNotEligibleForInvoice */
+    OrderNotEligibleForInvoice: {
+      /**
+       * Error
+       * @example OrderNotEligibleForInvoice
+       * @constant
+       */
+      error: 'OrderNotEligibleForInvoice'
+      /** Detail */
+      detail: string
+    }
     /** OrderNotEligibleForRetry */
     OrderNotEligibleForRetry: {
       /**
@@ -39496,6 +39507,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description Order is not eligible for invoice generation (invalid status). */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrderNotEligibleForInvoice']
+        }
+      }
       /** @description Order is missing billing name or address. */
       422: {
         headers: {
@@ -46013,6 +46033,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Order is not eligible for invoice generation (invalid status). */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrderNotEligibleForInvoice']
         }
       }
       /** @description Order is missing billing name or address. */

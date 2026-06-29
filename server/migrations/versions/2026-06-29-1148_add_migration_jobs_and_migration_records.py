@@ -27,7 +27,11 @@ def upgrade() -> None:
         sa.Column("organization_id", sa.Uuid(), nullable=False),
         sa.Column("source_platform", sa.String(length=32), nullable=False),
         sa.Column("step", sa.String(length=32), nullable=False),
-        sa.Column("source_refresh_token", sa.Text(), nullable=True),
+        sa.Column(
+            "source_credentials",
+            postgresql.JSONB(astext_type=sa.Text()),
+            nullable=False,
+        ),
         sa.Column(
             "pan_transfer_steps",
             postgresql.JSONB(astext_type=sa.Text()),

@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Text, Uuid
+from sqlalchemy import ForeignKey, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -52,11 +52,12 @@ class MigrationJob(RecordModel):
         nullable=False,
         default=MigrationStep.source_setup,
     )
-    # Credential used to read the source provider. For Stripe this is the OAuth
-    # refresh token (rotated on every refresh). Encryption at rest is tracked
-    # separately (see the KMS secrets RFC).
-    source_refresh_token: Mapped[str | None] = mapped_column(
-        Text, nullable=True, default=None
+    # Provider-specific credentials used to read the source; the shape depends
+    # on source_platform: a Stripe OAuth refresh token, a Lemon Squeezy / Paddle
+    # API key, etc. Encryption at rest is tracked separately (see the KMS
+    # secrets RFC).
+    source_credentials: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict
     )
     # The PAN transfer checklist: a list of step objects (see PanTransferStep).
     pan_transfer_steps: Mapped[list[dict[str, Any]]] = mapped_column(

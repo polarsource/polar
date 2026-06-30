@@ -12351,6 +12351,13 @@ export interface components {
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
+      /** @description The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval. */
+      meter_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Number of meter interval units. None when no meter cycle is set.
+       */
+      meter_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -12710,6 +12717,13 @@ export interface components {
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
+      /** @description The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval. */
+      meter_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Number of meter interval units. None when no meter cycle is set.
+       */
+      meter_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -16385,6 +16399,13 @@ export interface components {
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
+      /** @description The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval. */
+      meter_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Number of meter interval units. None when no meter cycle is set.
+       */
+      meter_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -16505,6 +16526,16 @@ export interface components {
        * @description The end timestamp of the current billing period.
        */
       current_period_end: string
+      /**
+       * Current Meter Period Start
+       * @description The start timestamp of the current meter period, if the product has a meter cycle set. Metered credits are granted and overage is settled on this cadence.
+       */
+      current_meter_period_start: string | null
+      /**
+       * Current Meter Period End
+       * @description The end timestamp of the current meter period, if the product has a meter cycle set. This is when credits next renew.
+       */
+      current_meter_period_end: string | null
       /**
        * Trial Start
        * @description The start timestamp of the trial period, if any.
@@ -16973,6 +17004,13 @@ export interface components {
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
+      /** @description The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval. */
+      meter_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Number of meter interval units. None when no meter cycle is set.
+       */
+      meter_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -17930,6 +17968,16 @@ export interface components {
        */
       current_period_end: string
       /**
+       * Current Meter Period Start
+       * @description The start timestamp of the current meter period, if the product has a meter cycle set. Metered credits are granted and overage is settled on this cadence.
+       */
+      current_meter_period_start: string | null
+      /**
+       * Current Meter Period End
+       * @description The end timestamp of the current meter period, if the product has a meter cycle set. This is when credits next renew.
+       */
+      current_meter_period_end: string | null
+      /**
        * Trial Start
        * @description The start timestamp of the trial period, if any.
        */
@@ -18161,6 +18209,13 @@ export interface components {
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
+      /** @description The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval. */
+      meter_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Number of meter interval units. None when no meter cycle is set.
+       */
+      meter_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -19499,6 +19554,13 @@ export interface components {
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
+      /** @description The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval. */
+      meter_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Number of meter interval units. None when no meter cycle is set.
+       */
+      meter_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -23854,6 +23916,13 @@ export interface components {
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
+      /** @description The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval. */
+      meter_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Number of meter interval units. None when no meter cycle is set.
+       */
+      meter_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -24059,6 +24128,16 @@ export interface components {
        * @description The end timestamp of the current billing period.
        */
       current_period_end: string
+      /**
+       * Current Meter Period Start
+       * @description The start timestamp of the current meter period, if the product has a meter cycle set. Metered credits are granted and overage is settled on this cadence.
+       */
+      current_meter_period_start: string | null
+      /**
+       * Current Meter Period End
+       * @description The end timestamp of the current meter period, if the product has a meter cycle set. This is when credits next renew.
+       */
+      current_meter_period_end: string | null
       /**
        * Trial Start
        * @description The start timestamp of the trial period, if any.
@@ -27922,6 +28001,13 @@ export interface components {
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
+      /** @description The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval. */
+      meter_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Number of meter interval units. None when no meter cycle is set.
+       */
+      meter_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -28126,6 +28212,13 @@ export interface components {
        * @default 1
        */
       recurring_interval_count: number
+      /** @description Optional meter cycle, independent of the billing interval. When set, overage settlement, meter resets and meter-credit grants run on this cadence rather than the billing interval — e.g. yearly billing with monthly credits. It must evenly divide the billing interval. If `None`, metered concerns follow the billing interval. **Once set, it can't be changed.** */
+      meter_interval?: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Number of meter interval units. Defaults to 1 when `meter_interval` is set. Ignored when `meter_interval` is `None`.
+       */
+      meter_interval_count?: number | null
     }
     /**
      * ProductMediaFileCreate
@@ -30209,6 +30302,16 @@ export interface components {
        * @description The end timestamp of the current billing period.
        */
       current_period_end: string
+      /**
+       * Current Meter Period Start
+       * @description The start timestamp of the current meter period, if the product has a meter cycle set. Metered credits are granted and overage is settled on this cadence.
+       */
+      current_meter_period_start: string | null
+      /**
+       * Current Meter Period End
+       * @description The end timestamp of the current meter period, if the product has a meter cycle set. This is when credits next renew.
+       */
+      current_meter_period_end: string | null
       /**
        * Trial Start
        * @description The start timestamp of the trial period, if any.

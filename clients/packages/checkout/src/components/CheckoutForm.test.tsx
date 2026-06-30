@@ -95,6 +95,8 @@ const recurringProduct = {
   recurring_interval: 'month' as const,
   recurring_interval_count: null,
   is_recurring: true,
+  meter_interval: null,
+  meter_interval_count: null,
   trial_interval: null,
   trial_interval_count: null,
   visibility: 'public' as const,

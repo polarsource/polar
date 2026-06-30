@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, NotRequired, TypedDict
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, Uuid
+from sqlalchemy import Boolean, ForeignKey, String, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -43,6 +43,7 @@ class OrganizationSSOConnection(RecordModel):
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
 
+    name: Mapped[str | None] = mapped_column(String, nullable=True)
     type: Mapped[OrganizationSSOConnectionType] = mapped_column(
         StringEnum(OrganizationSSOConnectionType), nullable=False
     )

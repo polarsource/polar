@@ -223,7 +223,7 @@ def read_session_mock() -> AsyncReadSession:
 def organization_repository_mock(mocker: MockerFixture) -> MagicMock:
     repository = MagicMock()
     active_organization = MagicMock(spec=Organization)
-    active_organization.is_active.return_value = True
+    active_organization.can_change_plan.return_value = True
     repository.get_by_id = AsyncMock(return_value=active_organization)
     mocker.patch(
         "polar.integrations.polar.service.OrganizationRepository.from_session",
@@ -1523,7 +1523,7 @@ class TestChangePlan:
             _make_product(id="prod_2", metadata={"order": 2}),
         ]
         inactive = MagicMock(spec=Organization)
-        inactive.is_active.return_value = False
+        inactive.can_change_plan.return_value = False
         organization_repository_mock.get_by_id.return_value = inactive
 
         with pytest.raises(PolarSelfNotApproved):

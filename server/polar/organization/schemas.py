@@ -28,7 +28,6 @@ from polar.kit.schemas import (
     IDSchema,
     MergeJSONSchema,
     Schema,
-    SelectorWidget,
     SlugValidator,
     TimestampedSchema,
 )
@@ -48,7 +47,6 @@ from polar.models.user_organization import (
 OrganizationID = Annotated[
     UUID4,
     MergeJSONSchema({"description": "The organization ID."}),
-    SelectorWidget("/v1/organizations", "Organization", "name"),
     Field(examples=[ORGANIZATION_ID_EXAMPLE]),
 ]
 

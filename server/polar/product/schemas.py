@@ -48,7 +48,6 @@ from polar.kit.schemas import (
     Int32,
     MergeJSONSchema,
     Schema,
-    SelectorWidget,
     SetSchemaReference,
     StripValidator,
     TimestampedSchema,
@@ -87,7 +86,6 @@ PRODUCT_NAME_MAX_LENGTH = 64
 ProductID = Annotated[
     UUID4,
     MergeJSONSchema({"description": "The product ID."}),
-    SelectorWidget("/v1/products", "Product", "name"),
 ]
 
 

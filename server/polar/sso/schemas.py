@@ -53,6 +53,9 @@ class OrganizationSSOConnection(IDSchema, TimestampedSchema):
     organization_id: UUID4 = Field(
         description="ID of the organization the connection belongs to."
     )
+    name: str | None = Field(
+        description="Human-friendly label for the connection, shown on the login page."
+    )
     type: OrganizationSSOConnectionType = Field(
         description="Type of the SSO connection."
     )
@@ -62,7 +65,22 @@ class OrganizationSSOConnection(IDSchema, TimestampedSchema):
     enabled: bool = Field(description="Whether the connection can be used to sign in.")
 
 
+class OrganizationSSOConnectionLogin(IDSchema):
+    """Public, login-facing view of an enabled SSO connection."""
+
+    name: str | None = Field(
+        description="Human-friendly label for the connection, shown on the login page."
+    )
+    type: OrganizationSSOConnectionType = Field(
+        description="Type of the SSO connection."
+    )
+
+
 class OrganizationSSOConnectionCreate(Schema):
+    name: NonEmptyStr | None = Field(
+        default=None,
+        description="Human-friendly label for the connection, shown on the login page.",
+    )
     type: Literal[OrganizationSSOConnectionType.oidc] = Field(
         default=OrganizationSSOConnectionType.oidc,
         description="Type of the SSO connection.",
@@ -76,6 +94,10 @@ class OrganizationSSOConnectionCreate(Schema):
 
 
 class OrganizationSSOConnectionUpdate(Schema):
+    name: NonEmptyStr | None = Field(
+        default=None,
+        description="Human-friendly label for the connection, shown on the login page.",
+    )
     configuration: OIDCConfiguration | None = Field(
         default=None, description="Provider-specific configuration of the connection."
     )

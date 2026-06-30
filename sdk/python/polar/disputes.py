@@ -4,6 +4,7 @@ import builtins
 
 from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
+    DisputeNotOpenError,
     HTTPValidationError,
     ResourceNotFound,
 )
@@ -31,7 +32,7 @@ class DisputesSync(SyncServiceBase):
         """
         List disputes.
 
-        **Scopes**: `disputes:read`
+        **Scopes**: `disputes:read` `disputes:write`
 
         Args:
             organization_id: Filter by organization ID.
@@ -72,7 +73,7 @@ class DisputesSync(SyncServiceBase):
         """
         Get a dispute by ID.
 
-        **Scopes**: `disputes:read`
+        **Scopes**: `disputes:read` `disputes:write`
 
         Args:
             id: The dispute ID.
@@ -98,6 +99,44 @@ class DisputesSync(SyncServiceBase):
         }
         return parse_response_json(response, Dispute, method_errors)
 
+    def accept(
+        self,
+        id: str,
+    ) -> Dispute:
+        """
+        Accept a dispute, conceding the chargeback.
+
+        Closes the dispute with the processor (settling it as `lost`) and records
+        the merchant's decision on the dispute's support case.
+
+        **Scopes**: `disputes:write`
+
+        Args:
+            id: The dispute ID.
+
+        Raises:
+            ResourceNotFound: Dispute not found.
+            DisputeNotOpenError: Conflict
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/disputes/{id}/accept",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            404: ResourceNotFound,
+            409: DisputeNotOpenError,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, Dispute, method_errors)
+
 
 class DisputesAsync(AsyncServiceBase):
     async def list(
@@ -113,7 +152,7 @@ class DisputesAsync(AsyncServiceBase):
         """
         List disputes.
 
-        **Scopes**: `disputes:read`
+        **Scopes**: `disputes:read` `disputes:write`
 
         Args:
             organization_id: Filter by organization ID.
@@ -154,7 +193,7 @@ class DisputesAsync(AsyncServiceBase):
         """
         Get a dispute by ID.
 
-        **Scopes**: `disputes:read`
+        **Scopes**: `disputes:read` `disputes:write`
 
         Args:
             id: The dispute ID.
@@ -176,6 +215,44 @@ class DisputesAsync(AsyncServiceBase):
         response = await self.client.send_request(request)
         method_errors = {
             404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, Dispute, method_errors)
+
+    async def accept(
+        self,
+        id: str,
+    ) -> Dispute:
+        """
+        Accept a dispute, conceding the chargeback.
+
+        Closes the dispute with the processor (settling it as `lost`) and records
+        the merchant's decision on the dispute's support case.
+
+        **Scopes**: `disputes:write`
+
+        Args:
+            id: The dispute ID.
+
+        Raises:
+            ResourceNotFound: Dispute not found.
+            DisputeNotOpenError: Conflict
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/disputes/{id}/accept",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            404: ResourceNotFound,
+            409: DisputeNotOpenError,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Dispute, method_errors)

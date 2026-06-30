@@ -24,7 +24,9 @@ from python.utils import format_default_value, format_default_value_dataclass
 EMITTER_DIRECTORY = pathlib.Path(__file__).parent
 
 
-def _collect_type_ref_names(type_ref: TypeRef | None, ir: OpenAPIIR) -> set[str]:
+def _collect_type_ref_names(
+    type_ref: TypeRef | None, ir: OpenAPIIR, explode_union_ref: bool = False
+) -> set[str]:
     """Collect all model names from a TypeRef."""
     if type_ref is None:
         return set()
@@ -34,13 +36,14 @@ def _collect_type_ref_names(type_ref: TypeRef | None, ir: OpenAPIIR) -> set[str]
     if isinstance(type_ref, ModelRef):
         names.add(type_ref.name)
     elif isinstance(type_ref, UnionRef):
-        names.add(type_ref.name)
-        # Also add the union's variants
-        for union in ir.input_unions + ir.output_unions:
-            if union.name == type_ref.name:
-                for variant in union.variants:
-                    if isinstance(variant, ModelRef):
-                        names.add(variant.name)
+        if not explode_union_ref:
+            names.add(type_ref.name)
+        else:
+            for union in ir.input_unions + ir.output_unions:
+                if union.name == type_ref.name:
+                    for variant in union.variants:
+                        if isinstance(variant, ModelRef):
+                            names.add(variant.name)
     elif isinstance(type_ref, UnionType):
         for variant in type_ref.variants:
             names.update(_collect_type_ref_names(variant, ir))
@@ -219,7 +222,11 @@ class PythonEmitter(EmitterBase):
         for method in service.methods:
             # Collect input imports from body
             if method.body is not None:
-                imports["input"].update(_collect_type_ref_names(method.body, self.ir))
+                imports["input"].update(
+                    _collect_type_ref_names(
+                        method.body, self.ir, explode_union_ref=True
+                    )
+                )
                 imports["enum"].update(_collect_enum_names(method.body, self.ir))
 
             # Collect output imports from response
@@ -235,13 +242,6 @@ class PythonEmitter(EmitterBase):
                 # Also collect model/union names from parameters
                 if isinstance(param.type, (ModelRef, UnionRef)):
                     imports["input"].add(param.type.name)
-
-            # Also collect union names for union_ref bodies
-            if method.body is not None and isinstance(method.body, UnionRef):
-                imports["input"].add(method.body.name)
-
-            if method.response is not None and isinstance(method.response, UnionRef):
-                imports["output"].add(method.response.name)
 
             # Collect imports from error responses
             for error in method.errors:

@@ -15,6 +15,7 @@ from polar.errors import (
     HTTPValidationError,
     MissingInvoiceBillingDetails,
     OrderNotDraft,
+    OrderNotEligibleForInvoice,
     ResourceNotFound,
 )
 from polar.inputs import (
@@ -336,6 +337,7 @@ class OrdersSync(SyncServiceBase):
 
         Raises:
             ResourceNotFound: Order not found.
+            OrderNotEligibleForInvoice: Order is not eligible for invoice generation (invalid status).
             MissingInvoiceBillingDetails: Order is missing billing name or address.
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarServerError: Raised when the server returns a 5xx error response.
@@ -351,6 +353,7 @@ class OrdersSync(SyncServiceBase):
         response = self.client.send_request(request)
         method_errors = {
             404: ResourceNotFound,
+            409: OrderNotEligibleForInvoice,
             422: MissingInvoiceBillingDetails,
         }
         return parse_response_json(response, typing.Any, method_errors)
@@ -690,6 +693,7 @@ class OrdersAsync(AsyncServiceBase):
 
         Raises:
             ResourceNotFound: Order not found.
+            OrderNotEligibleForInvoice: Order is not eligible for invoice generation (invalid status).
             MissingInvoiceBillingDetails: Order is missing billing name or address.
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarServerError: Raised when the server returns a 5xx error response.
@@ -705,6 +709,7 @@ class OrdersAsync(AsyncServiceBase):
         response = await self.client.send_request(request)
         method_errors = {
             404: ResourceNotFound,
+            409: OrderNotEligibleForInvoice,
             422: MissingInvoiceBillingDetails,
         }
         return parse_response_json(response, typing.Any, method_errors)

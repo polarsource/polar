@@ -15,3 +15,9 @@ lint-check:
 
 test:
     uv run pytest tests/
+
+openapi:
+  uv run -m --directory ../../server scripts.generate_openapi | jq -r > openapi.json
+
+generate language:
+  uv run -m cli --language {{language}} --clear openapi.json ../{{language}}

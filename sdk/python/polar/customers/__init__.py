@@ -31,8 +31,16 @@ from polar.outputs import (
     ListResourcePaymentMethod,
 )
 
+from .members import MembersAsync, MembersSync
+
 
 class CustomersSync(SyncServiceBase):
+    members: MembersSync
+
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.members = MembersSync.from_service(self)
+
     def list(
         self,
         *,
@@ -554,6 +562,12 @@ class CustomersSync(SyncServiceBase):
 
 
 class CustomersAsync(AsyncServiceBase):
+    members: MembersAsync
+
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.members = MembersAsync.from_service(self)
+
     async def list(
         self,
         *,

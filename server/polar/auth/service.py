@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from typing import TypeVar
+from uuid import UUID
 
 import structlog
 from fastapi import Request, Response
@@ -12,7 +13,7 @@ from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.http import get_safe_return_url
 from polar.kit.utils import utc_now
 from polar.logging import Logger
-from polar.models import User, UserSession
+from polar.models import User, UserSession, UserSessionOrganization
 from polar.postgres import AsyncSession
 
 from .schemas import Factor
@@ -34,12 +35,14 @@ class AuthService:
         *,
         return_to: str | None = None,
         factor: Factor | None = None,
+        organization_ids: frozenset[UUID] | None = None,
     ) -> RedirectResponse:
         token, user_session = await self._create_user_session(
             session=session,
             user=user,
             user_agent=request.headers.get("User-Agent", ""),
             scopes=list(Scope),
+            organization_ids=organization_ids,
         )
 
         return_url = get_safe_return_url(return_to)
@@ -127,6 +130,7 @@ class AuthService:
         user_agent: str,
         scopes: list[Scope],
         expire_in: timedelta = settings.USER_SESSION_TTL,
+        organization_ids: frozenset[UUID] | None = None,
     ) -> tuple[str, UserSession]:
         token, token_hash = generate_token_hash_pair(
             secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
@@ -138,6 +142,11 @@ class AuthService:
             scopes=scopes,
             expires_at=utc_now() + expire_in,
         )
+        if organization_ids is not None:
+            user_session.organization_scopes = [
+                UserSessionOrganization(organization_id=organization_id)
+                for organization_id in organization_ids
+            ]
         session.add(user_session)
         await session.flush()
 

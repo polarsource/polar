@@ -201,9 +201,16 @@ async def complete(
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
+    context = authentication_session.context or {}
+    sso_organization_id = context.get("sso_organization_id")
+    if sso_organization_id is None:
+        raise PolarAuthRedirectionError("Authentication session cannot be completed")
+
+    # An SSO factor alone completes the login, even for members enrolled in other
+    # factors, so we don't enforce remaining factors here.
     try:
         identity_id, _ = await authentication_session_service.complete(
-            authentication_session
+            authentication_session, enforce_factors=False
         )
     except (IdentityNotAttachedException, FactorsRemainingException) as e:
         raise PolarAuthRedirectionError(
@@ -215,16 +222,13 @@ async def complete(
     if user is None:
         raise PolarAuthRedirectionError("User not found for authenticated identity")
 
-    return_to = (
-        authentication_session.context.get("return_to")
-        if authentication_session.context
-        else None
-    )
-
-    # TODO(Phase 4): scope the minted session to context["sso_organization_id"]
-    # via complete(enforce_factors=False) + get_login_response(organization_ids=...).
     response = await auth_service.get_login_response(
-        session, request, user, return_to=return_to, factor="sso"
+        session,
+        request,
+        user,
+        return_to=context.get("return_to"),
+        factor="sso",
+        organization_ids=frozenset({UUID(sso_organization_id)}),
     )
     await authentication_session_service.set_cookie(request, response, "", 0)
     return response

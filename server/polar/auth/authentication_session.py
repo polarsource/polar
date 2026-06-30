@@ -3,6 +3,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import Depends, Request, Response
+from reauth.amr import AuthenticationMethodReference
 from reauth.authentication_session import (
     AuthenticationSession as AuthenticationSessionDataclass,
 )
@@ -11,6 +12,8 @@ from reauth.authentication_session import (
 )
 from reauth.authentication_session import (
     ExpiredSessionException,
+    FactorsRemainingException,
+    IdentityNotAttachedException,
     InvalidSessionTokenException,
 )
 from reauth.factors import FactorBase
@@ -103,6 +106,23 @@ class AuthenticationSessionService(AuthenticationSessionServiceBase):
         )
         await self.session.execute(statement)
         await self.session.flush()
+
+    async def complete(
+        self,
+        authentication_session: AuthenticationSessionDataclass,
+        *,
+        enforce_factors: bool = True,
+    ) -> tuple[typing.Any, list[AuthenticationMethodReference]]:
+        if authentication_session.identity_id is None:
+            raise IdentityNotAttachedException()
+
+        if enforce_factors:
+            available_factors = await self.get_available_factors(authentication_session)
+            if available_factors:
+                raise FactorsRemainingException(available_factors)
+
+        await self.delete(authentication_session)
+        return authentication_session.identity_id, authentication_session.amr
 
     async def set_cookie(
         self, request: Request, response: Response, value: str, expires_at: int

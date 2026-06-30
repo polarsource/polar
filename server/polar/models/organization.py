@@ -861,8 +861,13 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def is_blocked(self) -> bool:
         return self.status == OrganizationStatus.BLOCKED
 
-    def is_active(self) -> bool:
-        return self.status == OrganizationStatus.ACTIVE
+    def can_change_plan(self) -> bool:
+        # Active organizations and organizations under silent review (review or
+        # snoozed) may change their plan; all other statuses are blocked.
+        return (
+            self.status == OrganizationStatus.ACTIVE
+            or self.status in OrganizationStatus.review_statuses()
+        )
 
     def statement_descriptor(self, suffix: str = "") -> str:
         max_length = settings.stripe_descriptor_suffix_max_length

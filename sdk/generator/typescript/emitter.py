@@ -141,17 +141,14 @@ class TypeScriptEmitter(EmitterBase):
             self.get_context(),
         )
 
-        # Collect all errors
         errors = self._collect_all_errors()
-        error_type_imports, error_type_aliases = self._get_error_type_imports(errors)
         self.render_file(
             "src/errors.ts",
             src_dir / "errors.ts",
             {
                 **self.get_context(),
                 "errors": errors,
-                "error_type_imports": error_type_imports,
-                "error_type_aliases": error_type_aliases,
+                "error_imports": self._get_error_type_imports(errors),
             },
         )
 
@@ -302,41 +299,16 @@ class TypeScriptEmitter(EmitterBase):
 
         return errors
 
-    def _get_error_type_imports(
-        self, errors: list[ErrorResponse]
-    ) -> tuple[dict[str, str], dict[str, str]]:
-        """Collect all type imports needed for error classes, handling name collisions.
-
-        Returns a tuple of (type_imports, error_type_aliases) where:
-        - type_imports: mapping of type names to their import aliases
-        - error_type_aliases: mapping of error names to their resolved type strings
-        """
-
-        type_imports: dict[str, str] = {}  # original_name -> alias_in_import
-        error_type_aliases: dict[str, str] = {}  # error_name -> resolved_type_string
+    def _get_error_type_imports(self, errors: list[ErrorResponse]) -> list[str]:
+        """Collect imports for the errors module."""
+        imports: set[str] = set()
 
         for error in errors:
             if error.type is not None:
-                # Collect all referenced model/union names from the type
-                names = collect_type_imports(error.type, self.ir)
-                # Get the type as a string
-                type_str = convert_type_to_typescript(error.type, self.ir)
+                for name in collect_type_imports(error.type, self.ir):
+                    imports.add(name)
 
-                # Track which types need to be imported
-                for name in names:
-                    # If the type name conflicts with the error class name, create an alias
-                    if name == error.name:
-                        alias = f"{name}Model"
-                        type_imports[name] = alias
-                        # Replace the name in the type string with the alias
-                        error_type_aliases[error.name] = type_str.replace(name, alias)
-                    elif name not in type_imports:
-                        type_imports[name] = name
-
-                if error.name not in error_type_aliases:
-                    error_type_aliases[error.name] = type_str
-
-        return type_imports, error_type_aliases
+        return sorted(imports)
 
     def _get_service_imports(self, service: Service) -> dict[str, list[str]]:
         """Collect imports for a single service."""

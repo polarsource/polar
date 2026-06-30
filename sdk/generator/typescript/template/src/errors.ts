@@ -1,14 +1,14 @@
 import { PolarClientError } from "./base";
-{% if error_type_imports %}
-import type { {% for name, alias in error_type_imports.items() %}{{ name }} as {{ alias }}{% if not loop.last %}, {% endif %}{% endfor %} } from "./models/outputs";
+{% if error_imports %}
+import type { {% for name in error_imports %}{{ name }} as {{ name }}Model{% if not loop.last %}, {% endif %}{% endfor %} } from "./models/outputs";
 {% endif %}
 {% for error in errors %}
 {% if error.response_type == 'json' %}
 /**
  * {{ error.description or 'Error with status code ' + error.status_code }}
  */
-export class {{ error.name }} extends PolarClientError<{{ error_type_aliases.get(error.name, error.type | ts_type) }}> {
-  constructor(public readonly statusCode: {{ error.status_code }}, public readonly error: {{ error_type_aliases.get(error.name, error.type | ts_type) }}) {
+export class {{ error.name }} extends PolarClientError<{{ error.type | ts_type(ref_suffix="Model") }}> {
+  constructor(public readonly statusCode: {{ error.status_code }}, public readonly error: {{ error.type | ts_type(ref_suffix="Model") }}) {
     super(statusCode, error);
     this.name = "{{ error.name }}";
   }

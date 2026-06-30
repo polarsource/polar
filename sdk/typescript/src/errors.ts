@@ -1,29 +1,29 @@
 import { PolarClientError } from "./base";
 import type {
-  HTTPValidationError as HTTPValidationErrorModel,
-  ResourceNotFound as ResourceNotFoundModel,
-  NotPermitted as NotPermittedModel,
   AlreadyCanceledSubscription as AlreadyCanceledSubscriptionModel,
-  SubscriptionLocked as SubscriptionLockedModel,
-  PaymentFailed as PaymentFailedModel,
-  PaymentActionRequired,
-  OrganizationNotReadyForPayments,
-  OffSessionChargesNotEnabled,
+  AmbiguousExternalCustomerID as AmbiguousExternalCustomerIDModel,
+  CheckoutForbiddenError as CheckoutForbiddenErrorModel,
+  CustomerNotReady as CustomerNotReadyModel,
+  ExpiredCheckoutError as ExpiredCheckoutErrorModel,
+  HTTPValidationError as HTTPValidationErrorModel,
+  ManualRetryLimitExceeded as ManualRetryLimitExceededModel,
+  MissingInvoiceBillingDetails as MissingInvoiceBillingDetailsModel,
+  NotPermitted as NotPermittedModel,
+  OffSessionChargesNotEnabled as OffSessionChargesNotEnabledModel,
   OrderNotDraft as OrderNotDraftModel,
   OrderNotEligibleForInvoice as OrderNotEligibleForInvoiceModel,
-  MissingInvoiceBillingDetails as MissingInvoiceBillingDetailsModel,
-  RefundedAlready as RefundedAlreadyModel,
-  CheckoutForbiddenError,
-  ExpiredCheckoutError as ExpiredCheckoutErrorModel,
-  PaymentError as PaymentErrorModel,
-  Unauthorized as UnauthorizedModel,
-  AmbiguousExternalCustomerID as AmbiguousExternalCustomerIDModel,
-  PaymentMethodSetupFailed as PaymentMethodSetupFailedModel,
-  CustomerNotReady as CustomerNotReadyModel,
-  PaymentMethodInUseByActiveSubscription as PaymentMethodInUseByActiveSubscriptionModel,
-  PaymentAlreadyInProgress as PaymentAlreadyInProgressModel,
   OrderNotEligibleForRetry as OrderNotEligibleForRetryModel,
-  ManualRetryLimitExceeded as ManualRetryLimitExceededModel,
+  OrganizationNotReadyForPayments as OrganizationNotReadyForPaymentsModel,
+  PaymentActionRequired as PaymentActionRequiredModel,
+  PaymentAlreadyInProgress as PaymentAlreadyInProgressModel,
+  PaymentError as PaymentErrorModel,
+  PaymentFailed as PaymentFailedModel,
+  PaymentMethodInUseByActiveSubscription as PaymentMethodInUseByActiveSubscriptionModel,
+  PaymentMethodSetupFailed as PaymentMethodSetupFailedModel,
+  RefundedAlready as RefundedAlreadyModel,
+  ResourceNotFound as ResourceNotFoundModel,
+  SubscriptionLocked as SubscriptionLockedModel,
+  Unauthorized as UnauthorizedModel,
 } from "./models/outputs";
 /**
  * Validation Error
@@ -100,10 +100,12 @@ export class PaymentFailed extends PolarClientError<PaymentFailedModel> {
 /**
  * The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session.
  */
-export class Finalize402Error extends PolarClientError<PaymentFailed | PaymentActionRequired> {
+export class Finalize402Error extends PolarClientError<
+  PaymentFailedModel | PaymentActionRequiredModel
+> {
   constructor(
     public readonly statusCode: 402,
-    public readonly error: PaymentFailed | PaymentActionRequired,
+    public readonly error: PaymentFailedModel | PaymentActionRequiredModel,
   ) {
     super(statusCode, error);
     this.name = "Finalize402Error";
@@ -113,11 +115,11 @@ export class Finalize402Error extends PolarClientError<PaymentFailed | PaymentAc
  * Off-session charges are not enabled for this organization, or its account can't currently accept payments.
  */
 export class Finalize403Error extends PolarClientError<
-  OffSessionChargesNotEnabled | OrganizationNotReadyForPayments
+  OffSessionChargesNotEnabledModel | OrganizationNotReadyForPaymentsModel
 > {
   constructor(
     public readonly statusCode: 403,
-    public readonly error: OffSessionChargesNotEnabled | OrganizationNotReadyForPayments,
+    public readonly error: OffSessionChargesNotEnabledModel | OrganizationNotReadyForPaymentsModel,
   ) {
     super(statusCode, error);
     this.name = "Finalize403Error";
@@ -174,10 +176,10 @@ export class RefundedAlready extends PolarClientError<RefundedAlreadyModel> {
 /**
  * The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
  */
-export class Update403Error extends PolarClientError<CheckoutForbiddenError> {
+export class Update403Error extends PolarClientError<CheckoutForbiddenErrorModel> {
   constructor(
     public readonly statusCode: 403,
-    public readonly error: CheckoutForbiddenError,
+    public readonly error: CheckoutForbiddenErrorModel,
   ) {
     super(statusCode, error);
     this.name = "Update403Error";
@@ -198,10 +200,10 @@ export class ExpiredCheckoutError extends PolarClientError<ExpiredCheckoutErrorM
 /**
  * The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
  */
-export class ClientUpdate403Error extends PolarClientError<CheckoutForbiddenError> {
+export class ClientUpdate403Error extends PolarClientError<CheckoutForbiddenErrorModel> {
   constructor(
     public readonly statusCode: 403,
-    public readonly error: CheckoutForbiddenError,
+    public readonly error: CheckoutForbiddenErrorModel,
   ) {
     super(statusCode, error);
     this.name = "ClientUpdate403Error";
@@ -222,10 +224,10 @@ export class PaymentError extends PolarClientError<PaymentErrorModel> {
 /**
  * The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
  */
-export class ClientConfirm403Error extends PolarClientError<CheckoutForbiddenError> {
+export class ClientConfirm403Error extends PolarClientError<CheckoutForbiddenErrorModel> {
   constructor(
     public readonly statusCode: 403,
-    public readonly error: CheckoutForbiddenError,
+    public readonly error: CheckoutForbiddenErrorModel,
   ) {
     super(statusCode, error);
     this.name = "ClientConfirm403Error";

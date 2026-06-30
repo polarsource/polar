@@ -77,6 +77,12 @@ class OrganizationSSOConnectionLogin(IDSchema):
 
 
 class OrganizationSSOConnectionCreate(Schema):
+    id: UUID4 = Field(
+        description=(
+            "Client-generated ID. The identity provider callback URL embeds it, "
+            "so it must be known before the connection is created."
+        ),
+    )
     name: NonEmptyStr | None = Field(
         default=None,
         description="Human-friendly label for the connection, shown on the login page.",

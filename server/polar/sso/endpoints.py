@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import Depends
 
 from polar.authz.dependencies import AuthorizeOrgManageRead, AuthorizeOrgManageUser
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceAlreadyExists, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import OrganizationSSOConnection
 from polar.openapi import APITag
@@ -44,6 +44,11 @@ SSOConnectionNotFound = {
 NotPermittedResponse = {
     "description": "The user doesn't have the permission to manage the organization.",
     "model": NotPermitted.schema(),
+}
+
+SSOConnectionConflict = {
+    "description": "An SSO connection with this ID already exists.",
+    "model": ResourceAlreadyExists.schema(),
 }
 
 
@@ -92,7 +97,11 @@ async def get_sso_connection(
     summary="Create SSO Connection",
     response_model=OrganizationSSOConnectionSchema,
     status_code=201,
-    responses={403: NotPermittedResponse, 404: OrganizationNotFound},
+    responses={
+        403: NotPermittedResponse,
+        404: OrganizationNotFound,
+        409: SSOConnectionConflict,
+    },
 )
 async def create_sso_connection(
     create: OrganizationSSOConnectionCreate,

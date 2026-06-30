@@ -193,23 +193,50 @@ class TestCreateSSOConnection:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
+        connection_id = str(uuid.uuid4())
         response = await client.post(
             f"/v1/organizations/{organization.id}/sso-connections/",
             json={
+                "id": connection_id,
                 "configuration": {
                     "issuer": "https://idp.example.com",
                     "client_id": "client-id",
                     "auth_method": "client_secret",
                     "client_secret": "secret",
-                }
+                },
             },
         )
         assert response.status_code == 201
 
         json = response.json()
+        assert json["id"] == connection_id
         assert json["type"] == "oidc"
         assert json["enabled"] is False
         assert "client_secret" not in json["configuration"]
+
+    @pytest.mark.auth
+    async def test_duplicate_id_conflict(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        existing = await create_sso_connection(save_fixture, organization)
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/sso-connections/",
+            json={
+                "id": str(existing.id),
+                "configuration": {
+                    "issuer": "https://idp.example.com",
+                    "client_id": "client-id",
+                    "auth_method": "client_secret",
+                    "client_secret": "secret",
+                },
+            },
+        )
+        assert response.status_code == 409
 
     @pytest.mark.auth
     async def test_client_secret_required(
@@ -221,11 +248,12 @@ class TestCreateSSOConnection:
         response = await client.post(
             f"/v1/organizations/{organization.id}/sso-connections/",
             json={
+                "id": str(uuid.uuid4()),
                 "configuration": {
                     "issuer": "https://idp.example.com",
                     "client_id": "client-id",
                     "auth_method": "client_secret",
-                }
+                },
             },
         )
         assert response.status_code == 422
@@ -240,12 +268,13 @@ class TestCreateSSOConnection:
         response = await client.post(
             f"/v1/organizations/{organization.id}/sso-connections/",
             json={
+                "id": str(uuid.uuid4()),
                 "configuration": {
                     "issuer": "http://idp.example.com",
                     "client_id": "client-id",
                     "auth_method": "client_secret",
                     "client_secret": "secret",
-                }
+                },
             },
         )
         assert response.status_code == 422

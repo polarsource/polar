@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
+from polar.exceptions import ResourceAlreadyExists
 from polar.kit.pagination import PaginationParams, paginate
 from polar.models import Organization, OrganizationSSOConnection
 from polar.postgres import AsyncReadSession, AsyncSession
@@ -42,6 +43,10 @@ class OrganizationSSOConnectionService:
         create: OrganizationSSOConnectionCreate,
     ) -> OrganizationSSOConnection:
         repository = OrganizationSSOConnectionRepository.from_session(session)
+        if await repository.get_by_id(create.id, include_deleted=True) is not None:
+            raise ResourceAlreadyExists(
+                "An SSO connection with this ID already exists."
+            )
         connection = OrganizationSSOConnection(
             organization=organization,
             **create.model_dump(),

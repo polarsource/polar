@@ -26342,6 +26342,12 @@ export interface components {
     /** OrganizationSSOConnectionCreate */
     OrganizationSSOConnectionCreate: {
       /**
+       * Id
+       * Format: uuid4
+       * @description Client-generated ID. The identity provider callback URL embeds it, so it must be known before the connection is created.
+       */
+      id: string
+      /**
        * Name
        * @description Human-friendly label for the connection, shown on the login page.
        */
@@ -29583,6 +29589,17 @@ export interface components {
        * @constant
        */
       error: 'RefundedAlready'
+      /** Detail */
+      detail: string
+    }
+    /** ResourceAlreadyExists */
+    ResourceAlreadyExists: {
+      /**
+       * Error
+       * @example ResourceAlreadyExists
+       * @constant
+       */
+      error: 'ResourceAlreadyExists'
       /** Detail */
       detail: string
     }
@@ -37572,6 +37589,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description An SSO connection with this ID already exists. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceAlreadyExists']
         }
       }
       /** @description Validation Error */

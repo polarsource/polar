@@ -35,6 +35,7 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
+from polar.user_organization.repository import UserOrganizationRepository
 
 from .authentication_session import (
     AuthenticationSessionService,
@@ -152,16 +153,18 @@ async def complete(
     # An SSO login carries its organization in the session context; mint a
     # session down-scoped to it (other login methods stay unrestricted).
     sso_organization_id = context.get("sso_organization_id")
-    organization_ids = (
-        frozenset({UUID(sso_organization_id)})
-        if sso_organization_id is not None
-        else None
-    )
-    factor: Factor = (
-        "sso"
-        if sso_organization_id is not None
-        else typing.cast(Factor, authentication_session.used_factors[0])
-    )
+    organization_ids: frozenset[UUID] | None = None
+    factor: Factor = typing.cast(Factor, authentication_session.used_factors[0])
+    if sso_organization_id is not None:
+        organization_id = UUID(sso_organization_id)
+        user_organization_repository = UserOrganizationRepository.from_session(session)
+        membership = await user_organization_repository.get_by_user_and_organization(
+            user.id, organization_id
+        )
+        if membership is None:
+            raise PolarAuthRedirectionError("You are not a member of this organization")
+        organization_ids = frozenset({organization_id})
+        factor = "sso"
 
     response = await auth_service.get_login_response(
         session,

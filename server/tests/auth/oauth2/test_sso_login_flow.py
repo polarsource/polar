@@ -294,3 +294,36 @@ class TestSSOLoginFlow:
 
         assert "error=" in callback.headers["location"]
         assert await _user_session_count(session, user) == 0
+
+    async def test_rejects_when_membership_revoked_before_complete(
+        self,
+        sso_client: httpx.AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        idp_key: rsa.RSAPrivateKey,
+    ) -> None:
+        connection = await create_sso_connection(save_fixture, organization)
+
+        with respx.mock(assert_all_mocked=False) as mock:
+            callback = await drive_to_callback(
+                sso_client,
+                session,
+                mock,
+                idp_key,
+                slug=organization.slug,
+                connection_id=connection.id,
+                email=user.email,
+            )
+            assert callback.status_code == 303
+
+            # Membership is revoked between the callback and completion.
+            await session.delete(user_organization)
+            await session.flush()
+
+            complete = await sso_client.get("/v1/auth/complete")
+            assert "error=" in complete.headers["location"]
+
+        assert await _user_session_count(session, user) == 0

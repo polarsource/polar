@@ -1677,6 +1677,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/auth/{slug}/sso/connections': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Auth.Sso.Connections */
+    get: operations['auth:auth.sso.connections']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/auth/logout': {
     parameters: {
       query?: never
@@ -26307,6 +26324,11 @@ export interface components {
        * @description ID of the organization the connection belongs to.
        */
       organization_id: string
+      /**
+       * Name
+       * @description Human-friendly label for the connection, shown on the login page.
+       */
+      name: string | null
       /** @description Type of the SSO connection. */
       type: components['schemas']['OrganizationSSOConnectionType']
       /** @description Provider-specific configuration of the connection. */
@@ -26319,6 +26341,11 @@ export interface components {
     }
     /** OrganizationSSOConnectionCreate */
     OrganizationSSOConnectionCreate: {
+      /**
+       * Name
+       * @description Human-friendly label for the connection, shown on the login page.
+       */
+      name?: string | null
       /**
        * Type
        * @description Type of the SSO connection.
@@ -26341,12 +26368,36 @@ export interface components {
       enabled: boolean
     }
     /**
+     * OrganizationSSOConnectionLogin
+     * @description Public, login-facing view of an enabled SSO connection.
+     */
+    OrganizationSSOConnectionLogin: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description Human-friendly label for the connection, shown on the login page.
+       */
+      name: string | null
+      /** @description Type of the SSO connection. */
+      type: components['schemas']['OrganizationSSOConnectionType']
+    }
+    /**
      * OrganizationSSOConnectionType
      * @enum {string}
      */
     OrganizationSSOConnectionType: 'oidc'
     /** OrganizationSSOConnectionUpdate */
     OrganizationSSOConnectionUpdate: {
+      /**
+       * Name
+       * @description Human-friendly label for the connection, shown on the login page.
+       */
+      name?: string | null
       /**
        * Configuration
        * @description Provider-specific configuration of the connection.
@@ -38173,6 +38224,37 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['TaxSummary']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'auth:auth.sso.connections': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        slug: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationSSOConnectionLogin'][]
         }
       }
       /** @description Validation Error */

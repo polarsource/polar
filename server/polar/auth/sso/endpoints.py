@@ -1,5 +1,6 @@
 import secrets
 import typing
+from collections.abc import Sequence
 from uuid import UUID
 
 from fastapi import Depends, Query, Request
@@ -19,10 +20,17 @@ from reauth.factors.oauth2.state import ExpiredStateException, InvalidStateExcep
 from polar.config import settings
 from polar.exceptions import ResourceNotFound
 from polar.models import OrganizationSSOConnection
+from polar.openapi import APITag
 from polar.organization.repository import OrganizationRepository
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.routing import APIRouter
 from polar.sso.repository import OrganizationSSOConnectionRepository
+from polar.sso.schemas import OrganizationSSOConnectionLogin
 from polar.user.repository import UserRepository
 from polar.user_organization.repository import UserOrganizationRepository
 
@@ -69,10 +77,33 @@ async def get_sso_factor(
     raise ResourceNotFound()
 
 
-router = APIRouter(prefix="/{slug}", include_in_schema=False)
+router = APIRouter(prefix="/{slug}")
 
 
-@router.get("/sso/{connection_id}/authorize", name="auth.sso.authorize")
+@router.get(
+    "/sso/connections",
+    name="auth.sso.connections",
+    response_model=list[OrganizationSSOConnectionLogin],
+    tags=[APITag.private],
+)
+async def list_sso_connections(
+    slug: str,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Sequence[OrganizationSSOConnection]:
+    organization_repository = OrganizationRepository.from_session(session)
+    organization = await organization_repository.get_by_slug(slug)
+    if organization is None:
+        raise ResourceNotFound()
+
+    sso_repository = OrganizationSSOConnectionRepository.from_session(session)
+    return await sso_repository.get_enabled_by_organization(organization.id)
+
+
+@router.get(
+    "/sso/{connection_id}/authorize",
+    name="auth.sso.authorize",
+    include_in_schema=False,
+)
 async def authorize(
     request: Request,
     slug: str,
@@ -106,7 +137,11 @@ async def authorize(
     return response
 
 
-@router.get("/sso/{connection_id}/callback", name="auth.sso.callback")
+@router.get(
+    "/sso/{connection_id}/callback",
+    name="auth.sso.callback",
+    include_in_schema=False,
+)
 async def callback(
     request: Request,
     connection: OrganizationSSOConnection = Depends(get_sso_connection),

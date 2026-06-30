@@ -32,7 +32,11 @@ class OrganizationMemberInvite(Schema):
 
 
 class OrganizationMemberRoleUpdate(Schema):
-    role: Literal[OrganizationRole.admin, OrganizationRole.member] = Field(
+    role: Literal[
+        OrganizationRole.admin,
+        OrganizationRole.member,
+        OrganizationRole.finance,
+    ] = Field(
         description=(
             "The role to assign. `owner` is rejected — ownership transfers "
             "go through a separate flow."

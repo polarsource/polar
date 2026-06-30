@@ -16,6 +16,7 @@ class OrganizationRole(StrEnum):
     owner = "owner"
     admin = "admin"
     member = "member"
+    finance = "finance"
 
 
 class OrganizationNotificationSettings(TypedDict):

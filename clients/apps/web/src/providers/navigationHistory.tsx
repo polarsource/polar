@@ -5,7 +5,6 @@ import {
   createContext,
   PropsWithChildren,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -23,8 +22,6 @@ const NavigationHistoryContext = createContext<NavigationHistoryContextValue>({
   previousURL: null,
   withPotentialPreviousParams: (path) => path,
 })
-
-export const useNavigationHistory = () => useContext(NavigationHistoryContext)
 
 export const NavigationHistoryProvider = ({ children }: PropsWithChildren) => {
   const pathname = usePathname()

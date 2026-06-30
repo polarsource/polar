@@ -42,10 +42,16 @@ class TestBuildSSOFactor:
             }
         )
 
-        factor = build_sso_factor(connection, state_service=OAuth2StateService(session))
+        factor = build_sso_factor(
+            connection,
+            organization_slug="acme",
+            state_service=OAuth2StateService(session),
+        )
 
         assert isinstance(factor, SSOClientSecretFactor)
         assert factor.identifier == str(connection.id)
+        assert factor.connection_id == connection.id
+        assert factor.organization_slug == "acme"
         assert factor.client_id == "client-id"
         assert (
             factor.DISCOVERY_ENDPOINT
@@ -61,7 +67,11 @@ class TestBuildSSOFactor:
             }
         )
 
-        factor = build_sso_factor(connection, state_service=OAuth2StateService(session))
+        factor = build_sso_factor(
+            connection,
+            organization_slug="acme",
+            state_service=OAuth2StateService(session),
+        )
 
         assert isinstance(factor, SSOPrivateKeyJWTFactor)
         assert factor.identifier == str(connection.id)
@@ -81,7 +91,11 @@ class TestBuildSSOFactor:
             }
         )
 
-        factor = build_sso_factor(connection, state_service=OAuth2StateService(session))
+        factor = build_sso_factor(
+            connection,
+            organization_slug="acme",
+            state_service=OAuth2StateService(session),
+        )
 
         assert (
             factor.DISCOVERY_ENDPOINT

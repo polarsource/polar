@@ -16,7 +16,7 @@ from polar.logging import Logger
 from polar.models import User, UserSession, UserSessionOrganization
 from polar.postgres import AsyncSession
 
-from .schemas import Factor
+from .schemas import LoginMethod
 from .scope import Scope
 
 log: Logger = structlog.get_logger()
@@ -34,7 +34,7 @@ class AuthService:
         user: User,
         *,
         return_to: str | None = None,
-        factor: Factor | None = None,
+        factor: LoginMethod | None = None,
         organization_ids: frozenset[UUID] | None = None,
     ) -> RedirectResponse:
         token, user_session = await self._create_user_session(
@@ -170,7 +170,7 @@ class AuthService:
         return response
 
     def _set_last_login_method_cookie(
-        self, request: Request, response: R, factor: Factor
+        self, request: Request, response: R, factor: LoginMethod
     ) -> R:
         is_localhost = request.url.hostname in {"127.0.0.1", "localhost"}
         secure = False if is_localhost else True

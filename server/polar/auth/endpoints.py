@@ -61,7 +61,7 @@ from .schemas import (
     BackupCodesVerify,
     EmailOTPRequest,
     EmailOTPVerify,
-    Factor,
+    LoginMethod,
     TOTPEnable,
     TOTPEnrollment,
     TOTPStatus,
@@ -154,7 +154,9 @@ async def complete(
     # session down-scoped to it (other login methods stay unrestricted).
     sso_organization_id = context.get("sso_organization_id")
     organization_ids: frozenset[UUID] | None = None
-    factor: Factor = typing.cast(Factor, authentication_session.used_factors[0])
+    factor: LoginMethod = typing.cast(
+        LoginMethod, authentication_session.used_factors[0]
+    )
     if sso_organization_id is not None:
         organization_id = UUID(sso_organization_id)
         user_organization_repository = UserOrganizationRepository.from_session(session)

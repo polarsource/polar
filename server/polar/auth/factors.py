@@ -312,6 +312,10 @@ async def get_org_factors(
     connections = await sso_repository.get_enabled_by_organization(organization.id)
 
     return base_factors | {
-        build_sso_factor(connection, state_service=state_service)
+        build_sso_factor(
+            connection,
+            organization_slug=organization.slug,
+            state_service=state_service,
+        )
         for connection in connections
     }

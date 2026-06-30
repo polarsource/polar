@@ -19,7 +19,7 @@ def _discovery_endpoint(issuer: str) -> str:
     return f"{issuer.rstrip('/')}/.well-known/openid-configuration"
 
 
-class _SSOFactorMixin:
+class SSOFactorMixin:
     """Shared behavior for organization SSO OIDC factors.
 
     The discovery endpoint is resolved per connection from its issuer, so it's an
@@ -31,6 +31,8 @@ class _SSOFactorMixin:
     write hooks are never reached.
     """
 
+    connection_id: uuid.UUID
+    organization_slug: str
     _discovery_endpoint: str
 
     @property
@@ -58,11 +60,12 @@ class _SSOFactorMixin:
         raise NotImplementedError()
 
 
-class SSOClientSecretFactor(_SSOFactorMixin, OIDCFactor):
+class SSOClientSecretFactor(SSOFactorMixin, OIDCFactor):
     def __init__(
         self,
         *,
         connection_id: uuid.UUID,
+        organization_slug: str,
         issuer: str,
         client_id: str,
         client_secret: str,
@@ -74,14 +77,17 @@ class SSOClientSecretFactor(_SSOFactorMixin, OIDCFactor):
             client_secret=client_secret,
             state_service=state_service,
         )
+        self.connection_id = connection_id
+        self.organization_slug = organization_slug
         self.DISCOVERY_ENDPOINT = _discovery_endpoint(issuer)
 
 
-class SSOPrivateKeyJWTFactor(_SSOFactorMixin, PrivateKeyJWTOIDCFactor):
+class SSOPrivateKeyJWTFactor(SSOFactorMixin, PrivateKeyJWTOIDCFactor):
     def __init__(
         self,
         *,
         connection_id: uuid.UUID,
+        organization_slug: str,
         issuer: str,
         client_id: str,
         state_service: OAuth2StateService,
@@ -93,11 +99,16 @@ class SSOPrivateKeyJWTFactor(_SSOFactorMixin, PrivateKeyJWTOIDCFactor):
             kid=settings.CURRENT_JWK_KID,
             state_service=state_service,
         )
+        self.connection_id = connection_id
+        self.organization_slug = organization_slug
         self.DISCOVERY_ENDPOINT = _discovery_endpoint(issuer)
 
 
 def build_sso_factor(
-    connection: OrganizationSSOConnection, *, state_service: OAuth2StateService
+    connection: OrganizationSSOConnection,
+    *,
+    organization_slug: str,
+    state_service: OAuth2StateService,
 ) -> OIDCFactorBase:
     configuration = connection.configuration
     if configuration["auth_method"] == OIDCAuthMethod.client_secret:
@@ -107,6 +118,7 @@ def build_sso_factor(
         )
         return SSOClientSecretFactor(
             connection_id=connection.id,
+            organization_slug=organization_slug,
             issuer=configuration["issuer"],
             client_id=configuration["client_id"],
             client_secret=client_secret,
@@ -114,6 +126,7 @@ def build_sso_factor(
         )
     return SSOPrivateKeyJWTFactor(
         connection_id=connection.id,
+        organization_slug=organization_slug,
         issuer=configuration["issuer"],
         client_id=configuration["client_id"],
         state_service=state_service,

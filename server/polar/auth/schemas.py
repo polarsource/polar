@@ -1,7 +1,7 @@
 import typing
 from collections.abc import Iterable
 
-from pydantic import UUID4, EmailStr
+from pydantic import UUID4, EmailStr, Field
 from reauth.authentication_session import (
     AuthenticationSession as AuthenticationSessionDataclass,
 )
@@ -10,9 +10,36 @@ from reauth.factors import FactorBase
 from polar.kit.http import ReturnTo
 from polar.kit.schemas import Schema
 
-type Factor = typing.Literal[
+from .sso.factor import SSOFactorMixin
+
+# The login method recorded in the `polar_last_login_method` cookie.
+LoginMethod = typing.Literal[
     "email_otp", "totp", "backup_codes", "apple", "github", "google", "sso"
 ]
+
+
+class BaseFactor(Schema):
+    type: typing.Literal[
+        "email_otp", "totp", "backup_codes", "apple", "github", "google"
+    ]
+
+
+class SSOFactor(Schema):
+    type: typing.Literal["sso"] = "sso"
+    connection_id: UUID4
+    organization_slug: str
+
+
+Factor = typing.Annotated[BaseFactor | SSOFactor, Field(discriminator="type")]
+
+
+def _factor_to_schema(factor: FactorBase[typing.Any]) -> BaseFactor | SSOFactor:
+    if isinstance(factor, SSOFactorMixin):
+        return SSOFactor(
+            connection_id=factor.connection_id,
+            organization_slug=factor.organization_slug,
+        )
+    return BaseFactor.model_validate({"type": factor.identifier})
 
 
 class AuthenticationSessionStart(Schema):
@@ -31,9 +58,7 @@ class AuthenticationSession(Schema):
     ) -> typing.Self:
         return cls(
             identity_id=authentication_session.identity_id,
-            available_factors=[
-                typing.cast(Factor, factor.identifier) for factor in factors
-            ],
+            available_factors=[_factor_to_schema(factor) for factor in factors],
         )
 
 

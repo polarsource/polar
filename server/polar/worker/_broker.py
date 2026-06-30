@@ -191,7 +191,15 @@ class RoutingRedisBroker(RedisBroker):
     ) -> dramatiq.Message[Any]:
         if should_route_to_sqs(message.actor_name):
             _sqs.send_jobs_sync(
-                [(message.actor_name, message.args, message.kwargs, delay, None)]
+                [
+                    (
+                        message.actor_name,
+                        message.args,
+                        message.kwargs,
+                        delay,
+                        CorrelationID.get(),
+                    )
+                ]
             )
             return message
         return super().enqueue(message, delay=delay)

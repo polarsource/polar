@@ -66,7 +66,7 @@ from .schemas import (
     VarianceEvent,
 )
 from .sorting import EventNamesSortProperty, EventSortProperty
-from .system import SystemEvent
+from .system import SYSTEM_EVENT_LABELS, SystemEvent
 
 log: Logger = structlog.get_logger()
 
@@ -779,9 +779,25 @@ class EventService:
         end = start + pagination.limit
         paginated_stats = tinybird_stats[start:end]
 
+        event_type_repository = EventTypeRepository.from_session(session)
+        event_types_by_name = await event_type_repository.get_by_names_and_organization(
+            [name for name, *_ in paginated_stats], list(organization_ids)
+        )
+        event_type_labels = {
+            name: event_type.label
+            for (_, name), event_type in event_types_by_name.items()
+        }
+
+        def _resolve_label(name: str, event_source: EventSource) -> str:
+            fallback = event_type_labels.get(name, name)
+            if event_source == EventSource.system:
+                return SYSTEM_EVENT_LABELS.get(name, fallback)
+            return fallback
+
         event_names = [
             EventName(
                 name=name,
+                label=_resolve_label(name, event_source),
                 source=event_source,
                 occurrences=occurrences,
                 first_seen=first_seen,

@@ -417,6 +417,66 @@ class TestListNames:
         assert count == 2
         query_mock.assert_awaited_once()
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_resolves_labels(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        now = utc_now()
+        organization = auth_subject.subject
+        event_type = EventType(
+            name="api.request",
+            label="API Request",
+            organization=organization,
+        )
+        await save_fixture(event_type)
+
+        mocker.patch(
+            "polar.event.tinybird_repository.TinybirdEventsQuery.get_event_type_stats",
+            new_callable=AsyncMock,
+            return_value=[
+                TinybirdEventTypeStats(
+                    organization_id=organization.id,
+                    name="customer.created",
+                    source=EventSource.system,
+                    occurrences=1,
+                    first_seen=now,
+                    last_seen=now,
+                ),
+                TinybirdEventTypeStats(
+                    organization_id=organization.id,
+                    name="api.request",
+                    source=EventSource.user,
+                    occurrences=2,
+                    first_seen=now,
+                    last_seen=now,
+                ),
+                TinybirdEventTypeStats(
+                    organization_id=organization.id,
+                    name="custom.event",
+                    source=EventSource.user,
+                    occurrences=3,
+                    first_seen=now,
+                    last_seen=now,
+                ),
+            ],
+        )
+
+        event_names, _ = await event_service.list_names(
+            session,
+            auth_subject,
+            pagination=PaginationParams(1, 10),
+            sorting=[(EventNamesSortProperty.event_name, False)],
+        )
+
+        labels = {event_name.name: event_name.label for event_name in event_names}
+        assert labels["customer.created"] == "Customer Created"
+        assert labels["api.request"] == "API Request"
+        assert labels["custom.event"] == "custom.event"
+
 
 @pytest.mark.asyncio
 class TestIngest:

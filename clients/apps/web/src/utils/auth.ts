@@ -15,6 +15,13 @@ export const getGitHubAuthorizeLoginURL = (): string => {
   return `${getPublicServerURL()}/v1/auth/github/authorize`
 }
 
+export const getSSOAuthorizeLoginURL = (
+  organizationSlug: string,
+  connectionId: string,
+): string => {
+  return `${getPublicServerURL()}/v1/auth/${organizationSlug}/sso/${connectionId}/authorize`
+}
+
 export const getGitHubAuthorizeLinkURL = (return_to?: string): string => {
   const searchParams = new URLSearchParams()
   if (return_to) {

@@ -131,6 +131,11 @@ class TypeScriptEmitter(EmitterBase):
             self.get_context(),
         )
         self.render_file(
+            "src/base.test.ts",
+            src_dir / "base.test.ts",
+            self.get_context(),
+        )
+        self.render_file(
             "src/client.ts",
             src_dir / "client.ts",
             self.get_context(),
@@ -176,6 +181,7 @@ class TypeScriptEmitter(EmitterBase):
         self.run_command("just lint-fix", cwd=root_directory)
         self.run_command("just typecheck", cwd=root_directory)
         self.run_command("just build", cwd=root_directory)
+        self.run_command("just test", cwd=root_directory)
 
     def _emit_models(self, src_dir: pathlib.Path) -> None:
         """Emit all model files (inputs.ts, outputs.ts, literals.ts)."""

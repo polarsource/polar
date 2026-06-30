@@ -44,37 +44,33 @@ const buildUrl = (url: string, pathParams?: PathParams, queryParams?: QueryParam
   if (pathParams) {
     for (const [key, value] of Object.entries(pathParams)) {
       if (value !== null && value !== undefined) {
-        formattedUrl = formattedUrl.replace(`{${key}}`, String(value));
+        formattedUrl = formattedUrl.replace(`{${key}}`, encodeURIComponent(String(value)));
       }
     }
   }
 
   if (queryParams) {
-    const params: [string, string][] = [];
+    const searchParams = new URLSearchParams();
     for (const [key, value] of Object.entries(queryParams)) {
       if (value !== null && value !== undefined) {
         if (Array.isArray(value)) {
           for (const item of value) {
-            params.push([key, encodeURIComponent(String(item))]);
+            searchParams.append(key, String(item));
           }
         } else if (typeof value === "object") {
           // Handle deepObject style parameters (e.g., metadata)
           for (const [subKey, subValue] of Object.entries(value)) {
             if (subValue !== null && subValue !== undefined) {
-              // Don't encode brackets - they have special meaning in query params
-              params.push([`${key}[${subKey}]`, encodeURIComponent(String(subValue))]);
+              searchParams.append(`${key}[${subKey}]`, String(subValue));
             }
           }
         } else {
-          params.push([key, encodeURIComponent(String(value))]);
+          searchParams.append(key, String(value));
         }
       }
     }
-    if (params.length > 0) {
-      const searchParams = new URLSearchParams(params);
-      const queryString = searchParams.toString();
-      formattedUrl = `${formattedUrl}?${queryString}`;
-    }
+    const queryString = searchParams.toString();
+    formattedUrl = `${formattedUrl}?${queryString}`;
   }
 
   return formattedUrl;

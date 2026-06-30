@@ -21,13 +21,15 @@
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "typecheck": "tsc --noEmit",
-    "postbuild": "cp dist/index.d.mts dist/index.d.ts"
+    "postbuild": "cp dist/index.d.mts dist/index.d.ts",
+    "test": "vitest run"
   },
   "devDependencies": {
     "oxfmt": "^0.56.0",
     "oxlint": "^1.71.0",
     "tsdown": "^0.22.3",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
   },
   "keywords": [
     "polar",

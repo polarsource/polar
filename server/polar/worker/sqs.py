@@ -9,7 +9,7 @@ from polar.config import settings
 from polar.logging import Logger
 
 from ._runner import bootstrap, run_task, shutdown
-from ._sqs import actor_to_queue_name, get_queue_url, get_sqs_client, parse_envelope
+from ._sqs import actor_to_queue_name, get_queue_url, parse_envelope, sqs_client
 
 log: Logger = structlog.get_logger()
 
@@ -32,11 +32,8 @@ def run(actor: str, body: str = typer.Argument("{}")) -> None:
 
 
 async def _poll_loop(actors: list[str], max_iterations: int) -> None:
-    client = get_sqs_client()
-    queue_names = {actor_to_queue_name(actor) for actor in actors}
-    queue_urls = {
-        queue_name: get_queue_url(client, queue_name) for queue_name in queue_names
-    }
+    client = sqs_client
+    queue_urls = {a: get_queue_url(client, actor_to_queue_name(a)) for a in actors}
     iterations = 0
     try:
         while max_iterations == 0 or iterations < max_iterations:

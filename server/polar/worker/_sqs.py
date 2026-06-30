@@ -1,5 +1,4 @@
 import asyncio
-import functools
 import itertools
 import json
 from collections import defaultdict
@@ -23,6 +22,7 @@ log: Logger = structlog.get_logger()
 # SQS hard limits.
 SQS_BATCH_SIZE = 10
 MAX_DELAY_SECONDS = 900
+MAX_VISIBILITY_TIMEOUT_SECONDS = 43_200
 
 type Job = tuple[str, tuple[Any, ...], dict[str, Any], int | None, str | None]
 
@@ -34,7 +34,6 @@ class SQSSendError(Exception):
         super().__init__(f"Failed to send {len(failed)} message(s) to {queue_name}")
 
 
-@functools.lru_cache(maxsize=1)
 def get_sqs_client() -> "SQSClient":
     return boto3.client(
         "sqs",
@@ -55,18 +54,37 @@ def get_sqs_client() -> "SQSClient":
     )
 
 
+def get_consumer_sqs_client() -> "SQSClient":
+    """SQS client authenticated by the Lambda execution role (no static keys)."""
+    return boto3.client(
+        "sqs",
+        endpoint_url=settings.SQS_ENDPOINT_URL,
+        config=Config(
+            region_name=settings.AWS_REGION,
+            signature_version=settings.AWS_SIGNATURE_VERSION,
+            connect_timeout=2,
+            read_timeout=5,
+            retries={"max_attempts": 2, "mode": "standard"},
+        ),
+    )
+
+
+sqs_client = get_sqs_client()
+
+
 def actor_to_queue_name(_actor_name: str) -> str:
     return f"{settings.WORKER_SQS_QUEUE_PREFIX}-default"
 
 
-_queue_url_cache: dict[str, str] = {}
+_queue_url_cache: dict[tuple[int, str], str] = {}
 
 
 def get_queue_url(client: "SQSClient", queue_name: str) -> str:
-    url = _queue_url_cache.get(queue_name)
+    cache_key = (id(client), queue_name)
+    url = _queue_url_cache.get(cache_key)
     if url is None:
         url = client.get_queue_url(QueueName=queue_name)["QueueUrl"]
-        _queue_url_cache[queue_name] = url
+        _queue_url_cache[cache_key] = url
     return url
 
 
@@ -95,6 +113,21 @@ def parse_envelope(body: str) -> tuple[str, list[Any], dict[str, Any], str | Non
         data.get("args", []),
         data.get("kwargs", {}),
         data.get("correlation_id"),
+    )
+
+
+def set_message_visibility(
+    client: "SQSClient",
+    queue_arn: str,
+    receipt_handle: str,
+    timeout_seconds: int,
+) -> None:
+    queue_name = queue_arn.rsplit(":", 1)[-1]
+    queue_url = get_queue_url(client, queue_name)
+    client.change_message_visibility(
+        QueueUrl=queue_url,
+        ReceiptHandle=receipt_handle,
+        VisibilityTimeout=timeout_seconds,
     )
 
 
@@ -136,13 +169,17 @@ def send_jobs_sync(jobs: list[Job]) -> None:
 
 
 __all__ = [
+    "MAX_VISIBILITY_TIMEOUT_SECONDS",
     "Job",
     "SQSSendError",
     "actor_to_queue_name",
     "build_envelope",
+    "get_consumer_sqs_client",
     "get_queue_url",
     "get_sqs_client",
     "parse_envelope",
     "send_jobs",
     "send_jobs_sync",
+    "set_message_visibility",
+    "sqs_client",
 ]

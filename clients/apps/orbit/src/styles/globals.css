@@ -223,7 +223,6 @@
   html {
     color-scheme: light dark;
     @apply text-gray-900;
-    font-feature-settings: 'cv01', 'cv03', 'cv04', 'cv06', 'cv11', 'ss03';
   }
 
   html.dark {
@@ -254,6 +253,8 @@
   body {
     color: var(--foreground);
     text-rendering: optimizeLegibility;
+    letter-spacing: 0.015em;
+    font-weight: 450;
   }
 }
 

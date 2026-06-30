@@ -29,7 +29,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
       return (
         <div
           className={twMerge(
-            'prose-headings:font-normal prose-h1:leading-tight prose-headings:text-balance pt-6 text-center md:max-w-3xl md:pt-0 md:pb-6',
+            'prose-headings:font-medium prose-h1:leading-tight prose-headings:text-balance pt-6 text-center md:max-w-3xl md:pt-0 md:pb-6',
             props.className,
           )}
         >

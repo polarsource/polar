@@ -38,7 +38,7 @@ export const ProductCheckoutSection = ({
           <AccordionTrigger className="cursor-pointer hover:no-underline">
             <div className="flex flex-col items-start gap-y-2 text-left">
               <h2 className="text-lg font-medium">Checkout Page</h2>
-              <p className="dark:text-polar-500 text-sm leading-snug font-normal text-gray-500">
+              <p className="dark:text-polar-500 text-sm leading-snug text-gray-500">
                 Customize how this product is presented during checkout
               </p>
             </div>

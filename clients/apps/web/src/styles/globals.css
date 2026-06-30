@@ -297,6 +297,7 @@
 
   body {
     color: var(--foreground);
+    text-rendering: optimizeLegibility;
     font-weight: 450;
     letter-spacing: 0.015em;
   }

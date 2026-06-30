@@ -568,7 +568,7 @@ const BaseCheckoutForm = ({
                               }}
                             />
                           </FormControl>
-                          <FormLabel className="dark:text-polar-400 cursor-pointer font-normal">
+                          <FormLabel className="dark:text-polar-400 cursor-pointer">
                             {t('checkout.form.purchasingAsBusiness')}
                           </FormLabel>
                         </div>

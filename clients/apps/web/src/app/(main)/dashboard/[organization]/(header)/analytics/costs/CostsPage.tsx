@@ -835,7 +835,7 @@ function TrendBadge({
     <Tooltip>
       <TooltipTrigger asChild>
         <span
-          className={`mt-1 flex w-fit cursor-default items-center gap-1 text-xs font-normal ${
+          className={`mt-1 flex w-fit cursor-default items-center gap-1 text-xs ${
             isUp
               ? 'text-red-500'
               : isDown

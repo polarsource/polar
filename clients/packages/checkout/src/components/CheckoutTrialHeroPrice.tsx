@@ -80,7 +80,7 @@ const CheckoutTrialHeroPrice = ({
   return (
     <div className="flex flex-col gap-y-1">
       <span>{trialLabel}</span>
-      <span className="dark:text-polar-500 text-sm font-normal text-gray-500">
+      <span className="dark:text-polar-500 text-sm text-gray-500">
         {t('checkout.trial.hero.then')}{' '}
         <strong className="font-semibold">{priceStr}</strong>
         {dateStr

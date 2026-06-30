@@ -107,8 +107,11 @@ data "aws_iam_policy_document" "lambda" {
   }
 
   statement {
-    sid       = "DeadLetterQueue"
-    actions   = ["sqs:SendMessage"]
+    sid = "DeadLetterQueue"
+    actions = [
+      "sqs:GetQueueUrl",
+      "sqs:SendMessage",
+    ]
     resources = [aws_sqs_queue.dlq.arn]
   }
 

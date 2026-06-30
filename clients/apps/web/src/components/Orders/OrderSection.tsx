@@ -18,7 +18,7 @@ export const OrderSection = ({
   <Box as="section" flexDirection="column" rowGap="l">
     <Box justifyContent="between" alignItems="start" columnGap="m">
       <Box flexDirection="column" rowGap="xs">
-        <Text variant="heading-xxs" as="h3">
+        <Text variant="heading-xs" as="h3">
           {title}
         </Text>
         {description && <Text color="muted">{description}</Text>}

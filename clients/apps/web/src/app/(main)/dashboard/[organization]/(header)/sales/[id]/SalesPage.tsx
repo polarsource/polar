@@ -139,14 +139,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
         organization={organization}
       />
 
-      <Box
-        borderTopWidth={1}
-        borderStyle="solid"
-        borderColor="border-primary"
-      />
-
-      <OrderSecondaryDetails order={order} customFields={customFields?.items} />
-
       <OrderSection title="Invoice preview">
         <InvoicePreview
           currency={order.currency}
@@ -165,6 +157,14 @@ const ClientPage: React.FC<ClientPageProps> = ({
           refundedAmount={order.refunded_amount}
         />
       </OrderSection>
+
+      <Box
+        borderTopWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+      />
+
+      <OrderSecondaryDetails order={order} customFields={customFields?.items} />
 
       <OrderPaymentsTable
         payments={orderPayments}

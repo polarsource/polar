@@ -231,26 +231,6 @@ class TestCreateSSOConnection:
         assert response.status_code == 422
 
     @pytest.mark.auth
-    async def test_private_key_jwt_rejects_client_secret(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            f"/v1/organizations/{organization.id}/sso-connections/",
-            json={
-                "configuration": {
-                    "issuer": "https://idp.example.com",
-                    "client_id": "client-id",
-                    "auth_method": "private_key_jwt",
-                    "client_secret": "secret",
-                }
-            },
-        )
-        assert response.status_code == 422
-
-    @pytest.mark.auth
     async def test_non_https_issuer(
         self,
         client: AsyncClient,

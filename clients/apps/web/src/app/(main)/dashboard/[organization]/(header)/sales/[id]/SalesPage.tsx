@@ -1,52 +1,30 @@
 'use client'
 
 import { CustomerContextView } from '@/components/Customer/CustomerContextView'
-import CustomFieldValue from '@/components/CustomFields/CustomFieldValue'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { InlineModal } from '@polar-sh/orbit'
-import { useModal } from '@/components/Modal/useModal'
-import { DownloadInvoiceDashboard } from '@/components/Orders/DownloadInvoice'
+import { OrderAttributes } from '@/components/Orders/OrderAttributes'
 import { OrderCalloutBanner } from '@/components/Orders/OrderCalloutBanner'
+import { OrderDetails } from '@/components/Orders/OrderDetails'
+import { OrderDisputesTable } from '@/components/Orders/OrderDisputesTable'
+import { OrderPaymentsTable } from '@/components/Orders/OrderPaymentsTable'
+import { OrderRefundsSection } from '@/components/Orders/OrderRefundsSection'
+import { OrderSeatsSection } from '@/components/Orders/OrderSeatsSection'
+import { OrderSection } from '@/components/Orders/OrderSection'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
-import PaymentMethod from '@/components/PaymentMethod/PaymentMethod'
-import PaymentStatus from '@/components/PaymentStatus/PaymentStatus'
-import { RefundModal } from '@/components/Refunds/RefundModal'
-import {
-  RefundReasonDisplay,
-  RefundStatusDisplayColor,
-  RefundStatusDisplayTitle,
-} from '@/components/Refunds/utils'
-import { SeatViewOnlyTable } from '@/components/Seats/SeatViewOnlyTable'
-import { DetailRow } from '@/components/Shared/DetailRow'
+import { DownloadInvoiceDashboard } from '@/components/Orders/DownloadInvoice'
+import { InvoicePreview } from '@/components/Orders/InvoicePreview'
 import { useCustomFields, useProduct, useSubscription } from '@/hooks/queries'
-import { useDisputes } from '@/hooks/queries/disputes'
 import { useOrder } from '@/hooks/queries/orders'
 import { usePayments } from '@/hooks/queries/payments'
-import { useRefunds } from '@/hooks/queries/refunds'
-import { useOrganizationSeats } from '@/hooks/queries/seats'
-import {
-  DisputeStatusDisplayColor,
-  DisputeStatusDisplayTitle,
-} from '@/utils/dispute'
-import { formatCountry } from '@/utils/formatters'
 import {
   isOrderDunningFailed,
   isOrderInDunning,
   isOrderInDunningLifecycle,
 } from '@/utils/order'
-import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
-import { ArrowUpRightIcon } from 'lucide-react'
 import { schemas } from '@polar-sh/client'
-import { formatCurrency } from '@polar-sh/currency'
-import { Button } from '@polar-sh/orbit'
-import { DataTable, Truncated, type DataTableColumnDef } from '@polar-sh/orbit'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { Status } from '@polar-sh/orbit'
-import { Separator } from '@radix-ui/react-dropdown-menu'
-import Link from 'next/link'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import React from 'react'
-import { twMerge } from 'tailwind-merge'
 
 interface ClientPageProps {
   organization: schemas['Organization']
@@ -64,35 +42,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
     organization.id,
     { order_id: _order.id },
   )
-  const { data: refunds, isLoading: refundsLoading } = useRefunds(_order.id)
-  const { data: disputes, isLoading: disputesLoading } = useDisputes(
-    organization.id,
-    { order_id: _order.id },
-  )
-
-  const {
-    isShown: isRefundModalShown,
-    show: showRefundModal,
-    hide: hideRefundModal,
-  } = useModal()
-
-  const canRefund =
-    order?.paid && (order?.refunded_amount ?? 0) < (order?.net_amount ?? 0)
-
-  // Seat management for seat-based orders (view-only)
-  const hasSeatBasedOrder = !!order?.seats && order.seats > 0
-
-  const hasDeclinedPayment = (payments?.items ?? []).some(
-    (payment) => payment.status === 'failed',
-  )
-
-  const { data: seatsData, isLoading: isLoadingSeats } = useOrganizationSeats(
-    hasSeatBasedOrder ? { orderId: order?.id } : undefined,
-  )
-
-  const totalSeats = seatsData?.total_seats || 0
-  const availableSeats = seatsData?.available_seats || 0
-  const seats = seatsData?.seats || []
 
   const orderPayments = payments?.items ?? []
   const inDunningLifecycle =
@@ -117,12 +66,12 @@ const ClientPage: React.FC<ClientPageProps> = ({
   return (
     <DashboardBody
       title={
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-row items-center gap-4">
-            <h2 className="text-xl">Order</h2>
-            <OrderStatus status={order.status} />
-          </div>
-        </div>
+        <Box alignItems="center" columnGap="l">
+          <Text variant="heading-xs" as="h2">
+            Order
+          </Text>
+          <OrderStatus status={order.status} />
+        </Box>
       }
       header={
         order.paid ? (
@@ -152,470 +101,57 @@ const ClientPage: React.FC<ClientPageProps> = ({
         />
       ) : null}
 
-      <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
-        <div className="flex flex-col gap-6 p-4 md:p-8">
-          <div className="flex flex-col gap-1">
-            <DetailRow
-              label="Product"
-              value={
-                product ? (
-                  <Link
-                    href={`/dashboard/${organization.slug}/products/${product.id}`}
-                    className="flex items-center gap-1"
-                  >
-                    {product.name}
-                    <ArrowUpRightIcon className="h-3.5 w-3.5 shrink-0 opacity-50" />
-                  </Link>
-                ) : (
-                  '—'
-                )
-              }
-            />
-            <DetailRow label="Invoice number" value={order.invoice_number} />
-            <DetailRow
-              label="Order ID"
-              value={order.id}
-              valueClassName="font-mono text-sm"
-            />
-            <DetailRow
-              label="Order Date"
-              value={
-                <FormattedDateTime
-                  dateStyle="medium"
-                  resolution="time"
-                  datetime={order.created_at}
-                />
-              }
-            />
-            <DetailRow
-              label="Status"
-              value={<OrderStatus status={order.status} />}
-            />
+      <OrderDetails
+        order={order}
+        product={product}
+        organization={organization}
+      />
 
-            <DetailRow
-              label="Discount Code"
-              value={
-                order.discount ? (
-                  <div className="flex flex-row gap-x-2">
-                    {order.discount.code ? (
-                      <span className="font-mono capitalize">
-                        {order.discount.code}
-                      </span>
-                    ) : null}
-                    <span
-                      className={twMerge(
-                        order.discount.code
-                          ? 'text-polar-500 dark:text-polar-500'
-                          : undefined,
-                      )}
-                    >
-                      {order.discount.name}
-                    </span>
-                  </div>
-                ) : (
-                  '—'
-                )
-              }
-              action={
-                <Link
-                  href={`/dashboard/${organization.slug}/products/discounts?query=${order.discount?.code}`}
-                >
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-xxs h-4 w-4"
-                  >
-                    <ArrowOutwardOutlined fontSize="inherit" />
-                  </Button>
-                </Link>
-              }
-            />
+      <OrderAttributes order={order} customFields={customFields?.items} />
 
-            <DetailRow
-              label="Billing Reason"
-              value={order.billing_reason.split('_').join(' ')}
-              valueClassName="capitalize"
-            />
-
-            <Separator className="dark:bg-polar-700 my-4 h-px bg-gray-300" />
-
-            <div className="flex flex-col gap-1 pb-4">
-              {order.items.map((item) => (
-                <DetailRow
-                  key={item.id}
-                  label={item.label}
-                  value={formatCurrency('accounting')(
-                    item.amount,
-                    order.currency,
-                  )}
-                />
-              ))}
-            </div>
-
-            <DetailRow
-              label="Subtotal"
-              value={formatCurrency('accounting')(
-                order.subtotal_amount,
-                order.currency,
-              )}
-            />
-            <DetailRow
-              label="Discount"
-              value={
-                order.discount_amount
-                  ? formatCurrency('accounting')(
-                      -order.discount_amount,
-                      order.currency,
-                    )
-                  : '—'
-              }
-            />
-            <DetailRow
-              label="Net amount"
-              value={formatCurrency('accounting')(
-                order.net_amount,
-                order.currency,
-              )}
-            />
-            <DetailRow
-              label="Tax"
-              value={formatCurrency('accounting')(
-                order.tax_amount,
-                order.currency,
-              )}
-            />
-            <DetailRow
-              label="Total"
-              value={formatCurrency('accounting')(
-                order.total_amount,
-                order.currency,
-              )}
-            />
-            {order.applied_balance_amount !== 0 && (
-              <>
-                <DetailRow
-                  label="Applied balance"
-                  value={formatCurrency('accounting')(
-                    order.applied_balance_amount,
-                    order.currency,
-                  )}
-                />
-                <DetailRow
-                  label="To be paid"
-                  value={formatCurrency('accounting')(
-                    order.due_amount,
-                    order.currency,
-                  )}
-                />
-              </>
-            )}
-
-            {order.billing_address ||
-            order.billing_name ||
-            order.customer.tax_id ? (
-              <>
-                <Separator className="dark:bg-polar-700 my-4 h-px bg-gray-300" />
-                {order.billing_name ? (
-                  <DetailRow label="Billing Name" value={order.billing_name} />
-                ) : null}
-                {order.customer.tax_id ? (
-                  <DetailRow
-                    label="Tax ID"
-                    value={
-                      <span className="flex flex-row items-center gap-1.5">
-                        <span>{order.customer.tax_id[0]}</span>
-                        <span className="font-mono text-xs opacity-70">
-                          {order.customer.tax_id[1]
-                            .toLocaleUpperCase()
-                            .replace('_', ' ')}
-                        </span>
-                      </span>
-                    }
-                  />
-                ) : null}
-                {order.billing_address ? (
-                  <>
-                    <DetailRow
-                      label="Address"
-                      value={order.billing_address.line1}
-                    />
-                    <DetailRow
-                      label="Address 2"
-                      value={order.billing_address.line2}
-                    />
-                    <DetailRow
-                      label="Postal Code"
-                      value={order.billing_address.postal_code}
-                    />
-                    <DetailRow
-                      label="City"
-                      value={order.billing_address.city}
-                    />
-                    <DetailRow
-                      label="State"
-                      value={order.billing_address.state}
-                    />
-                    <DetailRow
-                      label="Country"
-                      value={formatCountry(order.billing_address.country)}
-                    />
-                  </>
-                ) : null}
-              </>
-            ) : null}
-          </div>
-        </div>
-
-        {(customFields?.items?.length ?? 0) > 0 && (
-          <div className="flex flex-col gap-6 p-8">
-            <h3 className="text-lg">Custom Fields</h3>
-            <div className="flex flex-col gap-2">
-              {customFields?.items?.map((field) => (
-                <DetailRow
-                  key={field.id}
-                  label={field.name}
-                  value={
-                    <CustomFieldValue
-                      field={field}
-                      value={
-                        order.custom_field_data
-                          ? order.custom_field_data[
-                              field.slug as keyof typeof order.custom_field_data
-                            ]
-                          : undefined
-                      }
-                    />
-                  }
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {Object.keys(order.metadata).length > 0 && (
-          <div className="flex flex-col gap-6 p-8">
-            <h3 className="text-lg">Metadata</h3>
-            <div className="flex flex-col gap-2">
-              {Object.entries(order.metadata).map(([key, value]) => (
-                <DetailRow
-                  key={key}
-                  label={key}
-                  value={
-                    typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value
-                  }
-                />
-              ))}
-            </div>
-          </div>
-        )}
-      </ShadowBox>
-
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-row items-center justify-between gap-x-8">
-          <div className="flex flex-row items-center justify-between gap-x-6">
-            <h3 className="text-lg">Payment Attempts</h3>
-          </div>
-        </div>
-
-        <DataTable
-          isLoading={paymentsLoading}
-          columns={[
-            {
-              accessorKey: 'created_at',
-              header: 'Created At',
-              cell: ({
-                row: {
-                  original: { created_at },
-                },
-              }) => (
-                <FormattedDateTime
-                  dateStyle="medium"
-                  resolution="time"
-                  datetime={created_at}
-                />
-              ),
-            },
-            {
-              accessorKey: 'method',
-              header: 'Method',
-              cell: ({ row: { original } }) => (
-                <PaymentMethod payment={original} />
-              ),
-            },
-            {
-              accessorKey: 'status',
-              header: 'Status',
-              cell: ({ row: { original } }) => (
-                <PaymentStatus payment={original} />
-              ),
-            },
-            ...(hasDeclinedPayment
-              ? ([
-                  {
-                    accessorKey: 'decline_reason',
-                    header: 'Bank Decline Reason',
-                    cell: ({ row: { original } }) => {
-                      const reason =
-                        original.decline_message || original.decline_reason
-                      return reason ? (
-                        <Truncated>
-                          <span className="text-sm">{reason}</span>
-                        </Truncated>
-                      ) : (
-                        '—'
-                      )
-                    },
-                  },
-                ] satisfies DataTableColumnDef<schemas['Payment']>[])
-              : []),
-          ]}
-          data={payments?.items ?? []}
+      <OrderSection title="Invoice preview">
+        <InvoicePreview
+          currency={order.currency}
+          items={order.items.map((item) => ({
+            id: item.id,
+            label: item.label,
+            amount: item.amount,
+          }))}
+          subtotalAmount={order.subtotal_amount}
+          discountAmount={order.discount_amount}
+          netAmount={order.net_amount}
+          taxAmount={order.tax_amount}
+          totalAmount={order.total_amount}
+          appliedBalanceAmount={order.applied_balance_amount}
+          dueAmount={order.due_amount}
+          refundedAmount={order.refunded_amount}
         />
-      </div>
+      </OrderSection>
 
-      {order.paid && (
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-row items-center justify-between gap-x-8">
-            <div className="flex flex-row items-center justify-between gap-x-6">
-              <h3 className="text-lg">Refunds</h3>
-            </div>
-            {canRefund && (
-              <Button onClick={showRefundModal}>Refund Order</Button>
-            )}
-          </div>
+      <OrderPaymentsTable
+        payments={orderPayments}
+        isLoading={paymentsLoading}
+      />
 
-          <DataTable
-            isLoading={refundsLoading}
-            columns={[
-              {
-                accessorKey: 'created_at',
-                header: 'Created At',
-                cell: ({ row }) => (
-                  <FormattedDateTime
-                    dateStyle="long"
-                    datetime={row.original.created_at}
-                  />
-                ),
-              },
-              {
-                accessorKey: 'amount',
-                header: 'Amount',
-                cell: ({ row }) =>
-                  formatCurrency('standard')(
-                    row.original.amount,
-                    row.original.currency,
-                  ),
-              },
-              {
-                accessorKey: 'status',
-                header: 'Status',
-                cell: ({ row }) => (
-                  <Status
-                    color={RefundStatusDisplayColor[row.original.status]}
-                    status={RefundStatusDisplayTitle[row.original.status]}
-                  />
-                ),
-              },
-              {
-                accessorKey: 'reason',
-                header: 'Reason',
-                cell: ({ row }) => RefundReasonDisplay[row.original.reason],
-              },
-              {
-                accessorKey: 'revoke_benefits',
-                header: 'Revoke Benefits',
-                cell: ({ row }) => (
-                  <Status
-                    status={row.original.revoke_benefits ? 'True' : 'False'}
-                    color={row.original.revoke_benefits ? 'green' : 'red'}
-                  />
-                ),
-              },
-            ]}
-            data={refunds?.items ?? []}
-          />
-        </div>
-      )}
+      <OrderRefundsSection order={order} />
 
-      {disputes && disputes.items.length > 0 && (
-        <div className="flex flex-col gap-6">
-          <h3 className="text-lg">Disputes</h3>
+      <OrderDisputesTable organization={organization} order={order} />
 
-          <DataTable
-            isLoading={disputesLoading}
-            columns={[
-              {
-                accessorKey: 'created_at',
-                header: 'Created At',
-                cell: ({ row }) => (
-                  <FormattedDateTime
-                    dateStyle="long"
-                    datetime={row.original.created_at}
-                  />
-                ),
-              },
-              {
-                accessorKey: 'amount',
-                header: 'Amount',
-                cell: ({ row }) =>
-                  formatCurrency('standard')(
-                    row.original.amount,
-                    row.original.currency,
-                  ),
-              },
-              {
-                accessorKey: 'status',
-                header: 'Status',
-                cell: ({ row }) => (
-                  <Status
-                    color={DisputeStatusDisplayColor[row.original.status]}
-                    status={DisputeStatusDisplayTitle[row.original.status]}
-                  />
-                ),
-              },
-            ]}
-            data={disputes?.items ?? []}
-          />
-        </div>
-      )}
+      <OrderSeatsSection order={order} />
 
-      {hasSeatBasedOrder && (
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-y-2">
-            <h3 className="text-lg">Seats</h3>
-            <p className="dark:text-polar-500 text-sm text-gray-500">
-              {availableSeats} of {totalSeats} seats available
-            </p>
-          </div>
-
-          {!isLoadingSeats && seats.length > 0 && (
-            <div className="flex flex-col gap-4">
-              <h4 className="text-base font-medium">Assigned Seats</h4>
-              <SeatViewOnlyTable seats={seats} />
-            </div>
-          )}
-
-          {!isLoadingSeats && seats.length === 0 && (
-            <p className="dark:text-polar-500 text-sm text-gray-500">
-              No seats have been assigned yet.
-            </p>
-          )}
-        </div>
-      )}
-
-      <div className="flex flex-col gap-y-6 md:hidden">
-        <h3 className="text-lg">Customer</h3>
+      <Box
+        flexDirection="column"
+        rowGap="l"
+        display={{ base: 'flex', md: 'none' }}
+      >
+        <Text variant="heading-xs" as="h3">
+          Customer
+        </Text>
         <CustomerContextView
           organization={organization}
           customer={order.customer}
         />
-      </div>
-
-      <InlineModal
-        isShown={isRefundModalShown}
-        hide={hideRefundModal}
-        modalContent={<RefundModal order={order} hide={hideRefundModal} />}
-      />
+      </Box>
     </DashboardBody>
   )
 }

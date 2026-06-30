@@ -217,10 +217,8 @@ class TestSSOLoginFlow:
                 email=user.email,
             )
             assert callback.status_code == 303
-            assert "complete" in callback.headers["location"]
 
-            complete = await sso_client.get(f"/v1/auth/{organization.slug}/complete")
-            assert complete.status_code == 303
+            await sso_client.get("/v1/auth/complete")
 
         user_session = (
             (
@@ -267,7 +265,7 @@ class TestSSOLoginFlow:
                 email=user_second.email,
             )
 
-        assert "complete" not in callback.headers["location"]
+        assert "error=" in callback.headers["location"]
         assert await _user_session_count(session, user_second) == 0
 
     async def test_rejects_unverified_email(
@@ -294,5 +292,5 @@ class TestSSOLoginFlow:
                 email_verified=False,
             )
 
-        assert "complete" not in callback.headers["location"]
+        assert "error=" in callback.headers["location"]
         assert await _user_session_count(session, user) == 0

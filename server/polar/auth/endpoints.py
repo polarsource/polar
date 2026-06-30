@@ -1,4 +1,5 @@
 import typing
+from uuid import UUID
 
 from fastapi import Depends, Request, Response
 from fastapi.responses import RedirectResponse
@@ -145,10 +146,21 @@ async def complete(
     if user is None:
         raise PolarAuthRedirectionError("User not found for authenticated identity")
 
-    return_to = (
-        authentication_session.context.get("return_to")
-        if authentication_session.context
+    context = authentication_session.context or {}
+    return_to = context.get("return_to")
+
+    # An SSO login carries its organization in the session context; mint a
+    # session down-scoped to it (other login methods stay unrestricted).
+    sso_organization_id = context.get("sso_organization_id")
+    organization_ids = (
+        frozenset({UUID(sso_organization_id)})
+        if sso_organization_id is not None
         else None
+    )
+    factor: Factor = (
+        "sso"
+        if sso_organization_id is not None
+        else typing.cast(Factor, authentication_session.used_factors[0])
     )
 
     response = await auth_service.get_login_response(
@@ -156,7 +168,8 @@ async def complete(
         request,
         user,
         return_to=return_to,
-        factor=typing.cast(Factor, authentication_session.used_factors[0]),
+        factor=factor,
+        organization_ids=organization_ids,
     )
     await authentication_session_service.set_cookie(request, response, "", 0)
     return response

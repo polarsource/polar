@@ -6,8 +6,6 @@ from fastapi import Depends, Query, Request
 from fastapi.responses import RedirectResponse
 from reauth.authentication_session import (
     AuthenticationSession,
-    FactorsRemainingException,
-    IdentityNotAttachedException,
 )
 from reauth.factors import FactorBase
 from reauth.factors.oauth2.base import (
@@ -35,7 +33,6 @@ from ..authentication_session import (
 )
 from ..exceptions import PolarAuthRedirectionError
 from ..factors import get_org_factors
-from ..service import auth as auth_service
 from .helpers import OIDC_ERROR_MESSAGE, check_factor, set_state_cookie
 
 SSO_SCOPE = ["openid", "email"]
@@ -112,7 +109,6 @@ async def authorize(
 @router.get("/sso/{connection_id}/callback", name="auth.sso.callback")
 async def callback(
     request: Request,
-    slug: str,
     connection: OrganizationSSOConnection = Depends(get_sso_connection),
     factor: OIDCFactorBase = Depends(get_sso_factor),
     code: str | None = Query(None),
@@ -184,51 +180,11 @@ async def callback(
         authentication_session, user.id, factor
     )
 
+    # Like the social login flow, hand off to the frontend so any remaining
+    # factors (e.g. TOTP) are challenged before the session is completed. The
+    # SSO organization is carried in the session context for scoped minting.
     response = RedirectResponse(
-        str(request.url_for("auth.sso.complete", slug=slug)), status_code=303
+        settings.generate_frontend_url("/auth"), status_code=303
     )
     set_state_cookie(request, response, "", 0)
-    return response
-
-
-@router.get("/complete", name="auth.sso.complete")
-async def complete(
-    request: Request,
-    slug: str,
-    authentication_session: AuthenticationSession = Depends(get_authentication_session),
-    authentication_session_service: AuthenticationSessionService = Depends(
-        get_org_authentication_session_service
-    ),
-    session: AsyncSession = Depends(get_db_session),
-) -> RedirectResponse:
-    context = authentication_session.context or {}
-    sso_organization_id = context.get("sso_organization_id")
-    if sso_organization_id is None:
-        raise PolarAuthRedirectionError("Authentication session cannot be completed")
-
-    # An SSO factor alone completes the login, even for members enrolled in other
-    # factors, so we don't enforce remaining factors here.
-    try:
-        identity_id, _ = await authentication_session_service.complete(
-            authentication_session, enforce_factors=False
-        )
-    except (IdentityNotAttachedException, FactorsRemainingException) as e:
-        raise PolarAuthRedirectionError(
-            "Authentication session cannot be completed"
-        ) from e
-
-    user_repository = UserRepository.from_session(session)
-    user = await user_repository.get_by_id(identity_id)
-    if user is None:
-        raise PolarAuthRedirectionError("User not found for authenticated identity")
-
-    response = await auth_service.get_login_response(
-        session,
-        request,
-        user,
-        return_to=context.get("return_to"),
-        factor="sso",
-        organization_ids=frozenset({UUID(sso_organization_id)}),
-    )
-    await authentication_session_service.set_cookie(request, response, "", 0)
     return response

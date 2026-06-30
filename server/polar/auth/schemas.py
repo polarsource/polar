@@ -11,7 +11,7 @@ from polar.kit.http import ReturnTo
 from polar.kit.schemas import Schema
 
 type Factor = typing.Literal[
-    "email_otp", "totp", "backup_codes", "apple", "github", "google"
+    "email_otp", "totp", "backup_codes", "apple", "github", "google", "sso"
 ]
 
 

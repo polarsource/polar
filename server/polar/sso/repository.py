@@ -40,3 +40,12 @@ class OrganizationSSOConnectionRepository(
             OrganizationSSOConnection.enabled.is_(True)
         )
         return await self.get_all(statement)
+
+    async def get_enabled_by_organization_and_id(
+        self, organization_id: UUID, id: UUID
+    ) -> OrganizationSSOConnection | None:
+        statement = self.get_statement_by_organization(organization_id).where(
+            OrganizationSSOConnection.id == id,
+            OrganizationSSOConnection.enabled.is_(True),
+        )
+        return await self.get_one_or_none(statement)

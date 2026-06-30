@@ -51,6 +51,7 @@ from .factors import (
 )
 from .oauth2.apple import get_apple_factor
 from .oauth2.router import get_oauth_link_router, get_oauth_login_router
+from .oauth2.sso_login import router as sso_login_router
 from .schemas import AuthenticationSession as AuthenticationSessionSchema
 from .schemas import (
     AuthenticationSessionStart,
@@ -74,6 +75,7 @@ router.include_router(get_oauth_login_router(get_github_factor, "github"))
 router.include_router(get_oauth_link_router(get_github_factor, "github"))
 router.include_router(get_oauth_login_router(get_google_factor, "google"))
 router.include_router(get_oauth_link_router(get_google_factor, "google"))
+router.include_router(sso_login_router)
 
 
 @router.get("/logout")

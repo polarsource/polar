@@ -38,6 +38,7 @@ const DetailColumn = ({
           justifyContent="center"
           alignItems="center"
           padding="5xl"
+          borderRadius="s"
         >
           <Text color="muted">No Data</Text>
         </Box>

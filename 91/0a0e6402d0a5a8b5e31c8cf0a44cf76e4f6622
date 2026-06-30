@@ -1,0 +1,19 @@
+server/polar/order/service.py
+  s_055272d137234c::t_52f0a000059493 1314-1338,1340,1342-1349,1351-1352,1355-1357,1359-1379,1381-1405,1407,1409-1440,1442,1444-1498,1500-1504,1507,1509
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "910a0e6402d0a5a8b5e31c8cf0a44cf76e4f6622",
+  "prompts": {},
+  "sessions": {
+    "s_055272d137234c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee94dbe5-c15a-44e2-9fb8-aed3888c188f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

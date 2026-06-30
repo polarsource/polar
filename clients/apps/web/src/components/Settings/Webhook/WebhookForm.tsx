@@ -191,6 +191,7 @@ export const FieldEvents = () => {
                   className="text-xs text-blue-400"
                   href={`https://polar.sh/docs/api-reference/webhooks/${event}`}
                   target="_blank"
+                  prefetch={false}
                 >
                   Schema
                 </Link>

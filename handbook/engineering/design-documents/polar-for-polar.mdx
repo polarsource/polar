@@ -68,6 +68,9 @@ graph LR
     WHSVC -.->|benefit_grant.*| Account
     WHSVC -.->|benefit_grant.*| Plain
     WHSVC -.->|order.created| Emails
+    WHSVC -.->|subscription.canceled| Emails
+    WHSVC -.->|subscription.past_due| Emails
+    WHSVC -.->|subscription.revoked| Emails
 ```
 
 ## Mapping
@@ -133,6 +136,9 @@ IMPLEMENTED_WEBHOOKS = {
     "benefit_grant.updated",
     "benefit_grant.revoked",
     "order.created",
+    "subscription.canceled",
+    "subscription.past_due",
+    "subscription.revoked",
 }
 
 @actor(actor_name="polar_self.webhook.benefit_grant.created", priority=TaskPriority.LOW)
@@ -145,7 +151,7 @@ async def webhook_benefit_grant_created(event_id: uuid.UUID) -> None:
             await polar_self.handle_benefit_grant_event(session, payload)
 ```
 
-`benefit_grant.*` is how paid plans take effect: the benefit's `metadata.type` (`transaction_fee` or `support`) drives whether we rewrite the org's Account fees or update its Plain support tier. `order.created` is what triggers the subscription confirmation / renewal emails with the invoice PDF attached — it's enqueued with a delay so the invoice has time to generate.
+`benefit_grant.*` is how paid plans take effect: the benefit's `metadata.type` (`transaction_fee` or `support`) drives whether we rewrite the org's Account fees or update its Plain support tier. `order.created` is what triggers the subscription confirmation / renewal emails with the invoice PDF attached — it's enqueued with a delay so the invoice has time to generate. `subscription.canceled` sends a cancellation confirmation email (surfacing the `ends_at` date). `subscription.past_due` sends a "payment failed" notification. `subscription.revoked` sends a terminal "subscription ended" email. All subscription email handlers skip free ($0) subscriptions and those without billing contacts.
 
 ## API Surface
 
@@ -251,5 +257,5 @@ The implementation will happen in multiple steps:
 2. Customer on Org Signup — On organization creation, enqueue a background task to create a Polar customer (keyed by org ID). Includes a backfill script for existing orgs. (We initially also created a free-tier subscription here, but dropped it — the free plan is synthesized client-side instead.)
 3. Members — Sync UserOrganization add/remove to Polar members on the customer via background tasks. Backfill extended to cover existing memberships.
 4. Metering Event Ingestion — Hook the ingested events to be bundled and ingested into into our own Polar organization with a count for the number of events ingested.
-5. Receive Polar Webhooks — Add /integrations/polar/webhook endpoint with signature verification, plus a polar ExternalEventSource enum value and handlers for benefit_grant.* and order.created events.
+5. Receive Polar Webhooks — Add /integrations/polar/webhook endpoint with signature verification, plus a polar ExternalEventSource enum value and handlers for benefit_grant.*, order.created, subscription.canceled, subscription.past_due, and subscription.revoked events.
 6. Paid Plans — Wire checkout, plan changes (with proration), cancellation, the customer portal proxy methods (payment methods, billing details, customer session), and order/invoice listing. Benefits drive fees and support tier via the webhook handler in step 5.

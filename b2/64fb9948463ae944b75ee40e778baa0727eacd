@@ -1,0 +1,37 @@
+server/polar/models/user.py
+  s_f5fc3abe70d302::t_07d74a68df9847 28,34-42,79-83,88-92,135-143,148-164,167
+  s_f5fc3abe70d302::t_642505476a240e 144-147,165-166
+  s_f5fc3abe70d302::t_7d0b3ebc1a3562 168
+server/polar/auth/oauth2/factor.py
+  s_f5fc3abe70d302::t_9b4bc91011eb67 76-77
+  s_f5fc3abe70d302::t_07d74a68df9847 52-53,61,71-73,78
+server/tests/models/test_oauth_account.py
+  s_f5fc3abe70d302::t_eedc1936f34b1a 41
+  s_f5fc3abe70d302::t_07d74a68df9847 1-40,42-70,105-130
+  s_f5fc3abe70d302::t_c982b2599a3872 71-104
+  s_f5fc3abe70d302::t_1e8e232694f2a5 131-150
+server/migrations/versions/2026-06-30-1000_add_oauth_account_encrypted_tokens.py
+  s_f5fc3abe70d302::t_07d74a68df9847 1-37
+server/polar/integrations/github_repository_benefit/service.py
+  s_f5fc3abe70d302::t_07d74a68df9847 107-108,128,130
+  s_f5fc3abe70d302::t_6c95c7b4d73bd5 168,170
+server/polar/auth/oauth2/apple.py
+  s_f5fc3abe70d302::t_699fad438a2b55 70-71
+  s_f5fc3abe70d302::t_07d74a68df9847 50-51,57,65-67,72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "b264fb9948463ae944b75ee40e778baa0727eacd",
+  "prompts": {},
+  "sessions": {
+    "s_f5fc3abe70d302": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7cd1007a-db72-41c1-8525-9ea6b973cdbd",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

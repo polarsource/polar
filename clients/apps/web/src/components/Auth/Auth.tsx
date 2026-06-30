@@ -2,6 +2,7 @@
 
 import { type EventName } from '@/hooks/posthog'
 import { schemas } from '@polar-sh/client'
+import { type LoginMethod } from '@/utils/auth'
 import { Fragment } from 'react'
 import GoogleLoginButton from './GoogleLoginButton'
 import EmailOTPForm from './EmailOTPForm'
@@ -11,11 +12,11 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { useImpressionEvent } from '@/hooks/useImpressionEvent'
 import { type JsonType } from '@posthog/core'
 
-type OAuthFactor = Exclude<schemas['Factor'], 'email_otp' | 'totp'>
+type OAuthFactor = Exclude<LoginMethod, 'email_otp' | 'totp'>
 const OAUTH_FACTORS: OAuthFactor[] = ['apple', 'github', 'google']
 
 const isOAuthFactor = (
-  value: schemas['Factor'] | null | undefined,
+  value: LoginMethod | null | undefined,
 ): value is OAuthFactor =>
   !!value && (OAUTH_FACTORS as string[]).includes(value)
 
@@ -26,7 +27,7 @@ const Auth = ({
   signup,
 }: {
   authenticationSession: schemas['AuthenticationSession'] | null
-  lastLoginMethod?: schemas['Factor'] | null
+  lastLoginMethod?: LoginMethod | null
   returnTo?: string
   signup?: boolean
 }) => {

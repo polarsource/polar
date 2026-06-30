@@ -75,6 +75,8 @@ class TestBuildSSOFactor:
 
         assert isinstance(factor, SSOPrivateKeyJWTFactor)
         assert factor.identifier == str(connection.id)
+        assert factor.connection_id == connection.id
+        assert factor.organization_slug == "acme"
         assert factor.client_id == "client-id"
         assert factor._kid == settings.CURRENT_JWK_KID
         assert factor._signing_jwks[settings.CURRENT_JWK_KID] is not None

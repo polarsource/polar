@@ -2,6 +2,15 @@ import { getPublicServerURL } from '@/utils/api'
 import { Client, operations, schemas } from '@polar-sh/client'
 import { redirect } from 'next/navigation'
 
+export type LoginMethod =
+  | 'email_otp'
+  | 'totp'
+  | 'backup_codes'
+  | 'apple'
+  | 'github'
+  | 'google'
+  | 'sso'
+
 export const getGitHubAuthorizeLoginURL = (): string => {
   return `${getPublicServerURL()}/v1/auth/github/authorize`
 }
@@ -104,11 +113,19 @@ export const getAuthenticationSessionRedirectPath = (
     return null
   }
 
-  if (authenticationSession.available_factors.includes('totp')) {
+  if (
+    authenticationSession.available_factors.some(
+      (factor) => factor.type === 'totp',
+    )
+  ) {
     return '/auth/totp'
   }
 
-  if (authenticationSession.available_factors.includes('backup_codes')) {
+  if (
+    authenticationSession.available_factors.some(
+      (factor) => factor.type === 'backup_codes',
+    )
+  ) {
     return '/auth/backup-codes'
   }
 

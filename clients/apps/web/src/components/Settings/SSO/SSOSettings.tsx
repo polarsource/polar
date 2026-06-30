@@ -7,9 +7,11 @@ import {
   useUpdateSSOConnection,
 } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
+import { getSSOLoginURL } from '@/utils/auth'
 import { schemas } from '@polar-sh/client'
 import { Button, InlineModal, ListGroup, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import { useModal } from '../../Modal/useModal'
 import NewSSOConnectionModal from './NewSSOConnectionModal'
 
@@ -19,24 +21,37 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
 
   return (
     <>
-      <ListGroup>
-        {connections.data?.items && connections.data.items.length > 0 ? (
-          connections.data.items.map((connection) => (
-            <ListGroup.Item key={connection.id}>
-              <SSOConnectionRow org={org} connection={connection} />
+      <Box flexDirection="column" gap="l">
+        <Box flexDirection="column" gap="xs">
+          <Text variant="label">Login link</Text>
+          <CopyToClipboardInput
+            value={getSSOLoginURL(org.slug)}
+            variant="mono"
+            onCopy={() => toast({ title: 'Copied to clipboard' })}
+          />
+          <Text variant="caption" color="muted">
+            Share this link with your members to sign in via SSO.
+          </Text>
+        </Box>
+        <ListGroup>
+          {connections.data?.items && connections.data.items.length > 0 ? (
+            connections.data.items.map((connection) => (
+              <ListGroup.Item key={connection.id}>
+                <SSOConnectionRow org={org} connection={connection} />
+              </ListGroup.Item>
+            ))
+          ) : (
+            <ListGroup.Item>
+              <Text color="muted">
+                {`${org.name} doesn't have any SSO connections yet`}
+              </Text>
             </ListGroup.Item>
-          ))
-        ) : (
+          )}
           <ListGroup.Item>
-            <Text color="muted">
-              {`${org.name} doesn't have any SSO connections yet`}
-            </Text>
+            <Button onClick={show}>Add connection</Button>
           </ListGroup.Item>
-        )}
-        <ListGroup.Item>
-          <Button onClick={show}>Add connection</Button>
-        </ListGroup.Item>
-      </ListGroup>
+        </ListGroup>
+      </Box>
       <InlineModal
         isShown={isShown}
         hide={hide}

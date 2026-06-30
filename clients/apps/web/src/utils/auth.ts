@@ -1,4 +1,5 @@
 import { getPublicServerURL } from '@/utils/api'
+import { CONFIG } from '@/utils/config'
 import { Client, operations, schemas } from '@polar-sh/client'
 import { redirect } from 'next/navigation'
 
@@ -27,6 +28,10 @@ export const getSSOCallbackURL = (
   connectionId: string,
 ): string => {
   return `${getPublicServerURL()}/v1/auth/${organizationSlug}/sso/${connectionId}/callback`
+}
+
+export const getSSOLoginURL = (organizationSlug: string): string => {
+  return `${CONFIG.FRONTEND_BASE_URL}/auth/sso/${organizationSlug}`
 }
 
 export const getSSOJwksURL = (): string => {

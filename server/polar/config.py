@@ -344,6 +344,7 @@ class Settings(BaseSettings):
     SQS_ENDPOINT_URL: str | None = None
     WORKER_SQS_AWS_ACCESS_KEY_ID: str | None = None
     WORKER_SQS_AWS_SECRET_ACCESS_KEY: str | None = None
+    WORKER_SQS_SCHEDULER_ROLE_ARN: str | None = None
 
     # Downloadable files
     S3_FILES_BUCKET_NAME: str = "polar-s3"

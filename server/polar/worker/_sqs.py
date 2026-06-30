@@ -1,7 +1,9 @@
 import asyncio
 import itertools
 import json
+import uuid
 from collections import defaultdict
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 import boto3
@@ -14,6 +16,7 @@ from polar.logging import Logger
 from ._encoder import _json_obj_serializer
 
 if TYPE_CHECKING:
+    from mypy_boto3_scheduler.client import EventBridgeSchedulerClient
     from mypy_boto3_sqs.client import SQSClient
     from mypy_boto3_sqs.type_defs import SendMessageBatchRequestEntryTypeDef
 
@@ -69,6 +72,20 @@ def get_consumer_sqs_client() -> "SQSClient":
     )
 
 
+def get_consumer_scheduler_client() -> "EventBridgeSchedulerClient":
+    """EventBridge Scheduler client authenticated by the Lambda execution role."""
+    return boto3.client(
+        "scheduler",
+        config=Config(
+            region_name=settings.AWS_REGION,
+            signature_version=settings.AWS_SIGNATURE_VERSION,
+            connect_timeout=2,
+            read_timeout=5,
+            retries={"max_attempts": 2, "mode": "standard"},
+        ),
+    )
+
+
 sqs_client = get_sqs_client()
 
 
@@ -93,6 +110,7 @@ def build_envelope(
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
     correlation_id: str | None,
+    attempt: int = 1,
 ) -> str:
     return json.dumps(
         {
@@ -100,19 +118,23 @@ def build_envelope(
             "args": args,
             "kwargs": kwargs,
             "correlation_id": correlation_id,
+            "attempt": attempt,
         },
         separators=(",", ":"),
         default=_json_obj_serializer,
     )
 
 
-def parse_envelope(body: str) -> tuple[str, list[Any], dict[str, Any], str | None]:
+def parse_envelope(
+    body: str,
+) -> tuple[str, list[Any], dict[str, Any], str | None, int]:
     data = json.loads(body)
     return (
         data["actor"],
         data.get("args", []),
         data.get("kwargs", {}),
         data.get("correlation_id"),
+        data.get("attempt", 1),
     )
 
 
@@ -129,6 +151,32 @@ def set_message_visibility(
         ReceiptHandle=receipt_handle,
         VisibilityTimeout=timeout_seconds,
     )
+
+
+def schedule_delayed_message(
+    client: "EventBridgeSchedulerClient",
+    queue_arn: str,
+    role_arn: str,
+    body: str,
+    delay_seconds: int,
+) -> None:
+    """Redeliver to SQS after a delay longer than SQS visibility allows (>12h)."""
+    fire_at = datetime.now(UTC) + timedelta(seconds=delay_seconds)
+    client.create_schedule(
+        Name=f"polar-retry-{uuid.uuid4().hex}",
+        ScheduleExpression=f"at({fire_at:%Y-%m-%dT%H:%M:%S})",
+        ScheduleExpressionTimezone="UTC",
+        FlexibleTimeWindow={"Mode": "OFF"},
+        Target={"Arn": queue_arn, "RoleArn": role_arn, "Input": body},
+        ActionAfterCompletion="DELETE",
+        State="ENABLED",
+    )
+
+
+def send_to_dlq(client: "SQSClient", queue_arn: str, body: str) -> None:
+    queue_name = queue_arn.rsplit(":", 1)[-1]
+    dlq_url = get_queue_url(client, f"{queue_name}-dlq")
+    client.send_message(QueueUrl=dlq_url, MessageBody=body)
 
 
 async def send_jobs(jobs: list[Job]) -> None:
@@ -174,12 +222,15 @@ __all__ = [
     "SQSSendError",
     "actor_to_queue_name",
     "build_envelope",
+    "get_consumer_scheduler_client",
     "get_consumer_sqs_client",
     "get_queue_url",
     "get_sqs_client",
     "parse_envelope",
+    "schedule_delayed_message",
     "send_jobs",
     "send_jobs_sync",
+    "send_to_dlq",
     "set_message_visibility",
     "sqs_client",
 ]

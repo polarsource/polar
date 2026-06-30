@@ -47,14 +47,15 @@ async def _poll_loop(actors: list[str], max_iterations: int) -> None:
                     MessageSystemAttributeNames=["ApproximateReceiveCount"],
                 )
                 for message in response.get("Messages", []):
-                    actor, args, kwargs, correlation_id = parse_envelope(
+                    actor, args, kwargs, correlation_id, attempt = parse_envelope(
                         message["Body"]
                     )
-                    receive_count = int(
+                    sqs_receive_count = int(
                         message.get("Attributes", {}).get(
                             "ApproximateReceiveCount", "1"
                         )
                     )
+                    receive_count = attempt + (sqs_receive_count - 1)
                     try:
                         await run_task(
                             actor,

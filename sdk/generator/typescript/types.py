@@ -74,7 +74,10 @@ def convert_type_to_typescript(
             for v in type_ref.variants
         ]
         # Join with |, wrapping nullable types in parens if needed
-        return " | ".join(variant_strs)
+        union = " | ".join(variant_strs)
+        if in_union:
+            return f"({union})"
+        return union
 
     # ArrayType -> Type[]
     if isinstance(type_ref, ArrayType):

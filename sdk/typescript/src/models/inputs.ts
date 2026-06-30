@@ -1,34 +1,34 @@
 import type {
-  Permission,
   SeatTierType,
-  CountryAlpha2Input,
-  ProductVisibility,
-  PresentmentCurrency,
-  FilterOperator,
   RecurringInterval,
-  CustomerType,
-  WebhookFormat,
-  FilterConjunction,
-  WebhookEventType,
-  Timeframe,
-  Func,
-  MeterUnit,
+  PaymentProcessor,
+  PresentmentCurrency,
   SubType,
+  Reason,
   DiscountDuration,
-  MemberRole,
-  TaxBehaviorOption,
-  OrganizationSocialPlatforms,
-  BenefitVisibility,
-  LicenseKeyStatus,
+  CustomerType,
+  TokenEndpointAuthMethod,
+  WebhookEventType,
+  TrialInterval,
   DiscountType,
   SubscriptionProrationBehavior,
-  Role,
-  Reason,
-  TrialInterval,
+  Func,
+  TaxBehaviorOption,
+  Permission,
   CustomerCancellationReason,
-  TokenEndpointAuthMethod,
-  PaymentProcessor,
+  Role,
   PublicSubscriptionProrationBehavior,
+  FilterConjunction,
+  MemberRole,
+  FilterOperator,
+  MeterUnit,
+  CountryAlpha2Input,
+  WebhookFormat,
+  BenefitVisibility,
+  Timeframe,
+  OrganizationSocialPlatforms,
+  ProductVisibility,
+  LicenseKeyStatus,
 } from "./literals";
 /**
  * AddressInput
@@ -997,10 +997,12 @@ You can store up to **50 key-value pairs**.
    */
   prices?: Record<
     string,
-    | ProductPriceFixedCreate
-    | ProductPriceCustomCreate
-    | ProductPriceSeatBasedCreate
-    | ProductPriceMeteredUnitCreate[]
+    (
+      | ProductPriceFixedCreate
+      | ProductPriceCustomCreate
+      | ProductPriceSeatBasedCreate
+      | ProductPriceMeteredUnitCreate
+    )[]
   > | null;
 } /**
  * Schema to create a new checkout link from a a single product.
@@ -2871,7 +2873,7 @@ export interface EventsIngest {
   /**
    * List of events to ingest.
    */
-  events: EventCreateCustomer | EventCreateExternalCustomer[];
+  events: (EventCreateCustomer | EventCreateExternalCustomer)[];
 } /**
  * A price that already exists for this product.
 
@@ -2921,7 +2923,7 @@ export interface Filter {
   /**
    * clauses
    */
-  clauses: FilterClause | Filter[];
+  clauses: (FilterClause | Filter)[];
 } /**
  * FilterClause
  */
@@ -3241,7 +3243,7 @@ You can store up to **50 key-value pairs**.
   /**
    * The aggregation to apply on the filtered events to calculate the meter.
    */
-  aggregation?: CountAggregation | PropertyAggregation | UniqueAggregation | null;
+  aggregation?: (CountAggregation | PropertyAggregation | UniqueAggregation) | null;
   /**
    * Whether the meter is archived. Archived meters are no longer used for billing.
    */
@@ -3289,7 +3291,7 @@ export interface OAuth2ClientConfiguration {
   /**
    * grant_types
    */
-  grant_types?: "authorization_code" | "refresh_token"[];
+  grant_types?: ("authorization_code" | "refresh_token")[];
   /**
    * response_types
    */
@@ -3337,7 +3339,7 @@ export interface OAuth2ClientConfigurationUpdate {
   /**
    * grant_types
    */
-  grant_types?: "authorization_code" | "refresh_token"[];
+  grant_types?: ("authorization_code" | "refresh_token")[];
   /**
    * response_types
    */
@@ -3508,8 +3510,7 @@ export interface OrganizationCreate {
    * legal_entity
    */
   legal_entity?:
-    | OrganizationIndividualLegalEntitySchema
-    | OrganizationCompanyLegalEntitySchema
+    | (OrganizationIndividualLegalEntitySchema | OrganizationCompanyLegalEntitySchema)
     | null;
   /**
    * Public support email.
@@ -3658,7 +3659,7 @@ export interface OrganizationDetails {
   /**
    * Which platform the organization is migrating from.
    */
-  switching_from?: "paddle" | "lemon_squeezy" | "gumroad" | "stripe" | "other" | null;
+  switching_from?: ("paddle" | "lemon_squeezy" | "gumroad" | "stripe" | "other") | null;
   /**
    * Revenue from last year if applicable.
    */
@@ -3827,11 +3828,12 @@ You can store up to **50 key-value pairs**.
   /**
    * List of available prices for this product. It may combine at most one fixed price with one seat-based price (billed as `fixed + seat_charge`), or contain a single custom or free price, plus any number of metered prices. A free price cannot be combined with other prices, and a custom price cannot be combined with a fixed or seat-based price. Metered prices are not supported on one-time purchase products.
    */
-  prices:
+  prices: (
     | ProductPriceFixedCreate
     | ProductPriceCustomCreate
     | ProductPriceSeatBasedCreate
-    | ProductPriceMeteredUnitCreate[];
+    | ProductPriceMeteredUnitCreate
+  )[];
   /**
    * List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded.
    */
@@ -3885,11 +3887,12 @@ You can store up to **50 key-value pairs**.
   /**
    * List of available prices for this product. It may combine at most one fixed price with one seat-based price (billed as `fixed + seat_charge`), or contain a single custom or free price, plus any number of metered prices. A free price cannot be combined with other prices, and a custom price cannot be combined with a fixed or seat-based price. Metered prices are not supported on one-time purchase products.
    */
-  prices:
+  prices: (
     | ProductPriceFixedCreate
     | ProductPriceCustomCreate
     | ProductPriceSeatBasedCreate
-    | ProductPriceMeteredUnitCreate[];
+    | ProductPriceMeteredUnitCreate
+  )[];
   /**
    * List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded.
    */
@@ -4534,11 +4537,15 @@ You can store up to **50 key-value pairs**.
    * List of available prices for this product. If you want to keep existing prices, include them in the list as an `ExistingProductPrice` object.
    */
   prices?:
-    | ExistingProductPrice
-    | ProductPriceFixedCreate
-    | ProductPriceCustomCreate
-    | ProductPriceSeatBasedCreate
-    | ProductPriceMeteredUnitCreate[]
+    | (
+        | ExistingProductPrice
+        | (
+            | ProductPriceFixedCreate
+            | ProductPriceCustomCreate
+            | ProductPriceSeatBasedCreate
+            | ProductPriceMeteredUnitCreate
+          )
+      )[]
     | null;
   /**
    * List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded.

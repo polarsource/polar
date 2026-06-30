@@ -221,7 +221,7 @@ export const listWebhookDeliveriesWebhooks = (client: ClientBase) => {
     end_timestamp?: string | null;
     succeeded?: boolean | null;
     query?: string | null;
-    http_code_class?: "2xx" | "3xx" | "4xx" | "5xx" | null;
+    http_code_class?: ("2xx" | "3xx" | "4xx" | "5xx") | null;
     event_type?: WebhookEventType | WebhookEventType[] | null;
     page?: number;
     limit?: number;

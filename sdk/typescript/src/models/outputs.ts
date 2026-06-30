@@ -1,51 +1,51 @@
 import type {
-  Permission,
   SeatTierType,
-  ProductVisibility,
-  FilterOperator,
   RecurringInterval,
-  CustomerType,
-  DisputeStatus,
-  TokenType,
-  RefundReason,
-  WebhookFormat,
-  ProductPriceSource,
-  SubscriptionStatus,
-  Status,
-  OrderBillingReason,
-  SeatStatus,
-  FilterConjunction,
-  Scope,
-  OrganizationStatus,
-  WebhookEventType,
-  Timeframe,
+  MetricType,
+  PaymentProcessor,
+  SubType,
   BenefitType,
+  DiscountDuration,
+  SeatStatus,
+  CustomerType,
+  CheckoutStatus,
+  BillingAddressFieldMode,
+  Scope,
+  WebhookEventType,
+  TrialInterval,
+  DiscountType,
+  TokenType,
+  SubscriptionProrationBehavior,
   Func,
+  TaxBehaviorOption,
+  Permission,
+  SubscriptionStatus,
+  CustomerCancellationReason,
+  EventSource,
+  FileServiceTypes,
+  OrderStatus,
+  PublicSubscriptionProrationBehavior,
+  PaymentTrigger,
+  FilterConjunction,
+  RefundStatus,
+  DisputeStatus,
+  OrderBillingReason,
+  RefundReason,
+  OrganizationStatus,
+  MemberRole,
+  Status,
+  FilterOperator,
   CountryAlpha2,
   MeterUnit,
-  SubType,
-  EventSource,
-  DiscountDuration,
-  MemberRole,
-  PaymentStatus,
-  TaxBehaviorOption,
-  OrganizationSocialPlatforms,
+  WebhookFormat,
   BenefitVisibility,
-  LicenseKeyStatus,
-  OrderStatus,
-  PaymentTrigger,
-  DiscountType,
-  RefundStatus,
-  SubscriptionProrationBehavior,
-  TrialInterval,
-  CustomerCancellationReason,
-  PaymentProcessor,
-  BillingAddressFieldMode,
-  CheckoutStatus,
-  FileServiceTypes,
+  Timeframe,
+  OrganizationSocialPlatforms,
   TaxBehavior,
-  MetricType,
-  PublicSubscriptionProrationBehavior,
+  ProductVisibility,
+  ProductPriceSource,
+  LicenseKeyStatus,
+  PaymentStatus,
 } from "./literals";
 /**
  * Address
@@ -2771,19 +2771,21 @@ export interface Checkout {
   /**
    * Price of the selected product.
    */
-  product_price: LegacyRecurringProductPrice | ProductPrice | null;
+  product_price: (LegacyRecurringProductPrice | ProductPrice) | null;
   /**
    * Mapping of product IDs to their list of prices.
    */
-  prices: Record<string, LegacyRecurringProductPrice | ProductPrice[]> | null;
+  prices: Record<string, (LegacyRecurringProductPrice | ProductPrice)[]> | null;
   /**
    * discount
    */
   discount:
-    | CheckoutDiscountFixedOnceForeverDuration
-    | CheckoutDiscountFixedRepeatDuration
-    | CheckoutDiscountPercentageOnceForeverDuration
-    | CheckoutDiscountPercentageRepeatDuration
+    | (
+        | CheckoutDiscountFixedOnceForeverDuration
+        | CheckoutDiscountFixedRepeatDuration
+        | CheckoutDiscountPercentageOnceForeverDuration
+        | CheckoutDiscountPercentageRepeatDuration
+      )
     | null;
   /**
    * subscription_id
@@ -3115,10 +3117,12 @@ export interface CheckoutLink {
    * discount
    */
   discount:
-    | DiscountFixedOnceForeverDurationBase
-    | DiscountFixedRepeatDurationBase
-    | DiscountPercentageOnceForeverDurationBase
-    | DiscountPercentageRepeatDurationBase
+    | (
+        | DiscountFixedOnceForeverDurationBase
+        | DiscountFixedRepeatDurationBase
+        | DiscountPercentageOnceForeverDurationBase
+        | DiscountPercentageRepeatDurationBase
+      )
     | null;
   /**
    * url
@@ -3187,7 +3191,7 @@ export interface CheckoutLinkProduct {
   /**
    * List of prices for this product.
    */
-  prices: LegacyRecurringProductPrice | ProductPrice[];
+  prices: (LegacyRecurringProductPrice | ProductPrice)[];
   /**
    * List of benefits granted by the product.
    */
@@ -3291,7 +3295,7 @@ export interface CheckoutProduct {
   /**
    * List of prices for this product.
    */
-  prices: LegacyRecurringProductPrice | ProductPrice[];
+  prices: (LegacyRecurringProductPrice | ProductPrice)[];
   /**
    * List of benefits granted by the product.
    */
@@ -3507,19 +3511,21 @@ export interface CheckoutPublic {
   /**
    * Price of the selected product.
    */
-  product_price: LegacyRecurringProductPrice | ProductPrice | null;
+  product_price: (LegacyRecurringProductPrice | ProductPrice) | null;
   /**
    * Mapping of product IDs to their list of prices.
    */
-  prices: Record<string, LegacyRecurringProductPrice | ProductPrice[]> | null;
+  prices: Record<string, (LegacyRecurringProductPrice | ProductPrice)[]> | null;
   /**
    * discount
    */
   discount:
-    | CheckoutDiscountFixedOnceForeverDuration
-    | CheckoutDiscountFixedRepeatDuration
-    | CheckoutDiscountPercentageOnceForeverDuration
-    | CheckoutDiscountPercentageRepeatDuration
+    | (
+        | CheckoutDiscountFixedOnceForeverDuration
+        | CheckoutDiscountFixedRepeatDuration
+        | CheckoutDiscountPercentageOnceForeverDuration
+        | CheckoutDiscountPercentageRepeatDuration
+      )
     | null;
   /**
    * organization
@@ -3739,19 +3745,21 @@ export interface CheckoutPublicConfirmed {
   /**
    * Price of the selected product.
    */
-  product_price: LegacyRecurringProductPrice | ProductPrice | null;
+  product_price: (LegacyRecurringProductPrice | ProductPrice) | null;
   /**
    * Mapping of product IDs to their list of prices.
    */
-  prices: Record<string, LegacyRecurringProductPrice | ProductPrice[]> | null;
+  prices: Record<string, (LegacyRecurringProductPrice | ProductPrice)[]> | null;
   /**
    * discount
    */
   discount:
-    | CheckoutDiscountFixedOnceForeverDuration
-    | CheckoutDiscountFixedRepeatDuration
-    | CheckoutDiscountPercentageOnceForeverDuration
-    | CheckoutDiscountPercentageRepeatDuration
+    | (
+        | CheckoutDiscountFixedOnceForeverDuration
+        | CheckoutDiscountFixedRepeatDuration
+        | CheckoutDiscountPercentageOnceForeverDuration
+        | CheckoutDiscountPercentageRepeatDuration
+      )
     | null;
   /**
    * organization
@@ -5267,7 +5275,7 @@ export interface CustomerOrderProduct {
   /**
    * List of prices for this product.
    */
-  prices: LegacyRecurringProductPrice | ProductPrice[];
+  prices: (LegacyRecurringProductPrice | ProductPrice)[];
   /**
    * List of benefits granted by the product.
    */
@@ -5735,7 +5743,7 @@ export interface CustomerProduct {
   /**
    * List of available prices for this product.
    */
-  prices: LegacyRecurringProductPrice | ProductPrice[];
+  prices: (LegacyRecurringProductPrice | ProductPrice)[];
   /**
    * List of benefits granted by the product.
    */
@@ -6338,7 +6346,7 @@ export interface CustomerSubscription {
   /**
    * List of enabled prices for the subscription.
    */
-  prices: LegacyRecurringProductPrice | ProductPrice[];
+  prices: (LegacyRecurringProductPrice | ProductPrice)[];
   /**
    * List of meters associated with the subscription.
    */
@@ -6462,7 +6470,7 @@ export interface CustomerSubscriptionProduct {
   /**
    * List of prices for this product.
    */
-  prices: LegacyRecurringProductPrice | ProductPrice[];
+  prices: (LegacyRecurringProductPrice | ProductPrice)[];
   /**
    * List of benefits granted by the product.
    */
@@ -7808,7 +7816,7 @@ export interface Filter {
   /**
    * clauses
    */
-  clauses: FilterClause | Filter[];
+  clauses: (FilterClause | Filter)[];
 } /**
  * FilterClause
  */
@@ -8624,11 +8632,12 @@ export interface ListResourceFileRead {
   /**
    * items
    */
-  items:
+  items: (
     | DownloadableFileRead
     | ProductMediaFileRead
     | OrganizationAvatarFileRead
-    | SupportCaseAttachmentFileRead[];
+    | SupportCaseAttachmentFileRead
+  )[];
   /**
    * pagination
    */
@@ -10072,10 +10081,12 @@ export interface Order {
    * discount
    */
   discount:
-    | DiscountFixedOnceForeverDurationBase
-    | DiscountFixedRepeatDurationBase
-    | DiscountPercentageOnceForeverDurationBase
-    | DiscountPercentageRepeatDurationBase
+    | (
+        | DiscountFixedOnceForeverDurationBase
+        | DiscountFixedRepeatDurationBase
+        | DiscountPercentageOnceForeverDurationBase
+        | DiscountPercentageRepeatDurationBase
+      )
     | null;
   /**
    * subscription
@@ -11352,7 +11363,7 @@ export interface Product {
   /**
    * List of prices for this product.
    */
-  prices: LegacyRecurringProductPrice | ProductPrice[];
+  prices: (LegacyRecurringProductPrice | ProductPrice)[];
   /**
    * List of benefits granted by the product.
    */
@@ -12094,15 +12105,17 @@ export interface Subscription {
    * discount
    */
   discount:
-    | DiscountFixedOnceForeverDurationBase
-    | DiscountFixedRepeatDurationBase
-    | DiscountPercentageOnceForeverDurationBase
-    | DiscountPercentageRepeatDurationBase
+    | (
+        | DiscountFixedOnceForeverDurationBase
+        | DiscountFixedRepeatDurationBase
+        | DiscountPercentageOnceForeverDurationBase
+        | DiscountPercentageRepeatDurationBase
+      )
     | null;
   /**
    * List of enabled prices for the subscription.
    */
-  prices: LegacyRecurringProductPrice | ProductPrice[];
+  prices: (LegacyRecurringProductPrice | ProductPrice)[];
   /**
    * List of meters associated with the subscription.
    */
@@ -13570,7 +13583,7 @@ export interface ValidationError {
   /**
    * loc
    */
-  loc: string | number[];
+  loc: (string | number)[];
   /**
    * msg
    */

@@ -162,10 +162,7 @@ const EventSelect: React.FC<EventSelectProps> = ({
       if (allSelected) {
         onChange(value.filter((selected) => !names.includes(selected)))
       } else {
-        onChange([
-          ...value,
-          ...names.filter((name) => !value.includes(name)),
-        ])
+        onChange([...value, ...names.filter((name) => !value.includes(name))])
       }
     },
     [onChange, value],

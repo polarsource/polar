@@ -33,8 +33,6 @@ export default {
       optional: 'Opzionale',
       apply: 'Applica',
       fieldRequired: 'Questo campo è obbligatorio',
-      addBusinessDetails: 'Aggiungi dati aziendali',
-      removeBusinessDetails: 'Rimuovi dati aziendali',
       billingDetails: 'Dati aziendali',
       addDiscountCode: 'Aggiungi codice sconto',
     },
@@ -72,20 +70,7 @@ export default {
         },
       },
       additionalMeteredUsage: 'Utilizzo aggiuntivo a consumo',
-      perUnit: '/ unità',
       discount: {
-        duration: {
-          months: {
-            '=1': 'per il primo mese',
-            other: 'per i primi # mesi',
-            _mode: 'plural',
-          },
-          years: {
-            '=1': 'per il primo anno',
-            other: 'per i primi # anni',
-            _mode: 'plural',
-          },
-        },
         until: 'Fino al {date}',
       },
       perSeat: 'per postazione',
@@ -111,29 +96,6 @@ export default {
       basePrice: 'Prezzo base',
     },
     trial: {
-      ends: 'La prova termina il {endDate}',
-      duration: {
-        days: {
-          '=1': 'Prova di # giorno',
-          other: 'Prova di # giorni',
-          _mode: 'plural',
-        },
-        weeks: {
-          '=1': 'Prova di # settimana',
-          other: 'Prova di # settimane',
-          _mode: 'plural',
-        },
-        months: {
-          '=1': 'Prova di # mese',
-          other: 'Prova di # mesi',
-          _mode: 'plural',
-        },
-        years: {
-          '=1': 'Prova di # anno',
-          other: 'Prova di # anni',
-          _mode: 'plural',
-        },
-      },
       hero: {
         free: {
           day: {
@@ -161,11 +123,6 @@ export default {
         then: 'Poi',
         startingDate: 'a partire dal {date}',
       },
-      summary: {
-        totalWhenTrialEnds: 'Totale al termine della prova',
-        totalWhenDiscountExpires: 'Totale alla scadenza dello sconto',
-        totalDueToday: 'Totale da pagare oggi',
-      },
     },
     pwywForm: {
       label: 'Scegli un prezzo equo',
@@ -178,21 +135,7 @@ export default {
       oneTimePurchase: 'Acquisto una tantum',
       fromPrefix: 'Da',
     },
-    card: {
-      included: 'Incluso',
-    },
     benefits: {
-      moreBenefits: {
-        '=1': '# altro vantaggio',
-        other: '# altri vantaggi',
-        _mode: 'plural',
-      },
-      showMoreBenefits: {
-        '=1': 'Mostra # altro vantaggio',
-        other: 'Mostra altri # vantaggi',
-        _mode: 'plural',
-      },
-      showLess: 'Mostra meno',
       granting: 'Assegnazione vantaggi in corso...',
       requestNewInvite: 'Richiedi nuovo invito',
       retryIn: {
@@ -281,7 +224,6 @@ export default {
     },
     productDescription: {
       readMore: 'Leggi di più',
-      readLess: 'Leggi meno',
     },
   },
   intervals: {

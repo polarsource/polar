@@ -1,12 +1,10 @@
-import { defineConfig, Options } from 'tsup'
+import { defineConfig } from 'tsup'
 
-export const options: Options[] = [
+export default defineConfig([
   {
     entry: ['src/index.ts'],
     format: ['cjs', 'esm'],
     minify: true,
     dts: true,
   },
-]
-
-export default defineConfig(options)
+])

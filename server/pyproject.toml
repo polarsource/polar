@@ -65,7 +65,7 @@ dependencies = [
   "anyio>=4.13.0",
   "markdown-it-py>=4.2.0",
   "tzdata>=2026.2",
-  "reauth==0.1.8",
+  "reauth==0.2.0",
 ]
 
 [dependency-groups]

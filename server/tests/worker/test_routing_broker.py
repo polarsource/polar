@@ -55,7 +55,7 @@ class TestRoutingBroker:
     ) -> None:
         mocker.patch.object(settings, "WORKER_SQS_ENABLED", True)
         mocker.patch.object(settings, "WORKER_SQS_ACTORS", {SUBSCRIPTION_ACTOR})
-        mocker.patch.object(RedisBroker, "enqueue")
+        super_enqueue = mocker.patch.object(RedisBroker, "enqueue")
         send_jobs_sync = mocker.patch("polar.worker._broker._sqs.send_jobs_sync")
 
         broker = dramatiq.get_broker()
@@ -66,6 +66,7 @@ class TestRoutingBroker:
             )
         )
 
+        super_enqueue.assert_not_called()
         sent = send_jobs_sync.call_args.args[0]
         assert sent[0][0] == SUBSCRIPTION_ACTOR
         assert sent[0][2] == {"subscription_id": subscription_id}

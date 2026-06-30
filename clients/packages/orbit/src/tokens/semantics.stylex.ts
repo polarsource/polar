@@ -89,36 +89,43 @@ export const textRoleStyles = stylex.create({
     fontFamily: fontFamilies.display,
     fontSize: { default: fontSizes[10], [md]: fontSizes[12] },
     lineHeight: lineHeights.none,
+    fontWeight: '500',
   },
   'heading-xl': {
     fontFamily: fontFamilies.display,
     fontSize: { default: fontSizes[9], [md]: fontSizes[11] },
     lineHeight: lineHeights.none,
+    fontWeight: '500',
   },
   'heading-l': {
     fontFamily: fontFamilies.display,
     fontSize: { default: fontSizes[8], [md]: fontSizes[9] },
     lineHeight: lineHeights.tight,
+    fontWeight: '500',
   },
   'heading-m': {
     fontFamily: fontFamilies.sans,
     fontSize: { default: fontSizes[7], [md]: fontSizes[8] },
     lineHeight: lineHeights.tight,
+    fontWeight: '500',
   },
   'heading-s': {
     fontFamily: fontFamilies.sans,
     fontSize: { default: fontSizes[6], [md]: fontSizes[7] },
     lineHeight: lineHeights.snug,
+    fontWeight: '500',
   },
   'heading-xs': {
     fontFamily: fontFamilies.sans,
     fontSize: { default: fontSizes[5], [md]: fontSizes[6] },
     lineHeight: lineHeights.snug,
+    fontWeight: '500',
   },
   'heading-xxs': {
     fontFamily: fontFamilies.sans,
     fontSize: { default: fontSizes[4], [md]: fontSizes[5] },
     lineHeight: lineHeights.snug,
+    fontWeight: '500',
   },
 })
 

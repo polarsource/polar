@@ -2754,6 +2754,9 @@ class OrderService:
         order: Order,
         organization: Organization,
     ) -> None:
+        if order.net_amount == 0:
+            return
+
         try:
             credit_metadata: BalanceCreditOrderMetadata = {
                 "order_id": str(order.id),

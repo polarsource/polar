@@ -57,12 +57,6 @@ variable "max_retries" {
   default     = 20
 }
 
-variable "batch_size" {
-  description = "SQS event source mapping batch size."
-  type        = number
-  default     = 1
-}
-
 variable "enabled" {
   description = "Event source mapping toggle. false provisions the worker dormant."
   type        = bool

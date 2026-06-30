@@ -196,7 +196,7 @@ resource "aws_lambda_function" "task" {
 resource "aws_lambda_event_source_mapping" "task" {
   event_source_arn        = aws_sqs_queue.task.arn
   function_name           = aws_lambda_function.task.arn
-  batch_size              = var.batch_size
+  batch_size              = 1
   enabled                 = var.enabled
   function_response_types = ["ReportBatchItemFailures"]
 }

@@ -14,7 +14,7 @@ parser.add_argument("output", type=str, help="Directory to output the generated 
 parser.add_argument(
     "--language",
     type=str,
-    choices=["python"],
+    choices=["python", "typescript"],
     default="python",
     help="Language to emit the SDK in (default: python).",
 )
@@ -51,6 +51,10 @@ language = args.language
 match language:
     case "python":
         emitter = PythonEmitter(ir)
+    case "typescript":
+        from typescript.emitter import TypeScriptEmitter
+
+        emitter = TypeScriptEmitter(ir)
     case _:
         print(f"Error: Unsupported language {language}.", file=sys.stderr)
         sys.exit(1)

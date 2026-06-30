@@ -76,7 +76,7 @@ export const InvoicePreview = ({
         borderColor="border-primary"
       >
         <Text color="muted" variant="body">
-          Description
+          Product
         </Text>
         <Text color="muted" variant="body" as="span">
           Amount
@@ -98,7 +98,7 @@ export const InvoicePreview = ({
 
       <Box
         alignSelf="end"
-        width={{ base: '100%', sm: '50%' }}
+        width={{ base: '100%', sm: '66%' }}
         flexDirection="column"
         rowGap="s"
         paddingTop="l"

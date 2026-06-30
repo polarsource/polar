@@ -2,7 +2,7 @@
 
 import { CustomerContextView } from '@/components/Customer/CustomerContextView'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { OrderAttributes } from '@/components/Orders/OrderAttributes'
+import { OrderSecondaryDetails } from '@/components/Orders/OrderSecondaryDetails'
 import { OrderCalloutBanner } from '@/components/Orders/OrderCalloutBanner'
 import { OrderDetails } from '@/components/Orders/OrderDetails'
 import { OrderDisputesTable } from '@/components/Orders/OrderDisputesTable'
@@ -13,6 +13,7 @@ import { OrderSection } from '@/components/Orders/OrderSection'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
 import { DownloadInvoiceDashboard } from '@/components/Orders/DownloadInvoice'
 import { InvoicePreview } from '@/components/Orders/InvoicePreview'
+import { toast } from '@/components/Toast/use-toast'
 import { useCustomFields, useProduct, useSubscription } from '@/hooks/queries'
 import { useOrder } from '@/hooks/queries/orders'
 import { usePayments } from '@/hooks/queries/payments'
@@ -21,9 +22,16 @@ import {
   isOrderInDunning,
   isOrderInDunningLifecycle,
 } from '@/utils/order'
+import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@polar-sh/ui/components/ui/dropdown-menu'
 import React from 'react'
 
 interface ClientPageProps {
@@ -74,15 +82,39 @@ const ClientPage: React.FC<ClientPageProps> = ({
         </Box>
       }
       header={
-        order.paid ? (
-          <DownloadInvoiceDashboard
-            order={order}
-            organization={organization}
-            onInvoiceGenerated={refetchOrder}
-          />
-        ) : undefined
+        <Box alignItems="center" columnGap="l">
+          {order.paid && (
+            <DownloadInvoiceDashboard
+              order={order}
+              organization={organization}
+              onInvoiceGenerated={refetchOrder}
+            />
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" size="icon">
+                <MoreVertOutlined fontSize="small" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  if (typeof navigator !== 'undefined') {
+                    navigator.clipboard.writeText(order.id)
+                    toast({
+                      title: 'Order ID copied',
+                      description: 'The order ID has been copied to clipboard',
+                    })
+                  }
+                }}
+              >
+                Copy Order ID
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </Box>
       }
-      className="gap-y-12"
+      className="gap-y-16"
       contextViewTitle="Customer"
       contextView={
         <CustomerContextView
@@ -107,7 +139,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
         organization={organization}
       />
 
-      <OrderAttributes order={order} customFields={customFields?.items} />
+      <Box
+        borderTopWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+      />
+
+      <OrderSecondaryDetails order={order} customFields={customFields?.items} />
 
       <OrderSection title="Invoice preview">
         <InvoicePreview

@@ -1,6 +1,6 @@
 'use client'
 
-import { Text } from '@polar-sh/orbit'
+import { Grid, Text, Truncated } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import type { ReactNode } from 'react'
 
@@ -41,20 +41,27 @@ export const DetailItem = ({
   monospace?: boolean
 }) => (
   <Box
-    flexDirection={{ base: 'column', md: 'row' }}
-    justifyContent={{ md: 'between' }}
-    alignItems={{ md: 'baseline' }}
+    flexGrow={1}
+    minWidth={0}
+    flexDirection="row"
+    justifyContent="between"
+    alignItems="baseline"
     columnGap="l"
-    rowGap="xs"
   >
-    <Text color="muted" variant="body">
-      {label}
-    </Text>
-    <Box alignItems="center" columnGap="s" minWidth={0}>
+    <Text color="muted">{label}</Text>
+    <Box
+      flex={1}
+      minWidth={0}
+      justifyContent="end"
+      alignItems="center"
+      columnGap="s"
+    >
       {typeof value === 'string' || typeof value === 'number' ? (
-        <Text as="span" variant="body" monospace={monospace} align="right">
-          {value}
-        </Text>
+        <Truncated tooltip={String(value)}>
+          <Text as="span" monospace={monospace} align="right">
+            {value}
+          </Text>
+        </Truncated>
       ) : (
         (value ?? (
           <Text as="span" color="muted">
@@ -64,5 +71,46 @@ export const DetailItem = ({
       )}
       {action}
     </Box>
+  </Box>
+)
+
+export const DetailGrid = ({ children }: { children: ReactNode }) => (
+  <Grid
+    templateColumns={{
+      base: '1fr',
+      sm: 'repeat(2, minmax(0, 1fr))',
+      lg: 'repeat(3, minmax(0, 1fr))',
+    }}
+    gap="xl"
+  >
+    {children}
+  </Grid>
+)
+
+export const DetailCell = ({
+  label,
+  value,
+  monospace,
+  fullWidth,
+}: {
+  label: ReactNode
+  value: ReactNode
+  monospace?: boolean
+  fullWidth?: boolean
+}) => (
+  <Box
+    flexDirection="column"
+    rowGap="xs"
+    minWidth={0}
+    gridColumn={fullWidth ? '1 / -1' : undefined}
+  >
+    <Text color="muted">{label}</Text>
+    {typeof value === 'string' || typeof value === 'number' ? (
+      <Text variant="body" monospace={monospace} truncate>
+        {value}
+      </Text>
+    ) : (
+      (value ?? <Text color="muted">—</Text>)
+    )}
   </Box>
 )

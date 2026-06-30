@@ -2,6 +2,15 @@ data "aws_iam_policy" "permission_boundary" {
   name = "PolarPermissionBoundary"
 }
 
+module "secrets_kms" {
+  source = "../modules/render_secrets_kms"
+
+  environment              = "sandbox"
+  render_owner_id          = "tea-ch0f74hjvhtkjjvvhnr0"
+  render_environment_id    = data.tfe_outputs.production.values.sandbox_environment_id
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+}
+
 module "lambda_worker_ecr" {
   source = "../modules/ecr_repository"
 

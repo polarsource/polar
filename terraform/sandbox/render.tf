@@ -234,6 +234,11 @@ module "sandbox" {
     files_download_secret = var.s3_files_download_secret_sandbox
   }
 
+  aws_kms_config = {
+    key_id   = module.secrets_kms.key_arn
+    role_arn = module.secrets_kms.role_arn
+  }
+
   worker_sqs_config = {
     enabled               = "true"
     actors                = var.worker_sqs_actors

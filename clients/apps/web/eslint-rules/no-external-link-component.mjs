@@ -30,7 +30,7 @@ function getStaticHref(attr) {
 }
 
 function isExternalHref(href) {
-  return href.startsWith('http') || href.startsWith('/docs')
+  return /^https?:\/\//.test(href) || href.startsWith('/docs')
 }
 
 /** @type {import('eslint').Rule.RuleModule} */
@@ -48,9 +48,22 @@ const noExternalLinkComponent = {
     },
   },
   create(context) {
+    const nextLinkLocalNames = new Set()
+
     return {
+      ImportDeclaration(node) {
+        if (node.source.value !== 'next/link') return
+        for (const specifier of node.specifiers) {
+          if (specifier.type === 'ImportDefaultSpecifier') {
+            nextLinkLocalNames.add(specifier.local.name)
+          }
+        }
+      },
       JSXOpeningElement(node) {
-        if (node.name.type !== 'JSXIdentifier' || node.name.name !== 'Link') {
+        if (
+          node.name.type !== 'JSXIdentifier' ||
+          !nextLinkLocalNames.has(node.name.name)
+        ) {
           return
         }
         for (const attr of node.attributes) {

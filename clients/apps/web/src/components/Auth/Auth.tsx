@@ -124,6 +124,7 @@ const Auth = ({
         <a
           className="dark:text-polar-300 text-gray-600"
           href="https://polar.sh/legal/master-services-terms"
+          rel="noopener noreferrer"
         >
           Terms of Service
         </a>{' '}
@@ -131,6 +132,7 @@ const Auth = ({
         <a
           className="dark:text-polar-300 text-gray-600"
           href="https://polar.sh/legal/privacy-policy"
+          rel="noopener noreferrer"
         >
           Privacy Policy
         </a>

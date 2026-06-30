@@ -187,14 +187,15 @@ export const WhyPolarPage = () => {
             believe that the best way to build a great developer experience is
             to build it with the community.
           </p>
-          <Link
+          <a
             href="https://github.com/polarsource/polar"
             target="_blank"
+            rel="noopener noreferrer"
             className="w-fit border-b border-black pb-0.5 dark:border-white"
           >
             Follow the development on GitHub
             <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
-          </Link>
+          </a>
         </div>
       </ResourceSection>
 

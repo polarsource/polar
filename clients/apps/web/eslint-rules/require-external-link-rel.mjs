@@ -31,7 +31,7 @@ function findAttr(node, name) {
 }
 
 function isExternalHref(href) {
-  return href.startsWith('http') || href.startsWith('/docs')
+  return /^https?:\/\//.test(href) || href.startsWith('/docs')
 }
 
 /** @type {import('eslint').Rule.RuleModule} */

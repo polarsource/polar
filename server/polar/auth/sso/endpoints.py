@@ -148,8 +148,7 @@ async def callback(
     except OIDCException as e:
         raise PolarAuthRedirectionError(OIDC_ERROR_MESSAGE) from e
 
-    assert oauth_account is not None
-    if oauth_account.id_token is None:
+    if oauth_account is None or oauth_account.id_token is None:
         raise PolarAuthRedirectionError(OIDC_ERROR_MESSAGE)
 
     claims = await factor.get_id_token_claims(oauth_account.id_token)

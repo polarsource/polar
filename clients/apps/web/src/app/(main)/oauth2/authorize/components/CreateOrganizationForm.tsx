@@ -217,7 +217,7 @@ const CreateOrganizationForm = ({
                           href="https://polar.sh/docs/merchant-of-record/account-reviews"
                           className="text-blue-600 hover:underline dark:text-blue-400"
                           target="_blank"
-                          rel="noreferrer"
+                          rel="noopener noreferrer"
                         >
                           Account Reviews Policy
                         </a>
@@ -229,7 +229,7 @@ const CreateOrganizationForm = ({
                           href="https://polar.sh/legal/master-services-terms"
                           className="text-blue-600 hover:underline dark:text-blue-400"
                           target="_blank"
-                          rel="noreferrer"
+                          rel="noopener noreferrer"
                         >
                           Terms of Service
                         </a>
@@ -239,7 +239,7 @@ const CreateOrganizationForm = ({
                           href="https://polar.sh/legal/privacy-policy"
                           className="text-blue-600 hover:underline dark:text-blue-400"
                           target="_blank"
-                          rel="noreferrer"
+                          rel="noopener noreferrer"
                         >
                           Privacy Policy
                         </a>

@@ -39,8 +39,9 @@ polar/
 ├── dev/                    # Dev scripts and tooling
 ├── docs/                   # User/developer docs (Mintlify)
 ├── sdk/                    # SDKs and generators
-│   ├── generator/              # Internal SDK code generator
+│   ├── generator/              # Internal SDK code generator (Python, TypeScript)
 │   ├── python/                 # Generated Python SDK
+│   ├── typescript/             # Generated TypeScript SDK
 │   └── overlays/               # OpenAPI Overlay tweaks for Speakeasy-generated SDKs
 └── .claude/                # Claude Code config (settings, hooks, commands)
 ```

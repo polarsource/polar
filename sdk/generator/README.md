@@ -28,3 +28,13 @@ Generate the Python SDK by running the following command:
 ```bash
 uv run -m cli --language python --clear openapi.json ../python
 ```
+
+### TypeScript
+
+The TypeScript generator is located in the `sdk/generator/typescript` folder. It generates the TypeScript SDK code from the IR. Post processing includes linting, type checking, and testing with pnpm.
+
+Generate the TypeScript SDK by running the following command:
+
+```bash
+uv run -m cli --language typescript --clear openapi.json ../typescript
+```

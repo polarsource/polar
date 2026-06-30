@@ -70,7 +70,9 @@ const buildUrl = (url: string, pathParams?: PathParams, queryParams?: QueryParam
       }
     }
     const queryString = searchParams.toString();
-    formattedUrl = `${formattedUrl}?${queryString}`;
+    if (queryString) {
+      formattedUrl = `${formattedUrl}?${queryString}`;
+    }
   }
 
   return formattedUrl;

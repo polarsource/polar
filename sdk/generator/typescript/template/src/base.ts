@@ -79,7 +79,9 @@ const buildUrl = (
       }
     }
     const queryString = searchParams.toString();
-    formattedUrl = `${formattedUrl}?${queryString}`;
+    if (queryString) {
+      formattedUrl = `${formattedUrl}?${queryString}`;
+    }
   }
 
   return formattedUrl;

@@ -21,15 +21,20 @@ from sqlalchemy import delete, select, update
 from polar.config import settings
 from polar.email.schemas import LoginCodeEmail, LoginCodeProps
 from polar.email.sender import enqueue_email_template
+from polar.exceptions import ResourceNotFound
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import BackupCodesEnrollment, EmailOTP, TOTPEnrollment
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession, get_db_session
+from polar.sso.repository import OrganizationSSOConnectionRepository
 from polar.user.repository import UserRepository
 
 from .oauth2.apple import AppleFactor, get_apple_factor
 from .oauth2.github import GitHubFactor, get_github_factor
 from .oauth2.google import GoogleFactor, get_google_factor
+from .oauth2.sso import build_sso_factor
+from .oauth2.state import OAuth2StateService, get_oauth2_state_service
 
 if typing.TYPE_CHECKING:
     from .schemas import EmailOTPRequest
@@ -289,4 +294,24 @@ async def get_factors(
         apple_factor,
         github_factor,
         google_factor,
+    }
+
+
+async def get_org_factors(
+    slug: str,
+    base_factors: set[FactorBase[typing.Any]] = Depends(get_factors),
+    session: AsyncSession = Depends(get_db_session),
+    state_service: OAuth2StateService = Depends(get_oauth2_state_service),
+) -> set[FactorBase[typing.Any]]:
+    organization_repository = OrganizationRepository.from_session(session)
+    organization = await organization_repository.get_by_slug(slug)
+    if organization is None:
+        raise ResourceNotFound()
+
+    sso_repository = OrganizationSSOConnectionRepository.from_session(session)
+    connections = await sso_repository.get_enabled_by_organization(organization.id)
+
+    return base_factors | {
+        build_sso_factor(connection, state_service=state_service)
+        for connection in connections
     }

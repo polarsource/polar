@@ -3,7 +3,6 @@ import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { TabsContent } from '@polar-sh/orbit'
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
-import { useMemo } from 'react'
 import { Events } from '../Events/Events'
 import EventSelect from '../Events/EventSelect'
 import MeterSelector from '../Meter/MeterSelector'
@@ -20,13 +19,9 @@ export const CustomerEventsView = ({
   dateRange: { startDate: Date; endDate: Date }
 }) => {
   const [meterId, setMeterId] = useQueryState('meterId', parseAsString)
-  const [eventNamesRaw, setEventNames] = useQueryState(
+  const [eventNames, setEventNames] = useQueryState(
     'eventName',
     parseAsArrayOf(parseAsString).withDefault([]),
-  )
-  const eventNames = useMemo(
-    () => eventNamesRaw.filter((name) => name !== 'all'),
-    [eventNamesRaw],
   )
 
   const {

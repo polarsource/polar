@@ -12,7 +12,7 @@ from polar.config import settings
 from polar.models import OrganizationSSOConnection
 from polar.models.organization_sso_connection import OIDCAuthMethod
 
-from .state import OAuth2StateService
+from ..oauth2.state import OAuth2StateService
 
 
 def _discovery_endpoint(issuer: str) -> str:

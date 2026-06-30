@@ -33,8 +33,8 @@ from polar.user.repository import UserRepository
 from .oauth2.apple import AppleFactor, get_apple_factor
 from .oauth2.github import GitHubFactor, get_github_factor
 from .oauth2.google import GoogleFactor, get_google_factor
-from .oauth2.sso import build_sso_factor
 from .oauth2.state import OAuth2StateService, get_oauth2_state_service
+from .sso.factor import build_sso_factor
 
 if typing.TYPE_CHECKING:
     from .schemas import EmailOTPRequest

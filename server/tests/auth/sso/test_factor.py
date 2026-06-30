@@ -2,12 +2,12 @@ import uuid
 
 import pytest
 
-from polar.auth.oauth2.sso import (
+from polar.auth.oauth2.state import OAuth2StateService
+from polar.auth.sso.factor import (
     SSOClientSecretFactor,
     SSOPrivateKeyJWTFactor,
     build_sso_factor,
 )
-from polar.auth.oauth2.state import OAuth2StateService
 from polar.config import settings
 from polar.models import OrganizationSSOConnection
 from polar.models.organization_sso_connection import (

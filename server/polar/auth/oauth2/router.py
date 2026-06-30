@@ -27,8 +27,8 @@ from ..authentication_session import (
     get_optional_authentication_session,
 )
 from ..exceptions import GetEmailError, PolarAuthRedirectionError
+from ..helpers import OIDC_ERROR_MESSAGE, check_factor, set_state_cookie
 from .factor import OAuth2FactorMixin
-from .helpers import OIDC_ERROR_MESSAGE, check_factor, set_state_cookie
 
 
 def get_oauth_login_router(

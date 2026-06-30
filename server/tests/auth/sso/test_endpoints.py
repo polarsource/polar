@@ -2,7 +2,7 @@ import uuid
 
 import pytest
 
-from polar.auth.oauth2.sso_login import get_sso_connection
+from polar.auth.sso.endpoints import get_sso_connection
 from polar.exceptions import ResourceNotFound
 from polar.models import Organization, OrganizationSSOConnection
 from polar.models.organization_sso_connection import (

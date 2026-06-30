@@ -53,7 +53,6 @@ from .factors import (
 )
 from .oauth2.apple import get_apple_factor
 from .oauth2.router import get_oauth_link_router, get_oauth_login_router
-from .oauth2.sso_login import router as sso_login_router
 from .schemas import AuthenticationSession as AuthenticationSessionSchema
 from .schemas import (
     AuthenticationSessionStart,
@@ -68,6 +67,7 @@ from .schemas import (
     TOTPStatus,
 )
 from .service import auth as auth_service
+from .sso.endpoints import router as sso_login_router
 
 router = APIRouter(prefix="/auth", tags=["auth", APITag.private])
 router.include_router(

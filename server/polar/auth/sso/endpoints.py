@@ -33,7 +33,7 @@ from ..authentication_session import (
 )
 from ..exceptions import PolarAuthRedirectionError
 from ..factors import get_org_factors
-from .helpers import OIDC_ERROR_MESSAGE, check_factor, set_state_cookie
+from ..helpers import OIDC_ERROR_MESSAGE, check_factor, set_state_cookie
 
 SSO_SCOPE = ["openid", "email"]
 

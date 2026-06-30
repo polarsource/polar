@@ -8,7 +8,7 @@ from reauth.factors import FactorBase
 from polar.config import settings
 from polar.kit.http import is_localhost
 
-from ..exceptions import PolarAuthRedirectionError
+from .exceptions import PolarAuthRedirectionError
 
 OIDC_ERROR_MESSAGE = "An authentication error occurred. Please try again."
 

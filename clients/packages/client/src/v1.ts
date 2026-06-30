@@ -7200,7 +7200,10 @@ export interface components {
       /** Identity Id */
       identity_id: string | null
       /** Available Factors */
-      available_factors: components['schemas']['Factor'][]
+      available_factors: (
+        | components['schemas']['BaseFactor']
+        | components['schemas']['SSOFactor']
+      )[]
     }
     /** AuthenticationSessionStart */
     AuthenticationSessionStart: {
@@ -8073,6 +8076,20 @@ export interface components {
        */
       name: 'balance.refund_reversal'
       metadata: components['schemas']['BalanceRefundMetadata']
+    }
+    /** BaseFactor */
+    BaseFactor: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type:
+        | 'apple'
+        | 'backup_codes'
+        | 'email_otp'
+        | 'github'
+        | 'google'
+        | 'totp'
     }
     Benefit:
       | components['schemas']['BenefitCustom']
@@ -20418,14 +20435,6 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /** @enum {string} */
-    Factor:
-      | 'email_otp'
-      | 'totp'
-      | 'backup_codes'
-      | 'apple'
-      | 'github'
-      | 'google'
     /** Feedback */
     Feedback: {
       /**
@@ -29614,6 +29623,21 @@ export interface components {
       headers: {
         [key: string]: string
       }
+    }
+    /** SSOFactor */
+    SSOFactor: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'sso'
+      /**
+       * Connection Id
+       * Format: uuid4
+       */
+      connection_id: string
+      /** Organization Slug */
+      organization_slug: string
     }
     /**
      * Scope
@@ -58240,6 +58264,9 @@ export const balanceRefundEventNameValues: ReadonlyArray<
 export const balanceRefundReversalEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BalanceRefundReversalEvent']['name']
 > = ['balance.refund_reversal']
+export const baseFactorTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BaseFactor']['type']
+> = ['apple', 'backup_codes', 'email_otp', 'github', 'google', 'totp']
 export const benefitCustomTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitCustom']['type']
 > = ['custom']
@@ -59198,9 +59225,6 @@ export const eventTypesSortPropertyValues: ReadonlyArray<
   'last_seen',
   '-last_seen',
 ]
-export const factorValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['Factor']
-> = ['email_otp', 'totp', 'backup_codes', 'apple', 'github', 'google']
 export const feedbackStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['FeedbackStatus']
 > = ['new', 'triaged']
@@ -61057,6 +61081,9 @@ export const refundSortPropertyValues: ReadonlyArray<
 export const refundStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RefundStatus']
 > = ['pending', 'succeeded', 'failed', 'canceled']
+export const sSOFactorTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SSOFactor']['type']
+> = ['sso']
 export const scopeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Scope']
 > = [

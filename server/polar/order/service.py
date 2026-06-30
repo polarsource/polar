@@ -2772,16 +2772,17 @@ class OrderService:
             if order.product_id is not None:
                 credit_metadata["product_id"] = str(order.product_id)
 
-            event_repository = EventRepository.from_session(session)
-            exchange_rate = (
-                await event_repository.get_recent_balance_order_exchange_rate(
-                    organization.id,
-                    order.currency,
-                    before=order.created_at,
+            if order.net_amount != 0:
+                event_repository = EventRepository.from_session(session)
+                exchange_rate = (
+                    await event_repository.get_recent_balance_order_exchange_rate(
+                        organization.id,
+                        order.currency,
+                        before=order.created_at,
+                    )
                 )
-            )
-            if exchange_rate is not None:
-                credit_metadata["exchange_rate"] = exchange_rate
+                if exchange_rate is not None:
+                    credit_metadata["exchange_rate"] = exchange_rate
 
             credit_event = build_system_event(
                 SystemEvent.balance_credit_order,

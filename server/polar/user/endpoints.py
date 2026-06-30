@@ -65,6 +65,12 @@ async def get_authenticated(
     user = auth_subject.subject
     repository = UserOrganizationRepository.from_session(session)
     org_with_roles = await repository.get_organizations_with_role(user.id)
+    if auth_subject.organization_ids is not None:
+        org_with_roles = [
+            (org, role)
+            for org, role in org_with_roles
+            if org.id in auth_subject.organization_ids
+        ]
     return UserRead.model_validate(user).model_copy(
         update={
             "organizations": [

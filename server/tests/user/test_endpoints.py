@@ -1,6 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
+from polar.auth.models import AuthSubject
 from polar.auth.scope import READ_ONLY_SCOPES
 from polar.kit.utils import utc_now
 from polar.models import Organization, User, UserOrganization
@@ -41,6 +42,29 @@ async def test_get_users_me_embeds_organizations_with_role(
     assert len(organizations) == 1
     assert organizations[0]["id"] == str(organization.id)
     assert organizations[0]["role"] == OrganizationRole.admin.value
+
+
+@pytest.mark.asyncio
+@pytest.mark.auth
+async def test_get_users_me_organizations_scoped_to_session(
+    client: AsyncClient,
+    save_fixture: SaveFixture,
+    auth_subject: AuthSubject[User],
+    organization: Organization,
+    organization_second: Organization,
+    user: User,
+    user_organization: UserOrganization,
+) -> None:
+    # Member of two organizations, but the session is down-scoped to one
+    # (as an SSO session is) — `me` must only list the scoped organization.
+    await save_fixture(UserOrganization(user=user, organization=organization_second))
+    auth_subject.organization_ids = frozenset({organization.id})
+
+    response = await client.get("/v1/users/me")
+
+    assert response.status_code == 200
+    organizations = response.json()["organizations"]
+    assert [o["id"] for o in organizations] == [str(organization.id)]
 
 
 @pytest.mark.asyncio

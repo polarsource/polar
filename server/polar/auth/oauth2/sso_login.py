@@ -36,7 +36,7 @@ from ..authentication_session import (
 from ..exceptions import PolarAuthRedirectionError
 from ..factors import get_org_factors
 from ..service import auth as auth_service
-from .router import OIDC_ERROR_MESSAGE, _check_factor, _set_state_cookie
+from .helpers import OIDC_ERROR_MESSAGE, check_factor, set_state_cookie
 
 SSO_SCOPE = ["openid", "email"]
 
@@ -89,7 +89,7 @@ async def authorize(
     factors = await authentication_session_service.get_available_factors(
         authentication_session
     )
-    _check_factor(factor, factors)
+    check_factor(factor, factors)
 
     redirect_uri = str(
         request.url_for("auth.sso.callback", slug=slug, connection_id=connection_id)
@@ -105,7 +105,7 @@ async def authorize(
         raise PolarAuthRedirectionError(OIDC_ERROR_MESSAGE) from e
 
     response = RedirectResponse(authorization_url, status_code=303)
-    _set_state_cookie(request, response, state, oauth2_state.expires_at)
+    set_state_cookie(request, response, state, oauth2_state.expires_at)
     return response
 
 
@@ -187,7 +187,7 @@ async def callback(
     response = RedirectResponse(
         str(request.url_for("auth.sso.complete", slug=slug)), status_code=303
     )
-    _set_state_cookie(request, response, "", 0)
+    set_state_cookie(request, response, "", 0)
     return response
 
 

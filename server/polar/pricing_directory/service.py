@@ -8,7 +8,13 @@ from uuid import UUID
 import structlog
 
 from polar.kit.utils import utc_now
-from polar.models import PricingCompany, PricingProduct, PricingSnapshot
+from polar.models import (
+    PricingCompany,
+    PricingFeature,
+    PricingMetric,
+    PricingProduct,
+    PricingSnapshot,
+)
 from polar.organization_review.collectors.firecrawl_client import (
     ScrapeResult,
     scrape_markdown,
@@ -18,6 +24,8 @@ from polar.postgres import AsyncReadSession, AsyncSession
 from .extractor import PricingExtractor
 from .repository import (
     PricingCompanyRepository,
+    PricingFeatureRepository,
+    PricingMetricRepository,
     PricingProductRepository,
     PricingSnapshotRepository,
 )
@@ -25,7 +33,9 @@ from .schemas import (
     ChangeDirection,
     ExtractedPricing,
     ExtractedProduct,
+    PriceComparisonRow,
     PricingChangeSchema,
+    PricingFeatureRow,
 )
 from .seed import SEED_COMPANIES
 
@@ -37,8 +47,19 @@ _EXCERPT_CHARS = 500
 _PRICE_RE = re.compile(r"\d[\d,]*\.?\d*")
 
 
-def _content_hash(model: str, anchor: str) -> str:
-    return hashlib.sha256(f"{model}|{anchor}".encode()).hexdigest()
+def _content_hash(product: ExtractedProduct) -> str:
+    metrics = sorted(
+        f"{m.label}|{m.unit.value}|{m.amount}|{m.per_quantity}|{m.currency}"
+        for m in product.metrics
+    )
+    features = sorted(
+        f"{f.key}|{f.category.value}|{f.value or ''}" for f in product.features
+    )
+    payload = (
+        f"{product.model.value}|{product.anchor}"
+        f"|{'~'.join(metrics)}|{'~'.join(features)}"
+    )
+    return hashlib.sha256(payload.encode()).hexdigest()
 
 
 def _parse_price(anchor: str) -> float | None:
@@ -179,6 +200,14 @@ class PricingDirectoryService:
                 session, company, product, extracted.confidence, scrape.markdown
             )
 
+        if extracted.products:
+            # Products no longer on the page become "legacy" (kept, not deleted).
+            await PricingProductRepository.from_session(
+                session
+            ).reconcile_status(
+                company.id, [product.name for product in extracted.products]
+            )
+
     async def _apply_product(
         self,
         session: AsyncSession,
@@ -190,7 +219,7 @@ class PricingDirectoryService:
         product_repository = PricingProductRepository.from_session(session)
         snapshot_repository = PricingSnapshotRepository.from_session(session)
 
-        content_hash = _content_hash(product.model.value, product.anchor)
+        content_hash = _content_hash(product)
         now = utc_now()
         excerpt = markdown[:_EXCERPT_CHARS]
 
@@ -220,6 +249,8 @@ class PricingDirectoryService:
                     source_excerpt=excerpt,
                 )
             )
+            await self._write_metrics(session, new_product, product)
+            await self._write_features(session, new_product, product)
             return
 
         if existing.last_content_hash == content_hash:
@@ -247,6 +278,97 @@ class PricingDirectoryService:
                 source_excerpt=excerpt,
             )
         )
+        await self._write_metrics(session, existing, product)
+        await self._write_features(session, existing, product)
+
+    async def _write_metrics(
+        self,
+        session: AsyncSession,
+        product: PricingProduct,
+        extracted: ExtractedProduct,
+    ) -> None:
+        metric_repository = PricingMetricRepository.from_session(session)
+        await metric_repository.delete_for_product(product.id)
+        for metric in extracted.metrics:
+            await metric_repository.create(
+                PricingMetric(
+                    product=product,
+                    label=metric.label,
+                    unit=metric.unit.value,
+                    amount=metric.amount,
+                    per_quantity=metric.per_quantity or 1,
+                    currency=metric.currency or "USD",
+                    raw=metric.raw,
+                )
+            )
+
+    async def _write_features(
+        self,
+        session: AsyncSession,
+        product: PricingProduct,
+        extracted: ExtractedProduct,
+    ) -> None:
+        feature_repository = PricingFeatureRepository.from_session(session)
+        await feature_repository.delete_for_product(product.id)
+        for feature in extracted.features:
+            await feature_repository.create(
+                PricingFeature(
+                    product=product,
+                    name=feature.name,
+                    key=feature.key,
+                    category=feature.category.value,
+                    value=feature.value,
+                )
+            )
+
+    async def list_features(
+        self,
+        session: AsyncReadSession,
+        *,
+        category: str | None = None,
+        key: str | None = None,
+        query: str | None = None,
+    ) -> list[PricingFeatureRow]:
+        repository = PricingFeatureRepository.from_session(session)
+        features = await repository.search(
+            category=category, key=key, query=query
+        )
+        return [
+            PricingFeatureRow(
+                company=feature.product.company.name,
+                company_slug=feature.product.company.slug,
+                product=feature.product.name,
+                name=feature.name,
+                key=feature.key,
+                category=feature.category,
+                value=feature.value,
+            )
+            for feature in features
+        ]
+
+    async def list_metrics(
+        self,
+        session: AsyncReadSession,
+        *,
+        unit: str | None = None,
+        query: str | None = None,
+    ) -> list[PriceComparisonRow]:
+        repository = PricingMetricRepository.from_session(session)
+        metrics = await repository.search(unit=unit, query=query)
+        return [
+            PriceComparisonRow(
+                company=metric.product.company.name,
+                company_slug=metric.product.company.slug,
+                product=metric.product.name,
+                label=metric.label,
+                unit=metric.unit,
+                amount=metric.amount,
+                per_quantity=metric.per_quantity,
+                currency=metric.currency,
+                unit_price=metric.amount / metric.per_quantity,
+            )
+            for metric in metrics
+        ]
 
 
 pricing_directory = PricingDirectoryService()

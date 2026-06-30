@@ -50,6 +50,10 @@ class PricingProduct(RecordModel):
         index=True,
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
+    # "active" while seen on the page, "legacy" once it disappears.
+    status: Mapped[str] = mapped_column(
+        String, nullable=False, default="active", server_default="active", index=True
+    )
     current_model: Mapped[str] = mapped_column(String, nullable=False)
     current_anchor: Mapped[str] = mapped_column(String, nullable=False)
     last_direction: Mapped[str] = mapped_column(String, nullable=False)
@@ -70,6 +74,18 @@ class PricingProduct(RecordModel):
         back_populates="product",
         cascade="all, delete-orphan",
         order_by="desc(PricingSnapshot.captured_at)",
+    )
+    metrics: Mapped[list["PricingMetric"]] = relationship(
+        "PricingMetric",
+        lazy="raise",
+        back_populates="product",
+        cascade="all, delete-orphan",
+    )
+    features: Mapped[list["PricingFeature"]] = relationship(
+        "PricingFeature",
+        lazy="raise",
+        back_populates="product",
+        cascade="all, delete-orphan",
     )
 
 
@@ -97,4 +113,64 @@ class PricingSnapshot(RecordModel):
         "PricingProduct",
         lazy="raise",
         back_populates="snapshots",
+    )
+
+
+class PricingMetric(RecordModel):
+    """A normalized per-unit price for a product (e.g. $/M tokens, $/GB-month).
+
+    This is the structured layer that powers cross-provider comparison: filter
+    by `unit` and rank by `amount / per_quantity`.
+    """
+
+    __tablename__ = "pricing_metrics"
+
+    product_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey("pricing_products.id", ondelete="cascade"),
+        nullable=False,
+        index=True,
+    )
+    # What the price is for, e.g. "Input tokens", "GPU-second", "Storage".
+    label: Mapped[str] = mapped_column(String, nullable=False)
+    # Canonical unit, e.g. "tokens", "seat", "gb_month", "gpu_second".
+    unit: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    amount: Mapped[float] = mapped_column(Float, nullable=False)
+    # Quantity the amount covers (1, 1000, 1_000_000), so amount/per_quantity
+    # is the price of a single unit, comparable across providers.
+    per_quantity: Mapped[float] = mapped_column(Float, nullable=False, default=1)
+    currency: Mapped[str] = mapped_column(String, nullable=False, default="USD")
+    raw: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    product: Mapped["PricingProduct"] = relationship(
+        "PricingProduct",
+        lazy="raise",
+        back_populates="metrics",
+    )
+
+
+class PricingFeature(RecordModel):
+    """A feature, benefit, or entitlement included in a product/plan.
+
+    `category` groups features into themes; `key` is a normalized slug so the
+    same feature can be compared across companies (e.g. every plan with 'sso').
+    """
+
+    __tablename__ = "pricing_features"
+
+    product_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey("pricing_products.id", ondelete="cascade"),
+        nullable=False,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    key: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    category: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    value: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    product: Mapped["PricingProduct"] = relationship(
+        "PricingProduct",
+        lazy="raise",
+        back_populates="features",
     )

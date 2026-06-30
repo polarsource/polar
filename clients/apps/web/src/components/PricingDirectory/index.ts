@@ -1,5 +1,4 @@
 export { PricingDirectoryNav } from './PricingDirectoryNav'
-export { PricingHero } from './PricingHero'
 export { DirectorySection } from './DirectorySection'
 export { ChangesSection } from './ChangesSection'
 export { EditorialSection } from './EditorialSection'

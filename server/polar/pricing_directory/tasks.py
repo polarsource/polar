@@ -39,7 +39,8 @@ async def pricing_directory_scrape_all() -> None:
 @actor(
     actor_name="pricing_directory.scrape_company",
     priority=TaskPriority.LOW,
-    time_limit=120_000,
+    # Extraction can run several candidate URLs, each up to ~180s.
+    time_limit=600_000,
     max_retries=3,
     min_backoff=60_000,
 )

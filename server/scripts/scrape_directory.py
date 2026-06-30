@@ -64,7 +64,8 @@ async def _run(concurrency: int, rescrape: bool) -> None:
                         typer.echo(f"  ok    {name}")
                     except Exception as error:
                         await session.rollback()
-                        typer.echo(f"  fail  {name}: {str(error)[:120]}")
+                        detail = f"{type(error).__name__}: {error}"
+                        typer.echo(f"  fail  {name}: {detail[:140]}")
 
         await asyncio.gather(
             *(scrape_one(company_id, name) for company_id, name in targets)

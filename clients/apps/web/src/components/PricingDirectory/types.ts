@@ -33,3 +33,25 @@ export interface RecentChange {
   anchor: string
   direction: ChangeDirection
 }
+
+export interface ComparisonRow {
+  company: string
+  companySlug: string
+  product: string
+  label: string
+  unit: string
+  amount: number
+  perQuantity: number
+  currency: string
+  unitPrice: number
+}
+
+export interface FeatureRow {
+  company: string
+  companySlug: string
+  product: string
+  name: string
+  key: string
+  category: string
+  value: string | null
+}

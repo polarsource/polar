@@ -2,10 +2,14 @@ import { CONFIG } from '@/utils/config'
 import {
   ChangeDirection,
   Company,
+  ComparisonRow,
+  FeatureRow,
   PricingModel,
   Product,
   RecentChange,
 } from './types'
+
+const API = `${CONFIG.BASE_URL}/v1/pricing-directory`
 
 // Shape returned by the backend (snake_case). Kept local so the rest of the
 // directory keeps using the camelCase Company/Product/PricePoint types.
@@ -95,6 +99,86 @@ interface ApiChange {
   model: string
   anchor: string
   direction: ChangeDirection
+}
+
+interface ApiComparison {
+  company: string
+  company_slug: string
+  product: string
+  label: string
+  unit: string
+  amount: number
+  per_quantity: number
+  currency: string
+  unit_price: number
+}
+
+export async function fetchComparison(params: {
+  unit?: string
+  q?: string
+}): Promise<ComparisonRow[]> {
+  const search = new URLSearchParams()
+  if (params.unit) search.set('unit', params.unit)
+  if (params.q) search.set('q', params.q)
+  try {
+    const response = await fetch(`${API}/compare?${search}`, {
+      next: { revalidate: 3600 },
+    })
+    if (!response.ok) return []
+    const rows: ApiComparison[] = await response.json()
+    return rows.map((row) => ({
+      company: row.company,
+      companySlug: row.company_slug,
+      product: row.product,
+      label: row.label,
+      unit: row.unit,
+      amount: row.amount,
+      perQuantity: row.per_quantity,
+      currency: row.currency,
+      unitPrice: row.unit_price,
+    }))
+  } catch {
+    return []
+  }
+}
+
+interface ApiFeature {
+  company: string
+  company_slug: string
+  product: string
+  name: string
+  key: string
+  category: string
+  value: string | null
+}
+
+export async function fetchFeatures(params: {
+  category?: string
+  key?: string
+  q?: string
+}): Promise<FeatureRow[]> {
+  const search = new URLSearchParams()
+  if (params.category) search.set('category', params.category)
+  if (params.key) search.set('key', params.key)
+  if (params.q) search.set('q', params.q)
+  try {
+    const response = await fetch(`${API}/features?${search}`, {
+      next: { revalidate: 3600 },
+    })
+    if (!response.ok) return []
+    const rows: ApiFeature[] = await response.json()
+    return rows.map((row) => ({
+      company: row.company,
+      companySlug: row.company_slug,
+      product: row.product,
+      name: row.name,
+      key: row.key,
+      category: row.category,
+      value: row.value,
+    }))
+  } catch {
+    return []
+  }
 }
 
 export async function fetchRecentChanges(): Promise<RecentChange[]> {

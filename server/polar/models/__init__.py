@@ -75,7 +75,13 @@ from .payout_attempt import PayoutAttempt
 from .personal_access_token import PersonalAccessToken
 from .pledge import Pledge
 from .pledge_transaction import PledgeTransaction
-from .pricing_directory import PricingCompany, PricingProduct, PricingSnapshot
+from .pricing_directory import (
+    PricingCompany,
+    PricingFeature,
+    PricingMetric,
+    PricingProduct,
+    PricingSnapshot,
+)
 from .processor_transaction import ProcessorTransaction
 from .product import Product, ProductVisibility
 from .product_benefit import ProductBenefit
@@ -201,6 +207,8 @@ __all__ = [
     "Pledge",
     "PledgeTransaction",
     "PricingCompany",
+    "PricingFeature",
+    "PricingMetric",
     "PricingProduct",
     "PricingSnapshot",
     "ProcessorTransaction",

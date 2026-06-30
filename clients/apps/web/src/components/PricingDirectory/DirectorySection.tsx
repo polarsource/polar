@@ -48,12 +48,7 @@ export function DirectorySection({ companies }: { companies: Company[] }) {
     <section id="directory" className="scroll-mt-24 py-24 md:py-40">
       <BrandContainer className="flex flex-col gap-16 md:gap-24">
         <div className="flex flex-col gap-10 md:gap-14">
-          <div className="text-brand-muted flex items-center gap-x-3 text-2xl">
-            <span>001</span>
-            <span className="bg-brand-muted h-px w-12" />
-            <span>Directory</span>
-          </div>
-          <Heading className="max-w-5xl">The directory</Heading>
+          <Heading className="max-w-5xl">Pricing Directory</Heading>
           <Lead>
             Every company we track, the products they sell, and the models
             behind them.

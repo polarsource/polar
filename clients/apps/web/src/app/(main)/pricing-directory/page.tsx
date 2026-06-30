@@ -28,7 +28,6 @@ export default async function PricingDirectoryPage() {
     <div className="font-neue-montreal bg-brand-surface text-brand-muted min-h-screen antialiased">
       <PricingDirectoryNav />
       <main>
-        <PricingHero />
         <DirectorySection companies={companies} />
         <ChangesSection changes={changes} />
         <EditorialSection />

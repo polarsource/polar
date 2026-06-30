@@ -14,19 +14,46 @@ log = structlog.get_logger(__name__)
 SYSTEM_PROMPT = """\
 You extract pricing information from a company's pricing page.
 
-Return every distinct paid product or plan you can find. For each one, choose the
-single pricing model that best describes it:
+Return the HEADLINE PLANS only — the top-level tiers a buyer chooses between
+(e.g. Free, Pro, Team, Enterprise). Do NOT emit a separate product for every
+instance size, SKU, region, or add-on; those belong in `metrics`. Aim for at
+most ~8 plans.
+
+For each plan, choose the single pricing model that best describes it:
 - Usage: metered, pay per unit consumed (tokens, requests, GB, seconds).
 - Seat: priced per user or seat.
 - Tiered: fixed plans or tiers (e.g. $25/mo Pro).
 - Hybrid: a base price plus usage on top.
 - Flat: one flat price for access.
 
-For `anchor`, give one short, representative price string a human would recognise
+For `anchor`, give one short, representative price a human would recognise
 (e.g. "$20 / user / mo", "$2.50 / M tokens", "$25 / mo Pro", or "Custom").
 
-Include free tiers — whether a product offers a free plan, and when that
-changes, is important to track. Use "Free" as the anchor for a free plan.
+In `metrics`, list the per-unit rates that plan charges — token prices, compute,
+storage, request, and overage rates. Normalize each:
+- `unit`: the canonical billing unit. Map the wording to the closest one, e.g.
+  "per workspace / per org / per team" -> workspace, "per project" -> project,
+  "per seat / per user / per member" -> seat, "per 1M tokens" -> tokens. Use
+  `other` only when nothing fits.
+- `amount` + `per_quantity`: e.g. "$2.50 / M tokens" -> amount 2.5,
+  per_quantity 1000000; "$0.50 / 1K requests" -> amount 0.5, per_quantity 1000.
+- `raw`: the original price text.
+A flat plan with no per-unit rates has an empty `metrics` list.
+
+In `features`, list the notable features, benefits, and entitlements the plan
+includes. For each:
+- `name`: the feature as written (e.g. "Single sign-on (SSO)").
+- `key`: a short normalized slug so the same feature compares across companies
+  (e.g. "sso", "audit_logs", "priority_support", "unlimited_seats").
+- `category`: the theme it belongs to — one of: access_control,
+  security_compliance, support, collaboration, usage_limits, integrations,
+  deployment, data_privacy, analytics, ai_capabilities, administration,
+  customization, other.
+- `value`: a quantity or limit if stated (e.g. "100 GB", "Unlimited", "5").
+Capture the differentiating features per tier; skip generic marketing fluff.
+
+Include free tiers — whether a plan offers a free option, and when that changes,
+is important to track. Use "Free" as the anchor for a free plan.
 
 Do not invent prices. If a plan is "contact sales", use "Custom". Set
 `confidence` to reflect how clearly the page stated its pricing.
@@ -58,7 +85,7 @@ class PricingExtractor:
         company_name: str,
         markdown: str,
         *,
-        timeout_seconds: int = 60,
+        timeout_seconds: int = 180,
     ) -> ExtractedPricing:
         prompt = (
             f"Company: {company_name}\n\n"

@@ -75,10 +75,6 @@ def validate_allowlist() -> None:
             raise ValueError(
                 f"Actor {actor_name!r} uses debounce, unsupported over SQS"
             )
-        if actor_obj.options.get("cron_trigger") is not None:
-            raise ValueError(
-                f"Actor {actor_name!r} is cron-scheduled; cron bypasses the SQS gate"
-            )
 
 
 @contextlib.contextmanager

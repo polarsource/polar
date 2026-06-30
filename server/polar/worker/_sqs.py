@@ -101,10 +101,12 @@ def parse_envelope(body: str) -> tuple[str, list[Any], dict[str, Any], str | Non
 async def send_jobs(jobs: list[Job]) -> None:
     if not jobs:
         return
-    await asyncio.to_thread(_send_jobs_sync, jobs)
+    await asyncio.to_thread(send_jobs_sync, jobs)
 
 
-def _send_jobs_sync(jobs: list[Job]) -> None:
+def send_jobs_sync(jobs: list[Job]) -> None:
+    if not jobs:
+        return
     client = get_sqs_client()
 
     by_queue: dict[str, list[SendMessageBatchRequestEntryTypeDef]] = defaultdict(list)
@@ -142,4 +144,5 @@ __all__ = [
     "get_sqs_client",
     "parse_envelope",
     "send_jobs",
+    "send_jobs_sync",
 ]

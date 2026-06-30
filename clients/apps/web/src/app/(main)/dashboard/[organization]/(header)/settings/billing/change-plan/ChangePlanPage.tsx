@@ -31,6 +31,14 @@ const FREE_PLAN_KEY = '__free__'
 const planKey = (plan: schemas['OrganizationPlan']) =>
   plan.product_id ?? FREE_PLAN_KEY
 
+// Statuses for which plan changes are available: active orgs and orgs still
+// pending approval (under review or snoozed).
+const PLAN_CHANGE_STATUSES: schemas['OrganizationStatus'][] = [
+  'active',
+  'review',
+  'snoozed',
+]
+
 export default function ChangePlanPage({
   organization,
 }: {
@@ -54,7 +62,7 @@ export default function ChangePlanPage({
   const cancelSubscription = useCancelSubscription(organization.id)
   const startCheckout = useStartSubscriptionCheckout(organization.id)
 
-  const blockChanges = organization.status !== 'active'
+  const blockChanges = !PLAN_CHANGE_STATUSES.includes(organization.status)
 
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
   const {

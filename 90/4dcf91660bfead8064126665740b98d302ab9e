@@ -1,0 +1,23 @@
+handbook/engineering/oncall/rotate-db-credentials.mdx
+  s_4a7d43fa499bb3::t_16f60b43854bec 80
+  s_4a7d43fa499bb3::t_3c90923c1dd746 56,58-59
+  s_4a7d43fa499bb3::t_ea378dd30fd330 115
+  s_4a7d43fa499bb3::t_42ee28897de735 97-98
+  s_4a7d43fa499bb3::t_d6e584942526d0 22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "904dcf91660bfead8064126665740b98d302ab9e",
+  "prompts": {},
+  "sessions": {
+    "s_4a7d43fa499bb3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbcffde9-870a-4e68-88a5-c422def5e401",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

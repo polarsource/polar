@@ -22,6 +22,17 @@ export const getSSOAuthorizeLoginURL = (
   return `${getPublicServerURL()}/v1/auth/${organizationSlug}/sso/${connectionId}/authorize`
 }
 
+export const getSSOCallbackURL = (
+  organizationSlug: string,
+  connectionId: string,
+): string => {
+  return `${getPublicServerURL()}/v1/auth/${organizationSlug}/sso/${connectionId}/callback`
+}
+
+export const getSSOJwksURL = (): string => {
+  return `${getPublicServerURL()}/.well-known/jwks.json`
+}
+
 export const getGitHubAuthorizeLinkURL = (return_to?: string): string => {
   const searchParams = new URLSearchParams()
   if (return_to) {

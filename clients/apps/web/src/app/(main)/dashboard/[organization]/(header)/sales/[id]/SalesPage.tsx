@@ -119,7 +119,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       title={
         <div className="flex flex-col gap-4">
           <div className="flex flex-row items-center gap-4">
-            <h2 className="text-xl font-normal">Order</h2>
+            <h2 className="text-xl">Order</h2>
             <OrderStatus status={order.status} />
           </div>
         </div>

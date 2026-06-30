@@ -64,7 +64,7 @@ export const Vision = () => {
             {PARAGRAPHS.map((paragraph, pi) => (
               <p
                 key={pi}
-                className="font-display text-[clamp(2rem,4.5vw,4rem)] leading-[1.3] font-normal text-gray-900 not-last:mb-16 dark:text-white"
+                className="font-display text-[clamp(2rem,4.5vw,4rem)] leading-[1.3] text-gray-900 not-last:mb-16 dark:text-white"
               >
                 {paragraph.split(' ').map((word, wi) => {
                   const idx = wordIndex++

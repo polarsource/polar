@@ -128,7 +128,7 @@ export default function CancellationsDistributionChart({
                 className="h-2.5 w-2.5 rounded-full"
                 style={{ backgroundColor: item.color }}
               />
-              <span className="font-normal">{item.label}</span>
+              <span>{item.label}</span>
               <span
                 className="dark:text-polar-400 -m-1 ml-auto p-1 text-right font-medium text-gray-500 tabular-nums"
                 onClick={(e) => {

@@ -1,6 +1,5 @@
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { Button } from '@polar-sh/orbit'
-import Link from 'next/link'
 import { Well } from '../Shared/Well'
 import {
   SyntaxHighlighterClient,
@@ -46,16 +45,17 @@ const result = await polar.events.ingest({
           />
         </Well>
         <div className="flex flex-row items-center gap-x-4">
-          <Link
+          <a
             href="https://docs.polar.sh/features/cost-insights/cost-events"
             target="_blank"
+            rel="noopener noreferrer"
             className="flex flex-row items-center"
           >
             <Button variant="secondary">
               <span>Learn more</span>
               <ArrowOutwardOutlined fontSize="inherit" className="ml-2" />
             </Button>
-          </Link>
+          </a>
         </div>
       </div>
     </SyntaxHighlighterProvider>

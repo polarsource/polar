@@ -172,7 +172,7 @@ export const DashboardSidebar = ({
         {type === 'organization' && organization && (
           <SupportButton organization={organization} />
         )}
-        <Link
+        <a
           className={twMerge(
             'flex flex-row items-center rounded-lg border border-transparent text-sm transition-colors dark:border-transparent',
             'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
@@ -180,12 +180,13 @@ export const DashboardSidebar = ({
           )}
           href="https://polar.sh/docs"
           target="_blank"
+          rel="noopener noreferrer"
         >
           <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
           {!isCollapsed && (
             <span className="ml-4 font-medium">Documentation</span>
           )}
-        </Link>
+        </a>
         <Separator />
         {type === 'organization' && organization && (
           <SidebarMenu>

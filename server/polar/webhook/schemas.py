@@ -5,13 +5,11 @@ from pydantic import (
     UUID4,
     AnyUrl,
     Field,
-    PlainSerializer,
-    UrlConstraints,
     field_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
 
-from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.schemas import HttpsUrl, IDSchema, Schema, TimestampedSchema
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.organization.schemas import OrganizationID
 
@@ -27,16 +25,6 @@ def is_blocked_webhook_host(host: str) -> bool:
     except ValueError:
         return False
 
-
-HttpsUrl = Annotated[
-    AnyUrl,
-    UrlConstraints(
-        max_length=2083,
-        allowed_schemes=["https"],
-        host_required=True,
-    ),
-    PlainSerializer(lambda v: str(v), return_type=str),
-]
 
 ENDPOINT_URL_DESCRIPTION = "The URL where the webhook events will be sent."
 ENDPOINT_URL_EXAMPLES = ["https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0"]

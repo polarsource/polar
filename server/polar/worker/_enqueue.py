@@ -40,6 +40,10 @@ _job_queue_manager: contextvars.ContextVar["JobQueueManager | None"] = (
 FLUSH_BATCH_SIZE = 50
 
 
+def should_route_to_sqs(actor_name: str) -> bool:
+    return settings.WORKER_SQS_ENABLED and actor_name in settings.WORKER_SQS_ACTORS
+
+
 class JobQueueManager:
     __slots__ = ("_enqueued_jobs", "_ingested_events")
 
@@ -75,20 +79,10 @@ class JobQueueManager:
             self.reset()
             return
 
-        if settings.WORKER_SQS_ENABLED and settings.WORKER_SQS_ACTORS:
-            sqs_jobs = [
-                job
-                for job in self._enqueued_jobs
-                if job[0] in settings.WORKER_SQS_ACTORS
-            ]
-            redis_jobs = [
-                job
-                for job in self._enqueued_jobs
-                if job[0] not in settings.WORKER_SQS_ACTORS
-            ]
-        else:
-            sqs_jobs = []
-            redis_jobs = self._enqueued_jobs
+        sqs_jobs = [job for job in self._enqueued_jobs if should_route_to_sqs(job[0])]
+        redis_jobs = [
+            job for job in self._enqueued_jobs if not should_route_to_sqs(job[0])
+        ]
 
         queue_messages = defaultdict[str, list[tuple[str, Any]]](list)
         all_messages: list[tuple[str, Any]] = []

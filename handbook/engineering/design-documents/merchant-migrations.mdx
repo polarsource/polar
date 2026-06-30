@@ -118,7 +118,7 @@ We can't test this on sandbox: PAN Copy and PAN Import only run on Stripe live, 
 - Keep everything behind a feature flag, enabled only for those orgs during the testing phase and removed once we're confident.
 
 ## Open questions
-1. Where and how should we store the API keys of Stripe, LS, Paddle? Do we have a convention to encrypt them?
+1. Where and how should we store the API keys of Stripe, LS, Paddle? **Resolved**: Use the secrets encryption pattern from `secrets-encryption.mdx` — wrap secrets in `EncryptedString` and map columns with `EncryptedStringType`.
 2. Should we get notified when a migration is triggered?
 3. How do we trigger the cutover on live? Resolved: a manual action via the checklist's cutover step (merchant; Ops can too), gated on checklist completion.
 4. What happens with subscriptions we can't migrate? Resolved: the precheck flags them (`past_due`/`unpaid`/paused, uncopyable PMs); they stay on the old provider, staged as skipped, not imported.

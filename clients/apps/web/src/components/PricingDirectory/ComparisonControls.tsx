@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import React, { useState } from 'react'
-import { CATEGORY_OPTIONS, Option, UNIT_OPTIONS } from './compareOptions'
+import { Option, UNIT_OPTIONS } from './compareOptions'
 
 function Chip({
   option,
@@ -28,7 +28,11 @@ function Chip({
   )
 }
 
-export function ComparisonControls() {
+export function ComparisonControls({
+  featureOptions,
+}: {
+  featureOptions: Option[]
+}) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -56,8 +60,9 @@ export function ComparisonControls() {
     push(next)
   }
 
-  const options = mode === 'prices' ? UNIT_OPTIONS : CATEGORY_OPTIONS
-  const activeFacet = params.get(mode === 'prices' ? 'unit' : 'category')
+  const facetKey = mode === 'prices' ? 'unit' : 'key'
+  const options = mode === 'prices' ? UNIT_OPTIONS : featureOptions
+  const activeFacet = params.get(facetKey)
 
   return (
     <div className="flex flex-col gap-10">
@@ -78,18 +83,16 @@ export function ComparisonControls() {
         ))}
       </div>
 
-      <form onSubmit={submitSearch}>
-        <input
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          placeholder={
-            mode === 'prices'
-              ? 'Compare any unit, e.g. workspace'
-              : 'Search features, e.g. SSO'
-          }
-          className="text-brand-foreground placeholder:text-brand-muted w-full appearance-none border-none bg-transparent p-0 text-4xl tracking-tight outline-none focus:ring-0 md:text-6xl"
-        />
-      </form>
+      {mode === 'prices' ? (
+        <form onSubmit={submitSearch}>
+          <input
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            placeholder="Compare any unit, e.g. workspace"
+            className="text-brand-foreground placeholder:text-brand-muted w-full appearance-none border-none bg-transparent p-0 text-4xl tracking-tight outline-none focus:ring-0 md:text-6xl"
+          />
+        </form>
+      ) : null}
 
       <div className="flex flex-wrap gap-3">
         {options.map((option) => (
@@ -97,9 +100,7 @@ export function ComparisonControls() {
             key={option.value}
             option={option}
             active={activeFacet === option.value}
-            onClick={() =>
-              selectFacet(mode === 'prices' ? 'unit' : 'category', option.value)
-            }
+            onClick={() => selectFacet(facetKey, option.value)}
           />
         ))}
       </div>

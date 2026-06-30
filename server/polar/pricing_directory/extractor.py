@@ -7,11 +7,16 @@ from pydantic_ai import Agent
 
 from polar.config import settings
 
+from .feature_catalog import FEATURE_CATALOG
 from .schemas import ExtractedPricing
 
 log = structlog.get_logger(__name__)
 
-SYSTEM_PROMPT = """\
+_CATALOG_LINES = "\n".join(
+    f"- {feature.key.value}: {feature.label}" for feature in FEATURE_CATALOG
+)
+
+SYSTEM_PROMPT = f"""\
 You extract pricing information from a company's pricing page.
 
 Return the HEADLINE PLANS only — the top-level tiers a buyer chooses between
@@ -40,17 +45,14 @@ storage, request, and overage rates. Normalize each:
 - `raw`: the original price text.
 A flat plan with no per-unit rates has an empty `metrics` list.
 
-In `features`, list the notable features, benefits, and entitlements the plan
-includes. For each:
-- `name`: the feature as written (e.g. "Single sign-on (SSO)").
-- `key`: a short normalized slug so the same feature compares across companies
-  (e.g. "sso", "audit_logs", "priority_support", "unlimited_seats").
-- `category`: the theme it belongs to — one of: access_control,
-  security_compliance, support, collaboration, usage_limits, integrations,
-  deployment, data_privacy, analytics, ai_capabilities, administration,
-  customization, other.
-- `value`: a quantity or limit if stated (e.g. "100 GB", "Unlimited", "5").
-Capture the differentiating features per tier; skip generic marketing fluff.
+In `features`, map this plan's notable entitlements to the CANONICAL FEATURES
+below. Only include a feature when the plan genuinely offers it. Add `value`
+when a quantity or limit is stated (e.g. "100 GB", "Unlimited"). Canonical
+features:
+{_CATALOG_LINES}
+
+In `other_features`, put advertised features that do NOT match any canonical
+feature, verbatim (used to grow the catalog). Skip generic marketing fluff.
 
 Include free tiers — whether a plan offers a free option, and when that changes,
 is important to track. Use "Free" as the anchor for a free plan.

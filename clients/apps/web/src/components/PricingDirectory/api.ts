@@ -1,9 +1,10 @@
 import { CONFIG } from '@/utils/config'
 import {
+  CatalogFeature,
   ChangeDirection,
   Company,
   ComparisonRow,
-  FeatureRow,
+  GatingRow,
   PricingModel,
   Product,
   RecentChange,
@@ -20,6 +21,21 @@ interface ApiSnapshot {
   direction: ChangeDirection
 }
 
+interface ApiMetric {
+  label: string
+  unit: string
+  amount: number
+  per_quantity: number
+  currency: string
+}
+
+interface ApiProductFeature {
+  name: string
+  key: string
+  category: string
+  value: string | null
+}
+
 interface ApiProduct {
   name: string
   current_model: string
@@ -27,6 +43,8 @@ interface ApiProduct {
   last_direction: ChangeDirection
   last_change_at: string
   snapshots?: ApiSnapshot[]
+  metrics?: ApiMetric[]
+  features?: ApiProductFeature[]
 }
 
 interface ApiCompany {
@@ -50,6 +68,19 @@ function mapProduct(product: ApiProduct): Product {
       date: date(snapshot.captured_at),
       value: snapshot.anchor,
       direction: snapshot.direction,
+    })),
+    metrics: (product.metrics ?? []).map((metric) => ({
+      label: metric.label,
+      unit: metric.unit,
+      amount: metric.amount,
+      perQuantity: metric.per_quantity,
+      currency: metric.currency,
+    })),
+    features: (product.features ?? []).map((feature) => ({
+      name: feature.name,
+      key: feature.key,
+      category: feature.category,
+      value: feature.value,
     })),
   }
 }
@@ -80,9 +111,11 @@ export async function fetchCompanies(): Promise<Company[]> {
 
 export async function fetchCompany(slug: string): Promise<Company | null> {
   try {
+    // Not cached: a slug that 404s before its company is scraped must not get a
+    // stale 404 cached once the company exists.
     const response = await fetch(
       `${CONFIG.BASE_URL}/v1/pricing-directory/companies/${slug}`,
-      { next: { revalidate: 3600 } },
+      { cache: 'no-store' },
     )
     if (!response.ok) return null
     return mapCompany(await response.json())
@@ -142,38 +175,39 @@ export async function fetchComparison(params: {
   }
 }
 
-interface ApiFeature {
-  company: string
-  company_slug: string
-  product: string
-  name: string
-  key: string
-  category: string
-  value: string | null
-}
-
-export async function fetchFeatures(params: {
-  category?: string
-  key?: string
-  q?: string
-}): Promise<FeatureRow[]> {
-  const search = new URLSearchParams()
-  if (params.category) search.set('category', params.category)
-  if (params.key) search.set('key', params.key)
-  if (params.q) search.set('q', params.q)
+export async function fetchFeatureCatalog(): Promise<CatalogFeature[]> {
   try {
-    const response = await fetch(`${API}/features?${search}`, {
+    const response = await fetch(`${API}/feature-catalog`, {
       next: { revalidate: 3600 },
     })
     if (!response.ok) return []
-    const rows: ApiFeature[] = await response.json()
+    return await response.json()
+  } catch {
+    return []
+  }
+}
+
+interface ApiGatingRow {
+  company: string
+  company_slug: string
+  plan: string
+  anchor: string
+  value: string | null
+}
+
+export async function fetchFeatureGating(key: string): Promise<GatingRow[]> {
+  const search = new URLSearchParams({ key })
+  try {
+    const response = await fetch(`${API}/features/gating?${search}`, {
+      next: { revalidate: 3600 },
+    })
+    if (!response.ok) return []
+    const rows: ApiGatingRow[] = await response.json()
     return rows.map((row) => ({
       company: row.company,
       companySlug: row.company_slug,
-      product: row.product,
-      name: row.name,
-      key: row.key,
-      category: row.category,
+      plan: row.plan,
+      anchor: row.anchor,
       value: row.value,
     }))
   } catch {

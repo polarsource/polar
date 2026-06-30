@@ -8,10 +8,12 @@ import {
 import { PricingDirectoryNav } from '@/components/PricingDirectory'
 import {
   fetchComparison,
-  fetchFeatures,
+  fetchFeatureCatalog,
+  fetchFeatureGating,
 } from '@/components/PricingDirectory/api'
 import { ComparisonControls } from '@/components/PricingDirectory/ComparisonControls'
-import { FeatureComparison } from '@/components/PricingDirectory/FeatureComparison'
+import { Option } from '@/components/PricingDirectory/compareOptions'
+import { FeatureGating } from '@/components/PricingDirectory/FeatureGating'
 import { PriceComparison } from '@/components/PricingDirectory/PriceComparison'
 import { Metadata } from 'next'
 import { ReactNode, Suspense } from 'react'
@@ -36,14 +38,19 @@ export default async function ComparePage({
   const sp = await searchParams
   const mode = sp.mode === 'features' ? 'features' : 'prices'
 
+  const catalog = await fetchFeatureCatalog()
+  const featureOptions: Option[] = catalog.map((feature) => ({
+    value: feature.key,
+    label: feature.label,
+  }))
+
   let results: ReactNode
   if (mode === 'features') {
-    const rows = await fetchFeatures({
-      category: sp.category,
-      key: sp.key,
-      q: sp.q,
-    })
-    results = <FeatureComparison rows={rows} />
+    const key = sp.key ?? catalog[0]?.key ?? 'sso'
+    const featureLabel =
+      catalog.find((feature) => feature.key === key)?.label ?? key
+    const rows = await fetchFeatureGating(key)
+    results = <FeatureGating rows={rows} featureLabel={featureLabel} />
   } else {
     const unit = sp.unit ?? (sp.q ? undefined : 'tokens')
     const rows = await fetchComparison({ unit, q: sp.q })
@@ -67,7 +74,7 @@ export default async function ComparePage({
         <section className="py-20 md:py-32">
           <BrandContainer className="flex flex-col gap-16">
             <Suspense>
-              <ComparisonControls />
+              <ComparisonControls featureOptions={featureOptions} />
             </Suspense>
             {results}
           </BrandContainer>

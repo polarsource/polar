@@ -7,6 +7,21 @@ export interface PricePoint {
   direction: ChangeDirection
 }
 
+export interface ProductMetric {
+  label: string
+  unit: string
+  amount: number
+  perQuantity: number
+  currency: string
+}
+
+export interface ProductFeature {
+  name: string
+  key: string
+  category: string
+  value: string | null
+}
+
 export interface Product {
   name: string
   model: PricingModel
@@ -14,6 +29,8 @@ export interface Product {
   lastChange: string
   direction: ChangeDirection
   history: PricePoint[]
+  metrics: ProductMetric[]
+  features: ProductFeature[]
 }
 
 export interface Company {
@@ -46,12 +63,16 @@ export interface ComparisonRow {
   unitPrice: number
 }
 
-export interface FeatureRow {
+export interface GatingRow {
   company: string
   companySlug: string
-  product: string
-  name: string
-  key: string
-  category: string
+  plan: string
+  anchor: string
   value: string | null
+}
+
+export interface CatalogFeature {
+  key: string
+  label: string
+  category: string
 }

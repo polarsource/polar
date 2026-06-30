@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import re
 from collections.abc import Sequence
+from typing import Any
 from uuid import UUID
 
 import structlog
@@ -22,6 +23,7 @@ from polar.organization_review.collectors.firecrawl_client import (
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .extractor import PricingExtractor
+from .feature_catalog import CATALOG_BY_KEY, FEATURE_CATALOG
 from .repository import (
     PricingCompanyRepository,
     PricingFeatureRepository,
@@ -30,9 +32,12 @@ from .repository import (
     PricingSnapshotRepository,
 )
 from .schemas import (
+    CatalogFeatureSchema,
     ChangeDirection,
     ExtractedPricing,
     ExtractedProduct,
+    FeatureCategory,
+    FeatureGatingRow,
     PriceComparisonRow,
     PricingChangeSchema,
     PricingFeatureRow,
@@ -52,12 +57,11 @@ def _content_hash(product: ExtractedProduct) -> str:
         f"{m.label}|{m.unit.value}|{m.amount}|{m.per_quantity}|{m.currency}"
         for m in product.metrics
     )
-    features = sorted(
-        f"{f.key}|{f.category.value}|{f.value or ''}" for f in product.features
-    )
+    features = sorted(f"{f.key.value}|{f.value or ''}" for f in product.features)
+    others = sorted(product.other_features)
     payload = (
-        f"{product.model.value}|{product.anchor}"
-        f"|{'~'.join(metrics)}|{'~'.join(features)}"
+        f"{product.model.value}|{product.anchor}|{'~'.join(metrics)}"
+        f"|{'~'.join(features)}|{'~'.join(others)}"
     )
     return hashlib.sha256(payload.encode()).hexdigest()
 
@@ -65,6 +69,14 @@ def _content_hash(product: ExtractedProduct) -> str:
 def _parse_price(anchor: str) -> float | None:
     match = _PRICE_RE.search(anchor.replace(",", ""))
     return float(match.group()) if match else None
+
+
+def _anchor_price(anchor: str) -> float:
+    """A sortable price for a plan's anchor: Free -> 0, custom/contact -> inf."""
+    if "free" in anchor.lower():
+        return 0.0
+    parsed = _parse_price(anchor)
+    return parsed if parsed is not None else float("inf")
 
 
 def _direction(previous_anchor: str, new_anchor: str) -> ChangeDirection:
@@ -254,30 +266,35 @@ class PricingDirectoryService:
             return
 
         if existing.last_content_hash == content_hash:
-            return  # nothing moved since last scrape
+            return  # nothing changed at all since last scrape
 
+        # Only record a price snapshot when the price itself moved. Metric and
+        # feature churn (the LLM phrasing them differently run to run) must not
+        # create duplicate history rows.
+        price_moved = (
+            existing.current_model != product.model.value
+            or existing.current_anchor != product.anchor
+        )
         direction = _direction(existing.current_anchor, product.anchor)
-        await product_repository.update(
-            existing,
-            update_dict={
-                "current_model": product.model.value,
-                "current_anchor": product.anchor,
-                "last_direction": direction.value,
-                "last_change_at": now,
-                "last_content_hash": content_hash,
-            },
-        )
-        await snapshot_repository.create(
-            PricingSnapshot(
-                product=existing,
-                captured_at=now,
-                model=product.model.value,
-                anchor=product.anchor,
-                direction=direction.value,
-                confidence=confidence,
-                source_excerpt=excerpt,
+        update_dict: dict[str, Any] = {"last_content_hash": content_hash}
+        if price_moved:
+            update_dict["current_model"] = product.model.value
+            update_dict["current_anchor"] = product.anchor
+            update_dict["last_direction"] = direction.value
+            update_dict["last_change_at"] = now
+        await product_repository.update(existing, update_dict=update_dict)
+        if price_moved:
+            await snapshot_repository.create(
+                PricingSnapshot(
+                    product=existing,
+                    captured_at=now,
+                    model=product.model.value,
+                    anchor=product.anchor,
+                    direction=direction.value,
+                    confidence=confidence,
+                    source_excerpt=excerpt,
+                )
             )
-        )
         await self._write_metrics(session, existing, product)
         await self._write_features(session, existing, product)
 
@@ -310,14 +327,29 @@ class PricingDirectoryService:
     ) -> None:
         feature_repository = PricingFeatureRepository.from_session(session)
         await feature_repository.delete_for_product(product.id)
+        seen: set[str] = set()
         for feature in extracted.features:
+            catalog = CATALOG_BY_KEY.get(feature.key)
+            if catalog is None or catalog.key.value in seen:
+                continue
+            seen.add(catalog.key.value)
             await feature_repository.create(
                 PricingFeature(
                     product=product,
-                    name=feature.name,
-                    key=feature.key,
-                    category=feature.category.value,
+                    name=catalog.label,
+                    key=catalog.key.value,
+                    category=catalog.category.value,
                     value=feature.value,
+                )
+            )
+        for name in extracted.other_features:
+            await feature_repository.create(
+                PricingFeature(
+                    product=product,
+                    name=name,
+                    key="other",
+                    category=FeatureCategory.other.value,
+                    value=None,
                 )
             )
 
@@ -338,12 +370,49 @@ class PricingDirectoryService:
                 company=feature.product.company.name,
                 company_slug=feature.product.company.slug,
                 product=feature.product.name,
+                anchor=feature.product.current_anchor,
                 name=feature.name,
                 key=feature.key,
                 category=feature.category,
                 value=feature.value,
             )
             for feature in features
+        ]
+
+    def catalog(self) -> list[CatalogFeatureSchema]:
+        return [
+            CatalogFeatureSchema(
+                key=feature.key.value,
+                label=feature.label,
+                category=feature.category.value,
+            )
+            for feature in FEATURE_CATALOG
+        ]
+
+    async def feature_gating(
+        self, session: AsyncReadSession, key: str
+    ) -> list[FeatureGatingRow]:
+        repository = PricingFeatureRepository.from_session(session)
+        features = await repository.search(key=key)
+
+        # Keep the cheapest plan per company that includes the feature.
+        cheapest: dict[str, tuple[float, FeatureGatingRow]] = {}
+        for feature in features:
+            product = feature.product
+            slug = product.company.slug
+            price = _anchor_price(product.current_anchor)
+            row = FeatureGatingRow(
+                company=product.company.name,
+                company_slug=slug,
+                plan=product.name,
+                anchor=product.current_anchor,
+                value=feature.value,
+            )
+            if slug not in cheapest or price < cheapest[slug][0]:
+                cheapest[slug] = (price, row)
+
+        return [
+            row for _, row in sorted(cheapest.values(), key=lambda item: item[0])
         ]
 
     async def list_metrics(

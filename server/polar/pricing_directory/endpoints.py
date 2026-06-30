@@ -8,6 +8,8 @@ from polar.openapi import APITag
 from polar.postgres import AsyncReadSession, get_db_read_session
 
 from .schemas import (
+    CatalogFeatureSchema,
+    FeatureGatingRow,
     PriceComparisonRow,
     PricingChangeSchema,
     PricingCompanySchema,
@@ -67,6 +69,19 @@ async def list_features(
     return await pricing_directory_service.list_features(
         session, category=category, key=key, query=q
     )
+
+
+@router.get("/feature-catalog", response_model=list[CatalogFeatureSchema])
+async def feature_catalog() -> list[CatalogFeatureSchema]:
+    return pricing_directory_service.catalog()
+
+
+@router.get("/features/gating", response_model=list[FeatureGatingRow])
+async def feature_gating(
+    key: str = Query(description="Canonical feature key, e.g. 'sso'."),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> list[FeatureGatingRow]:
+    return await pricing_directory_service.feature_gating(session, key)
 
 
 @router.get(

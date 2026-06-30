@@ -53,6 +53,43 @@ class FeatureCategory(StrEnum):
     other = "other"
 
 
+class FeatureKey(StrEnum):
+    """Canonical, comparable features. See feature_catalog.py for labels."""
+
+    sso = "sso"
+    scim = "scim"
+    rbac = "rbac"
+    mfa = "mfa"
+    audit_logs = "audit_logs"
+    soc2 = "soc2"
+    hipaa = "hipaa"
+    iso27001 = "iso27001"
+    encryption = "encryption"
+    sla = "sla"
+    priority_support = "priority_support"
+    dedicated_manager = "dedicated_manager"
+    onboarding = "onboarding"
+    self_hosted = "self_hosted"
+    private_cloud = "private_cloud"
+    multi_region = "multi_region"
+    data_residency = "data_residency"
+    byok = "byok"
+    api_access = "api_access"
+    webhooks = "webhooks"
+    integrations = "integrations"
+    seats_included = "seats_included"
+    unlimited_seats = "unlimited_seats"
+    guest_access = "guest_access"
+    storage = "storage"
+    data_retention = "data_retention"
+    free_tier = "free_tier"
+    free_trial = "free_trial"
+    annual_discount = "annual_discount"
+    advanced_analytics = "advanced_analytics"
+    custom_branding = "custom_branding"
+    invoicing = "invoicing"
+
+
 # --- LLM extraction output ---------------------------------------------------
 
 
@@ -76,21 +113,12 @@ class ExtractedMetric(Schema):
 
 
 class ExtractedFeature(Schema):
-    name: str = Field(
-        description="The feature or entitlement as written, e.g. 'Single sign-on'."
-    )
-    key: str = Field(
-        description=(
-            "A short normalized slug for the feature so it can be compared "
-            "across companies, e.g. 'sso', 'audit_logs', 'priority_support'."
-        )
-    )
-    category: FeatureCategory = Field(
-        description="The theme this feature belongs to."
+    key: FeatureKey = Field(
+        description="Which canonical feature this plan includes."
     )
     value: str | None = Field(
         default=None,
-        description="A quantity or limit if any, e.g. '100 GB', 'Unlimited', '5'.",
+        description="A quantity or limit if stated, e.g. '100 GB', 'Unlimited'.",
     )
 
 
@@ -115,8 +143,15 @@ class ExtractedProduct(Schema):
     features: list[ExtractedFeature] = Field(
         default_factory=list,
         description=(
-            "Notable features, benefits, and entitlements this plan includes "
-            "(SSO, audit logs, support level, limits, integrations, ...)."
+            "Which canonical features (from the provided list) this plan "
+            "includes, with a value where one is stated."
+        ),
+    )
+    other_features: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Notable features the plan advertises that do NOT map to any "
+            "canonical feature — kept for catalog discovery, verbatim."
         ),
     )
 
@@ -188,10 +223,27 @@ class PricingFeatureRow(Schema):
     company: str
     company_slug: str
     product: str
+    anchor: str
     name: str
     key: str
     category: str
     value: str | None
+
+
+class FeatureGatingRow(Schema):
+    """For one feature, the cheapest plan per company that includes it."""
+
+    company: str
+    company_slug: str
+    plan: str
+    anchor: str
+    value: str | None
+
+
+class CatalogFeatureSchema(Schema):
+    key: str
+    label: str
+    category: str
 
 
 class PricingCompanySummary(IDSchema, TimestampedSchema):

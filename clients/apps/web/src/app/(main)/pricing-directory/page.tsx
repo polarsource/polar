@@ -4,7 +4,6 @@ import {
   DirectorySection,
   EditorialSection,
   PricingDirectoryNav,
-  PricingHero,
 } from '@/components/PricingDirectory'
 import {
   fetchCompanies,

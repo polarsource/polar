@@ -1,6 +1,7 @@
+import Link from 'next/link'
 import React from 'react'
 import { BrandContainer, Caption, Display, Lead } from '../Brand/primitives'
-import { companyModels } from './data'
+import { companyModels, productSlug } from './data'
 import { ChangeDirection, Company } from './types'
 
 const directionLabel: Record<ChangeDirection, string> = {
@@ -52,14 +53,17 @@ export function CompanyDetail({ company }: { company: Company }) {
           <div className="flex flex-col gap-10 md:gap-12">
             {company.products.map((product) => (
               <div key={product.name} className="flex flex-col gap-3">
-                <div className="border-brand-line flex items-baseline gap-3 border-b pb-3">
-                  <span className="text-brand-foreground text-xl md:text-2xl">
+                <Link
+                  href={`/pricing-directory/${company.slug}/${productSlug(product.name)}`}
+                  className="group border-brand-line flex items-baseline gap-3 border-b pb-3"
+                >
+                  <span className="text-brand-foreground group-hover:text-brand-muted text-xl transition-colors md:text-2xl">
                     {product.name}
                   </span>
-                  <span className="text-brand-muted text-base md:text-lg">
+                  <span className="text-brand-muted text-base md:text-2xl">
                     {product.model}
                   </span>
-                </div>
+                </Link>
 
                 <div className="flex flex-col">
                   {product.history.map((point) => (

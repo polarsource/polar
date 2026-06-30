@@ -21,6 +21,13 @@ export const categories = [
 export const companyModels = (company: Company): string[] =>
   Array.from(new Set(company.products.map((product) => product.model)))
 
+export const productSlug = (name: string): string =>
+  name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
 export const companyLatestChange = (company: Company): string => {
   const dates = company.products.map((product) => product.lastChange).sort()
   return dates[dates.length - 1]

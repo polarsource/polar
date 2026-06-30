@@ -442,6 +442,9 @@ lambda = [
 s3 = [
     { name = "mypy-boto3-s3" },
 ]
+scheduler = [
+    { name = "mypy-boto3-scheduler" },
+]
 sqs = [
     { name = "mypy-boto3-sqs" },
 ]
@@ -2053,6 +2056,15 @@ wheels = [
 ]
 
 [[package]]
+name = "mypy-boto3-scheduler"
+version = "1.43.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/06/88/315f03165d74a683083f0950068cd766e39da5bd1024338c911f96bdb82d/mypy_boto3_scheduler-1.43.0.tar.gz", hash = "sha256:e22f6e8842d3e7e959e9024ab2081275afe0c6928e92ec224fbc48e1445d2faf", size = 18599, upload-time = "2026-04-29T23:05:41.453Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/db/8e/243a1f851ef52dc42571e9ccc855756f9d9cd165ab43e1cc5a9526fa8eec/mypy_boto3_scheduler-1.43.0-py3-none-any.whl", hash = "sha256:3b454605585edeeed0d4933e11ea1926ac4e2a5d8fce430f418ad7a8edf2fae6", size = 24894, upload-time = "2026-04-29T23:05:38.679Z" },
+]
+
+[[package]]
 name = "mypy-boto3-sqs"
 version = "1.43.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2449,7 +2461,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "boto3-stubs", extra = ["lambda", "s3", "sqs"] },
+    { name = "boto3-stubs", extra = ["lambda", "s3", "scheduler", "sqs"] },
     { name = "coverage" },
     { name = "debugpy" },
     { name = "fakeredis", extra = ["lua"] },
@@ -2544,7 +2556,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "boto3-stubs", extras = ["s3", "sqs", "lambda"], specifier = ">=1.43.26" },
+    { name = "boto3-stubs", extras = ["s3", "sqs", "lambda", "scheduler"], specifier = ">=1.43.26" },
     { name = "coverage", specifier = ">=7.14.1" },
     { name = "debugpy", specifier = ">=1.8.21" },
     { name = "fakeredis", extras = ["lua"], specifier = ">=2.36.1" },

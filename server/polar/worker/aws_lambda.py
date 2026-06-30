@@ -13,6 +13,7 @@ from polar.sentry import configure_sentry
 from ._runner import RetryAction, bootstrap, plan_retry, run_task
 from ._sqs import (
     build_envelope,
+    build_retry_schedule_name,
     get_consumer_scheduler_client,
     get_consumer_sqs_client,
     parse_envelope,
@@ -111,6 +112,7 @@ def _apply_retry_backoff(record: dict[str, Any], exception: BaseException) -> bo
                     actor, tuple(args), kwargs, correlation_id, receive_count + 1
                 ),
                 delay_seconds,
+                build_retry_schedule_name(queue_arn, record["messageId"], attempt),
             )
             log.info(
                 "polar.worker.sqs_retry_scheduled_eventbridge",

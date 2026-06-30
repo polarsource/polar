@@ -1,6 +1,8 @@
 import json
 import math
 
+import pytest
+from botocore.exceptions import ClientError
 from dramatiq.errors import Retry
 from dramatiq.middleware.retries import DEFAULT_MAX_BACKOFF
 from pytest_mock import MockerFixture
@@ -139,6 +141,21 @@ class TestPlanRetry:
         assert delay == _sqs.MAX_VISIBILITY_TIMEOUT_SECONDS
 
 
+class TestBuildRetryScheduleName:
+    def test_is_deterministic(self) -> None:
+        first = _sqs.build_retry_schedule_name("arn:q", "msg-1", 3)
+        second = _sqs.build_retry_schedule_name("arn:q", "msg-1", 3)
+        assert first == second
+        assert first.startswith("polar-retry-")
+        assert len(first) <= 64
+
+    def test_varies_by_input(self) -> None:
+        base = _sqs.build_retry_schedule_name("arn:q", "msg-1", 3)
+        assert base != _sqs.build_retry_schedule_name("arn:q", "msg-2", 3)
+        assert base != _sqs.build_retry_schedule_name("arn:q", "msg-1", 4)
+        assert base != _sqs.build_retry_schedule_name("arn:q2", "msg-1", 3)
+
+
 class TestScheduleDelayedMessage:
     def test_creates_one_time_schedule(self, mocker: MockerFixture) -> None:
         client = mocker.MagicMock()
@@ -149,11 +166,12 @@ class TestScheduleDelayedMessage:
             "arn:aws:iam::123456789012:role/scheduler",
             '{"actor":"dummy"}',
             48 * 3600,
+            "polar-retry-abc123",
         )
 
         client.create_schedule.assert_called_once()
         kwargs = client.create_schedule.call_args.kwargs
-        assert kwargs["Name"].startswith("polar-retry-")
+        assert kwargs["Name"] == "polar-retry-abc123"
         assert kwargs["ScheduleExpression"].startswith("at(")
         assert kwargs["ActionAfterCompletion"] == "DELETE"
         assert kwargs["Target"] == {
@@ -161,6 +179,29 @@ class TestScheduleDelayedMessage:
             "RoleArn": "arn:aws:iam::123456789012:role/scheduler",
             "Input": '{"actor":"dummy"}',
         }
+
+    def test_existing_schedule_is_idempotent(self, mocker: MockerFixture) -> None:
+        client = mocker.MagicMock()
+        client.create_schedule.side_effect = ClientError(
+            {"Error": {"Code": "ConflictException", "Message": "exists"}},
+            "CreateSchedule",
+        )
+
+        _sqs.schedule_delayed_message(
+            client, "arn:q", "arn:role", "{}", 48 * 3600, "polar-retry-abc123"
+        )
+
+    def test_other_client_error_is_raised(self, mocker: MockerFixture) -> None:
+        client = mocker.MagicMock()
+        client.create_schedule.side_effect = ClientError(
+            {"Error": {"Code": "ValidationException", "Message": "bad"}},
+            "CreateSchedule",
+        )
+
+        with pytest.raises(ClientError):
+            _sqs.schedule_delayed_message(
+                client, "arn:q", "arn:role", "{}", 48 * 3600, "polar-retry-abc123"
+            )
 
 
 class TestSendToDlq:

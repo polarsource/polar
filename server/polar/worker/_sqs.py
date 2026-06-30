@@ -1,7 +1,7 @@
 import asyncio
+import hashlib
 import itertools
 import json
-import uuid
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 import boto3
 import structlog
 from botocore.config import Config
+from botocore.exceptions import ClientError
 
 from polar.config import settings
 from polar.logging import Logger
@@ -153,24 +154,37 @@ def set_message_visibility(
     )
 
 
+def build_retry_schedule_name(queue_arn: str, message_id: str, attempt: int) -> str:
+    """Deterministic per logical handoff so a crash + SQS redelivery is idempotent."""
+    digest = hashlib.sha256(f"{queue_arn}:{message_id}:{attempt}".encode()).hexdigest()
+    return f"polar-retry-{digest[:40]}"
+
+
 def schedule_delayed_message(
     client: "EventBridgeSchedulerClient",
     queue_arn: str,
     role_arn: str,
     body: str,
     delay_seconds: int,
+    schedule_name: str,
 ) -> None:
     """Redeliver to SQS after a delay longer than SQS visibility allows (>12h)."""
     fire_at = datetime.now(UTC) + timedelta(seconds=delay_seconds)
-    client.create_schedule(
-        Name=f"polar-retry-{uuid.uuid4().hex}",
-        ScheduleExpression=f"at({fire_at:%Y-%m-%dT%H:%M:%S})",
-        ScheduleExpressionTimezone="UTC",
-        FlexibleTimeWindow={"Mode": "OFF"},
-        Target={"Arn": queue_arn, "RoleArn": role_arn, "Input": body},
-        ActionAfterCompletion="DELETE",
-        State="ENABLED",
-    )
+    try:
+        client.create_schedule(
+            Name=schedule_name,
+            ScheduleExpression=f"at({fire_at:%Y-%m-%dT%H:%M:%S})",
+            ScheduleExpressionTimezone="UTC",
+            FlexibleTimeWindow={"Mode": "OFF"},
+            Target={"Arn": queue_arn, "RoleArn": role_arn, "Input": body},
+            ActionAfterCompletion="DELETE",
+            State="ENABLED",
+        )
+    except ClientError as exc:
+        code = exc.response.get("Error", {}).get("Code")
+        if code in {"ConflictException", "ResourceAlreadyExistsException"}:
+            return
+        raise
 
 
 def send_to_dlq(client: "SQSClient", queue_arn: str, body: str) -> None:
@@ -222,6 +236,7 @@ __all__ = [
     "SQSSendError",
     "actor_to_queue_name",
     "build_envelope",
+    "build_retry_schedule_name",
     "get_consumer_scheduler_client",
     "get_consumer_sqs_client",
     "get_queue_url",

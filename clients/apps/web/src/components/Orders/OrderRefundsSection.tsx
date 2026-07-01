@@ -20,11 +20,7 @@ import {
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { OrderSection } from './OrderSection'
 
-export const OrderRefundsSection = ({
-  order,
-}: {
-  order: schemas['Order']
-}) => {
+export const OrderRefundsSection = ({ order }: { order: schemas['Order'] }) => {
   const { data: refunds, isLoading } = useRefunds(order.id)
   const {
     isShown: isRefundModalShown,
@@ -36,8 +32,7 @@ export const OrderRefundsSection = ({
     return null
   }
 
-  const canRefund =
-    (order.refunded_amount ?? 0) < (order.net_amount ?? 0)
+  const canRefund = (order.refunded_amount ?? 0) < (order.net_amount ?? 0)
 
   return (
     <OrderSection
@@ -50,52 +45,54 @@ export const OrderRefundsSection = ({
     >
       <DataTable
         isLoading={isLoading}
-        columns={[
-          {
-            accessorKey: 'created_at',
-            header: 'Created At',
-            cell: ({ row }) => (
-              <FormattedDateTime
-                dateStyle="long"
-                datetime={row.original.created_at}
-              />
-            ),
-          },
-          {
-            accessorKey: 'amount',
-            header: 'Amount',
-            cell: ({ row }) =>
-              formatCurrency('standard')(
-                row.original.amount,
-                row.original.currency,
+        columns={
+          [
+            {
+              accessorKey: 'created_at',
+              header: 'Created At',
+              cell: ({ row }) => (
+                <FormattedDateTime
+                  dateStyle="long"
+                  datetime={row.original.created_at}
+                />
               ),
-          },
-          {
-            accessorKey: 'status',
-            header: 'Status',
-            cell: ({ row }) => (
-              <Status
-                color={RefundStatusDisplayColor[row.original.status]}
-                status={RefundStatusDisplayTitle[row.original.status]}
-              />
-            ),
-          },
-          {
-            accessorKey: 'reason',
-            header: 'Reason',
-            cell: ({ row }) => RefundReasonDisplay[row.original.reason],
-          },
-          {
-            accessorKey: 'revoke_benefits',
-            header: 'Revoke Benefits',
-            cell: ({ row }) => (
-              <Status
-                status={row.original.revoke_benefits ? 'True' : 'False'}
-                color={row.original.revoke_benefits ? 'green' : 'red'}
-              />
-            ),
-          },
-        ] satisfies DataTableColumnDef<schemas['Refund']>[]}
+            },
+            {
+              accessorKey: 'amount',
+              header: 'Amount',
+              cell: ({ row }) =>
+                formatCurrency('standard')(
+                  row.original.amount,
+                  row.original.currency,
+                ),
+            },
+            {
+              accessorKey: 'status',
+              header: 'Status',
+              cell: ({ row }) => (
+                <Status
+                  color={RefundStatusDisplayColor[row.original.status]}
+                  status={RefundStatusDisplayTitle[row.original.status]}
+                />
+              ),
+            },
+            {
+              accessorKey: 'reason',
+              header: 'Reason',
+              cell: ({ row }) => RefundReasonDisplay[row.original.reason],
+            },
+            {
+              accessorKey: 'revoke_benefits',
+              header: 'Revoke Benefits',
+              cell: ({ row }) => (
+                <Status
+                  status={row.original.revoke_benefits ? 'True' : 'False'}
+                  color={row.original.revoke_benefits ? 'green' : 'red'}
+                />
+              ),
+            },
+          ] satisfies DataTableColumnDef<schemas['Refund']>[]
+        }
         data={refunds?.items ?? []}
       />
 

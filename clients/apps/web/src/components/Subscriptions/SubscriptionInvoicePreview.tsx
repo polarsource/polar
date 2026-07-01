@@ -1,6 +1,9 @@
 'use client'
 
-import { InvoicePreview, type InvoiceLineItem } from '@/components/Orders/InvoicePreview'
+import {
+  InvoicePreview,
+  type InvoiceLineItem,
+} from '@/components/Orders/InvoicePreview'
 import { OrderSection } from '@/components/Orders/OrderSection'
 import { useProduct } from '@/hooks/queries'
 import { useSubscriptionChargePreview } from '@/hooks/queries/subscriptions'

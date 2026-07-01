@@ -30,37 +30,39 @@ export const OrderDisputesTable = ({
     <OrderSection title="Disputes">
       <DataTable
         isLoading={isLoading}
-        columns={[
-          {
-            accessorKey: 'created_at',
-            header: 'Created At',
-            cell: ({ row }) => (
-              <FormattedDateTime
-                dateStyle="long"
-                datetime={row.original.created_at}
-              />
-            ),
-          },
-          {
-            accessorKey: 'amount',
-            header: 'Amount',
-            cell: ({ row }) =>
-              formatCurrency('standard')(
-                row.original.amount,
-                row.original.currency,
+        columns={
+          [
+            {
+              accessorKey: 'created_at',
+              header: 'Created At',
+              cell: ({ row }) => (
+                <FormattedDateTime
+                  dateStyle="long"
+                  datetime={row.original.created_at}
+                />
               ),
-          },
-          {
-            accessorKey: 'status',
-            header: 'Status',
-            cell: ({ row }) => (
-              <Status
-                color={DisputeStatusDisplayColor[row.original.status]}
-                status={DisputeStatusDisplayTitle[row.original.status]}
-              />
-            ),
-          },
-        ] satisfies DataTableColumnDef<schemas['Dispute']>[]}
+            },
+            {
+              accessorKey: 'amount',
+              header: 'Amount',
+              cell: ({ row }) =>
+                formatCurrency('standard')(
+                  row.original.amount,
+                  row.original.currency,
+                ),
+            },
+            {
+              accessorKey: 'status',
+              header: 'Status',
+              cell: ({ row }) => (
+                <Status
+                  color={DisputeStatusDisplayColor[row.original.status]}
+                  status={DisputeStatusDisplayTitle[row.original.status]}
+                />
+              ),
+            },
+          ] satisfies DataTableColumnDef<schemas['Dispute']>[]
+        }
         data={disputes.items}
       />
     </OrderSection>

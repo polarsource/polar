@@ -6,11 +6,7 @@ import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { OrderSection } from './OrderSection'
 
-export const OrderSeatsSection = ({
-  order,
-}: {
-  order: schemas['Order']
-}) => {
+export const OrderSeatsSection = ({ order }: { order: schemas['Order'] }) => {
   const hasSeatBasedOrder = !!order.seats && order.seats > 0
 
   const { data: seatsData, isLoading } = useOrganizationSeats(

@@ -15,7 +15,6 @@ export default async function Layout({
       <OrganizationPermissionGuard
         organizationSlug={organization}
         permission="finance:read"
-        message="You don't have permission to view finance for this organization. Ask an admin if you need access."
       >
         {children}
       </OrganizationPermissionGuard>

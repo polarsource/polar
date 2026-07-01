@@ -100,12 +100,12 @@ class TestGetSSOConnection:
 
 
 @pytest.mark.asyncio
-class TestListSSOConnections:
+class TestStart:
     async def test_unknown_slug(self, client: AsyncClient) -> None:
-        response = await client.get("/v1/auth/does-not-exist/sso/connections")
+        response = await client.post("/v1/auth/does-not-exist/start", json={})
         assert response.status_code == 404
 
-    async def test_returns_enabled_connections(
+    async def test_exposes_enabled_sso_connections(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -116,10 +116,13 @@ class TestListSSOConnections:
         )
         await create_sso_connection(save_fixture, organization, enabled=False)
 
-        response = await client.get(f"/v1/auth/{organization.slug}/sso/connections")
+        response = await client.post(f"/v1/auth/{organization.slug}/start", json={})
 
-        assert response.status_code == 200
-        data = response.json()
-        assert [c["id"] for c in data] == [str(enabled.id)]
-        assert data[0]["name"] == "Acme SSO"
-        assert data[0]["type"] == "oidc"
+        assert response.status_code == 201
+        sso_factors = [
+            factor
+            for factor in response.json()["available_factors"]
+            if factor["type"] == "sso"
+        ]
+        assert [factor["connection_id"] for factor in sso_factors] == [str(enabled.id)]
+        assert sso_factors[0]["name"] == "Acme SSO"

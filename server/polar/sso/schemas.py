@@ -65,17 +65,6 @@ class OrganizationSSOConnection(IDSchema, TimestampedSchema):
     enabled: bool = Field(description="Whether the connection can be used to sign in.")
 
 
-class OrganizationSSOConnectionLogin(IDSchema):
-    """Public, login-facing view of an enabled SSO connection."""
-
-    name: str | None = Field(
-        description="Human-friendly label for the connection, shown on the login page."
-    )
-    type: OrganizationSSOConnectionType = Field(
-        description="Type of the SSO connection."
-    )
-
-
 class OrganizationSSOConnectionCreate(Schema):
     name: NonEmptyStr | None = Field(
         default=None,

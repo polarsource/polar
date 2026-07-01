@@ -20,18 +20,12 @@ from reauth.factors.oauth2.state import ExpiredStateException, InvalidStateExcep
 
 from polar.config import settings
 from polar.exceptions import ResourceNotFound
-from polar.kit.db.postgres import AsyncReadSession
 from polar.models import Organization, OrganizationSSOConnection
 from polar.openapi import APITag
 from polar.organization.repository import OrganizationRepository
-from polar.postgres import (
-    AsyncSession,
-    get_db_read_session,
-    get_db_session,
-)
+from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 from polar.sso.repository import OrganizationSSOConnectionRepository
-from polar.sso.schemas import OrganizationSSOConnectionLogin
 from polar.user.repository import UserRepository
 from polar.user_organization.repository import UserOrganizationRepository
 
@@ -109,25 +103,6 @@ async def get_org_authentication_session(
 
 
 router = APIRouter(prefix="/{slug}")
-
-
-@router.get(
-    "/sso/connections",
-    name="auth.sso.connections",
-    response_model=list[OrganizationSSOConnectionLogin],
-    tags=[APITag.private],
-)
-async def list_sso_connections(
-    slug: str,
-    session: AsyncReadSession = Depends(get_db_read_session),
-) -> typing.Sequence[OrganizationSSOConnection]:
-    organization_repository = OrganizationRepository.from_session(session)
-    organization = await organization_repository.get_by_slug(slug)
-    if organization is None:
-        raise ResourceNotFound()
-
-    sso_repository = OrganizationSSOConnectionRepository.from_session(session)
-    return await sso_repository.get_enabled_by_organization(organization.id)
 
 
 @router.post(

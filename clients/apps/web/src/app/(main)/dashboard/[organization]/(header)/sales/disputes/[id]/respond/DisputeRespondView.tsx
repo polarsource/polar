@@ -1,6 +1,6 @@
 'use client'
 
-import { CustomerContextView } from '@/components/Customer/CustomerContextView'
+import { DisputeContextView } from '@/components/Disputes/DisputeContextView'
 import {
   DisputeEvidenceState,
   DisputeEvidenceUpload,
@@ -77,10 +77,7 @@ export const DisputeRespondView = ({ organization, dispute }: Props) => {
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:shadow-none"
       contextView={
         order ? (
-          <CustomerContextView
-            organization={organization}
-            customer={order.customer}
-          />
+          <DisputeContextView organization={organization} order={order} />
         ) : undefined
       }
     >

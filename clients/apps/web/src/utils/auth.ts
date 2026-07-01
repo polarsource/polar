@@ -1,4 +1,5 @@
 import { getPublicServerURL } from '@/utils/api'
+import { CONFIG } from '@/utils/config'
 import { Client, operations, schemas } from '@polar-sh/client'
 import { redirect } from 'next/navigation'
 
@@ -37,6 +38,18 @@ export const getGoogleAuthorizeLinkURL = (return_to?: string): string => {
 
 export const getAppleAuthorizeURL = (): string => {
   return `${getPublicServerURL()}/v1/auth/apple/authorize`
+}
+
+export const getSSOCallbackURL = (organizationSlug: string): string => {
+  return `${getPublicServerURL()}/v1/auth/${organizationSlug}/sso/callback`
+}
+
+export const getSSOLoginURL = (organizationSlug: string): string => {
+  return `${CONFIG.FRONTEND_BASE_URL}/auth/sso/${organizationSlug}`
+}
+
+export const getSSOJwksURL = (): string => {
+  return `${getPublicServerURL()}/.well-known/jwks.json`
 }
 
 export const getBotDiscordAuthorizeURL = (

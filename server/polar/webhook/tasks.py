@@ -189,6 +189,7 @@ async def _webhook_event_send(
             _, delay = compute_backoff(
                 delivery_count,
                 factor=settings.WORKER_MIN_BACKOFF_MILLISECONDS,
+                max_backoff=20 * 60_000,
             )
             raise Retry(delay=delay) from e
     # Invalid Unicode codepoint in the URL hostname (e.g. em dash):

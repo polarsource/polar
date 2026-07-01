@@ -8,6 +8,7 @@ from pydantic.json_schema import WithJsonSchema
 from sqlalchemy import (
     TIMESTAMP,
     BigInteger,
+    Boolean,
     CheckConstraint,
     ColumnElement,
     ForeignKey,
@@ -632,6 +633,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @property
     def is_sso_enabled(self) -> bool:
         return self.feature_settings.get("sso_enabled", False)
+
+    force_sso: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
 
     #
     # Currency and tax settings

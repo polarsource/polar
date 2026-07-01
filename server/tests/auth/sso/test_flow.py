@@ -180,7 +180,7 @@ async def drive_to_callback(
     )
 
     return await client.get(
-        f"/v1/auth/{slug}/sso/{connection_id}/callback",
+        f"/v1/auth/{slug}/sso/callback",
         params={"code": "the-code", "state": state},
     )
 

@@ -33,6 +33,12 @@ variable "image_uri" {
   type        = string
 }
 
+variable "image_command" {
+  description = "Container image CMD override the worker Lambda runs."
+  type        = list(string)
+  default     = ["polar.worker.aws_lambda.handler"]
+}
+
 variable "timeout_seconds" {
   description = "Lambda function timeout. Must stay below the queue visibility timeout."
   type        = number

@@ -1,10 +1,9 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from polar.exceptions import PolarError, PolarRequestValidationError
+from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.models import Organization, OrganizationSSOConnection
-from polar.models.organization_sso_connection import OIDCAuthMethod, OIDCConfiguration
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import OrganizationSSOConnectionRepository
@@ -73,40 +72,7 @@ class OrganizationSSOConnectionService:
     ) -> OrganizationSSOConnection:
         repository = OrganizationSSOConnectionRepository.from_session(session)
         update_dict = update.model_dump(exclude_none=True)
-        if "configuration" in update_dict:
-            update_dict["configuration"] = self._merge_configuration(
-                connection, update_dict["configuration"]
-            )
         return await repository.update(connection, update_dict=update_dict)
-
-    def _merge_configuration(
-        self,
-        connection: OrganizationSSOConnection,
-        configuration: OIDCConfiguration,
-    ) -> OIDCConfiguration:
-        if configuration["auth_method"] != OIDCAuthMethod.client_secret:
-            return configuration
-        if configuration.get("client_secret"):
-            return configuration
-        current = connection.configuration
-        current_secret = (
-            current.get("client_secret")
-            if current["auth_method"] == OIDCAuthMethod.client_secret
-            else None
-        )
-        if current_secret is None:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "missing",
-                        "msg": "A client secret is required for this authentication method.",
-                        "loc": ("body", "configuration", "client_secret"),
-                        "input": None,
-                    }
-                ]
-            )
-        configuration["client_secret"] = current_secret
-        return configuration
 
     async def delete(
         self,

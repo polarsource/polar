@@ -42,10 +42,6 @@ export default function EditSSOConnectionModal({
     connection.id,
   )
 
-  const switchingToClientSecret =
-    authMethod === 'client_secret' &&
-    connection.configuration.auth_method !== 'client_secret'
-
   const onSubmit = useCallback(
     async (values: SSOConnectionFormValues) => {
       const configuration: schemas['OrganizationSSOConnectionUpdate']['configuration'] =
@@ -59,9 +55,7 @@ export default function EditSSOConnectionModal({
               auth_method: 'client_secret',
               issuer: values.issuer,
               client_id: values.client_id,
-              ...(values.client_secret
-                ? { client_secret: values.client_secret }
-                : {}),
+              client_secret: values.client_secret,
             }
 
       const { error } = await updateConnection.mutateAsync({
@@ -96,12 +90,7 @@ export default function EditSSOConnectionModal({
                 control={control}
                 authMethod={authMethod}
                 callbackURL={callbackURL}
-                secretRequired={switchingToClientSecret}
-                secretHint={
-                  switchingToClientSecret
-                    ? undefined
-                    : 'Leave blank to keep the current secret.'
-                }
+                secretRequired
               />
               <Button
                 type="submit"

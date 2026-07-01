@@ -57,13 +57,11 @@ const SSOConnectionFormFields = ({
   authMethod,
   callbackURL,
   secretRequired,
-  secretHint,
 }: {
   control: Control<SSOConnectionFormValues>
   authMethod: SSOConnectionFormValues['auth_method']
   callbackURL: string
   secretRequired: boolean
-  secretHint?: string
 }) => (
   <>
     <CopyField
@@ -160,11 +158,6 @@ const SSOConnectionFormFields = ({
             <FormControl>
               <Input {...field} value={field.value || ''} type="password" />
             </FormControl>
-            {secretHint ? (
-              <Text variant="caption" color="muted">
-                {secretHint}
-              </Text>
-            ) : null}
             <FormMessage />
           </FormItem>
         )}

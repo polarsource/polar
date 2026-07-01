@@ -39,25 +39,6 @@ OIDCConfiguration = Annotated[
 ]
 
 
-class OIDCConfigurationClientSecretUpdate(OIDCConfigurationBase):
-    auth_method: Literal[OIDCAuthMethod.client_secret] = Field(
-        description="Authentication method used against the identity provider."
-    )
-    client_secret: NonEmptyStr | None = Field(
-        default=None,
-        description=(
-            "Client secret used to authenticate against the identity provider. "
-            "Leave unset to keep the current secret."
-        ),
-    )
-
-
-OIDCConfigurationUpdate = Annotated[
-    OIDCConfigurationClientSecretUpdate | OIDCConfigurationPrivateKeyJWT,
-    Discriminator("auth_method"),
-]
-
-
 class OIDCConfigurationRead(Schema):
     issuer: str = Field(description="OIDC issuer URL of the identity provider.")
     client_id: str = Field(
@@ -106,7 +87,7 @@ class OrganizationSSOConnectionUpdate(Schema):
         default=None,
         description="Human-friendly label for the connection, shown on the login page.",
     )
-    configuration: OIDCConfigurationUpdate | None = Field(
+    configuration: OIDCConfiguration | None = Field(
         default=None, description="Provider-specific configuration of the connection."
     )
     enabled: bool | None = Field(

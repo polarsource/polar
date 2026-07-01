@@ -23289,30 +23289,6 @@ export interface components {
        */
       client_secret: string
     }
-    /** OIDCConfigurationClientSecretUpdate */
-    OIDCConfigurationClientSecretUpdate: {
-      /**
-       * Issuer
-       * Format: uri
-       * @description OIDC issuer URL of the identity provider.
-       */
-      issuer: string
-      /**
-       * Client Id
-       * @description OAuth client ID registered with the identity provider.
-       */
-      client_id: string
-      /**
-       * @description Authentication method used against the identity provider. (enum property replaced by openapi-typescript)
-       * @enum {string}
-       */
-      auth_method: 'client_secret'
-      /**
-       * Client Secret
-       * @description Client secret used to authenticate against the identity provider. Leave unset to keep the current secret.
-       */
-      client_secret?: string | null
-    }
     /** OIDCConfigurationPrivateKeyJWT */
     OIDCConfigurationPrivateKeyJWT: {
       /**
@@ -26420,7 +26396,7 @@ export interface components {
        */
       configuration?:
         | (
-            | components['schemas']['OIDCConfigurationClientSecretUpdate']
+            | components['schemas']['OIDCConfigurationClientSecret']
             | components['schemas']['OIDCConfigurationPrivateKeyJWT']
           )
         | null
@@ -59444,9 +59420,6 @@ export const oIDCAuthMethodValues: ReadonlyArray<
 > = ['client_secret', 'private_key_jwt']
 export const oIDCConfigurationClientSecretAuth_methodValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OIDCConfigurationClientSecret']['auth_method']
-> = ['client_secret']
-export const oIDCConfigurationClientSecretUpdateAuth_methodValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['OIDCConfigurationClientSecretUpdate']['auth_method']
 > = ['client_secret']
 export const oIDCConfigurationPrivateKeyJWTAuth_methodValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OIDCConfigurationPrivateKeyJWT']['auth_method']

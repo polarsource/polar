@@ -331,6 +331,53 @@ class TestUpdateSSOConnection:
         assert response.json()["enabled"] is False
 
     @pytest.mark.auth
+    async def test_configuration(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        sso_enabled_organization: Organization,
+        user_organization: UserOrganization,
+        sso_connection: OrganizationSSOConnection,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}/sso-connections/{sso_connection.id}",
+            json={
+                "configuration": {
+                    "issuer": "https://new-idp.example.com",
+                    "client_id": "new-client-id",
+                    "auth_method": "client_secret",
+                    "client_secret": "new-secret",
+                }
+            },
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["configuration"]["issuer"] == "https://new-idp.example.com/"
+        assert json["configuration"]["client_id"] == "new-client-id"
+        assert "client_secret" not in json["configuration"]
+
+    @pytest.mark.auth
+    async def test_configuration_client_secret_required(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        sso_enabled_organization: Organization,
+        user_organization: UserOrganization,
+        sso_connection: OrganizationSSOConnection,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}/sso-connections/{sso_connection.id}",
+            json={
+                "configuration": {
+                    "issuer": "https://new-idp.example.com",
+                    "client_id": "new-client-id",
+                    "auth_method": "client_secret",
+                }
+            },
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.auth
     async def test_not_existing(
         self,
         client: AsyncClient,

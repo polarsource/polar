@@ -318,10 +318,10 @@ class SupportCaseSection:
     def _render_dispute_details(self, request: Request, dispute: Dispute) -> None:
         """Read-only facts about the chargeback: what is owed, why, and by when."""
         order_url = str(request.url_for("orders:get", id=dispute.order_id))
-        with tag.div(classes="mb-8 rounded-xl border border-base-200"):
+        with tag.div(classes="mb-8 rounded-xl border border-base-300"):
             with tag.div(
                 classes="flex items-center justify-between gap-2 px-4 py-3 "
-                "border-b border-base-200"
+                "border-b border-base-300"
             ):
                 with tag.div(classes="flex items-center gap-2"):
                     with tag.span(classes="icon-gavel text-base-content/60"):
@@ -376,7 +376,7 @@ class SupportCaseSection:
         if not self.attachments:
             return
         with tag.div(
-            classes="flex flex-col gap-2 px-4 pb-4 border-t border-base-200 pt-4"
+            classes="flex flex-col gap-2 px-4 pb-4 border-t border-base-300 pt-4"
         ):
             with tag.div(
                 classes="text-xs uppercase tracking-wide text-base-content/40"
@@ -554,7 +554,7 @@ class SupportCaseSection:
             href=url,
             target="_blank",
             classes="flex items-center gap-2 max-w-md rounded-lg border "
-            "border-base-200 bg-base-100 px-3 py-2 hover:bg-base-200",
+            "border-base-300 bg-base-100 px-3 py-2 hover:bg-base-200",
         ):
             with tag.span(classes="icon-paperclip text-base-content/40"):
                 pass
@@ -597,7 +597,7 @@ class SupportCaseSection:
         )
         # A closed case only takes internal follow-ups after the decision.
         internal_only = not is_open
-        with tag.div(classes="mt-8 pt-6 border-t border-base-200"):
+        with tag.div(classes="mt-8 pt-6 border-t border-base-300"):
             if not is_open:
                 with tag.div(
                     classes="flex items-center gap-2 mb-3 text-sm text-base-content/60"

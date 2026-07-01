@@ -115,14 +115,22 @@ const ClientPage: React.FC<ClientPageProps> = ({
             <DropdownMenuContent align="end">
               <DropdownMenuItem
                 onClick={() => {
-                  if (typeof navigator !== 'undefined') {
-                    navigator.clipboard.writeText(subscription.id)
-                    toast({
-                      title: 'Subscription ID copied',
-                      description:
-                        'The subscription ID has been copied to clipboard',
-                    })
-                  }
+                  navigator.clipboard
+                    .writeText(subscription.id)
+                    .then(() =>
+                      toast({
+                        title: 'Subscription ID copied',
+                        description:
+                          'The subscription ID has been copied to clipboard',
+                      }),
+                    )
+                    .catch(() =>
+                      toast({
+                        title: 'Failed to copy',
+                        description:
+                          'Could not copy the subscription ID to clipboard',
+                      }),
+                    )
                 }}
               >
                 Copy Subscription ID

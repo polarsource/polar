@@ -228,9 +228,12 @@ export const SubscriptionDetailsGrid = ({
             />
           </DetailGrid>
           {cancellationComment && (
-            <TextArea tabIndex={-1} readOnly resizable={false}>
-              {cancellationComment}
-            </TextArea>
+            <TextArea
+              tabIndex={-1}
+              readOnly
+              resizable={false}
+              value={cancellationComment}
+            />
           )}
         </Box>
       )}

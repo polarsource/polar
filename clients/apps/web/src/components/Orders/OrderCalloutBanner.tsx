@@ -205,6 +205,7 @@ export const OrderCalloutBanner = ({
         }}
         borderColor="border-primary"
         borderWidth={1}
+        borderStyle="solid"
         borderRadius="l"
       >
         <BannerColumn>

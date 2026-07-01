@@ -57,7 +57,7 @@ export const DetailItem = ({
       columnGap="s"
     >
       {typeof value === 'string' || typeof value === 'number' ? (
-        <Truncated tooltip={String(value)}>
+        <Truncated>
           <Text as="span" monospace={monospace} align="right">
             {value}
           </Text>

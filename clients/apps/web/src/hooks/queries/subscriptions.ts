@@ -42,7 +42,10 @@ export const useSubscription = (
     enabled: options?.enabled ?? true,
   })
 
-export const useSubscriptionChargePreview = (id: string) =>
+export const useSubscriptionChargePreview = (
+  id: string,
+  options?: { enabled?: boolean },
+) =>
   useQuery({
     queryKey: ['subscriptions', { id }, 'charge-preview'],
     queryFn: () =>
@@ -52,6 +55,7 @@ export const useSubscriptionChargePreview = (id: string) =>
         }),
       ),
     retry: defaultRetry,
+    enabled: options?.enabled ?? true,
   })
 
 export const useUpdateSubscription = (id: string) =>

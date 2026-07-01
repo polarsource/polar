@@ -19,7 +19,13 @@ const SubscriptionInvoicePreview = ({
 }: {
   subscription: schemas['Subscription']
 }) => {
-  const { data: chargePreview } = useSubscriptionChargePreview(subscription.id)
+  const isTrialing = subscription.status === 'trialing'
+  const isActive = subscription.status === 'active'
+
+  const { data: chargePreview } = useSubscriptionChargePreview(
+    subscription.id,
+    { enabled: isActive || isTrialing },
+  )
 
   const productId = useMemo(
     () => subscription.pending_update?.product_id ?? subscription.product_id,
@@ -32,8 +38,6 @@ const SubscriptionInvoicePreview = ({
     [subscription],
   )
 
-  const isTrialing = subscription.status === 'trialing'
-  const isActive = subscription.status === 'active'
   const isCancelingAtPeriodEnd =
     subscription.cancel_at_period_end && !subscription.ended_at
 

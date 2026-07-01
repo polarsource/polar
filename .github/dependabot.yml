@@ -20,12 +20,17 @@ updates:
     cooldown:
       default-days: 7
     groups:
+      server-production-core:
+        dependency-type: "production"
+        patterns:
+          - "fastapi"
       server-production:
         dependency-type: "production"
         patterns:
           - "*"
         exclude-patterns:
           - "stripe"
+          - "fastapi"
       server-development:
         dependency-type: "development"
         patterns:

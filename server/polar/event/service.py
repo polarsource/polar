@@ -783,9 +783,14 @@ class EventService:
         event_types_by_name = await event_type_repository.get_by_names_and_organization(
             [name for name, *_ in paginated_stats], list(organization_ids)
         )
+        labels_by_name: dict[str, set[str]] = {}
+        for (_, name), event_type in event_types_by_name.items():
+            labels_by_name.setdefault(name, set()).add(event_type.label)
+        # Fall back to the event name when accessible orgs disagree on the label
         event_type_labels = {
-            name: event_type.label
-            for (_, name), event_type in event_types_by_name.items()
+            name: next(iter(labels))
+            for name, labels in labels_by_name.items()
+            if len(labels) == 1
         }
 
         def _resolve_label(name: str, event_source: EventSource) -> str:

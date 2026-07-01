@@ -1,27 +1,15 @@
-import asyncio
-from typing import Any, cast
-
 import typer
-from rich.progress import (
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-    TimeElapsedColumn,
-)
-from sqlalchemy import (
-    ColumnElement,
-    CursorResult,
-    func,
-    select,
-    update,
-)
+from sqlalchemy import ColumnElement, func, select, update
 
-from polar.config import settings
-from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
-from polar.kit.db.postgres import create_async_engine as _create_async_engine
+from polar.kit.db.postgres import AsyncSession
 from polar.models import Customer, Order
 
-from .helper import configure_script_logging, typer_async
+from .helper import (
+    configure_script_logging,
+    limit_bindparam,
+    run_batched_update,
+    typer_async,
+)
 
 cli = typer.Typer()
 
@@ -35,8 +23,8 @@ def _computed_billing_name() -> ColumnElement[str | None]:
     Orders created for a nameless customer got a null snapshot and can never
     produce an invoice. We re-derive it from the customer, coalescing to the
     order's current ``billing_name`` so already-filled orders (and orders whose
-    customer still has no name) compute to their existing value and drop out of
-    the update predicate — idempotent, and never writes NULL.
+    customer still has no name) compute to their existing value and are excluded
+    by the ``is_distinct_from`` predicate below — idempotent, never writes NULL.
 
     ``Customer._billing_name`` is the mapped column behind the read-only
     ``billing_name`` property; the property isn't queryable, so we read the
@@ -69,87 +57,32 @@ async def run_backfill(
     customer without overwriting orders that already have one. Orders still
     missing a ``billing_address`` remain un-invoiceable — that's a separate gate.
 
-    Set-based and batched: each batch updates up to ``batch_size`` orders whose
-    stored ``billing_name`` differs from the computed value, so already-filled
-    orders (and orders whose customer has no name) drop out of the predicate.
-    This gives the loop its termination condition and makes the script safe to
-    rerun.
+    ``billing_name IS DISTINCT FROM COALESCE(billing_name, <customer name>)`` is
+    only true when ``billing_name`` is null and the customer has a name, so
+    already-filled orders (and orders whose customer has no name) drop out of the
+    predicate. This gives the batched loop its termination condition and makes
+    the script safe to rerun.
     """
-    engine = None
-    own_session = False
-
-    if session is None:
-        engine = _create_async_engine(
-            dsn=str(settings.get_postgres_dsn("asyncpg")),
-            application_name=f"{settings.ENV.value}.script",
-            debug=False,
-            pool_size=settings.DATABASE_POOL_SIZE,
-            pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
-            command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
+    batch = (
+        select(Order.id)
+        .where(
+            Order.deleted_at.is_(None),
+            Order.billing_name.is_distinct_from(_computed_billing_name()),
         )
-        sessionmaker = create_async_sessionmaker(engine)
-        session = sessionmaker()
-        own_session = True
-
-    total_updated = 0
-    batch_number = 0
-
-    try:
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            TimeElapsedColumn(),
-            transient=False,
-        ) as progress:
-            task = progress.add_task("[cyan]Batch 0: 0 rows updated", total=None)
-
-            while True:
-                batch = (
-                    select(Order.id)
-                    .where(
-                        Order.deleted_at.is_(None),
-                        Order.billing_name.is_(None),
-                        Order.billing_name.is_distinct_from(_computed_billing_name()),
-                    )
-                    .limit(batch_size)
-                )
-                result = await session.execute(
-                    update(Order)
-                    .where(Order.id.in_(batch))
-                    .values(billing_name=_computed_billing_name())
-                    .execution_options(synchronize_session=False)
-                )
-                await session.commit()
-
-                rows_updated = cast(CursorResult[Any], result).rowcount
-                if rows_updated == 0:
-                    progress.update(
-                        task,
-                        description=(
-                            f"[green]✓ Complete: {total_updated} rows updated"
-                        ),
-                    )
-                    break
-
-                batch_number += 1
-                total_updated += rows_updated
-                progress.update(
-                    task,
-                    description=(
-                        f"[cyan]Batch {batch_number}: {total_updated} rows updated"
-                    ),
-                )
-
-                if sleep_seconds > 0:
-                    await asyncio.sleep(sleep_seconds)
-
-        return total_updated
-
-    finally:
-        if own_session:
-            await session.close()
-        if engine is not None:
-            await engine.dispose()
+        .limit(limit_bindparam())
+    )
+    update_statement = (
+        update(Order)
+        .where(Order.id.in_(batch))
+        .values(billing_name=_computed_billing_name())
+        .execution_options(synchronize_session=False)
+    )
+    return await run_batched_update(
+        update_statement,
+        batch_size=batch_size,
+        sleep_seconds=sleep_seconds,
+        session=session,
+    )
 
 
 @cli.command()

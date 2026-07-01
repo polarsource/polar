@@ -19,7 +19,7 @@ jobs:
     outputs:
       relevant: ${{ steps.filter.outputs.relevant }}
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -45,7 +45,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.0
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 100
@@ -73,7 +73,7 @@ jobs:
         with:
           python-version-file: "server/pyproject.toml"
 
-      - uses: pnpm/action-setup@v6.0.8
+      - uses: pnpm/action-setup@v6.0.9
         with:
           package_json_file: clients/package.json
 

@@ -30,6 +30,7 @@ import { useCallback } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 
 interface SSOConnectionFormValues {
+  name: string
   issuer: string
   client_id: string
   auth_method: 'client_secret' | 'private_key_jwt'
@@ -93,6 +94,7 @@ export default function NewSSOConnectionModal({
 
       const { error } = await createConnection.mutateAsync({
         type: 'oidc',
+        name: values.name || null,
         configuration,
         enabled: false,
       })
@@ -128,6 +130,23 @@ export default function NewSSOConnectionModal({
         <Form {...form}>
           <form onSubmit={handleSubmit(onSubmit)}>
             <Box flexDirection="column" gap="l">
+              <FormField
+                control={control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col gap-1">
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={field.value || ''}
+                        placeholder="Acme SSO (optional)"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={control}
                 name="issuer"

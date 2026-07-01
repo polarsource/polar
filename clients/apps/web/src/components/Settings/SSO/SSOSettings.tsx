@@ -106,13 +106,16 @@ const SSOConnectionRow = ({
     <Box alignItems="center" justifyContent="between" width="100%">
       <Box flexDirection="column" gap="xs">
         <Box alignItems="center" gap="s">
-          <Text>{connection.configuration.issuer}</Text>
+          <Text>{connection.name ?? connection.configuration.issuer}</Text>
           <Status
             status={connection.enabled ? 'Enabled' : 'Disabled'}
             color={connection.enabled ? 'green' : 'gray'}
             size="small"
           />
         </Box>
+        <Text variant="caption" color="muted">
+          {connection.configuration.issuer}
+        </Text>
       </Box>
       <Box alignItems="center" gap="s">
         <Button

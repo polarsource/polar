@@ -19,10 +19,15 @@ depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
-    # Run scripts.backfill_organization_sso_enforced --execute before this
-    # migration so no NULL rows remain when enforcing NOT NULL.
     # Ensures we don't break app by applying a deadlock-inducing migration
     op.execute("SET LOCAL lock_timeout = '5s'")
+    # Backfill remaining NULLs so the migration is self-contained (fresh/local DBs
+    # and any stragglers). In production, run
+    # scripts.backfill_organization_sso_enforced --execute first so this UPDATE
+    # matches no rows and doesn't rewrite the table under lock.
+    op.execute(
+        "UPDATE organizations SET sso_enforced = false WHERE sso_enforced IS NULL"
+    )
     op.alter_column(
         "organizations", "sso_enforced", existing_type=sa.Boolean(), nullable=False
     )

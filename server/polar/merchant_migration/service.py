@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any, Literal, TypedDict
 from uuid import UUID
 
@@ -17,7 +18,12 @@ from polar.models.merchant_migration import (
 from polar.postgres import AsyncReadSession
 
 from .repository import MerchantMigrationRepository
-from .stripe_oauth import StripeAppNotConfigured, StripeOAuthToken, stripe_oauth
+from .stripe_oauth import (
+    StripeAppNotConfigured,
+    StripeOAuthError,
+    StripeOAuthToken,
+    stripe_oauth,
+)
 
 OAUTH_STATE_JWT_TYPE: Literal["stripe_app_oauth"] = "stripe_app_oauth"
 # The state must survive the whole interactive consent on Stripe, so give it more
@@ -50,6 +56,15 @@ class MerchantMigrationError(PolarError): ...
 class InvalidStripeOAuthState(MerchantMigrationError):
     def __init__(self, message: str = "Invalid Stripe authorization state.") -> None:
         super().__init__(message, 400)
+
+
+@dataclass
+class StripeConnectResult:
+    """Where the callback should send the merchant back, and an error message to
+    surface there if the connection didn't complete."""
+
+    return_to: str
+    error: str | None = None
 
 
 class MerchantMigrationService:
@@ -97,7 +112,46 @@ class MerchantMigrationService:
         )
         return stripe_oauth.build_authorize_url(state=state, redirect_uri=redirect_uri)
 
-    def decode_state(self, state: str) -> dict[str, Any]:
+    async def complete_stripe_authorization(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        state: str,
+        code: str | None,
+        error: str | None,
+    ) -> StripeConnectResult:
+        """Handle the Stripe OAuth callback end to end: validate the state, run
+        the code exchange, and store the credentials. A tampered/expired state
+        raises (nothing trustworthy to redirect to); every other failure comes
+        back as a ``StripeConnectResult`` with an ``error`` to show the merchant.
+        """
+        state_data = self._decode_state(state)
+        return_to = state_data.get("return_to") or ""
+
+        if state_data.get("subject_id") != str(auth_subject.subject.id):
+            return StripeConnectResult(
+                return_to=return_to,
+                error="Authorization must be completed by the same account "
+                "that started it.",
+            )
+        if code is None or error is not None:
+            return StripeConnectResult(
+                return_to=return_to,
+                error=error or "Failed to connect Stripe account.",
+            )
+
+        try:
+            await self._store_stripe_credentials(
+                session, auth_subject, UUID(state_data["migration_id"]), code
+            )
+        except (StripeOAuthError, MerchantMigrationError):
+            return StripeConnectResult(
+                return_to=return_to, error="Failed to connect Stripe account."
+            )
+        return StripeConnectResult(return_to=return_to)
+
+    def _decode_state(self, state: str) -> dict[str, Any]:
         try:
             return jwt.decode(
                 token=state, secret=settings.SECRET, type=OAUTH_STATE_JWT_TYPE
@@ -105,14 +159,13 @@ class MerchantMigrationService:
         except (jwt.DecodeError, jwt.ExpiredSignatureError) as e:
             raise InvalidStripeOAuthState(str(e)) from e
 
-    async def complete_stripe_authorization(
+    async def _store_stripe_credentials(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
-        *,
         migration_id: UUID,
         code: str,
-    ) -> MerchantMigration:
+    ) -> None:
         repository = MerchantMigrationRepository.from_session(session)
         migration = await repository.get_by_id(migration_id)
         if migration is None:
@@ -126,7 +179,7 @@ class MerchantMigrationService:
 
         token = await stripe_oauth.exchange_code(code)
         credentials = await self._build_stripe_credentials(migration, token)
-        return await repository.update(
+        await repository.update(
             migration, update_dict={"source_credentials": dict(credentials)}
         )
 

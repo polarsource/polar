@@ -1,5 +1,4 @@
 from typing import Annotated
-from uuid import UUID
 
 from fastapi import Depends, Query, Request
 from fastapi.responses import RedirectResponse
@@ -16,9 +15,7 @@ from polar.routing import APIRouter
 
 from .auth import MerchantMigrationRead, MerchantMigrationWrite
 from .schemas import MerchantMigration as MerchantMigrationSchema
-from .service import MerchantMigrationError
 from .service import merchant_migration as merchant_migration_service
-from .stripe_oauth import StripeOAuthError
 
 router = APIRouter(
     prefix="/merchant-migrations",
@@ -59,40 +56,13 @@ async def stripe_callback(
     error: str | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
-    state_data = merchant_migration_service.decode_state(state)
-    return_to = state_data.get("return_to") or ""
-
-    if state_data.get("subject_id") != str(auth_subject.subject.id):
-        redirect_url = get_safe_return_url(
-            add_query_parameters(
-                return_to,
-                error="Authorization must be completed by the same account "
-                "that started it.",
-            )
-        )
-        return RedirectResponse(redirect_url, 303)
-
-    if code is None or error is not None:
-        redirect_url = get_safe_return_url(
-            add_query_parameters(
-                return_to, error=error or "Failed to connect Stripe account."
-            )
-        )
-        return RedirectResponse(redirect_url, 303)
-
-    try:
-        await merchant_migration_service.complete_stripe_authorization(
-            session,
-            auth_subject,
-            migration_id=UUID(state_data["migration_id"]),
-            code=code,
-        )
-    except (StripeOAuthError, MerchantMigrationError):
-        redirect_url = get_safe_return_url(
-            add_query_parameters(return_to, error="Failed to connect Stripe account.")
-        )
-        return RedirectResponse(redirect_url, 303)
-    return RedirectResponse(get_safe_return_url(return_to), 303)
+    result = await merchant_migration_service.complete_stripe_authorization(
+        session, auth_subject, state=state, code=code, error=error
+    )
+    target = result.return_to
+    if result.error is not None:
+        target = add_query_parameters(target, error=result.error)
+    return RedirectResponse(get_safe_return_url(target), 303)
 
 
 @router.get(

@@ -259,9 +259,11 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: str = ""
     STRIPE_CONNECT_WEBHOOK_SECRET: str = ""
     STRIPE_STATEMENT_DESCRIPTOR: str = "POLAR"
-    # Polar Stripe App, used to connect a merchant's Stripe account as a
-    # migration source via OAuth. CLIENT_ID is the app's `ca_…` id, CLIENT_LINK_ID
-    # the `chnlink_…` segment of the channel-scoped authorize URL.
+    # Credentials for the Polar Stripe App, used to connect a merchant's Stripe
+    # account as a migration source via OAuth. Both come from the app's
+    # "External test" / install link in the Stripe dashboard: CLIENT_ID is the
+    # `ca_…` OAuth client id, CLIENT_LINK_ID the `chnlink_…` id that goes in the
+    # authorize URL path.
     STRIPE_APP_CLIENT_ID: str = ""
     STRIPE_APP_CLIENT_LINK_ID: str = ""
 

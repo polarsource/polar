@@ -3,6 +3,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
+from polar.kit import jwt
 from polar.merchant_migration.repository import MerchantMigrationRepository
 from polar.merchant_migration.service import merchant_migration as service
 from polar.merchant_migration.stripe_oauth import StripeOAuthToken
@@ -98,11 +99,24 @@ class TestCompleteStripeAuthorization:
             step=MerchantMigrationStep.source_setup,
         )
         await save_fixture(migration)
-
-        updated = await service.complete_stripe_authorization(
-            session, auth_subject, migration_id=migration.id, code="ac_test"
+        state = jwt.encode(
+            data={
+                "migration_id": str(migration.id),
+                "subject_id": str(auth_subject.subject.id),
+                "return_to": "/dashboard",
+            },
+            secret=settings.SECRET,
+            type="stripe_app_oauth",
         )
 
+        result = await service.complete_stripe_authorization(
+            session, auth_subject, state=state, code="ac_test", error=None
+        )
+        assert result.error is None
+
+        repository = MerchantMigrationRepository.from_session(session)
+        updated = await repository.get_by_id(migration.id)
+        assert updated is not None
         credentials = updated.source_credentials
         assert credentials["stripe_user_id"] == "acct_test"
         assert credentials["livemode"] is True

@@ -1,14 +1,10 @@
 """OAuth client for the Polar Stripe App.
 
-The merchant connects their Stripe account by installing the Polar Stripe App
-(one-click OAuth); we never ask for a pasted API key. The access token Stripe
-returns is a restricted key bound to the merchant account, short-lived and
-minted on demand from the long-lived refresh token. Refresh tokens rotate on
-every exchange, so the caller must persist the new one each time.
-
-The Stripe Apps OAuth endpoints can only be validated against Stripe live (PAN
-copy/import don't run on sandbox), so the URLs below are centralized here and
-must be confirmed against the live POC before rollout.
+Builds the consent URL and exchanges/refreshes tokens against the Stripe Apps
+OAuth endpoints. The access token it returns is a short-lived restricted key
+bound to the merchant account, minted on demand from the long-lived refresh
+token; the refresh token rotates on every exchange, so the caller must persist
+the new one each time.
 """
 
 from dataclasses import dataclass

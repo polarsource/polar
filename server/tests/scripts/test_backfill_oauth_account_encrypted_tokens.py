@@ -137,3 +137,22 @@ class TestBackfillOAuthAccountEncryptedTokens:
         loaded = await _reload(session, oauth_account)
         assert isinstance(loaded.access_token_encrypted, EncryptedString)
         assert loaded.access_token_encrypted.encrypted_value == first_ciphertext
+
+    async def test_dry_run_counts_without_writing(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        oauth_account = await _create_legacy_oauth_account(
+            save_fixture,
+            user,
+            account_id="dry-run",
+            access_token="the-access-token",
+        )
+
+        count = await run_backfill(dry_run=True, session=session)
+
+        assert count == 1
+        loaded = await _reload(session, oauth_account)
+        assert loaded.access_token_encrypted is None

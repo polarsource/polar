@@ -7,7 +7,7 @@ from rich.progress import (
     TextColumn,
     TimeElapsedColumn,
 )
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
@@ -22,6 +22,7 @@ cli = typer.Typer()
 async def run_backfill(
     batch_size: int = 500,
     sleep_seconds: float = 0.1,
+    dry_run: bool = False,
     session: AsyncSession | None = None,
 ) -> int:
     """
@@ -52,6 +53,18 @@ async def run_backfill(
     batch_number = 0
 
     try:
+        if dry_run:
+            count = (
+                await session.scalar(
+                    select(func.count())
+                    .select_from(OAuthAccount)
+                    .where(OAuthAccount.access_token_encrypted.is_(None))
+                )
+                or 0
+            )
+            typer.echo(f"[dry-run] {count} oauth accounts would be encrypted")
+            return count
+
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -120,13 +133,17 @@ async def run_backfill(
 async def backfill(
     batch_size: int = typer.Option(500, help="Number of rows to process per batch"),
     sleep_seconds: float = typer.Option(0.1, help="Seconds to sleep between batches"),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Count rows that would be encrypted without writing"
+    ),
 ) -> None:
     """Encrypt OAuthAccount tokens written before dual-write."""
     configure_script_logging()
     total_encrypted = await run_backfill(
-        batch_size=batch_size, sleep_seconds=sleep_seconds
+        batch_size=batch_size, sleep_seconds=sleep_seconds, dry_run=dry_run
     )
-    typer.echo(f"Encrypted {total_encrypted} oauth accounts")
+    if not dry_run:
+        typer.echo(f"Encrypted {total_encrypted} oauth accounts")
 
 
 if __name__ == "__main__":

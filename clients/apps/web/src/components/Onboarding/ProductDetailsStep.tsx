@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@/hooks'
+import { OWNER_PERMISSIONS } from '@/hooks/permissions'
 import { useCreateOrganization } from '@/hooks/queries'
 import { AupVerdict, useAupValidation } from '@/hooks/useAupValidation'
 import { schemas } from '@polar-sh/client'
@@ -185,7 +186,11 @@ export function ProductDetailsStep() {
 
     setUserOrganizations((previous) => [
       ...previous,
-      { ...organization, role: 'owner' as const },
+      {
+        ...organization,
+        role: 'owner' as const,
+        permissions: OWNER_PERMISSIONS,
+      },
     ])
     updateData({
       organizationId: organization.id,

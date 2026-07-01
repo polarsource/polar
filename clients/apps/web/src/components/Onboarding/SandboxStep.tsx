@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@/hooks'
+import { OWNER_PERMISSIONS } from '@/hooks/permissions'
 import { useCreateOrganization } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
@@ -100,7 +101,7 @@ export function SandboxStep() {
 
     setUserOrganizations((prev) => [
       ...prev,
-      { ...org, role: 'owner' as const },
+      { ...org, role: 'owner' as const, permissions: OWNER_PERMISSIONS },
     ])
     router.push(`/dashboard/${org.slug}`)
     clearData()

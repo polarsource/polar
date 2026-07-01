@@ -3,6 +3,7 @@
 import revalidate from '@/app/actions'
 import { CurrencySelector } from '@/components/CurrencySelector'
 import { useAuth } from '@/hooks'
+import { OWNER_PERMISSIONS } from '@/hooks/permissions'
 import { useCreateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
@@ -90,7 +91,11 @@ const CreateOrganizationForm = ({
     await revalidate(`users:${currentUser?.id}:organizations`, { expire: 0 })
     setUserOrganizations((orgs) => [
       ...orgs,
-      { ...organization, role: 'owner' as const },
+      {
+        ...organization,
+        role: 'owner' as const,
+        permissions: OWNER_PERMISSIONS,
+      },
     ])
     onCreated(organization)
   }

@@ -263,10 +263,11 @@ async def callback(
         authentication_session, user.id, factor
     )
 
-    # Like the social login flow, hand off to the frontend so any remaining
-    # factors (e.g. TOTP) are challenged before the session completes
+    # Hand off to the organization login page so any remaining factors (e.g.
+    # TOTP) are challenged and the org-scoped session is completed via
+    # `/{slug}/complete` rather than the global, unscoped completion.
     response = RedirectResponse(
-        settings.generate_frontend_url("/auth"), status_code=303
+        settings.generate_frontend_url(f"/auth/sso/{slug}"), status_code=303
     )
     set_state_cookie(request, response, "", 0)
     return response

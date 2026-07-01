@@ -217,6 +217,9 @@ class TestSSOLoginFlow:
                 email=user.email,
             )
             assert callback.status_code == 303
+            assert (
+                f"/auth/sso/{organization.slug}" in callback.headers["location"]
+            )
 
             await sso_client.get(f"/v1/auth/{organization.slug}/complete")
 

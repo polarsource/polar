@@ -73,6 +73,10 @@ from polar.models.organization import (
 )
 from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_review import OrganizationReview
+from polar.models.organization_sso_connection import (
+    OrganizationSSOConnection,
+    OrganizationSSOConnectionType,
+)
 from polar.models.payout_account import PayoutAccount
 from polar.models.product import Product
 from polar.models.product_price import (
@@ -165,6 +169,14 @@ class OrganizationDict(TypedDict):
     feature_settings: NotRequired[dict[str, bool]]
     customer_email_settings: NotRequired[OrganizationCustomerEmailSettings]
     seat_based_customers: NotRequired[list[SeatBasedCustomerDict]]
+    sso_connection: NotRequired["SSOConnectionDict"]
+
+
+class SSOConnectionDict(TypedDict):
+    name: str
+    issuer: str
+    client_id: str
+    client_secret: str
 
 
 class ProductDict(TypedDict):
@@ -1526,6 +1538,12 @@ async def create_seed_data(
             "feature_settings": {
                 "sso_enabled": True,
             },
+            "sso_connection": {
+                "name": "Local Mock SSO",
+                "issuer": "http://localhost:8080/default",
+                "client_id": "polar",
+                "client_secret": "polar-secret",
+            },
             "details": {
                 "about": "Polar is an open source payment infrastructure platform for developers",
                 "switching": False,
@@ -1726,6 +1744,25 @@ async def create_seed_data(
         if "customer_email_settings" in org_data:
             organization.customer_email_settings = org_data["customer_email_settings"]
         session.add(organization)
+
+        # Seed an enabled SSO connection pointing at the local mock OIDC IdP.
+        # Written directly so the http:// mock issuer bypasses the HttpsUrl schema.
+        sso_connection_data = org_data.get("sso_connection")
+        if sso_connection_data is not None:
+            session.add(
+                OrganizationSSOConnection(
+                    organization=organization,
+                    name=sso_connection_data["name"],
+                    type=OrganizationSSOConnectionType.oidc,
+                    configuration={
+                        "issuer": sso_connection_data["issuer"],
+                        "client_id": sso_connection_data["client_id"],
+                        "client_secret": sso_connection_data["client_secret"],
+                        "auth_method": "client_secret",
+                    },
+                    enabled=True,
+                )
+            )
 
         # Attach a fake payout account so seeded orgs are payout-ready
         await create_fake_payout_account(session, organization, user)

@@ -26,6 +26,7 @@ export const useAuth = (): {
   const reloadUser = async (): Promise<undefined> => {
     const user = await unwrap(api.GET('/v1/users/me'))
     setCurrentUser(user)
+    setUserOrganizations(user.organizations)
   }
 
   useEffect(() => {

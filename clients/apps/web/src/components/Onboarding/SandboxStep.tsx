@@ -1,7 +1,6 @@
 'use client'
 
 import { useAuth } from '@/hooks'
-import { OWNER_PERMISSIONS } from '@/hooks/permissions'
 import { useCreateOrganization } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
@@ -51,7 +50,7 @@ function SubmitButton({
 
 export function SandboxStep() {
   const router = useRouter()
-  const { setUserOrganizations } = useAuth()
+  const { reloadUser } = useAuth()
   const { clearData } = useOnboardingData()
   const createOrganization = useCreateOrganization()
   const [submitting, setSubmitting] = useState(false)
@@ -99,10 +98,7 @@ export function SandboxStep() {
       return
     }
 
-    setUserOrganizations((prev) => [
-      ...prev,
-      { ...org, role: 'owner' as const, permissions: OWNER_PERMISSIONS },
-    ])
+    await reloadUser()
     router.push(`/dashboard/${org.slug}`)
     clearData()
   }

@@ -1,7 +1,6 @@
 'use client'
 
 import { useAuth } from '@/hooks'
-import { OWNER_PERMISSIONS } from '@/hooks/permissions'
 import { useCreateOrganization } from '@/hooks/queries'
 import { AupVerdict, useAupValidation } from '@/hooks/useAupValidation'
 import { schemas } from '@polar-sh/client'
@@ -52,7 +51,7 @@ const MAX_LENGTH = 3000
 
 export function ProductDetailsStep() {
   const router = useRouter()
-  const { setUserOrganizations } = useAuth()
+  const { reloadUser } = useAuth()
   const { data, updateData, setApiLoading, showApiResponse } =
     useOnboardingData()
   const { trackStepViewed, trackStepCompleted } = useOnboardingV2Tracking()
@@ -184,14 +183,7 @@ export function ProductDetailsStep() {
       return false
     }
 
-    setUserOrganizations((previous) => [
-      ...previous,
-      {
-        ...organization,
-        role: 'owner' as const,
-        permissions: OWNER_PERMISSIONS,
-      },
-    ])
+    await reloadUser()
     updateData({
       organizationId: organization.id,
       orgSlug: organization.slug,

@@ -78,7 +78,18 @@ async def get_sso_factor(
 router = APIRouter(prefix="/{slug}")
 
 
-@router.post("/start", name="auth.sso.start", status_code=201, tags=[APITag.private])
+@router.post(
+    "/start",
+    name="auth.sso.start",
+    status_code=201,
+    tags=[APITag.private],
+    responses={
+        404: {
+            "description": "Organization not found",
+            "model": ResourceNotFound.schema(),
+        }
+    },
+)
 async def start(
     request: Request,
     response: Response,

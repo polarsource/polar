@@ -10,6 +10,13 @@
 data "http" "cloudflare_ips_v4" {
   url                = "https://www.cloudflare.com/ips-v4"
   request_timeout_ms = 30000
+
+  lifecycle {
+    postcondition {
+      condition     = self.response_body != ""
+      error_message = "Cloudflare IPv4 ranges endpoint returned empty content. Check https://www.cloudflare.com/ips-v4"
+    }
+  }
 }
 
 # Fetch Cloudflare IPv6 ranges
@@ -18,6 +25,13 @@ data "http" "cloudflare_ips_v4" {
 data "http" "cloudflare_ips_v6" {
   url                = "https://www.cloudflare.com/ips-v6"
   request_timeout_ms = 30000
+
+  lifecycle {
+    postcondition {
+      condition     = self.response_body != ""
+      error_message = "Cloudflare IPv6 ranges endpoint returned empty content. Check https://www.cloudflare.com/ips-v6"
+    }
+  }
 }
 
 locals {
@@ -35,15 +49,4 @@ locals {
 
   # Combine all ranges into a single comma-separated string
   all_ranges = join(",", concat(local.ipv4_ranges, local.ipv6_ranges))
-}
-
-# Validate that we successfully fetched at least one IP range
-# If Cloudflare's endpoints return empty (transient outage), this will fail
-# the Terraform plan rather than silently setting forwarded_allow_ips to ""
-# which would block all traffic.
-check "cloudflare_ranges_not_empty" {
-  assert {
-    condition     = length(local.ipv4_ranges) > 0 || length(local.ipv6_ranges) > 0
-    error_message = "Cloudflare IP ranges are empty. Check if https://www.cloudflare.com/ips-v4 and https://www.cloudflare.com/ips-v6 are accessible."
-  }
 }

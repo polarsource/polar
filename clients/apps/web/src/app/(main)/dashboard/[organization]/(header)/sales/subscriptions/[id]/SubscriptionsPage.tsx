@@ -1,15 +1,16 @@
 'use client'
 
 import { CustomerContextView } from '@/components/Customer/CustomerContextView'
-import CustomFieldValue from '@/components/CustomFields/CustomFieldValue'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
+import { OrderSection } from '@/components/Orders/OrderSection'
 import { SeatViewOnlyTable } from '@/components/Seats/SeatViewOnlyTable'
-import { DetailRow } from '@/components/Shared/DetailRow'
 import CancelSubscriptionModal from '@/components/Subscriptions/CancelSubscriptionModal'
-import SubscriptionDetails from '@/components/Subscriptions/SubscriptionDetails'
-import UpcomingChargeCard from '@/components/Subscriptions/UpcomingChargeCard'
+import { SubscriptionDetailsGrid } from '@/components/Subscriptions/SubscriptionDetailsGrid'
+import SubscriptionInvoicePreview from '@/components/Subscriptions/SubscriptionInvoicePreview'
+import SubscriptionOrdersSection from '@/components/Subscriptions/SubscriptionOrdersSection'
+import { SubscriptionSecondaryDetails } from '@/components/Subscriptions/SubscriptionSecondaryDetails'
+import { SubscriptionStatus } from '@/components/Subscriptions/SubscriptionStatus'
 import UpdateSubscriptionModal from '@/components/Subscriptions/UpdateSubscriptionModal'
 import { toast } from '@/components/Toast/use-toast'
 import {
@@ -18,20 +19,19 @@ import {
   useSubscription,
   useUncancelSubscription,
 } from '@/hooks/queries'
-import { extractApiErrorMessage } from '@/utils/api/errors'
 import { useOrganizationSeats } from '@/hooks/queries/seats'
-import SubscriptionOrdersSection from '@/components/Subscriptions/SubscriptionOrdersSection'
+import { extractApiErrorMessage } from '@/utils/api/errors'
+import { isFreePrice } from '@/utils/product'
+import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, InlineModal, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/atoms/DropdownMenu'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { ArrowUpRightIcon, MoreVertical } from 'lucide-react'
-import Link from 'next/link'
 import React from 'react'
 
 interface ClientPageProps {
@@ -93,35 +93,57 @@ const ClientPage: React.FC<ClientPageProps> = ({
     return null
   }
 
+  const isFreeProduct = subscription.prices.some(isFreePrice)
+  const hasMeters = subscription.meters.length > 0
+  const showUpcoming =
+    (subscription.status === 'active' || subscription.status === 'trialing') &&
+    (!isFreeProduct || hasMeters)
+  const customer = subscription.customer
+  const hasBilling =
+    !!customer.billing_name || !!customer.billing_address || !!customer.tax_id
+  const hasSecondary =
+    hasBilling ||
+    Object.keys(subscription.metadata).length > 0 ||
+    (customFields?.items?.length ?? 0) > 0
+
   return (
     <DashboardBody
       title={
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-row items-center gap-4">
-            <h2 className="text-xl">Subscription</h2>
-          </div>
-        </div>
+        <Box alignItems="center" columnGap="l">
+          <Text variant="heading-xs" as="h2">
+            Subscription
+          </Text>
+        </Box>
       }
-      className="gap-y-8"
+      className="gap-y-16"
       header={
-        <div className="flex flex-row items-center gap-4">
+        <Box alignItems="center" columnGap="l">
           <Button type="button" onClick={showUpdateModal}>
             Update Subscription
           </Button>
-          {subscription.status !== 'canceled' && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="default"
-                  className="aspect-square px-0"
-                >
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {subscription.cancel_at_period_end ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="secondary" size="icon">
+                <MoreVertOutlined fontSize="small" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  if (typeof navigator !== 'undefined') {
+                    navigator.clipboard.writeText(subscription.id)
+                    toast({
+                      title: 'Subscription ID copied',
+                      description:
+                        'The subscription ID has been copied to clipboard',
+                    })
+                  }
+                }}
+              >
+                Copy Subscription ID
+              </DropdownMenuItem>
+              {subscription.status !== 'canceled' &&
+                (subscription.cancel_at_period_end ? (
                   <DropdownMenuItem
                     onClick={handleUncancel}
                     disabled={uncancelSubscription.isPending}
@@ -132,11 +154,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
                   <DropdownMenuItem onClick={showCancellationModal}>
                     Cancel Subscription
                   </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </Box>
       }
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none"
       contextViewTitle="Customer"
@@ -147,95 +168,53 @@ const ClientPage: React.FC<ClientPageProps> = ({
         />
       }
     >
-      <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
-        <div className="flex flex-col gap-6 p-8">
-          <div className="flex flex-col gap-2">
-            <DetailRow
-              label="Product"
-              value={
-                <Link
-                  href={`/dashboard/${organization.slug}/products/${product?.id}`}
-                  className="flex items-center gap-1"
-                >
-                  {product?.name}
-                  <ArrowUpRightIcon className="h-3.5 w-3.5 shrink-0 opacity-50" />
-                </Link>
-              }
-            />
-            <SubscriptionDetails subscription={subscription} />
-          </div>
-        </div>
+      <SubscriptionDetailsGrid
+        subscription={subscription}
+        product={product}
+        organization={organization}
+      />
 
-        {(customFields?.items?.length ?? 0) > 0 && (
-          <div className="flex flex-col gap-6 p-8">
-            <h3 className="text-lg">Custom Fields</h3>
-            <div className="flex flex-col gap-2">
-              {customFields?.items?.map((field) => (
-                <DetailRow
-                  key={field.id}
-                  label={field.name}
-                  value={
-                    <CustomFieldValue
-                      field={field}
-                      value={
-                        subscription.custom_field_data
-                          ? subscription.custom_field_data[
-                              field.slug as keyof typeof subscription.custom_field_data
-                            ]
-                          : undefined
-                      }
-                    />
-                  }
-                />
-              ))}
-            </div>
-          </div>
-        )}
+      {showUpcoming && (
+        <>
+          <Box
+            borderTopWidth={1}
+            borderStyle="solid"
+            borderColor="border-primary"
+          />
+          <SubscriptionInvoicePreview subscription={subscription} />
+        </>
+      )}
 
-        {Object.keys(subscription.metadata).length > 0 && (
-          <div className="flex flex-col gap-6 p-8">
-            <h3 className="text-lg">Metadata</h3>
-            <div className="flex flex-col gap-2">
-              {Object.entries(subscription.metadata).map(([key, value]) => (
-                <DetailRow
-                  key={key}
-                  label={key}
-                  value={value}
-                  valueClassName="font-mono"
-                />
-              ))}
-            </div>
-          </div>
-        )}
+      {hasSecondary && (
+        <>
+          <Box
+            borderTopWidth={1}
+            borderStyle="solid"
+            borderColor="border-primary"
+          />
+          <SubscriptionSecondaryDetails
+            subscription={subscription}
+            customFields={customFields?.items}
+          />
+        </>
+      )}
 
-        {hasSeatBasedSubscription && (
-          <div className="flex flex-col gap-6 p-8">
-            <div className="flex flex-col gap-y-2">
-              <h3 className="text-lg">Seats</h3>
-              <p className="dark:text-polar-500 text-sm text-gray-500">
-                {availableSeats} of {totalSeats} seats available
-              </p>
-            </div>
-
-            {!isLoadingSeats && seats.length > 0 && (
-              <div className="flex flex-col gap-4">
-                <h4 className="text-base font-medium">Assigned Seats</h4>
-                <SeatViewOnlyTable seats={seats} />
-              </div>
-            )}
-
-            {!isLoadingSeats && seats.length === 0 && (
-              <p className="dark:text-polar-500 text-sm text-gray-500">
-                No seats have been assigned yet.
-              </p>
-            )}
-          </div>
-        )}
-      </ShadowBox>
-
-      {(subscription.status === 'active' ||
-        subscription.status === 'trialing') && (
-        <UpcomingChargeCard subscription={subscription} />
+      {hasSeatBasedSubscription && (
+        <OrderSection
+          title="Seats"
+          description={
+            <Text color="muted">
+              {availableSeats} of {totalSeats} seats available
+            </Text>
+          }
+        >
+          {!isLoadingSeats && seats.length > 0 && (
+            <SeatViewOnlyTable seats={seats} />
+          )}
+          {!isLoadingSeats && seats.length === 0 && (
+            <Text color="muted">No seats have been assigned yet.</Text>
+          )}
+        </OrderSection>
       )}
 
       <SubscriptionOrdersSection
@@ -243,12 +222,19 @@ const ClientPage: React.FC<ClientPageProps> = ({
         subscription={subscription}
       />
 
-      <div className="flex flex-col gap-4 md:hidden">
+      <Box
+        flexDirection="column"
+        rowGap="l"
+        display={{ base: 'flex', md: 'none' }}
+      >
+        <Text variant="heading-xs" as="h3">
+          Customer
+        </Text>
         <CustomerContextView
           organization={organization}
           customer={subscription.customer}
         />
-      </div>
+      </Box>
 
       <InlineModal
         isShown={isShownCancellationModal}

@@ -218,7 +218,7 @@ export const OrderCalloutBanner = ({
               flexDirection="column"
               rowGap="xs"
               backgroundColor="background-card"
-              borderRadius="m"
+              borderRadius="s"
               padding="l"
             >
               <Text variant="caption" color="muted">

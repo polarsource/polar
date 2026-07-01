@@ -15,13 +15,13 @@ export const OrderSection = ({
   action?: ReactNode
   children: ReactNode
 }) => (
-  <Box as="section" flexDirection="column" rowGap="l">
+  <Box as="section" flexDirection="column" rowGap="xl">
     <Box justifyContent="between" alignItems="start" columnGap="m">
       <Box flexDirection="column" rowGap="xs">
         <Text variant="heading-xs" as="h3">
           {title}
         </Text>
-        {description && <Text color="muted">{description}</Text>}
+        {description}
       </Box>
       {action}
     </Box>
@@ -70,6 +70,60 @@ export const DetailItem = ({
         ))
       )}
       {action}
+    </Box>
+  </Box>
+)
+
+export interface DetailColumnRow {
+  key: string
+  label: ReactNode
+  value: ReactNode
+}
+
+export const DetailColumn = ({
+  title,
+  items,
+}: {
+  title: ReactNode
+  items: DetailColumnRow[]
+}) => (
+  <Box flexDirection="column" rowGap="l" minWidth={0}>
+    <Text variant="body" as="h3">
+      {title}
+    </Text>
+    <Box flexDirection="column" minWidth={0} flex={1}>
+      {items.length === 0 ? (
+        <Box
+          borderColor="border-primary"
+          borderWidth={1}
+          width="100%"
+          height="100%"
+          flexGrow={1}
+          flex={1}
+          flexDirection="column"
+          justifyContent="center"
+          alignItems="center"
+          padding="5xl"
+          borderRadius="s"
+        >
+          <Text color="muted">No Data</Text>
+        </Box>
+      ) : (
+        items.map((item, index) => (
+          <Box
+            key={item.key}
+            flexDirection="column"
+            minWidth={0}
+            borderTopWidth={index === 0 ? 0 : 1}
+            borderStyle="solid"
+            borderColor="border-primary"
+            paddingTop={index === 0 ? 'none' : 's'}
+            paddingBottom={index === items.length - 1 ? 'none' : 's'}
+          >
+            <DetailItem label={item.label} value={item.value} />
+          </Box>
+        ))
+      )}
     </Box>
   </Box>
 )

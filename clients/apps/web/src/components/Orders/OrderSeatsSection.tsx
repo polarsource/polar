@@ -28,7 +28,11 @@ export const OrderSeatsSection = ({
   return (
     <OrderSection
       title="Seats"
-      description={`${availableSeats} of ${totalSeats} seats available`}
+      description={
+        <Text color="muted">
+          {availableSeats} of {totalSeats} seats available
+        </Text>
+      }
     >
       {!isLoading && seats.length > 0 && <SeatViewOnlyTable seats={seats} />}
       {!isLoading && seats.length === 0 && (

@@ -45,7 +45,7 @@ export const SeatViewOnlyTable = ({ seats }: SeatViewOnlyTableProps) => {
           cell: ({ row }) => {
             const status = row.original.status
             const [label, color] = seatStatusDisplayConfig[status]
-            return <Status color={color} status={label} size="small" />
+            return <Status color={color} status={label} />
           },
         },
       ]}

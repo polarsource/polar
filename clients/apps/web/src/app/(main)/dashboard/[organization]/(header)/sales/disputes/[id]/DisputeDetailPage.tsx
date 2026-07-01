@@ -1,10 +1,10 @@
 'use client'
 
-import { CustomerContextView } from '@/components/Customer/CustomerContextView'
 import { DisputeBanner } from '@/components/Disputes/DisputeBanner'
+import { DisputeContextView } from '@/components/Disputes/DisputeContextView'
 import { DisputeConversation } from '@/components/Disputes/DisputeConversation'
 import { DisputeCountdownBadge } from '@/components/Disputes/DisputeCountdownBadge'
-import { DisputeOrderCard } from '@/components/Disputes/DisputeOrderCard'
+import { DisputeTimeline } from '@/components/Disputes/DisputeTimeline'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useDispute } from '@/hooks/queries/disputes'
 import { useSupportCase } from '@/hooks/queries/org'
@@ -12,7 +12,7 @@ import { useOrder } from '@/hooks/queries/orders'
 import { buildCustomerDashboardPath } from '@/utils/customer'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Button, Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Loader2 } from 'lucide-react'
@@ -125,9 +125,13 @@ const DisputeDetailPage = ({ organization, disputeId }: Props) => {
     )
   } else {
     body = (
-      <Box flexDirection="column" rowGap="xl">
+      <Box flexDirection="column" rowGap="2xl">
         <DisputeBanner dispute={dispute} organization={organization} />
-        {order && <DisputeOrderCard order={order} />}
+        <DisputeTimeline
+          dispute={dispute}
+          order={order}
+          messages={thread?.messages ?? []}
+        />
       </Box>
     )
   }
@@ -164,21 +168,13 @@ const DisputeDetailPage = ({ organization, disputeId }: Props) => {
               </Text>
             )}
           </Box>
-          {order && (
-            <Link href={`/dashboard/${organization.slug}/sales/${order.id}`}>
-              <Button variant="secondary">View order</Button>
-            </Link>
-          )}
         </Box>
       }
       contextViewTitle="Details"
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:shadow-none"
       contextView={
         order ? (
-          <CustomerContextView
-            organization={organization}
-            customer={order.customer}
-          />
+          <DisputeContextView organization={organization} order={order} />
         ) : undefined
       }
       className={bodyClassName}

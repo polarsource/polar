@@ -1,4 +1,5 @@
 import typing
+from uuid import UUID
 
 from fastapi import Depends, Request, Response
 from fastapi.responses import RedirectResponse
@@ -34,6 +35,7 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
+from polar.user_organization.repository import UserOrganizationRepository
 
 from .authentication_session import (
     AuthenticationSessionService,
@@ -146,15 +148,32 @@ async def complete(
         raise PolarAuthRedirectionError("User not found for authenticated identity")
 
     context = authentication_session.context or {}
-    factor: LoginMethod = typing.cast(
-        LoginMethod, authentication_session.used_factors[0]
-    )
+
+    # An SSO-authenticated session stays scoped to its organization, whichever
+    # completion path (including the global 2FA pages) it reaches.
+    organization_ids: frozenset[UUID] | None = None
+    factor: LoginMethod
+    sso_organization_id = context.get("sso_organization_id")
+    if sso_organization_id is not None:
+        organization_id = UUID(sso_organization_id)
+        user_organization_repository = UserOrganizationRepository.from_session(session)
+        membership = await user_organization_repository.get_by_user_and_organization(
+            user.id, organization_id
+        )
+        if membership is None:
+            raise PolarAuthRedirectionError("You are not a member of this organization")
+        organization_ids = frozenset({organization_id})
+        factor = "sso"
+    else:
+        factor = typing.cast(LoginMethod, authentication_session.used_factors[0])
+
     response = await auth_service.get_login_response(
         session,
         request,
         user,
         return_to=context.get("return_to"),
         factor=factor,
+        organization_ids=organization_ids,
     )
     await authentication_session_service.set_cookie(request, response, "", 0)
     return response

@@ -259,6 +259,13 @@ async def callback(
     if membership is None:
         raise PolarAuthRedirectionError("You are not a member of this organization")
 
+    # Mark that SSO authenticated this session for the organization, so any
+    # completion path (including the global 2FA pages) mints an org-scoped
+    # session and never falls back to an unscoped login.
+    authentication_session.context = {
+        **(authentication_session.context or {}),
+        "sso_organization_id": str(connection.organization_id),
+    }
     await authentication_session_service.advance(
         authentication_session, user.id, factor
     )

@@ -36,7 +36,10 @@ const REASON_OPTIONS = [
     label: 'The purchase was made by the rightful cardholder',
   },
   { value: 'other', label: 'Other' },
-] as const
+] as const satisfies readonly {
+  value: schemas['DisputeWinReason']
+  label: string
+}[]
 
 interface Props {
   organization: schemas['Organization']
@@ -58,11 +61,13 @@ export const DisputeRespondView = ({ organization, dispute }: Props) => {
   })
   const reply = useReplyToSupportCase()
 
-  const isValid =
-    reason !== '' &&
-    (reason !== 'other' || otherReason.trim().length > 0) &&
-    explanation.trim().length >= MIN_EXPLANATION_LENGTH &&
-    caseId != null
+  const hasReason = reason !== ''
+  const otherReasonProvided =
+    reason === 'other' ? otherReason.trim().length > 0 : true
+  const hasExplanation = explanation.trim().length >= MIN_EXPLANATION_LENGTH
+  const hasCase = caseId != null
+
+  const isValid = hasReason && otherReasonProvided && hasExplanation && hasCase
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()

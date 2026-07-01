@@ -135,6 +135,7 @@ class SupportCaseSection:
         author_emails: dict[UUID, str] | None = None,
         current_user_id: UUID | None = None,
         attachments_by_message: dict[UUID, list[SupportCaseAttachment]] | None = None,
+        attachments: Sequence[SupportCaseAttachment] | None = None,
         dispute: Dispute | None = None,
         return_to: str | None = None,
     ) -> None:
@@ -143,6 +144,7 @@ class SupportCaseSection:
         self.author_emails = author_emails or {}
         self.current_user_id = current_user_id
         self.attachments_by_message = attachments_by_message or {}
+        self.attachments = attachments or []
         # The dispute behind a dispute case, surfaced as a read-only facts panel.
         self.dispute = dispute
         # Origin to come back to after an action (e.g. the org page), threaded
@@ -369,13 +371,9 @@ class SupportCaseSection:
             text(label)
 
     def _render_evidence_files(self, request: Request) -> None:
-        """The merchant's submitted evidence, consolidated for a quick review."""
-        attachments = [
-            attachment
-            for message_attachments in self.attachments_by_message.values()
-            for attachment in message_attachments
-        ]
-        if not attachments:
+        """Every attachment on the case — the counter submission and any sent
+        later in the chat — consolidated so support always has the full set."""
+        if not self.attachments:
             return
         with tag.div(
             classes="flex flex-col gap-2 px-4 pb-4 border-t border-base-200 pt-4"
@@ -383,8 +381,8 @@ class SupportCaseSection:
             with tag.div(
                 classes="text-xs uppercase tracking-wide text-base-content/40"
             ):
-                text(f"Evidence files ({len(attachments)})")
-            for attachment in attachments:
+                text(f"Merchant submitted files ({len(self.attachments)})")
+            for attachment in self.attachments:
                 self._render_attachment(request, attachment)
 
     @contextlib.contextmanager

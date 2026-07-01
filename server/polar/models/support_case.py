@@ -213,13 +213,10 @@ class DisputeSupportCase(SupportCase):
         default=None,
     )
 
-    # The merchant's stated reason for contesting, set when they submit their
-    # counter. Null until then (and on system-opened, not-yet-answered cases).
     win_reason: Mapped[DisputeWinReason | None] = mapped_column(
         StringEnum(DisputeWinReason), nullable=True, default=None
     )
 
-    # Free-text detail when ``win_reason`` is ``other``.
     win_reason_other: Mapped[str | None] = mapped_column(
         Text, nullable=True, default=None
     )

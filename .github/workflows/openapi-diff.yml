@@ -24,12 +24,12 @@ jobs:
 
     steps:
       - name: Checkout PR (head)
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.0
         with:
           path: head
 
       - name: Checkout base branch
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.0
         with:
           ref: ${{ github.base_ref }}
           path: base

@@ -63,7 +63,7 @@ jobs:
     outputs:
       deployment-url: ${{ steps.deploy.outputs.deployment-url }}
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
@@ -89,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
 
       - name: Deploy Backend to Render
         run: |
@@ -123,7 +123,7 @@ jobs:
     # noise, not a deploy regression. Don't fail the workflow.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
       - name: Resolve image tag
         id: tag
         run: echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
@@ -148,7 +148,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
@@ -191,7 +191,7 @@ jobs:
     # would turn this into a hard production-deploy outage.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
         with:
           # Depth 1 is sufficient: we only ever tag github.sha (HEAD), which
           # checkout fetches by default.
@@ -234,7 +234,7 @@ jobs:
     # must not fail the workflow_call.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
         with:
           fetch-depth: 1
 

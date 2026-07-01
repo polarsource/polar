@@ -13,6 +13,7 @@ import { Button, InlineModal, ListGroup, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import { useModal } from '../../Modal/useModal'
+import EditSSOConnectionModal from './EditSSOConnectionModal'
 import NewSSOConnectionModal from './NewSSOConnectionModal'
 
 const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
@@ -70,6 +71,7 @@ const SSOConnectionRow = ({
   org: schemas['Organization']
   connection: schemas['OrganizationSSOConnection']
 }) => {
+  const { isShown, show, hide } = useModal()
   const updateConnection = useUpdateSSOConnection(org.id, connection.id)
   const deleteConnection = useDeleteSSOConnection(org.id)
 
@@ -103,36 +105,52 @@ const SSOConnectionRow = ({
   }
 
   return (
-    <Box alignItems="center" justifyContent="between" width="100%">
-      <Box flexDirection="column" gap="xs">
-        <Box alignItems="center" gap="s">
-          <Text>{connection.name ?? connection.configuration.issuer}</Text>
-          <Status
-            status={connection.enabled ? 'Enabled' : 'Disabled'}
-            color={connection.enabled ? 'green' : 'gray'}
-            size="small"
-          />
+    <>
+      <Box alignItems="center" justifyContent="between" width="100%">
+        <Box flexDirection="column" gap="xs">
+          <Box alignItems="center" gap="s">
+            <Text>{connection.name ?? connection.configuration.issuer}</Text>
+            <Status
+              status={connection.enabled ? 'Enabled' : 'Disabled'}
+              color={connection.enabled ? 'green' : 'gray'}
+              size="small"
+            />
+          </Box>
+          <Text variant="caption" color="muted">
+            {connection.configuration.issuer}
+          </Text>
         </Box>
-        <Text variant="caption" color="muted">
-          {connection.configuration.issuer}
-        </Text>
+        <Box alignItems="center" gap="s">
+          <Button variant="secondary" onClick={show}>
+            Edit
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={toggleEnabled}
+            loading={updateConnection.isPending}
+          >
+            {connection.enabled ? 'Disable' : 'Enable'}
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={onDelete}
+            loading={deleteConnection.isPending}
+          >
+            Delete
+          </Button>
+        </Box>
       </Box>
-      <Box alignItems="center" gap="s">
-        <Button
-          variant="secondary"
-          onClick={toggleEnabled}
-          loading={updateConnection.isPending}
-        >
-          {connection.enabled ? 'Disable' : 'Enable'}
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={onDelete}
-          loading={deleteConnection.isPending}
-        >
-          Delete
-        </Button>
-      </Box>
-    </Box>
+      <InlineModal
+        isShown={isShown}
+        hide={hide}
+        modalContent={
+          <EditSSOConnectionModal
+            organization={org}
+            connection={connection}
+            hide={hide}
+          />
+        }
+      />
+    </>
   )
 }

@@ -608,7 +608,7 @@
       {
         "tab": "Changelog",
         "icon": "signal-stream",
-        "pages": ["changelog/recent", "changelog/api"]
+        "pages": ["changelog/recent"]
       },
       {
         "tab": "Support",

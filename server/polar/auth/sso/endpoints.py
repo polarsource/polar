@@ -240,8 +240,20 @@ async def callback(
         raise PolarAuthRedirectionError(OIDC_ERROR_MESSAGE)
 
     claims = await factor.get_id_token_claims(oauth_account.id_token)
-    if claims.get("email_verified") is not True:
-        raise PolarAuthRedirectionError("The email address could not be verified")
+    email_verified = claims.get("email_verified")
+    if email_verified is not True:
+        if email_verified is False:
+            raise PolarAuthRedirectionError("The email address could not be verified")
+        try:
+            # Some providers (e.g. Okta) omit `email_verified` from the id_token but
+            # assert it at the userinfo endpoint. Fall back to the profile before failing.
+            profile = await factor.get_profile(oauth_account.access_token)
+        except (OAuth2GetProfileException, NotImplementedError) as e:
+            raise PolarAuthRedirectionError(
+                "The email address could not be verified"
+            ) from e
+        if profile.get("email_verified") is not True:
+            raise PolarAuthRedirectionError("The email address could not be verified")
 
     email = claims.get("email")
     if email is None:

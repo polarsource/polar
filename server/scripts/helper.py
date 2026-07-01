@@ -8,7 +8,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from sqlalchemy import CursorResult, Update, bindparam
 from sqlalchemy.sql.elements import BindParameter
 
-from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.postgres import create_async_engine
 
 
@@ -76,6 +76,7 @@ async def run_batched_update(
     *,
     batch_size: int = 5000,
     sleep_seconds: float = 0.1,
+    session: AsyncSession | None = None,
 ) -> int:
     """
     Execute a batched update migration to avoid long locks on large tables.
@@ -108,12 +109,17 @@ async def run_batched_update(
             subset of rows.
         batch_size: Number of rows to process per batch.
         sleep_seconds: Seconds to sleep between batches to reduce database load.
+        session: Optional session to run every batch on (used by tests). When
+            omitted, each batch opens its own session on a dedicated engine.
 
     Returns:
         Total number of rows updated.
     """
-    engine = create_async_engine("script")
-    sessionmaker = create_async_sessionmaker(engine)
+    engine = None
+    sessionmaker = None
+    if session is None:
+        engine = create_async_engine("script")
+        sessionmaker = create_async_sessionmaker(engine)
 
     total_updated = 0
     batch_number = 0
@@ -128,30 +134,37 @@ async def run_batched_update(
             task = progress.add_task("[cyan]Batch 0: 0 rows updated", total=None)
 
             while True:
-                async with sessionmaker() as session:
+                if session is not None:
                     result = await session.execute(
                         update_statement, {"limit": batch_size}
                     )
                     await session.commit()
-
-                    # https://github.com/sqlalchemy/sqlalchemy/commit/67f62aac5b49b6d048ca39019e5bd123d3c9cfb2
-                    rows_updated = cast(CursorResult[Any], result).rowcount
-
-                    if rows_updated == 0:
-                        progress.update(
-                            task,
-                            description=f"[green]✓ Complete: {total_updated} rows updated",
+                else:
+                    assert sessionmaker is not None
+                    async with sessionmaker() as batch_session:
+                        result = await batch_session.execute(
+                            update_statement, {"limit": batch_size}
                         )
-                        break
+                        await batch_session.commit()
 
-                    batch_number += 1
-                    total_updated += rows_updated
+                # https://github.com/sqlalchemy/sqlalchemy/commit/67f62aac5b49b6d048ca39019e5bd123d3c9cfb2
+                rows_updated = cast(CursorResult[Any], result).rowcount
+
+                if rows_updated == 0:
                     progress.update(
                         task,
-                        description=(
-                            f"[cyan]Batch {batch_number}: {total_updated} rows updated"
-                        ),
+                        description=f"[green]✓ Complete: {total_updated} rows updated",
                     )
+                    break
+
+                batch_number += 1
+                total_updated += rows_updated
+                progress.update(
+                    task,
+                    description=(
+                        f"[cyan]Batch {batch_number}: {total_updated} rows updated"
+                    ),
+                )
 
                 if sleep_seconds > 0:
                     await asyncio.sleep(sleep_seconds)
@@ -159,4 +172,5 @@ async def run_batched_update(
         return total_updated
 
     finally:
-        await engine.dispose()
+        if engine is not None:
+            await engine.dispose()

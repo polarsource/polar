@@ -660,6 +660,7 @@ EventTypeAdapter: TypeAdapter[Event] = TypeAdapter(Event)
 
 class EventName(Schema):
     name: str = Field(description="The name of the event.")
+    label: str = Field(description="Human readable label of the event.")
     source: EventSource = Field(description=_SOURCE_DESCRIPTION)
     occurrences: int = Field(description="Number of times the event has occurred.")
     first_seen: datetime = Field(description="The first time the event occurred.")

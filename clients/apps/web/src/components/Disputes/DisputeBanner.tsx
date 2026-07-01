@@ -8,14 +8,22 @@ import { getDisputeReasonExplanation } from '@/utils/dispute'
 import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import Link from 'next/link'
 
 const DISPUTE_DOCS_URL =
   'https://polar.sh/docs/merchant-of-record/fees#dispute/chargeback-fees'
 
-export const DisputeBanner = ({ dispute }: { dispute: schemas['Dispute'] }) => {
+export const DisputeBanner = ({
+  dispute,
+  organization,
+}: {
+  dispute: schemas['Dispute']
+  organization: schemas['Organization']
+}) => {
   const needsResponse = dispute.status === 'needs_response'
   const acceptModal = useModal()
   const acceptDispute = useAcceptDispute()
+  const respondPath = `/dashboard/${organization.slug}/sales/disputes/${dispute.id}/respond`
 
   return (
     <Box
@@ -34,7 +42,8 @@ export const DisputeBanner = ({ dispute }: { dispute: schemas['Dispute'] }) => {
         <Text color="muted">{getDisputeReasonExplanation(dispute.reason)}</Text>
         {needsResponse && (
           <Text color="muted">
-            You can accept this dispute to refund the customer and close it.
+            Counter it with evidence to contest the chargeback, or accept it to
+            refund the customer and close it.
           </Text>
         )}
       </Box>
@@ -44,7 +53,8 @@ export const DisputeBanner = ({ dispute }: { dispute: schemas['Dispute'] }) => {
           alignItems="center"
           justifyContent="between"
           columnGap="m"
-          padding="l"
+          paddingVertical="l"
+          paddingHorizontal="xl"
           borderTopWidth={1}
           borderStyle="solid"
           borderColor="border-primary"
@@ -57,9 +67,18 @@ export const DisputeBanner = ({ dispute }: { dispute: schemas['Dispute'] }) => {
           >
             Learn more about dispute fees
           </a>
-          <Button onClick={acceptModal.show} loading={acceptDispute.isPending}>
-            Accept dispute
-          </Button>
+          <Box flexDirection="row" alignItems="center" columnGap="m">
+            <Button
+              variant="secondary"
+              onClick={acceptModal.show}
+              loading={acceptDispute.isPending}
+            >
+              Accept dispute
+            </Button>
+            <Link href={respondPath}>
+              <Button>Counter dispute</Button>
+            </Link>
+          </Box>
         </Box>
       )}
 

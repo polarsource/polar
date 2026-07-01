@@ -14,6 +14,8 @@ from tagflow import attr, tag, text
 from polar.enums import PaymentProcessor
 from polar.models import Dispute, Organization
 from polar.models.support_case import (
+    DisputeSupportCase,
+    DisputeWinReason,
     SupportCase,
     SupportCaseAttachment,
     SupportCaseMessage,
@@ -36,6 +38,15 @@ _AUTHOR_LABELS: dict[SupportCaseMessageAuthorKind, str] = {
 _CASE_TITLES: dict[SupportCaseType, str] = {
     SupportCaseType.review_appeal: "Appeal Support Case",
     SupportCaseType.dispute: "Dispute Support Case",
+}
+
+_WIN_REASON_LABELS: dict[DisputeWinReason, str] = {
+    DisputeWinReason.cardholder_withdrew: "The cardholder withdrew the dispute",
+    DisputeWinReason.cardholder_refunded: "The cardholder was refunded",
+    DisputeWinReason.rightful_cardholder: (
+        "The purchase was made by the rightful cardholder"
+    ),
+    DisputeWinReason.other: "Other",
 }
 
 # The "opened" milestone reads differently per case type (a merchant-requested
@@ -341,6 +352,40 @@ class SupportCaseSection:
                 if dispute.payment_processor_id:
                     with self._fact("Processor dispute ID"):
                         self._render_processor_id(dispute)
+                with self._fact("Why they should win"):
+                    self._render_win_reason()
+            self._render_evidence_files(request)
+
+    def _render_win_reason(self) -> None:
+        case = self.thread[0] if self.thread else None
+        if not isinstance(case, DisputeSupportCase) or case.win_reason is None:
+            with tag.span(classes="text-base-content/50"):
+                text("Not provided")
+            return
+        label = _WIN_REASON_LABELS.get(case.win_reason, case.win_reason.value)
+        if case.win_reason == DisputeWinReason.other and case.win_reason_other:
+            text(f"{label} — {case.win_reason_other}")
+        else:
+            text(label)
+
+    def _render_evidence_files(self, request: Request) -> None:
+        """The merchant's submitted evidence, consolidated for a quick review."""
+        attachments = [
+            attachment
+            for message_attachments in self.attachments_by_message.values()
+            for attachment in message_attachments
+        ]
+        if not attachments:
+            return
+        with tag.div(
+            classes="flex flex-col gap-2 px-4 pb-4 border-t border-base-200 pt-4"
+        ):
+            with tag.div(
+                classes="text-xs uppercase tracking-wide text-base-content/40"
+            ):
+                text(f"Evidence files ({len(attachments)})")
+            for attachment in attachments:
+                self._render_attachment(request, attachment)
 
     @contextlib.contextmanager
     def _fact(self, label: str) -> Generator[None]:

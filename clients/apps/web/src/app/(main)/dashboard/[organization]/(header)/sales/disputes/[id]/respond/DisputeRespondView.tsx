@@ -11,14 +11,32 @@ import { useReplyToSupportCase } from '@/hooks/queries/org'
 import { useOrder } from '@/hooks/queries/orders'
 import { getDisputeReasonExplanation } from '@/utils/dispute'
 import { schemas } from '@polar-sh/client'
-import { Button, Text } from '@polar-sh/orbit'
+import { Button, Input, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Textarea } from '@polar-sh/orbit/ui/textarea'
+import { Label } from '@polar-sh/ui/components/ui/label'
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from '@polar-sh/ui/components/ui/radio-group'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 const MIN_EXPLANATION_LENGTH = 20
+
+const REASON_OPTIONS = [
+  {
+    value: 'cardholder_withdrew',
+    label: 'The cardholder withdrew the dispute',
+  },
+  { value: 'cardholder_refunded', label: 'The cardholder was refunded' },
+  {
+    value: 'rightful_cardholder',
+    label: 'The purchase was made by the rightful cardholder',
+  },
+  { value: 'other', label: 'Other' },
+] as const
 
 interface Props {
   organization: schemas['Organization']
@@ -31,6 +49,8 @@ export const DisputeRespondView = ({ organization, dispute }: Props) => {
   const caseId = dispute.case_id
   const { data: order } = useOrder(dispute.order_id)
 
+  const [reason, setReason] = useState<schemas['DisputeWinReason'] | ''>('')
+  const [otherReason, setOtherReason] = useState('')
   const [explanation, setExplanation] = useState('')
   const [evidence, setEvidence] = useState<DisputeEvidenceState>({
     fileIds: [],
@@ -39,7 +59,10 @@ export const DisputeRespondView = ({ organization, dispute }: Props) => {
   const reply = useReplyToSupportCase()
 
   const isValid =
-    explanation.trim().length >= MIN_EXPLANATION_LENGTH && caseId != null
+    reason !== '' &&
+    (reason !== 'other' || otherReason.trim().length > 0) &&
+    explanation.trim().length >= MIN_EXPLANATION_LENGTH &&
+    caseId != null
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -50,6 +73,8 @@ export const DisputeRespondView = ({ organization, dispute }: Props) => {
       caseId,
       body: explanation.trim(),
       file_ids: evidence.fileIds,
+      dispute_win_reason: reason || null,
+      dispute_win_reason_other: reason === 'other' ? otherReason.trim() : null,
     })
     if (result.error) {
       toast({
@@ -84,6 +109,49 @@ export const DisputeRespondView = ({ organization, dispute }: Props) => {
       <div className="w-full">
         <form onSubmit={handleSubmit}>
           <Box flexDirection="column" rowGap="xl">
+            <Box flexDirection="column" rowGap="xs">
+              <Box flexDirection="column" rowGap="xs" marginBottom="s">
+                <Text variant="heading-xxs" as="h3">
+                  Why should you win this dispute?
+                </Text>
+                <Text variant="caption" color="muted">
+                  Choose the reason that best describes your case.
+                </Text>
+              </Box>
+              <RadioGroup
+                value={reason}
+                onValueChange={(value) =>
+                  setReason(value as schemas['DisputeWinReason'])
+                }
+              >
+                {REASON_OPTIONS.map((option) => (
+                  <Box key={option.value} alignItems="center" columnGap="m">
+                    <RadioGroupItem
+                      value={option.value}
+                      id={`reason-${option.value}`}
+                    />
+                    <Label
+                      htmlFor={`reason-${option.value}`}
+                      className="cursor-pointer"
+                    >
+                      {option.label}
+                    </Label>
+                  </Box>
+                ))}
+              </RadioGroup>
+              {reason === 'other' && (
+                <Box marginTop="s">
+                  <Input
+                    value={otherReason}
+                    onChange={(event) => setOtherReason(event.target.value)}
+                    placeholder="Tell us why you should win"
+                    maxLength={500}
+                    autoFocus
+                  />
+                </Box>
+              )}
+            </Box>
+
             <Box flexDirection="column" rowGap="xs">
               <Box flexDirection="column" rowGap="xs" marginBottom="s">
                 <Text variant="heading-xxs" as="h3">

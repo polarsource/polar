@@ -36,6 +36,19 @@ class SupportCaseType(StrEnum):
     # future: refund_request
 
 
+class DisputeWinReason(StrEnum):
+    """Why the merchant believes they should win the chargeback.
+
+    Collected on their counter submission to help support gather the right
+    evidence before submitting to the card network.
+    """
+
+    cardholder_withdrew = "cardholder_withdrew"
+    cardholder_refunded = "cardholder_refunded"
+    rightful_cardholder = "rightful_cardholder"
+    other = "other"
+
+
 class SupportCaseParticipantKind(StrEnum):
     platform = "platform"
     merchant = "merchant"
@@ -198,6 +211,17 @@ class DisputeSupportCase(SupportCase):
         ForeignKey("disputes.id", ondelete="restrict"),
         nullable=True,
         default=None,
+    )
+
+    # The merchant's stated reason for contesting, set when they submit their
+    # counter. Null until then (and on system-opened, not-yet-answered cases).
+    win_reason: Mapped[DisputeWinReason | None] = mapped_column(
+        StringEnum(DisputeWinReason), nullable=True, default=None
+    )
+
+    # Free-text detail when ``win_reason`` is ``other``.
+    win_reason_other: Mapped[str | None] = mapped_column(
+        Text, nullable=True, default=None
     )
 
     @declared_attr

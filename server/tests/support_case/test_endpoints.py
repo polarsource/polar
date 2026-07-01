@@ -1,10 +1,13 @@
 import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
+from sqlalchemy import select
 
 from polar.dispute.dispute_case import DISPUTE_GREETING_DELAY_MS
 from polar.models import Customer, Organization, Product
 from polar.models.support_case import (
+    DisputeSupportCase,
+    DisputeWinReason,
     SupportCaseAudience,
     SupportCaseMessageAuthorKind,
 )
@@ -220,6 +223,70 @@ class TestReplyToSupportCase:
         )
         assert response.status_code == 201
         assert response.json()["body"] == "my evidence"
+
+    @pytest.mark.auth
+    async def test_dispute_reply_records_win_reason(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        case = await create_dispute_case(save_fixture, organization, customer, product)
+        assert case.win_reason is None
+
+        response = await client.post(
+            f"/v1/support-cases/{case.id}/messages",
+            json={
+                "body": "my evidence",
+                "dispute_win_reason": "cardholder_withdrew",
+            },
+        )
+        assert response.status_code == 201
+
+        win_reason = await session.scalar(
+            select(DisputeSupportCase.win_reason).where(
+                DisputeSupportCase.id == case.id
+            )
+        )
+        assert win_reason == DisputeWinReason.cardholder_withdrew
+
+    @pytest.mark.auth
+    async def test_dispute_reply_records_win_reason_other(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        case = await create_dispute_case(save_fixture, organization, customer, product)
+
+        response = await client.post(
+            f"/v1/support-cases/{case.id}/messages",
+            json={
+                "body": "my evidence",
+                "dispute_win_reason": "other",
+                "dispute_win_reason_other": "The subscription was reactivated",
+            },
+        )
+        assert response.status_code == 201
+
+        row = (
+            await session.execute(
+                select(
+                    DisputeSupportCase.win_reason,
+                    DisputeSupportCase.win_reason_other,
+                ).where(DisputeSupportCase.id == case.id)
+            )
+        ).one()
+        assert row.win_reason == DisputeWinReason.other
+        assert row.win_reason_other == "The subscription was reactivated"
 
     @pytest.mark.auth
     async def test_dispute_first_reply_enqueues_greeting(

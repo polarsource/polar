@@ -137,6 +137,8 @@ async def reply_to_support_case(
             author_user=auth_subject.subject,
             body=message.body,
             files=files,
+            win_reason=message.dispute_win_reason,
+            win_reason_other=message.dispute_win_reason_other,
         )
     raise CaseRepliesNotSupportedError(case)
 

@@ -19907,6 +19907,19 @@ export interface components {
       | 'lost'
       | 'won'
     /**
+     * DisputeWinReason
+     * @description Why the merchant believes they should win the chargeback.
+     *
+     *     Collected on their counter submission to help support gather the right
+     *     evidence before submitting to the card network.
+     * @enum {string}
+     */
+    DisputeWinReason:
+      | 'cardholder_withdrew'
+      | 'cardholder_refunded'
+      | 'rightful_cardholder'
+      | 'other'
+    /**
      * DownloadableFileCreate
      * @description Schema to create a file to be associated with the downloadables benefit.
      */
@@ -32227,6 +32240,13 @@ export interface components {
       body?: string | null
       /** File Ids */
       file_ids?: string[]
+      /** @description For a dispute case, the merchant's stated grounds for contesting. Set on the counter submission; ignored for other case types. */
+      dispute_win_reason?: components['schemas']['DisputeWinReason'] | null
+      /**
+       * Dispute Win Reason Other
+       * @description Free-text detail when `dispute_win_reason` is `other`.
+       */
+      dispute_win_reason_other?: string | null
     }
     /**
      * SupportCaseMessageType
@@ -59262,6 +59282,14 @@ export const disputeStatusValues: ReadonlyArray<
   'under_review',
   'lost',
   'won',
+]
+export const disputeWinReasonValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['DisputeWinReason']
+> = [
+  'cardholder_withdrew',
+  'cardholder_refunded',
+  'rightful_cardholder',
+  'other',
 ]
 export const downloadableFileCreateServiceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DownloadableFileCreate']['service']

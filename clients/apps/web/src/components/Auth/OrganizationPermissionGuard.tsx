@@ -25,5 +25,5 @@ export default async function OrganizationPermissionGuard({
     return <AccessRestricted message={message} />
   }
 
-  return <>{children}</>
+  return children
 }

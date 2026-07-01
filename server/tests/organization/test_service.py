@@ -3733,16 +3733,29 @@ class TestSetOrganizationOffboarding:
         assert result.status == OrganizationStatus.OFFBOARDING
         assert result.status_updated_at is not None
 
+    async def test_from_denied(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+
+        result = await organization_service.set_organization_offboarding(
+            session, organization
+        )
+
+        assert result.status == OrganizationStatus.OFFBOARDING
+        assert result.status_updated_at is not None
+
     @pytest.mark.parametrize(
         "status",
         [
             OrganizationStatus.SNOOZED,
             OrganizationStatus.ACTIVE,
-            OrganizationStatus.DENIED,
             OrganizationStatus.CREATED,
         ],
     )
-    async def test_from_non_review_raises(
+    async def test_from_invalid_status_raises(
         self,
         status: OrganizationStatus,
         session: AsyncSession,
@@ -4513,17 +4526,24 @@ class TestStatusTransitions:
         organization.set_status(OrganizationStatus.REVIEW)
         assert organization.status == OrganizationStatus.REVIEW
 
+    async def test_denied_can_go_to_offboarding(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+        organization.set_status(OrganizationStatus.OFFBOARDING)
+        assert organization.status == OrganizationStatus.OFFBOARDING
+
     @pytest.mark.parametrize(
         "current",
         [
             OrganizationStatus.CREATED,
             OrganizationStatus.SNOOZED,
             OrganizationStatus.ACTIVE,
-            OrganizationStatus.DENIED,
             OrganizationStatus.BLOCKED,
         ],
     )
-    async def test_only_review_can_go_to_offboarding(
+    async def test_only_review_or_denied_can_go_to_offboarding(
         self,
         current: OrganizationStatus,
         organization: Organization,

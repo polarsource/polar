@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy import select
 
 from polar.kit.db.postgres import AsyncSession
-from polar.models import Customer, Order, Organization, Product
+from polar.models import Order, Organization, Product
 from scripts.backfill_order_billing_name import run_backfill
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_order

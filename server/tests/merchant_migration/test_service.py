@@ -6,7 +6,6 @@ from polar.config import settings
 from polar.kit import jwt
 from polar.merchant_migration.repository import MerchantMigrationRepository
 from polar.merchant_migration.service import merchant_migration as service
-from polar.merchant_migration.stripe_oauth import StripeOAuthToken
 from polar.models import (
     MerchantMigration,
     Organization,
@@ -19,16 +18,7 @@ from polar.models.merchant_migration import (
 )
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-
-
-def _token(refresh_token: str = "rt_test") -> StripeOAuthToken:
-    return StripeOAuthToken(
-        access_token="rk_test",
-        refresh_token=refresh_token,
-        stripe_user_id="acct_test",
-        scope="customer_read",
-        livemode=True,
-    )
+from tests.merchant_migration._helpers import build_stripe_oauth_token
 
 
 @pytest.mark.asyncio
@@ -91,7 +81,7 @@ class TestCompleteStripeAuthorization:
     ) -> None:
         mocker.patch(
             "polar.merchant_migration.service.stripe_oauth.exchange_code",
-            return_value=_token("rt_secret"),
+            return_value=build_stripe_oauth_token("rt_secret"),
         )
         migration = MerchantMigration(
             organization_id=organization.id,

@@ -8,7 +8,7 @@ from pytest_mock import MockerFixture
 from polar.auth.scope import Scope
 from polar.config import settings
 from polar.merchant_migration.repository import MerchantMigrationRepository
-from polar.merchant_migration.stripe_oauth import StripeOAuthError, StripeOAuthToken
+from polar.merchant_migration.stripe_oauth import StripeOAuthError
 from polar.models import MerchantMigration, Organization, UserOrganization
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
@@ -17,21 +17,12 @@ from polar.models.merchant_migration import (
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.merchant_migration._helpers import build_stripe_oauth_token
 
 
 def _configure_app(mocker: MockerFixture) -> None:
     mocker.patch.object(settings, "STRIPE_APP_CLIENT_ID", "ca_test")
     mocker.patch.object(settings, "STRIPE_APP_CLIENT_LINK_ID", "chnlink_test")
-
-
-def _token() -> StripeOAuthToken:
-    return StripeOAuthToken(
-        access_token="rk_test",
-        refresh_token="rt_secret",
-        stripe_user_id="acct_test",
-        scope="customer_read",
-        livemode=True,
-    )
 
 
 @pytest.mark.asyncio
@@ -96,7 +87,7 @@ class TestStripeCallback:
         _configure_app(mocker)
         mocker.patch(
             "polar.merchant_migration.service.stripe_oauth.exchange_code",
-            return_value=_token(),
+            return_value=build_stripe_oauth_token(),
         )
 
         authorize = await client.get(
@@ -170,11 +161,7 @@ class TestStripeCallback:
         assert "error=" in response.headers["location"]
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
-    async def test_invalid_state_returns_400(
-        self,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-    ) -> None:
+    async def test_invalid_state_returns_400(self, client: AsyncClient) -> None:
         response = await client.get(
             "/v1/merchant-migrations/stripe/callback",
             params={"state": "not-a-jwt", "code": "ac_test"},

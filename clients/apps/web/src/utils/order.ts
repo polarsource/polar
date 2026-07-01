@@ -70,3 +70,23 @@ export function isOrderDunningFailed(
     subscription.customer_cancellation_reason === null
   )
 }
+
+/**
+ * Returns the succeeded refund that was issued to prevent a chargeback, if the
+ * order was (partially) refunded for that reason. This is the signal we use to
+ * surface the chargeback prevention banner and derived status.
+ */
+export function getChargebackPreventionRefund(
+  order: schemas['Order'],
+  refunds: schemas['Refund'][],
+): schemas['Refund'] | null {
+  if (order.status !== 'refunded' && order.status !== 'partially_refunded') {
+    return null
+  }
+  return (
+    refunds.find(
+      (refund) =>
+        refund.reason === 'dispute_prevention' && refund.status === 'succeeded',
+    ) ?? null
+  )
+}

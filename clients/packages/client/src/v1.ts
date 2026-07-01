@@ -26329,6 +26329,11 @@ export interface components {
        * @description ID of the organization the connection belongs to.
        */
       organization_id: string
+      /**
+       * Name
+       * @description Human-friendly label for the connection, shown on the login page.
+       */
+      name: string | null
       /** @description Type of the SSO connection. */
       type: components['schemas']['OrganizationSSOConnectionType']
       /** @description Provider-specific configuration of the connection. */
@@ -26341,6 +26346,11 @@ export interface components {
     }
     /** OrganizationSSOConnectionCreate */
     OrganizationSSOConnectionCreate: {
+      /**
+       * Name
+       * @description Human-friendly label for the connection, shown on the login page.
+       */
+      name?: string | null
       /**
        * Type
        * @description Type of the SSO connection.
@@ -26369,6 +26379,11 @@ export interface components {
     OrganizationSSOConnectionType: 'oidc'
     /** OrganizationSSOConnectionUpdate */
     OrganizationSSOConnectionUpdate: {
+      /**
+       * Name
+       * @description Human-friendly label for the connection, shown on the login page.
+       */
+      name?: string | null
       /**
        * Configuration
        * @description Provider-specific configuration of the connection.
@@ -29660,6 +29675,11 @@ export interface components {
       connection_id: string
       /** Organization Slug */
       organization_slug: string
+      /**
+       * Name
+       * @description Human-friendly label for the connection, shown on the login page.
+       */
+      name: string | null
     }
     /**
      * Scope

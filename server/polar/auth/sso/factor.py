@@ -33,6 +33,7 @@ class SSOFactorMixin:
 
     connection_id: uuid.UUID
     organization_slug: str
+    name: str | None
     _discovery_endpoint: str
 
     @property
@@ -66,6 +67,7 @@ class SSOClientSecretFactor(SSOFactorMixin, OIDCFactor):
         *,
         connection_id: uuid.UUID,
         organization_slug: str,
+        name: str | None,
         issuer: str,
         client_id: str,
         client_secret: str,
@@ -79,6 +81,7 @@ class SSOClientSecretFactor(SSOFactorMixin, OIDCFactor):
         )
         self.connection_id = connection_id
         self.organization_slug = organization_slug
+        self.name = name
         self.DISCOVERY_ENDPOINT = _discovery_endpoint(issuer)
 
 
@@ -88,6 +91,7 @@ class SSOPrivateKeyJWTFactor(SSOFactorMixin, PrivateKeyJWTOIDCFactor):
         *,
         connection_id: uuid.UUID,
         organization_slug: str,
+        name: str | None,
         issuer: str,
         client_id: str,
         state_service: OAuth2StateService,
@@ -101,6 +105,7 @@ class SSOPrivateKeyJWTFactor(SSOFactorMixin, PrivateKeyJWTOIDCFactor):
         )
         self.connection_id = connection_id
         self.organization_slug = organization_slug
+        self.name = name
         self.DISCOVERY_ENDPOINT = _discovery_endpoint(issuer)
 
 
@@ -119,6 +124,7 @@ def build_sso_factor(
         return SSOClientSecretFactor(
             connection_id=connection.id,
             organization_slug=organization_slug,
+            name=connection.name,
             issuer=configuration["issuer"],
             client_id=configuration["client_id"],
             client_secret=client_secret,
@@ -127,6 +133,7 @@ def build_sso_factor(
     return SSOPrivateKeyJWTFactor(
         connection_id=connection.id,
         organization_slug=organization_slug,
+        name=connection.name,
         issuer=configuration["issuer"],
         client_id=configuration["client_id"],
         state_service=state_service,

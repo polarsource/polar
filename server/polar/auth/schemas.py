@@ -28,6 +28,9 @@ class SSOFactor(Schema):
     type: typing.Literal["sso"] = "sso"
     connection_id: UUID4
     organization_slug: str
+    name: str | None = Field(
+        description="Human-friendly label for the connection, shown on the login page."
+    )
 
 
 Factor = typing.Annotated[BaseFactor | SSOFactor, Field(discriminator="type")]
@@ -38,6 +41,7 @@ def _factor_to_schema(factor: FactorBase[typing.Any]) -> BaseFactor | SSOFactor:
         return SSOFactor(
             connection_id=factor.connection_id,
             organization_slug=factor.organization_slug,
+            name=factor.name,
         )
     return BaseFactor.model_validate({"type": factor.identifier})
 

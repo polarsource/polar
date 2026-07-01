@@ -1,6 +1,7 @@
 import uuid
 
 import pytest
+from httpx import AsyncClient
 
 from polar.auth.sso.endpoints import get_sso_connection
 from polar.exceptions import ResourceNotFound
@@ -19,6 +20,7 @@ async def create_sso_connection(
     organization: Organization,
     *,
     enabled: bool = True,
+    name: str | None = None,
 ) -> OrganizationSSOConnection:
     configuration: OIDCConfiguration = {
         "issuer": "https://idp.example.com",
@@ -31,6 +33,7 @@ async def create_sso_connection(
         type=OrganizationSSOConnectionType.oidc,
         configuration=configuration,
         enabled=enabled,
+        name=name,
     )
     await save_fixture(connection)
     return connection
@@ -94,3 +97,32 @@ class TestGetSSOConnection:
         )
 
         assert result.id == connection.id
+
+
+@pytest.mark.asyncio
+class TestStart:
+    async def test_unknown_slug(self, client: AsyncClient) -> None:
+        response = await client.post("/v1/auth/does-not-exist/start", json={})
+        assert response.status_code == 404
+
+    async def test_exposes_enabled_sso_connections(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        enabled = await create_sso_connection(
+            save_fixture, organization, name="Acme SSO"
+        )
+        await create_sso_connection(save_fixture, organization, enabled=False)
+
+        response = await client.post(f"/v1/auth/{organization.slug}/start", json={})
+
+        assert response.status_code == 201
+        sso_factors = [
+            factor
+            for factor in response.json()["available_factors"]
+            if factor["type"] == "sso"
+        ]
+        assert [factor["connection_id"] for factor in sso_factors] == [str(enabled.id)]
+        assert sso_factors[0]["name"] == "Acme SSO"

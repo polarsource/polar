@@ -98,13 +98,15 @@ class GitHubRepositoryBenefitUserService:
 
         oauth_account = OAuthAccount(
             platform=OAuthPlatform.github_repository_benefit,
-            access_token=access_token,
             expires_at=oauth2_token_data["expires_at"],
-            refresh_token=oauth2_token_data["refresh_token"],
             account_id=str(account_id),
             account_email=account_email,
             account_username=account_username,
             user=user,
+        )
+        await oauth_account.set_tokens(
+            access_token=access_token,
+            refresh_token=oauth2_token_data["refresh_token"],
         )
 
         nested = await session.begin_nested()
@@ -125,9 +127,11 @@ class GitHubRepositoryBenefitUserService:
         if account is None:
             raise GitHubRepositoryBenefitAccountNotConnected(user)
 
-        account.access_token = oauth2_token_data["access_token"]
+        await account.set_tokens(
+            access_token=oauth2_token_data["access_token"],
+            refresh_token=oauth2_token_data["refresh_token"],
+        )
         account.expires_at = oauth2_token_data["expires_at"]
-        account.refresh_token = oauth2_token_data["refresh_token"]
 
         client = github.get_client(access_token=account.access_token)
         user_data = await client.rest.users.async_get_authenticated()
@@ -165,9 +169,11 @@ class GitHubRepositoryBenefitUserService:
             except RefreshTokenError as e:
                 raise GitHubRepositoryRefreshTokenError() from e
 
-            account.access_token = refreshed_token_data["access_token"]
+            await account.set_tokens(
+                access_token=refreshed_token_data["access_token"],
+                refresh_token=refreshed_token_data["refresh_token"],
+            )
             account.expires_at = refreshed_token_data["expires_at"]
-            account.refresh_token = refreshed_token_data["refresh_token"]
             session.add(account)
             await session.flush()
 

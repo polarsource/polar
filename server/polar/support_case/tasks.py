@@ -6,7 +6,10 @@ from polar.email.schemas import (
     SupportCaseOrganizationNewMessageProps,
 )
 from polar.email.sender import enqueue_email_template
+from polar.models import Organization
 from polar.models.support_case import (
+    DisputeSupportCase,
+    SupportCase,
     SupportCaseMessageAuthorKind,
     SupportCaseType,
 )
@@ -22,7 +25,15 @@ from polar.worker import AsyncSessionMaker, actor
 # Recipient-facing label per case type, so the email copy stays generic.
 _CASE_LABELS: dict[SupportCaseType, str] = {
     SupportCaseType.review_appeal: "appeal",
+    SupportCaseType.dispute: "dispute",
 }
+
+
+def _case_dashboard_path(case: SupportCase, organization: Organization) -> str:
+    """Deep-link the notification to where the merchant reads this case's thread."""
+    if isinstance(case, DisputeSupportCase):
+        return f"/dashboard/{organization.slug}/sales/disputes/{case.dispute_id}"
+    return f"/dashboard/{organization.slug}/finance/account"
 
 
 @actor(actor_name="support_case.notify_organization_of_new_message")
@@ -60,9 +71,7 @@ async def notify_organization_of_new_message(message_id: UUID) -> None:
         recipients = [member.user.email for member in members]
 
         case_label = _CASE_LABELS.get(case.type, "support case")
-        url = settings.generate_frontend_url(
-            f"/dashboard/{organization.slug}/finance/account"
-        )
+        url = settings.generate_frontend_url(_case_dashboard_path(case, organization))
         subject = f"Update on your {case_label} · {organization.name}"
 
         for email in recipients:

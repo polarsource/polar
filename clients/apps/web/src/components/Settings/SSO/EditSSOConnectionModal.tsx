@@ -1,7 +1,7 @@
 'use client'
 
 import { toast } from '@/components/Toast/use-toast'
-import { useCreateSSOConnection } from '@/hooks/queries'
+import { useUpdateSSOConnection } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getSSOCallbackURL } from '@/utils/auth'
 import { schemas } from '@polar-sh/client'
@@ -14,26 +14,41 @@ import SSOConnectionFormFields, {
   SSOConnectionFormValues,
 } from './SSOConnectionFormFields'
 
-export default function NewSSOConnectionModal({
+export default function EditSSOConnectionModal({
   organization,
+  connection,
   hide,
 }: {
   organization: schemas['Organization']
+  connection: schemas['OrganizationSSOConnection']
   hide: () => void
 }) {
   const callbackURL = getSSOCallbackURL(organization.slug)
 
   const form = useForm<SSOConnectionFormValues>({
-    defaultValues: { auth_method: 'client_secret' },
+    defaultValues: {
+      name: connection.name ?? '',
+      issuer: connection.configuration.issuer,
+      client_id: connection.configuration.client_id,
+      auth_method: connection.configuration.auth_method,
+      client_secret: '',
+    },
   })
   const { control, handleSubmit } = form
   const authMethod = useWatch({ control, name: 'auth_method' })
 
-  const createConnection = useCreateSSOConnection(organization.id)
+  const updateConnection = useUpdateSSOConnection(
+    organization.id,
+    connection.id,
+  )
+
+  const switchingToClientSecret =
+    authMethod === 'client_secret' &&
+    connection.configuration.auth_method !== 'client_secret'
 
   const onSubmit = useCallback(
     async (values: SSOConnectionFormValues) => {
-      const configuration: schemas['OrganizationSSOConnectionCreate']['configuration'] =
+      const configuration: schemas['OrganizationSSOConnectionUpdate']['configuration'] =
         values.auth_method === 'private_key_jwt'
           ? {
               auth_method: 'private_key_jwt',
@@ -44,36 +59,33 @@ export default function NewSSOConnectionModal({
               auth_method: 'client_secret',
               issuer: values.issuer,
               client_id: values.client_id,
-              client_secret: values.client_secret,
+              ...(values.client_secret
+                ? { client_secret: values.client_secret }
+                : {}),
             }
 
-      const { error } = await createConnection.mutateAsync({
-        type: 'oidc',
+      const { error } = await updateConnection.mutateAsync({
         name: values.name || null,
         configuration,
-        enabled: false,
       })
       if (error) {
         toast({
-          title: 'Connection creation failed',
+          title: 'Update failed',
           description: extractApiErrorMessage(error),
         })
         return
       }
-      toast({
-        title: 'SSO connection created',
-        description: 'Enable it once your identity provider is configured.',
-      })
+      toast({ title: 'SSO connection updated' })
       hide()
     },
-    [createConnection, hide],
+    [updateConnection, hide],
   )
 
   return (
     <>
       <InlineModalHeader hide={hide}>
         <Text variant="heading-xs" as="h2">
-          New SSO connection
+          Edit SSO connection
         </Text>
       </InlineModalHeader>
       <Box flexDirection="column" gap="xl" padding="2xl">
@@ -84,14 +96,19 @@ export default function NewSSOConnectionModal({
                 control={control}
                 authMethod={authMethod}
                 callbackURL={callbackURL}
-                secretRequired
+                secretRequired={switchingToClientSecret}
+                secretHint={
+                  switchingToClientSecret
+                    ? undefined
+                    : 'Leave blank to keep the current secret.'
+                }
               />
               <Button
                 type="submit"
-                loading={createConnection.isPending}
-                disabled={createConnection.isPending}
+                loading={updateConnection.isPending}
+                disabled={updateConnection.isPending}
               >
-                Create
+                Save changes
               </Button>
             </Box>
           </form>

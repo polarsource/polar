@@ -1,9 +1,9 @@
 'use client'
 
 import { formatCurrency } from '@polar-sh/currency'
-import { Text } from '@polar-sh/orbit'
+import { Grid, GridItem, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 
 const format = formatCurrency('accounting')
 
@@ -66,8 +66,9 @@ export const InvoicePreview = ({
   const showRefunded = refundedAmount != null && refundedAmount > 0
 
   return (
-    <Box as="section" flexDirection="column">
-      <Box
+    <Grid templateColumns="repeat(3, minmax(0, 1fr))" columnGap="2xl">
+      <GridItem
+        colSpan={3}
         justifyContent="between"
         columnGap="l"
         paddingBottom="m"
@@ -81,26 +82,27 @@ export const InvoicePreview = ({
         <Text color="muted" variant="body" as="span">
           Amount
         </Text>
-      </Box>
+      </GridItem>
 
-      {items.length > 0 && (
-        <Box flexDirection="column" rowGap="m" paddingVertical="l">
-          {items.map((item) => (
-            <Box key={item.id} justifyContent="between" columnGap="l">
-              <Text variant="body">{item.label}</Text>
-              <Text as="span" variant="body" tabularNums>
-                {format(item.amount, currency)}
-              </Text>
-            </Box>
-          ))}
-        </Box>
-      )}
+      {items.map((item, index) => (
+        <Fragment key={item.id}>
+          <GridItem colSpan={2} paddingTop={index === 0 ? 'l' : 'm'}>
+            <Text variant="body">{item.label}</Text>
+          </GridItem>
+          <GridItem justifyContent="end" paddingTop={index === 0 ? 'l' : 'm'}>
+            <Text as="span" variant="body" tabularNums>
+              {format(item.amount, currency)}
+            </Text>
+          </GridItem>
+        </Fragment>
+      ))}
 
-      <Box
-        alignSelf="end"
-        width={{ base: '100%', sm: '66%' }}
+      <GridItem
+        colStart={{ base: 1, sm: 3 }}
+        colSpan={{ base: 3, sm: 1 }}
         flexDirection="column"
         rowGap="s"
+        marginTop="l"
         paddingTop="l"
         borderTopWidth={1}
         borderStyle="solid"
@@ -149,7 +151,7 @@ export const InvoicePreview = ({
             />
           )}
         </Box>
-      </Box>
-    </Box>
+      </GridItem>
+    </Grid>
   )
 }

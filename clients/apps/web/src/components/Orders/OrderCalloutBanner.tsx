@@ -25,7 +25,7 @@ const BannerColumn = ({
     flexDirection="column"
     rowGap="m"
     paddingVertical="xl"
-    paddingHorizontal="2xl"
+    paddingHorizontal="xl"
     borderTopWidth={divided ? { base: 1, lg: 0 } : undefined}
     borderLeftWidth={divided ? { base: 0, lg: 1 } : undefined}
     borderStyle={divided ? 'solid' : undefined}
@@ -192,24 +192,10 @@ export const OrderCalloutBanner = ({
     : false
 
   return (
-    <Box
-      flexDirection="column"
-      overflow="hidden"
-      borderRadius="l"
-      borderWidth={1}
-      borderStyle="solid"
-      borderColor="border-primary"
-    >
-      <Box
-        alignItems="center"
-        columnGap="m"
-        paddingHorizontal="2xl"
-        paddingVertical="l"
-      >
-        <Text variant="body">
-          {dunningFailed ? "Payment couldn't be recovered" : 'Payment Failed'}
-        </Text>
-      </Box>
+    <Box flexDirection="column" rowGap="l">
+      <Text variant="heading-xxs">
+        {dunningFailed ? "Payment couldn't be recovered" : 'Payment Failed'}
+      </Text>
 
       <Box
         display="grid"
@@ -217,9 +203,9 @@ export const OrderCalloutBanner = ({
           base: '1fr',
           lg: dunningFailed ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
         }}
-        borderTopWidth={1}
-        borderStyle="solid"
         borderColor="border-primary"
+        borderWidth={1}
+        borderRadius="l"
       >
         <BannerColumn>
           <ColumnHeading

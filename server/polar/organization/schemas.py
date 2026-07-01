@@ -16,7 +16,7 @@ from pydantic import (
 from pydantic.json_schema import SkipJsonSchema
 from pydantic.networks import HttpUrl
 
-from polar.auth.permission import OrganizationPermission
+from polar.auth.permission import ROLE_PERMISSIONS, OrganizationPermission
 from polar.config import settings
 from polar.enums import SubscriptionProrationBehavior, TaxBehaviorOption
 from polar.kit.address import CountryAlpha2, CountryAlpha2Input
@@ -466,6 +466,9 @@ class OrganizationWithRole(Organization):
     includes the user's role on the organization."""
 
     role: OrganizationRole = Field(description="The user's role on this organization.")
+    permissions: list[OrganizationPermission] = Field(
+        description="The permissions the user's role grants on this organization."
+    )
 
     @classmethod
     def from_organization(
@@ -473,7 +476,11 @@ class OrganizationWithRole(Organization):
     ) -> "OrganizationWithRole":
         """Build from a SQLAlchemy `Organization` plus the user's role."""
         return cls.model_validate(
-            {**Organization.model_validate(organization).model_dump(), "role": role}
+            {
+                **Organization.model_validate(organization).model_dump(),
+                "role": role,
+                "permissions": sorted(ROLE_PERMISSIONS[role]),
+            }
         )
 
 

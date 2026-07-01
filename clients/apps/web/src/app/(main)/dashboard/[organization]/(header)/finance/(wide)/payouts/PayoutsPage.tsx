@@ -1,13 +1,11 @@
 'use client'
 
-import AccessRestricted from '@/components/Finance/AccessRestricted'
 import AccountBalance from '@/components/Payouts/AccountBalance'
 import DownloadInvoice, {
   InvoiceModal,
 } from '@/components/Payouts/DownloadInvoice'
 import { PayoutProvider } from '@/components/Payouts/PayoutContext'
 import { PayoutStatus } from '@/components/Payouts/PayoutStatus'
-import { useHasPermission } from '@/hooks/permissions'
 import { useOrganizationAccount } from '@/hooks/queries'
 import { usePayouts } from '@/hooks/queries/payouts'
 import { getServerURL } from '@/utils/api'
@@ -86,11 +84,7 @@ export default function ClientPage({
     )
   }
 
-  const canReadFinance = useHasPermission(organization.id, 'finance:read')
-
-  const { data: account } = useOrganizationAccount(
-    canReadFinance ? organization.id : undefined,
-  )
+  const { data: account } = useOrganizationAccount(organization.id)
 
   const { data: payouts, isLoading } = usePayouts(account?.id, {
     ...getAPIParams(pagination, sorting),
@@ -273,14 +267,6 @@ export default function ClientPage({
       },
     },
   ]
-
-  if (canReadFinance === false) {
-    return (
-      <div className="flex flex-col gap-y-6">
-        <AccessRestricted message="You don't have permission to view payouts for this organization. Ask an admin if you need access." />
-      </div>
-    )
-  }
 
   return (
     <PayoutProvider>

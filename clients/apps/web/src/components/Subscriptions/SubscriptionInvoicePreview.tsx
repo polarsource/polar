@@ -99,33 +99,41 @@ const SubscriptionInvoicePreview = ({
       : null
 
   return (
-    <OrderSection
-      title={title}
-      description={
-        <Box alignItems="center" columnGap="s">
-          <Text color="muted">{dateLabel}</Text>
-          {chargeDate && (
-            <>
-              <Text color="muted">·</Text>
-              <Text color="muted">
-                <FormattedDateTime dateStyle="medium" datetime={chargeDate} />
-              </Text>
-            </>
-          )}
-        </Box>
-      }
+    <Box
+      flexDirection="column"
+      borderTopWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+      paddingTop="4xl"
     >
-      <InvoicePreview
-        currency={subscription.currency}
-        items={items}
-        subtotalAmount={chargePreview.subtotal_amount}
-        discountAmount={chargePreview.discount_amount}
-        netAmount={chargePreview.net_amount}
-        taxAmount={chargePreview.tax_amount}
-        totalAmount={chargePreview.total_amount}
-      />
-      {note && <Text color="muted">{note}</Text>}
-    </OrderSection>
+      <OrderSection
+        title={title}
+        description={
+          <Box alignItems="center" columnGap="s">
+            <Text color="muted">{dateLabel}</Text>
+            {chargeDate && (
+              <>
+                <Text color="muted">·</Text>
+                <Text color="muted">
+                  <FormattedDateTime dateStyle="medium" datetime={chargeDate} />
+                </Text>
+              </>
+            )}
+          </Box>
+        }
+      >
+        <InvoicePreview
+          currency={subscription.currency}
+          items={items}
+          subtotalAmount={chargePreview.subtotal_amount}
+          discountAmount={chargePreview.discount_amount}
+          netAmount={chargePreview.net_amount}
+          taxAmount={chargePreview.tax_amount}
+          totalAmount={chargePreview.total_amount}
+        />
+        {note && <Text color="muted">{note}</Text>}
+      </OrderSection>
+    </Box>
   )
 }
 

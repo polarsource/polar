@@ -147,24 +147,32 @@ const ClientPage: React.FC<ClientPageProps> = ({
         organization={organization}
       />
 
-      <OrderSection title="Invoice preview">
-        <InvoicePreview
-          currency={order.currency}
-          items={order.items.map((item) => ({
-            id: item.id,
-            label: item.label,
-            amount: item.amount,
-          }))}
-          subtotalAmount={order.subtotal_amount}
-          discountAmount={order.discount_amount}
-          netAmount={order.net_amount}
-          taxAmount={order.tax_amount}
-          totalAmount={order.total_amount}
-          appliedBalanceAmount={order.applied_balance_amount}
-          dueAmount={order.due_amount}
-          refundedAmount={order.refunded_amount}
-        />
-      </OrderSection>
+      <Box
+        flexDirection="column"
+        borderTopWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+        paddingTop="4xl"
+      >
+        <OrderSection title="Charge">
+          <InvoicePreview
+            currency={order.currency}
+            items={order.items.map((item) => ({
+              id: item.id,
+              label: item.label,
+              amount: item.amount,
+            }))}
+            subtotalAmount={order.subtotal_amount}
+            discountAmount={order.discount_amount}
+            netAmount={order.net_amount}
+            taxAmount={order.tax_amount}
+            totalAmount={order.total_amount}
+            appliedBalanceAmount={order.applied_balance_amount}
+            dueAmount={order.due_amount}
+            refundedAmount={order.refunded_amount}
+          />
+        </OrderSection>
+      </Box>
 
       <OrderSecondaryDetails order={order} customFields={customFields?.items} />
 

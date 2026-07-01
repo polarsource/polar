@@ -37,6 +37,7 @@ from ..authentication_session import (
 from ..exceptions import PolarAuthRedirectionError
 from ..factors import get_org_factors
 from ..helpers import OIDC_ERROR_MESSAGE, check_factor, set_state_cookie
+from ..oauth2.state import OAuth2StateService, get_oauth2_state_service
 from ..schemas import AuthenticationSession as AuthenticationSessionSchema
 from ..schemas import AuthenticationSessionStart
 from ..service import auth as auth_service
@@ -163,15 +164,14 @@ async def authorize(
     )
     check_factor(factor, factors)
 
-    redirect_uri = str(
-        request.url_for("auth.sso.callback", slug=slug, connection_id=connection_id)
-    )
+    redirect_uri = str(request.url_for("auth.sso.callback", slug=slug))
     try:
         authorization_url, state, oauth2_state = await factor.start(
             redirect_uri=redirect_uri,
             scope=SSO_SCOPE,
             nonce=secrets.token_urlsafe(16),
             authentication_session_token_hash=authentication_session.token_hash,
+            sso_connection_id=str(connection_id),
         )
     except OIDCException as e:
         raise PolarAuthRedirectionError(OIDC_ERROR_MESSAGE) from e
@@ -181,15 +181,10 @@ async def authorize(
     return response
 
 
-@router.get(
-    "/sso/{connection_id}/callback",
-    name="auth.sso.callback",
-    include_in_schema=False,
-)
+@router.get("/sso/callback", name="auth.sso.callback", include_in_schema=False)
 async def callback(
     request: Request,
-    connection: OrganizationSSOConnection = Depends(get_sso_connection),
-    factor: OIDCFactorBase = Depends(get_sso_factor),
+    slug: str,
     code: str | None = Query(None),
     error: str | None = Query(None),
     error_description: str | None = Query(None),
@@ -201,6 +196,8 @@ async def callback(
     authentication_session_service: AuthenticationSessionService = Depends(
         get_org_authentication_session_service
     ),
+    factors: set[FactorBase[typing.Any]] = Depends(get_org_factors),
+    state_service: OAuth2StateService = Depends(get_oauth2_state_service),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
     if state is None:
@@ -211,6 +208,16 @@ async def callback(
         raise PolarAuthRedirectionError("Missing OAuth2 state cookie")
     if state != state_cookie:
         raise PolarAuthRedirectionError("Invalid OAuth2 state")
+
+    oauth2_state = await state_service.get_by_token(state)
+    if oauth2_state is None or oauth2_state.context is None:
+        raise PolarAuthRedirectionError("Invalid OAuth2 state")
+    connection_id = oauth2_state.context.get("sso_connection_id")
+    if connection_id is None:
+        raise PolarAuthRedirectionError("Invalid OAuth2 state")
+
+    connection = await get_sso_connection(slug, UUID(connection_id), session)
+    factor = await get_sso_factor(connection, factors)
 
     try:
         _, oauth_account, _ = await factor.callback(

@@ -2634,12 +2634,15 @@ class CheckoutService:
                 stripe_customer_id, tax_id=tax_id, **update_params
             )
 
-        # Only populate customer.name when creating a new customer. For existing
-        # customers (linked via customer_id or matched by email),
-        # checkout.customer_name may be the cardholder name on a wallet/payment
-        # method — e.g. a CFO or office manager paying on behalf of a company
-        # customer — and must not overwrite the company's name.
-        if created and customer_name is not None:
+        # Populate customer.name when it's not already set, even for existing
+        # customers (linked via customer_id or matched by email). We only avoid
+        # *overwriting* an existing name: checkout.customer_name may be the
+        # cardholder name on a wallet/payment method — e.g. a CFO or office
+        # manager paying on behalf of a company customer — and must not clobber
+        # the company's name. But an existing customer with no name at all
+        # (e.g. created through the API without one) should still get an initial
+        # value so invoices can be generated.
+        if customer.name is None and customer_name is not None:
             customer.name = customer_name
         if checkout.customer_billing_name is not None:
             customer.billing_name = checkout.customer_billing_name

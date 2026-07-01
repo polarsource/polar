@@ -5077,6 +5077,50 @@ class TestConfirm:
         update_call = stripe_service_mock.update_customer.call_args
         assert update_call.kwargs.get("name") == "ACME Corp Inc."
 
+    async def test_existing_customer_without_name_gets_cardholder_name(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            stripe_customer_id="CHECKOUT_CUSTOMER_ID",
+        )
+        customer.name = None
+        await save_fixture(customer)
+        checkout_one_time_fixed.customer = customer
+        checkout_one_time_fixed.customer_email = customer.email
+        await save_fixture(checkout_one_time_fixed)
+
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "John Smith",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.customer is not None
+        # An existing customer with no name yet gets an initial value from the
+        # cardholder name, so billing_name resolves and invoices can generate.
+        assert checkout.customer.name == "John Smith"
+        assert checkout.customer.billing_name == "John Smith"
+
     async def test_valid_stripe_existing_customer_email(
         self,
         save_fixture: SaveFixture,

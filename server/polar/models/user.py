@@ -25,10 +25,20 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.schema import Index, UniqueConstraint
 
 from polar.kit.db.models import RecordModel
+from polar.kit.encryption import EncryptedString, EncryptedStringType
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.schemas import Schema
 
 from .account import Account
+
+OAUTH_ACCOUNT_ACCESS_TOKEN_CONTEXT = {
+    "table": "oauth_accounts",
+    "column": "access_token",
+}
+OAUTH_ACCOUNT_REFRESH_TOKEN_CONTEXT = {
+    "table": "oauth_accounts",
+    "column": "refresh_token",
+}
 
 
 class OAuthPlatform(StrEnum):
@@ -66,9 +76,19 @@ class OAuthAccount(RecordModel):
 
     platform: Mapped[OAuthPlatform] = mapped_column(String(32), nullable=False)
     access_token: Mapped[str] = mapped_column(String(1024), nullable=False)
+    access_token_encrypted: Mapped[EncryptedString | None] = mapped_column(
+        EncryptedStringType(OAUTH_ACCOUNT_ACCESS_TOKEN_CONTEXT),
+        nullable=True,
+        default=None,
+    )
     expires_at: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     refresh_token: Mapped[str | None] = mapped_column(
         String(1024), nullable=True, default=None
+    )
+    refresh_token_encrypted: Mapped[EncryptedString | None] = mapped_column(
+        EncryptedStringType(OAUTH_ACCOUNT_REFRESH_TOKEN_CONTEXT),
+        nullable=True,
+        default=None,
     )
     refresh_token_expires_at: Mapped[int | None] = mapped_column(
         Integer, nullable=True, default=None
@@ -110,6 +130,36 @@ class OAuthAccount(RecordModel):
             refresh_token_expires_at=self.refresh_token_expires_at,
             account_id=self.account_id,
             identity_id=self.user_id,
+        )
+
+    @classmethod
+    async def encrypt_access_token(cls, id: UUID, access_token: str) -> EncryptedString:
+        return await EncryptedString.encrypt(
+            access_token,
+            context={**OAUTH_ACCOUNT_ACCESS_TOKEN_CONTEXT, "id": str(id)},
+        )
+
+    @classmethod
+    async def encrypt_refresh_token(
+        cls, id: UUID, refresh_token: str | None
+    ) -> EncryptedString | None:
+        if refresh_token is None:
+            return None
+        return await EncryptedString.encrypt(
+            refresh_token,
+            context={**OAUTH_ACCOUNT_REFRESH_TOKEN_CONTEXT, "id": str(id)},
+        )
+
+    async def set_tokens(self, *, access_token: str, refresh_token: str | None) -> None:
+        if self.id is None:
+            self.id = self.generate_id()
+        self.access_token = access_token
+        self.refresh_token = refresh_token
+        self.access_token_encrypted = await self.encrypt_access_token(
+            self.id, access_token
+        )
+        self.refresh_token_encrypted = await self.encrypt_refresh_token(
+            self.id, refresh_token
         )
 
 

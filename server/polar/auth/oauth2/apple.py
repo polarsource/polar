@@ -40,20 +40,23 @@ class AppleFactor(OAuth2FactorMixin, AppleOAuth2FactorBase):
         claims = await self.get_id_token_claims(enrollment.id_token)
         enrollment_orm = OAuthAccount(
             platform=OAuthPlatform.apple,
-            access_token=enrollment.access_token,
             expires_at=enrollment.expires_at,
-            refresh_token=enrollment.refresh_token,
             refresh_token_expires_at=enrollment.refresh_token_expires_at,
             account_id=enrollment.account_id,
             account_email=claims["email"],
             account_username=claims.get("name"),
             user_id=enrollment.identity_id,
         )
+        await enrollment_orm.set_tokens(
+            access_token=enrollment.access_token,
+            refresh_token=enrollment.refresh_token,
+        )
         self.session.add(enrollment_orm)
         await self.session.flush()
         return enrollment_orm.id
 
     async def update(self, enrollment: OAuth2EnrollmentDataclass) -> None:
+        assert enrollment.id is not None
         statement = (
             update(OAuthAccount)
             .where(
@@ -61,8 +64,14 @@ class AppleFactor(OAuth2FactorMixin, AppleOAuth2FactorBase):
             )
             .values(
                 access_token=enrollment.access_token,
+                access_token_encrypted=await OAuthAccount.encrypt_access_token(
+                    enrollment.id, enrollment.access_token
+                ),
                 expires_at=enrollment.expires_at,
                 refresh_token=enrollment.refresh_token,
+                refresh_token_encrypted=await OAuthAccount.encrypt_refresh_token(
+                    enrollment.id, enrollment.refresh_token
+                ),
                 refresh_token_expires_at=enrollment.refresh_token_expires_at,
                 # Apple doesn't provide profile information on subsequent login,
                 # so we don't update account_email and account_username on update.

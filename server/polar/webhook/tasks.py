@@ -190,6 +190,13 @@ async def _webhook_event_send(
                 factor=settings.WORKER_MIN_BACKOFF_MILLISECONDS,
             )
             raise Retry(delay=delay) from e
+    # Unexpected error (e.g. malformed URL): permanently fail, no retry.
+    except Exception as e:
+        bound_log.warning("Unexpected error while sending a webhook", error=e)
+        delivery.succeeded = False
+        event.succeeded = False
+        delivery.response = str(e)
+        enqueue_job("webhook_event.failed", webhook_event_id=webhook_event_id)
     # Success
     else:
         delivery.succeeded = True

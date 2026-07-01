@@ -12,13 +12,13 @@ You pick the proration behavior either at the organization level (as the default
 
 Polar supports three standard proration behaviors:
 
-### Invoice Immediately (`invoice`)
+### Prorate and charge now (`invoice`)
 
 The subscription is updated **immediately** and Polar invoices the prorated difference right away. If the update is an upgrade the customer is charged; if it's a downgrade they're credited on the new invoice.
 
 Use this when you want money to change hands at the same time as the change — for example, on upgrades where you want to collect the extra revenue now.
 
-### Next Invoice (`prorate`)
+### Prorate on next invoice (`prorate`)
 
 The subscription is updated **immediately**, but the prorated difference is carried over and applied on the **next scheduled invoice** instead of triggering a charge now. The customer's billing cycle is unchanged.
 
@@ -35,7 +35,7 @@ This is typically the smoothest experience for the customer: their plan changes 
   unchanged.
 </Warning>
 
-### Next Period (`next_period`)
+### Schedule for next cycle (`next_period`)
 
 The change is **not applied immediately**. It's scheduled as a pending update and applied at the start of the next billing period. No proration charge or credit is issued — the new plan simply takes effect on renewal.
 
@@ -43,7 +43,7 @@ While a `next_period` update is pending, the subscription's `pending_update` fie
 
 This behavior is the safer default for downgrades where you don't want to issue credits, and for any case where you want the current period's terms to stay intact.
 
-### Opting out of proration (`reset`)
+### Charge full amount and reset cycle (`reset`)
 
 The subscription switches to the new plan **immediately**, Polar invoices the **full price of the new plan** right away, and the **billing cycle is reset** to start now. No proration is applied: the customer isn't credited for the unused portion of the old period, and they aren't charged a prorated amount — they pay the full new price and begin a fresh billing period.
 

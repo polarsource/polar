@@ -8,14 +8,16 @@
 # https://www.cloudflare.com/ips-v4
 # Returns a plain text file with one IP range per line
 data "http" "cloudflare_ips_v4" {
-  url = "https://www.cloudflare.com/ips-v4"
+  url                = "https://www.cloudflare.com/ips-v4"
+  request_timeout_ms = 30000
 }
 
 # Fetch Cloudflare IPv6 ranges
 # https://www.cloudflare.com/ips-v6
 # Returns a plain text file with one IP range per line
 data "http" "cloudflare_ips_v6" {
-  url = "https://www.cloudflare.com/ips-v6"
+  url                = "https://www.cloudflare.com/ips-v6"
+  request_timeout_ms = 30000
 }
 
 locals {

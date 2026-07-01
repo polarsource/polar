@@ -42,7 +42,7 @@ variable "timeout_seconds" {
 variable "memory_size" {
   description = "Lambda memory in MB."
   type        = number
-  default     = 512
+  default     = 2048
 }
 
 variable "reserved_concurrency" {

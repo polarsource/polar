@@ -1,5 +1,7 @@
 """Seed the database with sample data for development."""
 
+import sys
+
 import typer
 from rich.panel import Panel
 from rich.table import Table
@@ -14,6 +16,72 @@ from shared import (
     step_spinner,
     step_status,
 )
+
+DEFAULT_OWNER = "admin@polar.sh"
+
+INCLUDE_OPTIONS = [
+    ("products", "Products"),
+    ("customers", "Customers"),
+    ("orders", "Orders & subscriptions"),
+    ("cost_insights", "Cost insights"),
+]
+
+INCLUDE_LABEL = {
+    "products": "products",
+    "customers": "customers",
+    "orders": "orders & subscriptions",
+    "cost_insights": "cost insights",
+}
+
+PRODUCT_VARIANTS = [
+    ("mix", "A mix of products"),
+    ("subscriptions", "Subscriptions only"),
+    ("seats", "Seats only (per-seat pricing)"),
+    ("one_time", "One-time only"),
+]
+
+ORDER_VARIANTS = [
+    ("mix", "A realistic mix (trials, cancellations, refunds, disputes)"),
+    ("successful", "Successful only (clean active subscriptions, paid orders)"),
+]
+
+COST_VARIANTS = [
+    ("mix", "A mix of LLM and infrastructure"),
+    ("llm", "LLM usage only (model token costs)"),
+    ("infra", "Infrastructure only (storage, compute)"),
+]
+
+GROUP_VARIANTS = {
+    "products": PRODUCT_VARIANTS,
+    "orders": ORDER_VARIANTS,
+    "cost_insights": COST_VARIANTS,
+}
+
+VARIANT_PROMPTS = {
+    "products": "What kind of products?",
+    "orders": "Which orders?",
+    "cost_insights": "What kind of cost insights?",
+}
+
+DEFAULT_INCLUDES = {"products", "customers", "orders"}
+
+VARIANT_LABEL = {
+    "products": {
+        "mix": "mixed",
+        "subscriptions": "subscriptions only",
+        "seats": "seats only",
+        "one_time": "one-time only",
+    },
+    "orders": {
+        "mix": "realistic mix",
+        "successful": "successful only",
+    },
+    "cost_insights": {
+        "mix": "LLM + infra",
+        "llm": "LLM only",
+        "infra": "infra only",
+    },
+}
 
 
 def _update_secrets_file(key: str, value: str) -> None:
@@ -107,6 +175,214 @@ def _print_seeded_login_info(new_org: str | None = None) -> None:
     console.print()
 
 
+def _poc_select_kind() -> str:
+    from InquirerPy import inquirer
+    from InquirerPy.base.control import Choice
+
+    return inquirer.select(
+        message="What kind of seed do you want?",
+        choices=[
+            Choice(
+                value="full",
+                name="Full demo        multiple orgs · products · customers · orders · insights",
+            ),
+            Choice(
+                value="custom",
+                name="Custom org       pick a user and exactly what to include",
+            ),
+            Choice(
+                value="reset",
+                name="Reset & reseed   wipe the database, then full demo",
+            ),
+        ],
+        default="full",
+    ).execute()
+
+
+def _poc_prompt_owner() -> str:
+    from InquirerPy import inquirer
+
+    return inquirer.text(
+        message="Add the org to which user?",
+        default=DEFAULT_OWNER,
+    ).execute()
+
+
+def _poc_prompt_slug() -> str:
+    from InquirerPy import inquirer
+
+    return inquirer.text(message="Organization slug", default="acme-test").execute()
+
+
+def _poc_prompt_includes() -> list[str]:
+    from InquirerPy import inquirer
+    from InquirerPy.base.control import Choice
+
+    return inquirer.checkbox(
+        message="What should it include?",
+        choices=[
+            Choice(value=key, name=label, enabled=key in DEFAULT_INCLUDES)
+            for key, label in INCLUDE_OPTIONS
+        ],
+        instruction="↑/↓ move · space toggle · enter confirm",
+        transformer=lambda result: f"{len(result)} selected",
+    ).execute()
+
+
+def _poc_prompt_variant(message: str, variants: list[tuple[str, str]]) -> str:
+    from InquirerPy import inquirer
+    from InquirerPy.base.control import Choice
+
+    return inquirer.select(
+        message=message,
+        choices=[Choice(value=key, name=name) for key, name in variants],
+        default=variants[0][0],
+    ).execute()
+
+
+def _format_includes(includes: list[str], variants: dict[str, str]) -> str:
+    parts = []
+    for key in includes:
+        label = INCLUDE_LABEL[key]
+        variant = variants.get(key)
+        if variant and variant in VARIANT_LABEL.get(key, {}):
+            label = f"{label} ({VARIANT_LABEL[key][variant]})"
+        parts.append(label)
+    return ", ".join(parts) or "nothing"
+
+
+def _resolve_includes(selected: list[str]) -> tuple[list[str], list[str]]:
+    chosen = set(selected)
+    auto = set()
+    if "orders" in chosen:
+        for dependency in ("products", "customers"):
+            if dependency not in chosen:
+                chosen.add(dependency)
+                auto.add(dependency)
+    if "cost_insights" in chosen and "customers" not in chosen:
+        chosen.add("customers")
+        auto.add("customers")
+
+    order = [key for key, _ in INCLUDE_OPTIONS]
+    includes = [key for key in order if key in chosen]
+    auto_ordered = [key for key in order if key in auto]
+    return includes, auto_ordered
+
+
+def _poc_show_plan(
+    kind: str,
+    *,
+    slug: str | None = None,
+    owner: str = DEFAULT_OWNER,
+    includes: list[str] | None = None,
+    auto: list[str] | None = None,
+    variants: dict[str, str] | None = None,
+) -> None:
+    includes = includes or []
+    auto = auto or []
+    variants = variants or {}
+
+    table = Table(show_header=False, box=None, padding=(0, 2))
+    table.add_column(style="dim")
+    table.add_column(style="bold")
+
+    if kind == "full":
+        table.add_row("Action", "Full demo seed")
+        table.add_row("Owner", owner)
+        table.add_row("Includes", "everything (orgs, products, customers, orders, insights)")
+        proposed = "dev seed"
+    elif kind == "reset":
+        table.add_row("Action", "Recreate database, then full demo seed")
+        table.add_row("Owner", owner)
+        table.add_row("Includes", "everything")
+        proposed = "dev seed --reset"
+    else:
+        labels = _format_includes(includes, variants)
+        table.add_row("Action", "Create single org")
+        table.add_row("Slug", slug or "")
+        table.add_row("Owner", owner)
+        table.add_row("Includes", labels)
+        if auto:
+            added = ", ".join(INCLUDE_LABEL[key] for key in auto)
+            table.add_row("Auto-added", f"{added} (required by orders)")
+        proposed = (
+            f"dev seed --new-org {slug} --owner {owner} "
+            f"--include {','.join(includes) or 'none'}"
+        )
+
+    # table.add_row("Proposed CLI", proposed)
+
+    console.print()
+    console.print(
+        Panel(
+            table,
+            title="[bold yellow]Org seeded![/bold yellow]",
+            # subtitle="[dim]Nothing was seeded. --new-org / --reset still seed for real.[/dim]",
+            border_style="yellow",
+            padding=(1, 2),
+        )
+    )
+    console.print()
+
+
+def _poc_show_next_steps(*, slug: str | None = None, owner: str = DEFAULT_OWNER) -> None:
+    dashboard = (
+        f"http://127.0.0.1:3000/dashboard/{slug}" if slug else "http://127.0.0.1:3000"
+    )
+
+    steps = Table(show_header=False, box=None, padding=(0, 2))
+    steps.add_column(style="bold cyan")
+    steps.add_column()
+    steps.add_row("1.", "Make sure services are running — [bold]dev start[/bold]")
+    steps.add_row("2.", f"Log in as [bold]{owner}[/bold] at http://127.0.0.1:3000")
+    steps.add_row("", "[dim]Grab the OTP from the terminal running [bold]dev api[/bold][/dim]")
+    steps.add_row("3.", f"Open the dashboard — [bold]{dashboard}[/bold]")
+    if not slug:
+        steps.add_row("", "[dim]The admin account can access all seeded organizations[/dim]")
+
+    console.print(
+        Panel(
+            steps,
+            title="[bold blue]Next steps[/bold blue]",
+            border_style="blue",
+            padding=(1, 2),
+        )
+    )
+    console.print()
+
+
+def _run_seed_poc() -> bool:
+    if not sys.stdin.isatty():
+        return False
+    try:
+        kind = _poc_select_kind()
+        if kind == "custom":
+            slug = _poc_prompt_slug()
+            owner = _poc_prompt_owner()
+            includes, auto = _resolve_includes(_poc_prompt_includes())
+            variants = {
+                key: _poc_prompt_variant(VARIANT_PROMPTS[key], GROUP_VARIANTS[key])
+                for key in includes
+                if key in GROUP_VARIANTS
+            }
+            _poc_show_plan(
+                "custom",
+                slug=slug,
+                owner=owner,
+                includes=includes,
+                auto=auto,
+                variants=variants,
+            )
+            _poc_show_next_steps(slug=slug, owner=owner)
+        else:
+            owner = _poc_prompt_owner()
+            _poc_show_plan(kind, owner=owner)
+            _poc_show_next_steps(owner=owner)
+        return True
+    except Exception:
+        return False
+
+
 def register(app: typer.Typer, prompt_setup: callable) -> None:
     @app.command()
     def seed(
@@ -128,6 +404,9 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     ) -> None:
         """Load sample data (users, organizations, products) into the database."""
         console.print()
+
+        if not reset and not new_org and _run_seed_poc():
+            return
 
         if reset and new_org:
             console.print("\n[red]--reset cannot be combined with --new-org.[/red]\n")

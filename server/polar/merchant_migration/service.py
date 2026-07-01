@@ -204,24 +204,16 @@ class MerchantMigrationService:
     async def _build_stripe_credentials(
         self, migration: MerchantMigration, token: StripeOAuthToken
     ) -> StripeSourceCredentials:
+        encrypted = await EncryptedString.encrypt(
+            token.refresh_token,
+            context={**SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT, "id": str(migration.id)},
+        )
         return StripeSourceCredentials(
             stripe_user_id=token.stripe_user_id,
             scope=token.scope,
             livemode=token.livemode,
-            refresh_token_encrypted=await self._encrypt_source_secret(
-                migration.id, token.refresh_token
-            ),
+            refresh_token_encrypted=encrypted.encrypted_value,
         )
-
-    async def _encrypt_source_secret(self, migration_id: UUID, plaintext: str) -> str:
-        """The single place a source secret gets encrypted for storage in
-        ``source_credentials`` — go through this so a value is never persisted in
-        clear text and the encryption context stays consistent."""
-        encrypted = await EncryptedString.encrypt(
-            plaintext,
-            context={**SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT, "id": str(migration_id)},
-        )
-        return encrypted.encrypted_value
 
 
 merchant_migration = MerchantMigrationService()

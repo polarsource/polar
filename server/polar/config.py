@@ -259,14 +259,8 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: str = ""
     STRIPE_CONNECT_WEBHOOK_SECRET: str = ""
     STRIPE_STATEMENT_DESCRIPTOR: str = "POLAR"
-    # Credentials for the Polar Stripe App, the OAuth app a merchant installs to
-    # connect their Stripe account as a migration source. Both values are read
-    # off the app's OAuth install link in the Stripe dashboard (Developers > Apps
-    # > the app), which has the shape
-    #   https://marketplace.stripe.com/oauth/v2/{CLIENT_LINK_ID}/authorize?client_id={CLIENT_ID}
-    # CLIENT_ID is the `ca_…` OAuth client id; CLIENT_LINK_ID the `chnlink_…` path
-    # segment. Stripe mints a separate client id per mode, so production runs the
-    # published app's live-mode values (test/sandbox links are used in dev).
+    # Polar Stripe App OAuth credentials, read from the app's install link in the
+    # Stripe dashboard: `.../oauth/v2/{CLIENT_LINK_ID}/authorize?client_id={CLIENT_ID}`.
     STRIPE_APP_CLIENT_ID: str = ""
     STRIPE_APP_CLIENT_LINK_ID: str = ""
 

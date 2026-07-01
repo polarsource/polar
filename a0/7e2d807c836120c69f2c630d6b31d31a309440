@@ -1,0 +1,86 @@
+server/tests/subscription/test_tasks.py
+  s_fb6165b946ae98::t_76e714288ff11a 50-88
+server/tests/subscription/test_service.py
+  s_fb6165b946ae98::t_638f3542443ec0 7322-7323,7333,7341-7377,7381-7383
+  s_fb6165b946ae98::t_7eff553113d7ac 7378-7380,7384-7393
+server/polar/subscription/service.py
+  s_fb6165b946ae98::t_0cd8501f6bd850 130-134
+  s_fb6165b946ae98::t_f3026739217e7e 1857-1875,1883-1884,1894,1897-1902,1904-1905,1916
+  s_fb6165b946ae98::t_171aed386cc56a 1917
+server/polar/subscription/tasks.py
+  s_fb6165b946ae98::t_bd2ac3a7f8cdec 85-88,91-98
+server/polar/merchant_migration/repository.py
+  s_623aabf115ece1::t_f24a8aab9dc6b1 1-2,7-8,10-19,21-24,41-57
+  s_623aabf115ece1::t_aa9bbf44efec22 3-6,25-40
+  s_623aabf115ece1::t_552d048ff216cb 9,20
+server/polar/config.py
+  s_623aabf115ece1::t_1e0010480a193b 262-266
+server/polar/api.py
+  s_623aabf115ece1::t_75742a6042df26 148-149
+  s_623aabf115ece1::t_69e03f0e4aa068 43
+server/polar/merchant_migration/schemas.py
+  s_623aabf115ece1::t_cbf32df9c00d0a 1-2,4-13
+  s_623aabf115ece1::t_c08bdde5c635d3 3
+server/polar/kit/jwt.py
+  s_623aabf115ece1::t_ada3ee74e2ff88 32
+server/tests/merchant_migration/test_service.py
+  s_623aabf115ece1::t_05ea2b40b28431 109
+  s_623aabf115ece1::t_336a0e25e40152 1-4,6-8,15-108,110-112
+  s_623aabf115ece1::t_32fe3bb5b765fa 5,9-14
+server/polar/merchant_migration/endpoints.py
+  s_623aabf115ece1::t_c1583759891adc 108,112
+  s_623aabf115ece1::t_53a46d96ab653b 1-10,12-18,20,22-82,95-107,109-111
+  s_623aabf115ece1::t_043422bf6f7c68 19,21
+  s_623aabf115ece1::t_49102848e9aac9 11
+  s_623aabf115ece1::t_cebb648d607da8 83-91,93-94
+  s_623aabf115ece1::t_0008e4c3c44162 92
+server/tests/merchant_migration/test_endpoints.py
+  s_623aabf115ece1::t_2b1d702137132a 1-10,13-121,124-147,174-232
+  s_623aabf115ece1::t_453c055a4af7c7 123
+  s_623aabf115ece1::t_4c14b8dd08d4ae 12
+  s_623aabf115ece1::t_92b035b2f5598d 122
+  s_623aabf115ece1::t_63943fb94ade26 148-173
+  s_623aabf115ece1::t_b71ca39b5dec5b 11
+server/polar/merchant_migration/auth.py
+  s_623aabf115ece1::t_26cb6134706047 1-23
+server/polar/merchant_migration/stripe_oauth.py
+  s_623aabf115ece1::t_1fb5527b7a6833 1-23,25-94,108-111,125-127
+  s_623aabf115ece1::t_a36feba4e64b94 24
+  s_623aabf115ece1::t_0008e4c3c44162 105-107
+  s_623aabf115ece1::t_82b0fa6ae93774 95-104,112-124
+server/polar/merchant_migration/service.py
+  s_623aabf115ece1::t_9f6fc8802cce83 2-10,12-16,18-19,21,26,31,33,35,41-43,45-55,68-82,85,87-95,97,99-127,129-132,137-139,143-160,177-179
+  s_623aabf115ece1::t_1fd4d95a1bb282 11,27-30,32,34,36-40,44,128,134-136,140-142,161-176
+  s_623aabf115ece1::t_a9698e8a24d1b0 1
+  s_623aabf115ece1::t_69e03f0e4aa068 17,86,98,133
+  s_623aabf115ece1::t_9301d59bc8e73c 20
+  s_623aabf115ece1::t_f97169e7885cbf 83-84
+  s_623aabf115ece1::t_628670f0dfae6c 96
+  s_623aabf115ece1::t_531095cb80b033 22
+  s_623aabf115ece1::t_b774af84f3457d 56-67
+  s_623aabf115ece1::t_bc642cfbb6dbc3 23-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "a07e2d807c836120c69f2c630d6b31d31a309440",
+  "prompts": {},
+  "sessions": {
+    "s_623aabf115ece1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bd927cd5-ae76-4ec4-9f66-e3d2a97f26cf",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_fb6165b946ae98": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88b37180-9dcc-4214-81e9-a0ad0db4d5be",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

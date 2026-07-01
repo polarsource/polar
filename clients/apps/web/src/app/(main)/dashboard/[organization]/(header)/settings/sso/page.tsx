@@ -1,6 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import SSOPage from './SSOPage'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -18,6 +19,10 @@ export default async function Page(props: {
     api,
     params.organization,
   )
+
+  if (!organization.feature_settings?.sso_enabled) {
+    notFound()
+  }
 
   return <SSOPage organization={organization} />
 }

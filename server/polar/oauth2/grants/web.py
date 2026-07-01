@@ -105,7 +105,8 @@ class WebGrant(BaseGrant, TokenEndpointMixin):
             # be one the user is a member of, within the session's own down-scope,
             # so the token can never be broader than its session.
             member_organization_ids = set(
-                self.server.session.execute(select_user_org_ids(user.id))
+                # Intersected with session_organization_ids just below.
+                self.server.session.execute(select_user_org_ids(user.id))  # noqa: org-scope
                 .scalars()
                 .all()
             )

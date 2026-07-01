@@ -153,7 +153,10 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
         down-scope, so a token can never be broader than its session.
         """
         member_organization_ids = set(
-            self.server.session.execute(select_user_org_ids(user.id)).scalars().all()
+            # Intersected with the session's down-scope just below.
+            self.server.session.execute(select_user_org_ids(user.id))  # noqa: org-scope
+            .scalars()
+            .all()
         )
         if self.session_organization_ids is not None:
             member_organization_ids &= self.session_organization_ids

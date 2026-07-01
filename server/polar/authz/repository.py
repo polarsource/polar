@@ -56,7 +56,8 @@ def select_accessible_org_ids(
     (optionally narrowed by ``permission``) intersected with that scope. An
     unscoped subject (``organization_ids is None``) is not narrowed.
     """
-    stmt = select_user_org_ids(auth_subject.subject.id, permission=permission)
+    # Composes the raw helper, then applies the session down-scope right below.
+    stmt = select_user_org_ids(auth_subject.subject.id, permission=permission)  # noqa: org-scope
     if auth_subject.organization_ids is not None:
         stmt = stmt.where(
             UserOrganization.organization_id.in_(auth_subject.organization_ids)

@@ -1523,6 +1523,9 @@ async def create_seed_data(
             "bio": "The admin organization of Polar",
             "status": OrganizationStatus.ACTIVE,
             "is_admin": True,
+            "feature_settings": {
+                "sso_enabled": True,
+            },
             "details": {
                 "about": "Polar is an open source payment infrastructure platform for developers",
                 "switching": False,

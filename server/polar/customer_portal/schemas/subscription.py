@@ -127,6 +127,19 @@ class CustomerSubscriptionCancel(Schema):
     )
 
 
+class CustomerSubscriptionPause(Schema):
+    pause_at_period_end: bool = Field(
+        description=inspect.cleandoc(
+            """
+        Pause an active subscription once the current period ends.
+
+        Or set to `false` to unpause: a scheduled pause is unscheduled, while
+        a paused subscription resumes immediately with a new billing period.
+        """
+        ),
+    )
+
+
 class CustomerSubscriptionUpdateClear(Schema):
     pending_update: None = Field(description="Clear the pending subscription update.")
 
@@ -134,6 +147,7 @@ class CustomerSubscriptionUpdateClear(Schema):
 CustomerSubscriptionUpdate = Annotated[
     CustomerSubscriptionUpdateProduct
     | CustomerSubscriptionUpdateSeats
+    | CustomerSubscriptionPause
     | CustomerSubscriptionCancel
     | CustomerSubscriptionUpdateClear,
     SetSchemaReference("CustomerSubscriptionUpdate"),

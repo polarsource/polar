@@ -1131,6 +1131,8 @@ async def create_subscription(
     discount: Discount | None = None,
     cancel_at_period_end: bool = False,
     revoke: bool = False,
+    pause_at_period_end: bool = False,
+    paused_at: datetime | None = None,
     user_metadata: dict[str, Any] | None = None,
     scheduler_locked_at: datetime | None = None,
     seats: int | None = None,
@@ -1184,6 +1186,8 @@ async def create_subscription(
         trial_end=trial_end,
         cancel_at_period_end=cancel_at_period_end,
         canceled_at=canceled_at,
+        pause_at_period_end=pause_at_period_end,
+        paused_at=paused_at,
         started_at=started_at,
         ended_at=ended_at,
         ends_at=ends_at,
@@ -1287,6 +1291,25 @@ async def create_active_subscription(
         cancel_at_period_end=cancel_at_period_end,
         user_metadata=user_metadata or {},
         scheduler_locked_at=scheduler_locked_at,
+    )
+
+
+async def create_paused_subscription(
+    save_fixture: SaveFixture,
+    *,
+    product: Product,
+    prices: Sequence[ProductPrice] | None = None,
+    customer: Customer,
+    paused_at: datetime | None = None,
+) -> Subscription:
+    return await create_subscription(
+        save_fixture,
+        product=product,
+        prices=prices,
+        customer=customer,
+        status=SubscriptionStatus.paused,
+        started_at=utc_now(),
+        paused_at=paused_at or utc_now(),
     )
 
 

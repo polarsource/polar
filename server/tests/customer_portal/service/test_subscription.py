@@ -5,11 +5,13 @@ import pytest
 
 from polar.auth.models import AuthSubject
 from polar.customer_portal.schemas.subscription import (
+    CustomerSubscriptionPause,
     CustomerSubscriptionUpdateClear,
     CustomerSubscriptionUpdateProduct,
     CustomerSubscriptionUpdateSeats,
 )
 from polar.customer_portal.service.subscription import (
+    PauseSubscriptionNotAllowed,
     UpdateSubscriptionPlanNotAllowed,
     UpdateSubscriptionSeatsNotAllowed,
 )
@@ -385,6 +387,88 @@ class TestCancel:
         assert updated_subscription.ended_at is None
         assert updated_subscription.cancel_at_period_end
         assert updated_subscription.ends_at == updated_subscription.current_period_end
+
+
+@pytest.mark.asyncio
+class TestPause:
+    @pytest.mark.auth
+    async def test_not_allowed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        with pytest.raises(PauseSubscriptionNotAllowed):
+            await customer_subscription_service.update(
+                session,
+                subscription,
+                updates=CustomerSubscriptionPause(pause_at_period_end=True),
+            )
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "subscription": {
+                "update_seats": True,
+                "update_plan": True,
+                "pause": True,
+            },
+        }
+        await save_fixture(organization)
+
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        updated_subscription = await customer_subscription_service.update(
+            session,
+            subscription,
+            updates=CustomerSubscriptionPause(pause_at_period_end=True),
+        )
+
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.pause_at_period_end is True
+
+    @pytest.mark.auth
+    async def test_unpause_allowed_when_setting_disabled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        subscription.pause_at_period_end = True
+        await save_fixture(subscription)
+
+        updated_subscription = await customer_subscription_service.update(
+            session,
+            subscription,
+            updates=CustomerSubscriptionPause(pause_at_period_end=False),
+        )
+
+        assert updated_subscription.pause_at_period_end is False
 
 
 @pytest.mark.asyncio

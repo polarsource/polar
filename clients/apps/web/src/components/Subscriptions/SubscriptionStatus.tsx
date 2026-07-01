@@ -1,6 +1,6 @@
 import { schemas } from '@polar-sh/client'
 import { Pill } from '@polar-sh/orbit'
-import { CircleX, Clock } from 'lucide-react'
+import { CircleX, Clock, Pause } from 'lucide-react'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import {
@@ -56,15 +56,23 @@ export const SubscriptionStatus = ({
 }: {
   subscription: schemas['Subscription']
 }) => {
-  const { status, ends_at } = subscription
+  const { status, ends_at, pause_at_period_end, current_period_end } =
+    subscription
   const isEnding = useMemo(() => ends_at !== null, [ends_at])
+  const isPausing = useMemo(
+    () => pause_at_period_end === true,
+    [pause_at_period_end],
+  )
 
   const color = useMemo(
-    () => getSubscriptionStatusBorderColor(status, isEnding),
-    [status, isEnding],
+    () => getSubscriptionStatusBorderColor(status, isEnding || isPausing),
+    [status, isEnding, isPausing],
   )
 
   const icon = useMemo(() => {
+    if (isPausing && !isEnding) {
+      return <Pause className="size-3" />
+    }
     if (!isEnding) {
       return null
     }
@@ -72,10 +80,20 @@ export const SubscriptionStatus = ({
       return <CircleX className="size-3" />
     }
     return <Clock className="size-3" />
-  }, [isEnding, status])
+  }, [isEnding, isPausing, status])
+
+  const eventDate = useMemo(() => {
+    if (isEnding) {
+      return ends_at
+    }
+    if (isPausing) {
+      return current_period_end
+    }
+    return null
+  }, [isEnding, isPausing, ends_at, current_period_end])
 
   return (
-    <StatusLabel color={color} dt={ends_at} icon={icon}>
+    <StatusLabel color={color} dt={eventDate} icon={icon}>
       {subscriptionStatusDisplayNames[subscription.status]}
     </StatusLabel>
   )

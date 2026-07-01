@@ -64,6 +64,7 @@ class SubscriptionStatus(StrEnum):
     trialing = "trialing"
     active = "active"
     past_due = "past_due"
+    paused = "paused"
     canceled = "canceled"
     unpaid = "unpaid"
 
@@ -86,6 +87,10 @@ class SubscriptionStatus(StrEnum):
     @classmethod
     def is_incomplete(cls, status: Self) -> bool:
         return status in cls.incomplete_statuses()
+
+    @classmethod
+    def is_paused(cls, status: Self) -> bool:
+        return status == cls.paused
 
     @classmethod
     def is_active(cls, status: Self) -> bool:
@@ -197,6 +202,12 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, nullable=False)
     canceled_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True
+    )
+    pause_at_period_end: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    paused_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
     started_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True
@@ -386,6 +397,15 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def _canceled_expression(cls) -> ColumnElement[bool]:
         return cls.canceled_at.is_not(None)
 
+    @hybrid_property
+    def paused(self) -> bool:
+        return SubscriptionStatus.is_paused(self.status)
+
+    @paused.inplace.expression
+    @classmethod
+    def _paused_expression(cls) -> ColumnElement[bool]:
+        return type_coerce(cls.status == SubscriptionStatus.paused, Boolean)
+
     def initialize_meter_period(self, start: datetime | None) -> None:
         """
         Initialize (or clear) the meter clock from the snapshotted ``meter_interval``.
@@ -438,14 +458,18 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return cast(cls.past_due_at + total_interval, TIMESTAMP(timezone=True))
 
     def can_cancel(self, immediately: bool = False) -> bool:
-        if not SubscriptionStatus.is_billable(self.status):
-            return False
-
         if self.ended_at:
             return False
 
         if immediately:
-            return True
+            # A paused subscription has no upcoming period to defer to,
+            # but it can still be revoked immediately.
+            return SubscriptionStatus.is_billable(
+                self.status
+            ) or SubscriptionStatus.is_paused(self.status)
+
+        if not SubscriptionStatus.is_billable(self.status):
+            return False
 
         if self.cancel_at_period_end or self.ends_at:
             return False
@@ -456,6 +480,20 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             self.cancel_at_period_end
             and self.status in SubscriptionStatus.billable_statuses()
         )
+
+    def can_pause(self) -> bool:
+        return (
+            self.status == SubscriptionStatus.active
+            and self.ended_at is None
+            and self.ends_at is None
+            and not self.cancel_at_period_end
+            and not self.pause_at_period_end
+        )
+
+    def can_unpause(self) -> bool:
+        if self.ended_at is not None:
+            return False
+        return self.pause_at_period_end or SubscriptionStatus.is_paused(self.status)
 
     def update_amount_and_currency(
         self, prices: Sequence["SubscriptionProductPrice"], discount: "Discount | None"

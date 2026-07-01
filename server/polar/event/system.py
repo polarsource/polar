@@ -27,6 +27,8 @@ class SystemEvent(StrEnum):
     subscription_past_due = "subscription.past_due"
     subscription_reactivated = "subscription.reactivated"
     subscription_uncanceled = "subscription.uncanceled"
+    subscription_paused = "subscription.paused"
+    subscription_unpaused = "subscription.unpaused"
     subscription_product_updated = "subscription.product_updated"
     subscription_seats_updated = "subscription.seats_updated"
     subscription_billing_period_updated = "subscription.billing_period_updated"
@@ -59,6 +61,8 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "subscription.past_due": "Subscription Past Due",
     "subscription.reactivated": "Subscription Reactivated",
     "subscription.uncanceled": "Subscription Uncanceled",
+    "subscription.paused": "Subscription Paused",
+    "subscription.unpaused": "Subscription Unpaused",
     "subscription.product_updated": "Subscription Product Updated",
     "order.paid": "Order Paid",
     "order.refunded": "Order Refunded",
@@ -329,6 +333,39 @@ class SubscriptionUncanceledEvent(Event):
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.subscription_uncanceled]]
         user_metadata: Mapped[SubscriptionUncanceledMetadata]  # type: ignore[assignment]
+
+
+class SubscriptionPausedMetadata(TypedDict):
+    subscription_id: str
+    product_id: str
+    amount: int
+    currency: str
+    recurring_interval: str
+    recurring_interval_count: int
+    paused_at: str
+
+
+class SubscriptionPausedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.subscription_paused]]
+        user_metadata: Mapped[SubscriptionPausedMetadata]  # type: ignore[assignment]
+
+
+class SubscriptionUnpausedMetadata(TypedDict):
+    subscription_id: str
+    product_id: str
+    amount: int
+    currency: str
+    recurring_interval: str
+    recurring_interval_count: int
+
+
+class SubscriptionUnpausedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.subscription_unpaused]]
+        user_metadata: Mapped[SubscriptionUnpausedMetadata]  # type: ignore[assignment]
 
 
 class SubscriptionProductUpdatedMetadata(TypedDict):
@@ -708,6 +745,24 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: SubscriptionUncanceledMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.subscription_paused],
+    customer: Customer,
+    organization: Organization,
+    metadata: SubscriptionPausedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.subscription_unpaused],
+    customer: Customer,
+    organization: Organization,
+    metadata: SubscriptionUnpausedMetadata,
 ) -> Event: ...
 
 

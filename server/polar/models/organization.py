@@ -144,6 +144,7 @@ class CustomerPortalUsageSettings(TypedDict):
 class CustomerPortalSubscriptionSettings(TypedDict):
     update_seats: bool
     update_plan: bool
+    pause: NotRequired[bool]
 
 
 class CustomerPortalCustomerSettings(TypedDict):
@@ -161,6 +162,7 @@ _default_customer_portal_settings: OrganizationCustomerPortalSettings = {
     "subscription": {
         "update_seats": True,
         "update_plan": True,
+        "pause": False,
     },
     "customer": {
         "allow_email_change": False,
@@ -807,6 +809,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return self.customer_portal_settings.get("subscription", {}).get(
             "update_plan", True
         )
+
+    @property
+    def customer_portal_subscription_pause(self) -> bool:
+        return self.customer_portal_settings.get("subscription", {}).get("pause", False)
 
     @property
     def checkout_require_3ds(self) -> bool:

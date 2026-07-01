@@ -41,9 +41,11 @@ from polar.event.system import (
     SubscriptionCreatedMetadata,
     SubscriptionCycledMetadata,
     SubscriptionPastDueMetadata,
+    SubscriptionPausedMetadata,
     SubscriptionReactivatedMetadata,
     SubscriptionRevokedMetadata,
     SubscriptionUncanceledMetadata,
+    SubscriptionUnpausedMetadata,
     SubscriptionUpdatedMetadataFields,
     SystemEvent,
     build_system_event,
@@ -115,6 +117,7 @@ from .schemas import (
     SubscriptionChargePreviewProration,
     SubscriptionCreate,
     SubscriptionCreateCustomer,
+    SubscriptionPause,
     SubscriptionRevoke,
     SubscriptionUpdate,
     SubscriptionUpdateBase,
@@ -175,6 +178,22 @@ class SubscriptionLocked(SubscriptionError):
         self.subscription = subscription
         message = "This subscription is pending an update."
         super().__init__(message, 409)
+
+
+class AlreadyPausedSubscription(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = (
+            "This subscription is already paused or will be at the end of the period."
+        )
+        super().__init__(message, 403)
+
+
+class SubscriptionNotPausable(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = "This subscription cannot be paused."
+        super().__init__(message, 403)
 
 
 class NotASeatBasedSubscription(SubscriptionError):
@@ -775,6 +794,7 @@ class SubscriptionService:
             return subscription
 
         revoke = subscription.cancel_at_period_end
+        pause = subscription.pause_at_period_end and not revoke
         previous_status = subscription.status
         previous_canceled = subscription.canceled
 
@@ -782,6 +802,13 @@ class SubscriptionService:
         if revoke:
             subscription.ended_at = utc_now()
             subscription.status = SubscriptionStatus.canceled
+            await self.enqueue_benefits_grants(session, subscription)
+        # Subscription is due to pause: freeze the billing clock and revoke
+        # benefits until it's unpaused
+        elif pause:
+            subscription.paused_at = utc_now()
+            subscription.status = SubscriptionStatus.paused
+            subscription.pause_at_period_end = False
             await self.enqueue_benefits_grants(session, subscription)
         # Normal cycle
         else:
@@ -884,14 +911,14 @@ class SubscriptionService:
                         ),
                     )
 
-        if previous_status == SubscriptionStatus.trialing:
+        if previous_status == SubscriptionStatus.trialing and not pause:
             subscription.status = SubscriptionStatus.active
 
         # Re-arm the meter clock off the new billing period. At the billing boundary
         # both clocks coincide, so the full cycle settles the final meter period and
         # the meter clock simply restarts. Also covers trial conversion, where the
         # meter clock starts for the first time.
-        if not revoke:
+        if not revoke and not pause:
             subscription.initialize_meter_period(subscription.current_period_start)
 
         repository = SubscriptionRepository.from_session(session)
@@ -899,7 +926,9 @@ class SubscriptionService:
             subscription, update_dict={"scheduler_locked_at": None}
         )
 
-        if revoke:
+        if revoke or pause:
+            # A pause, like a cancellation, only settles outstanding usage:
+            # no billing entry was created for a new period.
             billing_reason = OrderBillingReasonInternal.subscription_cancel
         elif previous_status == SubscriptionStatus.trialing:
             billing_reason = OrderBillingReasonInternal.subscription_cycle_after_trial
@@ -1083,6 +1112,12 @@ class SubscriptionService:
                 immediately=True,
             )
 
+        if isinstance(update, SubscriptionPause):
+            if update.pause_at_period_end:
+                subscription = await self.pause(session, ctx, subscription)
+            else:
+                subscription = await self.unpause(session, ctx, subscription)
+
         if isinstance(update, SubscriptionUpdateClear):
             subscription = await self.clear_pending_update(session, ctx, subscription)
 
@@ -1101,6 +1136,9 @@ class SubscriptionService:
     ) -> Subscription:
         if subscription.revoked or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
+
+        if subscription.paused:
+            raise InactiveSubscription(subscription)
 
         previous_product = subscription.product
         previous_prices = [*subscription.prices]
@@ -1794,6 +1832,72 @@ class SubscriptionService:
         session.add(subscription)
         return subscription
 
+    async def pause(
+        self,
+        session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
+        subscription: Subscription,
+    ) -> Subscription:
+        if subscription.ended_at:
+            raise ResourceUnavailable()
+
+        if subscription.paused or subscription.pause_at_period_end:
+            raise AlreadyPausedSubscription(subscription)
+
+        if not subscription.can_pause():
+            raise SubscriptionNotPausable(subscription)
+
+        # Pausing a seat-based subscription would revoke all assigned seats,
+        # destroying the seat assignments the customer would expect back on unpause.
+        if subscription.get_price_by_type(ProductPriceSeatUnit) is not None:
+            raise SubscriptionNotPausable(subscription)
+
+        subscription.pause_at_period_end = True
+        session.add(subscription)
+
+        log.info(
+            "subscription.pause",
+            id=subscription.id,
+            pause_at=subscription.current_period_end,
+        )
+
+        return subscription
+
+    async def unpause(
+        self,
+        session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
+        subscription: Subscription,
+    ) -> Subscription:
+        if subscription.ended_at:
+            raise ResourceUnavailable()
+
+        # Pause is scheduled but not effective yet: simply unschedule it
+        if subscription.pause_at_period_end:
+            subscription.pause_at_period_end = False
+            session.add(subscription)
+            return subscription
+
+        if not subscription.paused:
+            raise BadRequest()
+
+        now = utc_now()
+        subscription.status = SubscriptionStatus.active
+        subscription.paused_at = None
+        # Start a fresh billing period anchored at the unpause time. Cycling
+        # immediately advances the clock from here, creates the billing entries
+        # for the new period and charges the customer.
+        subscription.anchor_day = now.day
+        subscription.current_period_end = now
+        session.add(subscription)
+        ctx.set_billing_effect("cycle")
+
+        await self.enqueue_benefits_grants(session, subscription)
+
+        log.info("subscription.unpause", id=subscription.id)
+
+        return subscription
+
     async def revoke(
         self,
         session: AsyncSession,
@@ -1931,6 +2035,9 @@ class SubscriptionService:
 
         now = utc_now()
         subscription.canceled_at = now
+        # Cancellation takes precedence over a pause, whether scheduled or effective
+        subscription.pause_at_period_end = False
+        subscription.paused_at = None
 
         if customer_reason:
             subscription.customer_cancellation_reason = customer_reason
@@ -2151,9 +2258,15 @@ class SubscriptionService:
         became_reactivated = (
             became_activated and previous_status == SubscriptionStatus.past_due
         )
+        became_unpaused = (
+            became_activated and previous_status == SubscriptionStatus.paused
+        )
         became_past_due = (
             subscription.status == SubscriptionStatus.past_due
             and previous_status != SubscriptionStatus.past_due
+        )
+        became_paused = subscription.paused and not SubscriptionStatus.is_paused(
+            previous_status
         )
         became_canceled = subscription.canceled and not previous_is_canceled
         became_uncanceled = not subscription.canceled and previous_is_canceled
@@ -2163,11 +2276,17 @@ class SubscriptionService:
 
         if became_activated:
             await self._on_subscription_activated(
-                session, subscription, became_reactivated
+                session, subscription, became_reactivated, unpaused=became_unpaused
             )
 
         if became_uncanceled:
             await self._on_subscription_uncanceled(session, subscription)
+
+        if became_paused:
+            await self._on_subscription_paused(session, subscription)
+
+        if became_unpaused:
+            await self._on_subscription_unpaused(session, subscription)
 
         if became_past_due:
             await self._on_subscription_past_due(session, subscription)
@@ -2204,14 +2323,15 @@ class SubscriptionService:
         session: AsyncSession,
         subscription: Subscription,
         reactivated: bool,
+        unpaused: bool = False,
     ) -> None:
         await self._send_webhook(
             session, subscription, WebhookEventType.subscription_active
         )
 
         # Only send merchant notification if the subscription is a new one,
-        # not a past due that has been reactivated.
-        if not reactivated:
+        # not a past due that has been reactivated or a pause that has been lifted.
+        if not reactivated and not unpaused:
             await self._send_new_subscription_notification(session, subscription)
 
         if reactivated:
@@ -2287,6 +2407,60 @@ class SubscriptionService:
         )
 
         await self.send_uncanceled_email(session, subscription)
+
+    async def _on_subscription_paused(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> None:
+        await self._send_webhook(
+            session, subscription, WebhookEventType.subscription_paused
+        )
+
+        assert subscription.paused_at is not None
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_paused,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata=SubscriptionPausedMetadata(
+                    subscription_id=str(subscription.id),
+                    product_id=str(subscription.product_id),
+                    amount=subscription.amount,
+                    currency=subscription.currency,
+                    recurring_interval=subscription.recurring_interval.value,
+                    recurring_interval_count=subscription.recurring_interval_count,
+                    paused_at=subscription.paused_at.isoformat(),
+                ),
+            ),
+        )
+
+    async def _on_subscription_unpaused(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> None:
+        await self._send_webhook(
+            session, subscription, WebhookEventType.subscription_unpaused
+        )
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_unpaused,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata=SubscriptionUnpausedMetadata(
+                    subscription_id=str(subscription.id),
+                    product_id=str(subscription.product_id),
+                    amount=subscription.amount,
+                    currency=subscription.currency,
+                    recurring_interval=subscription.recurring_interval.value,
+                    recurring_interval_count=subscription.recurring_interval_count,
+                ),
+            ),
+        )
 
     async def _on_subscription_canceled(
         self,
@@ -2406,6 +2580,8 @@ class SubscriptionService:
             WebhookEventType.subscription_active,
             WebhookEventType.subscription_canceled,
             WebhookEventType.subscription_uncanceled,
+            WebhookEventType.subscription_paused,
+            WebhookEventType.subscription_unpaused,
             WebhookEventType.subscription_revoked,
             WebhookEventType.subscription_past_due,
         ],

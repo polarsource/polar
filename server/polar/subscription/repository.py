@@ -316,6 +316,7 @@ class SubscriptionRepository(
             .where(
                 Subscription.status == SubscriptionStatus.active,
                 Subscription.cancel_at_period_end.is_(False),
+                Subscription.pause_at_period_end.is_(False),
                 Subscription.current_period_end.isnot(None),
                 Subscription.current_period_end > now,
                 Subscription.current_period_end <= reminder_window_end,
@@ -417,8 +418,9 @@ class SubscriptionRepository(
                         ),
                     ),
                     (Subscription.status == SubscriptionStatus.past_due, 6),
-                    (Subscription.status == SubscriptionStatus.canceled, 7),
-                    (Subscription.status == SubscriptionStatus.unpaid, 8),
+                    (Subscription.status == SubscriptionStatus.paused, 7),
+                    (Subscription.status == SubscriptionStatus.canceled, 8),
+                    (Subscription.status == SubscriptionStatus.unpaid, 9),
                 )
             case SubscriptionSortProperty.started_at:
                 return Subscription.started_at

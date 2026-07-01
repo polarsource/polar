@@ -118,6 +118,19 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
             "The subscription might still be active if `cancel_at_period_end` is `true`."
         )
     )
+    pause_at_period_end: bool = Field(
+        False,
+        description=(
+            "Whether the subscription will be paused at the end of the current period."
+        ),
+    )
+    paused_at: datetime | None = Field(
+        None,
+        description=(
+            "The timestamp when the subscription was paused. "
+            "Set only while the subscription is paused."
+        ),
+    )
     started_at: datetime | None = Field(
         description="The timestamp when the subscription started."
     )
@@ -435,6 +448,23 @@ class SubscriptionRevoke(SubscriptionCancelBase):
     )
 
 
+class SubscriptionPause(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    pause_at_period_end: bool = Field(
+        description=inspect.cleandoc(
+            """
+        Pause an active subscription once the current period ends.
+
+        Billing stops and benefits are revoked until the subscription is
+        unpaused. Set to `false` to unpause: a scheduled pause is simply
+        unscheduled, while a paused subscription resumes immediately with
+        a new billing period starting at that time.
+        """
+        ),
+    )
+
+
 class SubscriptionUpdateClear(Schema):
     model_config = ConfigDict(extra="forbid")
 
@@ -449,6 +479,7 @@ SubscriptionUpdate = Annotated[
     | SubscriptionUpdateBillingPeriod
     | SubscriptionCancel
     | SubscriptionRevoke
+    | SubscriptionPause
     | SubscriptionUpdateClear,
     SetSchemaReference("SubscriptionUpdate"),
 ]

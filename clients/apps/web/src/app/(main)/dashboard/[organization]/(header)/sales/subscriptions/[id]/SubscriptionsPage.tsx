@@ -6,30 +6,17 @@ import { useModal } from '@/components/Modal/useModal'
 import { OrderSection } from '@/components/Orders/OrderSection'
 import { SeatViewOnlyTable } from '@/components/Seats/SeatViewOnlyTable'
 import CancelSubscriptionModal from '@/components/Subscriptions/CancelSubscriptionModal'
+import SubscriptionActions from '@/components/Subscriptions/SubscriptionActions'
 import { SubscriptionDetailsGrid } from '@/components/Subscriptions/SubscriptionDetailsGrid'
 import SubscriptionInvoicePreview from '@/components/Subscriptions/SubscriptionInvoicePreview'
 import SubscriptionOrdersSection from '@/components/Subscriptions/SubscriptionOrdersSection'
 import { SubscriptionSecondaryDetails } from '@/components/Subscriptions/SubscriptionSecondaryDetails'
 import UpdateSubscriptionModal from '@/components/Subscriptions/UpdateSubscriptionModal'
-import { toast } from '@/components/Toast/use-toast'
-import {
-  useCustomFields,
-  useProduct,
-  useSubscription,
-  useUncancelSubscription,
-} from '@/hooks/queries'
+import { useCustomFields, useProduct, useSubscription } from '@/hooks/queries'
 import { useOrganizationSeats } from '@/hooks/queries/seats'
-import { extractApiErrorMessage } from '@/utils/api/errors'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
 import { Button, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@polar-sh/ui/components/atoms/DropdownMenu'
 import React from 'react'
 
 interface ClientPageProps {
@@ -58,8 +45,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
     isShown: isShownUpdateModal,
   } = useModal()
 
-  const uncancelSubscription = useUncancelSubscription(_subscription.id)
-
   const hasSeatBasedSubscription =
     !!subscription?.seats && subscription.seats > 0
 
@@ -70,22 +55,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const totalSeats = seatsData?.total_seats || 0
   const availableSeats = seatsData?.available_seats || 0
   const seats = seatsData?.seats || []
-
-  const handleUncancel = async () => {
-    try {
-      await uncancelSubscription.mutateAsync()
-      toast({
-        title: 'Subscription Uncanceled',
-        description:
-          'The subscription has been successfully uncanceled and will continue at the next billing cycle.',
-      })
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: `Failed to uncancel the subscription: ${extractApiErrorMessage(error as Record<string, unknown>)}`,
-      })
-    }
-  }
 
   if (!subscription || !product) {
     return null
@@ -106,50 +75,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <Button type="button" onClick={showUpdateModal}>
             Update Subscription
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button type="button" variant="secondary" size="icon">
-                <MoreVertOutlined fontSize="small" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => {
-                  navigator.clipboard
-                    .writeText(subscription.id)
-                    .then(() =>
-                      toast({
-                        title: 'Subscription ID copied',
-                        description:
-                          'The subscription ID has been copied to clipboard',
-                      }),
-                    )
-                    .catch(() =>
-                      toast({
-                        title: 'Failed to copy',
-                        description:
-                          'Could not copy the subscription ID to clipboard',
-                      }),
-                    )
-                }}
-              >
-                Copy Subscription ID
-              </DropdownMenuItem>
-              {subscription.status !== 'canceled' &&
-                (subscription.cancel_at_period_end ? (
-                  <DropdownMenuItem
-                    onClick={handleUncancel}
-                    disabled={uncancelSubscription.isPending}
-                  >
-                    Uncancel
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem onClick={showCancellationModal}>
-                    Cancel Subscription
-                  </DropdownMenuItem>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <SubscriptionActions
+            subscription={subscription}
+            onCancelSubscription={showCancellationModal}
+          />
         </Box>
       }
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none"

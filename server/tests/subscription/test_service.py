@@ -85,12 +85,14 @@ from polar.subscription.schemas import (
 from polar.subscription.service import (
     AboveMaximumSeats,
     AlreadyCanceledSubscription,
+    AlreadyPausedSubscription,
     BelowMinimumSeats,
     InactiveSubscription,
     MissingCheckoutCustomer,
     NotARecurringProduct,
     NotASeatBasedSubscription,
     SeatsAlreadyAssigned,
+    SubscriptionNotPausable,
     SubscriptionUpdateContext,
 )
 from polar.subscription.service import subscription as subscription_service
@@ -109,6 +111,7 @@ from tests.fixtures.random_objects import (
     create_legacy_recurring_product_price,
     create_meter,
     create_order,
+    create_paused_subscription,
     create_payment_method,
     create_product,
     create_product_fixed_and_seat,
@@ -118,7 +121,9 @@ from tests.fixtures.random_objects import (
     set_product_benefits,
 )
 
-Hooks = namedtuple("Hooks", "updated activated canceled uncanceled revoked")
+Hooks = namedtuple(
+    "Hooks", "updated activated canceled uncanceled paused unpaused revoked"
+)
 HookNames = frozenset(Hooks._fields)
 
 
@@ -189,12 +194,16 @@ def subscription_hooks(mocker: MockerFixture) -> Hooks:
     uncanceled = mocker.patch.object(
         subscription_service, "_on_subscription_uncanceled"
     )
+    paused = mocker.patch.object(subscription_service, "_on_subscription_paused")
+    unpaused = mocker.patch.object(subscription_service, "_on_subscription_unpaused")
     revoked = mocker.patch.object(subscription_service, "_on_subscription_revoked")
     return Hooks(
         updated=updated,
         activated=activated,
         canceled=canceled,
         uncanceled=uncanceled,
+        paused=paused,
+        unpaused=unpaused,
         revoked=revoked,
     )
 
@@ -1466,6 +1475,83 @@ class TestCycle:
         subject = enqueue_email_mock.call_args.kwargs["subject"]
         assert "ended" in subject.lower()
 
+    async def test_pause_at_period_end(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription.pause_at_period_end = True
+        await save_fixture(subscription)
+
+        previous_current_period_start = subscription.current_period_start
+        previous_current_period_end = subscription.current_period_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.status == SubscriptionStatus.paused
+        assert updated_subscription.paused_at is not None
+        assert updated_subscription.pause_at_period_end is False
+        assert updated_subscription.ended_at is None
+        assert updated_subscription.canceled_at is None
+        # The billing clock is frozen: no new period starts while paused
+        assert (
+            updated_subscription.current_period_start == previous_current_period_start
+        )
+        assert updated_subscription.current_period_end == previous_current_period_end
+        assert updated_subscription.scheduler_locked_at is None
+
+        events = await get_all_by_name(session, SystemEvent.subscription_paused)
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert (
+            event.user_metadata["paused_at"]
+            == updated_subscription.paused_at.isoformat()
+        )
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert len(billing_entries) == 0
+
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="revoke",
+            customer_id=customer.id,
+            product_id=product.id,
+            subscription_id=subscription.id,
+            delay=None,
+        )
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            subscription.id,
+            OrderBillingReasonInternal.subscription_cancel,
+        )
+
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_paused,
+            organization,
+            updated_subscription,
+        )
+
     @freeze_time("2024-01-15 10:00:00")
     async def test_cancel_at_period_end_sets_ended_at_to_current_time(
         self,
@@ -2219,6 +2305,323 @@ class TestUncancel:
         assert updated_subscription.cancel_at_period_end is False
         assert updated_subscription.ends_at is None
         assert updated_subscription.canceled_at is None
+
+
+@pytest.mark.asyncio
+class TestPause:
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        enqueue_benefits_grants_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.pause(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.pause_at_period_end is True
+        assert updated_subscription.paused_at is None
+
+        # Benefits are kept until the pause takes effect at period end
+        enqueue_benefits_grants_mock.assert_not_called()
+        assert_hooks_called_once(subscription_hooks, {"updated"})
+
+    async def test_trialing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        with pytest.raises(SubscriptionNotPausable):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.pause(session, ctx, subscription)
+
+    async def test_cancellation_scheduled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            cancel_at_period_end=True,
+        )
+
+        with pytest.raises(SubscriptionNotPausable):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.pause(session, ctx, subscription)
+
+    async def test_already_scheduled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        subscription.pause_at_period_end = True
+        await save_fixture(subscription)
+
+        with pytest.raises(AlreadyPausedSubscription):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.pause(session, ctx, subscription)
+
+    async def test_already_paused(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_paused_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        with pytest.raises(AlreadyPausedSubscription):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.pause(session, ctx, subscription)
+
+    async def test_revoked(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            revoke=True,
+        )
+
+        with pytest.raises(ResourceUnavailable):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.pause(session, ctx, subscription)
+
+    async def test_seat_based(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_seat_based: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product_recurring_seat_based,
+            customer=customer,
+            seats=5,
+        )
+
+        with pytest.raises(SubscriptionNotPausable):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.pause(session, ctx, subscription)
+
+
+@pytest.mark.asyncio
+class TestUnpause:
+    async def test_not_paused(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        with pytest.raises(BadRequest):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.unpause(session, ctx, subscription)
+
+    async def test_revoked(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            revoke=True,
+        )
+
+        with pytest.raises(ResourceUnavailable):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.unpause(session, ctx, subscription)
+
+    async def test_unschedule_pause(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        enqueue_benefits_grants_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        subscription.pause_at_period_end = True
+        await save_fixture(subscription)
+
+        previous_period_end = subscription.current_period_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.unpause(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.pause_at_period_end is False
+        assert updated_subscription.current_period_end == previous_period_end
+
+        enqueue_benefits_grants_mock.assert_not_called()
+        assert_hooks_called_once(subscription_hooks, {"updated"})
+
+    async def test_resume_paused(
+        self,
+        frozen_time: datetime,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        enqueue_benefits_grants_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_paused_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            paused_at=utc_now() - timedelta(days=30),
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.unpause(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.paused_at is None
+        assert updated_subscription.pause_at_period_end is False
+
+        # A new billing period starts at the unpause time
+        assert updated_subscription.current_period_start == frozen_time
+        assert updated_subscription.current_period_end is not None
+        assert updated_subscription.current_period_end > frozen_time
+        assert updated_subscription.anchor_day == frozen_time.day
+
+        # The customer is charged for the new period
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            subscription.id,
+            OrderBillingReasonInternal.subscription_cycle,
+        )
+
+        # Benefits are granted again
+        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
+
+        assert_hooks_called_once(
+            subscription_hooks, {"updated", "activated", "unpaused"}
+        )
+
+    async def test_resume_paused_events(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        webhook_service_send_mock: AsyncMock,
+        enqueue_benefits_grants_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_paused_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.unpause(
+                session, ctx, subscription
+            )
+
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_unpaused,
+            organization,
+            updated_subscription,
+        )
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_active,
+            organization,
+            updated_subscription,
+        )
+
+        events = await get_all_by_name(session, SystemEvent.subscription_unpaused)
+        assert len(events) == 1
+        assert events[0].user_metadata["subscription_id"] == str(subscription.id)
 
 
 async def create_event_billing_entry(

@@ -80,6 +80,8 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.subscription_canceled], Subscription]
     | tuple[Literal[WebhookEventType.subscription_revoked], Subscription]
     | tuple[Literal[WebhookEventType.subscription_uncanceled], Subscription]
+    | tuple[Literal[WebhookEventType.subscription_paused], Subscription]
+    | tuple[Literal[WebhookEventType.subscription_unpaused], Subscription]
     | tuple[Literal[WebhookEventType.subscription_past_due], Subscription]
     | tuple[Literal[WebhookEventType.refund_created], Refund]
     | tuple[Literal[WebhookEventType.refund_updated], Refund]
@@ -680,6 +682,8 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
         | Literal[WebhookEventType.subscription_active]
         | Literal[WebhookEventType.subscription_canceled]
         | Literal[WebhookEventType.subscription_uncanceled]
+        | Literal[WebhookEventType.subscription_paused]
+        | Literal[WebhookEventType.subscription_unpaused]
         | Literal[WebhookEventType.subscription_revoked]
         | Literal[WebhookEventType.subscription_past_due]
     )
@@ -832,6 +836,76 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
                         "text": {
                             "type": "mrkdwn",
                             "text": "Subscription has been revoked.",
+                        },
+                        "fields": self._get_slack_fields(target),
+                    }
+                ],
+            }
+        )
+
+        return json.dumps(payload)
+
+    def _get_paused_discord_payload(self, target: User | Organization) -> str:
+        payload: DiscordPayload = {
+            "content": "Subscription has been paused.",
+            "embeds": [
+                get_branded_discord_embed(
+                    {
+                        "title": "Paused Subscription",
+                        "description": "Subscription has been paused.",
+                        "fields": self._get_discord_fields(target),
+                    }
+                )
+            ],
+        }
+
+        return json.dumps(payload)
+
+    def _get_paused_slack_payload(self, target: User | Organization) -> str:
+        payload: SlackPayload = get_branded_slack_payload(
+            {
+                "text": "Subscription has been paused.",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "Subscription has been paused.",
+                        },
+                        "fields": self._get_slack_fields(target),
+                    }
+                ],
+            }
+        )
+
+        return json.dumps(payload)
+
+    def _get_unpaused_discord_payload(self, target: User | Organization) -> str:
+        payload: DiscordPayload = {
+            "content": "Subscription has been unpaused.",
+            "embeds": [
+                get_branded_discord_embed(
+                    {
+                        "title": "Unpaused Subscription",
+                        "description": "Subscription has been resumed.",
+                        "fields": self._get_discord_fields(target),
+                    }
+                )
+            ],
+        }
+
+        return json.dumps(payload)
+
+    def _get_unpaused_slack_payload(self, target: User | Organization) -> str:
+        payload: SlackPayload = get_branded_slack_payload(
+            {
+                "text": "Subscription has been unpaused.",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "Subscription has been resumed.",
                         },
                         "fields": self._get_slack_fields(target),
                     }
@@ -1029,6 +1103,55 @@ class WebhookSubscriptionUncanceledPayload(WebhookSubscriptionUpdatedPayloadBase
             raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
 
         return self._get_uncanceled_slack_payload(target)
+
+
+class WebhookSubscriptionPausedPayload(WebhookSubscriptionUpdatedPayloadBase):
+    """
+    Sent when a subscription is paused, at the end of the period the customer
+    already paid for. Billing stops and benefits are revoked until the
+    subscription is unpaused.
+
+    **Discord & Slack support:** Full
+    """
+
+    type: Literal[WebhookEventType.subscription_paused]
+    data: SubscriptionSchema
+
+    def get_discord_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
+
+        return self._get_paused_discord_payload(target)
+
+    def get_slack_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
+
+        return self._get_paused_slack_payload(target)
+
+
+class WebhookSubscriptionUnpausedPayload(WebhookSubscriptionUpdatedPayloadBase):
+    """
+    Sent when a paused subscription is unpaused. A new billing period starts
+    immediately and benefits are granted again.
+
+    **Discord & Slack support:** Full
+    """
+
+    type: Literal[WebhookEventType.subscription_unpaused]
+    data: SubscriptionSchema
+
+    def get_discord_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
+
+        return self._get_unpaused_discord_payload(target)
+
+    def get_slack_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
+
+        return self._get_unpaused_slack_payload(target)
 
 
 class WebhookSubscriptionRevokedPayload(WebhookSubscriptionUpdatedPayloadBase):
@@ -1338,6 +1461,8 @@ WebhookPayload = Annotated[
     | WebhookSubscriptionActivePayload
     | WebhookSubscriptionCanceledPayload
     | WebhookSubscriptionUncanceledPayload
+    | WebhookSubscriptionPausedPayload
+    | WebhookSubscriptionUnpausedPayload
     | WebhookSubscriptionRevokedPayload
     | WebhookSubscriptionPastDuePayload
     | WebhookRefundCreatedPayload

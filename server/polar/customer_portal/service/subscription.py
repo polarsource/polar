@@ -24,6 +24,7 @@ from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 
 from ..schemas.subscription import (
+    CustomerSubscriptionPause,
     CustomerSubscriptionUpdate,
     CustomerSubscriptionUpdateClear,
     CustomerSubscriptionUpdateProduct,
@@ -43,6 +44,11 @@ class UpdateSubscriptionPlanNotAllowed(CustomerSubscriptionError):
 class UpdateSubscriptionSeatsNotAllowed(CustomerSubscriptionError):
     def __init__(self) -> None:
         super().__init__("Updating subscription seats is not allowed.", 403)
+
+
+class PauseSubscriptionNotAllowed(CustomerSubscriptionError):
+    def __init__(self) -> None:
+        super().__init__("Pausing the subscription is not allowed.", 403)
 
 
 class CustomerSubscriptionSortProperty(StrEnum):
@@ -175,6 +181,22 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                     seats=updates.seats,
                     proration_behavior=updates.proration_behavior,
                 )
+
+        if isinstance(updates, CustomerSubscriptionPause):
+            # Unpausing is always allowed, so a customer can't get trapped in a
+            # paused subscription if the organization disables the setting.
+            if (
+                updates.pause_at_period_end
+                and not organization.customer_portal_subscription_pause
+            ):
+                raise PauseSubscriptionNotAllowed()
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                if updates.pause_at_period_end:
+                    return await subscription_service.pause(session, ctx, subscription)
+                return await subscription_service.unpause(session, ctx, subscription)
 
         if isinstance(updates, CustomerSubscriptionUpdateClear):
             async with SubscriptionUpdateContext(

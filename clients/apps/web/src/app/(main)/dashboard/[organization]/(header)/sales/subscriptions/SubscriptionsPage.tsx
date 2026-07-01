@@ -334,6 +334,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                   'active',
                   'trialing',
                   'past_due',
+                  'paused',
                   'canceled',
                   'unpaid',
                 ]}

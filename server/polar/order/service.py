@@ -2881,11 +2881,11 @@ class OrderService:
         assert order.subscription is not None
         subscription = order.subscription
 
-        # Subscription already terminated — don't progress dunning or
-        # overwrite its terminal status.
-        if subscription.ended_at is not None:
+        # Subscription already terminated or paused — don't progress dunning or
+        # overwrite its status.
+        if subscription.ended_at is not None or subscription.paused:
             log.info(
-                "Ignoring first dunning attempt for ended subscription",
+                "Ignoring first dunning attempt for ended or paused subscription",
                 order_id=order.id,
                 subscription_id=subscription.id,
             )

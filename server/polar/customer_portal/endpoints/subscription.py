@@ -15,7 +15,11 @@ from polar.postgres import get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 from polar.subscription.schemas import SubscriptionChargePreview, SubscriptionID
-from polar.subscription.service import AlreadyCanceledSubscription
+from polar.subscription.service import (
+    AlreadyCanceledSubscription,
+    AlreadyPausedSubscription,
+    SubscriptionNotPausable,
+)
 from polar.subscription.service import subscription as subscription_service
 
 from .. import auth
@@ -147,9 +151,12 @@ async def get_charge_preview(
             "description": (
                 "Customer subscription is already canceled "
                 "or will be at the end of the period, "
+                "or the pause state doesn't allow the update, "
                 "or the user lacks billing permissions."
             ),
-            "model": AlreadyCanceledSubscription.schema(),
+            "model": AlreadyCanceledSubscription.schema()
+            | AlreadyPausedSubscription.schema()
+            | SubscriptionNotPausable.schema(),
         },
         404: SubscriptionNotFound,
     },

@@ -16591,6 +16591,17 @@ export interface components {
        */
       canceled_at: string | null
       /**
+       * Pause At Period End
+       * @description Whether the subscription will be paused at the end of the current period.
+       * @default false
+       */
+      pause_at_period_end?: boolean
+      /**
+       * Paused At
+       * @description The timestamp when the subscription was paused. Set only while the subscription is paused.
+       */
+      paused_at?: string | null
+      /**
        * Started At
        * @description The timestamp when the subscription started.
        */
@@ -18032,6 +18043,17 @@ export interface components {
        */
       canceled_at: string | null
       /**
+       * Pause At Period End
+       * @description Whether the subscription will be paused at the end of the current period.
+       * @default false
+       */
+      pause_at_period_end?: boolean
+      /**
+       * Paused At
+       * @description The timestamp when the subscription was paused. Set only while the subscription is paused.
+       */
+      paused_at?: string | null
+      /**
        * Started At
        * @description The timestamp when the subscription started.
        */
@@ -18301,9 +18323,21 @@ export interface components {
       | '-organization'
       | 'product'
       | '-product'
+    /** CustomerSubscriptionPause */
+    CustomerSubscriptionPause: {
+      /**
+       * Pause At Period End
+       * @description Pause an active subscription once the current period ends.
+       *
+       *     Or set to `false` to unpause: a scheduled pause is unscheduled, while
+       *     a paused subscription resumes immediately with a new billing period.
+       */
+      pause_at_period_end: boolean
+    }
     CustomerSubscriptionUpdate:
       | components['schemas']['CustomerSubscriptionUpdateProduct']
       | components['schemas']['CustomerSubscriptionUpdateSeats']
+      | components['schemas']['CustomerSubscriptionPause']
       | components['schemas']['CustomerSubscriptionCancel']
       | components['schemas']['CustomerSubscriptionUpdateClear']
     /** CustomerSubscriptionUpdateClear */
@@ -24189,6 +24223,17 @@ export interface components {
        * @description The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`.
        */
       canceled_at: string | null
+      /**
+       * Pause At Period End
+       * @description Whether the subscription will be paused at the end of the current period.
+       * @default false
+       */
+      pause_at_period_end?: boolean
+      /**
+       * Paused At
+       * @description The timestamp when the subscription was paused. Set only while the subscription is paused.
+       */
+      paused_at?: string | null
       /**
        * Started At
        * @description The timestamp when the subscription started.
@@ -30405,6 +30450,17 @@ export interface components {
        */
       canceled_at: string | null
       /**
+       * Pause At Period End
+       * @description Whether the subscription will be paused at the end of the current period.
+       * @default false
+       */
+      pause_at_period_end?: boolean
+      /**
+       * Paused At
+       * @description The timestamp when the subscription was paused. Set only while the subscription is paused.
+       */
+      paused_at?: string | null
+      /**
        * Started At
        * @description The timestamp when the subscription started.
        */
@@ -31458,6 +31514,19 @@ export interface components {
       /** Recurring Interval Count */
       recurring_interval_count?: number
     }
+    /** SubscriptionPause */
+    SubscriptionPause: {
+      /**
+       * Pause At Period End
+       * @description Pause an active subscription once the current period ends.
+       *
+       *     Billing stops and benefits are revoked until the subscription is
+       *     unpaused. Set to `false` to unpause: a scheduled pause is simply
+       *     unscheduled, while a paused subscription resumes immediately with
+       *     a new billing period starting at that time.
+       */
+      pause_at_period_end: boolean
+    }
     /** SubscriptionRevoke */
     SubscriptionRevoke: {
       /**
@@ -31711,6 +31780,7 @@ export interface components {
       | 'trialing'
       | 'active'
       | 'past_due'
+      | 'paused'
       | 'canceled'
       | 'unpaid'
     /**
@@ -31809,6 +31879,7 @@ export interface components {
       | components['schemas']['SubscriptionUpdateBillingPeriod']
       | components['schemas']['SubscriptionCancel']
       | components['schemas']['SubscriptionRevoke']
+      | components['schemas']['SubscriptionPause']
       | components['schemas']['SubscriptionUpdateClear']
     /** SubscriptionUpdateBase */
     SubscriptionUpdateBase: {
@@ -34065,6 +34136,8 @@ export interface components {
       | 'subscription.active'
       | 'subscription.canceled'
       | 'subscription.uncanceled'
+      | 'subscription.paused'
+      | 'subscription.unpaused'
       | 'subscription.revoked'
       | 'subscription.past_due'
       | 'refund.created'
@@ -61447,6 +61520,7 @@ export const subscriptionStatusValues: ReadonlyArray<
   'trialing',
   'active',
   'past_due',
+  'paused',
   'canceled',
   'unpaid',
 ]
@@ -61897,6 +61971,8 @@ export const webhookEventTypeValues: ReadonlyArray<
   'subscription.active',
   'subscription.canceled',
   'subscription.uncanceled',
+  'subscription.paused',
+  'subscription.unpaused',
   'subscription.revoked',
   'subscription.past_due',
   'refund.created',

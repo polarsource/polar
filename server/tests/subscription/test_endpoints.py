@@ -862,6 +862,109 @@ class TestSubscriptionUpdateRevoke:
 
 
 @pytest.mark.asyncio
+class TestSubscriptionUpdatePause:
+    async def test_anonymous(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=datetime(2023, 1, 1),
+        )
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json=dict(pause_at_period_end=True),
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=datetime(2023, 1, 1),
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json=dict(pause_at_period_end=True),
+        )
+
+        assert response.status_code == 200
+        updated_subscription = response.json()
+        assert updated_subscription["status"] == SubscriptionStatus.active
+        assert updated_subscription["pause_at_period_end"] is True
+        assert updated_subscription["paused_at"] is None
+
+    @pytest.mark.auth
+    async def test_already_paused(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+            started_at=datetime(2023, 1, 1),
+            paused_at=utc_now(),
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json=dict(pause_at_period_end=True),
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_unpause_scheduled(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=datetime(2023, 1, 1),
+        )
+        subscription.pause_at_period_end = True
+        await save_fixture(subscription)
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json=dict(pause_at_period_end=False),
+        )
+
+        assert response.status_code == 200
+        updated_subscription = response.json()
+        assert updated_subscription["status"] == SubscriptionStatus.active
+        assert updated_subscription["pause_at_period_end"] is False
+
+
+@pytest.mark.asyncio
 class TestSubscriptionRevoke:
     async def test_anonymous(
         self,

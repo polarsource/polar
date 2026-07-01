@@ -11,6 +11,7 @@ export const subscriptionStatusDisplayNames: {
   trialing: 'Trialing',
   active: 'Active',
   past_due: 'Past due',
+  paused: 'Paused',
   canceled: 'Canceled',
   unpaid: 'Unpaid',
 }
@@ -26,6 +27,8 @@ export const getSubscriptionStatusColor = (
       return 'blue'
     case 'past_due':
       return 'yellow'
+    case 'paused':
+      return 'gray'
     case 'unpaid':
     case 'canceled':
       return 'red'

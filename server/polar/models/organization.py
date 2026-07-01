@@ -635,7 +635,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return self.feature_settings.get("sso_enabled", False)
 
     sso_enforced: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False, server_default="false"
+        Boolean, nullable=False, default=False
     )
 
     #

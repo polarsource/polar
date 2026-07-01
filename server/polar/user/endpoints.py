@@ -64,7 +64,14 @@ async def get_authenticated(
 ) -> UserRead:
     user = auth_subject.subject
     repository = UserOrganizationRepository.from_session(session)
-    org_with_roles = await repository.get_organizations_with_role(user.id)
+    # Raw membership, intersected below with the session's organization scope.
+    org_with_roles = await repository.get_organizations_with_role(user.id)  # noqa: org-scope
+    if auth_subject.organization_ids is not None:
+        org_with_roles = [
+            (org, role)
+            for org, role in org_with_roles
+            if org.id in auth_subject.organization_ids
+        ]
     return UserRead.model_validate(user).model_copy(
         update={
             "organizations": [
@@ -105,6 +112,11 @@ async def update_authenticated_notification_settings(
     session: AsyncSession = Depends(get_db_session),
 ) -> UserOrganizationNotificationSettings:
     """Update the authenticated user's notification settings for an organization."""
+    if (
+        auth_subject.organization_ids is not None
+        and organization_id not in auth_subject.organization_ids
+    ):
+        raise ResourceNotFound()
     try:
         user_org = await user_organization_service.update_notification_settings(
             session,
@@ -134,6 +146,11 @@ async def get_authenticated_notification_settings(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> UserOrganizationNotificationSettings:
     """Get the authenticated user's notification settings for an organization."""
+    if (
+        auth_subject.organization_ids is not None
+        and organization_id not in auth_subject.organization_ids
+    ):
+        raise ResourceNotFound()
 
     user_org = await user_organization_service.get_by_user_and_org(
         session, auth_subject.subject.id, organization_id

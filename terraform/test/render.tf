@@ -217,6 +217,11 @@ module "test" {
     files_download_secret = var.s3_files_download_secret
   }
 
+  aws_kms_config = {
+    key_id   = one(module.secrets_kms[*].key_arn)
+    role_arn = one(module.secrets_kms[*].role_arn)
+  }
+
   github_secrets = {
     client_id                           = var.github_client_id
     client_secret                       = var.github_client_secret

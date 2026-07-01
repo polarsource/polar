@@ -336,6 +336,11 @@ module "production" {
     files_download_secret = var.s3_files_download_secret_production
   }
 
+  aws_kms_config = {
+    key_id   = module.secrets_kms.key_arn
+    role_arn = module.secrets_kms.role_arn
+  }
+
   github_secrets = {
     client_id                           = var.github_client_id_production
     client_secret                       = var.github_client_secret_production

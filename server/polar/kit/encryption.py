@@ -83,12 +83,7 @@ class KMSKeyProvider:
     def _client(self) -> Any:
         import boto3
 
-        return boto3.client(
-            "kms",
-            region_name=settings.AWS_REGION,
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-        )
+        return boto3.client("kms", region_name=settings.AWS_REGION)
 
     async def generate_data_key(self, context: dict[str, str]) -> tuple[bytes, bytes]:
         response = await asyncio.to_thread(

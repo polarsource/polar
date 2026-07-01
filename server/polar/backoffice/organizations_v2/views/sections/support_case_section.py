@@ -14,6 +14,8 @@ from tagflow import attr, tag, text
 from polar.enums import PaymentProcessor
 from polar.models import Dispute, Organization
 from polar.models.support_case import (
+    DisputeSupportCase,
+    DisputeWinReason,
     SupportCase,
     SupportCaseAttachment,
     SupportCaseMessage,
@@ -36,6 +38,15 @@ _AUTHOR_LABELS: dict[SupportCaseMessageAuthorKind, str] = {
 _CASE_TITLES: dict[SupportCaseType, str] = {
     SupportCaseType.review_appeal: "Appeal Support Case",
     SupportCaseType.dispute: "Dispute Support Case",
+}
+
+_WIN_REASON_LABELS: dict[DisputeWinReason, str] = {
+    DisputeWinReason.cardholder_withdrew: "The cardholder withdrew the dispute",
+    DisputeWinReason.cardholder_refunded: "The cardholder was refunded",
+    DisputeWinReason.rightful_cardholder: (
+        "The purchase was made by the rightful cardholder"
+    ),
+    DisputeWinReason.other: "Other",
 }
 
 # The "opened" milestone reads differently per case type (a merchant-requested
@@ -124,6 +135,7 @@ class SupportCaseSection:
         author_emails: dict[UUID, str] | None = None,
         current_user_id: UUID | None = None,
         attachments_by_message: dict[UUID, list[SupportCaseAttachment]] | None = None,
+        attachments: Sequence[SupportCaseAttachment] | None = None,
         dispute: Dispute | None = None,
         return_to: str | None = None,
     ) -> None:
@@ -132,6 +144,7 @@ class SupportCaseSection:
         self.author_emails = author_emails or {}
         self.current_user_id = current_user_id
         self.attachments_by_message = attachments_by_message or {}
+        self.attachments = attachments or []
         # The dispute behind a dispute case, surfaced as a read-only facts panel.
         self.dispute = dispute
         # Origin to come back to after an action (e.g. the org page), threaded
@@ -305,10 +318,10 @@ class SupportCaseSection:
     def _render_dispute_details(self, request: Request, dispute: Dispute) -> None:
         """Read-only facts about the chargeback: what is owed, why, and by when."""
         order_url = str(request.url_for("orders:get", id=dispute.order_id))
-        with tag.div(classes="mb-8 rounded-xl border border-base-200"):
+        with tag.div(classes="mb-8 rounded-xl border border-base-300"):
             with tag.div(
                 classes="flex items-center justify-between gap-2 px-4 py-3 "
-                "border-b border-base-200"
+                "border-b border-base-300"
             ):
                 with tag.div(classes="flex items-center gap-2"):
                     with tag.span(classes="icon-gavel text-base-content/60"):
@@ -341,6 +354,56 @@ class SupportCaseSection:
                 if dispute.payment_processor_id:
                     with self._fact("Processor dispute ID"):
                         self._render_processor_id(dispute)
+                with self._fact("Why they should win"):
+                    self._render_win_reason()
+            self._render_evidence_files(request)
+
+    def _render_win_reason(self) -> None:
+        case = self.thread[0] if self.thread else None
+        if not isinstance(case, DisputeSupportCase) or case.win_reason is None:
+            with tag.span(classes="text-base-content/50"):
+                text("Not provided")
+            return
+        label = _WIN_REASON_LABELS.get(case.win_reason, case.win_reason.value)
+        if case.win_reason == DisputeWinReason.other and case.win_reason_other:
+            text(f"{label} — {case.win_reason_other}")
+        else:
+            text(label)
+
+    def _merchant_attachments(self) -> list[SupportCaseAttachment]:
+        """Attachments carried by merchant-authored messages.
+
+        The case can also hold platform/internal attachments; those must not
+        appear under a "merchant submitted" heading."""
+        if self.thread is None:
+            return []
+        _case, _is_open, messages = self.thread
+        merchant_message_ids = {
+            message.id
+            for message in messages
+            if message.author_kind == SupportCaseMessageAuthorKind.merchant
+        }
+        return [
+            attachment
+            for attachment in self.attachments
+            if attachment.message_id in merchant_message_ids
+        ]
+
+    def _render_evidence_files(self, request: Request) -> None:
+        """The merchant's evidence — the counter submission and any files sent
+        later in the chat — consolidated so support always has the full set."""
+        attachments = self._merchant_attachments()
+        if not attachments:
+            return
+        with tag.div(
+            classes="flex flex-col gap-2 px-4 pb-4 border-t border-base-300 pt-4"
+        ):
+            with tag.div(
+                classes="text-xs uppercase tracking-wide text-base-content/40"
+            ):
+                text(f"Merchant submitted files ({len(attachments)})")
+            for attachment in attachments:
+                self._render_attachment(request, attachment)
 
     @contextlib.contextmanager
     def _fact(self, label: str) -> Generator[None]:
@@ -510,11 +573,25 @@ class SupportCaseSection:
         with tag.a(
             href=url,
             target="_blank",
-            classes="flex items-center gap-2 max-w-md rounded-lg border "
-            "border-base-200 bg-base-100 px-3 py-2 hover:bg-base-200",
+            classes="flex items-center gap-3 max-w-md rounded-lg border "
+            "border-base-300 bg-base-100 px-3 py-2 hover:bg-base-200",
         ):
-            with tag.span(classes="icon-paperclip text-base-content/40"):
-                pass
+            if file.mime_type.startswith("image/"):
+                with tag.img(
+                    src=url,
+                    alt=file.name,
+                    loading="lazy",
+                    classes="h-12 w-12 flex-none rounded-md object-cover bg-base-200",
+                ):
+                    pass
+            else:
+                with tag.div(
+                    classes="flex h-12 w-12 flex-none items-center "
+                    "justify-center rounded-md bg-base-200 "
+                    "text-base-content/40"
+                ):
+                    with tag.span(classes="icon-paperclip"):
+                        pass
             with tag.div(classes="min-w-0"):
                 with tag.div(classes="text-sm font-medium truncate"):
                     text(file.name)
@@ -554,7 +631,7 @@ class SupportCaseSection:
         )
         # A closed case only takes internal follow-ups after the decision.
         internal_only = not is_open
-        with tag.div(classes="mt-8 pt-6 border-t border-base-200"):
+        with tag.div(classes="mt-8 pt-6 border-t border-base-300"):
             if not is_open:
                 with tag.div(
                     classes="flex items-center gap-2 mb-3 text-sm text-base-content/60"

@@ -6,6 +6,7 @@ from pydantic import UUID4, Field, model_validator
 from polar.exceptions import ResourceNotFound
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.support_case import (
+    DisputeWinReason,
     SupportCaseMessageAuthorKind,
     SupportCaseMessageType,
     SupportCaseType,
@@ -55,11 +56,43 @@ class SupportCaseMessageCreate(Schema):
 
     body: str | None = Field(default=None, min_length=1, max_length=5000)
     file_ids: list[UUID4] = Field(default_factory=list, max_length=10)
+    dispute_win_reason: DisputeWinReason | None = Field(
+        default=None,
+        description=(
+            "For a dispute case, the merchant's stated grounds for contesting. "
+            "Set on the counter submission; ignored for other case types."
+        ),
+    )
+    dispute_win_reason_other: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=500,
+        description="Free-text detail when `dispute_win_reason` is `other`.",
+    )
 
     @model_validator(mode="after")
     def _require_content(self) -> Self:
         if not self.body and not self.file_ids:
             raise ValueError("A reply needs a body, an attachment, or both.")
+        return self
+
+    @model_validator(mode="after")
+    def _validate_win_reason(self) -> Self:
+        if (
+            self.dispute_win_reason_other is not None
+            and self.dispute_win_reason != DisputeWinReason.other
+        ):
+            raise ValueError(
+                "dispute_win_reason_other is only allowed when "
+                "dispute_win_reason is `other`."
+            )
+        if (
+            self.dispute_win_reason == DisputeWinReason.other
+            and not self.dispute_win_reason_other
+        ):
+            raise ValueError(
+                "dispute_win_reason `other` requires dispute_win_reason_other."
+            )
         return self
 
 

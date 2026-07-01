@@ -5,6 +5,7 @@ from polar.exceptions import PolarError
 from polar.models import Dispute, File, Organization, User
 from polar.models.support_case import (
     DisputeSupportCase,
+    DisputeWinReason,
     SupportCaseAudience,
     SupportCaseMessage,
     SupportCaseMessageAuthorKind,
@@ -140,14 +141,22 @@ class DisputeCaseService:
         body: str | None = None,
         files: Sequence[File] = (),
         internal: bool = False,
+        win_reason: DisputeWinReason | None = None,
+        win_reason_other: str | None = None,
     ) -> SupportCaseMessage:
         """Post a reply to the dispute thread, optionally carrying files.
 
         This is the merchant ↔ support conversation channel: the merchant's
         evidence and any back-and-forth live here as ``chat`` messages, which
-        support reviews and submits to the processor.
+        support reviews and submits to the processor. ``win_reason`` records the
+        merchant's stated grounds for contesting, set on their counter;
+        ``win_reason_other`` carries their free-text detail for ``other``.
         """
         await self._assert_open(session, case)
+
+        if win_reason is not None:
+            case.win_reason = win_reason
+            case.win_reason_other = win_reason_other
 
         is_first_merchant_reply = (
             author_kind == SupportCaseMessageAuthorKind.merchant

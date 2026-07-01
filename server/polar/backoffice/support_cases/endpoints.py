@@ -370,6 +370,7 @@ async def case_detail(
         author_emails=author_emails,
         current_user_id=user_session.user_id,
         attachments_by_message=attachments_by_message,
+        attachments=attachments,
         dispute=dispute,
         return_to=return_to if is_safe_return_to(return_to) else None,
     )

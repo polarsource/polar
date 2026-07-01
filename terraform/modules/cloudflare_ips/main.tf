@@ -13,8 +13,8 @@ data "http" "cloudflare_ips_v4" {
 
   lifecycle {
     postcondition {
-      condition     = self.response_body != ""
-      error_message = "Cloudflare IPv4 ranges endpoint returned empty content. Check https://www.cloudflare.com/ips-v4"
+      condition     = self.response_body != "" && self.status_code == 200
+      error_message = "Cloudflare IPv4 ranges endpoint failed. Check https://www.cloudflare.com/ips-v4"
     }
   }
 }
@@ -28,8 +28,8 @@ data "http" "cloudflare_ips_v6" {
 
   lifecycle {
     postcondition {
-      condition     = self.response_body != ""
-      error_message = "Cloudflare IPv6 ranges endpoint returned empty content. Check https://www.cloudflare.com/ips-v6"
+      condition     = self.response_body != "" && self.status_code == 200
+      error_message = "Cloudflare IPv6 ranges endpoint failed. Check https://www.cloudflare.com/ips-v6"
     }
   }
 }

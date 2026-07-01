@@ -327,3 +327,17 @@ class TestSSOLoginFlow:
             assert "error=" in complete.headers["location"]
 
         assert await _user_session_count(session, user) == 0
+
+    async def test_rejects_session_bound_to_other_organization(
+        self,
+        sso_client: httpx.AsyncClient,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        # The session is bound to `organization` at start.
+        start = await sso_client.post(f"/v1/auth/{organization.slug}/start", json={})
+        assert start.status_code == 201
+
+        # Driving it to a different organization's endpoint is rejected.
+        complete = await sso_client.get(f"/v1/auth/{organization_second.slug}/complete")
+        assert "error=" in complete.headers["location"]

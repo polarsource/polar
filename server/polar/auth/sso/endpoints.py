@@ -20,7 +20,7 @@ from reauth.factors.oauth2.state import ExpiredStateException, InvalidStateExcep
 
 from polar.config import settings
 from polar.exceptions import ResourceNotFound
-from polar.models import OrganizationSSOConnection
+from polar.models import Organization, OrganizationSSOConnection
 from polar.openapi import APITag
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession, get_db_session
@@ -75,6 +75,33 @@ async def get_sso_factor(
     raise ResourceNotFound()
 
 
+async def get_login_organization(
+    slug: str,
+    session: AsyncSession = Depends(get_db_session),
+) -> Organization:
+    organization = await OrganizationRepository.from_session(session).get_by_slug(slug)
+    if organization is None:
+        raise ResourceNotFound()
+    return organization
+
+
+async def get_org_authentication_session(
+    organization: Organization = Depends(get_login_organization),
+    authentication_session: AuthenticationSession = Depends(get_authentication_session),
+) -> AuthenticationSession:
+    """The authentication session, verified to belong to the URL's organization.
+
+    A session is bound to its organization at `/{slug}/start`; this rejects a
+    session that is then driven to a different organization's endpoints.
+    """
+    context = authentication_session.context or {}
+    if context.get("organization_id") != str(organization.id):
+        raise PolarAuthRedirectionError(
+            "This authentication session was not started for this organization"
+        )
+    return authentication_session
+
+
 router = APIRouter(prefix="/{slug}")
 
 
@@ -94,6 +121,7 @@ async def start(
     request: Request,
     response: Response,
     authentication_session_start: AuthenticationSessionStart,
+    organization: Organization = Depends(get_login_organization),
     authentication_session_service: AuthenticationSessionService = Depends(
         get_org_authentication_session_service
     ),
@@ -101,6 +129,12 @@ async def start(
     token, authentication_session = await authentication_session_service.start(
         return_to=authentication_session_start.return_to
     )
+    # Bind the session to this organization; slug-scoped endpoints verify it.
+    authentication_session.context = {
+        **(authentication_session.context or {}),
+        "organization_id": str(organization.id),
+    }
+    await authentication_session_service.update(authentication_session)
     await authentication_session_service.set_cookie(
         request, response, token, authentication_session.expires_at
     )
@@ -116,7 +150,9 @@ async def authorize(
     request: Request,
     slug: str,
     connection_id: UUID,
-    authentication_session: AuthenticationSession = Depends(get_authentication_session),
+    authentication_session: AuthenticationSession = Depends(
+        get_org_authentication_session
+    ),
     authentication_session_service: AuthenticationSessionService = Depends(
         get_org_authentication_session_service
     ),
@@ -159,7 +195,9 @@ async def callback(
     error_description: str | None = Query(None),
     error_uri: str | None = Query(None),
     state: str | None = Query(None),
-    authentication_session: AuthenticationSession = Depends(get_authentication_session),
+    authentication_session: AuthenticationSession = Depends(
+        get_org_authentication_session
+    ),
     authentication_session_service: AuthenticationSessionService = Depends(
         get_org_authentication_session_service
     ),
@@ -230,18 +268,15 @@ async def callback(
 @router.get("/complete", name="auth.sso.complete", include_in_schema=False)
 async def complete(
     request: Request,
-    slug: str,
-    authentication_session: AuthenticationSession = Depends(get_authentication_session),
+    organization: Organization = Depends(get_login_organization),
+    authentication_session: AuthenticationSession = Depends(
+        get_org_authentication_session
+    ),
     authentication_session_service: AuthenticationSessionService = Depends(
         get_org_authentication_session_service
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
-    organization_repository = OrganizationRepository.from_session(session)
-    organization = await organization_repository.get_by_slug(slug)
-    if organization is None:
-        raise ResourceNotFound()
-
     try:
         identity_id, _ = await authentication_session_service.complete(
             authentication_session

@@ -144,7 +144,7 @@ async def drive_to_callback(
     email_verified: bool = True,
 ) -> httpx.Response:
     """Run start → authorize → callback against the mock IdP, returning the
-    callback response (a redirect to /complete on success, or an error
+    callback response (a redirect to the frontend on success, or an error
     redirect on rejection)."""
     mock.get(f"{ISSUER}/.well-known/openid-configuration").mock(
         return_value=httpx.Response(200, json=_discovery_document())
@@ -153,7 +153,7 @@ async def drive_to_callback(
         return_value=httpx.Response(200, json=_public_jwks(idp_key))
     )
 
-    start = await client.post("/v1/auth/start", json={})
+    start = await client.post(f"/v1/auth/{slug}/start", json={})
     assert start.status_code == 201
 
     authorize = await client.get(f"/v1/auth/{slug}/sso/{connection_id}/authorize")
@@ -218,7 +218,7 @@ class TestSSOLoginFlow:
             )
             assert callback.status_code == 303
 
-            await sso_client.get("/v1/auth/complete")
+            await sso_client.get(f"/v1/auth/{organization.slug}/complete")
 
         user_session = (
             (
@@ -323,7 +323,21 @@ class TestSSOLoginFlow:
             await session.delete(user_organization)
             await session.flush()
 
-            complete = await sso_client.get("/v1/auth/complete")
+            complete = await sso_client.get(f"/v1/auth/{organization.slug}/complete")
             assert "error=" in complete.headers["location"]
 
         assert await _user_session_count(session, user) == 0
+
+    async def test_rejects_session_bound_to_other_organization(
+        self,
+        sso_client: httpx.AsyncClient,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        # The session is bound to `organization` at start.
+        start = await sso_client.post(f"/v1/auth/{organization.slug}/start", json={})
+        assert start.status_code == 201
+
+        # Driving it to a different organization's endpoint is rejected.
+        complete = await sso_client.get(f"/v1/auth/{organization_second.slug}/complete")
+        assert "error=" in complete.headers["location"]

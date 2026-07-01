@@ -1677,6 +1677,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/auth/{slug}/start': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Auth.Sso.Start */
+    post: operations['auth:auth.sso.start']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/auth/logout': {
     parameters: {
       query?: never
@@ -38173,6 +38190,41 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['TaxSummary']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'auth:auth.sso.start': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        slug: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AuthenticationSessionStart']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AuthenticationSession']
         }
       }
       /** @description Validation Error */

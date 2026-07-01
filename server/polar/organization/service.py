@@ -1510,9 +1510,12 @@ class OrganizationService:
         *,
         reason: str | None = None,
     ) -> Organization:
-        if organization.status != OrganizationStatus.REVIEW:
+        if organization.status not in (
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.DENIED,
+        ):
             raise OrganizationError(
-                "Only organizations under review can be set to offboarding.",
+                "Only organizations under review or denied can be set to offboarding.",
                 403,
             )
         organization.set_status(OrganizationStatus.OFFBOARDING)

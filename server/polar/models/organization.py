@@ -426,6 +426,7 @@ ALLOWED_STATUS_TRANSITIONS: dict[OrganizationStatus, frozenset[OrganizationStatu
         {
             OrganizationStatus.CREATED,
             OrganizationStatus.ACTIVE,
+            OrganizationStatus.OFFBOARDING,
             OrganizationStatus.BLOCKED,
         }
     ),

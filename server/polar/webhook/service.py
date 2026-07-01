@@ -2,10 +2,10 @@ import datetime
 import json
 from collections.abc import Sequence
 from typing import Literal, cast, overload
-from urllib.parse import urlparse
 from uuid import UUID
 
 import structlog
+from pydantic import AnyUrl
 from sqlalchemy import CursorResult, String, desc, or_, select, text, update
 from sqlalchemy import cast as sql_cast
 from sqlalchemy.orm import joinedload
@@ -66,7 +66,7 @@ from .eventstream import publish_webhook_event
 from .schemas import (
     WebhookEndpointCreate,
     WebhookEndpointUpdate,
-    is_blocked_webhook_host,
+    validate_hostname,
 )
 from .webhooks import SkipEvent, UnsupportedTarget, WebhookPayloadTypeAdapter
 
@@ -176,17 +176,20 @@ class WebhookService:
         repository = WebhookEndpointRepository.from_session(session)
 
         is_enabling = update_schema.enabled is True and not endpoint.enabled
-        if is_enabling and self._is_blocked_url(endpoint.url):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "enabled"),
-                        "msg": "Cannot enable a webhook endpoint with a localhost or private IP URL. Please update the URL first.",
-                        "input": update_schema.enabled,
-                    }
-                ]
-            )
+        if is_enabling:
+            try:
+                validate_hostname(AnyUrl(endpoint.url))
+            except ValueError as e:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "enabled"),
+                            "msg": "Cannot enable a webhook endpoint with an invalid URL. Please update the URL first.",
+                            "input": update_schema.enabled,
+                        }
+                    ]
+                ) from e
 
         return await repository.update(
             endpoint,
@@ -854,12 +857,6 @@ class WebhookService:
 
             if updated_count < batch_size:
                 break
-
-    @staticmethod
-    def _is_blocked_url(url: str) -> bool:
-        parsed = urlparse(url)
-        hostname = parsed.hostname or ""
-        return is_blocked_webhook_host(hostname)
 
     async def _get_event_target_endpoints(
         self,

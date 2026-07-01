@@ -100,6 +100,33 @@ class TestUpdateEndpoint:
         )
         assert updated_endpoint.url == "https://example.com/hook-updated"
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
+    )
+    async def test_reject_enable_with_invalid_hostname(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        endpoint = WebhookEndpoint(
+            url="https://exa\u2014mple.com/hook",
+            format=WebhookFormat.raw,
+            organization_id=organization.id,
+            secret="foobar",
+            enabled=False,
+        )
+        await save_fixture(endpoint)
+
+        with pytest.raises(PolarRequestValidationError):
+            await webhook_service.update_endpoint(
+                session,
+                auth_subject,
+                endpoint=endpoint,
+                update_schema=WebhookEndpointUpdate(enabled=True),
+            )
+
 
 @pytest.mark.asyncio
 class TestResetEndpointSecret:

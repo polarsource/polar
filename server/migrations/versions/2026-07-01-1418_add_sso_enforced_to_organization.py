@@ -25,10 +25,6 @@ def upgrade() -> None:
         "organizations",
         sa.Column("sso_enforced", sa.Boolean(), nullable=True),
     )
-    op.execute("UPDATE organizations SET sso_enforced = false")
-    op.alter_column(
-        "organizations", "sso_enforced", existing_type=sa.Boolean(), nullable=False
-    )
 
 
 def downgrade() -> None:

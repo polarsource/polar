@@ -25516,6 +25516,12 @@ export interface components {
        * @default false
        */
       disputes_enabled: boolean
+      /**
+       * Sso Enabled
+       * @description If this organization has single sign-on configuration enabled
+       * @default false
+       */
+      sso_enabled: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate

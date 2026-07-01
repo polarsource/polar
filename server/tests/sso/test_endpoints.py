@@ -39,6 +39,18 @@ async def create_sso_connection(
 
 
 @pytest_asyncio.fixture
+async def sso_enabled_organization(
+    save_fixture: SaveFixture, organization: Organization
+) -> Organization:
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "sso_enabled": True,
+    }
+    await save_fixture(organization)
+    return organization
+
+
+@pytest_asyncio.fixture
 async def sso_connection(
     save_fixture: SaveFixture, organization: Organization
 ) -> OrganizationSSOConnection:
@@ -69,6 +81,7 @@ class TestListSSOConnections:
         self,
         client: AsyncClient,
         organization: Organization,
+        sso_enabled_organization: Organization,
         user_organization: UserOrganization,
         sso_connection: OrganizationSSOConnection,
     ) -> None:
@@ -114,6 +127,7 @@ class TestGetSSOConnection:
         self,
         client: AsyncClient,
         organization: Organization,
+        sso_enabled_organization: Organization,
         user_organization: UserOrganization,
         sso_connection: OrganizationSSOConnection,
     ) -> None:
@@ -128,6 +142,7 @@ class TestGetSSOConnection:
         self,
         client: AsyncClient,
         organization: Organization,
+        sso_enabled_organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         response = await client.get(
@@ -142,6 +157,7 @@ class TestGetSSOConnection:
         save_fixture: SaveFixture,
         organization: Organization,
         organization_second: Organization,
+        sso_enabled_organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         other = await create_sso_connection(save_fixture, organization_second)
@@ -191,6 +207,7 @@ class TestCreateSSOConnection:
         self,
         client: AsyncClient,
         organization: Organization,
+        sso_enabled_organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
@@ -216,6 +233,7 @@ class TestCreateSSOConnection:
         self,
         client: AsyncClient,
         organization: Organization,
+        sso_enabled_organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
@@ -235,6 +253,7 @@ class TestCreateSSOConnection:
         self,
         client: AsyncClient,
         organization: Organization,
+        sso_enabled_organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
@@ -285,6 +304,7 @@ class TestUpdateSSOConnection:
         save_fixture: SaveFixture,
         organization: Organization,
         organization_second: Organization,
+        sso_enabled_organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         other = await create_sso_connection(save_fixture, organization_second)
@@ -299,6 +319,7 @@ class TestUpdateSSOConnection:
         self,
         client: AsyncClient,
         organization: Organization,
+        sso_enabled_organization: Organization,
         user_organization: UserOrganization,
         sso_connection: OrganizationSSOConnection,
     ) -> None:
@@ -314,6 +335,7 @@ class TestUpdateSSOConnection:
         self,
         client: AsyncClient,
         organization: Organization,
+        sso_enabled_organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         response = await client.patch(
@@ -355,6 +377,7 @@ class TestDeleteSSOConnection:
         save_fixture: SaveFixture,
         organization: Organization,
         organization_second: Organization,
+        sso_enabled_organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         other = await create_sso_connection(save_fixture, organization_second)
@@ -368,6 +391,7 @@ class TestDeleteSSOConnection:
         self,
         client: AsyncClient,
         organization: Organization,
+        sso_enabled_organization: Organization,
         user_organization: UserOrganization,
         sso_connection: OrganizationSSOConnection,
     ) -> None:
@@ -386,9 +410,60 @@ class TestDeleteSSOConnection:
         self,
         client: AsyncClient,
         organization: Organization,
+        sso_enabled_organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         response = await client.delete(
             f"/v1/organizations/{organization.id}/sso-connections/{uuid.uuid4()}"
         )
         assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestFeatureGate:
+    """A member of an organization without the `sso_enabled` feature is denied."""
+
+    @pytest.mark.auth
+    async def test_list_denied(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/sso-connections/"
+        )
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_create_denied(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/sso-connections/",
+            json={
+                "configuration": {
+                    "issuer": "https://idp.example.com",
+                    "client_id": "client-id",
+                    "auth_method": "client_secret",
+                    "client_secret": "secret",
+                }
+            },
+        )
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_get_denied(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        sso_connection: OrganizationSSOConnection,
+    ) -> None:
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/sso-connections/{sso_connection.id}"
+        )
+        assert response.status_code == 403

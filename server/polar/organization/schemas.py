@@ -176,6 +176,10 @@ class OrganizationFeatureSettings(Schema):
         False,
         description="If this organization has the disputes dashboard enabled",
     )
+    sso_enabled: bool = Field(
+        False,
+        description="If this organization has single sign-on configuration enabled",
+    )
 
 
 class OrganizationFeatureSettingsUpdate(Schema):

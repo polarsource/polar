@@ -183,17 +183,6 @@ class MerchantMigrationService:
             migration, update_dict={"source_credentials": dict(credentials)}
         )
 
-    async def decrypt_stripe_refresh_token(self, migration: MerchantMigration) -> str:
-        credentials = migration.source_credentials
-        encrypted = credentials.get("refresh_token_encrypted")
-        if not encrypted:
-            raise MerchantMigrationError(
-                "No Stripe credentials stored for this migration.", 409
-            )
-        return await EncryptedString(
-            encrypted, self._encryption_context(migration.id)
-        ).decrypt()
-
     async def _get_or_create_stripe_migration(
         self, session: AsyncSession, organization_id: UUID
     ) -> MerchantMigration:
@@ -215,18 +204,24 @@ class MerchantMigrationService:
     async def _build_stripe_credentials(
         self, migration: MerchantMigration, token: StripeOAuthToken
     ) -> StripeSourceCredentials:
-        encrypted = await EncryptedString.encrypt(
-            token.refresh_token, context=self._encryption_context(migration.id)
-        )
         return StripeSourceCredentials(
             stripe_user_id=token.stripe_user_id,
             scope=token.scope,
             livemode=token.livemode,
-            refresh_token_encrypted=encrypted.encrypted_value,
+            refresh_token_encrypted=await self._encrypt_source_secret(
+                migration.id, token.refresh_token
+            ),
         )
 
-    def _encryption_context(self, migration_id: UUID) -> dict[str, str]:
-        return {**SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT, "id": str(migration_id)}
+    async def _encrypt_source_secret(self, migration_id: UUID, plaintext: str) -> str:
+        """The single place a source secret gets encrypted for storage in
+        ``source_credentials`` — go through this so a value is never persisted in
+        clear text and the encryption context stays consistent."""
+        encrypted = await EncryptedString.encrypt(
+            plaintext,
+            context={**SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT, "id": str(migration_id)},
+        )
+        return encrypted.encrypted_value
 
 
 merchant_migration = MerchantMigrationService()

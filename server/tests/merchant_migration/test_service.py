@@ -120,7 +120,6 @@ class TestCompleteStripeAuthorization:
         credentials = updated.source_credentials
         assert credentials["stripe_user_id"] == "acct_test"
         assert credentials["livemode"] is True
+        # the refresh token is stored as ciphertext, never in clear text
         assert credentials["refresh_token_encrypted"] != "rt_secret"
-
-        decrypted = await service.decrypt_stripe_refresh_token(updated)
-        assert decrypted == "rt_secret"
+        assert credentials["refresh_token_encrypted"].startswith("v1.")

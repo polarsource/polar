@@ -8,7 +8,6 @@ from pytest_mock import MockerFixture
 from polar.auth.scope import Scope
 from polar.config import settings
 from polar.merchant_migration.repository import MerchantMigrationRepository
-from polar.merchant_migration.service import merchant_migration as service
 from polar.merchant_migration.stripe_oauth import StripeOAuthError, StripeOAuthToken
 from polar.models import MerchantMigration, Organization, UserOrganization
 from polar.models.merchant_migration import (
@@ -119,8 +118,8 @@ class TestStripeCallback:
         )
         assert migration is not None
         assert migration.source_credentials["stripe_user_id"] == "acct_test"
-        assert "refresh_token_encrypted" in migration.source_credentials
-        assert await service.decrypt_stripe_refresh_token(migration) == "rt_secret"
+        # the refresh token is stored as ciphertext, never in clear text
+        assert migration.source_credentials["refresh_token_encrypted"].startswith("v1.")
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_missing_code_redirects_with_error(

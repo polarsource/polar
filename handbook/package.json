@@ -18,8 +18,8 @@
   },
   "devDependencies": {
     "@scalar/openapi-parser": "^0.28.7",
-    "@types/node": "^24.13.1",
-    "js-yaml": "^4.2.0",
+    "@types/node": "^24.13.2",
+    "js-yaml": "^5.1.0",
     "openapi-sampler": "^1.7.4",
     "tsx": "^4.22.4"
   }

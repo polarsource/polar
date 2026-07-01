@@ -56,6 +56,15 @@ export const useAuthSessionStart = () =>
       api.POST('/v1/auth/start', { body: { return_to } }),
   })
 
+export const useOrgAuthSessionStart = (slug: string) =>
+  useMutation({
+    mutationFn: (return_to?: string) =>
+      api.POST('/v1/auth/{slug}/start', {
+        params: { path: { slug } },
+        body: { return_to },
+      }),
+  })
+
 export const useEmailOTPRequest = () =>
   useMutation({
     mutationFn: (email: string) =>

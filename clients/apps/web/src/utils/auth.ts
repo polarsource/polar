@@ -40,6 +40,19 @@ export const getAppleAuthorizeURL = (): string => {
   return `${getPublicServerURL()}/v1/auth/apple/authorize`
 }
 
+export const getSSOAuthorizeLoginURL = (
+  organizationSlug: string,
+  connectionId: string,
+): string => {
+  return `${getPublicServerURL()}/v1/auth/${organizationSlug}/sso/${connectionId}/authorize`
+}
+
+export const getOrgAuthenticationSessionCompleteURL = (
+  organizationSlug: string,
+): string => {
+  return `${getPublicServerURL()}/v1/auth/${organizationSlug}/complete`
+}
+
 export const getSSOCallbackURL = (organizationSlug: string): string => {
   return `${getPublicServerURL()}/v1/auth/${organizationSlug}/sso/callback`
 }

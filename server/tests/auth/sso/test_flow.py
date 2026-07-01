@@ -217,8 +217,60 @@ class TestSSOLoginFlow:
                 email=user.email,
             )
             assert callback.status_code == 303
+            assert f"/auth/sso/{organization.slug}" in callback.headers["location"]
 
             await sso_client.get(f"/v1/auth/{organization.slug}/complete")
+
+        user_session = (
+            (
+                await session.execute(
+                    select(UserSession).where(UserSession.user_id == user.id)
+                )
+            )
+            .scalars()
+            .unique()
+            .one()
+        )
+        scopes = (
+            (
+                await session.execute(
+                    select(UserSessionOrganization).where(
+                        UserSessionOrganization.user_session_id == user_session.id
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        assert [scope.organization_id for scope in scopes] == [organization.id]
+
+    async def test_global_complete_keeps_sso_session_scoped(
+        self,
+        sso_client: httpx.AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        idp_key: rsa.RSAPrivateKey,
+    ) -> None:
+        # Completing through the global /complete (as the shared TOTP/backup-codes
+        # pages do) must still mint an org-scoped session for an SSO login.
+        connection = await create_sso_connection(save_fixture, organization)
+
+        with respx.mock(assert_all_mocked=False) as mock:
+            callback = await drive_to_callback(
+                sso_client,
+                session,
+                mock,
+                idp_key,
+                slug=organization.slug,
+                connection_id=connection.id,
+                email=user.email,
+            )
+            assert callback.status_code == 303
+
+            await sso_client.get("/v1/auth/complete")
 
         user_session = (
             (

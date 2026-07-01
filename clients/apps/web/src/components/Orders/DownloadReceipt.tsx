@@ -1,5 +1,7 @@
 'use client'
 
+import { useOrganizationSSE } from '@/hooks/sse'
+import { api } from '@/utils/client'
 import type { Client, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import type EventEmitter from 'eventemitter3'
@@ -141,6 +143,27 @@ const DownloadReceipt = ({
     >
       Download Receipt
     </Button>
+  )
+}
+
+export const DownloadReceiptDashboard = ({
+  organization,
+  order,
+  className,
+}: {
+  organization: schemas['Organization']
+  order: schemas['Order']
+  className?: string
+}) => {
+  const eventEmitter = useOrganizationSSE(organization.id)
+  return (
+    <DownloadReceipt
+      order={order}
+      api={api}
+      eventEmitter={eventEmitter}
+      receiptURL="/v1/orders/{id}/receipt"
+      className={className}
+    />
   )
 }
 

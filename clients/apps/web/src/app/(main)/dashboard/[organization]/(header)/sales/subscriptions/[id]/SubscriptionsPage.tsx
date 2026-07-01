@@ -10,7 +10,6 @@ import { SubscriptionDetailsGrid } from '@/components/Subscriptions/Subscription
 import SubscriptionInvoicePreview from '@/components/Subscriptions/SubscriptionInvoicePreview'
 import SubscriptionOrdersSection from '@/components/Subscriptions/SubscriptionOrdersSection'
 import { SubscriptionSecondaryDetails } from '@/components/Subscriptions/SubscriptionSecondaryDetails'
-import { SubscriptionStatus } from '@/components/Subscriptions/SubscriptionStatus'
 import UpdateSubscriptionModal from '@/components/Subscriptions/UpdateSubscriptionModal'
 import { toast } from '@/components/Toast/use-toast'
 import {
@@ -21,7 +20,6 @@ import {
 } from '@/hooks/queries'
 import { useOrganizationSeats } from '@/hooks/queries/seats'
 import { extractApiErrorMessage } from '@/utils/api/errors'
-import { isFreePrice } from '@/utils/product'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
 import { Button, InlineModal, Text } from '@polar-sh/orbit'
@@ -93,19 +91,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
     return null
   }
 
-  const isFreeProduct = subscription.prices.some(isFreePrice)
-  const hasMeters = subscription.meters.length > 0
-  const showUpcoming =
-    (subscription.status === 'active' || subscription.status === 'trialing') &&
-    (!isFreeProduct || hasMeters)
-  const customer = subscription.customer
-  const hasBilling =
-    !!customer.billing_name || !!customer.billing_address || !!customer.tax_id
-  const hasSecondary =
-    hasBilling ||
-    Object.keys(subscription.metadata).length > 0 ||
-    (customFields?.items?.length ?? 0) > 0
-
   return (
     <DashboardBody
       title={
@@ -174,30 +159,12 @@ const ClientPage: React.FC<ClientPageProps> = ({
         organization={organization}
       />
 
-      {showUpcoming && (
-        <>
-          <Box
-            borderTopWidth={1}
-            borderStyle="solid"
-            borderColor="border-primary"
-          />
-          <SubscriptionInvoicePreview subscription={subscription} />
-        </>
-      )}
+      <SubscriptionInvoicePreview subscription={subscription} />
 
-      {hasSecondary && (
-        <>
-          <Box
-            borderTopWidth={1}
-            borderStyle="solid"
-            borderColor="border-primary"
-          />
-          <SubscriptionSecondaryDetails
-            subscription={subscription}
-            customFields={customFields?.items}
-          />
-        </>
-      )}
+      <SubscriptionSecondaryDetails
+        subscription={subscription}
+        customFields={customFields?.items}
+      />
 
       {hasSeatBasedSubscription && (
         <OrderSection

@@ -97,6 +97,10 @@ export const OrderSecondaryDetails = ({
 
   return (
     <Grid
+      borderTopWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+      paddingTop="4xl"
       templateColumns={{ base: '1fr', md: 'repeat(3, minmax(0, 1fr))' }}
       columnGap="2xl"
       rowGap="2xl"

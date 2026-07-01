@@ -158,12 +158,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
         />
       </OrderSection>
 
-      <Box
-        borderTopWidth={1}
-        borderStyle="solid"
-        borderColor="border-primary"
-      />
-
       <OrderSecondaryDetails order={order} customFields={customFields?.items} />
 
       <OrderPaymentsTable

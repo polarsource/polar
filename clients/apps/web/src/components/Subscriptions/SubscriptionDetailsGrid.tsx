@@ -71,7 +71,7 @@ export const SubscriptionDetailsGrid = ({
   const cancellationComment = subscription.customer_cancellation_comment
 
   return (
-    <Box flexDirection="column" rowGap="xl">
+    <>
       <DetailGrid>
         <DetailCell
           label="Product"
@@ -182,15 +182,30 @@ export const SubscriptionDetailsGrid = ({
       </DetailGrid>
 
       {subscription.pending_update && (
-        <ScheduledUpdateSection
-          pendingUpdate={subscription.pending_update}
-          subscription={subscription}
-        />
+        <Box
+          flexDirection="column"
+          borderTopWidth={1}
+          borderStyle="solid"
+          borderColor="border-primary"
+          paddingTop="4xl"
+        >
+          <ScheduledUpdateSection
+            pendingUpdate={subscription.pending_update}
+            subscription={subscription}
+          />
+        </Box>
       )}
 
       {cancellationDate && (
-        <Box flexDirection="column" rowGap="l">
-          <Text variant="body" as="h3">
+        <Box
+          flexDirection="column"
+          rowGap="xl"
+          borderTopWidth={1}
+          borderStyle="solid"
+          borderColor="border-primary"
+          paddingTop="4xl"
+        >
+          <Text variant="heading-xxs" as="h3">
             Cancellation details
           </Text>
           <DetailGrid>
@@ -219,6 +234,6 @@ export const SubscriptionDetailsGrid = ({
           )}
         </Box>
       )}
-    </Box>
+    </>
   )
 }

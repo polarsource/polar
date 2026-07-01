@@ -1,0 +1,27 @@
+server/tests/scripts/test_backfill_oauth_account_encrypted_tokens.py
+  s_c2d84824e99976::t_a926f8fac754c1 1-139
+server/scripts/backfill_oauth_account_encrypted_tokens.py
+  s_c2d84824e99976::t_5dab0d276ee025 95
+  s_c2d84824e99976::t_911f561cedc66f 28-33
+  s_c2d84824e99976::t_a926f8fac754c1 1-27,34-94,96-133
+handbook/engineering/design-documents/secrets-encryption.mdx
+  s_c2d84824e99976::t_9dd2d6b865a3bc 82
+  s_c2d84824e99976::t_e4bb0d3e269b3e 274
+  s_c2d84824e99976::t_db73ffcc689040 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "55d00084a5bbc543bbc9cf999d32d7c7c08b9c9e",
+  "prompts": {},
+  "sessions": {
+    "s_c2d84824e99976": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c9231038-183a-4891-a437-646632b5c578",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

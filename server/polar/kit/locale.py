@@ -1,27 +1,29 @@
 from typing import Annotated
 
+import langcodes
 from pydantic import AfterValidator, Field
 
 
-def _normalize_locale(value: str) -> str:
-    """Normalize locale to lowercase-UPPERCASE format (e.g. en-us → en-US)."""
-    parts = value.split("-", 1)
-    parts[0] = parts[0].lower()
-    if len(parts) == 2:
-        parts[1] = parts[1].upper()
-    return "-".join(parts)
+def _validate_locale(value: str) -> str:
+    if not langcodes.tag_is_valid(value):
+        raise ValueError("Invalid IETF BCP 47 language tag")
+    locale = langcodes.Language.get(value)
+    # Tags without a real language subtag (`und`, private-use `x-…`) are valid
+    # BCP 47, but carry no language and `Intl` rejects the `x-…` form.
+    if locale.language is None or len(locale.language) > 3:
+        raise ValueError("Invalid IETF BCP 47 language tag")
+    return langcodes.standardize_tag(value)
 
 
 Locale = Annotated[
     str,
     Field(
-        pattern=r"^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
         description=(
-            "Locale of the customer, given as an IETF BCP 47 language tag. "
-            "Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). "
+            "Locale of the customer, given as an IETF BCP 47 language tag, "
+            "e.g. `en`, `en-US` or `en-GB-oxendict`. "
             "If `null` or unsupported, the locale will default to `en`."
         ),
         examples=["en", "en-US", "fr", "fr-CA"],
     ),
-    AfterValidator(_normalize_locale),
+    AfterValidator(_validate_locale),
 ]

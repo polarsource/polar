@@ -53,8 +53,6 @@ async def start_impersonation(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
-    # Resolve the organization to impersonate into (the requested one, or the
-    # user's first) before minting the session, so we can scope the session to it.
     org_repository = OrganizationRepository.from_session(session)
     user_orgs = await org_repository.get_all_by_user(target_user.id)
     target_org = next(
@@ -68,7 +66,7 @@ async def start_impersonation(
         )
 
     # Scope the session to the organization so it can reach the org even when SSO
-    # is enforced (the break-glass path) and stays limited to it.
+    # is enforced (and eventually break the glass if something is missconfigured).
     token, impersonation_session = await auth_service._create_user_session(
         session=session,
         user=target_user,

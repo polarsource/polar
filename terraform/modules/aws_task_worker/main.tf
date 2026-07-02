@@ -158,6 +158,10 @@ resource "aws_lambda_function" "task" {
   package_type  = "Image"
   image_uri     = var.image_uri
 
+  image_config {
+    command = var.image_command
+  }
+
   timeout     = var.timeout_seconds
   memory_size = var.memory_size
 

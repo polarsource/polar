@@ -14,7 +14,9 @@ from polar.organization_review.report import (
 )
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import (
+    AUP_SECTION_LABELS,
     ActorType,
+    AUPSection,
     DataSnapshot,
     DecisionType,
     DimensionAssessment,
@@ -352,6 +354,42 @@ class TestRecordHumanDecision:
         assert first.is_current is False
         assert second.is_current is True
 
+    async def test_persists_violated_aup_section(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        repo = OrganizationReviewRepository.from_session(session)
+        decision = await repo.record_human_decision(
+            organization_id=organization.id,
+            reviewer_id=user.id,
+            decision=DecisionType.DENY,
+            reason="Crypto trading bot",
+            violated_aup_section=AUPSection.PP_19_TRADING_FINANCIAL,
+        )
+        await session.flush()
+
+        assert decision.violated_aup_section == AUPSection.PP_19_TRADING_FINANCIAL
+        assert decision.violated_aup_section.value == "pp_19_trading_financial"
+
+    async def test_violated_aup_section_defaults_none(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        repo = OrganizationReviewRepository.from_session(session)
+        decision = await repo.record_human_decision(
+            organization_id=organization.id,
+            reviewer_id=user.id,
+            decision=DecisionType.DENY,
+            reason="legacy-style denial",
+        )
+        await session.flush()
+
+        assert decision.violated_aup_section is None
+
 
 @pytest.mark.asyncio
 class TestSaveReviewDecision:
@@ -438,6 +476,28 @@ class TestSaveReviewDecision:
         await session.flush()
 
         assert decision.is_current is True
+
+    async def test_violated_aup_section_roundtrips(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        repo = OrganizationReviewRepository.from_session(session)
+        decision = await repo.save_review_decision(
+            organization_id=organization.id,
+            actor_type=ActorType.HUMAN,
+            decision=DecisionType.DENY,
+            review_context=ReviewContext.MANUAL,
+            reviewer_id=user.id,
+            reason="OSINT platform",
+            violated_aup_section=AUPSection.PP_36_OSINT,
+        )
+        await session.flush()
+
+        assert decision.violated_aup_section == AUPSection.PP_36_OSINT
+        assert decision.violated_aup_section.value == "pp_36_osint"
 
 
 @pytest.mark.asyncio
@@ -1173,3 +1233,10 @@ class TestGetAdhocPriceCount:
         repo = OrganizationReviewRepository.from_session(session)
         assert await repo.get_adhoc_price_count(organization.id) == 0
         assert await repo.get_adhoc_price_count(other_org.id) == 1
+
+
+class TestAUPSectionEnum:
+    def test_every_member_labelled(self) -> None:
+        assert len(AUP_SECTION_LABELS) == len(AUPSection)
+        for member in AUPSection:
+            assert AUP_SECTION_LABELS[member]

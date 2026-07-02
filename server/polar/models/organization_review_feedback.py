@@ -16,6 +16,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
 from polar.organization_review.schemas import (
     ActorType,
+    AUPSection,
     DecisionType,
     ReviewContext,
     ReviewVerdict,
@@ -78,6 +79,9 @@ class OrganizationReviewFeedback(RecordModel):
     risk_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     review_context: Mapped[ReviewContext | None] = mapped_column(
         StringEnum(ReviewContext), nullable=True
+    )
+    violated_aup_section: Mapped[AUPSection | None] = mapped_column(
+        StringEnum(AUPSection), nullable=True
     )
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_current: Mapped[bool | None] = mapped_column(

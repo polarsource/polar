@@ -132,7 +132,7 @@ Each receipt includes:
 - Any **refunds** issued against the order, with dates and amounts.
 - The same line items, taxes, totals, and linked invoice number as the order's invoice.
 
-Customers download receipts from the [Customer Portal](/features/customer-portal/introduction) — a **Download Receipt** button appears on each paid order. Programmatically, use [Get Order Receipt](/api-reference/orders/get-receipt) for the merchant API or its [customer-portal counterpart](/api-reference/customer-portal/orders/get-receipt).
+You can **download receipts** from the order detail page in the dashboard, and customers download receipts from the [Customer Portal](/features/customer-portal/introduction) — a **Download Receipt** button appears on each paid order. Programmatically, use [Get Order Receipt](/api-reference/orders/get-receipt) for the merchant API or its [customer-portal counterpart](/api-reference/customer-portal/orders/get-receipt).
 
 The first request for a given order may return `202 Accepted` while the PDF renders. Retry shortly after for a presigned download URL. The Customer Portal handles this for you.
 

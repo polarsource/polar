@@ -54,7 +54,7 @@ const CheckoutTrialHeroPrice = ({
     if (!interval || !(interval in INTERVAL_SUFFIX_KEYS)) return ''
     const intervalKey = interval as keyof typeof INTERVAL_SUFFIX_KEYS
     if (intervalCount && intervalCount > 1) {
-      return ` / ${t(`intervals.shortCount.${intervalKey}`, { count: intervalCount })}`
+      return ` / ${t(`intervals.short.${intervalKey}`, { count: intervalCount })}`
     }
     return t(INTERVAL_SUFFIX_KEYS[intervalKey])
   })()

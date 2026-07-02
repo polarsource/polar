@@ -26,10 +26,9 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
     if (!interval) {
       return ''
     }
-    const formatted =
-      intervalCount && intervalCount > 1
-        ? t(`intervals.shortCount.${interval}`, { count: intervalCount })
-        : t(`intervals.short.${interval}`)
+    const formatted = t(`intervals.short.${interval}`, {
+      count: intervalCount ?? 1,
+    })
     return formatted ? ` / ${formatted}` : ''
   }, [interval, intervalCount, t])
 

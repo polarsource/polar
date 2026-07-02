@@ -226,31 +226,25 @@ export default {
   },
   intervals: {
     short: {
-      day: 'dia',
-      week: 'sem',
-      month: 'mês',
-      year: 'ano',
-    },
-    shortCount: {
       day: {
-        '=1': '# dia',
-        other: '# dias',
         _mode: 'plural',
+        '=1': 'dia',
+        other: '# dias',
       },
       week: {
-        '=1': '# sem',
-        other: '# sem',
         _mode: 'plural',
+        '=1': 'sem',
+        other: '# sem',
       },
       month: {
-        '=1': '# mês',
-        other: '# meses',
         _mode: 'plural',
+        '=1': 'mês',
+        other: '# meses',
       },
       year: {
-        '=1': '# ano',
-        other: '# anos',
         _mode: 'plural',
+        '=1': 'ano',
+        other: '# anos',
       },
     },
   },

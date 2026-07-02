@@ -228,31 +228,25 @@ export default {
   },
   intervals: {
     short: {
-      day: 'g',
-      week: 'sett',
-      month: 'mese',
-      year: 'anno',
-    },
-    shortCount: {
       day: {
-        '=1': '# g',
-        other: '# g',
         _mode: 'plural',
+        '=1': 'g',
+        other: '# giorni',
       },
       week: {
-        '=1': '# sett',
-        other: '# sett',
         _mode: 'plural',
+        '=1': 'sett',
+        other: '# settimane',
       },
       month: {
-        '=1': '# mes',
-        other: '# mes',
         _mode: 'plural',
+        '=1': 'mese',
+        other: '# mesi',
       },
       year: {
-        '=1': '# a',
-        other: '# a',
         _mode: 'plural',
+        '=1': 'anno',
+        other: '# anni',
       },
     },
   },

@@ -226,31 +226,25 @@ export default {
   },
   intervals: {
     short: {
-      day: 'nap',
-      week: 'hét',
-      month: 'hó',
-      year: 'év',
-    },
-    shortCount: {
       day: {
-        '=1': '# nap',
-        other: '# nap',
         _mode: 'plural',
+        '=1': 'nap',
+        other: '# nap',
       },
       week: {
-        '=1': '# hét',
-        other: '# hét',
         _mode: 'plural',
+        '=1': 'hét',
+        other: '# hét',
       },
       month: {
-        '=1': '# hó',
-        other: '# hó',
         _mode: 'plural',
+        '=1': 'hó',
+        other: '# hó',
       },
       year: {
-        '=1': '# év',
-        other: '# év',
         _mode: 'plural',
+        '=1': 'év',
+        other: '# év',
       },
     },
   },

@@ -225,31 +225,25 @@ export default {
   },
   intervals: {
     short: {
-      day: 'd',
-      week: 'v',
-      month: 'mån',
-      year: 'år',
-    },
-    shortCount: {
       day: {
-        '=1': '# d',
-        other: '# d',
         _mode: 'plural',
+        '=1': 'd',
+        other: '# d',
       },
       week: {
-        '=1': '# v',
-        other: '# v',
         _mode: 'plural',
+        '=1': 'v',
+        other: '# v',
       },
       month: {
-        '=1': '# mån',
-        other: '# mån',
         _mode: 'plural',
+        '=1': 'mån',
+        other: '# mån',
       },
       year: {
-        '=1': '# år',
-        other: '# år',
         _mode: 'plural',
+        '=1': 'år',
+        other: '# år',
       },
     },
   },

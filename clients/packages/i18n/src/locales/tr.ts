@@ -226,31 +226,25 @@ export default {
   },
   intervals: {
     short: {
-      day: 'g',
-      week: 'h',
-      month: 'a',
-      year: 'y',
-    },
-    shortCount: {
       day: {
-        '=1': '# gün',
-        other: '# gün',
         _mode: 'plural',
+        '=1': 'g',
+        other: '# gün',
       },
       week: {
-        '=1': '# hf',
-        other: '# hf',
         _mode: 'plural',
+        '=1': 'h',
+        other: '# hafta',
       },
       month: {
-        '=1': '# ay',
-        other: '# ay',
         _mode: 'plural',
+        '=1': 'a',
+        other: '# ay',
       },
       year: {
-        '=1': '# yıl',
-        other: '# yıl',
         _mode: 'plural',
+        '=1': 'y',
+        other: '# yıl',
       },
     },
   },

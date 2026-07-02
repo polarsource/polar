@@ -228,31 +228,25 @@ export default {
   },
   intervals: {
     short: {
-      day: 'dg',
-      week: 'wk',
-      month: 'mnd',
-      year: 'jr',
-    },
-    shortCount: {
       day: {
-        '=1': '# dgn',
-        other: '# dgn',
         _mode: 'plural',
+        '=1': 'dg',
+        other: '# dg',
       },
       week: {
-        '=1': '# wk',
-        other: '# wk',
         _mode: 'plural',
+        '=1': 'wk',
+        other: '# wk',
       },
       month: {
-        '=1': '# mnd',
-        other: '# mnd',
         _mode: 'plural',
+        '=1': 'mnd',
+        other: '# mnd',
       },
       year: {
-        '=1': '# jr',
-        other: '# jr',
         _mode: 'plural',
+        '=1': 'jr',
+        other: '# jr',
       },
     },
   },

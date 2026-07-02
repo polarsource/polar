@@ -229,31 +229,25 @@ export default {
   },
   intervals: {
     short: {
-      day: '日',
-      week: '週',
-      month: '月',
-      year: '年',
-    },
-    shortCount: {
       day: {
-        '=1': '#日',
-        other: '#日',
         _mode: 'plural',
+        '=1': '日',
+        other: '#日',
       },
       week: {
-        '=1': '#週',
-        other: '#週',
         _mode: 'plural',
+        '=1': '週',
+        other: '#週間',
       },
       month: {
-        '=1': '#か月',
-        other: '#か月',
         _mode: 'plural',
+        '=1': '月',
+        other: '#ヶ月',
       },
       year: {
-        '=1': '#年',
-        other: '#年',
         _mode: 'plural',
+        '=1': '年',
+        other: '#年',
       },
     },
   },

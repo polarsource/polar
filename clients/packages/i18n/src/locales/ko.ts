@@ -224,31 +224,25 @@ export default {
   },
   intervals: {
     short: {
-      day: '일',
-      week: '주',
-      month: '월',
-      year: '년',
-    },
-    shortCount: {
       day: {
-        '=1': '#일',
-        other: '#일',
         _mode: 'plural',
+        '=1': '일',
+        other: '#일',
       },
       week: {
-        '=1': '#주',
-        other: '#주',
         _mode: 'plural',
+        '=1': '주',
+        other: '#주',
       },
       month: {
-        '=1': '#개월',
-        other: '#개월',
         _mode: 'plural',
+        '=1': '월',
+        other: '#개월',
       },
       year: {
-        '=1': '#년',
-        other: '#년',
         _mode: 'plural',
+        '=1': '년',
+        other: '#년',
       },
     },
   },

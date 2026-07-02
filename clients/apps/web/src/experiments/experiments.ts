@@ -8,11 +8,6 @@
  *
  */
 export const experiments = {
-  test_experiment: {
-    description: 'Test experiment',
-    variants: ['control', 'treatment'] as const,
-    defaultVariant: 'control',
-  },
   onboarding_flow_v1: {
     description: 'Test onboarding flow variations',
     variants: ['control', 'treatment'] as const,

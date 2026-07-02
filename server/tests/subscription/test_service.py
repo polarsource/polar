@@ -1829,6 +1829,87 @@ class TestCycle:
         assert updated_subscription_update is not None
         assert updated_subscription_update.applied_at is not None
 
+    async def test_pending_update_product_prices_archived(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.prorate,
+            product=product_second,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        # Archive the target product's prices in the subscription's currency
+        # after the update was scheduled but before it's applied. Expire the
+        # relationship so the cycle re-reads the filtered prices, as it would in
+        # a fresh worker session.
+        for price in product_second.prices:
+            price.is_archived = True
+            await save_fixture(price)
+        session.expire(product_second, ["prices"])
+
+        previous_current_period_end = subscription.current_period_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        # The stale update is discarded and the subscription cycles normally on
+        # its current product instead of becoming permanently locked.
+        assert updated_subscription.product == product
+        assert updated_subscription.ended_at is None
+        assert updated_subscription.current_period_start == previous_current_period_end
+        assert updated_subscription.current_period_end is not None
+        assert previous_current_period_end is not None
+        assert updated_subscription.current_period_end > previous_current_period_end
+        assert updated_subscription.scheduler_locked_at is None
+        assert updated_subscription.pending_update is None
+
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert len(billing_entries) == 1
+        assert billing_entries[0].product_price_id == price.id
+
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            subscription.id,
+            OrderBillingReasonInternal.subscription_cycle,
+        )
+
+        # The scheduled update is soft-deleted, not applied.
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        stale_update = await subscription_update_repository.get_by_id(
+            subscription_update.id,
+            include_deleted=True,
+        )
+        assert stale_update is not None
+        assert stale_update.applied_at is None
+        assert stale_update.deleted_at is not None
+
     async def test_pending_update_seats(
         self,
         session: AsyncSession,

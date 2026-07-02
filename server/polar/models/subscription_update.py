@@ -121,11 +121,15 @@ class SubscriptionUpdate(RecordModel):
 
         if self.product is not None:
             assert is_recurring_product(self.product)
-            subscription.product = self.product
-            subscription.subscription_product_prices = [
+            # Resolve new product prices before updating the subscription to
+            # avoid inconsistent states if PriceSet.from_product raises, e.g.
+            # NoPricesForCurrencies.
+            subscription_product_prices = [
                 SubscriptionProductPrice.from_price(price, seats=subscription.seats)
                 for price in PriceSet.from_product(self.product, subscription.currency)
             ]
+            subscription.product = self.product
+            subscription.subscription_product_prices = subscription_product_prices
             subscription.recurring_interval = self.product.recurring_interval
             subscription.recurring_interval_count = (
                 self.product.recurring_interval_count

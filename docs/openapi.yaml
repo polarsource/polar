@@ -63107,10 +63107,6 @@
           "new_subscription": {
             "type": "boolean",
             "title": "New Subscription"
-          },
-          "chargeback_prevention": {
-            "type": "boolean",
-            "title": "Chargeback Prevention"
           }
         },
         "type": "object",

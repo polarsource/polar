@@ -27,8 +27,6 @@ from tagflow import tag, text
 from polar.account.repository import AccountRepository
 from polar.account_credit.repository import AccountCreditRepository
 from polar.account_credit.service import account_credit_service
-from polar.auth.scope import READ_ONLY_SCOPES
-from polar.auth.service import auth as auth_service
 from polar.config import settings
 from polar.enums import PayoutAccountType
 from polar.file.repository import FileRepository
@@ -3696,93 +3694,6 @@ async def edit_note(
                     text("Save Notes")
 
     return None
-
-
-@router.get(
-    "/{organization_id}/impersonate/{user_id}",
-    name="organizations:impersonate",
-)
-async def impersonate_user(
-    request: Request,
-    organization_id: UUID4,
-    user_id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
-) -> HXRedirectResponse:
-    """Impersonate a user by creating a read-only session for them."""
-    from datetime import timedelta
-
-    from polar.config import settings
-
-    # Fetch the user to impersonate
-    stmt = select(User).where(User.id == user_id)
-    result = await session.execute(stmt)
-    user = result.scalars().one_or_none()
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # Verify user belongs to organization
-    membership_stmt = select(UserOrganization).where(
-        UserOrganization.user_id == user_id,
-        UserOrganization.organization_id == organization_id,
-    )
-    result = await session.execute(membership_stmt)
-    if not result.scalars().one_or_none():
-        raise HTTPException(
-            status_code=400, detail="User is not a member of this organization"
-        )
-
-    # Create read-only impersonation session with time limit
-    token, impersonation_session = await auth_service._create_user_session(
-        session=session,
-        user=user,
-        user_agent=request.headers.get("User-Agent", ""),
-        scopes=list(READ_ONLY_SCOPES),
-        expire_in=timedelta(minutes=60),  # Time-limited
-    )
-
-    # Get user's first organization for redirect
-    repository = OrganizationRepository(session)
-    user_orgs = await repository.get_all_by_user(user.id)
-    redirect_url = f"/{user_orgs[0].slug}" if user_orgs else "/"
-
-    response = HXRedirectResponse(request, redirect_url, 303)
-
-    admin_token = request.cookies.get(
-        settings.IMPERSONATION_COOKIE_KEY
-    ) or request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
-
-    # Preserve admin session in impersonation cookie
-    if admin_token:
-        response.set_cookie(
-            settings.IMPERSONATION_COOKIE_KEY,
-            value=admin_token,
-            expires=impersonation_session.expires_at,
-            path="/",
-            domain=settings.USER_SESSION_COOKIE_DOMAIN,
-            secure=request.url.hostname not in ["127.0.0.1", "localhost"],
-            httponly=True,
-            samesite="lax",
-        )
-
-    # Set impersonated session cookie
-    response = auth_service._set_user_session_cookie(
-        request, response, token, impersonation_session.expires_at
-    )
-
-    # Set impersonation indicator (JS-readable for UI)
-    response.set_cookie(
-        settings.IMPERSONATION_INDICATOR_COOKIE_KEY,
-        value="true",
-        expires=impersonation_session.expires_at,
-        path="/",
-        domain=settings.USER_SESSION_COOKIE_DOMAIN,
-        secure=request.url.hostname not in ["127.0.0.1", "localhost"],
-        httponly=False,  # JS-readable for UI banner
-        samesite="lax",
-    )
-
-    return response
 
 
 @router.post(

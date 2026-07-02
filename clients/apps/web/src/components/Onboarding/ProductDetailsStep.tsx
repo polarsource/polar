@@ -51,7 +51,7 @@ const MAX_LENGTH = 3000
 
 export function ProductDetailsStep() {
   const router = useRouter()
-  const { setUserOrganizations } = useAuth()
+  const { reloadUser } = useAuth()
   const { data, updateData, setApiLoading, showApiResponse } =
     useOnboardingData()
   const { trackStepViewed, trackStepCompleted } = useOnboardingV2Tracking()
@@ -183,10 +183,7 @@ export function ProductDetailsStep() {
       return false
     }
 
-    setUserOrganizations((previous) => [
-      ...previous,
-      { ...organization, role: 'owner' as const },
-    ])
+    await reloadUser()
     updateData({
       organizationId: organization.id,
       orgSlug: organization.slug,

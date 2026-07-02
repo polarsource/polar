@@ -1,9 +1,7 @@
 'use client'
 
-import AccessRestricted from '@/components/Finance/AccessRestricted'
 import AccountBalance from '@/components/Payouts/AccountBalance'
 import TransactionsList from '@/components/Transactions/TransactionsList'
-import { useHasPermission } from '@/hooks/permissions'
 import { useOrganizationAccount, useSearchTransactions } from '@/hooks/queries'
 import {
   DataTablePaginationState,
@@ -57,10 +55,8 @@ export default function ClientPage({
     )
   }
 
-  const canReadFinance = useHasPermission(organization.id, 'finance:read')
-
   const { data: account, isLoading: accountIsLoading } = useOrganizationAccount(
-    canReadFinance ? organization.id : undefined,
+    organization.id,
   )
   const payoutTransactionDelay = account?.payout_transaction_delay
     ? new ISODuration(account.payout_transaction_delay)
@@ -75,14 +71,6 @@ export default function ClientPage({
   const balances = balancesHook.data?.items || []
   const rowCount = balancesHook.data?.pagination.total_count ?? 0
   const pageCount = balancesHook.data?.pagination.max_page ?? 1
-
-  if (canReadFinance === false) {
-    return (
-      <div className="flex flex-col gap-y-6">
-        <AccessRestricted message="You don't have permission to view income for this organization. Ask an admin if you need access." />
-      </div>
-    )
-  }
 
   return (
     <div className="flex flex-col gap-y-8">

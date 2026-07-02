@@ -40,7 +40,7 @@ const CreateOrganizationForm = ({
 }: {
   onCreated: (organization: schemas['Organization']) => void
 }) => {
-  const { currentUser, setUserOrganizations } = useAuth()
+  const { currentUser, reloadUser } = useAuth()
   const createOrganization = useCreateOrganization()
   const [editedSlug, setEditedSlug] = useState(false)
 
@@ -88,10 +88,7 @@ const CreateOrganizationForm = ({
     }
 
     await revalidate(`users:${currentUser?.id}:organizations`, { expire: 0 })
-    setUserOrganizations((orgs) => [
-      ...orgs,
-      { ...organization, role: 'owner' as const },
-    ])
+    await reloadUser()
     onCreated(organization)
   }
 

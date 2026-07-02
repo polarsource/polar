@@ -123,6 +123,7 @@ from .schemas import (
     OrganizationValidateWebsiteRequest,
     OrganizationValidateWebsiteResponse,
 )
+from .service import CannotCreateOrganizationError
 from .service import organization as organization_service
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
@@ -262,7 +263,10 @@ async def get_kyc(
     response_model=OrganizationSchema,
     status_code=201,
     summary="Create Organization",
-    responses={201: {"description": "Organization created."}},
+    responses={
+        201: {"description": "Organization created."},
+        403: {"model": CannotCreateOrganizationError.schema()},
+    },
     tags=[APITag.public],
 )
 async def create(

@@ -65,6 +65,14 @@ class UserRead(UserBase, TimestampedSchema):
             "Populated by `GET /v1/users/me`."
         ),
     )
+    organization_scoped: bool = Field(
+        default=False,
+        description=(
+            "Whether the current session is restricted to a specific "
+            "organization. Such sessions cannot access other organizations or "
+            "create new ones. Populated by `GET /v1/users/me`."
+        ),
+    )
 
     @computed_field
     def email_hash(self) -> str | None:

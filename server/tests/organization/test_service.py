@@ -54,7 +54,10 @@ from polar.organization.schemas import (
     OrganizationSocialPlatforms,
     OrganizationUpdate,
 )
-from polar.organization.service import OrganizationError
+from polar.organization.service import (
+    CannotCreateOrganizationError,
+    OrganizationError,
+)
 from polar.organization.service import organization as organization_service
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
 from polar.organization_review.schemas import ReviewContext, ReviewVerdict
@@ -100,6 +103,23 @@ class TestCreate:
             await organization_service.create(
                 session,
                 OrganizationCreate(name="My New Organization", slug=slug),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_organization_scoped_session_forbidden(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        auth_subject.organization_ids = frozenset({organization.id})
+        with pytest.raises(CannotCreateOrganizationError):
+            await organization_service.create(
+                session,
+                OrganizationCreate(
+                    name="My New Organization", slug="scoped-session-org"
+                ),
                 auth_subject,
             )
 

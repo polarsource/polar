@@ -230,6 +230,15 @@ class CannotChangeOwnerError(OrganizationError):
         super().__init__(f"Cannot change organization owner: {reason}")
 
 
+class CannotCreateOrganizationError(OrganizationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "You cannot create an organization from a session restricted to a "
+            "specific organization.",
+            403,
+        )
+
+
 class OrganizationService:
     async def list(
         self,
@@ -316,6 +325,9 @@ class OrganizationService:
         create_schema: OrganizationCreate,
         auth_subject: AuthSubject[User],
     ) -> Organization:
+        if auth_subject.organization_ids is not None:
+            raise CannotCreateOrganizationError()
+
         repository = OrganizationRepository.from_session(session)
         if await repository.slug_exists(create_schema.slug):
             raise PolarRequestValidationError(

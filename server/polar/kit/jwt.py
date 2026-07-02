@@ -29,6 +29,7 @@ TYPE = Literal[
     "github_repository_benefit_oauth",
     "customer_oauth",
     "slack_integration_oauth",
+    "stripe_app_oauth",
 ]
 
 

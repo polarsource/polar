@@ -4878,6 +4878,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/merchant-migrations/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Merchant Migration
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['merchant-migrations:get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/email-update/request': {
     parameters: {
       query?: never
@@ -11218,6 +11238,17 @@ export interface components {
        * @enum {string}
        */
       action: 'allow' | 'deny'
+    }
+    /** CannotCreateOrganizationError */
+    CannotCreateOrganizationError: {
+      /**
+       * Error
+       * @example CannotCreateOrganizationError
+       * @constant
+       */
+      error: 'CannotCreateOrganizationError'
+      /** Detail */
+      detail: string
     }
     /**
      * CardPayment
@@ -22114,6 +22145,37 @@ export interface components {
        */
       role?: components['schemas']['MemberRole'] | null
     }
+    /** MerchantMigration */
+    MerchantMigration: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
+      source_platform: components['schemas']['MerchantMigrationSourcePlatform']
+    }
+    /**
+     * MerchantMigrationSourcePlatform
+     * @enum {string}
+     */
+    MerchantMigrationSourcePlatform: 'stripe' | 'lemon_squeezy' | 'paddle'
     MetadataOutputType: {
       [key: string]: string | number | boolean
     }
@@ -33057,6 +33119,12 @@ export interface components {
        * @description All organizations the user is a member of, regardless of whether they're accessible in the current session. Compare with `organizations` (the accessible subset) to determine access. Populated by `GET /v1/users/me`.
        */
       member_organizations?: components['schemas']['MemberOrganization'][]
+      /**
+       * Organization Scoped
+       * @description Whether the current session is restricted to a specific organization. Such sessions cannot access other organizations or create new ones. Populated by `GET /v1/users/me`.
+       * @default false
+       */
+      organization_scoped: boolean
       /** Email Hash */
       readonly email_hash: string | null
     }
@@ -35821,6 +35889,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Organization']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CannotCreateOrganizationError']
         }
       }
       /** @description Validation Error */
@@ -47694,6 +47771,44 @@ export interface operations {
       }
     }
   }
+  'merchant-migrations:get': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigration']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'email-update:request_email_update': {
     parameters: {
       query?: never
@@ -59411,6 +59526,9 @@ export const memberRoleValues: ReadonlyArray<
 export const memberSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberSortProperty']
 > = ['created_at', '-created_at']
+export const merchantMigrationSourcePlatformValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationSourcePlatform']
+> = ['stripe', 'lemon_squeezy', 'paddle']
 export const meterCreditEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MeterCreditEvent']['name']
 > = ['meter.credited']

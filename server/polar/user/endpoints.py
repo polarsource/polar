@@ -88,6 +88,7 @@ async def get_authenticated(
                 )
                 for org, _ in org_with_roles
             ],
+            "organization_scoped": auth_subject.organization_ids is not None,
         }
     )
 

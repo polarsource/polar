@@ -11,7 +11,7 @@ from polar.customer.repository import CustomerRepository
 from polar.integrations.discord.service import discord_bot as discord_bot_service
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
-from polar.models import Benefit, Customer, Member, Organization, User
+from polar.models import Benefit, Customer, Member, Organization, Subscription, User
 from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
 
 from ..base.service import (
@@ -37,6 +37,7 @@ class BenefitDiscordService(
         update: bool = False,
         attempt: int = 1,
         member: Member | None = None,
+        subscription: Subscription | None = None,
     ) -> BenefitGrantDiscordProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),

@@ -24416,6 +24416,11 @@ export interface components {
        */
       details_submitted_at: string | null
       /**
+       * Sso Enforced
+       * @description Whether members must access this organization through its SSO connection.
+       */
+      sso_enforced: boolean
+      /**
        * Default Presentment Currency
        * @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available.
        */
@@ -25629,6 +25634,11 @@ export interface components {
        * @description When the business details were submitted for review.
        */
       details_submitted_at: string | null
+      /**
+       * Sso Enforced
+       * @description Whether members must access this organization through its SSO connection.
+       */
+      sso_enforced: boolean
       /**
        * Default Presentment Currency
        * @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available.
@@ -27019,6 +27029,11 @@ export interface components {
        * @description When the business details were submitted for review.
        */
       details_submitted_at: string | null
+      /**
+       * Sso Enforced
+       * @description Whether members must access this organization through its SSO connection.
+       */
+      sso_enforced: boolean
       /**
        * Default Presentment Currency
        * @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available.

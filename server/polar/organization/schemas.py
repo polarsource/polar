@@ -413,6 +413,12 @@ class Organization(OrganizationBase):
     details_submitted_at: datetime | None = Field(
         description="When the business details were submitted for review.",
     )
+    sso_enforced: bool = Field(
+        description=(
+            "Whether members must access this organization through its SSO "
+            "connection."
+        ),
+    )
 
     default_presentment_currency: str = Field(
         description=(

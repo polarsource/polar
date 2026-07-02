@@ -15,6 +15,7 @@ from polar.customer_portal.endpoints.license_keys import router as license_keys_
 from polar.customer_portal.endpoints.order import router as order_router
 from polar.customer_portal.endpoints.subscription import router as subscription_router
 from polar.exceptions import ResourceNotFound
+from polar.kit.http import get_ip_address
 from polar.models import User
 from polar.models.user import OAuthPlatform
 from polar.openapi import APITag
@@ -89,7 +90,7 @@ async def update_authenticated(
     auth_subject: AuthorizeWebUserWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> User:
-    ip_address = request.client.host if request.client else None
+    ip_address = get_ip_address(request)
     return await user_service.update(
         session, auth_subject.subject, user_update, ip_address=ip_address
     )

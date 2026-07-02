@@ -415,8 +415,7 @@ class Organization(OrganizationBase):
     )
     sso_enforced: bool = Field(
         description=(
-            "Whether members must access this organization through its SSO "
-            "connection."
+            "Whether members must access this organization through its SSO connection."
         ),
     )
 

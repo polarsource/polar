@@ -259,6 +259,10 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: str = ""
     STRIPE_CONNECT_WEBHOOK_SECRET: str = ""
     STRIPE_STATEMENT_DESCRIPTOR: str = "POLAR"
+    # Polar Stripe App OAuth credentials, read from the app's install link in the
+    # Stripe dashboard: `.../oauth/v2/{CLIENT_LINK_ID}/authorize?client_id={CLIENT_ID}`.
+    STRIPE_APP_CLIENT_ID: str = ""
+    STRIPE_APP_CLIENT_LINK_ID: str = ""
 
     # Numeral
     NUMERAL_API_KEY: str | None = None

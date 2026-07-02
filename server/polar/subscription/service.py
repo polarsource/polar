@@ -806,13 +806,30 @@ class SubscriptionService:
                     )
                 else:
                     pending_update.discount = None
-                # Check before apply_update() changes subscription.product
-                pending_update_changed_interval = pending_update.is_interval_changed()
-                pending_update.apply_update()
                 subscription_update_repository = (
                     SubscriptionUpdateRepository.from_session(session)
                 )
-                await subscription_update_repository.update(pending_update)
+                # Check before apply_update() changes subscription.product
+                pending_update_changed_interval = pending_update.is_interval_changed()
+                try:
+                    pending_update.apply_update()
+                except NoPricesForCurrencies:
+                    # The target product's prices in the subscription's currency
+                    # were archived after this update was scheduled. Discard the
+                    # stale update and cycle on the current product rather than
+                    # leaving the subscription permanently locked.
+                    log.warning(
+                        "Skipping scheduled subscription update: "
+                        "target product has no price for the subscription currency",
+                        subscription_id=subscription.id,
+                        subscription_update_id=pending_update.id,
+                        product_id=pending_update.product_id,
+                        currency=subscription.currency,
+                    )
+                    pending_update_changed_interval = False
+                    await subscription_update_repository.soft_delete(pending_update)
+                else:
+                    await subscription_update_repository.update(pending_update)
                 subscription.pending_update = None
 
             if update_cycle_dates and not pending_update_changed_interval:

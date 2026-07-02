@@ -1355,7 +1355,15 @@ class SubscriptionService:
                 # Seat-based subscriptions short-circuit enqueue_benefits_grants
                 # while active, so existing claimed seats won't pick up the new
                 # product's benefits without an explicit re-sync.
-                if product.has_seat_based_price and subscription.active:
+                # On an initial seat transition the only claimed seat is the one
+                # just claimed above via `assign_seat(immediate_claim=True)`, which
+                # already enqueued its grant; re-syncing here would enqueue a second
+                # grant task for the same (subscription, member, benefit) and race it.
+                if (
+                    product.has_seat_based_price
+                    and subscription.active
+                    and not is_initial_seat_transition
+                ):
                     await seat_service.update_subscription_benefits_grants(
                         session, subscription
                     )

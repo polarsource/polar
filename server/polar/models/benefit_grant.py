@@ -8,7 +8,6 @@ from sqlalchemy import (
     ColumnElement,
     ForeignKey,
     Index,
-    UniqueConstraint,
     Uuid,
     and_,
     text,
@@ -81,21 +80,15 @@ class BenefitGrant(RecordModel):
     """
     Represents a benefit granted to a customer or member.
 
-    Unique constraints:
-    - benefit_grants_sbc_key: Ensures one grant per (subscription, customer, benefit)
-    - benefit_grants_smb_key: Ensures one grant per (subscription, member, benefit)
-
-    These constraints allow both customer-level and member-level benefit grants.
+    Uniqueness is enforced by ix_benefit_grants_scope_unique, a partial index over
+    (customer_id, benefit_id, member_id, subscription_id, order_id) where the grant
+    is not soft-deleted. NULLS NOT DISTINCT keeps customer-level (member_id IS NULL)
+    grants idempotent, while still allowing one grant per member for member-level
+    (seat-based) grants.
     """
 
     __tablename__ = "benefit_grants"
     __table_args__ = (
-        UniqueConstraint(
-            "subscription_id",
-            "member_id",
-            "benefit_id",
-            name="benefit_grants_smb_key",
-        ),
         Index(
             "ix_benefit_grants_scope_unique",
             "customer_id",

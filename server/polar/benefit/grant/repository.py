@@ -3,6 +3,7 @@ from typing import Unpack
 from uuid import UUID
 
 from sqlalchemy import Select, func, select
+from sqlalchemy.exc import IntegrityError
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
@@ -59,6 +60,42 @@ class BenefitGrantRepository(
             BenefitGrant.scope == scope,
         )
         return await self.get_one_or_none(statement)
+
+    async def get_or_create_by_benefit_and_scope(
+        self,
+        customer: Customer,
+        benefit: Benefit,
+        member: Member | None = None,
+        **scope: Unpack[BenefitGrantScope],
+    ) -> BenefitGrant:
+        grant = await self.get_by_benefit_and_scope(
+            customer, benefit, member=member, **scope
+        )
+        if grant is not None:
+            return grant
+
+        grant = BenefitGrant(
+            customer=customer,
+            benefit=benefit,
+            member=member,
+            properties={},
+            **scope,
+        )
+        # Two grant tasks can be enqueued for the same (subscription, member,
+        # benefit) and race this check-then-insert; flush in a savepoint so the
+        # losing insert is a recoverable IntegrityError and reuse the winner's row.
+        nested = await self.session.begin_nested()
+        try:
+            self.session.add(grant)
+            await self.session.flush()
+        except IntegrityError:
+            await nested.rollback()
+            grant = await self.get_by_benefit_and_scope(
+                customer, benefit, member=member, **scope
+            )
+            if grant is None:
+                raise
+        return grant
 
     async def list_granted_by_scope(
         self, **scope: Unpack[BenefitGrantScope]

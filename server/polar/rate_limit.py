@@ -2,6 +2,7 @@ import hashlib
 from collections.abc import Sequence
 from functools import partial
 
+from fastapi.requests import Request
 from fastapi.security.utils import get_authorization_scheme_param
 from ratelimit import RateLimitMiddleware, Rule
 from ratelimit.auths import EmptyInformation
@@ -17,47 +18,40 @@ _IDENTITY_KEY_PREFIX = "rl:ident:"
 _IDENTITY_TTL_SECONDS = 300
 _ANONYMOUS_IDENTITY = "anonymous"
 
-_AUTHORIZATION_HEADER = b"authorization"
-_COOKIE_HEADER = b"cookie"
-
 
 def _bearer_token(scope: Scope) -> str | None:
     if scope.get("type") != "http":
         return None
-    for name, value in scope.get("headers", ()):
-        if name != _AUTHORIZATION_HEADER:
-            continue
-        try:
-            authorization = value.decode("ascii")
-        except UnicodeDecodeError:
-            return None
-        scheme, token = get_authorization_scheme_param(authorization)
-        if not scheme or scheme.lower() != "bearer" or not token:
-            return None
-        return token
-    return None
+
+    request = Request(scope)
+
+    authorization = request.headers.get("authorization")
+    if authorization is None:
+        return None
+
+    scheme, token = get_authorization_scheme_param(authorization)
+    if not scheme or scheme.lower() != "bearer" or not token:
+        return None
+
+    return token
 
 
 def _session_cookie(scope: Scope) -> str | None:
     if scope.get("type") != "http":
         return None
-    name_bytes = settings.USER_SESSION_COOKIE_KEY.encode("ascii")
-    for header_name, header_value in scope.get("headers", ()):
-        if header_name != _COOKIE_HEADER:
-            continue
-        for part in header_value.split(b";"):
-            part = part.strip()
-            equal = part.find(b"=")
-            if equal == -1:
-                continue
-            if part[:equal] != name_bytes:
-                continue
-            try:
-                value = part[equal + 1 :].decode("ascii")
-            except UnicodeDecodeError:
-                return None
-            return value or None
-    return None
+
+    request = Request(scope)
+    value = request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
+    return value or None
+
+
+def _auth_session_cookie(scope: Scope) -> str | None:
+    if scope.get("type") != "http":
+        return None
+
+    request = Request(scope)
+    value = request.cookies.get(settings.AUTHENTICATION_SESSION_COOKIE_KEY)
+    return value or None
 
 
 def _token_hash(token: str) -> str:
@@ -120,6 +114,13 @@ async def _authenticate(scope: Scope, *, redis: Redis) -> tuple[str, RateLimitGr
         if cached is not None:
             return cached
         return f"cookie:{_token_hash(cookie)}", RateLimitGroup.pending_auth
+
+    auth_session_cookie = _auth_session_cookie(scope)
+    if auth_session_cookie is not None:
+        return (
+            f"auth_session_cookie:{_token_hash(auth_session_cookie)}",
+            RateLimitGroup.default,
+        )
 
     try:
         return _get_ip(scope)

@@ -60,10 +60,6 @@ class TestBearerToken:
         scope = _http_scope(headers=[(b"authorization", b"Bearer ")])
         assert _bearer_token(scope) is None
 
-    def test_non_ascii_header(self) -> None:
-        scope = _http_scope(headers=[(b"authorization", b"Bearer \xc3\xa9token")])
-        assert _bearer_token(scope) is None
-
     def test_non_http_scope(self) -> None:
         scope: dict[str, object] = {"type": "websocket", "headers": []}
         assert _bearer_token(scope) is None

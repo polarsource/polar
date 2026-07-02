@@ -2,10 +2,11 @@
 
 import revalidate from '@/app/actions'
 import { CurrencySelector } from '@/components/CurrencySelector'
+import { useToast } from '@/components/Toast/use-toast'
 import { useAuth } from '@/hooks'
 import { useCreateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { schemas } from '@polar-sh/client'
+import { isValidationError, schemas } from '@polar-sh/client'
 import { Button, Checkbox, Input } from '@polar-sh/orbit'
 import {
   Form,
@@ -42,6 +43,7 @@ const CreateOrganizationForm = ({
 }) => {
   const { currentUser, setUserOrganizations } = useAuth()
   const createOrganization = useCreateOrganization()
+  const { toast } = useToast()
   const [editedSlug, setEditedSlug] = useState(false)
 
   const form = useForm<FormSchema>({
@@ -81,8 +83,13 @@ const CreateOrganizationForm = ({
       await createOrganization.mutateAsync(data)
 
     if (error) {
-      if (error.detail) {
+      if (isValidationError(error.detail)) {
         setValidationErrors(error.detail, setError)
+      } else if (error.detail) {
+        toast({
+          title: 'Organization creation failed',
+          description: error.detail,
+        })
       }
       return
     }

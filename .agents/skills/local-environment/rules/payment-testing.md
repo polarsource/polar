@@ -29,8 +29,10 @@ docker logs --since 30s polar-app-<N>-api-1 2>&1 | grep -A1 "LOGIN CODE"
 
 Use `admin@polar.sh` as the default test account — the seed creates it with
 an approved org (`admin-org`) that already has a payout account, identity
-verification, and at least one product. That lets you go straight to
-checkout testing without onboarding work.
+verification, at least one product, and an enabled SSO connection. That lets
+you go straight to checkout testing without onboarding work. (For SSO
+testing, `admin-org` has a seeded OIDC connection pointing at a local mock
+IdP — see DEVELOPMENT.md.)
 
 ## Stripe Webhooks
 

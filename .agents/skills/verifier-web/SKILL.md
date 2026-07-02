@@ -73,7 +73,7 @@ into the dashboard authenticates the backoffice too.
    (the nav "Login" link is hidden; go to `/auth` directly. `/login` 404s.)
 2. Type `admin@polar.sh` into the Email field, click **Sign in with email**.
    The seed account `admin@polar.sh` owns `admin-org` (approved, payout account,
-   products) — go straight to checkout testing, no onboarding.
+   products, SSO connection) — go straight to checkout testing, no onboarding.
 3. The page advances to `/auth/email-otp`. Read the code from the api logs:
    ```bash
    docker logs --since 60s polar-app-<N>-api-1 2>&1 | grep -A1 "LOGIN CODE"

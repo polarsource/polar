@@ -180,6 +180,13 @@ class OrganizationFeatureSettings(Schema):
         False,
         description="If this organization has single sign-on configuration enabled",
     )
+    compass_enabled: bool = Field(
+        False,
+        description=(
+            "If this organization has the split product navigation "
+            "(Billing / Compass / Customers) enabled in the dashboard"
+        ),
+    )
 
 
 class OrganizationFeatureSettingsUpdate(Schema):

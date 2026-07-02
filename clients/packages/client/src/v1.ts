@@ -20924,6 +20924,17 @@ export interface components {
        */
       total_tokens: number
     }
+    /** LastSSOConnectionRequired */
+    LastSSOConnectionRequired: {
+      /**
+       * Error
+       * @example LastSSOConnectionRequired
+       * @constant
+       */
+      error: 'LastSSOConnectionRequired'
+      /** Detail */
+      detail: string
+    }
     /**
      * LegacyOrganizationStatus
      * @description Legacy organization status values kept for backward compatibility in schemas
@@ -27011,6 +27022,11 @@ export interface components {
         | null
       /** @description Default tax behavior applied on products. */
       default_tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * Sso Enforced
+       * @description Whether members must access this organization through its SSO connection. Requires an enabled SSO connection to turn on.
+       */
+      sso_enforced?: boolean | null
     }
     /** OrganizationValidateWebsiteRequest */
     OrganizationValidateWebsiteRequest: {
@@ -37781,6 +37797,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description Cannot remove the last enabled connection while SSO is enforced. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LastSSOConnectionRequired']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -37833,6 +37858,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Cannot remove the last enabled connection while SSO is enforced. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LastSSOConnectionRequired']
         }
       }
       /** @description Validation Error */

@@ -18,7 +18,13 @@ from polar.enums import (
 )
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.http import UrlReachability
-from polar.models import Customer, Organization, Product, User, UserOrganization
+from polar.models import (
+    Customer,
+    Organization,
+    Product,
+    User,
+    UserOrganization,
+)
 from polar.models.account import Account
 from polar.models.benefit import BenefitType
 from polar.models.member import MemberRole

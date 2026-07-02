@@ -313,6 +313,24 @@ async def update(
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
     """Update an organization."""
+    if organization_update.sso_enforced and (
+        authz.auth_subject.organization_ids is None
+        or authz.organization.id not in authz.auth_subject.organization_ids
+    ):
+        # Only allow enforcing SSO from a session already authenticated through
+        # this organization's SSO — proof it works, so an admin can't lock
+        # themselves (and everyone else) out.
+        raise PolarRequestValidationError(
+            [
+                {
+                    "loc": ("body", "sso_enforced"),
+                    "msg": "You must be signed in through SSO for this "
+                    "organization to enforce it.",
+                    "type": "value_error",
+                    "input": True,
+                }
+            ]
+        )
     return await organization_service.update(
         session, authz.organization, organization_update
     )

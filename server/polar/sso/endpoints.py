@@ -22,6 +22,7 @@ from .schemas import (
     OrganizationSSOConnectionCreate,
     OrganizationSSOConnectionUpdate,
 )
+from .service import LastSSOConnectionRequired
 from .service import (
     organization_sso_connection as organization_sso_connection_service,
 )
@@ -44,6 +45,11 @@ SSOConnectionNotFound = {
 NotPermittedResponse = {
     "description": "The user doesn't have the permission to manage the organization.",
     "model": NotPermitted.schema(),
+}
+
+LastSSOConnectionResponse = {
+    "description": "Cannot remove the last enabled connection while SSO is enforced.",
+    "model": LastSSOConnectionRequired.schema(),
 }
 
 
@@ -108,7 +114,11 @@ async def create_sso_connection(
     "/{connection_id}",
     summary="Update SSO Connection",
     response_model=OrganizationSSOConnectionSchema,
-    responses={403: NotPermittedResponse, 404: SSOConnectionNotFound},
+    responses={
+        403: NotPermittedResponse,
+        404: SSOConnectionNotFound,
+        409: LastSSOConnectionResponse,
+    },
 )
 async def update_sso_connection(
     connection_id: UUID,
@@ -121,14 +131,20 @@ async def update_sso_connection(
     )
     if connection is None:
         raise ResourceNotFound()
-    return await organization_sso_connection_service.update(session, connection, update)
+    return await organization_sso_connection_service.update(
+        session, authz.organization, connection, update
+    )
 
 
 @router.delete(
     "/{connection_id}",
     summary="Delete SSO Connection",
     status_code=204,
-    responses={403: NotPermittedResponse, 404: SSOConnectionNotFound},
+    responses={
+        403: NotPermittedResponse,
+        404: SSOConnectionNotFound,
+        409: LastSSOConnectionResponse,
+    },
 )
 async def delete_sso_connection(
     connection_id: UUID,
@@ -140,4 +156,6 @@ async def delete_sso_connection(
     )
     if connection is None:
         raise ResourceNotFound()
-    await organization_sso_connection_service.delete(session, connection)
+    await organization_sso_connection_service.delete(
+        session, authz.organization, connection
+    )

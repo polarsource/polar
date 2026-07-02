@@ -53,24 +53,8 @@ async def start_impersonation(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
-    # Create a read-only impersonation session for the target user
-    token, impersonation_session = await auth_service._create_user_session(
-        session=session,
-        user=target_user,
-        user_agent=request.headers.get("User-Agent", ""),
-        scopes=list(READ_ONLY_SCOPES),
-        expire_in=timedelta(minutes=60),
-    )
-
-    admin_token = request.cookies.get(settings.IMPERSONATION_COOKIE_KEY)
-    if admin_token:
-        token_hash = get_token_hash(admin_token, secret=settings.SECRET)
-        if token_hash != admin_session.token:
-            admin_token = None
-    if not admin_token:
-        admin_token = request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
-
-    # Create response object
+    # Resolve the organization to impersonate into (the requested one, or the
+    # user's first) before minting the session, so we can scope the session to it.
     org_repository = OrganizationRepository.from_session(session)
     user_orgs = await org_repository.get_all_by_user(target_user.id)
     target_org = next(
@@ -82,6 +66,26 @@ async def start_impersonation(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User has no organizations to impersonate into",
         )
+
+    # Scope the session to the organization so it can reach the org even when SSO
+    # is enforced (the break-glass path) and stays limited to it.
+    token, impersonation_session = await auth_service._create_user_session(
+        session=session,
+        user=target_user,
+        user_agent=request.headers.get("User-Agent", ""),
+        scopes=list(READ_ONLY_SCOPES),
+        expire_in=timedelta(minutes=60),
+        organization_ids=frozenset({target_org.id}),
+    )
+
+    admin_token = request.cookies.get(settings.IMPERSONATION_COOKIE_KEY)
+    if admin_token:
+        token_hash = get_token_hash(admin_token, secret=settings.SECRET)
+        if token_hash != admin_session.token:
+            admin_token = None
+    if not admin_token:
+        admin_token = request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
+
     response = HXRedirectResponse(
         request, f"{settings.FRONTEND_BASE_URL}/dashboard/{target_org.slug}", 307
     )

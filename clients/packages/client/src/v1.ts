@@ -27011,6 +27011,11 @@ export interface components {
         | null
       /** @description Default tax behavior applied on products. */
       default_tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * Sso Enforced
+       * @description Whether members must access this organization through its SSO connection. Requires an enabled SSO connection to turn on.
+       */
+      sso_enforced?: boolean | null
     }
     /** OrganizationValidateWebsiteRequest */
     OrganizationValidateWebsiteRequest: {

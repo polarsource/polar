@@ -1,0 +1,24 @@
+server/tests/scripts/test_backfill_oauth_account_encrypted_tokens.py
+  s_c2d84824e99976::t_eac6755f1068d4 140-158
+server/scripts/backfill_oauth_account_encrypted_tokens.py
+  s_c2d84824e99976::t_af35b66a946dca 56-67
+  s_c2d84824e99976::t_635931e200259c 10
+  s_c2d84824e99976::t_4ce44b2cf83c19 25
+  s_c2d84824e99976::t_4e58a297e23ee9 136-138,143,145-146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "6c9bccf9d890296b7c5c9ff1548e5926feea25b1",
+  "prompts": {},
+  "sessions": {
+    "s_c2d84824e99976": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c9231038-183a-4891-a437-646632b5c578",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

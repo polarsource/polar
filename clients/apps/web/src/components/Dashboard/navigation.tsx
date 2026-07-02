@@ -95,7 +95,7 @@ const applyIsActive = (path: string): ((r: Route) => RouteWithActive) => {
   }
 }
 
-const useResolveRoutes = (
+export const useResolveRoutes = (
   routesResolver: (
     org?: schemas['Organization'],
     posthog?: PolarHog,

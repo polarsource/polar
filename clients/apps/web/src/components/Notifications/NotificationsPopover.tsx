@@ -77,12 +77,12 @@ export const NotificationsPopover = () => {
   return (
     <Popover>
       <Button
-        className="relative h-8 w-8"
+        className="relative h-8 w-8 cursor-pointer"
         variant="ghost"
         onMouseDown={clickBell}
         asChild
       >
-        <PopoverTrigger>
+        <PopoverTrigger className="cursor-pointer">
           <BoltOutlined
             className="[&svg]:size-5!"
             fontSize="medium"

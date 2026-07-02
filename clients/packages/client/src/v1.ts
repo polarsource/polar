@@ -25604,6 +25604,12 @@ export interface components {
        * @default false
        */
       sso_enabled: boolean
+      /**
+       * Compass Enabled
+       * @description If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard
+       * @default false
+       */
+      compass_enabled: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate

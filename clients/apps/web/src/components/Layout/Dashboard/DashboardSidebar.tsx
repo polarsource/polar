@@ -8,7 +8,7 @@ import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
 import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
-import { Avatar } from '@polar-sh/orbit'
+import { Avatar, Button } from '@polar-sh/orbit'
 import {
   Sidebar,
   SidebarContent,
@@ -17,7 +17,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
   useSidebar,
 } from '@polar-sh/ui/components/atoms/Sidebar'
 import {
@@ -98,49 +97,34 @@ export const DashboardSidebar = ({
           href={organization ? `/dashboard/${organization.slug}` : '/dashboard'}
         />
         <motion.div
-          key={isCollapsed ? 'header-collapsed' : 'header-expanded'}
-          className={`flex ${isCollapsed ? 'flex-row md:flex-col-reverse' : 'flex-row'} items-center gap-2`}
+          className="flex flex-row items-center gap-2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1 }}
         >
           <NotificationsPopover />
-          <SidebarTrigger />
+          <Button
+            className="relative h-8 w-8"
+            variant="ghost"
+            onClick={() => setSearchOpen(true)}
+            aria-label="Search"
+          >
+            <Search
+              className="[&svg]:size-5!"
+              fontSize="medium"
+              aria-hidden="true"
+            />
+          </Button>
         </motion.div>
       </SidebarHeader>
 
-      <SidebarContent className="gap-4 px-2 py-4">
+      <SidebarContent className="gap-4 px-2 py-2">
         {type === 'organization' && organization && (
-          <>
-            <button
-              onClick={() => setSearchOpen(true)}
-              className={twMerge(
-                'flex cursor-pointer items-center gap-4 rounded-lg border px-2 py-2 text-sm transition-colors',
-                'dark:bg-polar-950 dark:border-polar-800 dark:hover:bg-polar-900 border-gray-200 bg-white hover:bg-gray-50',
-                isCollapsed && 'justify-center px-2',
-              )}
-            >
-              <Search
-                className="dark:text-polar-500 text-gray-500"
-                fontSize="inherit"
-              />
-              {!isCollapsed && (
-                <>
-                  <span className="dark:text-polar-500 flex-1 text-left text-gray-500">
-                    Search...
-                  </span>
-                  <kbd className="dark:border-polar-700 dark:bg-polar-800 dark:text-polar-400 pointer-events-none inline-flex h-5 items-center gap-1 rounded border border-gray-200 bg-gray-100 px-1.5 font-mono text-[11px] text-gray-600 select-none">
-                    <span className="text-sm">⌘</span>K
-                  </kbd>
-                </>
-              )}
-            </button>
-            <OmniSearch
-              open={searchOpen}
-              onOpenChange={setSearchOpen}
-              organization={organization}
-            />
-          </>
+          <OmniSearch
+            open={searchOpen}
+            onOpenChange={setSearchOpen}
+            organization={organization}
+          />
         )}
         <motion.div
           key={isCollapsed ? 'nav-collapsed' : 'nav-expanded'}

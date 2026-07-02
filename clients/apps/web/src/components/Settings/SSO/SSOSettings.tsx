@@ -4,6 +4,7 @@ import { toast } from '@/components/Toast/use-toast'
 import {
   useDeleteSSOConnection,
   useSSOConnections,
+  useUpdateOrganization,
   useUpdateSSOConnection,
 } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
@@ -19,6 +20,24 @@ import NewSSOConnectionModal from './NewSSOConnectionModal'
 const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
   const { isShown, show, hide } = useModal()
   const connections = useSSOConnections(org.id)
+  const updateOrganization = useUpdateOrganization()
+
+  const hasEnabledConnection = connections.data?.items?.some(
+    (connection) => connection.enabled,
+  )
+
+  const toggleEnforced = async () => {
+    const { error } = await updateOrganization.mutateAsync({
+      id: org.id,
+      body: { sso_enforced: !org.sso_enforced },
+    })
+    if (error) {
+      toast({
+        title: 'Update failed',
+        description: extractApiErrorMessage(error),
+      })
+    }
+  }
 
   return (
     <>
@@ -52,6 +71,33 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
             <Button onClick={show}>Add connection</Button>
           </ListGroup.Item>
         </ListGroup>
+        <Box alignItems="center" justifyContent="between" width="100%">
+          <Box flexDirection="column" gap="xs">
+            <Box alignItems="center" gap="s">
+              <Text variant="label">Enforce SSO</Text>
+              <Status
+                status={org.sso_enforced ? 'Enforced' : 'Not enforced'}
+                color={org.sso_enforced ? 'green' : 'gray'}
+                size="small"
+              />
+            </Box>
+            <Text variant="caption" color="muted">
+              {org.sso_enforced
+                ? 'Members must sign in through SSO to access this organization.'
+                : hasEnabledConnection
+                  ? 'Require members to sign in through SSO to access this organization.'
+                  : 'Add and enable an SSO connection before enforcing SSO.'}
+            </Text>
+          </Box>
+          <Button
+            variant="secondary"
+            onClick={toggleEnforced}
+            loading={updateOrganization.isPending}
+            disabled={!org.sso_enforced && !hasEnabledConnection}
+          >
+            {org.sso_enforced ? 'Stop enforcing' : 'Enforce'}
+          </Button>
+        </Box>
       </Box>
       <InlineModal
         isShown={isShown}

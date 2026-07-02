@@ -52,32 +52,12 @@ superseded.
 
 ### 3. Check each relevant ADR against the diff
 
-Read the ADR's Decision and Consequences, then look for the violation signature in
-the changed hunks. For the ADRs that exist today:
-
-- **ADR-0002 (status-coded `PolarError`)**: a `PolarError` subclass or a `raise`
-  with no explicit `status_code` (it defaults to 500); a business or logic error
-  raised as `PolarRequestValidationError` (422); an endpoint that declares an error
-  but omits it from `responses=`; a content-less `422: {"description": ...}`
-  override. Area: Backend.
-- **ADR-0003 (one transaction per request or task)**: any `session.commit()` in
-  application code (services, endpoints, tasks). Grep the diff for `.commit(`.
-  Area: Backend.
-- **ADR-0004 (Orbit `Box` + tokens)**: new UI using a raw `<div>` plus Tailwind for
-  layout, spacing, or color; `dark:` variants; raw hex or px values; or `className`
-  / `style` on `<Box />` or `<Text />`. Most of this is caught by ESLint
-  (`no-classname-box`, `no-view`, `no-hardcoded-colors`, and friends); the value you
-  add is flagging new component files that avoid `Box` entirely. Area: Frontend.
-- **ADR-0005 (`AuthSubject` + scopes)**: a new endpoint with no `auth_subject`
-  dependency that is not meant to be public; a hand-rolled `AuthSubject`; an endpoint
-  that bypasses its module's `Authenticator`. Area: Backend.
-- **ADR-0006 (migration + backfill safety)**: a migration under
-  `server/migrations/versions/` with an unbatched `UPDATE`; adding a NOT NULL column
-  in one step instead of add-nullable, then batched backfill, then enforce; a
-  migration PR that also touches non-migration application code. Area: Backend.
-
-ADR-0001 is the meta record and has no code rule. For any ADR not in this list,
-derive its violation signature from its own Decision and Consequences the same way.
+For each Accepted ADR whose Area matches a changed file, read its Decision and
+Consequences and derive the violation signature from them: the Decision states the
+rule, and the Consequences often spell out the "must" and the failure it prevents.
+Then look for that signature in the changed hunks (grep for the concrete identifiers
+the ADR names, and read the surrounding code). Don't rely on a signature list kept
+here: it would drift from the ADRs. The ADR text is the source of truth.
 
 ### 4. Report
 

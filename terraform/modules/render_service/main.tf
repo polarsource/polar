@@ -172,6 +172,8 @@ resource "render_env_group" "stripe" {
     POLAR_STRIPE_CONNECT_WEBHOOK_SECRET = { value = var.stripe_secrets.connect_webhook_secret }
     POLAR_STRIPE_SECRET_KEY             = { value = var.stripe_secrets.secret_key }
     POLAR_STRIPE_WEBHOOK_SECRET         = { value = var.stripe_secrets.webhook_secret }
+    POLAR_STRIPE_APP_CLIENT_ID          = { value = var.stripe_secrets.app_client_id }
+    POLAR_STRIPE_APP_CLIENT_LINK_ID     = { value = var.stripe_secrets.app_client_link_id }
   }
 }
 

@@ -508,3 +508,15 @@ variable "next_public_stripe_payment_method_configuration" {
   type        = string
   sensitive   = true
 }
+
+variable "stripe_app_client_id" {
+  description = "Stripe App OAuth client ID"
+  type        = string
+  default     = ""
+}
+
+variable "stripe_app_client_link_id" {
+  description = "Stripe App OAuth client link ID"
+  type        = string
+  default     = ""
+}

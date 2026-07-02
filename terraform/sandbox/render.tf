@@ -261,6 +261,8 @@ module "sandbox" {
     connect_webhook_secret = var.stripe_connect_webhook_secret_sandbox
     secret_key             = var.stripe_secret_key_sandbox
     webhook_secret         = var.stripe_webhook_secret_sandbox
+    app_client_id          = var.stripe_app_client_id
+    app_client_link_id     = var.stripe_app_client_link_id
   }
 
   apple_secrets = {

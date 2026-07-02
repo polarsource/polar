@@ -5,7 +5,7 @@ from sqlalchemy import Select, select
 
 from polar.auth.models import AuthSubject, User, is_organization, is_user
 from polar.auth.permission import OrganizationPermission, roles_with_permission
-from polar.models import Organization, UserOrganization
+from polar.models import Organization, UserOrganization, UserSession
 from polar.postgres import AsyncReadSession
 
 
@@ -53,8 +53,13 @@ def select_accessible_org_ids(
     Takes the full ``AuthSubject`` so the session/token down-scope
     (``organization_ids``) travels with the subject and can't be forgotten or
     mismatched with a stray ``user_id``: results are the user's memberships
-    (optionally narrowed by ``permission``) intersected with that scope. An
-    unscoped subject (``organization_ids is None``) is not narrowed.
+    (optionally narrowed by ``permission``) intersected with that scope.
+
+    A subject scoped to specific organizations (``organization_ids``) is
+    narrowed to them. An unscoped **user session** additionally cannot reach
+    organizations that enforce SSO (``sso_enforced``) — those are only
+    accessible through an SSO-scoped session. Token credentials (PAT / OAuth)
+    are exempt from SSO enforcement.
     """
     # Composes the raw helper, then applies the session down-scope right below.
     stmt = select_user_org_ids(auth_subject.subject.id, permission=permission)  # noqa: org-scope
@@ -62,6 +67,8 @@ def select_accessible_org_ids(
         stmt = stmt.where(
             UserOrganization.organization_id.in_(auth_subject.organization_ids)
         )
+    elif isinstance(auth_subject.session, UserSession):
+        stmt = stmt.where(Organization.sso_enforced.is_not(True))
     return stmt
 
 

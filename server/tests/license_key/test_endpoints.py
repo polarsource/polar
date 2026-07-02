@@ -11,11 +11,13 @@ from polar.benefit.strategies.license_keys.schemas import (
     BenefitLicenseKeyActivationCreateProperties,
     BenefitLicenseKeysCreateProperties,
 )
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import generate_uuid, utc_now
 from polar.license_key.repository import LicenseKeyRepository
 from polar.license_key.service import license_key as license_key_service
 from polar.models import (
+    BenefitGrant,
     Customer,
     LicenseKey,
     Organization,
@@ -650,6 +652,165 @@ class TestUpdateLicenseKey:
         )
 
         assert response.status_code == 404
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_reenable_syncs_benefit_grant_status(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(prefix="testing"),
+        )
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+
+        grant_repository = BenefitGrantRepository.from_session(session)
+        statement = grant_repository.get_base_statement().where(
+            BenefitGrant.benefit_id == benefit.id,
+            BenefitGrant.customer_id == customer.id,
+        )
+        grant = await grant_repository.get_one_or_none(statement)
+        assert grant is not None
+        grant.properties = {"license_key_id": str(lk.id)}
+        grant.set_revoked()
+        await save_fixture(grant)
+
+        lk.status = LicenseKeyStatus.revoked
+        session.add(lk)
+        await session.flush()
+        grant_id = grant.id
+
+        response = await client.patch(
+            f"/v1/license-keys/{lk.id}",
+            json={"status": LicenseKeyStatus.granted.value},
+        )
+        assert response.status_code == 200
+        assert response.json()["status"] == LicenseKeyStatus.granted.value
+
+        refreshed_grant = await grant_repository.get_by_id(grant_id)
+        assert refreshed_grant is not None
+        assert refreshed_grant.is_granted is True
+        assert refreshed_grant.is_revoked is False
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_revoke_syncs_benefit_grant_status(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(prefix="testing"),
+        )
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+
+        grant_repository = BenefitGrantRepository.from_session(session)
+        statement = grant_repository.get_base_statement().where(
+            BenefitGrant.benefit_id == benefit.id,
+            BenefitGrant.customer_id == customer.id,
+        )
+        grant = await grant_repository.get_one_or_none(statement)
+        assert grant is not None
+        grant.properties = {"license_key_id": str(lk.id)}
+        grant.set_granted()
+        await save_fixture(grant)
+        grant_id = grant.id
+
+        response = await client.patch(
+            f"/v1/license-keys/{lk.id}",
+            json={"status": LicenseKeyStatus.revoked.value},
+        )
+        assert response.status_code == 200
+        assert response.json()["status"] == LicenseKeyStatus.revoked.value
+
+        refreshed_grant = await grant_repository.get_by_id(grant_id)
+        assert refreshed_grant is not None
+        assert refreshed_grant.is_revoked is True
+        assert refreshed_grant.is_granted is False
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_update_without_status_change_preserves_grant(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(prefix="testing"),
+        )
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+
+        grant_repository = BenefitGrantRepository.from_session(session)
+        statement = grant_repository.get_base_statement().where(
+            BenefitGrant.benefit_id == benefit.id,
+            BenefitGrant.customer_id == customer.id,
+        )
+        grant = await grant_repository.get_one_or_none(statement)
+        assert grant is not None
+        grant.properties = {"license_key_id": str(lk.id)}
+        grant.set_revoked()
+        await save_fixture(grant)
+        grant_id = grant.id
+
+        response = await client.patch(
+            f"/v1/license-keys/{lk.id}",
+            json={"usage": 5},
+        )
+        assert response.status_code == 200
+
+        refreshed_grant = await grant_repository.get_by_id(grant_id)
+        assert refreshed_grant is not None
+        assert refreshed_grant.is_revoked is True
+        assert refreshed_grant.is_granted is False
 
 
 @pytest.mark.asyncio

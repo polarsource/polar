@@ -278,6 +278,57 @@ module "test" {
 }
 
 # =============================================================================
+# PgBouncer
+# =============================================================================
+
+module "pgbouncer" {
+  count  = local.test_enabled ? 1 : 0
+  source = "../modules/pgbouncer"
+
+  environment            = "test"
+  render_environment_id  = local.environment_id
+  registry_credential_id = render_registry_credential.ghcr.id
+
+  database = {
+    host     = local.db_internal_host
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
+  }
+
+  pool_config = {
+    max_client_conn   = "1000"
+    default_pool_size = "20"
+  }
+
+  depends_on = [render_registry_credential.ghcr, render_postgres.db]
+}
+
+module "pgbouncer_read" {
+  count  = local.test_enabled ? 1 : 0
+  source = "../modules/pgbouncer"
+
+  name                   = "pgbouncer-read"
+  environment            = "test"
+  render_environment_id  = local.environment_id
+  registry_credential_id = render_registry_credential.ghcr.id
+
+  database = {
+    host     = local.read_replica.id
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
+  }
+
+  pool_config = {
+    max_client_conn   = "1000"
+    default_pool_size = "20"
+  }
+
+  depends_on = [render_registry_credential.ghcr, render_postgres.db]
+}
+
+# =============================================================================
 # Cloudflare DNS
 # =============================================================================
 

@@ -407,6 +407,57 @@ module "production" {
 }
 
 # =============================================================================
+# PgBouncer
+# =============================================================================
+
+module "pgbouncer" {
+  source = "../modules/pgbouncer"
+
+  environment            = "production"
+  render_environment_id  = render_project.polar.environments["Production"].id
+  registry_credential_id = render_registry_credential.ghcr.id
+
+  database = {
+    host     = local.db_internal_host
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
+  }
+
+  pool_config = {
+    max_client_conn   = "5000"
+    default_pool_size = "50"
+    reserve_pool_size = "10"
+  }
+
+  depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db]
+}
+
+module "pgbouncer_read" {
+  source = "../modules/pgbouncer"
+
+  name                   = "pgbouncer-read"
+  environment            = "production"
+  render_environment_id  = render_project.polar.environments["Production"].id
+  registry_credential_id = render_registry_credential.ghcr.id
+
+  database = {
+    host     = local.read_replica.id
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
+  }
+
+  pool_config = {
+    max_client_conn   = "5000"
+    default_pool_size = "50"
+    reserve_pool_size = "10"
+  }
+
+  depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db]
+}
+
+# =============================================================================
 # Tailscale Subnet Router
 # =============================================================================
 

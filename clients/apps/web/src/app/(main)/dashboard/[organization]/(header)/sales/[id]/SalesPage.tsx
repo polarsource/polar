@@ -86,19 +86,19 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <Box alignItems="center" columnGap="l">
           {order.paid && (
             <>
+              <DownloadInvoiceDashboard
+                order={order}
+                organization={organization}
+                onInvoiceGenerated={refetchOrder}
+              />
               {order.receipt_number != null && (
                 <DownloadReceiptDashboard
                   organization={organization}
                   order={order}
                   className="w-auto"
+                  variant="secondary"
                 />
               )}
-              <DownloadInvoiceDashboard
-                order={order}
-                organization={organization}
-                onInvoiceGenerated={refetchOrder}
-                variant={order.receipt_number != null ? 'secondary' : undefined}
-              />
             </>
           )}
           <DropdownMenu>

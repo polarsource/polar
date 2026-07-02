@@ -40,6 +40,12 @@ export default async function Layout(props: {
   const userOrganizations = await getUserOrganizations()
 
   if (!userOrganizations.some((org) => org.id === organization.id)) {
+    // An org that enforces SSO is only reachable through an SSO-scoped session,
+    // so send the user to re-authenticate via SSO rather than bouncing them to
+    // the dashboard root.
+    if (organization.sso_enforced) {
+      return redirect(`/auth/sso/${organization.slug}`)
+    }
     return redirect('/dashboard')
   }
 

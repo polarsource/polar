@@ -311,8 +311,7 @@ async def get_org_factors(
     sso_repository = OrganizationSSOConnectionRepository.from_session(session)
     connections = await sso_repository.get_enabled_by_organization(organization.id)
 
-    # todo (maxime) : once we implement org enforce sso, we should remove the base factors and only return the sso factors
-    return base_factors | {
+    sso_factors: set[FactorBase[typing.Any]] = {
         build_sso_factor(
             connection,
             organization_slug=organization.slug,
@@ -320,3 +319,8 @@ async def get_org_factors(
         )
         for connection in connections
     }
+
+    if organization.sso_enforced:
+        return sso_factors
+
+    return base_factors | sso_factors

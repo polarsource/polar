@@ -1,6 +1,6 @@
+import AuthHeader from '@/components/Auth/AuthHeader'
+import AuthTermsFooter from '@/components/Auth/AuthTermsFooter'
 import OrgAuth from '@/components/Auth/OrgAuth'
-import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
-import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Metadata } from 'next'
 
@@ -35,25 +35,9 @@ export default async function Page(props: {
         borderRadius="xl"
         padding="3xl"
       >
-        <Box flexDirection="column" gap="l">
-          <PolarLogotype logoVariant="icon" size={60} />
-          <Text variant="heading-s" as="h2">
-            Sign in
-          </Text>
-          {error && (
-            <Box
-              borderRadius="m"
-              backgroundColor="background-warning"
-              borderWidth={1}
-              borderStyle="solid"
-              borderColor="border-warning"
-              padding="l"
-            >
-              <Text>{error}</Text>
-            </Box>
-          )}
-        </Box>
+        <AuthHeader error={error} />
         <OrgAuth slug={slug} returnTo={returnTo} />
+        <AuthTermsFooter />
       </Box>
     </Box>
   )

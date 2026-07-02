@@ -72,16 +72,25 @@ async def test_get_users_me_excludes_sso_enforced_org_for_global_session(
     organization: Organization,
     user_organization: UserOrganization,
 ) -> None:
-    # A non-SSO session cannot reach an org that enforces SSO, so it must not
-    # appear in the org list either — otherwise the dashboard lets the user in
-    # and every scoped query then comes back empty.
+    # A non-SSO session cannot reach an org that enforces SSO, so it's excluded
+    # from the accessible `organizations` list but still surfaced under
+    # `member_organizations` (flagged `requires_sso`) so the dashboard can
+    # redirect the member to SSO rather than 404.
     organization.sso_enforced = True
     await save_fixture(organization)
 
     response = await client.get("/v1/users/me")
 
     assert response.status_code == 200
-    assert response.json()["organizations"] == []
+    json = response.json()
+    assert json["organizations"] == []
+    assert json["member_organizations"] == [
+        {
+            "id": str(organization.id),
+            "slug": organization.slug,
+            "requires_sso": True,
+        }
+    ]
 
 
 @pytest.mark.asyncio
@@ -100,9 +109,18 @@ async def test_get_users_me_includes_sso_enforced_org_for_sso_session(
     response = await client.get("/v1/users/me")
 
     assert response.status_code == 200
-    organizations = response.json()["organizations"]
+    json = response.json()
+    organizations = json["organizations"]
     assert len(organizations) == 1
     assert organizations[0]["id"] == str(organization.id)
+    # It's accessible in an SSO-scoped session and still listed as a membership.
+    assert json["member_organizations"] == [
+        {
+            "id": str(organization.id),
+            "slug": organization.slug,
+            "requires_sso": True,
+        }
+    ]
 
 
 @pytest.mark.asyncio

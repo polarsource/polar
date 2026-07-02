@@ -43,6 +43,7 @@ from polar.user_organization.service import (
 )
 
 from .schemas import (
+    MemberOrganization,
     UserDeletionResponse,
     UserIdentityVerification,
     UserRead,
@@ -66,21 +67,27 @@ async def get_authenticated(
 ) -> UserRead:
     user = auth_subject.subject
     repository = UserOrganizationRepository.from_session(session)
-    # Raw membership, filtered below to the session's accessible organizations
-    # (session scope + SSO enforcement) via the shared authz chokepoint.
+    # Raw membership; `organizations` is narrowed to the session's accessible
+    # set (session scope + SSO enforcement) via the shared authz chokepoint,
+    # while `member_organizations` exposes every membership so the frontend can
+    # tell "no access" apart from "not a member".
     org_with_roles = await repository.get_organizations_with_role(user.id)  # noqa: org-scope
     accessible_ids = await AuthzRepository.from_session(session).get_user_org_ids(
         auth_subject
     )
-    org_with_roles = [
-        (org, role) for org, role in org_with_roles if org.id in accessible_ids
-    ]
     return UserRead.model_validate(user).model_copy(
         update={
             "organizations": [
                 OrganizationWithRole.from_organization(org, role)
                 for org, role in org_with_roles
-            ]
+                if org.id in accessible_ids
+            ],
+            "member_organizations": [
+                MemberOrganization(
+                    id=org.id, slug=org.slug, requires_sso=org.sso_enforced
+                )
+                for org, _ in org_with_roles
+            ],
         }
     )
 

@@ -22053,6 +22053,21 @@ export interface components {
        */
       role: 'member' | 'billing_manager'
     }
+    /** MemberOrganization */
+    MemberOrganization: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /** Slug */
+      slug: string
+      /**
+       * Requires Sso
+       * @description Whether this organization enforces SSO.
+       */
+      requires_sso: boolean
+    }
     /**
      * MemberOwnerCreate
      * @description Schema for creating an owner member during customer creation.
@@ -33034,9 +33049,14 @@ export interface components {
       oauth_accounts: components['schemas']['OAuthAccountRead'][]
       /**
        * Organizations
-       * @description Organizations the user is a member of, with their role on each. Populated by `GET /v1/users/me`; empty otherwise.
+       * @description Organizations the user is a member of and can access in the current session, with their role on each. Populated by `GET /v1/users/me`; empty otherwise.
        */
       organizations?: components['schemas']['OrganizationWithRole'][]
+      /**
+       * Member Organizations
+       * @description All organizations the user is a member of, regardless of whether they're accessible in the current session. Compare with `organizations` (the accessible subset) to determine access. Populated by `GET /v1/users/me`.
+       */
+      member_organizations?: components['schemas']['MemberOrganization'][]
       /** Email Hash */
       readonly email_hash: string | null
     }

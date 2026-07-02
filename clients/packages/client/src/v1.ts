@@ -20924,6 +20924,17 @@ export interface components {
        */
       total_tokens: number
     }
+    /** LastSSOConnectionRequired */
+    LastSSOConnectionRequired: {
+      /**
+       * Error
+       * @example LastSSOConnectionRequired
+       * @constant
+       */
+      error: 'LastSSOConnectionRequired'
+      /** Detail */
+      detail: string
+    }
     /**
      * LegacyOrganizationStatus
      * @description Legacy organization status values kept for backward compatibility in schemas
@@ -37786,6 +37797,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description Cannot remove the last enabled connection while SSO is enforced. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LastSSOConnectionRequired']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -37838,6 +37858,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Cannot remove the last enabled connection while SSO is enforced. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LastSSOConnectionRequired']
         }
       }
       /** @description Validation Error */

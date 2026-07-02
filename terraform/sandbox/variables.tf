@@ -425,3 +425,13 @@ variable "worker_sqs_actors" {
   type        = string
   default     = "[\"dummy\"]"
 }
+
+variable "stripe_app_client_id" {
+  description = "Stripe App OAuth client ID"
+  type        = string
+}
+
+variable "stripe_app_client_link_id" {
+  description = "Stripe App OAuth client link ID"
+  type        = string
+}

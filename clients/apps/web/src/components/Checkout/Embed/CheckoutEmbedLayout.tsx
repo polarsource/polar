@@ -15,8 +15,8 @@ const CheckoutEmbedLayout = ({
       className={theme === 'dark' ? 'dark' : 'light'}
       id="polar-embed-layout"
     >
-      <div className="flex h-full w-full items-center justify-center p-0 md:p-12 dark:text-white">
-        <div className="h-full w-full max-w-2xl" id="polar-embed-content">
+      <div className="flex h-full w-full items-center justify-center p-0 md:p-6 dark:text-white">
+        <div className="h-full w-full max-w-lg" id="polar-embed-content">
           {children}
         </div>
       </div>

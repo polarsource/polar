@@ -80,6 +80,7 @@ interface BaseCheckoutFormProps {
   locale?: AcceptedLocale
   isWalletPayment?: boolean
   beforeSubmit?: React.ReactNode
+  embed?: boolean
 }
 
 const BaseCheckoutForm = ({
@@ -95,6 +96,7 @@ const BaseCheckoutForm = ({
   locale: localeProp,
   isWalletPayment,
   beforeSubmit,
+  embed,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
     ? isLegacyRecurringProductPrice(checkout.product_price)
@@ -274,12 +276,17 @@ const BaseCheckoutForm = ({
   }, [checkout, interval, t])
 
   return (
-    <div className="flex flex-col justify-between gap-y-24">
-      <div className="flex flex-col gap-y-12">
+    <div
+      className={cn(
+        'flex flex-col justify-between',
+        embed ? 'gap-y-8' : 'gap-y-24',
+      )}
+    >
+      <div className={cn('flex flex-col', embed ? 'gap-y-8' : 'gap-y-12')}>
         <Form {...form}>
           <form
             onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col gap-y-12"
+            className={cn('flex flex-col', embed ? 'gap-y-8' : 'gap-y-12')}
           >
             <div className="flex flex-col gap-y-6">
               <FormField
@@ -745,6 +752,7 @@ interface CheckoutFormProps {
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
   beforeSubmit?: React.ReactNode
+  embed?: boolean
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {

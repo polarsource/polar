@@ -46,8 +46,6 @@ Turn usage into revenue. Polar is the financial layer for a new generation of in
 
 ## Pricing
 
-No monthly fees and no upfront costs. You only pay a percentage plus a fixed fee on each transaction.
-
 - **Starter** (free): 5.00% + 50¢ per transaction
 - **Pro:** 3.80% + 40¢ per transaction
 - **Growth:** 3.60% + 35¢ per transaction

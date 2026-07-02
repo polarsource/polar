@@ -323,8 +323,6 @@ class TestListResources:
 ## Conventions (enforced in review)
 
 Cross-cutting patterns the team enforces in code review. New backend code is expected to follow them.
-The *why* behind the load-bearing ones is recorded as ADRs in `handbook/engineering/decisions/`;
-treat Accepted ADRs as binding and cite them when flagging violations.
 
 ### Imports
 Keep `import` statements at module top, never inside functions or methods. Import models from

@@ -120,6 +120,17 @@ Detailed, review-enforced patterns live next to the code — read the relevant f
 **i18n:** add new translatable strings only to `clients/packages/i18n/src/locales/en.ts` — a CI
 job auto-translates the rest. Don't edit other locale files. (More in `clients/AGENTS.md`.)
 
+## Architecture Decisions (ADRs)
+
+Significant, cross-cutting, or hard-to-reverse decisions are recorded as short ADRs in
+`handbook/engineering/decisions/` (see the [index](handbook/engineering/decisions/index.mdx)).
+Treat **Accepted** ADRs as binding:
+
+- Before changing a load-bearing pattern, check for a relevant ADR (grep that directory).
+- If code contradicts an Accepted ADR, flag it and cite the id (e.g. "violates ADR-0002").
+- If a change makes a significant decision no ADR covers, propose a new one from
+  `handbook/engineering/decisions/template.mdx` rather than losing the rationale in the diff.
+
 ## Custom Commands
 
 - `/polar-code-review` — comprehensive review with 3 parallel agents (security, conventions, simplification).

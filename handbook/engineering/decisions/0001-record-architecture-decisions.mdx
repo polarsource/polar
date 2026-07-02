@@ -1,0 +1,51 @@
+---
+title: "ADR-0001: Record architecture decisions"
+description: "We keep short, immutable ADRs for significant, cross-cutting decisions."
+---
+
+<Info>
+**Status**: Accepted
+
+**Area**: Cross-cutting
+
+**Date**: 2026-07-02
+</Info>
+
+## Context
+
+We write [design documents](/engineering/design-documents/index),
+and those are useful to show a feature will work.
+We have some rules in `AGENTS.md` files and lint scripts.
+But most of the conventions in the code are not written.
+New engineers and agents don't have all the context,
+and the rules may be missed.
+
+Design docs don't fill this gap: they're large, forward-looking, and go stale once a feature
+ships. We need a home for short, durable *decision* records.
+
+## Decision
+
+We record conventions or hard-to-reverse decisions as **ADRs** under
+`handbook/engineering/decisions/`, one sequentially numbered file each, from the
+[template](/engineering/decisions/template). One numbered sequence covers the whole
+monorepo, and the **Area** field scopes each ADR (Backend, Frontend, Infra, or Cross-cutting).
+
+## Consequences
+
+- One place to learn *why* the codebase is shaped the way it is, reviewed and published like
+  design docs.
+- Agents and reviewers treat ADRs as binding, cite them when flagging violations,
+  and propose new ones for uncovered decisions.
+- Design docs are unchanged; an ADR may summarize and link to one.
+
+## Alternatives considered
+
+- **Keep everything in `AGENTS.md` or lint only**: captures the *rule* but not the *why* or
+  the alternatives, and mixes binding decisions with tips and setup.
+- **Only write design docs**: those should be used for feature design, being heavy and providing details.
+- **Per-package ADR logs**: fragment cross-tier decisions and duplicate numbering.
+
+## References
+
+- [ADR index and lifecycle](/engineering/decisions/index)
+- [Design documents](/engineering/design-documents/index)

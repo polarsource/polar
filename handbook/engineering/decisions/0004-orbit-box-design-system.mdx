@@ -1,0 +1,47 @@
+---
+title: "ADR-0004: Frontend UI is authored with Orbit Box and design tokens"
+description: "New UI uses the typed Box and Text primitives consuming design tokens; raw div plus Tailwind is deprecated."
+---
+
+<Info>
+**Status**: Accepted
+
+**Area**: Frontend
+
+**Date**: 2026-07-02
+
+**Deciders**: Engineering
+</Info>
+
+## Context
+
+Raw `<div>` plus Tailwind lets anyone (human or agent) invent off-scale spacing and colors,
+forget `dark:` variants, and none of it is type-checked. As AI-authored UI grew, that freedom
+became a consistency and correctness problem.
+
+## Decision
+
+Author UI with `<Box />` and `<Text />` from `@polar-sh/orbit`, passing design tokens as typed
+props. Raw `<div>` plus Tailwind for layout, spacing, color, border, radius, shadow, flex,
+grid, and position is deprecated. Tokens are two-tiered (primitive values feed semantic names);
+`<Box />` takes token names, never raw values. Tailwind remains only for third-party override
+classNames and temporary glue while migrating legacy files.
+
+## Consequences
+
+- Token props resolve light and dark automatically, so no per-element `dark:` duplication, and
+  off-token values become unwriteable. The type system makes the wrong thing hard to write.
+- Custom ESLint rules enforce it: `no-classname-box`, `no-style-box`, `no-classname-text` on
+  web, and `no-view`, `no-text`, `no-hardcoded-colors`, `no-hardcoded-spacing` on the Expo app.
+- Editing a legacy Tailwind file? Migrate it to `<Box />` rather than extend the Tailwind.
+
+## Alternatives considered
+
+- **Tailwind utilities plus `dark:` variants**: per-element dark-mode duplication, arbitrary
+  off-token values, no type safety.
+
+## References
+
+- `clients/packages/orbit/` (`src/components/Box.tsx`, `src/tokens/`).
+- Enforcement: `clients/apps/web/eslint-rules/`, `clients/apps/app/eslint-rules/`.
+- `clients/AGENTS.md`, "UI Authoring Rule".

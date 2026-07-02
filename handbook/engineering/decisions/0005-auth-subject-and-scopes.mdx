@@ -1,0 +1,58 @@
+---
+title: "ADR-0005: Authorization is AuthSubject plus scopes, with per-module authenticators"
+description: "Every request resolves to a typed AuthSubject; endpoints opt into protection via an authenticator; roles add a second per-org layer."
+---
+
+<Info>
+**Status**: Accepted
+
+**Area**: Backend
+
+**Date**: 2026-07-02
+
+**Deciders**: Engineering
+</Info>
+
+## Context
+
+Callers come in several kinds: user tokens and sessions, organization access tokens,
+customer sessions, and anonymous visitors. We want one consistent way to protect endpoints
+across all of them, with no ambient trust and no "forgot to check the token type" bug.
+
+## Decision
+
+Two independent layers.
+
+**1. Who is calling, and with what scopes.** Every request resolves to a typed
+`AuthSubject[T]`: a User, Organization, Customer, or Anonymous. An endpoint protects itself
+by depending on a per-module `Authenticator` (defined in that module's `auth.py`), which fixes
+the `allowed_subjects` it accepts and the `required_scopes` it needs. Rules of thumb:
+
+- No `auth_subject` dependency means the endpoint is public.
+- Dashboard routes use the ready-made `WebUser` / `WebUserOrAnonymous` dependencies, which
+  also require a web session.
+
+**2. What that caller may do inside an org.** Per-org role permissions
+(`OrganizationPermission` / `ROLE_PERMISSIONS`) decide authorization within a single
+organization. This layer is separate from scopes and is combined with layer 1 at policy time.
+
+## Consequences
+
+- A handler typed `AuthSubject[User]` cannot be reached by the wrong subject: a disallowed
+  subject fails closed to Anonymous before the scope check runs.
+- Required scopes surface in the OpenAPI schema.
+- Roles stay per-org and decoupled from token scopes, since tokens are org-agnostic. The role
+  layer is already live in production (webhook, order, and metrics services); further rollout
+  is tracked in the RBAC design doc.
+- In tests, get an `AuthSubject` via the `@pytest.mark.auth` marker, never hand-rolled.
+
+## Alternatives considered
+
+- **Encode per-org roles into token scopes**: either coarsens scopes to a cross-org union
+  (making the check redundant) or churns tokens on every role change. Rejected in the RBAC
+  design doc.
+
+## References
+
+- `server/polar/auth/` (`models.py`, `dependencies.py`, `scope.py`, `permission.py`); per-module `auth.py`.
+- [RBAC design document](/engineering/design-documents/rbac).

@@ -148,14 +148,19 @@ async def end_impersonation(
         )
 
     # Get the current impersonated session to delete it
-    impersonated_user_id = None
+    impersonated_org_id = None
     current_token = request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
     if current_token:
         current_session = await auth_service._get_user_session_by_token(
             session, current_token
         )
         if current_session:
-            impersonated_user_id = current_session.user_id
+            # Impersonation sessions are scoped to a single organization; use it
+            # to send the admin back to that organization in the backoffice.
+            if current_session.organization_scopes:
+                impersonated_org_id = current_session.organization_scopes[
+                    0
+                ].organization_id
             await session.delete(current_session)
 
     # Validate the admin session is still valid
@@ -166,9 +171,9 @@ async def end_impersonation(
             detail="Admin session expired or invalid",
         )
 
-    if impersonated_user_id:
+    if impersonated_org_id:
         response = RedirectResponse(
-            settings.generate_backoffice_url(f"/users/{impersonated_user_id}")
+            settings.generate_backoffice_url(f"/organizations/{impersonated_org_id}")
         )
     else:
         response = RedirectResponse(settings.generate_backoffice_url("/"))

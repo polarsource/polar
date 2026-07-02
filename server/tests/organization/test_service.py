@@ -21,7 +21,6 @@ from polar.kit.http import UrlReachability
 from polar.models import (
     Customer,
     Organization,
-    OrganizationSSOConnection,
     Product,
     User,
     UserOrganization,
@@ -42,11 +41,6 @@ from polar.models.organization import (
 )
 from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_review import OrganizationReview
-from polar.models.organization_sso_connection import (
-    OIDCAuthMethod,
-    OIDCConfiguration,
-    OrganizationSSOConnectionType,
-)
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
 from polar.organization.repository import OrganizationRepository
@@ -327,78 +321,6 @@ class TestCreate:
         assert (
             organization.capabilities == STATUS_CAPABILITIES[OrganizationStatus.CREATED]
         )
-
-
-@pytest.mark.asyncio
-class TestUpdateSSOEnforced:
-    async def _create_connection(
-        self,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        *,
-        enabled: bool,
-    ) -> OrganizationSSOConnection:
-        configuration: OIDCConfiguration = {
-            "issuer": "https://idp.example.com",
-            "client_id": "client-id",
-            "auth_method": OIDCAuthMethod.client_secret,
-            "client_secret": "secret",
-        }
-        connection = OrganizationSSOConnection(
-            organization=organization,
-            type=OrganizationSSOConnectionType.oidc,
-            configuration=configuration,
-            enabled=enabled,
-        )
-        await save_fixture(connection)
-        return connection
-
-    async def test_enable_requires_enabled_connection(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        with pytest.raises(PolarRequestValidationError):
-            await organization_service.update(
-                session, organization, OrganizationUpdate(sso_enforced=True)
-            )
-
-    async def test_enable_ignores_disabled_connection(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        await self._create_connection(save_fixture, organization, enabled=False)
-
-        with pytest.raises(PolarRequestValidationError):
-            await organization_service.update(
-                session, organization, OrganizationUpdate(sso_enforced=True)
-            )
-
-    async def test_enable_with_enabled_connection(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        await self._create_connection(save_fixture, organization, enabled=True)
-
-        result = await organization_service.update(
-            session, organization, OrganizationUpdate(sso_enforced=True)
-        )
-
-        assert result.sso_enforced is True
-
-    async def test_disable_does_not_require_connection(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        organization.sso_enforced = True
-        await session.flush()
-
-        result = await organization_service.update(
-            session, organization, OrganizationUpdate(sso_enforced=False)
-        )
-
-        assert result.sso_enforced is False
 
 
 @pytest.mark.asyncio

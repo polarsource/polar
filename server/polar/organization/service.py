@@ -77,7 +77,6 @@ from polar.payout_account.service import payout_account as payout_account_servic
 from polar.postgres import AsyncReadSession, AsyncSession, sql
 from polar.posthog import posthog
 from polar.product.repository import ProductRepository
-from polar.sso.repository import OrganizationSSOConnectionRepository
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -539,28 +538,6 @@ class OrganizationService:
             await self._validate_currency_change(
                 session, organization, update_schema.default_presentment_currency
             )
-
-        if update_schema.sso_enforced:
-            connection_repository = (
-                OrganizationSSOConnectionRepository.from_session(session)
-            )
-            enabled_connections = (
-                await connection_repository.get_enabled_by_organization(
-                    organization.id
-                )
-            )
-            if not enabled_connections:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "loc": ("body", "sso_enforced"),
-                            "msg": "An enabled SSO connection is required "
-                            "before enforcing SSO.",
-                            "type": "value_error",
-                            "input": True,
-                        }
-                    ]
-                )
 
         update_dict = update_schema.model_dump(
             by_alias=True,

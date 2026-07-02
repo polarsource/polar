@@ -5,6 +5,7 @@ import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
+from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.integrations.polar.service import PolarSelfService
 from polar.models import Product, User
@@ -1361,3 +1362,60 @@ class TestGetReviewStatus:
 
         assert response.status_code == 200
         assert response.json()["appeal_case_id"] is None
+
+
+@pytest.mark.asyncio
+class TestUpdateSSOEnforced:
+    @pytest.mark.auth
+    async def test_enable_from_global_session_forbidden(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # A non-SSO session must not be able to turn on enforcement.
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"sso_enforced": True},
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_enable_from_scoped_session(
+        self,
+        client: AsyncClient,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        auth_subject.organization_ids = frozenset({organization.id})
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"sso_enforced": True},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["sso_enforced"] is True
+
+    @pytest.mark.auth
+    async def test_disable_from_scoped_session(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.sso_enforced = True
+        await save_fixture(organization)
+        auth_subject.organization_ids = frozenset({organization.id})
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"sso_enforced": False},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["sso_enforced"] is False

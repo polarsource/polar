@@ -1,6 +1,7 @@
 'use client'
 
 import { toast } from '@/components/Toast/use-toast'
+import { useAuth } from '@/hooks'
 import {
   useDeleteSSOConnection,
   useSSOConnections,
@@ -19,12 +20,17 @@ import NewSSOConnectionModal from './NewSSOConnectionModal'
 
 const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
   const { isShown, show, hide } = useModal()
+  const { currentUser } = useAuth()
   const connections = useSSOConnections(org.id)
   const updateOrganization = useUpdateOrganization()
 
   const hasEnabledConnection = connections.data?.items?.some(
     (connection) => connection.enabled,
   )
+  // Enforcing is only allowed from a session already authenticated through
+  // this organization's SSO — a scoped session can only reach this org, so
+  // `organization_scoped` here means "signed in via this org's SSO".
+  const canEnforce = currentUser?.organization_scoped ?? false
 
   const toggleEnforced = async () => {
     const { error } = await updateOrganization.mutateAsync({
@@ -84,16 +90,18 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
             <Text variant="caption" color="muted">
               {org.sso_enforced
                 ? 'Members must sign in through SSO to access this organization.'
-                : hasEnabledConnection
-                  ? 'Require members to sign in through SSO to access this organization.'
-                  : 'Add and enable an SSO connection before enforcing SSO.'}
+                : !hasEnabledConnection
+                  ? 'Add and enable an SSO connection before enforcing SSO.'
+                  : !canEnforce
+                    ? 'Sign in through this organization’s SSO to enforce it.'
+                    : 'Require members to sign in through SSO to access this organization.'}
             </Text>
           </Box>
           <Button
             variant="secondary"
             onClick={toggleEnforced}
             loading={updateOrganization.isPending}
-            disabled={!org.sso_enforced && !hasEnabledConnection}
+            disabled={!org.sso_enforced && !canEnforce}
           >
             {org.sso_enforced ? 'Stop enforcing' : 'Enforce'}
           </Button>

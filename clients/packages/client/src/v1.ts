@@ -11219,6 +11219,17 @@ export interface components {
        */
       action: 'allow' | 'deny'
     }
+    /** CannotCreateOrganizationError */
+    CannotCreateOrganizationError: {
+      /**
+       * Error
+       * @example CannotCreateOrganizationError
+       * @constant
+       */
+      error: 'CannotCreateOrganizationError'
+      /** Detail */
+      detail: string
+    }
     /**
      * CardPayment
      * @description Schema of a payment with a card payment method.
@@ -33022,6 +33033,12 @@ export interface components {
        * @description Organizations the user is a member of, with their role on each. Populated by `GET /v1/users/me`; empty otherwise.
        */
       organizations?: components['schemas']['OrganizationWithRole'][]
+      /**
+       * Organization Scoped
+       * @description Whether the current session is restricted to a specific organization. Such sessions cannot access other organizations or create new ones. Populated by `GET /v1/users/me`.
+       * @default false
+       */
+      organization_scoped: boolean
       /** Email Hash */
       readonly email_hash: string | null
     }
@@ -35786,6 +35803,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Organization']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CannotCreateOrganizationError']
         }
       }
       /** @description Validation Error */

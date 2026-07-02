@@ -36,6 +36,7 @@ from polar.models.benefit_grant import BenefitGrantScope
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
 from polar.redis import Redis
+from polar.subscription.repository import SubscriptionRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import can_retry, enqueue_job
 
@@ -238,6 +239,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 grant.properties,
                 attempt=attempt,
                 member=member,
+                subscription=scope.get("subscription"),
             )
         except BenefitActionRequiredError as e:
             if e.grant_properties is not None:
@@ -511,6 +513,13 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             member_repository = MemberRepository.from_session(session)
             member = await member_repository.get_by_id(grant.member_id)
 
+        subscription = None
+        if grant.subscription_id:
+            subscription_repository = SubscriptionRepository.from_session(session)
+            subscription = await subscription_repository.get_by_id(
+                grant.subscription_id
+            )
+
         previous_properties = grant.properties
         benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
         try:
@@ -521,6 +530,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 update=True,
                 attempt=attempt,
                 member=member,
+                subscription=subscription,
             )
         except BenefitActionRequiredError as e:
             if e.grant_properties is not None:

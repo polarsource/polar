@@ -17,6 +17,7 @@ from polar.models import (
     Member,
     Organization,
     SlackApp,
+    Subscription,
     User,
 )
 
@@ -66,6 +67,7 @@ class BenefitSlackSharedChannelService(
         update: bool = False,
         attempt: int = 1,
         member: Member | None = None,
+        subscription: Subscription | None = None,
     ) -> BenefitGrantSlackSharedChannelProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id), customer_id=str(customer.id)

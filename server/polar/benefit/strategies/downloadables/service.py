@@ -12,7 +12,15 @@ from polar.customer_portal.service.downloadables import (
 from polar.exceptions import ValidationError
 from polar.file.repository import FileRepository
 from polar.logging import Logger
-from polar.models import Benefit, Customer, File, Member, Organization, User
+from polar.models import (
+    Benefit,
+    Customer,
+    File,
+    Member,
+    Organization,
+    Subscription,
+    User,
+)
 
 from ..base.service import BenefitPropertiesValidationError, BenefitServiceProtocol
 from . import schemas
@@ -43,6 +51,7 @@ class BenefitDownloadablesService(
         update: bool = False,
         attempt: int = 1,
         member: Member | None = None,
+        subscription: Subscription | None = None,
     ) -> BenefitGrantDownloadablesProperties:
         properties = self._get_properties(benefit)
         file_ids = get_active_file_ids(properties)

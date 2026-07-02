@@ -10,7 +10,7 @@ from polar.event.service import event as event_service
 from polar.event.system import SystemEvent, build_system_event
 from polar.kit.utils import utc_now
 from polar.meter.repository import MeterRepository
-from polar.models import Benefit, Customer, Member, Organization, User
+from polar.models import Benefit, Customer, Member, Organization, Subscription, User
 
 from ..base.service import BenefitPropertiesValidationError, BenefitServiceProtocol
 from .properties import BenefitGrantMeterCreditProperties, BenefitMeterCreditProperties
@@ -30,6 +30,7 @@ class BenefitMeterCreditService(
         update: bool = False,
         attempt: int = 1,
         member: Member | None = None,
+        subscription: Subscription | None = None,
     ) -> BenefitGrantMeterCreditProperties:
         properties = self._get_properties(benefit)
         meter_id = uuid.UUID(properties["meter_id"])

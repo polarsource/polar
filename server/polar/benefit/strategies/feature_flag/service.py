@@ -1,7 +1,7 @@
 from typing import Any, cast
 
 from polar.auth.models import AuthSubject
-from polar.models import Benefit, Customer, Member, Organization, User
+from polar.models import Benefit, Customer, Member, Organization, Subscription, User
 
 from ..base.service import BenefitServiceProtocol
 from .properties import BenefitFeatureFlagProperties, BenefitGrantFeatureFlagProperties
@@ -21,6 +21,7 @@ class BenefitFeatureFlagService(
         update: bool = False,
         attempt: int = 1,
         member: Member | None = None,
+        subscription: Subscription | None = None,
     ) -> BenefitGrantFeatureFlagProperties:
         return {}
 

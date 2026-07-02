@@ -328,8 +328,10 @@ class LicenseKeyService:
         license_key_id: UUID | None = None,
         key: str | None = None,
         member_id: UUID | None = None,
+        set_expiration: bool = True,
     ) -> LicenseKey:
         props = cast(BenefitLicenseKeysProperties, benefit.properties)
+        expires = props.get("expires", None) if set_expiration else None
         if key is not None:
             create_schema = LicenseKeyCreate.build(
                 organization_id=benefit.organization_id,
@@ -338,7 +340,7 @@ class LicenseKeyService:
                 key=key,
                 limit_usage=props.get("limit_usage", None),
                 activations=props.get("activations", None),
-                expires=props.get("expires", None),
+                expires=expires,
             )
         else:
             create_schema = LicenseKeyCreate.build(
@@ -348,7 +350,7 @@ class LicenseKeyService:
                 prefix=props.get("prefix", None),
                 limit_usage=props.get("limit_usage", None),
                 activations=props.get("activations", None),
-                expires=props.get("expires", None),
+                expires=expires,
             )
 
         log.info(

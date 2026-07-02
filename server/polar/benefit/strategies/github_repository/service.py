@@ -17,7 +17,7 @@ from polar.integrations.github_repository_benefit.service import (
     github_repository_benefit_user_service,
 )
 from polar.logging import Logger
-from polar.models import Benefit, Customer, Member, Organization, User
+from polar.models import Benefit, Customer, Member, Organization, Subscription, User
 from polar.models.customer import CustomerOAuthPlatform
 
 from ..base.service import (
@@ -53,6 +53,7 @@ class BenefitGitHubRepositoryService(
         update: bool = False,
         attempt: int = 1,
         member: Member | None = None,
+        subscription: Subscription | None = None,
     ) -> BenefitGrantGitHubRepositoryProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),

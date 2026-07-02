@@ -232,24 +232,24 @@ export default {
     },
     shortCount: {
       day: {
-        _mode: 'plural',
         '=1': '# d',
         other: '# d',
+        _mode: 'plural',
       },
       week: {
-        _mode: 'plural',
         '=1': '# v',
         other: '# v',
+        _mode: 'plural',
       },
       month: {
-        _mode: 'plural',
         '=1': '# mån',
         other: '# mån',
+        _mode: 'plural',
       },
       year: {
-        _mode: 'plural',
         '=1': '# år',
         other: '# år',
+        _mode: 'plural',
       },
     },
   },

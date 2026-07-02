@@ -235,24 +235,24 @@ export default {
     },
     shortCount: {
       day: {
+        '=1': '# g',
+        other: '# g',
         _mode: 'plural',
-        '=1': '# giorno',
-        other: '# giorni',
       },
       week: {
+        '=1': '# sett',
+        other: '# sett',
         _mode: 'plural',
-        '=1': '# settimana',
-        other: '# settimane',
       },
       month: {
+        '=1': '# mes',
+        other: '# mes',
         _mode: 'plural',
-        '=1': '# mese',
-        other: '# mesi',
       },
       year: {
+        '=1': '# a',
+        other: '# a',
         _mode: 'plural',
-        '=1': '# anno',
-        other: '# anni',
       },
     },
   },

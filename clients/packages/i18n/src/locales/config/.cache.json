@@ -172,7 +172,15 @@
     "checkout.benefits.slackSharedChannel.enterEmail": "Enter the email of an admin in your Slack workspace. They'll receive a Slack Connect invite for a private channel.",
     "checkout.benefits.slackSharedChannel.emailPlaceholder": "slack-admin@yourcompany.com",
     "checkout.benefits.slackSharedChannel.tryAgain": "Try again",
-    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite"
+    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite",
+    "intervals.shortCount.day.=1": "# dy",
+    "intervals.shortCount.day.other": "# dy",
+    "intervals.shortCount.week.=1": "# wk",
+    "intervals.shortCount.week.other": "# wk",
+    "intervals.shortCount.month.=1": "# mo",
+    "intervals.shortCount.month.other": "# mo",
+    "intervals.shortCount.year.=1": "# yr",
+    "intervals.shortCount.year.other": "# yr"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -347,7 +355,15 @@
     "checkout.benefits.slackSharedChannel.enterEmail": "Enter the email of an admin in your Slack workspace. They'll receive a Slack Connect invite for a private channel.",
     "checkout.benefits.slackSharedChannel.emailPlaceholder": "slack-admin@yourcompany.com",
     "checkout.benefits.slackSharedChannel.tryAgain": "Try again",
-    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite"
+    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite",
+    "intervals.shortCount.day.=1": "# dy",
+    "intervals.shortCount.day.other": "# dy",
+    "intervals.shortCount.week.=1": "# wk",
+    "intervals.shortCount.week.other": "# wk",
+    "intervals.shortCount.month.=1": "# mo",
+    "intervals.shortCount.month.other": "# mo",
+    "intervals.shortCount.year.=1": "# yr",
+    "intervals.shortCount.year.other": "# yr"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -522,7 +538,15 @@
     "checkout.benefits.slackSharedChannel.enterEmail": "Enter the email of an admin in your Slack workspace. They'll receive a Slack Connect invite for a private channel.",
     "checkout.benefits.slackSharedChannel.emailPlaceholder": "slack-admin@yourcompany.com",
     "checkout.benefits.slackSharedChannel.tryAgain": "Try again",
-    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite"
+    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite",
+    "intervals.shortCount.day.=1": "# dy",
+    "intervals.shortCount.day.other": "# dy",
+    "intervals.shortCount.week.=1": "# wk",
+    "intervals.shortCount.week.other": "# wk",
+    "intervals.shortCount.month.=1": "# mo",
+    "intervals.shortCount.month.other": "# mo",
+    "intervals.shortCount.year.=1": "# yr",
+    "intervals.shortCount.year.other": "# yr"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -697,7 +721,15 @@
     "checkout.benefits.slackSharedChannel.enterEmail": "Enter the email of an admin in your Slack workspace. They'll receive a Slack Connect invite for a private channel.",
     "checkout.benefits.slackSharedChannel.emailPlaceholder": "slack-admin@yourcompany.com",
     "checkout.benefits.slackSharedChannel.tryAgain": "Try again",
-    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite"
+    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite",
+    "intervals.shortCount.day.=1": "# dy",
+    "intervals.shortCount.day.other": "# dy",
+    "intervals.shortCount.week.=1": "# wk",
+    "intervals.shortCount.week.other": "# wk",
+    "intervals.shortCount.month.=1": "# mo",
+    "intervals.shortCount.month.other": "# mo",
+    "intervals.shortCount.year.=1": "# yr",
+    "intervals.shortCount.year.other": "# yr"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -872,7 +904,15 @@
     "checkout.benefits.slackSharedChannel.enterEmail": "Enter the email of an admin in your Slack workspace. They'll receive a Slack Connect invite for a private channel.",
     "checkout.benefits.slackSharedChannel.emailPlaceholder": "slack-admin@yourcompany.com",
     "checkout.benefits.slackSharedChannel.tryAgain": "Try again",
-    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite"
+    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite",
+    "intervals.shortCount.day.=1": "# dy",
+    "intervals.shortCount.day.other": "# dy",
+    "intervals.shortCount.week.=1": "# wk",
+    "intervals.shortCount.week.other": "# wk",
+    "intervals.shortCount.month.=1": "# mo",
+    "intervals.shortCount.month.other": "# mo",
+    "intervals.shortCount.year.=1": "# yr",
+    "intervals.shortCount.year.other": "# yr"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1039,7 +1079,15 @@
     "checkout.benefits.slackSharedChannel.enterEmail": "Enter the email of an admin in your Slack workspace. They'll receive a Slack Connect invite for a private channel.",
     "checkout.benefits.slackSharedChannel.emailPlaceholder": "slack-admin@yourcompany.com",
     "checkout.benefits.slackSharedChannel.tryAgain": "Try again",
-    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite"
+    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite",
+    "intervals.shortCount.day.=1": "# dy",
+    "intervals.shortCount.day.other": "# dy",
+    "intervals.shortCount.week.=1": "# wk",
+    "intervals.shortCount.week.other": "# wk",
+    "intervals.shortCount.month.=1": "# mo",
+    "intervals.shortCount.month.other": "# mo",
+    "intervals.shortCount.year.=1": "# yr",
+    "intervals.shortCount.year.other": "# yr"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1206,7 +1254,15 @@
     "checkout.benefits.slackSharedChannel.enterEmail": "Enter the email of an admin in your Slack workspace. They'll receive a Slack Connect invite for a private channel.",
     "checkout.benefits.slackSharedChannel.emailPlaceholder": "slack-admin@yourcompany.com",
     "checkout.benefits.slackSharedChannel.tryAgain": "Try again",
-    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite"
+    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite",
+    "intervals.shortCount.day.=1": "# dy",
+    "intervals.shortCount.day.other": "# dy",
+    "intervals.shortCount.week.=1": "# wk",
+    "intervals.shortCount.week.other": "# wk",
+    "intervals.shortCount.month.=1": "# mo",
+    "intervals.shortCount.month.other": "# mo",
+    "intervals.shortCount.year.=1": "# yr",
+    "intervals.shortCount.year.other": "# yr"
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1373,7 +1429,15 @@
     "checkout.benefits.slackSharedChannel.enterEmail": "Enter the email of an admin in your Slack workspace. They'll receive a Slack Connect invite for a private channel.",
     "checkout.benefits.slackSharedChannel.emailPlaceholder": "slack-admin@yourcompany.com",
     "checkout.benefits.slackSharedChannel.tryAgain": "Try again",
-    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite"
+    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite",
+    "intervals.shortCount.day.=1": "# dy",
+    "intervals.shortCount.day.other": "# dy",
+    "intervals.shortCount.week.=1": "# wk",
+    "intervals.shortCount.week.other": "# wk",
+    "intervals.shortCount.month.=1": "# mo",
+    "intervals.shortCount.month.other": "# mo",
+    "intervals.shortCount.year.=1": "# yr",
+    "intervals.shortCount.year.other": "# yr"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1540,7 +1604,15 @@
     "checkout.benefits.slackSharedChannel.enterEmail": "Enter the email of an admin in your Slack workspace. They'll receive a Slack Connect invite for a private channel.",
     "checkout.benefits.slackSharedChannel.emailPlaceholder": "slack-admin@yourcompany.com",
     "checkout.benefits.slackSharedChannel.tryAgain": "Try again",
-    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite"
+    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite",
+    "intervals.shortCount.day.=1": "# dy",
+    "intervals.shortCount.day.other": "# dy",
+    "intervals.shortCount.week.=1": "# wk",
+    "intervals.shortCount.week.other": "# wk",
+    "intervals.shortCount.month.=1": "# mo",
+    "intervals.shortCount.month.other": "# mo",
+    "intervals.shortCount.year.=1": "# yr",
+    "intervals.shortCount.year.other": "# yr"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1707,7 +1779,15 @@
     "checkout.benefits.slackSharedChannel.enterEmail": "Enter the email of an admin in your Slack workspace. They'll receive a Slack Connect invite for a private channel.",
     "checkout.benefits.slackSharedChannel.emailPlaceholder": "slack-admin@yourcompany.com",
     "checkout.benefits.slackSharedChannel.tryAgain": "Try again",
-    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite"
+    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite",
+    "intervals.shortCount.day.=1": "# dy",
+    "intervals.shortCount.day.other": "# dy",
+    "intervals.shortCount.week.=1": "# wk",
+    "intervals.shortCount.week.other": "# wk",
+    "intervals.shortCount.month.=1": "# mo",
+    "intervals.shortCount.month.other": "# mo",
+    "intervals.shortCount.year.=1": "# yr",
+    "intervals.shortCount.year.other": "# yr"
   },
   "ja": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1874,7 +1954,15 @@
     "checkout.benefits.slackSharedChannel.enterEmail": "Enter the email of an admin in your Slack workspace. They'll receive a Slack Connect invite for a private channel.",
     "checkout.benefits.slackSharedChannel.emailPlaceholder": "slack-admin@yourcompany.com",
     "checkout.benefits.slackSharedChannel.tryAgain": "Try again",
-    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite"
+    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite",
+    "intervals.shortCount.day.=1": "# dy",
+    "intervals.shortCount.day.other": "# dy",
+    "intervals.shortCount.week.=1": "# wk",
+    "intervals.shortCount.week.other": "# wk",
+    "intervals.shortCount.month.=1": "# mo",
+    "intervals.shortCount.month.other": "# mo",
+    "intervals.shortCount.year.=1": "# yr",
+    "intervals.shortCount.year.other": "# yr"
   },
   "tr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2041,7 +2129,15 @@
     "checkout.benefits.slackSharedChannel.enterEmail": "Enter the email of an admin in your Slack workspace. They'll receive a Slack Connect invite for a private channel.",
     "checkout.benefits.slackSharedChannel.emailPlaceholder": "slack-admin@yourcompany.com",
     "checkout.benefits.slackSharedChannel.tryAgain": "Try again",
-    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite"
+    "checkout.benefits.slackSharedChannel.requestInvite": "Request Slack invite",
+    "intervals.shortCount.day.=1": "# dy",
+    "intervals.shortCount.day.other": "# dy",
+    "intervals.shortCount.week.=1": "# wk",
+    "intervals.shortCount.week.other": "# wk",
+    "intervals.shortCount.month.=1": "# mo",
+    "intervals.shortCount.month.other": "# mo",
+    "intervals.shortCount.year.=1": "# yr",
+    "intervals.shortCount.year.other": "# yr"
   },
   "pl": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2208,6 +2304,14 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "intervals.shortCount.day.=1": "# dy",
+    "intervals.shortCount.day.other": "# dy",
+    "intervals.shortCount.week.=1": "# wk",
+    "intervals.shortCount.week.other": "# wk",
+    "intervals.shortCount.month.=1": "# mo",
+    "intervals.shortCount.month.other": "# mo",
+    "intervals.shortCount.year.=1": "# yr",
+    "intervals.shortCount.year.other": "# yr"
   }
 }

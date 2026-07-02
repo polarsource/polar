@@ -236,24 +236,24 @@ export default {
     },
     shortCount: {
       day: {
-        _mode: 'plural',
         '=1': '#日',
         other: '#日',
+        _mode: 'plural',
       },
       week: {
+        '=1': '#週',
+        other: '#週',
         _mode: 'plural',
-        '=1': '#週間',
-        other: '#週間',
       },
       month: {
+        '=1': '#か月',
+        other: '#か月',
         _mode: 'plural',
-        '=1': '#ヶ月',
-        other: '#ヶ月',
       },
       year: {
-        _mode: 'plural',
         '=1': '#年',
         other: '#年',
+        _mode: 'plural',
       },
     },
   },

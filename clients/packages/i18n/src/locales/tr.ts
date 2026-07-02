@@ -233,24 +233,24 @@ export default {
     },
     shortCount: {
       day: {
-        _mode: 'plural',
         '=1': '# gün',
         other: '# gün',
+        _mode: 'plural',
       },
       week: {
+        '=1': '# hf',
+        other: '# hf',
         _mode: 'plural',
-        '=1': '# hafta',
-        other: '# hafta',
       },
       month: {
-        _mode: 'plural',
         '=1': '# ay',
         other: '# ay',
+        _mode: 'plural',
       },
       year: {
-        _mode: 'plural',
         '=1': '# yıl',
         other: '# yıl',
+        _mode: 'plural',
       },
     },
   },

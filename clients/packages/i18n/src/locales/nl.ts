@@ -235,24 +235,24 @@ export default {
     },
     shortCount: {
       day: {
+        '=1': '# dgn',
+        other: '# dgn',
         _mode: 'plural',
-        '=1': '# dg',
-        other: '# dg',
       },
       week: {
-        _mode: 'plural',
         '=1': '# wk',
         other: '# wk',
+        _mode: 'plural',
       },
       month: {
-        _mode: 'plural',
         '=1': '# mnd',
         other: '# mnd',
+        _mode: 'plural',
       },
       year: {
-        _mode: 'plural',
         '=1': '# jr',
         other: '# jr',
+        _mode: 'plural',
       },
     },
   },

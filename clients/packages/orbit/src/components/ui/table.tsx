@@ -96,11 +96,4 @@ const TableCell = ({
 )
 TableCell.displayName = 'TableCell'
 
-export {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-}
+export { Table, TableBody, TableCell, TableHead, TableHeader, TableRow }

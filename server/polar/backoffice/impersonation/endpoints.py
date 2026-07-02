@@ -42,6 +42,9 @@ async def start_impersonation(
 ) -> Any:  # RedirectResponse | HXRedirectResponse:
     """Start impersonating a user. Only available to admin users."""
 
+    # Allow non-secure cookies over local http (backoffice dev).
+    secure_cookie = request.url.hostname not in ("127.0.0.1", "localhost")
+
     # Get the target user
     result = await session.execute(select(User).where(User.id == user_id))
     target_user = result.unique().scalar_one_or_none()
@@ -91,7 +94,7 @@ async def start_impersonation(
             expires=admin_session.expires_at,
             path="/",
             domain=settings.USER_SESSION_COOKIE_DOMAIN,
-            secure=True,
+            secure=secure_cookie,
             httponly=True,
             samesite="lax",
         )
@@ -103,7 +106,7 @@ async def start_impersonation(
         expires=impersonation_session.expires_at,
         path="/",
         domain=settings.USER_SESSION_COOKIE_DOMAIN,
-        secure=True,
+        secure=secure_cookie,
         httponly=True,
         samesite="lax",
     )
@@ -115,7 +118,7 @@ async def start_impersonation(
         expires=impersonation_session.expires_at,
         path="/",
         domain=settings.USER_SESSION_COOKIE_DOMAIN,
-        secure=True,
+        secure=secure_cookie,
         httponly=False,  # JS-readable
         samesite="lax",
     )
@@ -129,6 +132,9 @@ async def end_impersonation(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
     """End impersonation and restore the admin session."""
+
+    # Allow non-secure cookies over local http (backoffice dev).
+    secure_cookie = request.url.hostname not in ("127.0.0.1", "localhost")
 
     # Get the admin session token
     admin_token = request.cookies.get(settings.IMPERSONATION_COOKIE_KEY)
@@ -170,7 +176,7 @@ async def end_impersonation(
         expires=admin_session.expires_at,
         path="/",
         domain=settings.USER_SESSION_COOKIE_DOMAIN,
-        secure=True,
+        secure=secure_cookie,
         httponly=True,
         samesite="lax",
     )

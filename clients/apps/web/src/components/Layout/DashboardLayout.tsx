@@ -1,6 +1,7 @@
 'use client'
 
 import LogoIcon from '@/components/Brand/logos/LogoIcon'
+import { CompassIntroModal } from '@/components/Compass/CompassIntroModal'
 import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { useAuth } from '@/hooks/auth'
@@ -48,6 +49,9 @@ const DashboardLayout = (
 
   return (
     <DashboardProvider organization={organization}>
+      {props.type !== 'account' && organization && (
+        <CompassIntroModal organization={organization} />
+      )}
       <div className="relative flex h-full w-full flex-col bg-white md:flex-row md:bg-gray-100 md:p-2 dark:bg-transparent">
         <MobileNav />
         <div className="hidden md:flex">

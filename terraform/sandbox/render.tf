@@ -307,6 +307,55 @@ module "sandbox" {
 }
 
 # =============================================================================
+# PgBouncer
+# =============================================================================
+
+module "pgbouncer" {
+  source = "../modules/pgbouncer"
+
+  environment            = "sandbox"
+  render_environment_id  = data.tfe_outputs.production.values.sandbox_environment_id
+  registry_credential_id = render_registry_credential.ghcr.id
+
+  database = {
+    host     = local.db_internal_host
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
+  }
+
+  pool_config = {
+    max_client_conn   = "1000"
+    default_pool_size = "20"
+  }
+
+  depends_on = [render_registry_credential.ghcr, data.render_postgres.db]
+}
+
+module "pgbouncer_read" {
+  source = "../modules/pgbouncer"
+
+  name                   = "pgbouncer-read"
+  environment            = "sandbox"
+  render_environment_id  = data.tfe_outputs.production.values.sandbox_environment_id
+  registry_credential_id = render_registry_credential.ghcr.id
+
+  database = {
+    host     = local.read_replica.id
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
+  }
+
+  pool_config = {
+    max_client_conn   = "1000"
+    default_pool_size = "20"
+  }
+
+  depends_on = [render_registry_credential.ghcr, data.render_postgres.db]
+}
+
+# =============================================================================
 # Cloudflare DNS
 # =============================================================================
 import {

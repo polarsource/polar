@@ -119,14 +119,24 @@ class OAuthAccount(RecordModel):
             return True
         return False
 
-    def to_dataclass(self, scope: list[str]) -> OAuth2EnrollmentDataclass:
+    async def get_access_token(self) -> str:
+        if self.access_token_encrypted is not None:
+            return await self.access_token_encrypted.decrypt(id=str(self.id))
+        return self.access_token
+
+    async def get_refresh_token(self) -> str | None:
+        if self.refresh_token_encrypted is not None:
+            return await self.refresh_token_encrypted.decrypt(id=str(self.id))
+        return self.refresh_token
+
+    async def to_dataclass(self, scope: list[str]) -> OAuth2EnrollmentDataclass:
         return OAuth2EnrollmentDataclass(
             id=self.id,
             provider=self.platform,
             scope=scope,
-            access_token=self.access_token,
+            access_token=await self.get_access_token(),
             expires_at=self.expires_at,
-            refresh_token=self.refresh_token,
+            refresh_token=await self.get_refresh_token(),
             refresh_token_expires_at=self.refresh_token_expires_at,
             account_id=self.account_id,
             identity_id=self.user_id,

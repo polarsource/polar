@@ -103,6 +103,46 @@ class TestEncryptClassmethods:
 
 
 @pytest.mark.asyncio
+class TestGetTokens:
+    async def test_prefers_encrypted(self, user: User) -> None:
+        oauth_account = await _build(user)
+        await oauth_account.set_tokens(
+            access_token="the-access-token", refresh_token="the-refresh-token"
+        )
+
+        assert await oauth_account.get_access_token() == "the-access-token"
+        assert await oauth_account.get_refresh_token() == "the-refresh-token"
+
+    async def test_falls_back_to_plain(self, user: User) -> None:
+        oauth_account = await _build(user)
+        oauth_account.id = OAuthAccount.generate_id()
+        oauth_account.access_token = "the-access-token"
+        oauth_account.refresh_token = "the-refresh-token"
+
+        assert await oauth_account.get_access_token() == "the-access-token"
+        assert await oauth_account.get_refresh_token() == "the-refresh-token"
+
+    async def test_refresh_token_none_without_encrypted(self, user: User) -> None:
+        oauth_account = await _build(user)
+        oauth_account.id = OAuthAccount.generate_id()
+        oauth_account.access_token = "the-access-token"
+        oauth_account.refresh_token = None
+
+        assert await oauth_account.get_refresh_token() is None
+
+    async def test_to_dataclass_decrypts_tokens(self, user: User) -> None:
+        oauth_account = await _build(user)
+        await oauth_account.set_tokens(
+            access_token="the-access-token", refresh_token="the-refresh-token"
+        )
+
+        enrollment = await oauth_account.to_dataclass(["scope"])
+
+        assert enrollment.access_token == "the-access-token"
+        assert enrollment.refresh_token == "the-refresh-token"
+
+
+@pytest.mark.asyncio
 class TestPersistence:
     async def test_round_trip_through_database(
         self, save_fixture: SaveFixture, session: AsyncSession, user: User

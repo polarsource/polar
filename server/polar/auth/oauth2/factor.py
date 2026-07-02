@@ -33,7 +33,7 @@ class OAuth2FactorMixin:
         enrollment_orm = result.scalar_one_or_none()
         if enrollment_orm is None:
             return None
-        return enrollment_orm.to_dataclass(self.SCOPE)
+        return await enrollment_orm.to_dataclass(self.SCOPE)
 
     async def insert(
         self: OAuth2FactorProtocol, enrollment: OAuth2EnrollmentDataclass
@@ -97,7 +97,7 @@ class OAuth2FactorMixin:
         enrollment_orm = result.scalar_one_or_none()
         if enrollment_orm is None:
             return None
-        return enrollment_orm.to_dataclass(self.SCOPE)
+        return await enrollment_orm.to_dataclass(self.SCOPE)
 
     async def get_email(
         self, callback_result: OAuth2EnrollmentDataclass | OAuth2Account

@@ -1,13 +1,13 @@
 """Flag membership resolution that bypasses the session org down-scope.
 
 Resolving "which organizations can this subject access?" must go through the
-**scope-aware** helpers so the session/token down-scope (`organization_ids`) is
-always applied: `select_accessible_org_ids(auth_subject)` (subquery) or
-`get_accessible_org_ids(...)` (service), and `get_accessible_organization(...)`
-for a single org. The *raw* helpers (`select_user_org_ids`,
-`get_organizations_with_role`) answer plain membership with **no** down-scope, so
-using them where an `auth_subject` is in play silently leaks other orgs (see the
-`/me` org-switcher regression).
+**scope-aware** helpers so the session/token down-scope (`organization_ids`) and
+SSO enforcement are always applied: `select_accessible_org_ids(auth_subject)`
+(subquery) or `get_accessible_org_ids(...)` (service), and
+`get_accessible_organization(...)` for a single org. The *raw* helpers
+(`select_user_org_ids`, `get_organizations_with_role`) answer plain membership
+with **no** down-scope or SSO check, so using them where an `auth_subject` is in
+play silently leaks other orgs (see the `/me` org-switcher regression).
 
 Rules:
 - Flag `select(UserOrganization.organization_id)` — hand-building the

@@ -79,8 +79,10 @@ class ResourceRepository(
 (`polar.authz.service`) at the service layer. Use `select_user_org_ids(user_id)`
 only when you need raw membership (e.g., OAuth consent) without session scope.
 Never inline a `UserOrganization.user_id == auth_subject...` filter — those
-helpers are the single point where session/token org-scoping is enforced, so an
-inline subquery silently bypasses it. Enforced by `uv run task lint_org_scope`.
+helpers are the single point where session/token org-scoping and SSO enforcement
+are applied. Unscoped user sessions cannot reach organizations that enforce SSO
+(`sso_enforced`); token credentials (PAT/OAuth) are exempt. Enforced by `uv run
+task lint_org_scope`.
 
 **Key methods from base:**
 - `get_base_statement()` - Returns `select(self.model)`

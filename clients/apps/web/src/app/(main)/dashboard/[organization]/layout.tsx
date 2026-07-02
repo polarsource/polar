@@ -1,20 +1,25 @@
 import { AccountSetupProvider } from '@/providers/accountSetup'
 import { OrganizationContextProvider } from '@/providers/maintainerOrganization'
 import { getServerSideAPI } from '@/utils/client/serverside'
-import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { getUserOrganizations } from '@/utils/user'
+import {
+  getOrganizationBySlug,
+  getOrganizationBySlugOrNotFound,
+} from '@/utils/organization'
+import { getAuthenticatedUser } from '@/utils/user'
 import { Metadata } from 'next'
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 
 export async function generateMetadata(props: {
   params: Promise<{ organization: string }>
 }): Promise<Metadata> {
   const params = await props.params
   const api = await getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
-    api,
-    params.organization,
-  )
+  // Non-throwing: access is enforced in the layout, so metadata must not 404 a
+  // member who needs to re-authenticate through SSO.
+  const organization = await getOrganizationBySlug(api, params.organization)
+  if (!organization) {
+    return { title: 'Polar' }
+  }
   return {
     title: {
       template: `%s | ${organization.name} | Polar`,
@@ -28,31 +33,33 @@ export default async function Layout(props: {
   children: React.ReactNode
 }) {
   const params = await props.params
-
   const { children } = props
+  const slug = params.organization
+
+  const user = await getAuthenticatedUser()
+  const organizations = user?.organizations ?? []
+  const memberOrganizations = user?.member_organizations ?? []
+
+  if (!organizations.some((org) => org.slug === slug)) {
+    // Not accessible in this session. A member of an org that enforces SSO must
+    // re-authenticate through SSO; a non-member gets a 404 (no leak).
+    const membership = memberOrganizations.find((org) => org.slug === slug)
+    if (membership?.requires_sso) {
+      redirect(`/auth/sso/${slug}`)
+    }
+    if (!membership) {
+      notFound()
+    }
+    redirect('/dashboard')
+  }
 
   const api = await getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
-    api,
-    params.organization,
-  )
-
-  const userOrganizations = await getUserOrganizations()
-
-  if (!userOrganizations.some((org) => org.id === organization.id)) {
-    // An org that enforces SSO is only reachable through an SSO-scoped session,
-    // so send the user to re-authenticate via SSO rather than bouncing them to
-    // the dashboard root.
-    if (organization.sso_enforced) {
-      return redirect(`/auth/sso/${organization.slug}`)
-    }
-    return redirect('/dashboard')
-  }
+  const organization = await getOrganizationBySlugOrNotFound(api, slug)
 
   return (
     <OrganizationContextProvider
       organization={organization}
-      organizations={userOrganizations}
+      organizations={organizations}
     >
       <AccountSetupProvider>{children}</AccountSetupProvider>
     </OrganizationContextProvider>

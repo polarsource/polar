@@ -1,6 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
+from polar.auth.models import AuthSubject
 from polar.auth.scope import READ_ONLY_SCOPES
 from polar.kit.utils import utc_now
 from polar.models import Organization, User, UserOrganization
@@ -61,6 +62,47 @@ async def test_get_users_me_excludes_blocked_organizations(
 
     assert response.status_code == 200
     assert response.json()["organizations"] == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.auth
+async def test_get_users_me_excludes_sso_enforced_org_for_global_session(
+    client: AsyncClient,
+    save_fixture: SaveFixture,
+    organization: Organization,
+    user_organization: UserOrganization,
+) -> None:
+    # A non-SSO session cannot reach an org that enforces SSO, so it must not
+    # appear in the org list either — otherwise the dashboard lets the user in
+    # and every scoped query then comes back empty.
+    organization.sso_enforced = True
+    await save_fixture(organization)
+
+    response = await client.get("/v1/users/me")
+
+    assert response.status_code == 200
+    assert response.json()["organizations"] == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.auth
+async def test_get_users_me_includes_sso_enforced_org_for_sso_session(
+    client: AsyncClient,
+    save_fixture: SaveFixture,
+    auth_subject: AuthSubject[User],
+    organization: Organization,
+    user_organization: UserOrganization,
+) -> None:
+    organization.sso_enforced = True
+    await save_fixture(organization)
+    auth_subject.organization_ids = frozenset({organization.id})
+
+    response = await client.get("/v1/users/me")
+
+    assert response.status_code == 200
+    organizations = response.json()["organizations"]
+    assert len(organizations) == 1
+    assert organizations[0]["id"] == str(organization.id)
 
 
 @pytest.mark.asyncio

@@ -231,6 +231,28 @@ export default {
       month: 'a',
       year: 'y',
     },
+    shortCount: {
+      day: {
+        _mode: 'plural',
+        '=1': '# gün',
+        other: '# gün',
+      },
+      week: {
+        _mode: 'plural',
+        '=1': '# hafta',
+        other: '# hafta',
+      },
+      month: {
+        _mode: 'plural',
+        '=1': '# ay',
+        other: '# ay',
+      },
+      year: {
+        _mode: 'plural',
+        '=1': '# yıl',
+        other: '# yıl',
+      },
+    },
   },
   benefitTypes: {
     license_keys: 'Lisans anahtarları',

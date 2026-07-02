@@ -231,6 +231,28 @@ export default {
       month: 'hó',
       year: 'év',
     },
+    shortCount: {
+      day: {
+        _mode: 'plural',
+        '=1': '# nap',
+        other: '# nap',
+      },
+      week: {
+        _mode: 'plural',
+        '=1': '# hét',
+        other: '# hét',
+      },
+      month: {
+        _mode: 'plural',
+        '=1': '# hó',
+        other: '# hó',
+      },
+      year: {
+        _mode: 'plural',
+        '=1': '# év',
+        other: '# év',
+      },
+    },
   },
   benefitTypes: {
     custom: 'Egyedi',

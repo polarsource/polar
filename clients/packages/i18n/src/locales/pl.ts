@@ -233,6 +233,28 @@ export default {
       month: 'mies.',
       year: 'r.',
     },
+    shortCount: {
+      day: {
+        _mode: 'plural',
+        '=1': '# dz.',
+        other: '# dz.',
+      },
+      week: {
+        _mode: 'plural',
+        '=1': '# tyg.',
+        other: '# tyg.',
+      },
+      month: {
+        _mode: 'plural',
+        '=1': '# mies.',
+        other: '# mies.',
+      },
+      year: {
+        _mode: 'plural',
+        '=1': '# r.',
+        other: '# l.',
+      },
+    },
   },
   benefitTypes: {
     custom: 'Niestandardowe',

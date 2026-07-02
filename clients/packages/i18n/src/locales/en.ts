@@ -281,6 +281,28 @@ export default {
       month: 'mo',
       year: 'yr',
     },
+    shortCount: {
+      day: {
+        _mode: 'plural',
+        '=1': '# dy',
+        other: '# dy',
+      },
+      week: {
+        _mode: 'plural',
+        '=1': '# wk',
+        other: '# wk',
+      },
+      month: {
+        _mode: 'plural',
+        '=1': '# mo',
+        other: '# mo',
+      },
+      year: {
+        _mode: 'plural',
+        '=1': '# yr',
+        other: '# yr',
+      },
+    },
   },
   benefitTypes: {
     license_keys: 'License keys',

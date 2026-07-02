@@ -133,6 +133,78 @@ describe('AmountLabel', () => {
       expect(container.textContent).toContain('/ 2 yr')
       expect(container.textContent).not.toContain('2nd')
     })
+
+    it('renders cardinal French label for every 3 months', () => {
+      const { container } = render(
+        <AmountLabel
+          amount={2999}
+          currency="eur"
+          interval="month"
+          intervalCount={3}
+          mode="standard"
+          locale="fr"
+        />,
+      )
+      expect(container.textContent).toContain('/ 3 mois')
+      expect(container.textContent).not.toContain('3e')
+    })
+
+    it('renders pluralized Italian label for every 3 months', () => {
+      const { container } = render(
+        <AmountLabel
+          amount={2999}
+          currency="eur"
+          interval="month"
+          intervalCount={3}
+          mode="standard"
+          locale="it"
+        />,
+      )
+      expect(container.textContent).toContain('/ 3 mesi')
+    })
+
+    it('renders pluralized Portuguese label for every 2 years', () => {
+      const { container } = render(
+        <AmountLabel
+          amount={19999}
+          currency="eur"
+          interval="year"
+          intervalCount={2}
+          mode="standard"
+          locale="pt"
+        />,
+      )
+      expect(container.textContent).toContain('/ 2 anos')
+    })
+
+    it('renders Japanese month counter for every 3 months', () => {
+      const { container } = render(
+        <AmountLabel
+          amount={2999}
+          currency="jpy"
+          interval="month"
+          intervalCount={3}
+          mode="standard"
+          locale="ja"
+        />,
+      )
+      expect(container.textContent).toContain('/ 3ヶ月')
+      expect(container.textContent).not.toContain('3 月')
+    })
+
+    it('renders Korean month counter for every 3 months', () => {
+      const { container } = render(
+        <AmountLabel
+          amount={2999}
+          currency="usd"
+          interval="month"
+          intervalCount={3}
+          mode="standard"
+          locale="ko"
+        />,
+      )
+      expect(container.textContent).toContain('/ 3개월')
+    })
   })
 
   describe('intervalCount = 1 (no ordinal)', () => {

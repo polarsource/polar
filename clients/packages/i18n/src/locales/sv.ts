@@ -230,6 +230,28 @@ export default {
       month: 'mån',
       year: 'år',
     },
+    shortCount: {
+      day: {
+        _mode: 'plural',
+        '=1': '# d',
+        other: '# d',
+      },
+      week: {
+        _mode: 'plural',
+        '=1': '# v',
+        other: '# v',
+      },
+      month: {
+        _mode: 'plural',
+        '=1': '# mån',
+        other: '# mån',
+      },
+      year: {
+        _mode: 'plural',
+        '=1': '# år',
+        other: '# år',
+      },
+    },
   },
   benefitTypes: {
     custom: 'Anpassad',

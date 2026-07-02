@@ -233,6 +233,28 @@ export default {
       month: 'mnd',
       year: 'jr',
     },
+    shortCount: {
+      day: {
+        _mode: 'plural',
+        '=1': '# dg',
+        other: '# dg',
+      },
+      week: {
+        _mode: 'plural',
+        '=1': '# wk',
+        other: '# wk',
+      },
+      month: {
+        _mode: 'plural',
+        '=1': '# mnd',
+        other: '# mnd',
+      },
+      year: {
+        _mode: 'plural',
+        '=1': '# jr',
+        other: '# jr',
+      },
+    },
   },
   benefitTypes: {
     custom: 'Aangepast',

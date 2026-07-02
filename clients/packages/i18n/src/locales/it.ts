@@ -233,6 +233,28 @@ export default {
       month: 'mese',
       year: 'anno',
     },
+    shortCount: {
+      day: {
+        _mode: 'plural',
+        '=1': '# giorno',
+        other: '# giorni',
+      },
+      week: {
+        _mode: 'plural',
+        '=1': '# settimana',
+        other: '# settimane',
+      },
+      month: {
+        _mode: 'plural',
+        '=1': '# mese',
+        other: '# mesi',
+      },
+      year: {
+        _mode: 'plural',
+        '=1': '# anno',
+        other: '# anni',
+      },
+    },
   },
   benefitTypes: {
     custom: 'Personalizzato',

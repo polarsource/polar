@@ -234,6 +234,28 @@ export default {
       month: '月',
       year: '年',
     },
+    shortCount: {
+      day: {
+        _mode: 'plural',
+        '=1': '#日',
+        other: '#日',
+      },
+      week: {
+        _mode: 'plural',
+        '=1': '#週間',
+        other: '#週間',
+      },
+      month: {
+        _mode: 'plural',
+        '=1': '#ヶ月',
+        other: '#ヶ月',
+      },
+      year: {
+        _mode: 'plural',
+        '=1': '#年',
+        other: '#年',
+      },
+    },
   },
   benefitTypes: {
     license_keys: 'ライセンスキー',

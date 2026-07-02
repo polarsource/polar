@@ -232,6 +232,28 @@ export default {
       month: 'm',
       year: 'a',
     },
+    shortCount: {
+      day: {
+        _mode: 'plural',
+        '=1': '# día',
+        other: '# días',
+      },
+      week: {
+        _mode: 'plural',
+        '=1': '# sem',
+        other: '# sem',
+      },
+      month: {
+        _mode: 'plural',
+        '=1': '# mes',
+        other: '# meses',
+      },
+      year: {
+        _mode: 'plural',
+        '=1': '# año',
+        other: '# años',
+      },
+    },
   },
   benefitTypes: {
     custom: 'Personalizado',

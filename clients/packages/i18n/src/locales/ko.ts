@@ -229,6 +229,28 @@ export default {
       month: '월',
       year: '년',
     },
+    shortCount: {
+      day: {
+        _mode: 'plural',
+        '=1': '#일',
+        other: '#일',
+      },
+      week: {
+        _mode: 'plural',
+        '=1': '#주',
+        other: '#주',
+      },
+      month: {
+        _mode: 'plural',
+        '=1': '#개월',
+        other: '#개월',
+      },
+      year: {
+        _mode: 'plural',
+        '=1': '#년',
+        other: '#년',
+      },
+    },
   },
   benefitTypes: {
     custom: '사용자 지정',

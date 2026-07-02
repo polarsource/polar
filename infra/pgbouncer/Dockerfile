@@ -1,5 +1,5 @@
 FROM debian:trixie-slim
-
+ARG PGBOUNCER_APT_VERSION=1.25.2-1.pgdg13+1
 RUN apt-get -qq update \
   && apt-get -qq install -y --no-install-recommends \
     ca-certificates \

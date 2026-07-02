@@ -435,14 +435,23 @@ export const useReplyToSupportCase = () =>
       caseId,
       body,
       file_ids,
+      dispute_win_reason,
+      dispute_win_reason_other,
     }: {
       caseId: string
       body?: string
       file_ids?: string[]
+      dispute_win_reason?: schemas['DisputeWinReason'] | null
+      dispute_win_reason_other?: string | null
     }) =>
       api.POST('/v1/support-cases/{id}/messages', {
         params: { path: { id: caseId } },
-        body: { body: body || null, file_ids },
+        body: {
+          body: body || null,
+          file_ids,
+          dispute_win_reason,
+          dispute_win_reason_other,
+        },
       }),
     onSuccess: async (result, { caseId }) => {
       if (result.error) return

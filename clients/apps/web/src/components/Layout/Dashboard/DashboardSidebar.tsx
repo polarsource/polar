@@ -1,4 +1,5 @@
 import { SupportButton } from '@/components/Feedback/SupportButton'
+import { useAuth } from '@/hooks/auth'
 import { NotificationsPopover } from '@/components/Notifications/NotificationsPopover'
 import { OmniSearch } from '@/components/Search/OmniSearch'
 import { CONFIG } from '@/utils/config'
@@ -50,6 +51,7 @@ export const DashboardSidebar = ({
 }) => {
   const router = useRouter()
   const { state } = useSidebar()
+  const { currentUser } = useAuth()
 
   const isCollapsed = state === 'collapsed'
   const [searchOpen, setSearchOpen] = useState(false)
@@ -232,15 +234,17 @@ export const DashboardSidebar = ({
                     </DropdownMenuItem>
                   ))}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() =>
-                      CONFIG.IS_SANDBOX
-                        ? router.push('/onboarding/sandbox')
-                        : router.push('/onboarding/business')
-                    }
-                  >
-                    New Organization
-                  </DropdownMenuItem>
+                  {!currentUser?.organization_scoped && (
+                    <DropdownMenuItem
+                      onClick={() =>
+                        CONFIG.IS_SANDBOX
+                          ? router.push('/onboarding/sandbox')
+                          : router.push('/onboarding/business')
+                      }
+                    >
+                      New Organization
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem
                     onClick={() => router.push('/dashboard/account')}
                   >

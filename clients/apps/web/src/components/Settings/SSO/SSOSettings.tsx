@@ -101,7 +101,9 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
             variant="secondary"
             onClick={toggleEnforced}
             loading={updateOrganization.isPending}
-            disabled={!org.sso_enforced && !canEnforce}
+            disabled={
+              !org.sso_enforced && (!canEnforce || !hasEnabledConnection)
+            }
           >
             {org.sso_enforced ? 'Stop enforcing' : 'Enforce'}
           </Button>

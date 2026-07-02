@@ -582,7 +582,8 @@ class OrganizationUpdate(Schema):
         None,
         description=(
             "Whether members must access this organization through its SSO "
-            "connection. Requires an enabled SSO connection to turn on."
+            "connection. Turning this on requires an active SSO session for "
+            "this organization and at least one enabled SSO connection."
         ),
     )
 

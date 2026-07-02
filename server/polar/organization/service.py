@@ -239,6 +239,15 @@ class CannotCreateOrganizationError(OrganizationError):
         )
 
 
+class SSOEnforcementRequiresConnection(OrganizationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This organization must have an enabled SSO connection before SSO "
+            "can be enforced.",
+            409,
+        )
+
+
 class OrganizationService:
     async def list(
         self,

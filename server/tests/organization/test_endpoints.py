@@ -8,9 +8,14 @@ from pytest_mock import MockerFixture
 from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.integrations.polar.service import PolarSelfService
-from polar.models import Product, User
+from polar.models import OrganizationSSOConnection, Product, User
 from polar.models.account import Account
 from polar.models.organization import Organization, OrganizationStatus
+from polar.models.organization_sso_connection import (
+    OIDCAuthMethod,
+    OIDCConfiguration,
+    OrganizationSSOConnectionType,
+)
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole, UserOrganization
 from polar.payout_account.service import PayoutAccountServiceError
@@ -1366,29 +1371,70 @@ class TestGetReviewStatus:
 
 @pytest.mark.asyncio
 class TestUpdateSSOEnforced:
+    async def _create_connection(
+        self, save_fixture: SaveFixture, organization: Organization
+    ) -> OrganizationSSOConnection:
+        configuration: OIDCConfiguration = {
+            "issuer": "https://idp.example.com",
+            "client_id": "client-id",
+            "auth_method": OIDCAuthMethod.client_secret,
+            "client_secret": "secret",
+        }
+        connection = OrganizationSSOConnection(
+            organization=organization,
+            type=OrganizationSSOConnectionType.oidc,
+            configuration=configuration,
+            enabled=True,
+        )
+        await save_fixture(connection)
+        return connection
+
     @pytest.mark.auth
     async def test_enable_from_global_session_forbidden(
         self,
         client: AsyncClient,
+        save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         # A non-SSO session must not be able to turn on enforcement.
+        await self._create_connection(save_fixture, organization)
+
         response = await client.patch(
             f"/v1/organizations/{organization.id}",
             json={"sso_enforced": True},
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 403
 
     @pytest.mark.auth
-    async def test_enable_from_scoped_session(
+    async def test_enable_without_connection_forbidden(
         self,
         client: AsyncClient,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
+        # Scoped session but no enabled connection would lock the org out.
+        auth_subject.organization_ids = frozenset({organization.id})
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"sso_enforced": True},
+        )
+
+        assert response.status_code == 409
+
+    @pytest.mark.auth
+    async def test_enable_from_scoped_session(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await self._create_connection(save_fixture, organization)
         auth_subject.organization_ids = frozenset({organization.id})
 
         response = await client.patch(

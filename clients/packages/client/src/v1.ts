@@ -27024,7 +27024,7 @@ export interface components {
       default_tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       /**
        * Sso Enforced
-       * @description Whether members must access this organization through its SSO connection. Requires an enabled SSO connection to turn on.
+       * @description Whether members must access this organization through its SSO connection. Turning this on requires an active SSO session for this organization and at least one enabled SSO connection.
        */
       sso_enforced?: boolean | null
     }
@@ -29774,6 +29774,17 @@ export interface components {
       headers: {
         [key: string]: string
       }
+    }
+    /** SSOEnforcementRequiresConnection */
+    SSOEnforcementRequiresConnection: {
+      /**
+       * Error
+       * @example SSOEnforcementRequiresConnection
+       * @constant
+       */
+      error: 'SSOEnforcementRequiresConnection'
+      /** Detail */
+      detail: string
     }
     /** SSOFactor */
     SSOFactor: {
@@ -36056,6 +36067,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Cannot enforce SSO without an enabled connection. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SSOEnforcementRequiresConnection']
         }
       }
       /** @description Validation Error */

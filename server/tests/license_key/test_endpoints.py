@@ -23,12 +23,14 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.benefit import BenefitType
 from polar.models.license_key import LicenseKeyStatus
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.license_key import TestLicenseKey
+from tests.fixtures.random_objects import create_benefit
 
 
 @pytest.mark.asyncio
@@ -472,7 +474,7 @@ class TestLicenseKeyEndpoints:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_activate_expired_license_key_should_fail(
+    async def test_activate_expired_order_license_key_should_fail(
         self,
         activate_path: str,
         session: AsyncSession,
@@ -484,7 +486,63 @@ class TestLicenseKeyEndpoints:
         product: Product,
         customer: Customer,
     ) -> None:
-        """Test that activating an expired license key should fail."""
+        """An expired license key not backed by a subscription should fail."""
+        benefit = await create_benefit(
+            save_fixture,
+            type=BenefitType.license_keys,
+            organization=organization,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+                activations=BenefitLicenseKeyActivationCreateProperties(
+                    limit=2, enable_customer_admin=True
+                ),
+            ).model_dump(mode="json"),
+        )
+        _, granted = await TestLicenseKey.create_order_grant(
+            session,
+            redis,
+            save_fixture,
+            benefit,
+            customer=customer,
+            product=product,
+        )
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+
+        lk.expires_at = utc_now() - relativedelta(days=1)
+        session.add(lk)
+        await session.flush()
+
+        activate = await client.post(
+            activate_path,
+            json={
+                "key": lk.key,
+                "organization_id": str(organization.id),
+                "label": "testing activation of expired key",
+            },
+        )
+
+        assert activate.status_code == 403, (
+            f"Expected 403 but got {activate.status_code}. Response: {activate.json()}"
+        )
+
+    async def test_activate_expired_subscription_license_key_succeeds(
+        self,
+        activate_path: str,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """
+        An expired license key backed by an active subscription should still
+        activate: the TTL is ignored in favor of the subscription status.
+        """
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
             session,
             redis,
@@ -516,8 +574,8 @@ class TestLicenseKeyEndpoints:
             },
         )
 
-        assert activate.status_code == 403, (
-            f"Expected 403 but got {activate.status_code}. Response: {activate.json()}"
+        assert activate.status_code == 200, (
+            f"Expected 200 but got {activate.status_code}. Response: {activate.json()}"
         )
 
 
@@ -699,6 +757,96 @@ class TestValidateLicenseKey:
         )
 
         assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_validate_expired_order_license_key_should_fail(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """An expired license key not backed by a subscription should fail."""
+        benefit = await create_benefit(
+            save_fixture,
+            type=BenefitType.license_keys,
+            organization=organization,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing"
+            ).model_dump(mode="json"),
+        )
+        _, granted = await TestLicenseKey.create_order_grant(
+            session,
+            redis,
+            save_fixture,
+            benefit,
+            customer=customer,
+            product=product,
+        )
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+
+        lk.expires_at = utc_now() - relativedelta(days=1)
+        session.add(lk)
+        await session.flush()
+
+        response = await client.post(
+            "/v1/license-keys/validate",
+            json={
+                "key": lk.key,
+                "organization_id": str(lk.organization_id),
+            },
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_validate_expired_subscription_license_key_succeeds(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """
+        An expired license key backed by an active subscription should still
+        validate: the TTL is ignored in favor of the subscription status.
+        """
+        _, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(prefix="testing"),
+        )
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+
+        lk.expires_at = utc_now() - relativedelta(days=1)
+        session.add(lk)
+        await session.flush()
+
+        response = await client.post(
+            "/v1/license-keys/validate",
+            json={
+                "key": lk.key,
+                "organization_id": str(lk.organization_id),
+            },
+        )
+
+        assert response.status_code == 200
 
     @pytest.mark.auth
     async def test_negative_increment_usage_rejected(

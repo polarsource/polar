@@ -36,7 +36,6 @@ class EmailTemplate(StrEnum):
     order_confirmation = "order_confirmation"
     organization_access_token_leaked = "organization_access_token_leaked"
     organization_invite = "organization_invite"
-    organization_account_unlink = "organization_account_unlink"
     organization_offboarded = "organization_offboarded"
     support_case_organization_new_message = "support_case_organization_new_message"
     personal_access_token_leaked = "personal_access_token_leaked"
@@ -506,18 +505,6 @@ class PolarSelfStartupProgramWelcomeEmail(BaseModel):
     props: PolarSelfStartupProgramWelcomeProps
 
 
-class OrganizationAccountUnlinkProps(EmailProps):
-    organization_kept_name: str
-    organizations_unlinked: list[str]
-
-
-class OrganizationAccountUnlinkEmail(BaseModel):
-    template: Literal[EmailTemplate.organization_account_unlink] = (
-        EmailTemplate.organization_account_unlink
-    )
-    props: OrganizationAccountUnlinkProps
-
-
 class OrganizationOffboardedProps(EmailProps):
     organization_name: str
     account_url: str
@@ -541,7 +528,6 @@ Email = Annotated[
     | OrderConfirmationEmail
     | OrganizationAccessTokenLeakedEmail
     | OrganizationInviteEmail
-    | OrganizationAccountUnlinkEmail
     | OrganizationOffboardedEmail
     | SupportCaseOrganizationNewMessageEmail
     | PersonalAccessTokenLeakedEmail

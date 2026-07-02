@@ -10,13 +10,8 @@ import { CONFIG } from '@/utils/config'
 import { setLastVisitedEnv, setLastVisitedOrg } from '@/utils/cookies'
 import ViewSidebarOutlined from '@mui/icons-material/ViewSidebarOutlined'
 import { Button } from '@polar-sh/orbit'
-import {
-  SidebarTrigger,
-  useSidebar,
-} from '@polar-sh/ui/components/atoms/Sidebar'
-import { Tabs, TabsList, TabsTrigger } from '@polar-sh/orbit'
+import { SidebarTrigger } from '@polar-sh/ui/components/atoms/Sidebar'
 import { motion } from 'motion/react'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   PropsWithChildren,
@@ -27,7 +22,6 @@ import {
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { DashboardProvider } from '../Dashboard/DashboardProvider'
-import { SubRouteWithActive } from '../Dashboard/navigation'
 import { useRoute } from '../Navigation/useRoute'
 import { DashboardSidebar } from './Dashboard/DashboardSidebar'
 import TopbarRight from './Public/TopbarRight'
@@ -106,29 +100,6 @@ const MobileNav = () => {
   )
 }
 
-const SubNav = (props: { items: SubRouteWithActive[] }) => {
-  const current = props.items.find((i) => i.isActive)
-
-  return (
-    <Tabs value={current?.title}>
-      <TabsList className="flex flex-row bg-transparent ring-0 dark:bg-transparent dark:ring-0">
-        {props.items.map((item) => {
-          return (
-            <Link key={item.title} href={item.link} prefetch={true}>
-              <TabsTrigger
-                className="flex flex-row items-center gap-x-2 px-4"
-                value={item.title}
-              >
-                <h3>{item.title}</h3>
-              </TabsTrigger>
-            </Link>
-          )
-        })}
-      </TabsList>
-    </Tabs>
-  )
-}
-
 export interface DashboardBodyProps {
   children?: React.ReactNode
   className?: string
@@ -157,10 +128,6 @@ export const DashboardBody = ({
   wide = false,
 }: DashboardBodyProps) => {
   const { currentRoute, currentSubRoute } = useRoute()
-
-  const { state } = useSidebar()
-
-  const isCollapsed = state === 'collapsed'
 
   const current = currentSubRoute ?? currentRoute
 
@@ -233,11 +200,7 @@ export const DashboardBody = ({
                 </div>
               )}
 
-              {header ? (
-                header
-              ) : isCollapsed && currentRoute && 'subs' in currentRoute ? (
-                <SubNav items={currentRoute.subs ?? []} />
-              ) : null}
+              {header}
             </div>
           )}
 

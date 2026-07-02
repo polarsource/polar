@@ -17,7 +17,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from '@polar-sh/ui/components/atoms/Sidebar'
 import {
   DropdownMenu,
@@ -49,10 +48,8 @@ export const DashboardSidebar = ({
   organizations: schemas['Organization'][]
 }) => {
   const router = useRouter()
-  const { state } = useSidebar()
   const { currentUser } = useAuth()
 
-  const isCollapsed = state === 'collapsed'
   const [searchOpen, setSearchOpen] = useState(false)
 
   const subscriptionPlan = useOrganizationSubscription(organization?.id ?? '')
@@ -85,11 +82,8 @@ export const DashboardSidebar = ({
     <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader
         className={twMerge(
-          'flex md:pt-3.5',
-          isTopBannerVisible ? 'md:pt-10' : '',
-          isCollapsed
-            ? 'flex-row items-center justify-between gap-y-4 md:flex-col md:items-start md:justify-start'
-            : 'flex-row items-center justify-between',
+          'flex flex-row items-center justify-between md:pt-3.5',
+          isTopBannerVisible && 'md:pt-10',
         )}
       >
         <PolarLogotype
@@ -123,7 +117,6 @@ export const DashboardSidebar = ({
           />
         )}
         <motion.div
-          key={isCollapsed ? 'nav-collapsed' : 'nav-expanded'}
           className="flex flex-col items-center gap-2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -136,7 +129,7 @@ export const DashboardSidebar = ({
         </motion.div>
       </SidebarContent>
       <SidebarFooter>
-        {isOnFreePlan && !isCollapsed && (
+        {isOnFreePlan && (
           <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-2 rounded-sm border border-gray-100 bg-white p-4">
             <h3 className="text-sm">Introducing Polar Plans</h3>
             <p className="dark:text-polar-500 text-sm text-gray-500">
@@ -158,16 +151,13 @@ export const DashboardSidebar = ({
           className={twMerge(
             'flex flex-row items-center rounded-lg border border-transparent text-sm transition-colors dark:border-transparent',
             'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
-            isCollapsed && '!dark:text-polar-600',
           )}
           href="https://polar.sh/docs"
           target="_blank"
           rel="noopener noreferrer"
         >
           <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
-          {!isCollapsed && (
-            <span className="ml-4 font-medium">Documentation</span>
-          )}
+          <span className="ml-4 font-medium">Documentation</span>
         </a>
         <Separator />
         {type === 'organization' && organization && (
@@ -181,22 +171,15 @@ export const DashboardSidebar = ({
                       avatar_url={organization.avatar_url}
                       className="h-6 w-6"
                     />
-                    {!isCollapsed && (
-                      <>
-                        <span className="min-w-0 truncate">
-                          {organization.name}
-                        </span>
-                        <KeyboardArrowDown
-                          className="ml-auto"
-                          fontSize="small"
-                        />
-                      </>
-                    )}
+                    <span className="min-w-0 truncate">
+                      {organization.name}
+                    </span>
+                    <KeyboardArrowDown className="ml-auto" fontSize="small" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   side="top"
-                  align={isCollapsed ? 'start' : 'center'}
+                  align="center"
                   className="w-(--radix-popper-anchor-width) min-w-[200px]"
                 >
                   {organizations.map((org) => (

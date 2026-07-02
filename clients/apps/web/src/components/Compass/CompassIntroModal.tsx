@@ -6,7 +6,7 @@ import { schemas } from '@polar-sh/client'
 import { Button, Modal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 
 const COMPASS_INTRO_KEY = 'compass_intro'
 
@@ -19,21 +19,17 @@ export const CompassIntroModal = ({
   const { isDismissed, dismiss: markDismissed } =
     useDismissed(COMPASS_INTRO_KEY)
 
-  const [isShown, setIsShown] = useState(false)
-  const handledRef = useRef(false)
+  const [closed, setClosed] = useState(false)
 
   const compassEnabled = !!organization.feature_settings?.compass_enabled
 
-  useEffect(() => {
-    if (!handledRef.current && compassEnabled && !isDismissed) {
-      handledRef.current = true
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- show once after mount
-      setIsShown(true)
-    }
-  }, [compassEnabled, isDismissed])
+  // Derived from live state so it self-corrects once `isDismissed` resolves
+  // from localStorage (default is `false` during SSR/hydration). Latching this
+  // in an effect would keep the modal open for already-dismissed users.
+  const isShown = compassEnabled && !isDismissed && !closed
 
   const dismiss = () => {
-    setIsShown(false)
+    setClosed(true)
     markDismissed()
   }
 

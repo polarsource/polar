@@ -6,7 +6,7 @@ RUN apt-get -qq update \
     postgresql-common \
   > /dev/null \
   && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
-  && apt-get -qq install -y --no-install-recommends pgbouncer > /dev/null \
+  && apt-get -qq install -y --no-install-recommends pgbouncer="${PGBOUNCER_APT_VERSION}" > /dev/null \
   && apt-get -qq clean \
   && rm -rf \
     /var/lib/apt/lists/* \

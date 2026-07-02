@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any, Unpack, cast
 from uuid import UUID
 
 import structlog
@@ -9,6 +9,7 @@ from polar.auth.models import AuthSubject
 from polar.license_key.service import license_key as license_key_service
 from polar.logging import Logger
 from polar.models import Benefit, Customer, Member, Organization, User
+from polar.models.benefit_grant import BenefitGrantScopeArgs
 
 from ..base.service import BenefitServiceProtocol
 from .properties import BenefitGrantLicenseKeysProperties, BenefitLicenseKeysProperties
@@ -32,6 +33,7 @@ class BenefitLicenseKeysService(
         update: bool = False,
         attempt: int = 1,
         member: Member | None = None,
+        **scope: Unpack[BenefitGrantScopeArgs],
     ) -> BenefitGrantLicenseKeysProperties:
         current_lk_id = None
         if update and "license_key_id" in grant_properties:
@@ -48,6 +50,8 @@ class BenefitLicenseKeysService(
             license_key_id=current_lk_id,
             key=user_provided_key,
             member_id=member.id if member else None,
+            # Subscription-backed keys never expire; they follow the subscription.
+            set_expiration=scope.get("subscription_id") is None,
         )
         return {
             **grant_properties,

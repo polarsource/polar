@@ -66,6 +66,7 @@ dependencies = [
   "markdown-it-py>=4.2.0",
   "tzdata>=2026.2",
   "reauth==0.2.0",
+  "langcodes>=3.5.1",
 ]
 
 [dependency-groups]

@@ -1,16 +1,17 @@
 'use client'
 
-import { useClearPendingSubscriptionUpdate } from '@/hooks/queries/subscriptions'
+import { DetailCell, DetailGrid } from '@/components/Orders/OrderSection'
 import { useProduct } from '@/hooks/queries'
+import { useClearPendingSubscriptionUpdate } from '@/hooks/queries/subscriptions'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
-import { ConfirmModal } from '../Modal/ConfirmModal'
+import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import { ArrowUpRightIcon } from 'lucide-react'
 import Link from 'next/link'
-import { useState, useContext } from 'react'
-import { DetailRow } from '../Shared/DetailRow'
+import { useContext, useState } from 'react'
+import { ConfirmModal } from '../Modal/ConfirmModal'
 
 export const ScheduledUpdateSection = ({
   pendingUpdate,
@@ -25,47 +26,60 @@ export const ScheduledUpdateSection = ({
   const [showConfirmModal, setShowConfirmModal] = useState(false)
 
   return (
-    <div className="mt-2 flex flex-col gap-y-4">
-      <div className="flex flex-row items-center justify-between gap-x-2">
-        <h3 className="text-lg">Scheduled Update</h3>
+    <Box flexDirection="column" rowGap="l">
+      <Box alignItems="center" justifyContent="between" columnGap="m">
+        <Text variant="heading-xxs" as="h3">
+          Scheduled update
+        </Text>
         <Button
           variant="secondary"
-          size="sm"
           onClick={() => setShowConfirmModal(true)}
           loading={clearPendingUpdate.isPending}
         >
           Cancel scheduled change
         </Button>
-      </div>
-      <div className="flex flex-col gap-y-2">
+      </Box>
+
+      <DetailGrid>
         {newProduct && (
-          <DetailRow
-            label="New Product"
+          <DetailCell
+            label="New product"
             value={
               <Link
                 href={`/dashboard/${organization.slug}/products/${newProduct.id}`}
-                className="flex items-center gap-1"
               >
-                {newProduct.name}
-                <ArrowOutwardOutlined
-                  fontSize="inherit"
-                  className="opacity-50"
-                />
+                <Box
+                  as="span"
+                  display="inline-flex"
+                  alignItems="center"
+                  columnGap="s"
+                >
+                  <Text as="span" variant="body" truncate>
+                    {newProduct.name}
+                  </Text>
+                  <Box as="span" display="inline-flex">
+                    <ArrowUpRightIcon size={16} />
+                  </Box>
+                </Box>
               </Link>
             }
           />
         )}
         {pendingUpdate.seats !== null && (
-          <DetailRow
-            label="New Seats"
-            value={`${subscription.seats ?? 0} -> ${pendingUpdate.seats}`}
+          <DetailCell
+            label="New seats"
+            value={`${subscription.seats ?? 0} → ${pendingUpdate.seats}`}
           />
         )}
-        <DetailRow
+        <DetailCell
           label="Will be applied on"
-          value={<FormattedDateTime datetime={pendingUpdate.applies_at} />}
+          value={
+            <Text variant="body" as="span">
+              <FormattedDateTime datetime={pendingUpdate.applies_at} />
+            </Text>
+          }
         />
-      </div>
+      </DetailGrid>
 
       <ConfirmModal
         isShown={showConfirmModal}
@@ -74,6 +88,6 @@ export const ScheduledUpdateSection = ({
         description="The customer's subscription will remain unchanged on the next billing cycle. Are you sure you want to cancel this pending update?"
         onConfirm={() => clearPendingUpdate.mutateAsync()}
       />
-    </div>
+    </Box>
   )
 }

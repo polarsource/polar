@@ -24,3 +24,10 @@ variable "member_account_bootstrap_role_name" {
   type        = string
   default     = "OrganizationAccountAccessRole"
 }
+
+variable "identity_account_email" {
+  description = "Email address for the identity AWS account."
+  type        = string
+  sensitive   = true
+  nullable    = false
+}

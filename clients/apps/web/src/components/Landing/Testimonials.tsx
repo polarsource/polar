@@ -1,7 +1,7 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
-import { StillaAI } from './Logos'
+import { FastAPICloud, StillaAI } from './Logos'
 import { Avatar } from '@polar-sh/orbit'
 import { SectionHeader } from './SectionHeader'
 
@@ -61,14 +61,19 @@ const userTestimonials = [
     ),
   },
   {
-    link: 'https://x.com/mrblackstudio/status/1987257923291259224',
-    name: 'Lee Black',
-    company: '1042 Studio',
+    link: 'https://fastapicloud.com',
+    name: 'Sebastián Ramírez',
+    company: 'FastAPI',
     verified: true,
-    avatar: '/assets/landing/testamonials/lee.jpg',
+    logo: (
+      <div className="mt-4">
+        <FastAPICloud size={24} />
+      </div>
+    ),
     text: (
       <Text variant="body" as="p">
-        I switched to Polar a few weeks back. Best decision ever.
+        Polar has been giving us the high attention support of a startup, with
+        an enterprise-level product and service.
       </Text>
     ),
   },

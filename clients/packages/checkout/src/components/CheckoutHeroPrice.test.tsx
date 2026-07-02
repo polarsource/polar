@@ -150,6 +150,8 @@ describe('CheckoutHeroPrice', () => {
           recurring_interval: 'year',
           recurring_interval_count: null,
           is_recurring: true,
+          meter_interval: null,
+          meter_interval_count: null,
           trial_interval: 'month',
           trial_interval_count: 1,
           visibility: 'public',

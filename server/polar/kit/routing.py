@@ -149,6 +149,24 @@ class SpeakeasyPaginationAPIRoute(APIRoute):
             }
 
 
+class PaginationAPIRoute(APIRoute):
+    """
+    A subclass of `APIRoute` that automatically adds `x-polar-pagination` property
+    to the OpenAPI schema if the endpoint response model is a `ListResource`.
+    """
+
+    def __init__(self, path: str, endpoint: Callable[..., Any], **kwargs: Any) -> None:
+        super().__init__(path, endpoint, **kwargs)
+        response_model = self.response_model
+        if (
+            response_model is not None
+            and inspect.isclass(response_model)
+            and ListResource in response_model.mro()
+        ):
+            openapi_extra = self.openapi_extra or {}
+            self.openapi_extra = {**openapi_extra, "x-polar-pagination": "page_limit"}
+
+
 def _inherit_signature_from[**P, T](
     _to: Callable[P, T],
 ) -> Callable[[Callable[..., T]], Callable[P, T]]:
@@ -172,6 +190,7 @@ def get_api_router_class(route_class: type[APIRoute]) -> type[_APIRouter]:
 __all__ = [
     "AutoCommitAPIRoute",
     "IncludedInSchemaAPIRoute",
+    "PaginationAPIRoute",
     "SpeakeasyGroupAPIRoute",
     "SpeakeasyIgnoreAPIRoute",
     "SpeakeasyNameOverrideAPIRoute",

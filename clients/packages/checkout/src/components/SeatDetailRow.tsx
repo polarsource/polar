@@ -8,7 +8,7 @@ import DetailRow from './DetailRow'
 interface SeatDetailRowProps {
   row: SeatRow
   currency: string
-  interval?: schemas['SubscriptionRecurringInterval'] | null
+  interval?: schemas['RecurringInterval'] | null
   intervalCount?: number | null
   locale: AcceptedLocale
 }

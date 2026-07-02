@@ -213,10 +213,10 @@ const PRORATION_BEHAVIOR_LABELS: Record<
   schemas['SubscriptionProrationBehavior'],
   string
 > = {
-  invoice: 'Invoice Immediately',
-  prorate: 'Prorate next Invoice',
-  next_period: 'Apply on Next Period',
-  reset: 'Invoice Immediately without Proration and Reset Cycle',
+  invoice: 'Prorate & charge now',
+  prorate: 'Prorate on next invoice',
+  next_period: 'Schedule for next cycle',
+  reset: 'Charge full amount & reset cycle',
 }
 
 const ProrationBehaviorSelector = ({

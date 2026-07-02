@@ -139,6 +139,7 @@ Individual payment transaction.
 | `status` | PaymentStatus | pending, succeeded, failed |
 | `processor_id` | str | Stripe charge ID |
 | `method` | str | card, bank_transfer, etc. |
+| `trigger` | PaymentTrigger \| None | What initiated payment: purchase, subscription_cycle, retry_dunning, retry_customer, retry_payment_method_update, retry_admin |
 | `decline_reason` | str | Why payment failed |
 | `risk_level`, `risk_score` | str, int | Fraud assessment |
 
@@ -311,7 +312,7 @@ revoke_benefit(customer, benefit)
 |------|---------|--------|
 | `subscription.cycle` | Scheduler at period end | Renew subscription, create order |
 | `subscription.update_product_benefits_grants` | Product benefits changed | Update all grants |
-| `subscription.cancel_customer` | Customer deleted | Cancel all subscriptions |
+| `subscription.cancel_customer` | Customer deleted | Cancel all billable subscriptions (trialing, active, past_due) |
 
 ### Order Tasks
 **File:** `server/polar/order/tasks.py`
@@ -570,7 +571,9 @@ BillingEntry(
 | `discord` | Server role | Assign Discord role |
 | `license_keys` | License distribution | Generate key |
 | `downloadables` | File access | Grant download permission |
-| `custom` | Webhook-based | Call external URL |
+| `slack_shared_channel` | Slack Connect channel | Create/invite to shared channel |
+| `feature_flag` | Feature toggle (API-only) | None — merchant reads via API |
+| `custom` | Customer-visible note | None — displayed in customer portal |
 
 ### Benefit Grant Flow
 

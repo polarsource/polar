@@ -7,8 +7,8 @@ import { getServerSideAPI } from '@/utils/client/serverside'
 import {
   checkAuthenticationSession,
   getAuthenticationSessionRedirectPath,
+  type LoginMethod,
 } from '@/utils/auth'
-import { schemas } from '@polar-sh/client'
 import { redirect } from 'next/navigation'
 
 export const metadata: Metadata = {
@@ -69,7 +69,7 @@ export default async function Page(props: {
         </div>
         <Auth
           authenticationSession={authenticationSession}
-          lastLoginMethod={lastLoginMethod as schemas['Factor'] | null}
+          lastLoginMethod={lastLoginMethod as LoginMethod | null}
           returnTo={return_to}
         />
       </div>

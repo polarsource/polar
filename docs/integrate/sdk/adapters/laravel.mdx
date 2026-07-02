@@ -526,7 +526,7 @@ if ($user->subscription()->onGracePeriod()) {
 
 #### Past Due Status
 
-If a recurring payment fails, the subscription will become past due. This indicates that the subscription is still valid, but your customer's payments will be retried in two weeks.
+If a recurring payment fails, the subscription will become past due. This indicates that the subscription is still valid, but your customer's payments will be retried automatically over a 21-day period.
 
 ```php
 if ($user->subscription()->pastDue()) {

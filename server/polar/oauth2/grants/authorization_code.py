@@ -1,6 +1,7 @@
 import typing
 import uuid
 
+import structlog
 from authlib.oauth2.rfc6749.errors import (
     AccessDeniedError,
     InvalidRequestError,
@@ -17,7 +18,6 @@ from authlib.oidc.core.grants import OpenIDToken as _OpenIDToken
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from polar.auth.permission import OrganizationPermission
 from polar.authz.repository import select_user_org_ids
 from polar.config import settings
 from polar.kit.crypto import generate_token, get_token_hash
@@ -38,6 +38,8 @@ from ..userinfo import UserInfo, generate_user_info
 if typing.TYPE_CHECKING:
     from ..authorization_server import AuthorizationServer
 
+log = structlog.get_logger()
+
 
 def _exists_nonce(
     session: Session, nonce: str, request: StarletteOAuth2Request
@@ -56,6 +58,9 @@ class SubTypeGrantMixin:
     # Down-scope of the session authenticating the consent; bounds the orgs the
     # issued token may be scoped to. ``None`` means an unrestricted session.
     session_organization_ids: frozenset[uuid.UUID] | None = None
+    # The OAuth server only issues user tokens now. ``sub_type=organization``
+    # is kept as a hint that forces the token to a single org down-scope.
+    requires_single_organization: bool = False
 
 
 class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
@@ -148,7 +153,10 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
         down-scope, so a token can never be broader than its session.
         """
         member_organization_ids = set(
-            self.server.session.execute(select_user_org_ids(user.id)).scalars().all()
+            # Intersected with the session's down-scope just below.
+            self.server.session.execute(select_user_org_ids(user.id))  # noqa: org-scope
+            .scalars()
+            .all()
         )
         if self.session_organization_ids is not None:
             member_organization_ids &= self.session_organization_ids
@@ -172,12 +180,32 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
                 )
 
         if selected:
-            return list(selected)
-        # No explicit selection: inherit the session's down-scope (if any) so
-        # the token is never broader than the session.
-        if self.session_organization_ids is not None:
-            return list(member_organization_ids)
-        return []
+            result = list(selected)
+        elif self.session_organization_ids is not None:
+            # No explicit selection: inherit the session's down-scope (if any)
+            # so the token is never broader than the session.
+            result = list(member_organization_ids)
+        else:
+            result = []
+
+        # sub_type=organization must yield exactly one org. The radio UI enforces
+        # this client-side; defend it server-side too rather than silently
+        # widening (empty) or picking arbitrarily (>1).
+        if self.requires_single_organization:
+            if not result:
+                raise InvalidRequestError(
+                    "sub_type=organization requires selecting an organization"
+                )
+            if len(result) > 1:
+                log.warning(
+                    "oauth2.organization_sub_type_multiple_orgs",
+                    client_id=payload.client_id,
+                    user_id=str(user.id),
+                    organization_ids=[str(value) for value in result],
+                )
+                result = [sorted(result, key=str)[0]]
+
+        return result
 
     def query_authorization_code(
         self, code: str, client: OAuth2Client
@@ -273,33 +301,19 @@ class ValidateSubAndPrompt:
         sub_type: str | None = payload.data.get("sub_type")
         if sub_type:
             try:
-                grant.sub_type = SubType(sub_type)
+                requested_sub_type = SubType(sub_type)
             except ValueError as e:
                 raise InvalidRequestError("Invalid sub_type") from e
         else:
             client: OAuth2Client = typing.cast(OAuth2Client, grant.client)
-            grant.sub_type = client.default_sub_type
+            requested_sub_type = client.default_sub_type
 
-        sub: str | None = payload.data.get("sub")
-        user = grant.request.user
-
-        if grant.sub_type == SubType.user:
-            grant.sub = user
-            if sub is not None:
-                raise InvalidRequestError("Can't specify sub for user sub_type")
-        elif (
-            grant.sub_type == SubType.organization
-            and sub is not None
-            and user is not None
-        ):
-            try:
-                sub_uuid = uuid.UUID(sub)
-            except ValueError as e:
-                raise InvalidSubError() from e
-            organization = self._get_organization_admin(sub_uuid, user)
-            if organization is None:
-                raise InvalidSubError()
-            grant.sub = organization
+        # The OAuth server only issues user tokens now; sub_type=organization
+        # just forces a single-org down-scope (resolved from `organizations` at
+        # consent). The legacy `sub` param is ignored.
+        grant.requires_single_organization = requested_sub_type == SubType.organization
+        grant.sub_type = SubType.user
+        grant.sub = grant.request.user
 
     def _validate_scope_consent(
         self,
@@ -365,18 +379,3 @@ class ValidateSubAndPrompt:
         self._validate_sub(grant, redirect_uri, redirect_fragment)
         if grant.sub is None:
             raise InvalidSubError()
-
-    def _get_organization_admin(
-        self, organization_id: uuid.UUID, user: User
-    ) -> Organization | None:
-        statement = select(Organization).where(
-            Organization.id == organization_id,
-            Organization.id.in_(
-                select_user_org_ids(
-                    user.id,
-                    permission=OrganizationPermission.organization_manage,
-                )
-            ),
-        )
-        result = self._session.execute(statement)
-        return result.unique().scalar_one_or_none()

@@ -38,7 +38,9 @@ from polar.integrations.resend.endpoints import router as resend_router
 from polar.integrations.slack.endpoints import router as slack_router
 from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.license_key.endpoints import router as license_key_router
+from polar.member.endpoints import customer_members_router
 from polar.member.endpoints import router as member_router
+from polar.merchant_migration.endpoints import router as merchant_migration_router
 from polar.meter.endpoints import router as meter_router
 from polar.metrics.endpoints import router as metrics_router
 from polar.notifications.endpoints import router as notifications_router
@@ -54,6 +56,7 @@ from polar.payout_account.endpoints import router as payout_account_router
 from polar.personal_access_token.endpoints import router as pat_router
 from polar.product.endpoints import router as product_router
 from polar.refund.endpoints import router as refund_router
+from polar.sso.endpoints import router as sso_router
 from polar.subscription.endpoints import router as subscription_router
 from polar.support_case.endpoints import router as support_case_router
 from polar.tax.endpoints import router as tax_router
@@ -86,6 +89,8 @@ router.include_router(accounts_router)
 router.include_router(stream_router)
 # /organizations
 router.include_router(organization_router)
+# /organizations/{id}/sso-connections
+router.include_router(sso_router)
 # /subscriptions
 router.include_router(subscription_router)
 # /transactions
@@ -134,10 +139,14 @@ router.include_router(discount_router)
 router.include_router(customer_router)
 # /members
 router.include_router(member_router)
+# /customers/{id}/members (nested member CRUD; defined in the member module)
+router.include_router(customer_members_router)
 # /customer-portal
 router.include_router(customer_portal_router)
 # /seats
 router.include_router(customer_seat_router)
+# /merchant-migrations
+router.include_router(merchant_migration_router)
 # /update-email
 router.include_router(email_update_router)
 # /customer-sessions

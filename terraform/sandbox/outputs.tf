@@ -3,14 +3,14 @@ output "lambda_worker_ecr_repository_url" {
   value       = module.lambda_worker_ecr.repository_url
 }
 
-output "dummy_lambda_worker_function_name" {
-  description = "Sandbox dummy Lambda worker function name."
-  value       = module.dummy_lambda_worker.function_name
+output "lambda_worker_function_name" {
+  description = "Sandbox Lambda worker function name."
+  value       = module.lambda_worker.function_name
 }
 
-output "dummy_lambda_worker_queue_url" {
-  description = "Sandbox dummy Lambda worker SQS queue URL."
-  value       = module.dummy_lambda_worker.queue_url
+output "lambda_worker_queue_url" {
+  description = "Sandbox Lambda worker SQS queue URL."
+  value       = module.lambda_worker.queue_url
 }
 
 output "egress_ip" {

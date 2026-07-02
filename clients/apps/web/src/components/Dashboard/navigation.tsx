@@ -7,6 +7,7 @@ import CodeOutlined from '@mui/icons-material/CodeOutlined'
 import DiamondOutlined from '@mui/icons-material/DiamondOutlined'
 import DiscountOutlined from '@mui/icons-material/DiscountOutlined'
 import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
+import GavelOutlined from '@mui/icons-material/GavelOutlined'
 import HiveOutlined from '@mui/icons-material/HiveOutlined'
 import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined'
@@ -281,6 +282,12 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
         link: `/dashboard/${org?.slug}/sales/checkouts`,
         icon: <ShoppingCart />,
       },
+      {
+        title: 'Disputes',
+        link: `/dashboard/${org?.slug}/sales/disputes`,
+        icon: <GavelOutlined fontSize="inherit" />,
+        if: !!org?.feature_settings?.disputes_enabled,
+      },
     ],
   },
 ]
@@ -372,6 +379,11 @@ const organizationRoutesList = (
       {
         title: 'Custom Fields',
         link: `/dashboard/${org?.slug}/settings/custom-fields`,
+      },
+      {
+        title: 'Single Sign-On',
+        link: `/dashboard/${org?.slug}/settings/sso`,
+        if: !!org?.feature_settings?.sso_enabled,
       },
     ],
   },

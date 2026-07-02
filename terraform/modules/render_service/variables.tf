@@ -191,6 +191,14 @@ variable "aws_s3_secrets" {
   sensitive = true
 }
 
+variable "aws_kms_config" {
+  description = "Secrets-encryption KMS key ARN and the OIDC role the backend assumes to use it (both in the workload account)."
+  type = object({
+    key_id   = string # full key ARN -> POLAR_AWS_KMS_KEY_ID
+    role_arn = string # OIDC role -> AWS_ROLE_ARN
+  })
+}
+
 variable "worker_sqs_config" {
   description = "Worker SQS execution engine config and producer credentials (optional). null skips the env group."
   type = object({

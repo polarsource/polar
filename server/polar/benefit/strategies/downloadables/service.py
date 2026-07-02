@@ -52,7 +52,9 @@ class BenefitDownloadablesService(
         if update and grant_properties:
             previous_file_ids = {UUID(f) for f in grant_properties.get("files", [])}
             if previous_file_ids != set(file_ids):
-                await self.revoke(benefit, customer, grant_properties, attempt=attempt)
+                await self.revoke(
+                    benefit, customer, grant_properties, attempt=attempt, member=member
+                )
 
         if not file_ids:
             return {}
@@ -97,6 +99,7 @@ class BenefitDownloadablesService(
             self.session,
             customer=customer,
             benefit_id=benefit.id,
+            member_id=member.id if member else None,
         )
         return {}
 

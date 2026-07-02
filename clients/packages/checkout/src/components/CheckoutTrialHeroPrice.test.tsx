@@ -10,6 +10,8 @@ const trialProduct = {
   recurring_interval: 'year' as const,
   recurring_interval_count: null,
   is_recurring: true,
+  meter_interval: null,
+  meter_interval_count: null,
   trial_interval: 'month' as const,
   trial_interval_count: 1,
   visibility: 'public' as const,

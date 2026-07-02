@@ -273,7 +273,7 @@ const MetricChartBox = ({
           )}
           <h2
             className={
-              compact ? 'text-base' : 'text-3xl xl:text-5xl xl:font-light'
+              compact ? 'text-base' : 'text-3xl xl:text-5xl xl:font-[350]'
             }
           >
             {metricValue}
@@ -339,7 +339,7 @@ const MetricChartBox = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="hidden rounded-full opacity-0 transition-opacity group-hover:opacity-100 md:block"
+                  className="hidden rounded-full opacity-0 transition-opacity group-hover:opacity-100 md:flex"
                   onClick={showModal}
                 >
                   <ArrowOutwardOutlined fontSize="small" />
@@ -353,7 +353,7 @@ const MetricChartBox = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="hidden rounded-full opacity-0 transition-opacity group-hover:opacity-100 md:block"
+                className="hidden rounded-full opacity-0 transition-opacity group-hover:opacity-100 md:flex"
               >
                 <MoreVertOutlined fontSize="small" />
               </Button>

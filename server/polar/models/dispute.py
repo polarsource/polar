@@ -29,7 +29,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
-    from polar.models import Order, Payment
+    from polar.models import Customer, Order, Payment
 
 
 class DisputeStatus(StrEnum):
@@ -147,6 +147,10 @@ class Dispute(RecordModel):
             .correlate_except(DisputeSupportCase)
             .scalar_subquery()
         )
+
+    @property
+    def customer(self) -> "Customer":
+        return self.order.customer
 
     @hybrid_property
     def resolved(self) -> bool:

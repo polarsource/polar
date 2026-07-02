@@ -55,8 +55,11 @@ jobs:
       backend-production: ${{ steps.filter-backend-production.outputs.backend }}
       migrations-production: ${{ steps.filter-backend-production.outputs.migrations }}
       frontend-production: ${{ steps.filter-frontend-production.outputs.frontend }}
+      # Whether the test environment is enabled in Terraform. The deploy-test
+      # job is skipped entirely when this is false.
+      test-enabled: ${{ steps.test-enabled.outputs.enabled }}
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
         with:
           # fetch-depth: 0 already fetches all tags, so no separate
           # fetch-tags is needed here.
@@ -114,6 +117,19 @@ jobs:
             echo "backend-production=$(resolve deployed/backend-production)"
             echo "frontend-production=$(resolve deployed/frontend-production)"
           } >> "$GITHUB_OUTPUT"
+
+      # Parse local.test_enabled from the Terraform test config so the
+      # deploy-test job only runs when the test environment is actually
+      # provisioned. Defaults to false if the local is missing or unparseable.
+      - name: Resolve test environment enabled flag
+        id: test-enabled
+        run: |
+          set -euo pipefail
+          enabled="$(grep -oE '^[[:space:]]*test_enabled[[:space:]]*=[[:space:]]*(true|false)' terraform/test/render.tf \
+            | grep -oE '(true|false)$' \
+            | head -1 || true)"
+          echo "enabled=${enabled:-false}" >> "$GITHUB_OUTPUT"
+          echo "test_enabled=${enabled:-false}"
 
       # Four paths-filter invocations: one per component per env. We can't
       # combine them because dorny/paths-filter@v4 uses a single base for
@@ -183,7 +199,7 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
 
       - name: Set up Docker Buildx
         uses: useblacksmith/setup-docker-builder@v1.9.0
@@ -238,7 +254,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
 
       - name: Set up Docker Buildx
         uses: useblacksmith/setup-docker-builder@v1.9.0
@@ -249,7 +265,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6.2.0
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-to-assume: ${{ secrets.SANDBOX_AWS_ROLE_ARN }}
           aws-region: us-east-2
 
       - name: Log in to Amazon ECR
@@ -287,7 +303,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6.2.0
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-to-assume: ${{ secrets.SANDBOX_AWS_ROLE_ARN }}
           aws-region: us-east-2
       - name: Log in to Amazon ECR
         id: login-ecr
@@ -295,7 +311,7 @@ jobs:
       - name: Update sandbox Lambda function code
         run: |
           aws lambda update-function-code \
-            --function-name polar-sandbox-worker-dummy \
+            --function-name polar-sandbox-worker-default \
             --image-uri "${{ steps.login-ecr.outputs.registry }}/polar-sandbox-lambda-worker:sha-${{ github.sha }}" \
             --publish
 
@@ -336,6 +352,30 @@ jobs:
       environment: sandbox
       render-api-service-id: "srv-crkocgbtq21c73ddsdbg"
       render-worker-service-ids: "srv-d62q7vh4tr6s73fk44ng,srv-d733cp15pdvs73f6vqng,srv-d7unnjhj2pic73c2vr60,srv-d089jj7diees73934kgg"
+      has-migrations: ${{ needs.changes.outputs.migrations-sandbox == 'true' || github.event_name == 'workflow_dispatch' }}
+      skip-backend: ${{ needs.changes.outputs.backend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
+      skip-frontend: ${{ needs.changes.outputs.frontend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
+    secrets:
+      RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+
+  deploy-test:
+    name: "Deploy to Test 🧰"
+    # Parallel to sandbox/production: depends only on changes + build, never on
+    # the other deploy jobs, so it can't slow the sandbox→production path.
+    # Reuses the sandbox change outputs for skip logic and only runs when the
+    # test environment is enabled in Terraform.
+    needs: [changes, build]
+    if: always() && !failure() && !cancelled() && needs.changes.outputs.test-enabled == 'true' && (needs.build.result == 'success' || needs.build.result == 'skipped') && (needs.changes.outputs.backend-sandbox == 'true' || needs.changes.outputs.frontend-sandbox == 'true' || github.event_name == 'workflow_dispatch')
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      environment: test
+      render-api-service-id: "srv-d8ffbc42m8qs73e7lv30"
+      render-worker-service-ids: "srv-d8ffbbvavr4c73a79u00"
       has-migrations: ${{ needs.changes.outputs.migrations-sandbox == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
       skip-frontend: ${{ needs.changes.outputs.frontend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}

@@ -42,7 +42,6 @@ export function CancellationsContent({
           <div className="dark:border-polar-700 border-t-0 border-r border-b border-l-0 border-gray-200 p-4">
             <CancellationsDistributionChart
               data={data}
-              interval={interval}
               height={20}
               organizationId={organizationId}
               startDate={startDate}

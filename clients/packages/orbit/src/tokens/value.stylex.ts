@@ -41,7 +41,7 @@ export const palette = stylex.defineVars({
   polar400: 'hsl(233, 4%, 52%)',
   polar500: 'hsl(233, 4%, 46%)',
   polar600: 'hsl(233, 4%, 22%)',
-  polar700: 'hsl(233, 4%, 12%)',
+  polar700: 'hsl(233, 4%, 13%)',
   polar800: 'hsl(233, 4%, 9.5%)',
   polar900: 'hsl(233, 4%, 6.5%)',
   polar950: 'hsl(233, 4%, 3.5%)',
@@ -140,8 +140,8 @@ export const letterSpacings = stylex.defineVars({
 } as const)
 
 export const fontFamilies = stylex.defineVars({
-  sans: "'Inter', sans-serif",
-  display: "'InterDisplay', sans-serif",
+  sans: "'PP Neue Montreal', 'Inter', sans-serif",
+  display: "'PP Neue Montreal', 'InterDisplay', sans-serif",
   mono: "'GeistMono', monospace",
 } as const)
 

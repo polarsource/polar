@@ -38,6 +38,8 @@ function createDiscountedCheckout({
           recurring_interval: interval,
           recurring_interval_count: intervalCount ?? 1,
           is_recurring: true,
+          meter_interval: null,
+          meter_interval_count: null,
         },
         discount,
         ...(trial && {
@@ -260,6 +262,8 @@ describe('CheckoutPricingBreakdown', () => {
           recurring_interval: 'month',
           recurring_interval_count: 1,
           is_recurring: true,
+          meter_interval: null,
+          meter_interval_count: null,
         },
       })
 
@@ -281,6 +285,8 @@ describe('CheckoutPricingBreakdown', () => {
           recurring_interval: 'year',
           recurring_interval_count: 1,
           is_recurring: true,
+          meter_interval: null,
+          meter_interval_count: null,
         },
       })
 
@@ -329,6 +335,8 @@ describe('CheckoutPricingBreakdown', () => {
           recurring_interval: 'month',
           recurring_interval_count: 1,
           is_recurring: true,
+          meter_interval: null,
+          meter_interval_count: null,
         },
         discount: {
           id: 'disc_1',
@@ -357,6 +365,8 @@ describe('CheckoutPricingBreakdown', () => {
           recurring_interval: 'month',
           recurring_interval_count: 1,
           is_recurring: true,
+          meter_interval: null,
+          meter_interval_count: null,
         },
         discount: {
           id: 'disc_1',
@@ -386,6 +396,8 @@ describe('CheckoutPricingBreakdown', () => {
           recurring_interval: 'month',
           recurring_interval_count: 1,
           is_recurring: true,
+          meter_interval: null,
+          meter_interval_count: null,
         },
         discount: {
           id: 'disc_1',
@@ -418,6 +430,8 @@ describe('CheckoutPricingBreakdown', () => {
           recurring_interval: 'month',
           recurring_interval_count: 1,
           is_recurring: true,
+          meter_interval: null,
+          meter_interval_count: null,
         },
       })
 

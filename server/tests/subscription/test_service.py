@@ -58,6 +58,7 @@ from polar.models.customer import CustomerType
 from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
+from polar.models.organization import OrganizationStatus
 from polar.models.product_price import ProductPriceAmountType, ProductPriceSeatUnit
 from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
@@ -395,6 +396,68 @@ class TestCreate:
 
         assert_hooks_called_once(subscription_hooks, {"activated", "updated"})
         enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
+
+    @pytest.mark.auth
+    async def test_valid_snapshots_meter_interval_and_clock(
+        self,
+        enqueue_benefits_grants_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            meter_interval=SubscriptionRecurringInterval.month,
+            prices=[(None, "usd")],
+        )
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product.id,
+            customer_id=customer.id,
+        )
+
+        subscription = await subscription_service.create(
+            session, subscription_create, auth_subject
+        )
+
+        assert subscription.meter_interval == SubscriptionRecurringInterval.month
+        assert subscription.meter_interval_count == 1
+        assert (
+            subscription.current_meter_period_start == subscription.current_period_start
+        )
+        expected_end = SubscriptionRecurringInterval.month.get_next_period(
+            subscription.current_period_start, subscription.anchor_day, 1
+        )
+        assert subscription.current_meter_period_end == expected_end
+
+    @pytest.mark.auth
+    async def test_valid_without_meter_interval_leaves_clock_empty(
+        self,
+        enqueue_benefits_grants_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product_recurring_free_price: Product,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product_recurring_free_price.id,
+            customer_id=customer.id,
+        )
+
+        subscription = await subscription_service.create(
+            session, subscription_create, auth_subject
+        )
+
+        assert subscription.meter_interval is None
+        assert subscription.meter_interval_count is None
+        assert subscription.current_meter_period_start is None
+        assert subscription.current_meter_period_end is None
 
     @pytest.mark.auth
     async def test_valid_with_external_customer_id(
@@ -933,6 +996,84 @@ class TestCreateOrUpdateFromCheckout:
         assert subscription.amount == checkout.total_amount
         assert subscription.payment_method == payment_method
         assert subscription.currency == "eur"
+
+
+@pytest.mark.asyncio
+class TestApplyUpdate:
+    async def test_snapshots_meter_interval_on_product_change(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            meter_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        assert subscription.meter_interval is None
+
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.prorate,
+            product=new_product,
+        )
+        updated = subscription_update.apply_update()
+
+        # The new product's meter cycle is snapshotted, like recurring_interval.
+        assert updated.meter_interval == SubscriptionRecurringInterval.month
+        assert updated.meter_interval_count == 1
+        # ...and the meter clock is re-anchored to the current billing period, so the
+        # two-clock scheduler wakes on the new cadence (without this it stays NULL).
+        assert updated.current_meter_period_start == updated.current_period_start
+        assert updated.current_meter_period_end is not None
+        assert updated.current_meter_period_end > updated.current_meter_period_start
+
+    async def test_clears_meter_clock_changing_to_non_metered_product(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            meter_interval=SubscriptionRecurringInterval.month,
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.initialize_meter_period(subscription.current_period_start)
+        await save_fixture(subscription)
+        assert subscription.current_meter_period_start is not None
+
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.prorate,
+            product=new_product,
+        )
+        updated = subscription_update.apply_update()
+
+        assert updated.meter_interval is None
+        assert updated.current_meter_period_start is None
+        assert updated.current_meter_period_end is None
 
 
 @pytest.mark.asyncio
@@ -1804,6 +1945,40 @@ class TestCycle:
             billing_entry.start_timestamp == updated_subscription.current_period_start
         )
         assert billing_entry.end_timestamp == updated_subscription.current_period_end
+
+    async def test_cycle_rearms_meter_clock(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_start = subscription.current_period_start
+        subscription.current_meter_period_end = subscription.current_period_end
+        await save_fixture(subscription)
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.cycle(session, ctx, subscription)
+
+        # The meter clock re-arms off the new billing period start.
+        assert updated.current_meter_period_start == updated.current_period_start
+        expected_end = SubscriptionRecurringInterval.month.get_next_period(
+            updated.current_period_start, updated.anchor_day, 1
+        )
+        assert updated.current_meter_period_end == expected_end
 
 
 @pytest.mark.asyncio
@@ -4555,6 +4730,86 @@ class TestUpdateTrial:
         assert updated_subscription.seats == 5
         assert updated_subscription.amount == 5000
 
+    async def test_update_trial_end_now_with_pending_update_keeps_period_start_in_past(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        assert subscription.trial_end is not None
+        original_trial_end = subscription.trial_end
+
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=product_second,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        assert subscription_update.new_cycle_end == original_trial_end
+
+        time_before_update = utc_now()
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_trial(
+                session, ctx, subscription, trial_end="now"
+            )
+        time_after_update = utc_now()
+
+        assert subscription.current_period_start < original_trial_end
+        assert time_before_update <= subscription.current_period_start
+        assert subscription.current_period_start <= time_after_update
+
+    async def test_update_trial_end_extended_with_pending_update_keeps_correct_period_start(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        assert subscription.trial_end is not None
+        original_trial_end = subscription.trial_end
+        new_trial_end = original_trial_end + timedelta(days=30)
+
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=product_second,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        assert subscription_update.new_cycle_end == original_trial_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_trial(
+                session, ctx, subscription, trial_end=new_trial_end
+            )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.current_period_start == new_trial_end
+
 
 @pytest.mark.asyncio
 async def test_send_past_due_email(
@@ -6895,6 +7150,247 @@ class TestCancelCustomer:
             "Expected the past_due subscription's pending orders to be voided, "
             f"but found {len(void_calls)} void call(s)"
         )
+
+
+@pytest.mark.asyncio
+class TestCancelForOrganization:
+    async def test_cancels_billable_without_email(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_email_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        await subscription_service.cancel_for_organization(
+            session, product.organization_id
+        )
+
+        await session.refresh(subscription)
+        assert subscription.status == SubscriptionStatus.canceled
+        assert subscription.canceled_at is not None
+        assert subscription.ended_at is not None
+
+        # No customer-facing email is sent for an org-driven cancellation.
+        enqueue_email_mock.assert_not_called()
+
+        # Merchant side effects still happen (pending orders are voided and the
+        # customer state is recomputed).
+        enqueue_job_mock.assert_any_call(
+            "order.void_pending_orders_for_subscription", subscription.id
+        )
+        enqueue_job_mock.assert_any_call(
+            "customer.state_changed", subscription.customer_id
+        )
+
+    async def test_skips_already_ended_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_email_mock: MagicMock,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            revoke=True,
+        )
+        ended_at = subscription.ended_at
+
+        await subscription_service.cancel_for_organization(
+            session, product.organization_id
+        )
+
+        await session.refresh(subscription)
+        assert subscription.ended_at == ended_at
+        enqueue_email_mock.assert_not_called()
+
+    async def test_skips_org_not_in_cancellation_status(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_email_mock: MagicMock,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # The org was reactivated (ACTIVE) after the daily scan enqueued the
+        # job: the deferred cancellation must be a no-op.
+        organization.status = OrganizationStatus.ACTIVE
+        await save_fixture(organization)
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        await subscription_service.cancel_for_organization(
+            session, product.organization_id
+        )
+
+        await session.refresh(subscription)
+        assert subscription.status == SubscriptionStatus.active
+        enqueue_email_mock.assert_not_called()
+
+    async def test_only_cancels_target_organization(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+        product: Product,
+        product_organization_second: Product,
+        customer: Customer,
+    ) -> None:
+        # Both orgs are denied; only the targeted org's subscriptions are
+        # cancelled, proving the scoping is by organization id.
+        organization.status = OrganizationStatus.DENIED
+        organization_second.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        await save_fixture(organization_second)
+        other_customer = await create_customer(
+            save_fixture,
+            organization=organization_second,
+        )
+        target_subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        other_subscription = await create_active_subscription(
+            save_fixture,
+            product=product_organization_second,
+            customer=other_customer,
+        )
+
+        await subscription_service.cancel_for_organization(
+            session, product.organization_id
+        )
+
+        await session.refresh(target_subscription)
+        await session.refresh(other_subscription)
+        assert target_subscription.status == SubscriptionStatus.canceled
+        assert other_subscription.status == SubscriptionStatus.active
+
+    async def test_skips_concurrently_canceled_subscription(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # A duplicate/concurrent run already cancelled the subscription, so
+        # _perform_cancellation raises: the batch must skip it, not abort.
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        mocker.patch.object(
+            subscription_service,
+            "_perform_cancellation",
+            side_effect=AlreadyCanceledSubscription(subscription),
+        )
+
+        # Must not raise.
+        await subscription_service.cancel_for_organization(
+            session, product.organization_id
+        )
+
+    async def test_cancels_multiple_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        # Every billable subscription of the org is cancelled in one batch when
+        # they all fit under the batch size, not just the first one.
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        first = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        second = await create_active_subscription(
+            save_fixture, product=product, customer=customer_second
+        )
+
+        has_more = await subscription_service.cancel_for_organization(
+            session, product.organization_id
+        )
+
+        await session.refresh(first)
+        await session.refresh(second)
+        assert first.status == SubscriptionStatus.canceled
+        assert second.status == SubscriptionStatus.canceled
+        assert has_more is False
+
+    async def test_batches_and_signals_remaining_work(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        # With more billable subscriptions than the batch size, a single call
+        # cancels only a batch and reports that work remains, so the task
+        # re-enqueues itself instead of exceeding the worker time limit.
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        first = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        second = await create_active_subscription(
+            save_fixture, product=product, customer=customer_second
+        )
+
+        has_more = await subscription_service.cancel_for_organization(
+            session, product.organization_id, batch_size=1
+        )
+        assert has_more is True
+
+        await session.refresh(first)
+        await session.refresh(second)
+        cancelled = [
+            s for s in (first, second) if s.status == SubscriptionStatus.canceled
+        ]
+        assert len(cancelled) == 1
+
+        # The next run cancels the last subscription; it still reports remaining
+        # work because it processed a full batch, so one final confirming run
+        # follows.
+        has_more = await subscription_service.cancel_for_organization(
+            session, product.organization_id, batch_size=1
+        )
+        assert has_more is True
+
+        await session.refresh(first)
+        await session.refresh(second)
+        assert first.status == SubscriptionStatus.canceled
+        assert second.status == SubscriptionStatus.canceled
+
+        # Nothing billable remains, so the loop terminates.
+        has_more = await subscription_service.cancel_for_organization(
+            session, product.organization_id, batch_size=1
+        )
+        assert has_more is False
 
 
 @pytest.mark.asyncio

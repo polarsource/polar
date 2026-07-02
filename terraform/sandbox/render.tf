@@ -142,7 +142,7 @@ module "sandbox" {
       database_pool_size = "16"
     }
     worker-sandbox-tinybird = {
-      start_command      = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues tinybird"
+      start_command      = "uv run dramatiq polar.worker.run_without_db -p 1 -t 16 --queues tinybird"
       dramatiq_prom_port = "10002"
     }
     worker-sandbox-invoices-receipts = {
@@ -234,9 +234,14 @@ module "sandbox" {
     files_download_secret = var.s3_files_download_secret_sandbox
   }
 
+  aws_kms_config = {
+    key_id   = module.secrets_kms.key_arn
+    role_arn = module.secrets_kms.role_arn
+  }
+
   worker_sqs_config = {
     enabled               = "true"
-    actors                = jsonencode(["dummy"])
+    actors                = var.worker_sqs_actors
     queue_prefix          = "polar-sandbox-tasks"
     aws_access_key_id     = aws_iam_access_key.tasks_producer.id
     aws_secret_access_key = aws_iam_access_key.tasks_producer.secret

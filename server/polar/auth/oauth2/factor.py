@@ -33,7 +33,7 @@ class OAuth2FactorMixin:
         enrollment_orm = result.scalar_one_or_none()
         if enrollment_orm is None:
             return None
-        return enrollment_orm.to_dataclass(self.SCOPE)
+        return await enrollment_orm.to_dataclass(self.SCOPE)
 
     async def insert(
         self: OAuth2FactorProtocol, enrollment: OAuth2EnrollmentDataclass
@@ -42,14 +42,16 @@ class OAuth2FactorMixin:
         email = await typing.cast(OAuth2FactorMixin, self).get_email(enrollment)
         enrollment_orm = OAuthAccount(
             platform=OAuthPlatform(self.identifier),
-            access_token=enrollment.access_token,
             expires_at=enrollment.expires_at,
-            refresh_token=enrollment.refresh_token,
             refresh_token_expires_at=enrollment.refresh_token_expires_at,
             account_id=enrollment.account_id,
             account_email=email,
             account_username=profile.get("name"),
             user_id=enrollment.identity_id,
+        )
+        await enrollment_orm.set_tokens(
+            access_token=enrollment.access_token,
+            refresh_token=enrollment.refresh_token,
         )
         self.session.add(enrollment_orm)
         await self.session.flush()
@@ -58,6 +60,7 @@ class OAuth2FactorMixin:
     async def update(
         self: OAuth2FactorProtocol, enrollment: OAuth2EnrollmentDataclass
     ) -> None:
+        assert enrollment.id is not None
         profile = await self.get_profile(enrollment.access_token)
         email = await typing.cast(OAuth2FactorMixin, self).get_email(enrollment)
         statement = (
@@ -67,8 +70,14 @@ class OAuth2FactorMixin:
             )
             .values(
                 access_token=enrollment.access_token,
+                access_token_encrypted=await OAuthAccount.encrypt_access_token(
+                    enrollment.id, enrollment.access_token
+                ),
                 expires_at=enrollment.expires_at,
                 refresh_token=enrollment.refresh_token,
+                refresh_token_encrypted=await OAuthAccount.encrypt_refresh_token(
+                    enrollment.id, enrollment.refresh_token
+                ),
                 refresh_token_expires_at=enrollment.refresh_token_expires_at,
                 account_email=email,
                 account_username=profile.get("name"),
@@ -88,7 +97,7 @@ class OAuth2FactorMixin:
         enrollment_orm = result.scalar_one_or_none()
         if enrollment_orm is None:
             return None
-        return enrollment_orm.to_dataclass(self.SCOPE)
+        return await enrollment_orm.to_dataclass(self.SCOPE)
 
     async def get_email(
         self, callback_result: OAuth2EnrollmentDataclass | OAuth2Account

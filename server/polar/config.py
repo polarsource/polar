@@ -248,6 +248,10 @@ class Settings(BaseSettings):
     # (not fully refunded) order, i.e. the post-chargeback-risk wind-down window.
     ORGANIZATION_OFFBOARDING_PERIOD: timedelta = timedelta(days=120)
 
+    # Delay after an org becomes denied/blocked/offboarded before its customers'
+    # subscriptions are auto-cancelled — silently, without notifying customers.
+    ORGANIZATION_SUBSCRIPTION_CANCELLATION_DELAY: timedelta = timedelta(days=7)
+
     # Stripe
     STRIPE_SECRET_KEY: str = ""
     STRIPE_PUBLISHABLE_KEY: str = ""
@@ -255,6 +259,10 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: str = ""
     STRIPE_CONNECT_WEBHOOK_SECRET: str = ""
     STRIPE_STATEMENT_DESCRIPTOR: str = "POLAR"
+    # Polar Stripe App OAuth credentials, read from the app's install link in the
+    # Stripe dashboard: `.../oauth/v2/{CLIENT_LINK_ID}/authorize?client_id={CLIENT_ID}`.
+    STRIPE_APP_CLIENT_ID: str = ""
+    STRIPE_APP_CLIENT_LINK_ID: str = ""
 
     # Numeral
     NUMERAL_API_KEY: str | None = None
@@ -324,9 +332,15 @@ class Settings(BaseSettings):
     AWS_REGION: str = "us-east-2"
     AWS_SIGNATURE_VERSION: str = "v4"
 
+    # Secrets encryption. Production and sandbox wrap data keys with a KMS key
+    # (AWS_KMS_KEY_ID); local and CI use a static key instead, so tests make no
+    # cloud calls.
+    AWS_KMS_KEY_ID: str | None = None
+    ENCRYPTION_LOCAL_KEY: str = "super secret encryption key"
+
     # Worker SQS/Lambda execution engine (POC)
-    # When enabled, jobs enqueued for an allowlisted actor are routed to a
-    # per-actor SQS queue (consumed by a Lambda) instead of the Redis broker.
+    # When enabled, jobs enqueued for an allowlisted actor are routed to an
+    # SQS queue consumed by the Lambda worker instead of Redis.
     WORKER_SQS_ENABLED: bool = False
     WORKER_SQS_ACTORS: set[str] = {"dummy"}
     WORKER_SQS_QUEUE_PREFIX: str = "polar-tasks"
@@ -334,6 +348,7 @@ class Settings(BaseSettings):
     SQS_ENDPOINT_URL: str | None = None
     WORKER_SQS_AWS_ACCESS_KEY_ID: str | None = None
     WORKER_SQS_AWS_SECRET_ACCESS_KEY: str | None = None
+    WORKER_SQS_SCHEDULER_ROLE_ARN: str | None = None
 
     # Downloadable files
     S3_FILES_BUCKET_NAME: str = "polar-s3"

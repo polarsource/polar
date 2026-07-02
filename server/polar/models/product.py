@@ -22,7 +22,7 @@ from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import MeterInterval, SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
 from polar.kit.metadata import MetadataMixin
@@ -77,6 +77,22 @@ class Product(VisibilityMixin, TrialConfigurationMixin, MetadataMixin, RecordMod
         default=None,
     )
     recurring_interval_count: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=None
+    )
+    meter_interval: Mapped[MeterInterval | None] = mapped_column(
+        StringEnum(MeterInterval),
+        nullable=True,
+        default=None,
+    )
+    """
+    Optional meter cycle, independent of the billing interval.
+
+    When set, it drives the metered concerns (overage settlement, meter resets and
+    meter-credit grants) on its own cadence — e.g. yearly billing with monthly
+    credits. It must evenly divide the billing interval. When unset, metered
+    concerns follow the billing interval, exactly as before.
+    """
+    meter_interval_count: Mapped[int | None] = mapped_column(
         Integer, nullable=True, default=None
     )
 

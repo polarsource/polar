@@ -12,12 +12,11 @@ from authlib.oauth2.rfc6749.grants import BaseGrant, TokenEndpointMixin
 from authlib.oauth2.rfc6749.hooks import hooked
 from sqlalchemy import select
 
-from polar.auth.permission import OrganizationPermission
 from polar.authz.repository import select_user_org_ids
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
-from polar.models import Organization, User, UserSession
+from polar.models import UserSession
 
 from ..sub_type import SubType, SubTypeValue
 
@@ -91,39 +90,34 @@ class WebGrant(BaseGrant, TokenEndpointMixin):
             raise InvalidGrantError()
 
         user = user_session.user
-        sub_value: User | Organization | None = None
-        if sub_type == SubType.user:
-            sub_value = user
-            # Inherit the session's down-scope so the token can't be broader
-            # than the session it's exchanged from.
-            self.request.organization_ids = [
-                scope.organization_id for scope in user_session.organization_scopes
-            ]
-        elif sub_type == SubType.organization:
+        session_organization_ids = {
+            scope.organization_id for scope in user_session.organization_scopes
+        }
+
+        if sub_type == SubType.organization:
             assert sub is not None
             try:
                 sub_uuid = uuid.UUID(sub)
             except ValueError as e:
                 raise InvalidRequestError("Invalid 'sub' UUID") from e
-            organization = self._get_organization_admin(sub_uuid, user)
-            if organization is None:
+            # The OAuth server only issues user tokens now; sub_type=organization
+            # mints a user token down-scoped to the single requested org. It must
+            # be one the user is a member of, within the session's own down-scope,
+            # so the token can never be broader than its session.
+            member_organization_ids = set(
+                # Intersected with session_organization_ids just below.
+                self.server.session.execute(select_user_org_ids(user.id))  # noqa: org-scope
+                .scalars()
+                .all()
+            )
+            if session_organization_ids:
+                member_organization_ids &= session_organization_ids
+            if sub_uuid not in member_organization_ids:
                 raise InvalidGrantError()
-            sub_value = organization
+            self.request.organization_ids = [sub_uuid]
+        else:
+            # Inherit the session's down-scope so the token can't be broader
+            # than the session it's exchanged from.
+            self.request.organization_ids = list(session_organization_ids)
 
-        assert sub_value is not None
-        return sub_type, sub_value
-
-    def _get_organization_admin(
-        self, organization_id: uuid.UUID, user: User
-    ) -> Organization | None:
-        statement = select(Organization).where(
-            Organization.id == organization_id,
-            Organization.id.in_(
-                select_user_org_ids(
-                    user.id,
-                    permission=OrganizationPermission.organization_manage,
-                )
-            ),
-        )
-        result = self.server.session.execute(statement)
-        return result.unique().scalar_one_or_none()
+        return SubType.user, user

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import Path
@@ -137,6 +138,13 @@ class OrderBase(TimestampedSchema, IDSchema):
     discount_id: UUID4 | None
     subscription_id: UUID4 | None
     checkout_id: UUID4 | None
+    next_payment_attempt_at: datetime | None = Field(
+        None,
+        description=(
+            "When the next automatic payment retry is scheduled. "
+            "`null` if the order is not in dunning or all retries have been exhausted."
+        ),
+    )
 
     @computed_field(
         description="Amount in cents, after discounts but before taxes.",

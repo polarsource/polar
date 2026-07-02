@@ -8,7 +8,7 @@ import { ProductListItem } from '@/components/Products/ProductListItem'
 import { useCustomer } from '@/hooks/queries/customers'
 import { usePayments } from '@/hooks/queries/payments'
 import { schemas } from '@polar-sh/client'
-import { DataTable } from '@polar-sh/orbit'
+import { DataTable, Truncated, type DataTableColumnDef } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { List } from '@polar-sh/orbit'
 import React from 'react'
@@ -26,12 +26,16 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, checkout }) => {
     { checkout_id: checkout.id },
   )
 
+  const hasDeclinedPayment = (payments?.items ?? []).some(
+    (payment) => payment.status === 'failed',
+  )
+
   return (
     <DashboardBody
       title={
         <div className="flex flex-col gap-4">
           <div className="flex flex-row items-center gap-4">
-            <h2 className="text-xl font-normal">Checkout</h2>
+            <h2 className="text-xl">Checkout</h2>
           </div>
           <span className="dark:text-polar-500 font-mono text-sm text-gray-500">
             {checkout.id}
@@ -100,6 +104,25 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, checkout }) => {
                 <PaymentStatus payment={original} />
               ),
             },
+            ...(hasDeclinedPayment
+              ? ([
+                  {
+                    accessorKey: 'decline_reason',
+                    header: 'Bank Decline Reason',
+                    cell: ({ row: { original } }) => {
+                      const reason =
+                        original.decline_message || original.decline_reason
+                      return reason ? (
+                        <Truncated>
+                          <span className="text-sm">{reason}</span>
+                        </Truncated>
+                      ) : (
+                        '—'
+                      )
+                    },
+                  },
+                ] satisfies DataTableColumnDef<schemas['Payment']>[])
+              : []),
           ]}
           data={payments?.items ?? []}
         />

@@ -193,11 +193,11 @@ module "production" {
       dramatiq_prom_port = "10001"
       database_pool_size = "16"
     }
-    "worker-tinybird" = {
-      start_command      = "uv run dramatiq polar.worker.run -p 4 -t 32 --queues tinybird"
+    worker-tinybird = {
+      start_command      = "uv run dramatiq polar.worker.run_without_db -p 4 -t 32 --queues tinybird"
       dramatiq_prom_port = "10002"
     }
-    "worker-invoices-receipts" = {
+    worker-invoices-receipts = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 3 --queues invoices_and_receipts"
       plan               = "standard"
       dramatiq_prom_port = "10003"
@@ -334,6 +334,11 @@ module "production" {
     secret_access_key     = var.aws_secret_access_key_production
     files_download_salt   = var.s3_files_download_salt_production
     files_download_secret = var.s3_files_download_secret_production
+  }
+
+  aws_kms_config = {
+    key_id   = module.secrets_kms.key_arn
+    role_arn = module.secrets_kms.role_arn
   }
 
   github_secrets = {

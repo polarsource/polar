@@ -13,6 +13,7 @@ from polar.openapi import APITag
 from polar.order.schemas import OrderID
 from polar.order.service import (
     MissingInvoiceBillingDetails,
+    OrderNotEligibleForInvoice,
     PaymentAlreadyInProgress,
 )
 from polar.payment.repository import PaymentRepository
@@ -140,6 +141,10 @@ async def update(
     summary="Generate Order Invoice",
     responses={
         404: OrderNotFound,
+        409: {
+            "description": "Order is not eligible for invoice generation (invalid status).",
+            "model": OrderNotEligibleForInvoice.schema(),
+        },
         422: {
             "description": "Order is missing billing name or address.",
             "model": MissingInvoiceBillingDetails.schema(),

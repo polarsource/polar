@@ -419,3 +419,9 @@ variable "next_public_stripe_payment_method_configuration" {
   type        = string
   sensitive   = true
 }
+
+variable "worker_sqs_actors" {
+  description = "JSON array of Dramatiq actor names routed to the SQS execution engine"
+  type        = string
+  default     = "[\"dummy\"]"
+}

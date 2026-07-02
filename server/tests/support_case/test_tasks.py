@@ -81,14 +81,16 @@ class TestNotifyOrganization:
         await _notify(message.id)
 
         enqueue.assert_called_once()
-        kwargs = enqueue.call_args.kwargs
+        email, kwargs = enqueue.call_args
         assert kwargs["to_email_addr"] == user_organization.user.email
         # Notification-only: from noreply, no reply-to (replies shouldn't open a
         # disconnected Plain thread).
         assert kwargs["from_email_addr"].startswith("noreply@")
         assert kwargs["reply_to_email_addr"] is None
+        assert email[0].props.case_label == "appeal"
+        assert email[0].props.url.endswith(f"/{organization.slug}/finance/account")
 
-    async def test_suppresses_dispute_case_until_merchant_ui(
+    async def test_notifies_dispute_case(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -98,7 +100,7 @@ class TestNotifyOrganization:
         product: Product,
         user_organization: UserOrganization,
     ) -> None:
-        # No merchant-facing dispute thread yet, so its emails are gated off.
+        # The merchant-facing dispute thread ships, so support replies notify.
         case = await create_dispute_case(save_fixture, organization, customer, product)
         message = await _message(
             save_fixture,
@@ -114,7 +116,12 @@ class TestNotifyOrganization:
 
         await _notify(message.id)
 
-        enqueue.assert_not_called()
+        enqueue.assert_called_once()
+        email, kwargs = enqueue.call_args
+        assert kwargs["to_email_addr"] == user_organization.user.email
+        # Dispute notifications deep-link to the dispute thread, not finance.
+        assert email[0].props.case_label == "dispute"
+        assert email[0].props.url.endswith(f"/sales/disputes/{case.dispute_id}")
 
     async def test_skips_non_staff_message(
         self,

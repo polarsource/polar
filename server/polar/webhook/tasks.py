@@ -4,6 +4,7 @@ from ssl import SSLError
 from uuid import UUID
 
 import httpx
+import idna
 import structlog
 from apscheduler.triggers.cron import CronTrigger
 from dramatiq import Retry
@@ -188,8 +189,17 @@ async def _webhook_event_send(
             _, delay = compute_backoff(
                 delivery_count,
                 factor=settings.WORKER_MIN_BACKOFF_MILLISECONDS,
+                max_backoff=20 * 60_000,
             )
             raise Retry(delay=delay) from e
+    # Invalid Unicode codepoint in the URL hostname (e.g. em dash):
+    # permanently fail, no retry.
+    except idna.core.InvalidCodepoint as e:
+        bound_log.warning("Unexpected error while sending a webhook", error=e)
+        delivery.succeeded = False
+        event.succeeded = False
+        delivery.response = str(e)
+        enqueue_job("webhook_event.failed", webhook_event_id=webhook_event_id)
     # Success
     else:
         delivery.succeeded = True

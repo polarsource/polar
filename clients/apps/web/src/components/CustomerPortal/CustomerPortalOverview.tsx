@@ -131,7 +131,7 @@ export const CustomerPortalOverview = ({
         )}
 
       {/* Benefit Grants - visible to all users */}
-      <CustomerPortalGrants organization={organization} api={api} />
+      <CustomerPortalGrants api={api} />
 
       {/* Inactive subscriptions - only visible to users with billing permissions */}
       {canManageBilling && inactiveOwnedSubscriptions.length > 0 && (

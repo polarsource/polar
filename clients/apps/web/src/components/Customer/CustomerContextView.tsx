@@ -9,11 +9,10 @@ import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Pill } from '@polar-sh/orbit'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
+import { ContextCard } from '../Shared/ContextCard'
 import { DetailRow } from '../Shared/DetailRow'
 import { useSubscriptions } from '@/hooks/queries'
-import { PropsWithChildren } from 'react'
 import { getSubscriptionStatusBorderColor } from '../Subscriptions/utils'
 
 interface CustomerContextViewProps {
@@ -152,16 +151,6 @@ export const CustomerContextView = ({
   )
 }
 
-type ContextCardProps = PropsWithChildren & {}
-
-const ContextCard = (props: ContextCardProps) => {
-  return (
-    <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 border-gray-200 bg-white p-6 md:shadow-xs lg:rounded-2xl">
-      {props.children}
-    </ShadowBox>
-  )
-}
-
 const STATUS_DISPLAY_NAMES: Record<schemas['SubscriptionStatus'], string> = {
   active: 'Active',
   trialing: 'Trialing',
@@ -182,18 +171,22 @@ const STATUS_ORDER: Record<schemas['SubscriptionStatus'], number> = {
   incomplete_expired: 6,
 }
 
-const INTERVAL_LABELS: Record<
-  schemas['SubscriptionRecurringInterval'],
-  string
-> = { day: 'Daily', week: 'Weekly', month: 'Monthly', year: 'Yearly' }
+const INTERVAL_LABELS: Record<schemas['RecurringInterval'], string> = {
+  day: 'Daily',
+  week: 'Weekly',
+  month: 'Monthly',
+  year: 'Yearly',
+}
 
-const INTERVAL_PLURAL: Record<
-  schemas['SubscriptionRecurringInterval'],
-  string
-> = { day: 'days', week: 'weeks', month: 'months', year: 'years' }
+const INTERVAL_PLURAL: Record<schemas['RecurringInterval'], string> = {
+  day: 'days',
+  week: 'weeks',
+  month: 'months',
+  year: 'years',
+}
 
 const formatInterval = (
-  interval: schemas['SubscriptionRecurringInterval'],
+  interval: schemas['RecurringInterval'],
   count: number,
 ): string =>
   count === 1

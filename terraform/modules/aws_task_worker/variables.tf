@@ -9,7 +9,7 @@ variable "environment" {
 }
 
 variable "name" {
-  description = "Short task name used in the Lambda function name: polar-{environment}-worker-{name}."
+  description = "Short worker profile name used in the Lambda function name: polar-{environment}-worker-{name}."
   type        = string
 
   validation {
@@ -24,12 +24,12 @@ variable "name" {
 }
 
 variable "queue_name" {
-  description = "Full task SQS queue name. The producer addresses this queue by name, so the caller must match it."
+  description = "Full worker profile SQS queue name. The producer addresses this queue by name, so the caller must match it."
   type        = string
 }
 
 variable "image_uri" {
-  description = "Container image URI the task Lambda runs."
+  description = "Container image URI the worker Lambda runs."
   type        = string
 }
 
@@ -42,7 +42,7 @@ variable "timeout_seconds" {
 variable "memory_size" {
   description = "Lambda memory in MB."
   type        = number
-  default     = 512
+  default     = 2048
 }
 
 variable "reserved_concurrency" {
@@ -52,15 +52,9 @@ variable "reserved_concurrency" {
 }
 
 variable "max_retries" {
-  description = "DLQ redrive maxReceiveCount is min(max_retries + 1, 5)."
+  description = "DLQ redrive maxReceiveCount is max_retries + 1. Backoffs past 12h are rescheduled via EventBridge Scheduler, which resets the SQS receive count, so this only bounds the in-queue retry climb before the handoff."
   type        = number
-  default     = 4
-}
-
-variable "batch_size" {
-  description = "SQS event source mapping batch size."
-  type        = number
-  default     = 1
+  default     = 20
 }
 
 variable "enabled" {
@@ -104,4 +98,10 @@ variable "tags" {
   description = "Tags applied to all created resources."
   type        = map(string)
   default     = {}
+}
+
+variable "permissions_boundary_arn" {
+  description = "Optional permissions boundary ARN to attach to the Lambda IAM role."
+  type        = string
+  default     = null
 }

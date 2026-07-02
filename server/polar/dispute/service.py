@@ -52,6 +52,12 @@ class DisputePaymentNotFoundError(DisputeError):
         super().__init__(message)
 
 
+class DisputeNotOpenError(DisputeError):
+    def __init__(self, dispute_id: uuid.UUID) -> None:
+        self.dispute_id = dispute_id
+        super().__init__(f"Dispute {dispute_id} is not awaiting a response.", 409)
+
+
 class DisputeService:
     async def list(
         self,
@@ -70,7 +76,9 @@ class DisputeService:
         org_ids = await get_accessible_org_ids(
             session, auth_subject, permission=OrganizationPermission.sales_read
         )
-        statement = repository.get_statement_by_org_ids(org_ids)
+        statement = repository.get_statement_by_org_ids(org_ids).options(
+            *repository.get_eager_options()
+        )
 
         if organization_id is not None:
             statement = statement.where(Payment.organization_id.in_(organization_id))
@@ -97,8 +105,40 @@ class DisputeService:
         org_ids = await get_accessible_org_ids(
             session, auth_subject, permission=OrganizationPermission.sales_read
         )
-        statement = repository.get_statement_by_org_ids(org_ids).where(Dispute.id == id)
+        statement = (
+            repository.get_statement_by_org_ids(org_ids)
+            .options(*repository.get_eager_options())
+            .where(Dispute.id == id)
+        )
         return await repository.get_one_or_none(statement)
+
+    async def accept(self, session: AsyncSession, dispute: Dispute) -> Dispute:
+        """Merchant concedes the chargeback.
+
+        Closes the dispute with the processor — which settles it as ``lost`` —
+        and records the merchant's decision on the support thread. The resulting
+        ``lost`` state is reconciled through the same path as the Stripe webhook.
+        """
+        if dispute.status != DisputeStatus.needs_response:
+            raise DisputeNotOpenError(dispute.id)
+
+        assert dispute.payment_processor_id is not None
+
+        case = await dispute_case_service.get_case(session, dispute)
+        if case is not None:
+            await dispute_case_service.accept(session, case)
+
+        stripe_dispute = await stripe_service.close_dispute(
+            dispute.payment_processor_id
+        )
+        await self.upsert_from_stripe(session, stripe_dispute)
+
+        repository = DisputeRepository.from_session(session)
+        reloaded = await repository.get_by_id(
+            dispute.id, options=repository.get_eager_options()
+        )
+        assert reloaded is not None
+        return reloaded
 
     async def upsert_from_stripe(
         self, session: AsyncSession, stripe_dispute: stripe_lib.Dispute
@@ -221,7 +261,7 @@ class DisputeService:
         if dispute.status == DisputeStatus.needs_response:
             if case is None:
                 await dispute_case_service.open_case(
-                    session, dispute, organization=dispute.payment.organization
+                    session, dispute, organization=dispute.order.organization
                 )
             elif not await dispute_case_service.is_open(session, case):
                 # Dispute reopened after we'd closed the case (e.g. a prevented
@@ -245,7 +285,6 @@ class DisputeService:
             case DisputeStatus.prevented:
                 await dispute_case_service.prevent(session, case)
             case DisputeStatus.needs_response | DisputeStatus.early_warning:
-                # needs_response is handled above; early_warning never has a case.
                 pass
             case _:
                 assert_never(dispute.status)
@@ -314,7 +353,10 @@ class DisputeService:
         payment = await payment_repository.get_by_processor_id(
             PaymentProcessor.stripe,
             processor_id,
-            options=(joinedload(Payment.order), joinedload(Payment.organization)),
+            options=(
+                joinedload(Payment.order).joinedload(Order.organization),
+                joinedload(Payment.organization),
+            ),
         )
         if payment is None or payment.order is None:
             raise DisputePaymentNotFoundError(processor, processor_id)

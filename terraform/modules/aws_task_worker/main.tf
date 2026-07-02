@@ -3,6 +3,8 @@ locals {
   in_vpc        = length(var.subnet_ids) > 0
 }
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_sqs_queue" "dlq" {
   name                      = "${var.queue_name}-dlq"
   message_retention_seconds = 1209600
@@ -18,10 +20,49 @@ resource "aws_sqs_queue" "task" {
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dlq.arn
-    maxReceiveCount     = min(var.max_retries + 1, 5)
+    maxReceiveCount     = var.max_retries + 1
   })
 
   tags = var.tags
+}
+
+# Role EventBridge Scheduler assumes to redeliver retries delayed beyond SQS's 12h visibility limit.
+data "aws_iam_policy_document" "scheduler_assume" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["scheduler.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "scheduler" {
+  name                 = "${local.function_name}-scheduler"
+  assume_role_policy   = data.aws_iam_policy_document.scheduler_assume.json
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = var.tags
+
+  lifecycle {
+    precondition {
+      condition     = length("${local.function_name}-scheduler") <= 64
+      error_message = "Scheduler role name must be 64 characters or fewer: ${local.function_name}-scheduler"
+    }
+  }
+}
+
+data "aws_iam_policy_document" "scheduler" {
+  statement {
+    sid       = "SendToTaskQueue"
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.task.arn]
+  }
+}
+
+resource "aws_iam_role_policy" "scheduler" {
+  name   = "${local.function_name}-scheduler"
+  role   = aws_iam_role.scheduler.id
+  policy = data.aws_iam_policy_document.scheduler.json
 }
 
 data "aws_iam_policy_document" "lambda_assume" {
@@ -35,9 +76,10 @@ data "aws_iam_policy_document" "lambda_assume" {
 }
 
 resource "aws_iam_role" "lambda" {
-  name               = local.function_name
-  assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
-  tags               = var.tags
+  name                 = local.function_name
+  assume_role_policy   = data.aws_iam_policy_document.lambda_assume.json
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = var.tags
 }
 
 data "aws_iam_policy_document" "lambda" {
@@ -65,9 +107,29 @@ data "aws_iam_policy_document" "lambda" {
   }
 
   statement {
-    sid       = "DeadLetterQueue"
-    actions   = ["sqs:SendMessage"]
+    sid = "DeadLetterQueue"
+    actions = [
+      "sqs:GetQueueUrl",
+      "sqs:SendMessage",
+    ]
     resources = [aws_sqs_queue.dlq.arn]
+  }
+
+  statement {
+    sid       = "ScheduleRetries"
+    actions   = ["scheduler:CreateSchedule"]
+    resources = ["arn:aws:scheduler:*:${data.aws_caller_identity.current.account_id}:schedule/default/polar-retry-*"]
+  }
+
+  statement {
+    sid       = "PassSchedulerRole"
+    actions   = ["iam:PassRole"]
+    resources = [aws_iam_role.scheduler.arn]
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["scheduler.amazonaws.com"]
+    }
   }
 }
 
@@ -107,6 +169,7 @@ resource "aws_lambda_function" "task" {
       var.secret_environment_variables,
       { POLAR_DATABASE_POOL_SIZE = "1" },
       { SERVICE_NAME = local.function_name },
+      { POLAR_WORKER_SQS_SCHEDULER_ROLE_ARN = aws_iam_role.scheduler.arn },
     )
   }
 
@@ -133,7 +196,7 @@ resource "aws_lambda_function" "task" {
 resource "aws_lambda_event_source_mapping" "task" {
   event_source_arn        = aws_sqs_queue.task.arn
   function_name           = aws_lambda_function.task.arn
-  batch_size              = var.batch_size
+  batch_size              = 1
   enabled                 = var.enabled
   function_response_types = ["ReportBatchItemFailures"]
 }

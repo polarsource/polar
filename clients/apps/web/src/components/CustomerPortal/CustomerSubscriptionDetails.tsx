@@ -20,7 +20,6 @@ import { ConfirmModal } from '../Modal/ConfirmModal'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
 import { DetailRow } from '../Shared/DetailRow'
-import CustomerCancellationModal from './CustomerCancellationModal'
 import CustomerChangePlanModal from './CustomerChangePlanModal'
 import { CustomerSubscriptionHeader } from './CustomerSubscriptionHeader'
 
@@ -40,7 +39,6 @@ const CustomerSubscriptionDetails = ({
   customerSessionToken: string
 }) => {
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
-  const [showCancelModal, setShowCancelModal] = useState(false)
   const [showClearPendingUpdateModal, setShowClearPendingUpdateModal] =
     useState(false)
 
@@ -227,13 +225,6 @@ const CustomerSubscriptionDetails = ({
             Change plan
           </Button>
         )}
-
-        <CustomerCancellationModal
-          isShown={showCancelModal}
-          hide={() => setShowCancelModal(false)}
-          subscription={subscription}
-          cancelSubscription={cancelSubscription}
-        />
       </div>
 
       <InlineModal

@@ -1,5 +1,6 @@
 import typing
 import uuid
+from datetime import UTC, datetime
 
 from fastapi import Depends, Request, Response
 from reauth.authentication_session import (
@@ -21,7 +22,7 @@ from polar.kit.http import is_localhost
 from polar.models import AuthenticationSession
 from polar.postgres import AsyncSession, get_db_session
 
-from .factors import get_factors
+from .factors import get_factors, get_org_factors
 from .schemas import AuthenticationSession as AuthenticationSessionSchema
 
 TOKEN_PREFIX = "polar_auth_session_"
@@ -87,6 +88,7 @@ class AuthenticationSessionService(AuthenticationSessionServiceBase):
                 step=authentication_session.step,
                 authentication_method_references=authentication_session.amr,
                 used_factors=authentication_session.used_factors,
+                context=authentication_session.context,
                 identity_id=authentication_session.identity_id,
             )
         )
@@ -105,6 +107,7 @@ class AuthenticationSessionService(AuthenticationSessionServiceBase):
     async def set_cookie(
         self, request: Request, response: Response, value: str, expires_at: int
     ) -> None:
+        expires_datetime = datetime.fromtimestamp(expires_at, tz=UTC)
         response.set_cookie(
             key=settings.AUTHENTICATION_SESSION_COOKIE_KEY,
             value=value,
@@ -113,7 +116,7 @@ class AuthenticationSessionService(AuthenticationSessionServiceBase):
             httponly=True,
             secure=not is_localhost(request),
             samesite="lax",
-            expires=expires_at,
+            expires=expires_datetime,
         )
 
     async def to_schema(
@@ -136,6 +139,13 @@ class AuthenticationSessionService(AuthenticationSessionServiceBase):
 async def get_authentication_session_service(
     session: AsyncSession = Depends(get_db_session),
     factors: set[FactorBase[typing.Any]] = Depends(get_factors),
+) -> AuthenticationSessionService:
+    return AuthenticationSessionService(session, factors)
+
+
+async def get_org_authentication_session_service(
+    session: AsyncSession = Depends(get_db_session),
+    factors: set[FactorBase[typing.Any]] = Depends(get_org_factors),
 ) -> AuthenticationSessionService:
     return AuthenticationSessionService(session, factors)
 

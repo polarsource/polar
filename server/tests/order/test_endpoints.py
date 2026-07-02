@@ -212,6 +212,33 @@ class TestGetOrder:
         json = response.json()
         assert json["custom_field_data"] == {"test": None}
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.orders_read}),
+    )
+    async def test_next_payment_attempt_at(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        next_attempt = datetime(2025, 6, 24, 14, 32, tzinfo=UTC)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=next_attempt,
+        )
+
+        response = await client.get(f"/v1/orders/{order.id}")
+
+        assert response.status_code == 200
+        assert response.json()[
+            "next_payment_attempt_at"
+        ] == next_attempt.isoformat().replace("+00:00", "Z")
+
 
 @pytest.mark.asyncio
 class TestExportOrders:

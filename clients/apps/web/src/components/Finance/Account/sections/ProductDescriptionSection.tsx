@@ -165,9 +165,9 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
   const counterColor = getCounterColor()
 
   const showContinueAnyway =
-    aup.verdict === 'CLARIFY' &&
-    aup.history.length >= 3 &&
-    productDescription.trim().length > 30 &&
+    aup.verdict &&
+    aup.history.length >= 2 &&
+    productDescription.trim().length >= MIN_LENGTH &&
     !aup.isValidating
 
   const submitDisabled =
@@ -191,7 +191,7 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
                   loading={submitting === 'submitting-anyway'}
                   disabled={submitting === 'submitting'}
                 >
-                  Continue without review
+                  Continue anyway. This may trigger a manual review.
                 </Button>
               )}
               <Button

@@ -10,6 +10,7 @@ import { BillingBenefitGrants } from '@/components/Settings/Billing/BillingBenef
 import { BillingOrdersTable } from '@/components/Settings/Billing/BillingOrdersTable'
 import { BillingPaymentMethods } from '@/components/Settings/Billing/BillingPaymentMethods'
 import { BillingSubscriptionCard } from '@/components/Settings/Billing/BillingSubscriptionCard'
+import { PastDueSubscriptionCallout } from '@/components/Settings/Billing/PastDueSubscriptionCallout'
 import { SandboxPreviewAccessNotice } from '@/components/Settings/Billing/SandboxPreviewAccessNotice'
 import { StartupProgramCallout } from '@/components/Settings/Billing/StartupProgramCallout'
 import { Section, SectionDescription } from '@/components/Settings/Section'
@@ -153,6 +154,9 @@ export default function BillingPage({
                 organization={organization}
                 subscription={subscriptionQuery.data}
                 plans={plansQuery.data ?? []}
+              />
+              <PastDueSubscriptionCallout
+                subscription={subscriptionQuery.data}
               />
               <BillingSubscriptionCard
                 subscription={subscriptionQuery.data}

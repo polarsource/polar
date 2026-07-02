@@ -2,9 +2,14 @@ provider "aws" {
   region = "us-east-1"
 }
 
+provider "aws" {
+  alias  = "us_east_2"
+  region = "us-east-2"
+}
+
 resource "aws_organizations_organization" "current" {
   feature_set                   = "ALL"
-  aws_service_access_principals = ["sso.amazonaws.com"]
+  aws_service_access_principals = ["account.amazonaws.com", "sso.amazonaws.com"]
   enabled_policy_types          = ["SERVICE_CONTROL_POLICY"]
 
   lifecycle {

@@ -16,8 +16,11 @@ import { OrganizationInvite } from './organization_invite'
 import { OrganizationOffboarded } from './organization_offboarded'
 import { PersonalAccessTokenLeaked } from './personal_access_token_leaked'
 import { PolarSelfStartupProgramWelcome } from './polar_self_startup_program_welcome'
+import { PolarSelfSubscriptionCancellation } from './polar_self_subscription_cancellation'
 import { PolarSelfSubscriptionConfirmation } from './polar_self_subscription_confirmation'
 import { PolarSelfSubscriptionCycled } from './polar_self_subscription_cycled'
+import { PolarSelfSubscriptionPastDue } from './polar_self_subscription_past_due'
+import { PolarSelfSubscriptionRevoked } from './polar_self_subscription_revoked'
 import { SeatInvitation } from './seat_invitation'
 import { SubscriptionCancellation } from './subscription_cancellation'
 import { SubscriptionConfirmation } from './subscription_confirmation'
@@ -65,8 +68,11 @@ const TEMPLATES: Record<string, React.FC<never>> = {
   notification_new_subscription: NotificationNewSubscription,
   notification_credits_granted: NotificationCreditsGranted,
   chargeback_prevention_refund: ChargebackPreventionRefund,
+  polar_self_subscription_cancellation: PolarSelfSubscriptionCancellation,
   polar_self_subscription_confirmation: PolarSelfSubscriptionConfirmation,
   polar_self_subscription_cycled: PolarSelfSubscriptionCycled,
+  polar_self_subscription_past_due: PolarSelfSubscriptionPastDue,
+  polar_self_subscription_revoked: PolarSelfSubscriptionRevoked,
   polar_self_startup_program_welcome: PolarSelfStartupProgramWelcome,
 }
 

@@ -12,6 +12,7 @@ from uuid import UUID
 from sqlalchemy import Select, and_, func, or_, select
 
 from polar.models import Dispute, Order, Organization, User
+from polar.models.dispute import DisputeStatus
 from polar.models.organization_review import OrganizationReview
 from polar.models.support_case import (
     DisputeSupportCase,
@@ -25,8 +26,11 @@ from polar.models.support_case import (
 )
 from polar.support_case.repository import SupportCaseMessageRepository
 
-# (case, organization, is_open, assignee_email, awaiting_platform, unread)
-Row = tuple[SupportCase, Organization, bool, str | None, bool, bool]
+# (case, organization, is_open, assignee_email, awaiting_platform, unread,
+#  dispute_status) — dispute_status is None for non-dispute cases.
+Row = tuple[
+    SupportCase, Organization, bool, str | None, bool, bool, DisputeStatus | None
+]
 
 # Human-readable label per case type, shared by every case list.
 TYPE_LABELS: dict[SupportCaseType, str] = {
@@ -92,6 +96,7 @@ def cases_statement(
             User.email.label("assignee_email"),
             awaiting_platform.label("awaiting_platform"),
             unread.label("unread"),
+            Dispute.status.label("dispute_status"),
         )
         .outerjoin(
             OrganizationReview,

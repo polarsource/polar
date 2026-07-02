@@ -1,10 +1,11 @@
+from unittest.mock import MagicMock
 from uuid import UUID
 
 import pytest
 
 from polar.auth.models import AuthSubject
 from polar.authz.service import get_accessible_org_ids, get_accessible_organization
-from polar.models import Organization, User
+from polar.models import Organization, PersonalAccessToken, User
 from polar.models.organization import OrganizationStatus
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
@@ -128,6 +129,70 @@ class TestGetAccessibleOrgIds:
 
         result = await get_accessible_org_ids(session, auth_subject)
         assert result == set()
+
+
+@pytest.mark.asyncio
+class TestGetAccessibleOrgIdsSSOEnforced:
+    """A non-SSO user session cannot reach organizations that enforce SSO."""
+
+    @pytest.mark.auth
+    async def test_global_session_denied_enforced_org(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.sso_enforced = True
+        await session.flush()
+
+        result = await get_accessible_org_ids(session, auth_subject)
+        assert result == set()
+
+    @pytest.mark.auth
+    async def test_global_session_allowed_non_enforced_org(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.sso_enforced = False
+        await session.flush()
+
+        result = await get_accessible_org_ids(session, auth_subject)
+        assert result == {organization.id}
+
+    @pytest.mark.auth
+    async def test_sso_scoped_session_allowed_enforced_org(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.sso_enforced = True
+        await session.flush()
+        auth_subject.organization_ids = frozenset({organization.id})
+
+        result = await get_accessible_org_ids(session, auth_subject)
+        assert result == {organization.id}
+
+    @pytest.mark.auth
+    async def test_token_credential_exempt(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.sso_enforced = True
+        await session.flush()
+        # PAT / OAuth credentials are not user sessions and stay exempt.
+        auth_subject.session = MagicMock(spec=PersonalAccessToken)
+
+        result = await get_accessible_org_ids(session, auth_subject)
+        assert result == {organization.id}
 
 
 @pytest.mark.asyncio

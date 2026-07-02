@@ -6,8 +6,22 @@ from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
+from polar.kit.encryption import EncryptedString, EncryptedStringType
 
 from .organization import Organization
+
+SLACK_APP_CLIENT_SECRET_CONTEXT = {
+    "table": "slack_apps",
+    "column": "client_secret",
+}
+SLACK_APP_SIGNING_SECRET_CONTEXT = {
+    "table": "slack_apps",
+    "column": "signing_secret",
+}
+SLACK_APP_BOT_TOKEN_CONTEXT = {
+    "table": "slack_apps",
+    "column": "bot_token",
+}
 
 
 class SlackApp(RecordModel):
@@ -30,8 +44,18 @@ class SlackApp(RecordModel):
     client_secret: Mapped[str | None] = mapped_column(
         String(255), nullable=True, default=None
     )
+    client_secret_encrypted: Mapped[EncryptedString | None] = mapped_column(
+        EncryptedStringType(SLACK_APP_CLIENT_SECRET_CONTEXT),
+        nullable=True,
+        default=None,
+    )
     signing_secret: Mapped[str | None] = mapped_column(
         String(255), nullable=True, default=None
+    )
+    signing_secret_encrypted: Mapped[EncryptedString | None] = mapped_column(
+        EncryptedStringType(SLACK_APP_SIGNING_SECRET_CONTEXT),
+        nullable=True,
+        default=None,
     )
 
     team_id: Mapped[str | None] = mapped_column(
@@ -45,6 +69,11 @@ class SlackApp(RecordModel):
     )
     bot_token: Mapped[str | None] = mapped_column(
         String(255), nullable=True, default=None
+    )
+    bot_token_encrypted: Mapped[EncryptedString | None] = mapped_column(
+        EncryptedStringType(SLACK_APP_BOT_TOKEN_CONTEXT),
+        nullable=True,
+        default=None,
     )
     authed_user_id: Mapped[str | None] = mapped_column(
         String(32), nullable=True, default=None
@@ -62,3 +91,36 @@ class SlackApp(RecordModel):
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship(Organization, lazy="raise")
+
+    @classmethod
+    async def encrypt_client_secret(
+        cls, id: UUID, client_secret: str | None
+    ) -> EncryptedString | None:
+        if client_secret is None:
+            return None
+        return await EncryptedString.encrypt(
+            client_secret,
+            context={**SLACK_APP_CLIENT_SECRET_CONTEXT, "id": str(id)},
+        )
+
+    @classmethod
+    async def encrypt_signing_secret(
+        cls, id: UUID, signing_secret: str | None
+    ) -> EncryptedString | None:
+        if signing_secret is None:
+            return None
+        return await EncryptedString.encrypt(
+            signing_secret,
+            context={**SLACK_APP_SIGNING_SECRET_CONTEXT, "id": str(id)},
+        )
+
+    @classmethod
+    async def encrypt_bot_token(
+        cls, id: UUID, bot_token: str | None
+    ) -> EncryptedString | None:
+        if bot_token is None:
+            return None
+        return await EncryptedString.encrypt(
+            bot_token,
+            context={**SLACK_APP_BOT_TOKEN_CONTEXT, "id": str(id)},
+        )

@@ -298,6 +298,15 @@ class StripeService:
             id, stripe_account=stripe_account, expand=expand or []
         )
 
+    async def close_dispute(
+        self,
+        id: str,
+        *,
+        stripe_account: str | None = None,
+    ) -> stripe_lib.Dispute:
+        """Close the dispute, conceding the chargeback. Settles it as ``lost``."""
+        return await stripe_lib.Dispute.close_async(id, stripe_account=stripe_account)
+
     async def get_confirmation_token(
         self,
         id: str,

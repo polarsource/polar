@@ -6,5 +6,9 @@
     <array>
       <string>group.com.polarsource.Polar</string>
     </array>
+    <key>keychain-access-groups</key>
+    <array>
+      <string>$(AppIdentifierPrefix)com.polarsource.Polar</string>
+    </array>
   </dict>
 </plist>

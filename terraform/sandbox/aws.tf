@@ -1,24 +1,14 @@
-# =============================================================================
-# Application Access (IAM user policies)
-# =============================================================================
-
-module "application_access_sandbox" {
-  source   = "../modules/application_access"
-  username = "polar-sandbox-files"
-  buckets = {
-    customer_invoices = { name = "polar-sandbox-customer-invoices" }
-    customer_receipts = { name = "polar-sandbox-customer-receipts" }
-    payout_invoices   = { name = "polar-sandbox-payout-invoices" }
-    files             = { name = "polar-sandbox-files", description = "Policy used by our SANDBOX app for downloadable benefits. Keep permissions to a bare minimum." }
-    public_files      = { name = "polar-public-sandbox-files", description = "Policy used by our SANDBOX app for public uploads -products medias and such-. Keep permissions to a bare minimum." }
-    logs              = { name = "polar-sandbox-logs", description = "Policy used by our SANDBOX app to write OpenTelemetry spans to S3 for long-term backup." }
-  }
+data "aws_iam_policy" "permission_boundary" {
+  name = "PolarPermissionBoundary"
 }
 
-# Adopt the IAM user that already exists in AWS (console-created).
-import {
-  to = module.application_access_sandbox.aws_iam_user.this
-  id = "polar-sandbox-files"
+module "secrets_kms" {
+  source = "../modules/render_secrets_kms"
+
+  environment              = "sandbox"
+  render_owner_id          = "tea-ch0f74hjvhtkjjvvhnr0"
+  render_environment_id    = data.tfe_outputs.production.values.sandbox_environment_id
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
 }
 
 module "lambda_worker_ecr" {
@@ -30,25 +20,21 @@ module "lambda_worker_ecr" {
 module "redis" {
   source = "../modules/aws_redis"
 
-  name                       = "polar-sandbox-worker"
-  vpc_id                     = module.vpc.vpc_id
-  subnet_ids                 = module.vpc.private_subnet_ids
-  ingress_security_group_ids = [aws_security_group.lambda.id]
+  name       = "polar-sandbox-worker"
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnet_ids
 }
 
-module "dummy_lambda_worker" {
-  source = "../modules/aws_task_worker"
+resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
+  security_group_id            = module.redis.security_group_id
+  referenced_security_group_id = aws_security_group.lambda.id
+  from_port                    = module.redis.port
+  to_port                      = module.redis.port
+  ip_protocol                  = "tcp"
+}
 
-  environment          = "sandbox"
-  name                 = "dummy"
-  queue_name           = "polar-sandbox-tasks-dummy"
-  image_uri            = "${module.lambda_worker_ecr.repository_url}:latest"
-  enabled              = true
-  reserved_concurrency = null
-  subnet_ids           = local.lambda_subnet_ids
-  security_group_ids   = local.lambda_security_group_ids
-
-  environment_variables = {
+locals {
+  lambda_worker_environment = {
     POLAR_ENV                     = "sandbox"
     POLAR_BASE_URL                = "https://sandbox-api.polar.sh"
     POLAR_FRONTEND_BASE_URL       = "https://sandbox.polar.sh"
@@ -65,19 +51,53 @@ module "dummy_lambda_worker" {
     POLAR_REDIS_PORT              = tostring(module.redis.port)
     POLAR_REDIS_DB                = "1"
     POLAR_AWS_REGION              = "us-east-2"
+    POLAR_EMAIL_SENDER            = "resend"
+    POLAR_EMAIL_FROM_NAME         = "[SANDBOX] Polar"
+    POLAR_EMAIL_FROM_DOMAIN       = "notifications.sandbox.polar.sh"
     POLAR_WORKER_SQS_ENABLED      = "true"
     POLAR_WORKER_SQS_QUEUE_PREFIX = "polar-sandbox-tasks"
   }
 
-  secret_environment_variables = {
+  lambda_worker_secrets = {
     POLAR_CURRENT_JWK_KID = var.backend_current_jwk_kid_sandbox
     POLAR_JWKS_CONTENT    = var.backend_jwks_sandbox
     POLAR_LOGFIRE_TOKEN   = var.logfire_token
     POLAR_POSTGRES_PWD    = local.db_password
+    POLAR_RESEND_API_KEY  = var.backend_resend_api_key_sandbox
     POLAR_SECRET          = var.backend_secret_sandbox
     POLAR_SENTRY_DSN      = var.backend_sentry_dsn_sandbox
     TAILSCALE_AUTHKEY     = var.lambda_worker_tailscale_token
   }
+
+  lambda_worker_name                 = "default"
+  lambda_worker_reserved_concurrency = null
+}
+
+module "lambda_worker" {
+  source = "../modules/aws_task_worker"
+
+  environment              = "sandbox"
+  name                     = local.lambda_worker_name
+  queue_name               = "polar-sandbox-tasks-${local.lambda_worker_name}"
+  image_uri                = "${module.lambda_worker_ecr.repository_url}:latest"
+  enabled                  = true
+  reserved_concurrency     = local.lambda_worker_reserved_concurrency
+  subnet_ids               = local.lambda_subnet_ids
+  security_group_ids       = local.lambda_security_group_ids
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+
+  environment_variables        = local.lambda_worker_environment
+  secret_environment_variables = local.lambda_worker_secrets
+}
+
+moved {
+  from = module.dummy_lambda_worker
+  to   = module.lambda_worker["low-priority"]
+}
+
+moved {
+  from = module.lambda_worker["low-priority"]
+  to   = module.lambda_worker
 }
 
 # =============================================================================
@@ -99,7 +119,7 @@ data "aws_iam_policy_document" "tasks_producer" {
       "sqs:SendMessage",
       "sqs:GetQueueUrl",
     ]
-    resources = [module.dummy_lambda_worker.queue_arn]
+    resources = [module.lambda_worker.queue_arn]
   }
 }
 
@@ -110,76 +130,53 @@ resource "aws_iam_user_policy" "tasks_producer" {
 }
 
 # =============================================================================
-# Image Resizer Lambda@Edge
+# GitHub Actions OIDC role (builds the task-worker image and deploys it)
 # =============================================================================
 
-data "aws_s3_bucket" "lambda_artifacts" {
-  provider = aws.us_east_1
-  bucket   = "polar-lambda-artifacts"
-}
+data "aws_caller_identity" "current" {}
 
-data "aws_s3_object" "image_resizer_package" {
-  provider = aws.us_east_1
-  bucket   = data.aws_s3_bucket.lambda_artifacts.id
-  key      = "image-resizer/package.zip"
-}
-
-module "image_resizer" {
-  source = "../modules/lambda_edge_resizer"
-  providers = {
-    aws = aws.us_east_1
+data "aws_iam_policy_document" "lambda_worker_deploy" {
+  statement {
+    sid       = "EcrAuthorization"
+    actions   = ["ecr:GetAuthorizationToken"]
+    resources = ["*"]
   }
 
-  function_name     = "polar-sandbox-image-resizer"
-  s3_bucket         = data.aws_s3_bucket.lambda_artifacts.id
-  s3_key            = data.aws_s3_object.image_resizer_package.key
-  s3_object_version = data.aws_s3_object.image_resizer_package.version_id
-  source_bucket_arn = module.s3_buckets.public_files_bucket_arn
-}
-
-# =============================================================================
-# CloudFront Distribution (Sandbox Public Assets)
-# =============================================================================
-
-module "cloudfront_sandbox_assets" {
-  source = "../modules/cloudfront_distribution"
-  providers = {
-    aws           = aws
-    aws.us_east_1 = aws.us_east_1
+  statement {
+    sid = "EcrPush"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage",
+      "ecr:CompleteLayerUpload",
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:InitiateLayerUpload",
+      "ecr:PutImage",
+      "ecr:UploadLayerPart",
+    ]
+    resources = [module.lambda_worker_ecr.repository_arn]
   }
 
-  name                           = "polar-sandbox-public-files"
-  domain                         = "sandbox-uploads.polar.sh"
-  cloudflare_zone_id             = "22bcd1b07ec25452aab472486bc8df94"
-  s3_bucket_id                   = module.s3_buckets.public_files_bucket_id
-  s3_bucket_regional_domain_name = module.s3_buckets.public_files_bucket_regional_domain_name
-  s3_bucket_arn                  = module.s3_buckets.public_files_bucket_arn
-  cors_allowed_origins           = ["https://sandbox.polar.sh"]
-
-  lambda_function_associations = [
-    {
-      event_type = "origin-request"
-      lambda_arn = module.image_resizer.qualified_arn
-    },
-  ]
+  statement {
+    sid       = "UpdateFunctionCode"
+    actions   = ["lambda:UpdateFunctionCode"]
+    resources = ["arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:${module.lambda_worker.function_name}"]
+  }
 }
 
-# =============================================================================
-# CloudFront Distribution (Sandbox CDN)
-# =============================================================================
+resource "aws_iam_policy" "lambda_worker_deploy" {
+  name   = "github-actions-lambda-worker-deploy"
+  policy = data.aws_iam_policy_document.lambda_worker_deploy.json
+}
 
-module "cloudfront_sandbox_cdn" {
-  source = "../modules/cloudfront_distribution"
-  providers = {
-    aws           = aws
-    aws.us_east_1 = aws.us_east_1
+module "github_oidc_lambda_worker" {
+  source = "../modules/github_oidc"
+
+  role_name       = "github-actions-lambda-worker"
+  github_org      = "polarsource"
+  github_repo     = "polar"
+  github_subjects = ["ref:refs/heads/main"]
+  policy_arns = {
+    deploy = aws_iam_policy.lambda_worker_deploy.arn
   }
-
-  name                           = "polar-sandbox-cdn"
-  domain                         = "sandbox-cdn.polar.sh"
-  cloudflare_zone_id             = "22bcd1b07ec25452aab472486bc8df94"
-  s3_bucket_id                   = module.s3_buckets.public_assets_bucket_id
-  s3_bucket_regional_domain_name = module.s3_buckets.public_assets_bucket_regional_domain_name
-  s3_bucket_arn                  = module.s3_buckets.public_assets_bucket_arn
-  cors_allowed_origins           = ["https://sandbox.polar.sh"]
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
 }

@@ -16,6 +16,12 @@ jest.mock('expo-auth-session', () => {
   }
 })
 
+const mockGetStorageItemAsync = jest.fn<Promise<string | null>, [string]>()
+
+jest.mock('@/hooks/storage', () => ({
+  getStorageItemAsync: (key: string) => mockGetStorageItemAsync(key),
+}))
+
 let configureRefresher: (typeof RefresherModule)['configureRefresher']
 let hasRefreshToken: (typeof RefresherModule)['hasRefreshToken']
 let isAccessTokenStale: (typeof RefresherModule)['isAccessTokenStale']
@@ -68,6 +74,8 @@ beforeEach(() => {
     refreshAccessToken,
   } = require('./refresher') as typeof RefresherModule)
   mockRefreshAsync.mockReset()
+  mockGetStorageItemAsync.mockReset()
+  mockGetStorageItemAsync.mockResolvedValue(null)
   jest.useFakeTimers().setSystemTime(NOW)
 })
 
@@ -298,6 +306,46 @@ describe('refreshAccessToken', () => {
     expect(result).toBeNull()
     expect(setSession).not.toHaveBeenCalledWith(null)
     expect(hasRefreshToken()).toBe(true)
+  })
+
+  it('on invalid_grant, adopts a token the widget rotated instead of clearing', async () => {
+    mockGetStorageItemAsync.mockImplementation(async (key) => {
+      if (key === 'session_refresh_token') return 'widget-rotated-rt'
+      if (key === 'session') return 'widget-access-token'
+      if (key === 'session_expires_at') return String(NOW + 120_000)
+      return null
+    })
+    const { setSession } = configure({ refreshToken: 'old-rt' })
+    mockRefreshAsync.mockRejectedValueOnce(
+      new TokenError({ error: 'invalid_grant' }),
+    )
+
+    const result = await refreshAccessToken()
+
+    expect(result).toBe('widget-access-token')
+    expect(setSession).toHaveBeenCalledWith({
+      accessToken: 'widget-access-token',
+      refreshToken: 'widget-rotated-rt',
+      expiresAt: NOW + 120_000,
+    })
+    expect(setSession).not.toHaveBeenCalledWith(null)
+    expect(hasRefreshToken()).toBe(true)
+  })
+
+  it('on invalid_grant, clears the session when storage holds the same refresh token', async () => {
+    mockGetStorageItemAsync.mockImplementation(async (key) =>
+      key === 'session_refresh_token' ? 'old-rt' : null,
+    )
+    const { setSession } = configure({ refreshToken: 'old-rt' })
+    mockRefreshAsync.mockRejectedValueOnce(
+      new TokenError({ error: 'invalid_grant' }),
+    )
+
+    const result = await refreshAccessToken()
+
+    expect(result).toBeNull()
+    expect(setSession).toHaveBeenCalledWith(null)
+    expect(hasRefreshToken()).toBe(false)
   })
 
   describe('concurrency dedup', () => {

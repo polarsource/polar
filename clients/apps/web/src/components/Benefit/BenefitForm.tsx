@@ -342,10 +342,7 @@ const DiscordBenefitForm = () => {
                                   {index > 0 && ( // Don't show it if it's already first
                                     <>
                                       <SelectSeparator />
-                                      <SelectLabel
-                                        key={role.id}
-                                        className="font-normal"
-                                      >
+                                      <SelectLabel key={role.id}>
                                         {role.name} —{' '}
                                         <span className="text-muted-foreground">
                                           ↑ Roles set above can&apos;t be

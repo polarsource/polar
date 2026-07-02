@@ -458,7 +458,10 @@ customers_search_vector_update_function = PGFunction(
     BEGIN
         NEW.search_vector :=
             setweight(to_tsvector('simple', coalesce(NEW.name, '')), 'A') ||
-            setweight(to_tsvector('simple', coalesce(NEW.email, '')), 'A');
+            setweight(to_tsvector('simple', coalesce(NEW.email, '')), 'A') ||
+            setweight(to_tsvector('simple', coalesce(
+                regexp_replace(NEW.email, '[@._-]', ' ', 'g'), ''
+            )), 'B');
         RETURN NEW;
     END
     $$ LANGUAGE plpgsql;

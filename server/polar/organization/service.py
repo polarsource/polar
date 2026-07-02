@@ -156,6 +156,20 @@ def _is_hosted_website_domain(website_domain: str) -> bool:
     )
 
 
+def _email_domain_matches_website(email_domain: str, website_domain: str) -> bool:
+    """Whether the support email domain belongs to the website's domain.
+
+    A subdomain relationship in either direction counts as a match, so a
+    `support@example.com` email is accepted for a website hosted on a subdomain
+    like `app.example.com`, and vice versa.
+    """
+    if email_domain == website_domain:
+        return True
+    return website_domain.endswith(f".{email_domain}") or email_domain.endswith(
+        f".{website_domain}"
+    )
+
+
 def _append_internal_note(
     organization: Organization, message: str, *, reason: str | None = None
 ) -> None:
@@ -214,6 +228,15 @@ class AccountAlreadySet(OrganizationError):
 class CannotChangeOwnerError(OrganizationError):
     def __init__(self, reason: str) -> None:
         super().__init__(f"Cannot change organization owner: {reason}")
+
+
+class CannotCreateOrganizationError(OrganizationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "You cannot create an organization from a session restricted to a "
+            "specific organization.",
+            403,
+        )
 
 
 class OrganizationService:
@@ -302,6 +325,9 @@ class OrganizationService:
         create_schema: OrganizationCreate,
         auth_subject: AuthSubject[User],
     ) -> Organization:
+        if auth_subject.organization_ids is not None:
+            raise CannotCreateOrganizationError()
+
         repository = OrganizationRepository.from_session(session)
         if await repository.slug_exists(create_schema.slug):
             raise PolarRequestValidationError(
@@ -557,56 +583,6 @@ class OrganizationService:
         await self._after_update(session, organization)
         return organization
 
-    async def delete(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> Organization:
-        """Anonymizes fields on the Organization that can contain PII and then
-        soft-deletes the Organization.
-
-        DOES NOT:
-        - Delete or anonymize Users related Organization
-        - Delete or anonymize Account of the Organization
-        - Delete or anonymize Customers, Products, Discounts, Benefits, Checkouts of the Organization
-        - Revoke Benefits granted
-        - Remove API tokens (organization or personal)
-        """
-        repository = OrganizationRepository.from_session(session)
-
-        update_dict: dict[str, Any] = {}
-
-        pii_fields = ["name", "slug", "website", "customer_invoice_prefix"]
-        github_fields = ["bio", "company", "blog", "location", "twitter_username"]
-        for pii_field in pii_fields + github_fields:
-            value = getattr(organization, pii_field)
-            if value:
-                update_dict[pii_field] = anonymize_for_deletion(
-                    value, organization.created_at
-                )
-
-        if organization.email:
-            update_dict["email"] = anonymize_email_for_deletion(
-                organization.email, organization.created_at
-            )
-
-        if organization._avatar_url:
-            # Anonymize by setting to Polar logo
-            update_dict["avatar_url"] = (
-                "https://avatars.githubusercontent.com/u/105373340?s=48&v=4"
-            )
-        if organization.details:
-            update_dict["details"] = {}
-
-        if organization.socials:
-            update_dict["socials"] = []
-
-        organization = await repository.update(organization, update_dict=update_dict)
-        await repository.soft_delete(organization)
-        polar_self_service.enqueue_delete_customer(organization_id=organization.id)
-
-        return organization
-
     async def check_can_delete(
         self,
         session: AsyncReadSession,
@@ -700,8 +676,8 @@ class OrganizationService:
             )
             return check_result
 
-        # Soft delete the organization
-        await self.soft_delete_organization(session, organization)
+        # Soft delete the organization, releasing its slug for reuse
+        await self.soft_delete_organization(session, organization, release_slug=True)
 
         return OrganizationDeletionCheckResult(
             can_delete_immediately=True,
@@ -712,25 +688,31 @@ class OrganizationService:
         self,
         session: AsyncSession,
         organization: Organization,
+        *,
+        release_slug: bool = False,
     ) -> Organization:
-        """Soft-delete an organization, releasing its slug for reuse.
+        """Soft-delete an organization, anonymizing its PII.
 
-        Anonymizes PII fields, archives the previous slug to ``slug_history``,
-        and rewrites the live slug to a tombstone so a new organization can
-        claim the original.
+        When ``release_slug`` is set, the previous slug is archived to
+        ``slug_history`` and the live slug is rewritten to a tombstone so a new
+        organization can claim the original. Otherwise the slug is scrubbed like
+        any other PII field, leaving no recoverable trace.
         """
         repository = OrganizationRepository.from_session(session)
 
-        now = datetime.now(UTC)
-        update_dict: dict[str, Any] = {
-            "slug_history": [
+        update_dict: dict[str, Any] = {}
+        pii_fields = ["name", "website", "customer_invoice_prefix"]
+
+        if release_slug:
+            now = datetime.now(UTC)
+            update_dict["slug_history"] = [
                 *organization.slug_history,
                 {"slug": organization.slug, "deleted_at": now.isoformat()},
-            ],
-            "slug": f"__deleted__-{organization.slug}-{organization.id}",
-        }
+            ]
+            update_dict["slug"] = f"__deleted__-{organization.slug}-{organization.id}"
+        else:
+            pii_fields = ["name", "slug", "website", "customer_invoice_prefix"]
 
-        pii_fields = ["name", "website", "customer_invoice_prefix"]
         github_fields = ["bio", "company", "blog", "location", "twitter_username"]
         for pii_field in pii_fields + github_fields:
             value = getattr(organization, pii_field)
@@ -1454,6 +1436,25 @@ class OrganizationService:
             transitioned.append(organization)
         return transitioned
 
+    async def cancel_expired_organizations_subscriptions(
+        self, session: AsyncSession
+    ) -> Sequence[Organization]:
+        """Enqueue a per-org cancellation job for each organization denied,
+        blocked, or offboarded past the cancellation delay that still has
+        billable subscriptions. Returns the organizations enqueued.
+        """
+        repository = OrganizationRepository.from_session(session)
+        cutoff = (
+            datetime.now(UTC) - settings.ORGANIZATION_SUBSCRIPTION_CANCELLATION_DELAY
+        )
+        organizations = await repository.get_status_cancellation_expired(cutoff)
+        for organization in organizations:
+            enqueue_job(
+                "subscription.cancel_for_organization",
+                organization_id=organization.id,
+            )
+        return organizations
+
     async def set_organization_offboarded(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
@@ -1521,9 +1522,12 @@ class OrganizationService:
         *,
         reason: str | None = None,
     ) -> Organization:
-        if organization.status != OrganizationStatus.REVIEW:
+        if organization.status not in (
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.DENIED,
+        ):
             raise OrganizationError(
-                "Only organizations under review can be set to offboarding.",
+                "Only organizations under review or denied can be set to offboarding.",
                 403,
             )
         organization.set_status(OrganizationStatus.OFFBOARDING)
@@ -1684,7 +1688,7 @@ class OrganizationService:
 
         if (
             website_domain
-            and email_domain != website_domain
+            and not _email_domain_matches_website(email_domain, website_domain)
             and not _is_hosted_website_domain(website_domain)
         ):
             reasons.append(OrganizationReviewCheckReason.IDENTITY_DOMAIN_MISMATCH)

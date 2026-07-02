@@ -182,6 +182,13 @@ def get_safe_return_url(return_to: str | None) -> str:
     # For paths, ensure we have an absolute URL on the frontend
     url_info = urlparse(return_to)
     if not url_info.netloc:
+        # Only accept paths that start with "/" to prevent open redirect via
+        # URL manipulation. A bare "@evil.com" would otherwise be naively
+        # concatenated with FRONTEND_BASE_URL to produce
+        # "https://polar.sh@evil.com", which browsers interpret as navigating
+        # to evil.com ("@" is the userinfo delimiter per RFC 3986).
+        if not return_to.startswith("/"):
+            return settings.generate_frontend_url(settings.FRONTEND_DEFAULT_RETURN_PATH)
         return settings.generate_frontend_url(return_to)
 
     return return_to
@@ -211,3 +218,21 @@ def add_query_parameters(url: str, **kwargs: str | list[str]) -> str:
 
 def is_localhost(request: Request) -> bool:
     return request.url.hostname in {"127.0.0.1", "localhost"}
+
+
+def get_ip_address(request: Request) -> str | None:
+    """
+    Get the client's IP address.
+
+    Favor the highly trusted `True-Client-IP` header if present (set by Cloudflare),
+    otherwise fall back to the request's client host.
+    """
+    try:
+        return request.headers["True-Client-IP"]
+    except KeyError:
+        pass
+
+    if request.client:
+        return request.client.host
+
+    return None

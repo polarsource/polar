@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from sqlalchemy import Select
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.enums import PaymentProcessor
@@ -13,7 +13,7 @@ from polar.kit.repository import (
     RepositorySortingMixin,
     SortingClause,
 )
-from polar.models import Dispute, Payment
+from polar.models import Dispute, Order, Payment
 from polar.models.dispute import DisputeAlertProcessor
 
 from .sorting import DisputeSortProperty
@@ -84,18 +84,16 @@ class DisputeRepository(
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[Dispute]]:
-        statement = (
+        return (
             self.get_base_statement()
             .join(Dispute.payment)
-            .options(contains_eager(Dispute.payment))
+            .where(Payment.organization_id.in_(org_ids))
         )
-        statement = statement.where(Payment.organization_id.in_(org_ids))
-        return statement
 
     def get_eager_options(self) -> Options:
         return (
-            joinedload(Dispute.payment).joinedload(Payment.organization),
-            joinedload(Dispute.order),
+            joinedload(Dispute.order).joinedload(Order.organization),
+            joinedload(Dispute.order).joinedload(Order.customer),
         )
 
     def get_sorting_clause(self, property: DisputeSortProperty) -> SortingClause:

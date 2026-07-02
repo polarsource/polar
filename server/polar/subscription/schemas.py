@@ -87,6 +87,19 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     current_period_end: datetime = Field(
         description="The end timestamp of the current billing period."
     )
+    current_meter_period_start: datetime | None = Field(
+        description=(
+            "The start timestamp of the current meter period, if the product has a "
+            "meter cycle set. Metered credits are granted and overage is settled on "
+            "this cadence."
+        ),
+    )
+    current_meter_period_end: datetime | None = Field(
+        description=(
+            "The end timestamp of the current meter period, if the product has a "
+            "meter cycle set. This is when credits next renew."
+        ),
+    )
     trial_start: datetime | None = Field(
         description="The start timestamp of the trial period, if any."
     )
@@ -113,6 +126,10 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     )
     ended_at: datetime | None = Field(
         description="The timestamp when the subscription ended."
+    )
+    past_due_at: datetime | None = Field(
+        None,
+        description=("The timestamp when the subscription entered `past_due` status."),
     )
 
     customer_id: UUID4 = Field(description="The ID of the subscribed customer.")

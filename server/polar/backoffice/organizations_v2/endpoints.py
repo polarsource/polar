@@ -3875,7 +3875,7 @@ async def delete_dialog(
         raise HTTPException(status_code=404, detail="Organization not found")
 
     if request.method == "POST":
-        await organization_service.delete(session, organization)
+        await organization_service.soft_delete_organization(session, organization)
 
         return HXRedirectResponse(
             request,

@@ -31,7 +31,7 @@ from polar.support_case.repository import (
 from polar.support_case.service import support_case as support_case_service
 from polar.worker import enqueue_job
 
-from ..components import datatable, support_tier_badge
+from ..components import datatable, dispute_status_badge, support_tier_badge
 from ..components._tab_nav import Tab, tab_nav
 from ..dependencies import get_admin
 from ..layout import layout
@@ -157,6 +157,7 @@ def _render_table(request: Request, rows: Sequence[Row], sort: str) -> None:
                     assignee_email,
                     _awaiting_platform,
                     unread,
+                    dispute_status,
                 ) in rows:
                     case_url = str(
                         request.url_for("support_cases:detail", case_id=case.id)
@@ -178,6 +179,8 @@ def _render_table(request: Request, rows: Sequence[Row], sort: str) -> None:
                         with tag.td():
                             with tag.div(classes="flex items-center gap-2"):
                                 _status_badge(is_open)
+                                if dispute_status is not None:
+                                    dispute_status_badge(dispute_status)
                                 if unread:
                                     with tag.span(
                                         classes="tooltip text-warning",
@@ -275,15 +278,9 @@ async def reply_case(
 
     form_data = await request.form()
     body = str(form_data.get("body", "")).strip()
-    # Force the message to be internal when there's no live merchant channel:
-    # disputes have no staff ↔ merchant reply channel yet, and a closed case is
-    # internal-notes-only (a merchant-facing message would email the merchant
-    # with no accessible thread to follow up in).
-    internal = (
-        bool(form_data.get("internal"))
-        or case.type == SupportCaseType.dispute
-        or not is_open
-    )
+    # A closed case is internal-notes-only: a merchant-facing message would
+    # email the merchant with no accessible thread to follow up in.
+    internal = bool(form_data.get("internal")) or not is_open
 
     if body:
         audience = [] if internal else [SupportCaseAudience.merchant]

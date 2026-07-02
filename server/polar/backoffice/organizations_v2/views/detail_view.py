@@ -426,7 +426,9 @@ class OrganizationDetailView:
                                 text("Unblock & Approve")
 
                     elif self.org.status == OrganizationStatus.DENIED:
-                        # Denied organizations can be approved
+                        # Denied organizations can be approved or, for merchants
+                        # winding down after the fact, sent straight to
+                        # offboarding to release their remaining balance.
                         with tag.div(classes="w-full"):
                             with button(
                                 variant="secondary",
@@ -441,6 +443,21 @@ class OrganizationDetailView:
                                 hx_target="#modal",
                             ):
                                 text("Approve")
+
+                        with tag.div(classes="w-full"):
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:offboard_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Set Offboarding")
 
                         # Show "Deny Appeal" when there's a pending appeal
                         if (

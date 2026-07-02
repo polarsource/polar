@@ -21,9 +21,11 @@ from polar.logfire import instrument_httpx
 from polar.logging import CorrelationID, Logger
 from polar.operational_errors import handle_operational_error
 
+from . import _sqs
 from ._asyncio import MonitoredAsyncIO
 from ._debounce import DebounceMiddleware
 from ._encoder import JSONEncoder
+from ._enqueue import should_route_to_sqs
 from ._health import HealthMiddleware
 from ._httpx import HTTPXMiddleware
 from ._metrics import PrometheusMiddleware
@@ -175,6 +177,34 @@ class LogfireMiddleware(dramatiq.Middleware):
         return self.after_process_message(broker, message)
 
 
+class RoutingRedisBroker(RedisBroker):
+    """RedisBroker that diverts SQS-allowlisted actors to SQS at enqueue time.
+
+    Native dramatiq dispatch (cron ``actor.send``, the subscription cycle,
+    retries, pipelines) all funnel through ``enqueue``, so the gate applied here
+    covers every scheduled path. The buffered ``enqueue_job`` path bypasses this
+    method and applies the same gate in ``JobQueueManager.flush``.
+    """
+
+    def enqueue(
+        self, message: dramatiq.Message[Any], *, delay: int | None = None
+    ) -> dramatiq.Message[Any]:
+        if should_route_to_sqs(message.actor_name):
+            _sqs.send_jobs_sync(
+                [
+                    (
+                        message.actor_name,
+                        message.args,
+                        message.kwargs,
+                        delay,
+                        CorrelationID.get(),
+                    )
+                ]
+            )
+            return message
+        return super().enqueue(message, delay=delay)
+
+
 def get_broker(*, database: bool = True) -> dramatiq.Broker:
     redis_pool = redis.ConnectionPool.from_url(
         settings.redis_url,
@@ -196,7 +226,7 @@ def get_broker(*, database: bool = True) -> dramatiq.Broker:
         *([SQLAlchemyMiddleware()] if database else []),
         RedisMiddleware(),
         HTTPXMiddleware(),
-        HealthMiddleware(),
+        HealthMiddleware(database=database),
         scheduler_middleware,
         # Observability (outer layer for message processing)
         LogContextMiddleware(),
@@ -216,7 +246,7 @@ def get_broker(*, database: bool = True) -> dramatiq.Broker:
         middleware.CurrentMessage(),
     ]
 
-    broker = RedisBroker(
+    broker = RoutingRedisBroker(
         connection_pool=redis_pool,
         middleware=middleware_list,
         dead_message_ttl=3600 * 1000,  # 1 hour in milliseconds

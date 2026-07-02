@@ -1021,76 +1021,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/organizations/{id}/appeal/case': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get Appeal Case
-     * @description Get the merchant's human-review case and its visible timeline.
-     *
-     *     **Scopes**: `organizations:read` `organizations:write`
-     */
-    get: operations['organizations:get_appeal_case']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/organizations/{id}/appeal/case/messages': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Reply to Appeal Case
-     * @description Post a merchant reply to the human-review case.
-     *
-     *     The reply may carry free text, attachments, or both. Attachments must
-     *     first be uploaded through the files API with service
-     *     ``support_case_attachment``.
-     *
-     *     **Scopes**: `organizations:write`
-     */
-    post: operations['organizations:reply_to_appeal_case']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/organizations/{id}/appeal/case/attachments/{attachment_id}/download': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Download Appeal Case Attachment
-     * @description Redirect to a short-lived presigned URL for a merchant-visible attachment.
-     *
-     *     **Scopes**: `organizations:read` `organizations:write`
-     */
-    get: operations['organizations:download_appeal_case_attachment']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/organizations/{id}/ai-onboarding-complete': {
     parameters: {
       query?: never
@@ -1493,6 +1423,58 @@ export interface paths {
     patch: operations['organizations:update_benefit_grant']
     trace?: never
   }
+  '/v1/organizations/{id}/sso-connections/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List SSO Connections
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['sso:list_sso_connections']
+    put?: never
+    /**
+     * Create SSO Connection
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['sso:create_sso_connection']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/sso-connections/{connection_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get SSO Connection
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['sso:get_sso_connection']
+    put?: never
+    post?: never
+    /**
+     * Delete SSO Connection
+     * @description **Scopes**: `organizations:write`
+     */
+    delete: operations['sso:delete_sso_connection']
+    options?: never
+    head?: never
+    /**
+     * Update SSO Connection
+     * @description **Scopes**: `organizations:write`
+     */
+    patch: operations['sso:update_sso_connection']
+    trace?: never
+  }
   '/v1/subscriptions/': {
     parameters: {
       query?: never
@@ -1689,6 +1671,23 @@ export interface paths {
     get: operations['taxes:get_summary']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/auth/{slug}/start': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Auth.Sso.Start */
+    post: operations['auth:auth.sso.start']
     delete?: never
     options?: never
     head?: never
@@ -2589,7 +2588,7 @@ export interface paths {
      * List Disputes
      * @description List disputes.
      *
-     *     **Scopes**: `disputes:read`
+     *     **Scopes**: `disputes:read` `disputes:write`
      */
     get: operations['disputes:list']
     put?: never
@@ -2611,11 +2610,36 @@ export interface paths {
      * Get Dispute
      * @description Get a dispute by ID.
      *
-     *     **Scopes**: `disputes:read`
+     *     **Scopes**: `disputes:read` `disputes:write`
      */
     get: operations['disputes:get']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/disputes/{id}/accept': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Accept Dispute
+     * @description Accept a dispute, conceding the chargeback.
+     *
+     *     Closes the dispute with the processor (settling it as `lost`) and records
+     *     the merchant's decision on the dispute's support case.
+     *
+     *     **Scopes**: `disputes:write`
+     */
+    post: operations['disputes:accept']
     delete?: never
     options?: never
     head?: never
@@ -3598,6 +3622,7 @@ export interface paths {
     put?: never
     /**
      * Create Member
+     * @deprecated
      * @description Create a new member for a customer.
      *
      *     Only B2B customers with the member management feature enabled can add members.
@@ -3621,6 +3646,7 @@ export interface paths {
     }
     /**
      * Get Member
+     * @deprecated
      * @description Get a member by ID.
      *
      *     The authenticated user or organization must have access to the member's organization.
@@ -3632,6 +3658,7 @@ export interface paths {
     post?: never
     /**
      * Delete Member
+     * @deprecated
      * @description Delete a member.
      *
      *     The authenticated user or organization must have access to the member's organization.
@@ -3643,6 +3670,7 @@ export interface paths {
     head?: never
     /**
      * Update Member
+     * @deprecated
      * @description Update a member.
      *
      *     Only name, email and role can be updated.
@@ -3662,6 +3690,7 @@ export interface paths {
     }
     /**
      * Get Member by External ID
+     * @deprecated
      * @description Get a member by external ID. One of customer_id or external_customer_id must be specified.
      *
      *     **Scopes**: `members:read` `members:write`
@@ -3671,6 +3700,7 @@ export interface paths {
     post?: never
     /**
      * Delete Member by External ID
+     * @deprecated
      * @description Delete a member by external ID. One of customer_id or external_customer_id must be specified.
      *
      *     **Scopes**: `members:write`
@@ -3680,11 +3710,129 @@ export interface paths {
     head?: never
     /**
      * Update Member by External ID
+     * @deprecated
      * @description Update a member by external ID. One of customer_id or external_customer_id must be specified.
      *
      *     **Scopes**: `members:write`
      */
     patch: operations['members:update_member_by_external_id']
+    trace?: never
+  }
+  '/v1/customers/{id}/members': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Create Member
+     * @description Create a new member for a customer.
+     *
+     *     Only B2B customers with the member management feature enabled can add members.
+     *     The authenticated user or organization must have access to the customer's organization.
+     *
+     *     **Scopes**: `members:write`
+     */
+    post: operations['customers:members:create']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customers/external/{external_id}/members': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Create Member by Customer External ID
+     * @description Create a new member for a customer identified by its external ID.
+     *
+     *     **Scopes**: `members:write`
+     */
+    post: operations['customers:members:create_external']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customers/{id}/members/{member_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Member
+     * @description Get a member of a customer by its ID.
+     *
+     *     **Scopes**: `members:read` `members:write`
+     */
+    get: operations['customers:members:get']
+    put?: never
+    post?: never
+    /**
+     * Delete Member
+     * @description Delete a member of a customer.
+     *
+     *     **Scopes**: `members:write`
+     */
+    delete: operations['customers:members:delete']
+    options?: never
+    head?: never
+    /**
+     * Update Member
+     * @description Update a member of a customer.
+     *
+     *     Only name, email and role can be updated.
+     *
+     *     **Scopes**: `members:write`
+     */
+    patch: operations['customers:members:update']
+    trace?: never
+  }
+  '/v1/customers/external/{external_id}/members/{member_external_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Member by External ID
+     * @description Get a member by external ID for a customer identified by its external ID.
+     *
+     *     **Scopes**: `members:read` `members:write`
+     */
+    get: operations['customers:members:get_external']
+    put?: never
+    post?: never
+    /**
+     * Delete Member by External ID
+     * @description Delete a member by external ID for a customer identified by its external ID.
+     *
+     *     **Scopes**: `members:write`
+     */
+    delete: operations['customers:members:delete_external']
+    options?: never
+    head?: never
+    /**
+     * Update Member by External ID
+     * @description Update a member by external ID for a customer identified by its external ID.
+     *
+     *     **Scopes**: `members:write`
+     */
+    patch: operations['customers:members:update_external']
     trace?: never
   }
   '/v1/customer-portal/benefit-grants/': {
@@ -4724,6 +4872,26 @@ export interface paths {
     put?: never
     /** Claim Seat */
     post: operations['customer-seats:claim_seat']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/merchant-migrations/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Merchant Migration
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['merchant-migrations:get']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -6996,6 +7164,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** AmbiguousExternalCustomerID */
+    AmbiguousExternalCustomerID: {
+      /**
+       * Error
+       * @example AmbiguousExternalCustomerID
+       * @constant
+       */
+      error: 'AmbiguousExternalCustomerID'
+      /** Detail */
+      detail: string
+    }
     /**
      * AppealDecision
      * @enum {string}
@@ -7058,7 +7237,10 @@ export interface components {
       /** Identity Id */
       identity_id: string | null
       /** Available Factors */
-      available_factors: components['schemas']['Factor'][]
+      available_factors: (
+        | components['schemas']['BaseFactor']
+        | components['schemas']['SSOFactor']
+      )[]
     }
     /** AuthenticationSessionStart */
     AuthenticationSessionStart: {
@@ -7093,6 +7275,13 @@ export interface components {
       sub: components['schemas']['AuthorizeOrganization'] | null
       /** Scopes */
       scopes: components['schemas']['Scope'][]
+      /** Organizations */
+      organizations: components['schemas']['AuthorizeOrganization'][]
+      /**
+       * Requires Single Organization
+       * @default false
+       */
+      requires_single_organization: boolean
       /**
        * Scope Display Names
        * @default {
@@ -7134,6 +7323,7 @@ export interface components {
        *       "wallets:read": "Read wallets",
        *       "wallets:write": "Create or modify wallets",
        *       "disputes:read": "Read disputes",
+       *       "disputes:write": "Create or modify disputes",
        *       "customer_meters:read": "Read customer meters",
        *       "customer_sessions:write": "Create or modify customer sessions",
        *       "member_sessions:write": "Create or modify member sessions",
@@ -7163,8 +7353,6 @@ export interface components {
       scope_display_names: {
         [key: string]: string
       }
-      /** Organizations */
-      organizations: components['schemas']['AuthorizeOrganization'][]
     }
     /** AuthorizeResponseUser */
     AuthorizeResponseUser: {
@@ -7177,6 +7365,13 @@ export interface components {
       sub: components['schemas']['AuthorizeUser'] | null
       /** Scopes */
       scopes: components['schemas']['Scope'][]
+      /** Organizations */
+      organizations: components['schemas']['AuthorizeOrganization'][]
+      /**
+       * Requires Single Organization
+       * @default false
+       */
+      requires_single_organization: boolean
       /**
        * Scope Display Names
        * @default {
@@ -7218,6 +7413,7 @@ export interface components {
        *       "wallets:read": "Read wallets",
        *       "wallets:write": "Create or modify wallets",
        *       "disputes:read": "Read disputes",
+       *       "disputes:write": "Create or modify disputes",
        *       "customer_meters:read": "Read customer meters",
        *       "customer_sessions:write": "Create or modify customer sessions",
        *       "member_sessions:write": "Create or modify member sessions",
@@ -7306,6 +7502,7 @@ export interface components {
       | 'wallets:read'
       | 'wallets:write'
       | 'disputes:read'
+      | 'disputes:write'
       | 'customer_meters:read'
       | 'customer_sessions:write'
       | 'member_sessions:write'
@@ -7916,6 +8113,20 @@ export interface components {
        */
       name: 'balance.refund_reversal'
       metadata: components['schemas']['BalanceRefundMetadata']
+    }
+    /** BaseFactor */
+    BaseFactor: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type:
+        | 'apple'
+        | 'backup_codes'
+        | 'email_otp'
+        | 'github'
+        | 'google'
+        | 'totp'
     }
     Benefit:
       | components['schemas']['BenefitCustom']
@@ -11028,6 +11239,17 @@ export interface components {
        */
       action: 'allow' | 'deny'
     }
+    /** CannotCreateOrganizationError */
+    CannotCreateOrganizationError: {
+      /**
+       * Error
+       * @example CannotCreateOrganizationError
+       * @constant
+       */
+      error: 'CannotCreateOrganizationError'
+      /** Detail */
+      detail: string
+    }
     /**
      * CardPayment
      * @description Schema of a payment with a card payment method.
@@ -11079,6 +11301,11 @@ export interface components {
        * @constant
        */
       method: 'card'
+      /**
+       * @description What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry.
+       * @example subscription_cycle
+       */
+      trigger?: components['schemas']['PaymentTrigger'] | null
       /**
        * Decline Reason
        * @description Error code, if the payment was declined.
@@ -12183,14 +12410,19 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
+      /** @description The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval. */
+      meter_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Number of meter interval units. None when no meter cycle is set.
+       */
+      meter_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -12544,14 +12776,19 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
+      /** @description The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval. */
+      meter_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Number of meter interval units. None when no meter cycle is set.
+       */
+      meter_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -16082,6 +16319,11 @@ export interface components {
       subscription_id: string | null
       /** Checkout Id */
       checkout_id: string | null
+      /**
+       * Next Payment Attempt At
+       * @description When the next automatic payment retry is scheduled. `null` if the order is not in dunning or all retries have been exhausted.
+       */
+      next_payment_attempt_at?: string | null
       product: components['schemas']['CustomerOrderProduct'] | null
       subscription: components['schemas']['CustomerOrderSubscription'] | null
       /**
@@ -16095,11 +16337,6 @@ export interface components {
        * @example Pro Plan
        */
       description: string
-      /**
-       * Next Payment Attempt At
-       * @description When the next payment retry is scheduled
-       */
-      next_payment_attempt_at?: string | null
       /**
        * Refundable Amount
        * @description Amount in cents that can still be refunded (net, before taxes). Accounts for any applied customer balance and previous refunds.
@@ -16221,14 +16458,19 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
+      /** @description The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval. */
+      meter_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Number of meter interval units. None when no meter cycle is set.
+       */
+      meter_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -16326,7 +16568,7 @@ export interface components {
        * @description The interval at which the subscription recurs.
        * @example month
        */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
@@ -16349,6 +16591,16 @@ export interface components {
        * @description The end timestamp of the current billing period.
        */
       current_period_end: string
+      /**
+       * Current Meter Period Start
+       * @description The start timestamp of the current meter period, if the product has a meter cycle set. Metered credits are granted and overage is settled on this cadence.
+       */
+      current_meter_period_start: string | null
+      /**
+       * Current Meter Period End
+       * @description The end timestamp of the current meter period, if the product has a meter cycle set. This is when credits next renew.
+       */
+      current_meter_period_end: string | null
       /**
        * Trial Start
        * @description The start timestamp of the trial period, if any.
@@ -16384,6 +16636,11 @@ export interface components {
        * @description The timestamp when the subscription ended.
        */
       ended_at: string | null
+      /**
+       * Past Due At
+       * @description The timestamp when the subscription entered `past_due` status.
+       */
+      past_due_at?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -16806,14 +17063,19 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
+      /** @description The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval. */
+      meter_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Number of meter interval units. None when no meter cycle is set.
+       */
+      meter_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -17488,7 +17750,7 @@ export interface components {
        */
       currency: string
       /** @description The interval at which the subscription recurs. */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Current Period Start
        * Format: date-time
@@ -17747,7 +18009,7 @@ export interface components {
        * @description The interval at which the subscription recurs.
        * @example month
        */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
@@ -17770,6 +18032,16 @@ export interface components {
        * @description The end timestamp of the current billing period.
        */
       current_period_end: string
+      /**
+       * Current Meter Period Start
+       * @description The start timestamp of the current meter period, if the product has a meter cycle set. Metered credits are granted and overage is settled on this cadence.
+       */
+      current_meter_period_start: string | null
+      /**
+       * Current Meter Period End
+       * @description The end timestamp of the current meter period, if the product has a meter cycle set. This is when credits next renew.
+       */
+      current_meter_period_end: string | null
       /**
        * Trial Start
        * @description The start timestamp of the trial period, if any.
@@ -17805,6 +18077,11 @@ export interface components {
        * @description The timestamp when the subscription ended.
        */
       ended_at: string | null
+      /**
+       * Past Due At
+       * @description The timestamp when the subscription entered `past_due` status.
+       */
+      past_due_at?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -17991,14 +18268,19 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
+      /** @description The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval. */
+      meter_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Number of meter interval units. None when no meter cycle is set.
+       */
+      meter_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -19331,14 +19613,19 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
+      /** @description The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval. */
+      meter_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Number of meter interval units. None when no meter cycle is set.
+       */
+      meter_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -19501,6 +19788,23 @@ export interface components {
        */
       currency: string
       /**
+       * Reason
+       * @description The reason for the dispute as reported by the card network (e.g. `fraudulent`, `product_not_received`). `None` until the processor reports it.
+       * @example fraudulent
+       */
+      reason: string | null
+      /**
+       * Evidence Due By
+       * @description Deadline to submit evidence in response to the dispute. `None` when no response is required.
+       */
+      evidence_due_by: string | null
+      /**
+       * Past Due
+       * @description Whether the evidence submission deadline has passed.
+       * @example false
+       */
+      past_due: boolean
+      /**
        * Order Id
        * Format: uuid4
        * @description The ID of the order associated with the dispute.
@@ -19514,11 +19818,108 @@ export interface components {
        * @example 42b94870-36b9-4573-96b6-b90b1c99a353
        */
       payment_id: string
+      /** @description The customer who was charged for the disputed payment. */
+      customer: components['schemas']['DisputeCustomer']
       /**
        * Case Id
        * @description The ID of the support case for this dispute, if one was opened.
        */
       case_id: string | null
+    }
+    /** DisputeCustomer */
+    DisputeCustomer: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * External Id
+       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
+       */
+      external_id?: string | null
+      /**
+       * Email
+       * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
+       */
+      email?: string | null
+      /**
+       * Email Verified
+       * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+       * @example true
+       */
+      email_verified: boolean
+      /**
+       * @description The type of customer: 'individual' for single users, 'team' for customers with multiple members.
+       * @example individual
+       */
+      type: components['schemas']['CustomerType']
+      /**
+       * Name
+       * @description The name of the customer.
+       * @example John Doe
+       */
+      name: string | null
+      /**
+       * Billing Name
+       * @description The name that should appear on the customer's invoices. Falls back to the customer name when not explicitly set.
+       * @example John Doe
+       */
+      billing_name: string | null
+      billing_address: components['schemas']['Address'] | null
+      /** Tax Id */
+      tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the customer.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Default Payment Method Id
+       * @description The ID of the customer's default payment method, if any. Use the payment methods endpoint to retrieve its details.
+       */
+      default_payment_method_id?: string | null
+      /**
+       * Deleted At
+       * @description Timestamp for when the customer was soft deleted.
+       */
+      deleted_at: string | null
+      /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
+      avatar_url: string | null
+    }
+    /** DisputeNotOpenError */
+    DisputeNotOpenError: {
+      /**
+       * Error
+       * @example DisputeNotOpenError
+       * @constant
+       */
+      error: 'DisputeNotOpenError'
+      /** Detail */
+      detail: string
     }
     /**
      * DisputeSortProperty
@@ -19779,6 +20180,11 @@ export interface components {
        * @description The name of the event.
        */
       name: string
+      /**
+       * Label
+       * @description Human readable label of the event.
+       */
+      label: string
       /** @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API. */
       source: components['schemas']['EventSource']
       /**
@@ -20082,14 +20488,6 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /** @enum {string} */
-    Factor:
-      | 'email_otp'
-      | 'totp'
-      | 'backup_codes'
-      | 'apple'
-      | 'github'
-      | 'google'
     /** Feedback */
     Feedback: {
       /**
@@ -20351,6 +20749,11 @@ export interface components {
        */
       method: string
       /**
+       * @description What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry.
+       * @example subscription_cycle
+       */
+      trigger?: components['schemas']['PaymentTrigger'] | null
+      /**
        * Decline Reason
        * @description Error code, if the payment was declined.
        * @example insufficient_funds
@@ -20587,7 +20990,7 @@ export interface components {
        */
       type: 'recurring'
       /** @description The recurring interval of the price. */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Minimum Amount
        * @description The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'.
@@ -20665,7 +21068,7 @@ export interface components {
        */
       type: 'recurring'
       /** @description The recurring interval of the price. */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Price Amount
        * @description The price in cents.
@@ -21273,6 +21676,12 @@ export interface components {
       items: components['schemas']['OrganizationOrder'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[OrganizationSSOConnection] */
+    ListResource_OrganizationSSOConnection_: {
+      /** Items */
+      items: components['schemas']['OrganizationSSOConnection'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[Organization] */
     ListResource_Organization_: {
       /** Items */
@@ -21611,15 +22020,9 @@ export interface components {
     }
     /**
      * MemberCreate
-     * @description Schema for creating a new member.
+     * @description Schema for creating a new member (deprecated; customer in the body).
      */
     MemberCreate: {
-      /**
-       * Customer Id
-       * Format: uuid4
-       * @description The ID of the customer this member belongs to.
-       */
-      customer_id: string
       /**
        * Email
        * Format: email
@@ -21643,6 +22046,58 @@ export interface components {
        * @enum {string}
        */
       role: 'member' | 'billing_manager'
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer this member belongs to.
+       */
+      customer_id: string
+    }
+    /**
+     * MemberCreateFromCustomer
+     * @description Schema for creating a new member nested under a customer.
+     *
+     *     The customer is taken from the URL path, so it's not part of the body.
+     */
+    MemberCreateFromCustomer: {
+      /**
+       * Email
+       * Format: email
+       * @description The email address of the member.
+       * @example member@example.com
+       */
+      email: string
+      /** Name */
+      name?: string | null
+      /**
+       * External Id
+       * @description The ID of the member in your system. This must be unique within the customer.
+       * @example usr_1337
+       */
+      external_id?: string | null
+      /**
+       * Role
+       * @description The role of the member within the customer. To assign or transfer ownership, use the member update endpoint.
+       * @default member
+       * @example member
+       * @enum {string}
+       */
+      role: 'member' | 'billing_manager'
+    }
+    /** MemberOrganization */
+    MemberOrganization: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /** Slug */
+      slug: string
+      /**
+       * Requires Sso
+       * @description Whether this organization enforces SSO.
+       */
+      requires_sso: boolean
     }
     /**
      * MemberOwnerCreate
@@ -21690,6 +22145,37 @@ export interface components {
        */
       role?: components['schemas']['MemberRole'] | null
     }
+    /** MerchantMigration */
+    MerchantMigration: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
+      source_platform: components['schemas']['MerchantMigrationSourcePlatform']
+    }
+    /**
+     * MerchantMigrationSourcePlatform
+     * @enum {string}
+     */
+    MerchantMigrationSourcePlatform: 'stripe' | 'lemon_squeezy' | 'paddle'
     MetadataOutputType: {
       [key: string]: string | number | boolean
     }
@@ -22670,7 +23156,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read disputes:write customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -22735,7 +23221,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read disputes:write customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -22781,7 +23267,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read disputes:write customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -22851,6 +23337,69 @@ export interface components {
      * @enum {string}
      */
     OAuthPlatform: 'github' | 'github_repository_benefit' | 'google' | 'apple'
+    /**
+     * OIDCAuthMethod
+     * @enum {string}
+     */
+    OIDCAuthMethod: 'client_secret' | 'private_key_jwt'
+    /** OIDCConfigurationClientSecret */
+    OIDCConfigurationClientSecret: {
+      /**
+       * Issuer
+       * Format: uri
+       * @description OIDC issuer URL of the identity provider.
+       */
+      issuer: string
+      /**
+       * Client Id
+       * @description OAuth client ID registered with the identity provider.
+       */
+      client_id: string
+      /**
+       * @description Authentication method used against the identity provider. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      auth_method: 'client_secret'
+      /**
+       * Client Secret
+       * @description Client secret used to authenticate against the identity provider.
+       */
+      client_secret: string
+    }
+    /** OIDCConfigurationPrivateKeyJWT */
+    OIDCConfigurationPrivateKeyJWT: {
+      /**
+       * Issuer
+       * Format: uri
+       * @description OIDC issuer URL of the identity provider.
+       */
+      issuer: string
+      /**
+       * Client Id
+       * @description OAuth client ID registered with the identity provider.
+       */
+      client_id: string
+      /**
+       * @description Authentication method used against the identity provider. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      auth_method: 'private_key_jwt'
+    }
+    /** OIDCConfigurationRead */
+    OIDCConfigurationRead: {
+      /**
+       * Issuer
+       * @description OIDC issuer URL of the identity provider.
+       */
+      issuer: string
+      /**
+       * Client Id
+       * @description OAuth client ID registered with the identity provider.
+       */
+      client_id: string
+      /** @description Authentication method used against the identity provider. */
+      auth_method: components['schemas']['OIDCAuthMethod']
+    }
     /** OffSessionChargesNotEnabled */
     OffSessionChargesNotEnabled: {
       /**
@@ -22988,6 +23537,11 @@ export interface components {
       subscription_id: string | null
       /** Checkout Id */
       checkout_id: string | null
+      /**
+       * Next Payment Attempt At
+       * @description When the next automatic payment retry is scheduled. `null` if the order is not in dunning or all retries have been exhausted.
+       */
+      next_payment_attempt_at?: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Custom Field Data
@@ -23296,6 +23850,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** OrderNotEligibleForInvoice */
+    OrderNotEligibleForInvoice: {
+      /**
+       * Error
+       * @example OrderNotEligibleForInvoice
+       * @constant
+       */
+      error: 'OrderNotEligibleForInvoice'
+      /** Detail */
+      detail: string
+    }
     /** OrderNotEligibleForRetry */
     OrderNotEligibleForRetry: {
       /**
@@ -23453,14 +24018,19 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
+      /** @description The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval. */
+      meter_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Number of meter interval units. None when no meter cycle is set.
+       */
+      meter_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -23643,7 +24213,7 @@ export interface components {
        * @description The interval at which the subscription recurs.
        * @example month
        */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
@@ -23666,6 +24236,16 @@ export interface components {
        * @description The end timestamp of the current billing period.
        */
       current_period_end: string
+      /**
+       * Current Meter Period Start
+       * @description The start timestamp of the current meter period, if the product has a meter cycle set. Metered credits are granted and overage is settled on this cadence.
+       */
+      current_meter_period_start: string | null
+      /**
+       * Current Meter Period End
+       * @description The end timestamp of the current meter period, if the product has a meter cycle set. This is when credits next renew.
+       */
+      current_meter_period_end: string | null
       /**
        * Trial Start
        * @description The start timestamp of the trial period, if any.
@@ -23701,6 +24281,11 @@ export interface components {
        * @description The timestamp when the subscription ended.
        */
       ended_at: string | null
+      /**
+       * Past Due At
+       * @description The timestamp when the subscription entered `past_due` status.
+       */
+      past_due_at?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -23907,6 +24492,11 @@ export interface components {
        * @description When the business details were submitted for review.
        */
       details_submitted_at: string | null
+      /**
+       * Sso Enforced
+       * @description Whether members must access this organization through its SSO connection.
+       */
+      sso_enforced: boolean
       /**
        * Default Presentment Currency
        * @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available.
@@ -25002,6 +25592,18 @@ export interface components {
        * @default false
        */
       preview_access_enabled: boolean
+      /**
+       * Disputes Enabled
+       * @description If this organization has the disputes dashboard enabled
+       * @default false
+       */
+      disputes_enabled: boolean
+      /**
+       * Sso Enabled
+       * @description If this organization has single sign-on configuration enabled
+       * @default false
+       */
+      sso_enabled: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate
@@ -25109,6 +25711,11 @@ export interface components {
        * @description When the business details were submitted for review.
        */
       details_submitted_at: string | null
+      /**
+       * Sso Enforced
+       * @description Whether members must access this organization through its SSO connection.
+       */
+      sso_enforced: boolean
       /**
        * Default Presentment Currency
        * @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available.
@@ -25790,6 +26397,102 @@ export interface components {
        */
       permissions: components['schemas']['OrganizationPermission'][]
     }
+    /** OrganizationSSOConnection */
+    OrganizationSSOConnection: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description ID of the organization the connection belongs to.
+       */
+      organization_id: string
+      /**
+       * Name
+       * @description Human-friendly label for the connection, shown on the login page.
+       */
+      name: string | null
+      /** @description Type of the SSO connection. */
+      type: components['schemas']['OrganizationSSOConnectionType']
+      /** @description Provider-specific configuration of the connection. */
+      configuration: components['schemas']['OIDCConfigurationRead']
+      /**
+       * Enabled
+       * @description Whether the connection can be used to sign in.
+       */
+      enabled: boolean
+    }
+    /** OrganizationSSOConnectionCreate */
+    OrganizationSSOConnectionCreate: {
+      /**
+       * Name
+       * @description Human-friendly label for the connection, shown on the login page.
+       */
+      name?: string | null
+      /**
+       * Type
+       * @description Type of the SSO connection.
+       * @default oidc
+       * @constant
+       */
+      type: 'oidc'
+      /**
+       * Configuration
+       * @description Provider-specific configuration of the connection.
+       */
+      configuration:
+        | components['schemas']['OIDCConfigurationClientSecret']
+        | components['schemas']['OIDCConfigurationPrivateKeyJWT']
+      /**
+       * Enabled
+       * @description Whether the connection can be used to sign in.
+       * @default false
+       */
+      enabled: boolean
+    }
+    /**
+     * OrganizationSSOConnectionType
+     * @enum {string}
+     */
+    OrganizationSSOConnectionType: 'oidc'
+    /** OrganizationSSOConnectionUpdate */
+    OrganizationSSOConnectionUpdate: {
+      /**
+       * Name
+       * @description Human-friendly label for the connection, shown on the login page.
+       */
+      name?: string | null
+      /**
+       * Configuration
+       * @description Provider-specific configuration of the connection.
+       */
+      configuration?:
+        | (
+            | components['schemas']['OIDCConfigurationClientSecret']
+            | components['schemas']['OIDCConfigurationPrivateKeyJWT']
+          )
+        | null
+      /**
+       * Enabled
+       * @description Whether the connection can be used to sign in.
+       */
+      enabled?: boolean | null
+    }
     /** OrganizationSlugAvailability */
     OrganizationSlugAvailability: {
       /**
@@ -26404,6 +27107,11 @@ export interface components {
        */
       details_submitted_at: string | null
       /**
+       * Sso Enforced
+       * @description Whether members must access this organization through its SSO connection.
+       */
+      sso_enforced: boolean
+      /**
        * Default Presentment Currency
        * @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available.
        */
@@ -26886,6 +27594,17 @@ export interface components {
      * @enum {string}
      */
     PaymentStatus: 'pending' | 'succeeded' | 'failed'
+    /**
+     * PaymentTrigger
+     * @enum {string}
+     */
+    PaymentTrigger:
+      | 'purchase'
+      | 'subscription_cycle'
+      | 'retry_dunning'
+      | 'retry_customer'
+      | 'retry_payment_method_update'
+      | 'retry_admin'
     /** Payout */
     Payout: {
       /**
@@ -26960,6 +27679,8 @@ export interface components {
        */
       modified_at: string | null
       type: components['schemas']['PayoutAccountType']
+      /** Processor Id */
+      processor_id: string | null
       /** Country */
       country: string
       /** Currency */
@@ -27418,14 +28139,19 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
+      /** @description The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval. */
+      meter_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Number of meter interval units. None when no meter cycle is set.
+       */
+      meter_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -27623,13 +28349,20 @@ export interface components {
        */
       trial_interval_count?: number | null
       /** @description The recurring interval of the product. */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
        * @default 1
        */
       recurring_interval_count: number
+      /** @description Optional meter cycle, independent of the billing interval. When set, overage settlement, meter resets and meter-credit grants run on this cadence rather than the billing interval — e.g. yearly billing with monthly credits. It must evenly divide the billing interval. If `None`, metered concerns follow the billing interval. **Once set, it can't be changed.** */
+      meter_interval?: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Number of meter interval units. Defaults to 1 when `meter_interval` is set. Ignored when `meter_interval` is `None`.
+       */
+      meter_interval_count?: number | null
     }
     /**
      * ProductMediaFileCreate
@@ -28620,9 +29353,7 @@ export interface components {
        */
       description?: string | null
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.** */
-      recurring_interval?:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval?: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**
@@ -28703,6 +29434,11 @@ export interface components {
         [key: string]: string
       }
     }
+    /**
+     * RecurringInterval
+     * @enum {string}
+     */
+    RecurringInterval: 'day' | 'week' | 'month' | 'year'
     /** Refund */
     Refund: {
       /**
@@ -28776,7 +29512,18 @@ export interface components {
        * Format: uuid4
        */
       order_id: string
-      reason: components['schemas']['RefundReason']
+      /**
+       * Reason
+       * @description Reason for the refund.
+       * @enum {string}
+       */
+      reason:
+        | 'duplicate'
+        | 'fraudulent'
+        | 'customer_request'
+        | 'service_disruption'
+        | 'satisfaction_guarantee'
+        | 'other'
       /**
        * Amount
        * @description Amount to refund in cents. Minimum is 1.
@@ -28858,6 +29605,23 @@ export interface components {
        * @example usd
        */
       currency: string
+      /**
+       * Reason
+       * @description The reason for the dispute as reported by the card network (e.g. `fraudulent`, `product_not_received`). `None` until the processor reports it.
+       * @example fraudulent
+       */
+      reason: string | null
+      /**
+       * Evidence Due By
+       * @description Deadline to submit evidence in response to the dispute. `None` when no response is required.
+       */
+      evidence_due_by: string | null
+      /**
+       * Past Due
+       * @description Whether the evidence submission deadline has passed.
+       * @example false
+       */
+      past_due: boolean
       /**
        * Order Id
        * Format: uuid4
@@ -28995,6 +29759,26 @@ export interface components {
         [key: string]: string
       }
     }
+    /** SSOFactor */
+    SSOFactor: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'sso'
+      /**
+       * Connection Id
+       * Format: uuid4
+       */
+      connection_id: string
+      /** Organization Slug */
+      organization_slug: string
+      /**
+       * Name
+       * @description Human-friendly label for the connection, shown on the login page.
+       */
+      name: string | null
+    }
     /**
      * Scope
      * @enum {string}
@@ -29038,6 +29822,7 @@ export interface components {
       | 'wallets:read'
       | 'wallets:write'
       | 'disputes:read'
+      | 'disputes:write'
       | 'customer_meters:read'
       | 'customer_sessions:write'
       | 'member_sessions:write'
@@ -29658,7 +30443,7 @@ export interface components {
        * @description The interval at which the subscription recurs.
        * @example month
        */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
@@ -29681,6 +30466,16 @@ export interface components {
        * @description The end timestamp of the current billing period.
        */
       current_period_end: string
+      /**
+       * Current Meter Period Start
+       * @description The start timestamp of the current meter period, if the product has a meter cycle set. Metered credits are granted and overage is settled on this cadence.
+       */
+      current_meter_period_start: string | null
+      /**
+       * Current Meter Period End
+       * @description The end timestamp of the current meter period, if the product has a meter cycle set. This is when credits next renew.
+       */
+      current_meter_period_end: string | null
       /**
        * Trial Start
        * @description The start timestamp of the trial period, if any.
@@ -29716,6 +30511,11 @@ export interface components {
        * @description The timestamp when the subscription ended.
        */
       ended_at: string | null
+      /**
+       * Past Due At
+       * @description The timestamp when the subscription entered `past_due` status.
+       */
+      past_due_at?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -30750,11 +31550,6 @@ export interface components {
       /** Recurring Interval Count */
       recurring_interval_count?: number
     }
-    /**
-     * SubscriptionRecurringInterval
-     * @enum {string}
-     */
-    SubscriptionRecurringInterval: 'day' | 'week' | 'month' | 'year'
     /** SubscriptionRevoke */
     SubscriptionRevoke: {
       /**
@@ -31545,6 +32340,7 @@ export interface components {
       | 'dispute_won'
       | 'dispute_lost'
       | 'dispute_prevented'
+      | 'merchant_accepted'
     /** SupportCaseThread */
     SupportCaseThread: {
       case: components['schemas']['SupportCase']
@@ -32054,9 +32850,7 @@ export interface components {
       id: string
       /** Name */
       name: string
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /** Organization Id */
       organization_id: string | null
       organization: components['schemas']['TransactionOrganization'] | null
@@ -32317,9 +33111,20 @@ export interface components {
       oauth_accounts: components['schemas']['OAuthAccountRead'][]
       /**
        * Organizations
-       * @description Organizations the user is a member of, with their role on each. Populated by `GET /v1/users/me`; empty otherwise.
+       * @description Organizations the user is a member of and can access in the current session, with their role on each. Populated by `GET /v1/users/me`; empty otherwise.
        */
       organizations?: components['schemas']['OrganizationWithRole'][]
+      /**
+       * Member Organizations
+       * @description All organizations the user is a member of, regardless of whether they're accessible in the current session. Compare with `organizations` (the accessible subset) to determine access. Populated by `GET /v1/users/me`.
+       */
+      member_organizations?: components['schemas']['MemberOrganization'][]
+      /**
+       * Organization Scoped
+       * @description Whether the current session is restricted to a specific organization. Such sessions cannot access other organizations or create new ones. Populated by `GET /v1/users/me`.
+       * @default false
+       */
+      organization_scoped: boolean
       /** Email Hash */
       readonly email_hash: string | null
     }
@@ -33209,7 +34014,7 @@ export interface components {
       /**
        * Secret
        * @description The secret used to sign the webhook events.
-       * @example polar_whs_ovyN6cPrTv56AApvzCaJno08SSmGJmgbWilb33N2JuK
+       * @example whsec_ovyN6cPrTv56AApvzCaJno08SSmGJmgbWilb33N2JuK
        */
       secret: string
       /**
@@ -35086,6 +35891,15 @@ export interface operations {
           'application/json': components['schemas']['Organization']
         }
       }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CannotCreateOrganizationError']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -35922,147 +36736,6 @@ export interface operations {
           'application/json':
             | components['schemas']['AppealNotRejectedError']
             | components['schemas']['CaseAlreadyExistsError']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'organizations:get_appeal_case': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Appeal case thread returned. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['SupportCaseThread']
-        }
-      }
-      /** @description Support case not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'organizations:reply_to_appeal_case': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['SupportCaseMessageCreate']
-      }
-    }
-    responses: {
-      /** @description Reply posted. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['SupportCaseMessage']
-        }
-      }
-      /** @description Support case not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description The case is closed. */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CaseClosedError']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'organizations:download_appeal_case_attachment': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        attachment_id: string
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
-        }
-      }
-      /** @description Redirect to a presigned download URL. */
-      302: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Support case not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -36914,6 +37587,265 @@ export interface operations {
       }
     }
   }
+  'sso:list_sso_connections': {
+    parameters: {
+      query?: {
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_OrganizationSSOConnection_']
+        }
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'sso:create_sso_connection': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationSSOConnectionCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationSSOConnection']
+        }
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'sso:get_sso_connection': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        connection_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationSSOConnection']
+        }
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization or SSO connection not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'sso:delete_sso_connection': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        connection_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization or SSO connection not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'sso:update_sso_connection': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        connection_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationSSOConnectionUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationSSOConnection']
+        }
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization or SSO connection not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'subscriptions:list': {
     parameters: {
       query?: {
@@ -37401,6 +38333,50 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['TaxSummary']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'auth:auth.sso.start': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        slug: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AuthenticationSessionStart']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AuthenticationSession']
+        }
+      }
+      /** @description Organization not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -39364,6 +40340,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description Order is not eligible for invoice generation (invalid status). */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrderNotEligibleForInvoice']
+        }
+      }
       /** @description Order is missing billing name or address. */
       422: {
         headers: {
@@ -39588,6 +40573,56 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'disputes:accept': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The dispute ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Dispute']
+        }
+      }
+      /** @description Dispute not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['DisputeNotOpenError']
         }
       }
       /** @description Validation Error */
@@ -43697,6 +44732,409 @@ export interface operations {
       }
     }
   }
+  'customers:members:create': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The customer ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MemberCreateFromCustomer']
+      }
+    }
+    responses: {
+      /** @description Member created. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Member']
+        }
+      }
+      /** @description Not permitted to add members. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Customer not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:members:create_external': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The customer external ID. */
+        external_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MemberCreateFromCustomer']
+      }
+    }
+    responses: {
+      /** @description Member created. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Member']
+        }
+      }
+      /** @description Not permitted to add members. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Customer not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The external customer ID matches customers in several accessible organizations. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AmbiguousExternalCustomerID']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:members:get': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The customer ID. */
+        id: string
+        member_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Member retrieved. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Member']
+        }
+      }
+      /** @description Member not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:members:delete': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The customer ID. */
+        id: string
+        member_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Member deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Member not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:members:update': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The customer ID. */
+        id: string
+        member_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MemberUpdate']
+      }
+    }
+    responses: {
+      /** @description Member updated. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Member']
+        }
+      }
+      /** @description Member not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:members:get_external': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The customer external ID. */
+        external_id: string
+        /** @description The member external ID. */
+        member_external_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Member retrieved. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Member']
+        }
+      }
+      /** @description Member not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The external customer ID matches customers in several accessible organizations. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AmbiguousExternalCustomerID']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:members:delete_external': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The customer external ID. */
+        external_id: string
+        /** @description The member external ID. */
+        member_external_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Member deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Member not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The external customer ID matches customers in several accessible organizations. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AmbiguousExternalCustomerID']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:members:update_external': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The customer external ID. */
+        external_id: string
+        /** @description The member external ID. */
+        member_external_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MemberUpdate']
+      }
+    }
+    responses: {
+      /** @description Member updated. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Member']
+        }
+      }
+      /** @description Member not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The external customer ID matches customers in several accessible organizations. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AmbiguousExternalCustomerID']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'customer_portal:benefit-grants:list': {
     parameters: {
       query?: {
@@ -45480,6 +46918,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description Order is not eligible for invoice generation (invalid status). */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrderNotEligibleForInvoice']
+        }
+      }
       /** @description Order is missing billing name or address. */
       422: {
         headers: {
@@ -46308,6 +47755,44 @@ export interface operations {
       }
       /** @description Seat-based pricing not enabled for organization */
       403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:get': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigration']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
         headers: {
           [name: string]: unknown
         }
@@ -56979,6 +58464,7 @@ export const availableScopeValues: ReadonlyArray<
   'wallets:read',
   'wallets:write',
   'disputes:read',
+  'disputes:write',
   'customer_meters:read',
   'customer_sessions:write',
   'member_sessions:write',
@@ -57020,6 +58506,9 @@ export const balanceRefundEventNameValues: ReadonlyArray<
 export const balanceRefundReversalEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BalanceRefundReversalEvent']['name']
 > = ['balance.refund_reversal']
+export const baseFactorTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BaseFactor']['type']
+> = ['apple', 'backup_codes', 'email_otp', 'github', 'google', 'totp']
 export const benefitCustomTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitCustom']['type']
 > = ['custom']
@@ -57978,9 +59467,6 @@ export const eventTypesSortPropertyValues: ReadonlyArray<
   'last_seen',
   '-last_seen',
 ]
-export const factorValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['Factor']
-> = ['email_otp', 'totp', 'backup_codes', 'apple', 'github', 'google']
 export const feedbackStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['FeedbackStatus']
 > = ['new', 'triaged']
@@ -58031,12 +59517,18 @@ export const maintainerNewProductSaleNotificationTypeValues: ReadonlyArray<
 export const memberCreateRoleValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberCreate']['role']
 > = ['member', 'billing_manager']
+export const memberCreateFromCustomerRoleValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MemberCreateFromCustomer']['role']
+> = ['member', 'billing_manager']
 export const memberRoleValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberRole']
 > = ['owner', 'billing_manager', 'member']
 export const memberSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberSortProperty']
 > = ['created_at', '-created_at']
+export const merchantMigrationSourcePlatformValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationSourcePlatform']
+> = ['stripe', 'lemon_squeezy', 'paddle']
 export const meterCreditEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MeterCreditEvent']['name']
 > = ['meter.credited']
@@ -58076,6 +59568,15 @@ export const oAuth2ClientConfigurationUpdateGrant_typesValues: ReadonlyArray<
 export const oAuthPlatformValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OAuthPlatform']
 > = ['github', 'github_repository_benefit', 'google', 'apple']
+export const oIDCAuthMethodValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OIDCAuthMethod']
+> = ['client_secret', 'private_key_jwt']
+export const oIDCConfigurationClientSecretAuth_methodValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OIDCConfigurationClientSecret']['auth_method']
+> = ['client_secret']
+export const oIDCConfigurationPrivateKeyJWTAuth_methodValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OIDCConfigurationPrivateKeyJWT']['auth_method']
+> = ['private_key_jwt']
 export const orderBillingReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrderBillingReason']
 > = [
@@ -58982,6 +60483,9 @@ export const organizationReviewSubCheckKeyValues: ReadonlyArray<
 export const organizationRoleValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationRole']
 > = ['owner', 'admin', 'member']
+export const organizationSSOConnectionTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationSSOConnectionType']
+> = ['oidc']
 export const organizationSocialPlatformsValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationSocialPlatforms']
 > = [
@@ -59544,6 +61048,16 @@ export const paymentSortPropertyValues: ReadonlyArray<
 export const paymentStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PaymentStatus']
 > = ['pending', 'succeeded', 'failed']
+export const paymentTriggerValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PaymentTrigger']
+> = [
+  'purchase',
+  'subscription_cycle',
+  'retry_dunning',
+  'retry_customer',
+  'retry_payment_method_update',
+  'retry_admin',
+]
 export const payoutAccountTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PayoutAccountType']
 > = ['stripe', 'manual']
@@ -59782,6 +61296,19 @@ export const productVisibilityValues: ReadonlyArray<
 export const propertyAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PropertyAggregation']['func']
 > = ['avg', 'max', 'min', 'sum']
+export const recurringIntervalValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['RecurringInterval']
+> = ['day', 'week', 'month', 'year']
+export const refundCreateReasonValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['RefundCreate']['reason']
+> = [
+  'duplicate',
+  'fraudulent',
+  'customer_request',
+  'service_disruption',
+  'satisfaction_guarantee',
+  'other',
+]
 export const refundReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RefundReason']
 > = [
@@ -59799,6 +61326,9 @@ export const refundSortPropertyValues: ReadonlyArray<
 export const refundStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RefundStatus']
 > = ['pending', 'succeeded', 'failed', 'canceled']
+export const sSOFactorTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SSOFactor']['type']
+> = ['sso']
 export const scopeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Scope']
 > = [
@@ -59840,6 +61370,7 @@ export const scopeValues: ReadonlyArray<
   'wallets:read',
   'wallets:write',
   'disputes:read',
+  'disputes:write',
   'customer_meters:read',
   'customer_sessions:write',
   'member_sessions:write',
@@ -60033,9 +61564,6 @@ export const subscriptionProrationBehaviorValues: ReadonlyArray<
 export const subscriptionReactivatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionReactivatedEvent']['name']
 > = ['subscription.reactivated']
-export const subscriptionRecurringIntervalValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['SubscriptionRecurringInterval']
-> = ['day', 'week', 'month', 'year']
 export const subscriptionRevokedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionRevokedEvent']['name']
 > = ['subscription.revoked']
@@ -60108,6 +61636,7 @@ export const supportCaseMessageTypeValues: ReadonlyArray<
   'dispute_won',
   'dispute_lost',
   'dispute_prevented',
+  'merchant_accepted',
 ]
 export const supportCaseTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SupportCaseType']

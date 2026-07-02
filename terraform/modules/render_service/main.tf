@@ -127,6 +127,17 @@ resource "render_env_group" "aws_s3" {
   }
 }
 
+# Setting AWS_ROLE_ARN makes Render inject a web-identity token, so boto3
+# assumes the role via OIDC and needs no static keys.
+resource "render_env_group" "secrets_kms" {
+  environment_id = var.render_environment_id
+  name           = "secrets-kms-${var.environment}"
+  env_vars = {
+    POLAR_AWS_KMS_KEY_ID = { value = var.aws_kms_config.key_id }
+    AWS_ROLE_ARN         = { value = var.aws_kms_config.role_arn }
+  }
+}
+
 resource "render_env_group" "worker_sqs" {
   count          = var.worker_sqs_config != null ? 1 : 0
   environment_id = var.render_environment_id
@@ -443,6 +454,11 @@ resource "render_env_group_link" "redis" {
 
 resource "render_env_group_link" "aws_s3" {
   env_group_id = render_env_group.aws_s3.id
+  service_ids  = local.all_service_ids
+}
+
+resource "render_env_group_link" "secrets_kms" {
+  env_group_id = render_env_group.secrets_kms.id
   service_ids  = local.all_service_ids
 }
 

@@ -37,7 +37,6 @@ resource "render_postgres" "db" {
   environment_id = local.environment_id
   name           = "db-test"
   database_name  = "polar_cpit"
-  database_user  = "polar_cpit_user"
   plan           = "pro_4gb"
   region         = "ohio"
   version        = "15"
@@ -53,7 +52,6 @@ resource "render_postgres" "db" {
     prevent_destroy = true
     ignore_changes = [
       ip_allow_list,
-      database_user,
       database_name,
     ]
   }
@@ -217,6 +215,11 @@ module "test" {
     secret_access_key     = var.aws_secret_access_key
     files_download_salt   = var.s3_files_download_salt
     files_download_secret = var.s3_files_download_secret
+  }
+
+  aws_kms_config = {
+    key_id   = one(module.secrets_kms[*].key_arn)
+    role_arn = one(module.secrets_kms[*].role_arn)
   }
 
   github_secrets = {

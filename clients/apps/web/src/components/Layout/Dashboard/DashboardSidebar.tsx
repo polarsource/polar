@@ -104,16 +104,12 @@ export const DashboardSidebar = ({
         >
           <NotificationsPopover />
           <Button
-            className="relative h-8 w-8"
+            className="relative size-8! p-0"
             variant="ghost"
             onClick={() => setSearchOpen(true)}
             aria-label="Search"
           >
-            <Search
-              className="[&svg]:size-5!"
-              fontSize="medium"
-              aria-hidden="true"
-            />
+            <Search fontSize="small" aria-hidden="true" />
           </Button>
         </motion.div>
       </SidebarHeader>

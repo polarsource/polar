@@ -433,26 +433,38 @@ module "pgbouncer" {
   depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db]
 }
 
-module "pgbouncer_read" {
-  source = "../modules/pgbouncer"
+locals {
+  pgbouncer_read_pool_configs = {
+    "polar-read" = {
+      max_client_conn   = "5000"
+      default_pool_size = "50"
+      reserve_pool_size = "10"
+    }
+    "polar-replica" = {
+      max_client_conn   = "1000"
+      default_pool_size = "20"
+      reserve_pool_size = "0"
+    }
+  }
+}
 
-  name                   = "pgbouncer-read"
+module "pgbouncer_read" {
+  source   = "../modules/pgbouncer"
+  for_each = { for replica in render_postgres.db.read_replicas : replica.name => replica }
+
+  name                   = "pgbouncer-${trimprefix(each.key, "polar-")}"
   environment            = "production"
   render_environment_id  = render_project.polar.environments["Production"].id
   registry_credential_id = render_registry_credential.ghcr.id
 
   database = {
-    host     = local.read_replica.id
+    host     = each.value.id
     port     = local.db_port
     user     = local.db_user
     password = local.db_password
   }
 
-  pool_config = {
-    max_client_conn   = "5000"
-    default_pool_size = "50"
-    reserve_pool_size = "10"
-  }
+  pool_config = local.pgbouncer_read_pool_configs[each.key]
 
   depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db]
 }

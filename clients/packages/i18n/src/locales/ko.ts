@@ -16,6 +16,8 @@ export default {
       email: '이메일',
       cardholderName: '카드 명의자',
       purchasingAsBusiness: '사업자로 구매합니다',
+      addBusinessDetails: '사업자 정보 추가',
+      removeBusinessDetails: '사업자 정보 제거',
       businessName: '상호명',
       billingAddress: {
         label: '청구지 주소',
@@ -45,6 +47,18 @@ export default {
       total: '합계',
       additionalMeteredUsage: '추가 종량제 사용량',
       discount: {
+        duration: {
+          months: {
+            '=1': '첫 달 동안',
+            other: '처음 #개월 동안',
+            _mode: 'plural',
+          },
+          years: {
+            '=1': '첫 해 동안',
+            other: '처음 #년 동안',
+            _mode: 'plural',
+          },
+        },
         until: '{date}까지',
       },
       everyInterval: {
@@ -73,6 +87,7 @@ export default {
           _mode: 'plural',
         },
       },
+      perUnit: '/ 단위',
       perSeat: '좌석당',
       seats: {
         label: '좌석',
@@ -96,6 +111,29 @@ export default {
       basePrice: '기본 가격',
     },
     trial: {
+      ends: '체험 기간 종료 {endDate}',
+      duration: {
+        days: {
+          '=1': '#일 체험',
+          other: '#일 체험',
+          _mode: 'plural',
+        },
+        weeks: {
+          '=1': '#주 체험',
+          other: '#주 체험',
+          _mode: 'plural',
+        },
+        months: {
+          '=1': '#개월 체험',
+          other: '#개월 체험',
+          _mode: 'plural',
+        },
+        years: {
+          '=1': '#년 체험',
+          other: '#년 체험',
+          _mode: 'plural',
+        },
+      },
       hero: {
         free: {
           day: {
@@ -123,6 +161,11 @@ export default {
         then: '이후',
         startingDate: '{date}부터',
       },
+      summary: {
+        totalWhenTrialEnds: '체험 종료 시 총액',
+        totalWhenDiscountExpires: '할인 만료 시 총액',
+        totalDueToday: '오늘 결제 총액',
+      },
     },
     pwywForm: {
       label: '원하는 가격 입력',
@@ -136,6 +179,17 @@ export default {
       fromPrefix: '최저',
     },
     benefits: {
+      moreBenefits: {
+        '=1': '혜택 #개 더',
+        other: '혜택 #개 더',
+        _mode: 'plural',
+      },
+      showMoreBenefits: {
+        '=1': '혜택 #개 더 보기',
+        other: '혜택 #개 더 보기',
+        _mode: 'plural',
+      },
+      showLess: '접기',
       granting: '헤택 적용 중…',
       requestNewInvite: '새 초대 요청',
       retryIn: {
@@ -220,6 +274,10 @@ export default {
     },
     productDescription: {
       readMore: '더 보기',
+      readLess: '접기',
+    },
+    card: {
+      included: '포함',
     },
   },
   intervals: {

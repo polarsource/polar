@@ -99,10 +99,13 @@ Recurring billing relationship.
 |-------|------|-------------|
 | `status` | SubscriptionStatus | incomplete, trialing, active, past_due, canceled, unpaid |
 | `amount`, `currency` | int, str | Subscription gross price |
-| `net_amount` | int | Net amount (gross minus inclusive tax, equal to gross if tax-exclusive) |
-| `tax_behavior` | TaxBehavior \| None | Inclusive, exclusive, or null (set at creation) |
+| `net_amount` | int | Net amount (gross minus inclusive tax) |
+| `tax_behavior` | TaxBehavior \| None | Inclusive, exclusive, or null |
 | `recurring_interval` | Interval | month, year |
+| `meter_interval` | Interval \| None | Optional meter cycle (independent of billing) |
+| `meter_interval_count` | int \| None | Number of meter interval units |
 | `current_period_start/end` | datetime | Billing period |
+| `current_meter_period_start/end` | datetime \| None | Meter period (if meter_interval set) |
 | `trial_start/end` | datetime | Trial period |
 | `cancel_at_period_end` | bool | Scheduled cancellation |
 | `canceled_at`, `ended_at` | datetime | Lifecycle timestamps |

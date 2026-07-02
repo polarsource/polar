@@ -122,26 +122,3 @@ const LoadingSpinner = (props: {
     </>
   )
 }
-
-export const RawButton = ({
-  ref,
-  className,
-  variant,
-  size,
-  children,
-  ...props
-}: ButtonProps & {
-  ref?: React.RefObject<HTMLButtonElement>
-}) => {
-  return (
-    <ShadcnButton
-      className={twMerge(buttonVariants({ variant, size, className }))}
-      ref={ref}
-      {...props}
-    >
-      {children}
-    </ShadcnButton>
-  )
-}
-
-RawButton.displayName = 'RawButton'

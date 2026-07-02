@@ -33,8 +33,6 @@ export default {
       optional: 'Valfritt',
       apply: 'Lägg till',
       fieldRequired: 'Detta fält är obligatoriskt',
-      addBusinessDetails: 'Lägg till företagsuppgifter',
-      removeBusinessDetails: 'Ta bort företagsuppgifter',
       billingDetails: 'Företagsuppgifter',
       addDiscountCode: 'Lägg till rabattkod',
     },
@@ -46,20 +44,7 @@ export default {
       payWhatYouWant: 'Betala vad du vill',
       total: 'Totalt',
       additionalMeteredUsage: 'Ytterligare mätbaserad användning',
-      perUnit: '/ enhet',
       discount: {
-        duration: {
-          months: {
-            '=1': 'för den första månaden',
-            other: 'för de första # månaderna',
-            _mode: 'plural',
-          },
-          years: {
-            '=1': 'för det första året',
-            other: 'för de första # åren',
-            _mode: 'plural',
-          },
-        },
         until: 'T.o.m. {date}',
       },
       everyInterval: {
@@ -111,29 +96,6 @@ export default {
       basePrice: 'Grundavgift',
     },
     trial: {
-      ends: 'Testperioden slutar {endDate}',
-      duration: {
-        days: {
-          '=1': '# dagars testperiod',
-          other: '# dagars testperiod',
-          _mode: 'plural',
-        },
-        weeks: {
-          '=1': '# veckas testperiod',
-          other: '# veckors testperiod',
-          _mode: 'plural',
-        },
-        months: {
-          '=1': '# månads testperiod',
-          other: '# månaders testperiod',
-          _mode: 'plural',
-        },
-        years: {
-          '=1': '# års testperiod',
-          other: '# års testperiod',
-          _mode: 'plural',
-        },
-      },
       hero: {
         free: {
           day: {
@@ -161,11 +123,6 @@ export default {
         then: 'Därefter',
         startingDate: 'från {date}',
       },
-      summary: {
-        totalWhenTrialEnds: 'Totalt efter provperioden',
-        totalWhenDiscountExpires: 'Totalt när rabatten löper ut',
-        totalDueToday: 'Att betala idag',
-      },
     },
     pwywForm: {
       label: 'Ange pris',
@@ -178,21 +135,7 @@ export default {
       oneTimePurchase: 'Engångsköp',
       fromPrefix: 'Från',
     },
-    card: {
-      included: 'Ingår',
-    },
     benefits: {
-      moreBenefits: {
-        '=1': '# ytterligare förmån',
-        other: '# ytterligare förmåner',
-        _mode: 'plural',
-      },
-      showMoreBenefits: {
-        '=1': 'Visa # ytterligare förmån',
-        other: 'Visa # ytterligare förmåner',
-        _mode: 'plural',
-      },
-      showLess: 'Visa mindre',
       granting: 'Tilldelar förmåner...',
       requestNewInvite: 'Begär ny inbjudan',
       retryIn: {
@@ -278,7 +221,6 @@ export default {
     },
     productDescription: {
       readMore: 'Läs mer',
-      readLess: 'Läs mindre',
     },
   },
   intervals: {

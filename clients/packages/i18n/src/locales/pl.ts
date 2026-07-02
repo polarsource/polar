@@ -16,8 +16,6 @@ export default {
       email: 'E-mail',
       cardholderName: 'Imię i nazwisko posiadacza karty',
       purchasingAsBusiness: 'Kupuję jako firma',
-      addBusinessDetails: 'Dodaj dane firmy',
-      removeBusinessDetails: 'Usuń dane firmy',
       businessName: 'Nazwa firmy',
       billingDetails: 'Dane do faktury',
       billingAddress: {
@@ -72,20 +70,7 @@ export default {
         },
       },
       additionalMeteredUsage: 'Dodatkowe opłaty wg zużycia',
-      perUnit: '/ jednostka',
       discount: {
-        duration: {
-          months: {
-            '=1': 'przez pierwszy miesiąc',
-            other: 'przez pierwsze # miesięcy',
-            _mode: 'plural',
-          },
-          years: {
-            '=1': 'przez pierwszy rok',
-            other: 'przez pierwsze # lat',
-            _mode: 'plural',
-          },
-        },
         until: 'Do {date}',
       },
       perSeat: 'za stanowisko',
@@ -111,29 +96,6 @@ export default {
       basePrice: 'Cena bazowa',
     },
     trial: {
-      ends: 'Okres próbny kończy się {endDate}',
-      duration: {
-        days: {
-          '=1': '#-dniowy okres próbny',
-          other: '#-dniowy okres próbny',
-          _mode: 'plural',
-        },
-        weeks: {
-          '=1': '#-tygodniowy okres próbny',
-          other: '#-tygodniowy okres próbny',
-          _mode: 'plural',
-        },
-        months: {
-          '=1': '#-miesięczny okres próbny',
-          other: '#-miesięczny okres próbny',
-          _mode: 'plural',
-        },
-        years: {
-          '=1': '#-letni okres próbny',
-          other: '#-letni okres próbny',
-          _mode: 'plural',
-        },
-      },
       hero: {
         free: {
           day: {
@@ -161,11 +123,6 @@ export default {
         then: 'Następnie',
         startingDate: 'od {date}',
       },
-      summary: {
-        totalWhenTrialEnds: 'Suma po zakończeniu okresu próbnego',
-        totalWhenDiscountExpires: 'Suma po wygaśnięciu rabatu',
-        totalDueToday: 'Suma do zapłaty dziś',
-      },
     },
     pwywForm: {
       label: 'Zaproponuj uczciwą cenę',
@@ -178,21 +135,7 @@ export default {
       oneTimePurchase: 'Płatność jednorazowa',
       fromPrefix: 'Od',
     },
-    card: {
-      included: 'W cenie',
-    },
     benefits: {
-      moreBenefits: {
-        '=1': 'Jeszcze # korzyść',
-        other: 'Jeszcze # korzyści',
-        _mode: 'plural',
-      },
-      showMoreBenefits: {
-        '=1': 'Pokaż # więcej',
-        other: 'Pokaż # więcej',
-        _mode: 'plural',
-      },
-      showLess: 'Pokaż mniej',
       granting: 'Przyznawanie dostępu...',
       requestNewInvite: 'Poproś o nowe zaproszenie',
       retryIn: {
@@ -281,7 +224,6 @@ export default {
     },
     productDescription: {
       readMore: 'Czytaj więcej',
-      readLess: 'Czytaj mniej',
     },
   },
   intervals: {

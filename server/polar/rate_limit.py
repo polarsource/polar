@@ -5,12 +5,12 @@ from functools import partial
 from fastapi.security.utils import get_authorization_scheme_param
 from ratelimit import RateLimitMiddleware, Rule
 from ratelimit.auths import EmptyInformation
-from ratelimit.auths.ip import client_ip
 from ratelimit.backends.redis import RedisBackend
 from ratelimit.types import ASGIApp, Scope
 
 from polar.config import Environment, settings
 from polar.enums import RateLimitGroup
+from polar.kit.http import get_ip_address
 from polar.redis import Redis
 
 _IDENTITY_KEY_PREFIX = "rl:ident:"
@@ -99,6 +99,13 @@ async def clear_cached_identity(redis: Redis, token: str) -> None:
     await redis.delete(_identity_cache_key(token))
 
 
+def _get_ip(scope: Scope) -> tuple[str, RateLimitGroup]:
+    ip = get_ip_address(Request(scope))
+    if ip is None:
+        raise EmptyInformation(scope)
+    return ip, RateLimitGroup.default
+
+
 async def _authenticate(scope: Scope, *, redis: Redis) -> tuple[str, RateLimitGroup]:
     token = _bearer_token(scope)
     if token is not None:
@@ -115,8 +122,7 @@ async def _authenticate(scope: Scope, *, redis: Redis) -> tuple[str, RateLimitGr
         return f"cookie:{_token_hash(cookie)}", RateLimitGroup.pending_auth
 
     try:
-        ip, _ = await client_ip(scope)
-        return ip, RateLimitGroup.default
+        return _get_ip(scope)
     except (EmptyInformation, ValueError, TypeError):
         return _ANONYMOUS_IDENTITY, RateLimitGroup.default
 

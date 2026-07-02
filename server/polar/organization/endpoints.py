@@ -48,7 +48,7 @@ from polar.integrations.polar.schemas import (
     organization_payment_method_from_sdk,
 )
 from polar.integrations.polar.service import polar_self as polar_self_service
-from polar.kit.http import check_url_reachable
+from polar.kit.http import check_url_reachable, get_ip_address
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization, UserOrganization
 from polar.models.support_case import (
@@ -946,7 +946,7 @@ async def start_subscription_checkout(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationCheckoutResponse:
     """Create a Polar checkout session for an initial paid subscription."""
-    customer_ip_address = request.client.host if request.client else None
+    customer_ip_address = get_ip_address(request)
     checkout = await polar_self_service.start_checkout(
         session=session,
         organization_id=authz.organization.id,
@@ -1044,7 +1044,7 @@ async def claim_startup_program(
     Caller passes ``success_url`` / ``return_url`` defensively; they're only
     used on the Free-plan branch.
     """
-    customer_ip_address = request.client.host if request.client else None
+    customer_ip_address = get_ip_address(request)
     try:
         subscription, checkout = await polar_self_service.claim_startup_program(
             session=session,

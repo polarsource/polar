@@ -9,6 +9,7 @@ from polar.checkout import ip_geolocation
 from polar.checkout.service import checkout as checkout_service
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.exceptions import ResourceNotFound
+from polar.kit.http import get_ip_address
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import CheckoutLink
@@ -186,7 +187,7 @@ async def redirect(
     if checkout_link is None:
         raise ResourceNotFound()
 
-    ip_address = request.client.host if request.client else None
+    ip_address = get_ip_address(request)
 
     # Build query_prefill dictionary from explicit parameters
     query_prefill: dict[str, str | UUID4 | dict[str, str] | None] = {

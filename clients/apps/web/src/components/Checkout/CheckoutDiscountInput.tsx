@@ -108,7 +108,7 @@ export const CheckoutDiscountInput = ({
         {!collapsible && (
           <label className="flex flex-row items-center justify-between text-sm">
             <span>{t('checkout.form.discountCode')}</span>
-            <span className="dark:text-polar-500 text-xs font-normal text-gray-500">
+            <span className="dark:text-polar-500 text-xs text-gray-500">
               {t('checkout.form.optional')}
             </span>
           </label>

@@ -37,6 +37,16 @@ from .license_key import LicenseKey
 from .license_key_activation import LicenseKeyActivation
 from .member import Member, MemberRole
 from .member_session import MemberSession
+from .merchant_migration import (
+    MerchantMigration,
+    MerchantMigrationSourcePlatform,
+    MerchantMigrationStep,
+)
+from .merchant_migration_record import (
+    MerchantMigrationRecord,
+    MerchantMigrationRecordStatus,
+    MerchantMigrationRecordType,
+)
 from .meter import Meter
 from .meter_event import MeterEvent
 from .metric_dashboard import MetricDashboard
@@ -56,6 +66,7 @@ from .organization_access_token import OrganizationAccessToken
 from .organization_agent_review import OrganizationAgentReview
 from .organization_review import OrganizationReview
 from .organization_review_feedback import OrganizationReviewFeedback
+from .organization_sso_connection import OrganizationSSOConnection
 from .payment import Payment
 from .payment_method import PaymentMethod
 from .payout import Payout
@@ -152,6 +163,12 @@ __all__ = [
     "Member",
     "MemberRole",
     "MemberSession",
+    "MerchantMigration",
+    "MerchantMigrationRecord",
+    "MerchantMigrationRecordStatus",
+    "MerchantMigrationRecordType",
+    "MerchantMigrationSourcePlatform",
+    "MerchantMigrationStep",
     "Meter",
     "MeterEvent",
     "MetricDashboard",
@@ -173,6 +190,7 @@ __all__ = [
     "OrganizationAgentReview",
     "OrganizationReview",
     "OrganizationReviewFeedback",
+    "OrganizationSSOConnection",
     "Payment",
     "PaymentMethod",
     "Payout",

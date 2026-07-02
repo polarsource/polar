@@ -52,6 +52,12 @@ class DisputePaymentNotFoundError(DisputeError):
         super().__init__(message)
 
 
+class DisputeNotOpenError(DisputeError):
+    def __init__(self, dispute_id: uuid.UUID) -> None:
+        self.dispute_id = dispute_id
+        super().__init__(f"Dispute {dispute_id} is not awaiting a response.", 409)
+
+
 class DisputeService:
     async def list(
         self,
@@ -105,6 +111,34 @@ class DisputeService:
             .where(Dispute.id == id)
         )
         return await repository.get_one_or_none(statement)
+
+    async def accept(self, session: AsyncSession, dispute: Dispute) -> Dispute:
+        """Merchant concedes the chargeback.
+
+        Closes the dispute with the processor — which settles it as ``lost`` —
+        and records the merchant's decision on the support thread. The resulting
+        ``lost`` state is reconciled through the same path as the Stripe webhook.
+        """
+        if dispute.status != DisputeStatus.needs_response:
+            raise DisputeNotOpenError(dispute.id)
+
+        assert dispute.payment_processor_id is not None
+
+        case = await dispute_case_service.get_case(session, dispute)
+        if case is not None:
+            await dispute_case_service.accept(session, case)
+
+        stripe_dispute = await stripe_service.close_dispute(
+            dispute.payment_processor_id
+        )
+        await self.upsert_from_stripe(session, stripe_dispute)
+
+        repository = DisputeRepository.from_session(session)
+        reloaded = await repository.get_by_id(
+            dispute.id, options=repository.get_eager_options()
+        )
+        assert reloaded is not None
+        return reloaded
 
     async def upsert_from_stripe(
         self, session: AsyncSession, stripe_dispute: stripe_lib.Dispute
@@ -251,7 +285,6 @@ class DisputeService:
             case DisputeStatus.prevented:
                 await dispute_case_service.prevent(session, case)
             case DisputeStatus.needs_response | DisputeStatus.early_warning:
-                # needs_response is handled above; early_warning never has a case.
                 pass
             case _:
                 assert_never(dispute.status)

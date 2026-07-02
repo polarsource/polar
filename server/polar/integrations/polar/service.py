@@ -912,7 +912,7 @@ class PolarSelfService:
         organization = await organization_repository.get_by_id(
             organization_id, include_blocked=True
         )
-        if organization is None or not organization.is_active():
+        if organization is None or not organization.can_change_plan():
             raise PolarSelfNotApproved(organization_id)
 
     async def _ensure_plan(self, product_id: str) -> "Product":

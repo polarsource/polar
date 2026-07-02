@@ -147,6 +147,27 @@ If you want to work with payments and subscriptions, you'll need to set up a Str
             POLAR_STRIPE_CONNECT_WEBHOOK_SECRET=whsec_...
             ```
 
+**Optional: setup SSO (local mock OIDC)**
+
+If you want to work on or test enterprise SSO login, you can point it at a local mock OIDC identity provider instead of a real one. The default seed (`dev seed`) already creates an **enabled** SSO connection on the `admin-org` organization that targets this mock server, so no manual configuration is needed.
+
+1. **Start the mock OIDC server** with Docker. It exposes an issuer at `http://localhost:8080/default` — the issuer the seed points at:
+
+    ```sh
+    docker run -p 8080:8080 ghcr.io/navikt/mock-oauth2-server:2.1.0
+    ```
+
+    The seeded connection uses `client_secret` authentication (`client_id=polar`, `client_secret=polar-secret`). The mock server accepts any client, so there's nothing to register.
+
+2. **Start the SSO login** by opening [http://127.0.0.1:3000/auth/sso/admin-org](http://127.0.0.1:3000/auth/sso/admin-org). You'll be redirected to the mock IdP's login page.
+
+3. **Assert the seeded member's identity.** The callback requires a *verified* email that belongs to a member of the organization, so in the mock login form submit these claims (the seeded admin is a member of `admin-org`):
+
+    ```json
+    {"email": "admin@polar.sh", "email_verified": true}
+    ```
+
+    You'll be redirected back to Polar, where the org-scoped session completes.
 
 ### Setup backend
 

@@ -79,7 +79,7 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
         <Box flexDirection="column" rowGap="m">
           <Box alignItems="center" columnGap="m">
             <RocketIcon className="h-4 w-4 shrink-0" />
-            <Text as="strong">Finish setting up your account</Text>
+            <Text variant="title">Finish setting up your account</Text>
           </Box>
           <Text color="muted">
             Set up your products and integrate into your app. Test the full flow
@@ -125,12 +125,12 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
           {nextLabel ? (
             <>
               <Text color="muted">Up next</Text>
-              <Text as="strong">{nextLabel}</Text>
+              <Text variant="title">{nextLabel}</Text>
               {nextDescription && <Text color="muted">{nextDescription}</Text>}
             </>
           ) : (
             <>
-              <Text as="strong">You&rsquo;re ready</Text>
+              <Text variant="title">You&rsquo;re ready</Text>
               <Text color="muted">
                 All steps complete, submit your account for review.
               </Text>

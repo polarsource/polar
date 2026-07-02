@@ -79,22 +79,44 @@ export const NavPopover = ({
                   : '',
               )}
             >
-              {section.items.map(({ href, label, subtitle, target }) => (
-                <Link
-                  key={href + label}
-                  href={href}
-                  prefetch
-                  target={target}
-                  className="dark:hover:bg-polar-800 flex flex-col rounded-md px-4 py-2 text-sm transition-colors hover:bg-gray-100"
-                >
-                  <span className="font-medium">{label}</span>
-                  {subtitle && (
-                    <span className="dark:text-polar-500 text-gray-500">
-                      {subtitle}
-                    </span>
-                  )}
-                </Link>
-              ))}
+              {section.items.map(({ href, label, subtitle, target }) => {
+                const className =
+                  'dark:hover:bg-polar-800 flex flex-col rounded-md px-4 py-2 text-sm transition-colors hover:bg-gray-100'
+                const content = (
+                  <>
+                    <span className="font-medium">{label}</span>
+                    {subtitle && (
+                      <span className="dark:text-polar-500 text-gray-500">
+                        {subtitle}
+                      </span>
+                    )}
+                  </>
+                )
+                const isExternal =
+                  href.startsWith('/docs') || href.startsWith('http')
+
+                return isExternal ? (
+                  <a
+                    key={href + label}
+                    href={href}
+                    target={target}
+                    rel="noopener noreferrer"
+                    className={className}
+                  >
+                    {content}
+                  </a>
+                ) : (
+                  <Link
+                    key={href + label}
+                    href={href}
+                    prefetch
+                    target={target}
+                    className={className}
+                  >
+                    {content}
+                  </Link>
+                )
+              })}
             </div>
           </div>
         ))}

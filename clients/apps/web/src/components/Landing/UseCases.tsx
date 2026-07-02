@@ -8,7 +8,6 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import { SectionHeader } from './SectionHeader'
-import Link from 'next/link'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -142,11 +141,11 @@ export const UseCases = () => {
                 </Text>
               </Box>
               <Box display="block" paddingTop="xs">
-                <Link href={active.docsHref}>
+                <a href={active.docsHref}>
                   <Button className="dark:hover:bg-polar-50 rounded-full border-none bg-black hover:bg-gray-900 dark:bg-white dark:text-black">
                     Read the docs
                   </Button>
-                </Link>
+                </a>
               </Box>
             </Box>
 

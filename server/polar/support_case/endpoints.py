@@ -1,11 +1,13 @@
 from fastapi import Depends
 from fastapi.responses import RedirectResponse
 
+from polar.dispute.dispute_case import dispute_case as dispute_case_service
 from polar.exceptions import PolarError, ResourceNotFound
 from polar.file.service import file as file_service
 from polar.models import File
 from polar.models.file import FileServiceTypes
 from polar.models.support_case import (
+    DisputeSupportCase,
     ReviewAppealSupportCase,
     SupportCase,
     SupportCaseAudience,
@@ -105,8 +107,6 @@ async def reply_to_support_case(
     case = await support_case_service.get(session, auth_subject, id)
     if case is None:
         raise ResourceNotFound()
-    if not isinstance(case, ReviewAppealSupportCase):
-        raise CaseRepliesNotSupportedError(case)
 
     files: list[File] = []
     for file_id in message.file_ids:
@@ -120,14 +120,25 @@ async def reply_to_support_case(
             raise ResourceNotFound()
         files.append(file)
 
-    return await appeal_case_service.add_reply(
-        session,
-        case,
-        author_kind=SupportCaseMessageAuthorKind.merchant,
-        author_user=auth_subject.subject,
-        body=message.body,
-        files=files,
-    )
+    if isinstance(case, ReviewAppealSupportCase):
+        return await appeal_case_service.add_reply(
+            session,
+            case,
+            author_kind=SupportCaseMessageAuthorKind.merchant,
+            author_user=auth_subject.subject,
+            body=message.body,
+            files=files,
+        )
+    if isinstance(case, DisputeSupportCase):
+        return await dispute_case_service.add_reply(
+            session,
+            case,
+            author_kind=SupportCaseMessageAuthorKind.merchant,
+            author_user=auth_subject.subject,
+            body=message.body,
+            files=files,
+        )
+    raise CaseRepliesNotSupportedError(case)
 
 
 @router.get(

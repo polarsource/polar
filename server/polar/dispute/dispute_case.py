@@ -1,7 +1,8 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 from polar.exceptions import PolarError
-from polar.models import Dispute, Organization
+from polar.models import Dispute, File, Organization, User
 from polar.models.support_case import (
     DisputeSupportCase,
     SupportCaseAudience,
@@ -16,6 +17,16 @@ from polar.support_case.repository import (
     SupportCaseMessageRepository,
 )
 from polar.support_case.service import support_case as support_case_service
+from polar.worker import enqueue_job
+
+DISPUTE_GREETING = (
+    "Thanks for submitting your response. The Polar team will review your evidence "
+    "and submit it to the card network on your behalf. We'll keep you posted "
+    "here as the dispute progresses, or reach out if we need more information."
+)
+# A small delay so the automated greeting doesn't land instantly after the
+# merchant's reply (which looks a bit wonky)
+DISPUTE_GREETING_DELAY_MS = 2000
 
 
 class DisputeCaseError(PolarError): ...
@@ -100,6 +111,85 @@ class DisputeCaseService:
             type=SupportCaseMessageType.dispute_under_review,
             author_kind=SupportCaseMessageAuthorKind.system,
             audience=[SupportCaseAudience.merchant],
+        )
+
+    async def accept(
+        self, session: AsyncSession, case: DisputeSupportCase
+    ) -> SupportCaseMessage:
+        """Record the merchant's acceptance (concede) on the thread.
+
+        A ``system`` lifecycle event, like the other ``dispute_*`` events —
+        merchant/platform/customer author kinds are reserved for chat.
+        """
+        await self._assert_open(session, case)
+        return await support_case_service.post_message(
+            session,
+            case,
+            type=SupportCaseMessageType.merchant_accepted,
+            author_kind=SupportCaseMessageAuthorKind.system,
+            audience=[SupportCaseAudience.merchant],
+        )
+
+    async def add_reply(
+        self,
+        session: AsyncSession,
+        case: DisputeSupportCase,
+        *,
+        author_kind: SupportCaseMessageAuthorKind,
+        author_user: User | None = None,
+        body: str | None = None,
+        files: Sequence[File] = (),
+        internal: bool = False,
+    ) -> SupportCaseMessage:
+        """Post a reply to the dispute thread, optionally carrying files.
+
+        This is the merchant ↔ support conversation channel: the merchant's
+        evidence and any back-and-forth live here as ``chat`` messages, which
+        support reviews and submits to the processor.
+        """
+        await self._assert_open(session, case)
+
+        is_first_merchant_reply = (
+            author_kind == SupportCaseMessageAuthorKind.merchant
+            and not await self._has_merchant_message(session, case)
+        )
+
+        audience = [] if internal else [SupportCaseAudience.merchant]
+        message = await support_case_service.post_message(
+            session,
+            case,
+            author_kind=author_kind,
+            author_user=author_user,
+            body=body,
+            audience=audience,
+        )
+        for file in files:
+            await support_case_service.add_attachment(
+                session, case, file=file, message=message, audience=audience
+            )
+        if not internal:
+            enqueue_job(
+                "support_case.notify_organization_of_new_message",
+                message_id=message.id,
+            )
+
+        if is_first_merchant_reply:
+            enqueue_job(
+                "dispute.post_dispute_greeting",
+                case_id=case.id,
+                delay=DISPUTE_GREETING_DELAY_MS,
+            )
+
+        return message
+
+    async def _has_merchant_message(
+        self, session: AsyncSession, case: DisputeSupportCase
+    ) -> bool:
+        repository = SupportCaseMessageRepository.from_session(session)
+        messages = await repository.list_by_case(case.id, visible_to=None)
+        return any(
+            message.author_kind == SupportCaseMessageAuthorKind.merchant
+            for message in messages
         )
 
     async def resolve(

@@ -74,7 +74,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
       <Well className="flex-1 justify-start rounded-2xl bg-gray-50 p-6">
         <WellHeader className="flex flex-row items-center justify-between gap-x-6">
           <Text variant="heading-xxs" as="h2">
-            Available balance
+            Available Balance
           </Text>
           <Button className="self-start" onClick={showPayoutConfirmModal}>
             Withdraw

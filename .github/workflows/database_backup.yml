@@ -21,3 +21,25 @@ jobs:
           --fail \
           --silent \
           --output /dev/null
+
+    - name: Notify Slack on failure
+      if: failure()
+      uses: slackapi/slack-github-action@v3.0.3
+      with:
+        method: chat.postMessage
+        token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
+        errors: true
+        payload: |
+          {
+            "channel": "C093CJXJXPT",
+            "text": "Database backup trigger failed",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": ":rotating_light: *Database backup trigger failed* — the daily Render PITR snapshot could not be triggered.\n*<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>*"
+                }
+              }
+            ]
+          }

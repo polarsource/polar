@@ -1,6 +1,16 @@
 import { getPublicServerURL } from '@/utils/api'
+import { CONFIG } from '@/utils/config'
 import { Client, operations, schemas } from '@polar-sh/client'
 import { redirect } from 'next/navigation'
+
+export type LoginMethod =
+  | 'email_otp'
+  | 'totp'
+  | 'backup_codes'
+  | 'apple'
+  | 'github'
+  | 'google'
+  | 'sso'
 
 export const getGitHubAuthorizeLoginURL = (): string => {
   return `${getPublicServerURL()}/v1/auth/github/authorize`
@@ -28,6 +38,31 @@ export const getGoogleAuthorizeLinkURL = (return_to?: string): string => {
 
 export const getAppleAuthorizeURL = (): string => {
   return `${getPublicServerURL()}/v1/auth/apple/authorize`
+}
+
+export const getSSOAuthorizeLoginURL = (
+  organizationSlug: string,
+  connectionId: string,
+): string => {
+  return `${getPublicServerURL()}/v1/auth/${organizationSlug}/sso/${connectionId}/authorize`
+}
+
+export const getOrgAuthenticationSessionCompleteURL = (
+  organizationSlug: string,
+): string => {
+  return `${getPublicServerURL()}/v1/auth/${organizationSlug}/complete`
+}
+
+export const getSSOCallbackURL = (organizationSlug: string): string => {
+  return `${getPublicServerURL()}/v1/auth/${organizationSlug}/sso/callback`
+}
+
+export const getSSOLoginURL = (organizationSlug: string): string => {
+  return `${CONFIG.FRONTEND_BASE_URL}/auth/sso/${organizationSlug}`
+}
+
+export const getSSOJwksURL = (): string => {
+  return `${getPublicServerURL()}/.well-known/jwks.json`
 }
 
 export const getBotDiscordAuthorizeURL = (
@@ -104,11 +139,19 @@ export const getAuthenticationSessionRedirectPath = (
     return null
   }
 
-  if (authenticationSession.available_factors.includes('totp')) {
+  if (
+    authenticationSession.available_factors.some(
+      (factor) => factor.type === 'totp',
+    )
+  ) {
     return '/auth/totp'
   }
 
-  if (authenticationSession.available_factors.includes('backup_codes')) {
+  if (
+    authenticationSession.available_factors.some(
+      (factor) => factor.type === 'backup_codes',
+    )
+  ) {
     return '/auth/backup-codes'
   }
 

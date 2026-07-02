@@ -33,8 +33,6 @@ export default {
       optional: 'Opcional',
       apply: 'Aplicar',
       fieldRequired: 'Este campo é obrigatório',
-      addBusinessDetails: 'Adicionar dados da empresa',
-      removeBusinessDetails: 'Remover dados da empresa',
       billingDetails: 'Dados da empresa',
       addDiscountCode: 'Adicionar código de desconto',
     },
@@ -46,20 +44,7 @@ export default {
       payWhatYouWant: 'Pague quanto quiser',
       total: 'Total',
       additionalMeteredUsage: 'Uso adicional',
-      perUnit: '/ unidade',
       discount: {
-        duration: {
-          months: {
-            '=1': 'no primeiro mês',
-            other: 'nos primeiros # meses',
-            _mode: 'plural',
-          },
-          years: {
-            '=1': 'no primeiro ano',
-            other: 'nos primeiros # anos',
-            _mode: 'plural',
-          },
-        },
         until: 'Até {date}',
       },
       everyInterval: {
@@ -111,29 +96,6 @@ export default {
       basePrice: 'Preço base',
     },
     trial: {
-      ends: 'Teste termina a {endDate}',
-      duration: {
-        days: {
-          '=1': 'Teste de # dia',
-          other: 'Teste de # dias',
-          _mode: 'plural',
-        },
-        weeks: {
-          '=1': 'Teste de # semana',
-          other: 'Teste de # semanas',
-          _mode: 'plural',
-        },
-        months: {
-          '=1': 'Teste de # mês',
-          other: 'Teste de # meses',
-          _mode: 'plural',
-        },
-        years: {
-          '=1': 'Teste de # ano',
-          other: 'Teste de # anos',
-          _mode: 'plural',
-        },
-      },
       hero: {
         free: {
           day: {
@@ -161,11 +123,6 @@ export default {
         then: 'Depois',
         startingDate: 'a partir de {date}',
       },
-      summary: {
-        totalWhenTrialEnds: 'Total ao final do teste',
-        totalWhenDiscountExpires: 'Total quando o desconto expirar',
-        totalDueToday: 'Total a pagar hoje',
-      },
     },
     pwywForm: {
       label: 'Defina um preço justo',
@@ -178,21 +135,7 @@ export default {
       oneTimePurchase: 'Pagamento único',
       fromPrefix: 'A partir de',
     },
-    card: {
-      included: 'Incluso',
-    },
     benefits: {
-      moreBenefits: {
-        '=1': 'mais # benefício',
-        other: 'mais # benefícios',
-        _mode: 'plural',
-      },
-      showMoreBenefits: {
-        '=1': 'Mostrar mais # benefício',
-        other: 'Mostrar mais # benefícios',
-        _mode: 'plural',
-      },
-      showLess: 'Mostrar menos',
       granting: 'Liberando benefícios...',
       requestNewInvite: 'Solicitar novo convite',
       retryIn: {
@@ -279,7 +222,6 @@ export default {
     },
     productDescription: {
       readMore: 'Ler mais',
-      readLess: 'Ler menos',
     },
   },
   intervals: {

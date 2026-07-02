@@ -193,11 +193,11 @@ module "production" {
       dramatiq_prom_port = "10001"
       database_pool_size = "16"
     }
-    "worker-tinybird" = {
-      start_command      = "uv run dramatiq polar.worker.run -p 4 -t 32 --queues tinybird"
+    worker-tinybird = {
+      start_command      = "uv run dramatiq polar.worker.run_without_db -p 4 -t 32 --queues tinybird"
       dramatiq_prom_port = "10002"
     }
-    "worker-invoices-receipts" = {
+    worker-invoices-receipts = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 3 --queues invoices_and_receipts"
       plan               = "standard"
       dramatiq_prom_port = "10003"
@@ -336,6 +336,11 @@ module "production" {
     files_download_secret = var.s3_files_download_secret_production
   }
 
+  aws_kms_config = {
+    key_id   = module.secrets_kms.key_arn
+    role_arn = module.secrets_kms.role_arn
+  }
+
   github_secrets = {
     client_id                           = var.github_client_id_production
     client_secret                       = var.github_client_secret_production
@@ -399,6 +404,69 @@ module "production" {
   }
 
   depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db, render_redis.redis]
+}
+
+# =============================================================================
+# PgBouncer
+# =============================================================================
+
+module "pgbouncer" {
+  source = "../modules/pgbouncer"
+
+  environment            = "production"
+  render_environment_id  = render_project.polar.environments["Production"].id
+  registry_credential_id = render_registry_credential.ghcr.id
+
+  database = {
+    host     = local.db_internal_host
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
+  }
+
+  pool_config = {
+    max_client_conn   = "5000"
+    default_pool_size = "50"
+    reserve_pool_size = "10"
+  }
+
+  depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db]
+}
+
+locals {
+  pgbouncer_read_pool_configs = {
+    "polar-read" = {
+      max_client_conn   = "5000"
+      default_pool_size = "50"
+      reserve_pool_size = "10"
+    }
+    "polar-replica" = {
+      max_client_conn   = "1000"
+      default_pool_size = "20"
+      reserve_pool_size = "0"
+    }
+  }
+}
+
+module "pgbouncer_read" {
+  source   = "../modules/pgbouncer"
+  for_each = { for replica in render_postgres.db.read_replicas : replica.name => replica }
+
+  name                   = "pgbouncer-${trimprefix(each.key, "polar-")}"
+  environment            = "production"
+  render_environment_id  = render_project.polar.environments["Production"].id
+  registry_credential_id = render_registry_credential.ghcr.id
+
+  database = {
+    host     = each.value.id
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
+  }
+
+  pool_config = local.pgbouncer_read_pool_configs[each.key]
+
+  depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db]
 }
 
 # =============================================================================

@@ -13,7 +13,6 @@ from tagflow import attr, tag, text
 
 from polar.enums import PaymentProcessor
 from polar.models import Dispute, Organization
-from polar.models.dispute import DisputeStatus
 from polar.models.support_case import (
     SupportCase,
     SupportCaseAttachment,
@@ -24,7 +23,7 @@ from polar.models.support_case import (
 )
 
 from .... import formatters
-from ....components import button, card
+from ....components import button, card, dispute_status_badge
 from ....support_cases.urls import append_return_to
 
 _AUTHOR_LABELS: dict[SupportCaseMessageAuthorKind, str] = {
@@ -75,6 +74,7 @@ _EVENT_TITLES: dict[SupportCaseMessageType, str] = {
     SupportCaseMessageType.dispute_won: "Dispute won",
     SupportCaseMessageType.dispute_lost: "Dispute lost",
     SupportCaseMessageType.dispute_prevented: "Dispute prevented",
+    SupportCaseMessageType.merchant_accepted: "Merchant accepted the dispute",
     SupportCaseMessageType.assigned: "Case assigned",
     SupportCaseMessageType.released: "Case unassigned",
 }
@@ -106,19 +106,9 @@ _EVENT_NODES: dict[SupportCaseMessageType, tuple[str, str]] = {
         "icon-shield-check",
         "bg-success text-success-content",
     ),
+    SupportCaseMessageType.merchant_accepted: ("icon-x", _MUTED_NODE),
     SupportCaseMessageType.assigned: ("icon-user-check", _MUTED_NODE),
     SupportCaseMessageType.released: ("icon-user-x", _MUTED_NODE),
-}
-
-# Dispute lifecycle status surfaced in the details panel: (badge classes, label).
-# A dispute case only exists from `needs_response` onward — `early_warning`
-# never has a case (see DisputeService._sync_support_case).
-_DISPUTE_STATUS_BADGES: dict[DisputeStatus, tuple[str, str]] = {
-    DisputeStatus.needs_response: ("badge-warning", "Needs response"),
-    DisputeStatus.under_review: ("badge-info", "Under review"),
-    DisputeStatus.prevented: ("badge-success", "Prevented"),
-    DisputeStatus.won: ("badge-success", "Won"),
-    DisputeStatus.lost: ("badge-error", "Lost"),
 }
 
 Thread = tuple[SupportCase, bool, Sequence[SupportCaseMessage]]
@@ -325,9 +315,7 @@ class SupportCaseSection:
                         pass
                     with tag.span(classes="text-sm font-medium"):
                         text("Dispute details")
-                badge, label = _DISPUTE_STATUS_BADGES[dispute.status]
-                with tag.div(classes=f"badge {badge} badge-sm"):
-                    text(label)
+                dispute_status_badge(dispute.status)
             with tag.div(
                 classes="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 px-4 py-4"
             ):
@@ -564,10 +552,8 @@ class SupportCaseSection:
         reply_url = self._with_return_to(
             str(request.url_for("support_cases:reply", case_id=case.id))
         )
-        # The composer is internal-notes-only when there's no live merchant
-        # channel (the endpoint enforces this too): disputes have none yet, and a
-        # closed case only takes internal follow-ups after the decision.
-        internal_only = self._case_type == SupportCaseType.dispute or not is_open
+        # A closed case only takes internal follow-ups after the decision.
+        internal_only = not is_open
         with tag.div(classes="mt-8 pt-6 border-t border-base-200"):
             if not is_open:
                 with tag.div(

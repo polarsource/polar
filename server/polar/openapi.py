@@ -83,11 +83,13 @@ OPENAPI_PARAMETERS: OpenAPIParameters = {
             "url": "https://api.polar.sh",
             "description": "Production environment",
             "x-speakeasy-server-id": "production",
+            "x-polar-environment": "production",
         },
         {
             "url": "https://sandbox-api.polar.sh",
             "description": "Sandbox environment",
             "x-speakeasy-server-id": "sandbox",
+            "x-polar-environment": "sandbox",
         },
     ],
 }

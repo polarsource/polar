@@ -1,24 +1,18 @@
 import ipaddress
 from typing import Annotated
 
-from pydantic import (
-    UUID4,
-    AnyUrl,
-    Field,
-    PlainSerializer,
-    UrlConstraints,
-    field_validator,
-)
+import idna
+from pydantic import UUID4, AfterValidator, AnyUrl, BeforeValidator, Field
 from pydantic.json_schema import SkipJsonSchema
 
-from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.schemas import HttpsUrl, IDSchema, Schema, TimestampedSchema
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.organization.schemas import OrganizationID
 
 LOCALHOST_HOSTS = {"localhost", "127.0.0.1", "0.0.0.0", "[::1]"}
 
 
-def is_blocked_webhook_host(host: str) -> bool:
+def _is_blocked_webhook_host(host: str) -> bool:
     if host.lower() in LOCALHOST_HOSTS:
         return True
     clean = host.strip("[]")
@@ -28,15 +22,33 @@ def is_blocked_webhook_host(host: str) -> bool:
         return False
 
 
-HttpsUrl = Annotated[
-    AnyUrl,
-    UrlConstraints(
-        max_length=2083,
-        allowed_schemes=["https"],
-        host_required=True,
-    ),
-    PlainSerializer(lambda v: str(v), return_type=str),
-]
+def _is_valid_webhook_hostname(host: str) -> bool:
+    clean = host.strip("[]")
+    try:
+        ipaddress.ip_address(clean)
+        return True
+    except ValueError:
+        pass
+    try:
+        idna.encode(host)
+    except idna.IDNAError:
+        return False
+    return True
+
+
+def validate_hostname(url: AnyUrl) -> AnyUrl:
+    if not url.host:
+        return url
+    if not _is_valid_webhook_hostname(url.host):
+        raise ValueError(
+            "Invalid webhook URL: the hostname contains characters not allowed in domain names."
+        )
+    if _is_blocked_webhook_host(url.host):
+        raise ValueError(
+            "Webhook URLs cannot point to localhost or private IP addresses."
+        )
+    return url
+
 
 ENDPOINT_URL_DESCRIPTION = "The URL where the webhook events will be sent."
 ENDPOINT_URL_EXAMPLES = ["https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0"]
@@ -44,6 +56,8 @@ ENDPOINT_URL_EXAMPLES = ["https://webhook.site/cb791d80-f26e-4f8c-be88-6e5605419
 EndpointURL = Annotated[
     HttpsUrl,
     Field(description=ENDPOINT_URL_DESCRIPTION, examples=ENDPOINT_URL_EXAMPLES),
+    BeforeValidator(lambda v: v.strip() if isinstance(v, str) else v),
+    AfterValidator(validate_hostname),
 ]
 EndpointFormat = Annotated[
     WebhookFormat,
@@ -110,22 +124,6 @@ class WebhookEndpointCreate(Schema):
         ),
     )
 
-    @field_validator("url", mode="before")
-    @classmethod
-    def strip_url(cls, v: str | None) -> str | None:
-        if isinstance(v, str):
-            return v.strip()
-        return v
-
-    @field_validator("url", mode="after")
-    @classmethod
-    def validate_not_localhost(cls, v: AnyUrl) -> AnyUrl:
-        if v.host and is_blocked_webhook_host(v.host):
-            raise ValueError(
-                "Webhook URLs cannot point to localhost or private IP addresses."
-            )
-        return v
-
 
 class WebhookEndpointUpdate(Schema):
     """
@@ -147,22 +145,6 @@ class WebhookEndpointUpdate(Schema):
     enabled: bool | None = Field(
         default=None, description="Whether the webhook endpoint is enabled."
     )
-
-    @field_validator("url", mode="before")
-    @classmethod
-    def strip_url(cls, v: str | None) -> str | None:
-        if isinstance(v, str):
-            return v.strip()
-        return v
-
-    @field_validator("url", mode="after")
-    @classmethod
-    def validate_not_localhost(cls, v: AnyUrl | None) -> AnyUrl | None:
-        if v is not None and v.host and is_blocked_webhook_host(v.host):
-            raise ValueError(
-                "Webhook URLs cannot point to localhost or private IP addresses."
-            )
-        return v
 
 
 class WebhookEvent(IDSchema, TimestampedSchema):

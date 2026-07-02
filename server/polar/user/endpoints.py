@@ -10,11 +10,13 @@ from polar.authz.dependencies import (
     AuthorizeWebUserRead,
     AuthorizeWebUserWrite,
 )
+from polar.authz.repository import AuthzRepository
 from polar.customer_portal.endpoints.downloadables import router as downloadables_router
 from polar.customer_portal.endpoints.license_keys import router as license_keys_router
 from polar.customer_portal.endpoints.order import router as order_router
 from polar.customer_portal.endpoints.subscription import router as subscription_router
 from polar.exceptions import ResourceNotFound
+from polar.kit.http import get_ip_address
 from polar.models import User
 from polar.models.user import OAuthPlatform
 from polar.openapi import APITag
@@ -41,6 +43,7 @@ from polar.user_organization.service import (
 )
 
 from .schemas import (
+    MemberOrganization,
     UserDeletionResponse,
     UserIdentityVerification,
     UserRead,
@@ -64,13 +67,28 @@ async def get_authenticated(
 ) -> UserRead:
     user = auth_subject.subject
     repository = UserOrganizationRepository.from_session(session)
-    org_with_roles = await repository.get_organizations_with_role(user.id)
+    # Raw membership; `organizations` is narrowed to the session's accessible
+    # set (session scope + SSO enforcement) via the shared authz chokepoint,
+    # while `member_organizations` exposes every membership so the frontend can
+    # tell "no access" apart from "not a member".
+    org_with_roles = await repository.get_organizations_with_role(user.id)  # noqa: org-scope
+    accessible_ids = await AuthzRepository.from_session(session).get_user_org_ids(
+        auth_subject
+    )
     return UserRead.model_validate(user).model_copy(
         update={
             "organizations": [
                 OrganizationWithRole.from_organization(org, role)
                 for org, role in org_with_roles
-            ]
+                if org.id in accessible_ids
+            ],
+            "member_organizations": [
+                MemberOrganization(
+                    id=org.id, slug=org.slug, requires_sso=org.sso_enforced
+                )
+                for org, _ in org_with_roles
+            ],
+            "organization_scoped": auth_subject.organization_ids is not None,
         }
     )
 
@@ -82,7 +100,7 @@ async def update_authenticated(
     auth_subject: AuthorizeWebUserWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> User:
-    ip_address = request.client.host if request.client else None
+    ip_address = get_ip_address(request)
     return await user_service.update(
         session, auth_subject.subject, user_update, ip_address=ip_address
     )
@@ -105,6 +123,11 @@ async def update_authenticated_notification_settings(
     session: AsyncSession = Depends(get_db_session),
 ) -> UserOrganizationNotificationSettings:
     """Update the authenticated user's notification settings for an organization."""
+    if (
+        auth_subject.organization_ids is not None
+        and organization_id not in auth_subject.organization_ids
+    ):
+        raise ResourceNotFound()
     try:
         user_org = await user_organization_service.update_notification_settings(
             session,
@@ -134,6 +157,11 @@ async def get_authenticated_notification_settings(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> UserOrganizationNotificationSettings:
     """Get the authenticated user's notification settings for an organization."""
+    if (
+        auth_subject.organization_ids is not None
+        and organization_id not in auth_subject.organization_ids
+    ):
+        raise ResourceNotFound()
 
     user_org = await user_organization_service.get_by_user_and_org(
         session, auth_subject.subject.id, organization_id

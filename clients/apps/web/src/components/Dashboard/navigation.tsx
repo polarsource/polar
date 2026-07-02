@@ -380,6 +380,11 @@ const organizationRoutesList = (
         title: 'Custom Fields',
         link: `/dashboard/${org?.slug}/settings/custom-fields`,
       },
+      {
+        title: 'Single Sign-On',
+        link: `/dashboard/${org?.slug}/settings/sso`,
+        if: !!org?.feature_settings?.sso_enabled,
+      },
     ],
   },
 ]

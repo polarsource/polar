@@ -16,8 +16,6 @@ export default {
       email: 'メールアドレス',
       cardholderName: 'カード名義人',
       purchasingAsBusiness: '法人として購入します',
-      addBusinessDetails: '法人情報を追加',
-      removeBusinessDetails: '法人情報を削除',
       businessName: '法人名',
       billingDetails: '法人情報',
       billingAddress: {
@@ -73,7 +71,6 @@ export default {
         },
       },
       additionalMeteredUsage: '追加の従量課金',
-      perUnit: '/ 1件',
       perSeat: '1席あたり',
       seats: {
         label: '席数',
@@ -94,46 +91,11 @@ export default {
         },
       },
       discount: {
-        duration: {
-          months: {
-            '=1': '初月のみ',
-            other: '最初の#か月間',
-            _mode: 'plural',
-          },
-          years: {
-            '=1': '初年度のみ',
-            other: '最初の#年間',
-            _mode: 'plural',
-          },
-        },
         until: '{date}まで',
       },
       basePrice: '基本料金',
     },
     trial: {
-      ends: 'トライアル終了日 {endDate}',
-      duration: {
-        days: {
-          '=1': '#日間トライアル',
-          other: '#日間トライアル',
-          _mode: 'plural',
-        },
-        weeks: {
-          '=1': '#週間トライアル',
-          other: '#週間トライアル',
-          _mode: 'plural',
-        },
-        months: {
-          '=1': '#か月間トライアル',
-          other: '#か月間トライアル',
-          _mode: 'plural',
-        },
-        years: {
-          '=1': '#年間トライアル',
-          other: '#年間トライアル',
-          _mode: 'plural',
-        },
-      },
       hero: {
         free: {
           day: {
@@ -161,11 +123,6 @@ export default {
         then: 'その後',
         startingDate: '{date}から',
       },
-      summary: {
-        totalWhenTrialEnds: 'トライアル終了時の合計',
-        totalWhenDiscountExpires: '割引終了時の合計',
-        totalDueToday: '本日の支払額合計',
-      },
     },
     pwywForm: {
       label: 'ご希望の価格を入力',
@@ -180,23 +137,8 @@ export default {
     },
     productDescription: {
       readMore: 'もっと見る',
-      readLess: '閉じる',
-    },
-    card: {
-      included: '含まれています',
     },
     benefits: {
-      moreBenefits: {
-        '=1': '他#件の特典',
-        other: '他#件の特典',
-        _mode: 'plural',
-      },
-      showMoreBenefits: {
-        '=1': '他#件の特典を表示',
-        other: '他#件の特典を表示',
-        _mode: 'plural',
-      },
-      showLess: '閉じる',
       granting: '特典を付与しています...',
       requestNewInvite: '新しい招待をリクエスト',
       retryIn: {

@@ -7,7 +7,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-06-17T07:51:38.371259Z"
+exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
 exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
@@ -441,6 +441,9 @@ lambda = [
 ]
 s3 = [
     { name = "mypy-boto3-s3" },
+]
+scheduler = [
+    { name = "mypy-boto3-scheduler" },
 ]
 sqs = [
     { name = "mypy-boto3-sqs" },
@@ -1597,6 +1600,15 @@ wheels = [
 ]
 
 [[package]]
+name = "langcodes"
+version = "3.5.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a9/75/f9edc5d72945019312f359e69ded9f82392a81d49c5051ed3209b100c0d2/langcodes-3.5.1.tar.gz", hash = "sha256:40bff315e01b01d11c2ae3928dd4f5cbd74dd38f9bd912c12b9a3606c143f731", size = 191084, upload-time = "2025-12-02T16:22:01.627Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dd/c1/d10b371bcba7abce05e2b33910e39c33cfa496a53f13640b7b8e10bb4d2b/langcodes-3.5.1-py3-none-any.whl", hash = "sha256:b6a9c25c603804e2d169165091d0cdb23934610524a21d226e4f463e8e958a72", size = 183050, upload-time = "2025-12-02T16:21:59.954Z" },
+]
+
+[[package]]
 name = "librt"
 version = "0.11.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2053,6 +2065,15 @@ wheels = [
 ]
 
 [[package]]
+name = "mypy-boto3-scheduler"
+version = "1.43.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/06/88/315f03165d74a683083f0950068cd766e39da5bd1024338c911f96bdb82d/mypy_boto3_scheduler-1.43.0.tar.gz", hash = "sha256:e22f6e8842d3e7e959e9024ab2081275afe0c6928e92ec224fbc48e1445d2faf", size = 18599, upload-time = "2026-04-29T23:05:41.453Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/db/8e/243a1f851ef52dc42571e9ccc855756f9d9cd165ab43e1cc5a9526fa8eec/mypy_boto3_scheduler-1.43.0-py3-none-any.whl", hash = "sha256:3b454605585edeeed0d4933e11ea1926ac4e2a5d8fce430f418ad7a8edf2fae6", size = 24894, upload-time = "2026-04-29T23:05:38.679Z" },
+]
+
+[[package]]
 name = "mypy-boto3-sqs"
 version = "1.43.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2409,6 +2430,7 @@ dependencies = [
     { name = "httpx-oauth" },
     { name = "ipinfo-db" },
     { name = "itsdangerous" },
+    { name = "langcodes" },
     { name = "logfire", extra = ["fastapi", "httpx", "redis", "sqlalchemy"] },
     { name = "makefun" },
     { name = "markdown-it-py" },
@@ -2449,7 +2471,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "boto3-stubs", extra = ["lambda", "s3", "sqs"] },
+    { name = "boto3-stubs", extra = ["lambda", "s3", "scheduler", "sqs"] },
     { name = "coverage" },
     { name = "debugpy" },
     { name = "fakeredis", extra = ["lua"] },
@@ -2504,6 +2526,7 @@ requires-dist = [
     { name = "httpx-oauth", specifier = ">=0.17.0" },
     { name = "ipinfo-db", specifier = ">=0.0.4" },
     { name = "itsdangerous", specifier = ">=2.2.0" },
+    { name = "langcodes", specifier = ">=3.5.1" },
     { name = "logfire", extras = ["fastapi", "httpx", "sqlalchemy", "redis"], specifier = ">=4.36.0" },
     { name = "makefun", specifier = ">=1.15.6" },
     { name = "markdown-it-py", specifier = ">=4.2.0" },
@@ -2524,7 +2547,7 @@ requires-dist = [
     { name = "python-slugify", specifier = ">=8.0.1" },
     { name = "python-snappy", specifier = ">=0.7.3" },
     { name = "python-stdnum", specifier = ">=2.1" },
-    { name = "reauth", specifier = "==0.1.8" },
+    { name = "reauth", specifier = "==0.2.0" },
     { name = "redis", specifier = ">=5.0.4" },
     { name = "safe-redirect-url", specifier = ">=0.1.1" },
     { name = "sentry-sdk", extras = ["fastapi", "sqlalchemy"], specifier = ">=2.62.0" },
@@ -2544,7 +2567,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "boto3-stubs", extras = ["s3", "sqs", "lambda"], specifier = ">=1.43.26" },
+    { name = "boto3-stubs", extras = ["s3", "sqs", "lambda", "scheduler"], specifier = ">=1.43.26" },
     { name = "coverage", specifier = ">=7.14.1" },
     { name = "debugpy", specifier = ">=1.8.21" },
     { name = "fakeredis", extras = ["lua"], specifier = ">=2.36.1" },
@@ -3233,7 +3256,7 @@ wheels = [
 
 [[package]]
 name = "reauth"
-version = "0.1.8"
+version = "0.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -3241,9 +3264,9 @@ dependencies = [
     { name = "httpx" },
     { name = "pyjwt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/99/74/43df2e2723f88232a2b25ece9d5a22938259b49b8a771e5a2d01a00f5217/reauth-0.1.8.tar.gz", hash = "sha256:d9354bc66d515e70c0a1e6a03cdf2789550a2e07c59fe711de766d726b9b555c", size = 504550, upload-time = "2026-05-29T08:45:30.204Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a5/b5/f8f6a72dedc3257ff1115574db7152f861964b71dc77eeab9a537382217d/reauth-0.2.0.tar.gz", hash = "sha256:fde02aac9e4a5e708eff056fce8e2f557043b484baf8e343836be53d0ded5acb", size = 517335, upload-time = "2026-06-30T08:18:57.363Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2e/18/ac25364926e995936c92039b15b9dfc5177f1c97dfd27f3e19c3699717ca/reauth-0.1.8-py3-none-any.whl", hash = "sha256:5f45b738ddbfe147448e4361db8e9d5992b9e5cc6adf9ca337f227b322d79cbc", size = 37983, upload-time = "2026-05-29T08:45:31.413Z" },
+    { url = "https://files.pythonhosted.org/packages/97/b2/905fd001c3730334bc9e0f38e4dc6b954c2fb9880fe9e2283d3e276c1cb9/reauth-0.2.0-py3-none-any.whl", hash = "sha256:00e8fa95d812b9d8907567cfa072c4d71099c7754b1ea29e101fd5f6d7fea688", size = 39329, upload-time = "2026-06-30T08:18:56.422Z" },
 ]
 
 [[package]]

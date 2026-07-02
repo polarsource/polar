@@ -28,7 +28,6 @@ from polar.kit.schemas import (
     IDSchema,
     MergeJSONSchema,
     Schema,
-    SelectorWidget,
     SlugValidator,
     TimestampedSchema,
 )
@@ -48,7 +47,6 @@ from polar.models.user_organization import (
 OrganizationID = Annotated[
     UUID4,
     MergeJSONSchema({"description": "The organization ID."}),
-    SelectorWidget("/v1/organizations", "Organization", "name"),
     Field(examples=[ORGANIZATION_ID_EXAMPLE]),
 ]
 
@@ -177,6 +175,10 @@ class OrganizationFeatureSettings(Schema):
     disputes_enabled: bool = Field(
         False,
         description="If this organization has the disputes dashboard enabled",
+    )
+    sso_enabled: bool = Field(
+        False,
+        description="If this organization has single sign-on configuration enabled",
     )
 
 
@@ -410,6 +412,11 @@ class Organization(OrganizationBase):
     status: OrganizationStatus = Field(description="Current organization status")
     details_submitted_at: datetime | None = Field(
         description="When the business details were submitted for review.",
+    )
+    sso_enforced: bool = Field(
+        description=(
+            "Whether members must access this organization through its SSO connection."
+        ),
     )
 
     default_presentment_currency: str = Field(

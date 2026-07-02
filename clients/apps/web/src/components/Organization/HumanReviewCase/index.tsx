@@ -13,12 +13,8 @@ import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { useQueryClient } from '@tanstack/react-query'
 import { Loader2, MessageCircle } from 'lucide-react'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  supportCaseUploader,
-  toChatAttachments,
-  toChatMessages,
-} from './chatAdapter'
+import React, { useCallback, useEffect, useState } from 'react'
+import { useSupportCaseChat } from '@/components/SupportCase/useSupportCaseChat'
 import { DecisionMessage } from './DecisionMessage'
 import { MessageAvatar } from './MessageAvatar'
 import { useUnreadTitleBadge } from './useUnreadTitleBadge'
@@ -59,20 +55,8 @@ const HumanReviewCase = ({ organization }: Props) => {
     }
   }, [eventEmitter, queryClient, organization.id, caseId])
 
-  const messages = useMemo(() => thread?.messages ?? [], [thread])
-  const messageById = useMemo(
-    () => new Map(messages.map((message) => [message.id, message])),
-    [messages],
-  )
-  const chatMessages = useMemo(() => toChatMessages(messages), [messages])
-  const chatAttachments = useMemo(
-    () => toChatAttachments(caseId, thread?.attachments ?? []),
-    [caseId, thread?.attachments],
-  )
-  const uploader = useMemo(
-    () => supportCaseUploader(organization),
-    [organization],
-  )
+  const { messageById, chatMessages, chatAttachments, uploader } =
+    useSupportCaseChat({ caseId, organization, thread })
 
   const renderMessage = useCallback(
     (chatMessage: ChatMessage) => {

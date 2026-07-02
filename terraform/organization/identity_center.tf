@@ -7,7 +7,10 @@ locals {
     production = local.workload_accounts.production.id
     sandbox    = local.workload_accounts.sandbox.id
     test       = local.workload_accounts.test.id
+    identity   = local.identity_account.id
   }
+
+  staff_default_accounts = setsubtract(keys(local.staff_target_accounts), ["identity"])
 
   identity_center_groups = {
     awsadmins    = { display_name = "AWS Access" }
@@ -23,6 +26,7 @@ locals {
       managed_policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
       boundary           = false
       groups             = ["awsadmins"]
+      accounts           = keys(local.staff_target_accounts)
     }
     engineering = {
       base_name          = "PolarEngineering"
@@ -30,6 +34,7 @@ locals {
       managed_policy_arn = "arn:aws:iam::aws:policy/PowerUserAccess"
       boundary           = true
       groups             = ["awsengineers", "engineering"]
+      accounts           = local.staff_default_accounts
     }
     read_only = {
       base_name          = "PolarReadOnly"
@@ -37,19 +42,20 @@ locals {
       managed_policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
       boundary           = false
       groups             = ["awsaccess"]
+      accounts           = local.staff_default_accounts
     }
   }
 
   account_permission_sets = merge([
     for tier_key, tier in local.access_tiers : {
-      for account_key, account_id in local.staff_target_accounts :
+      for account_key in tier.accounts :
       "${tier_key}-${account_key}" => {
         name               = "${tier.base_name}${title(account_key)}"
         description        = tier.description
         managed_policy_arn = tier.managed_policy_arn
         boundary           = tier.boundary
         groups             = tier.groups
-        account_id         = account_id
+        account_id         = local.staff_target_accounts[account_key]
       }
     }
   ]...)

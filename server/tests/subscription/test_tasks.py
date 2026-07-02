@@ -3,18 +3,88 @@ import uuid
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.models import Customer, Product
+from polar.models import Customer, Organization, Product, Subscription
+from polar.models.organization import OrganizationStatus
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.subscription.service import SubscriptionService
 from polar.subscription.tasks import (  # type: ignore[attr-defined]
     SubscriptionDoesNotExist,
     SubscriptionTierDoesNotExist,
+    subscription_cancel_for_organization,
     subscription_enqueue_benefits_grants,
     subscription_service,
     subscription_update_product_benefits_grants,
 )
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_subscription
+from tests.fixtures.random_objects import (
+    create_active_subscription,
+    create_subscription,
+)
+
+
+@pytest.mark.asyncio
+class TestSubscriptionCancelForOrganization:
+    async def test_cancels_organization_subscriptions(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        session.expunge_all()
+
+        await subscription_cancel_for_organization(product.organization_id)
+
+        refreshed = await session.get(Subscription, subscription.id)
+        assert refreshed is not None
+        assert refreshed.status == SubscriptionStatus.canceled
+
+    async def test_reenqueues_when_work_remains(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+    ) -> None:
+        organization_id = uuid.uuid4()
+        mocker.patch.object(
+            subscription_service,
+            "cancel_for_organization",
+            return_value=True,
+        )
+        enqueue_job_mock = mocker.patch("polar.subscription.tasks.enqueue_job")
+
+        session.expunge_all()
+
+        await subscription_cancel_for_organization(organization_id)
+
+        enqueue_job_mock.assert_called_once_with(
+            "subscription.cancel_for_organization", organization_id=organization_id
+        )
+
+    async def test_does_not_reenqueue_when_done(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service,
+            "cancel_for_organization",
+            return_value=False,
+        )
+        enqueue_job_mock = mocker.patch("polar.subscription.tasks.enqueue_job")
+
+        session.expunge_all()
+
+        await subscription_cancel_for_organization(uuid.uuid4())
+
+        enqueue_job_mock.assert_not_called()
 
 
 @pytest.mark.asyncio

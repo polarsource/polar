@@ -1,6 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
+from polar.auth.models import AuthSubject
 from polar.auth.scope import READ_ONLY_SCOPES
 from polar.kit.utils import utc_now
 from polar.models import Organization, User, UserOrganization
@@ -61,6 +62,65 @@ async def test_get_users_me_excludes_blocked_organizations(
 
     assert response.status_code == 200
     assert response.json()["organizations"] == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.auth
+async def test_get_users_me_excludes_sso_enforced_org_for_global_session(
+    client: AsyncClient,
+    save_fixture: SaveFixture,
+    organization: Organization,
+    user_organization: UserOrganization,
+) -> None:
+    # A non-SSO session cannot reach an org that enforces SSO, so it's excluded
+    # from the accessible `organizations` list but still surfaced under
+    # `member_organizations` (flagged `requires_sso`) so the dashboard can
+    # redirect the member to SSO rather than 404.
+    organization.sso_enforced = True
+    await save_fixture(organization)
+
+    response = await client.get("/v1/users/me")
+
+    assert response.status_code == 200
+    json = response.json()
+    assert json["organizations"] == []
+    assert json["member_organizations"] == [
+        {
+            "id": str(organization.id),
+            "slug": organization.slug,
+            "requires_sso": True,
+        }
+    ]
+
+
+@pytest.mark.asyncio
+@pytest.mark.auth
+async def test_get_users_me_includes_sso_enforced_org_for_sso_session(
+    client: AsyncClient,
+    save_fixture: SaveFixture,
+    auth_subject: AuthSubject[User],
+    organization: Organization,
+    user_organization: UserOrganization,
+) -> None:
+    organization.sso_enforced = True
+    await save_fixture(organization)
+    auth_subject.organization_ids = frozenset({organization.id})
+
+    response = await client.get("/v1/users/me")
+
+    assert response.status_code == 200
+    json = response.json()
+    organizations = json["organizations"]
+    assert len(organizations) == 1
+    assert organizations[0]["id"] == str(organization.id)
+    # It's accessible in an SSO-scoped session and still listed as a membership.
+    assert json["member_organizations"] == [
+        {
+            "id": str(organization.id),
+            "slug": organization.slug,
+            "requires_sso": True,
+        }
+    ]
 
 
 @pytest.mark.asyncio

@@ -18,6 +18,8 @@ const baseProduct: schemas['CheckoutProduct'] = {
   recurring_interval: null,
   recurring_interval_count: null,
   is_recurring: false,
+  meter_interval: null,
+  meter_interval_count: null,
   trial_interval: null,
   trial_interval_count: null,
   visibility: 'public',

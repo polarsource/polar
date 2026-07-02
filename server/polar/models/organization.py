@@ -8,6 +8,7 @@ from pydantic.json_schema import WithJsonSchema
 from sqlalchemy import (
     TIMESTAMP,
     BigInteger,
+    Boolean,
     CheckConstraint,
     ColumnElement,
     ForeignKey,
@@ -425,6 +426,7 @@ ALLOWED_STATUS_TRANSITIONS: dict[OrganizationStatus, frozenset[OrganizationStatu
         {
             OrganizationStatus.CREATED,
             OrganizationStatus.ACTIVE,
+            OrganizationStatus.OFFBOARDING,
             OrganizationStatus.BLOCKED,
         }
     ),
@@ -628,6 +630,12 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @property
     def is_member_model_enabled(self) -> bool:
         return self.feature_settings.get("member_model_enabled", False)
+
+    @property
+    def is_sso_enabled(self) -> bool:
+        return self.feature_settings.get("sso_enabled", False)
+
+    sso_enforced: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     #
     # Currency and tax settings
@@ -861,8 +869,13 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def is_blocked(self) -> bool:
         return self.status == OrganizationStatus.BLOCKED
 
-    def is_active(self) -> bool:
-        return self.status == OrganizationStatus.ACTIVE
+    def can_change_plan(self) -> bool:
+        # Active organizations and organizations under silent review (review or
+        # snoozed) may change their plan; all other statuses are blocked.
+        return (
+            self.status == OrganizationStatus.ACTIVE
+            or self.status in OrganizationStatus.review_statuses()
+        )
 
     def statement_descriptor(self, suffix: str = "") -> str:
         max_length = settings.stripe_descriptor_suffix_max_length

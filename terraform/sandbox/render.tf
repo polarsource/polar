@@ -142,7 +142,7 @@ module "sandbox" {
       database_pool_size = "16"
     }
     worker-sandbox-tinybird = {
-      start_command      = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues tinybird"
+      start_command      = "uv run dramatiq polar.worker.run_without_db -p 1 -t 16 --queues tinybird"
       dramatiq_prom_port = "10002"
     }
     worker-sandbox-invoices-receipts = {
@@ -234,6 +234,11 @@ module "sandbox" {
     files_download_secret = var.s3_files_download_secret_sandbox
   }
 
+  aws_kms_config = {
+    key_id   = module.secrets_kms.key_arn
+    role_arn = module.secrets_kms.role_arn
+  }
+
   worker_sqs_config = {
     enabled               = "true"
     actors                = var.worker_sqs_actors
@@ -299,6 +304,55 @@ module "sandbox" {
   }
 
   depends_on = [render_registry_credential.ghcr, data.render_postgres.db, data.render_redis.redis, render_redis.redis_sandbox]
+}
+
+# =============================================================================
+# PgBouncer
+# =============================================================================
+
+module "pgbouncer" {
+  source = "../modules/pgbouncer"
+
+  environment            = "sandbox"
+  render_environment_id  = data.tfe_outputs.production.values.sandbox_environment_id
+  registry_credential_id = render_registry_credential.ghcr.id
+
+  database = {
+    host     = local.db_internal_host
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
+  }
+
+  pool_config = {
+    max_client_conn   = "1000"
+    default_pool_size = "20"
+  }
+
+  depends_on = [render_registry_credential.ghcr, data.render_postgres.db]
+}
+
+module "pgbouncer_read" {
+  source = "../modules/pgbouncer"
+
+  name                   = "pgbouncer-read"
+  environment            = "sandbox"
+  render_environment_id  = data.tfe_outputs.production.values.sandbox_environment_id
+  registry_credential_id = render_registry_credential.ghcr.id
+
+  database = {
+    host     = local.read_replica.id
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
+  }
+
+  pool_config = {
+    max_client_conn   = "1000"
+    default_pool_size = "20"
+  }
+
+  depends_on = [render_registry_credential.ghcr, data.render_postgres.db]
 }
 
 # =============================================================================

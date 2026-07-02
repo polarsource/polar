@@ -46,6 +46,7 @@ from polar_sdk.models import (
     Subscription,
     SubscriptionCancel,
     SubscriptionProrationBehavior,
+    SubscriptionStatus,
     SubscriptionUpdateBase,
 )
 from polar_sdk.models.membercreate import Role as MemberCreateRole
@@ -302,7 +303,11 @@ class PolarSelfClient:
             try:
                 response = await self._sdk.subscriptions.list_async(
                     external_customer_id=external_customer_id,
-                    active=True,
+                    status=[
+                        SubscriptionStatus.TRIALING,
+                        SubscriptionStatus.ACTIVE,
+                        SubscriptionStatus.PAST_DUE,
+                    ],
                     page=1,
                     limit=1,
                 )

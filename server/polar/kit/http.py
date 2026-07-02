@@ -218,3 +218,21 @@ def add_query_parameters(url: str, **kwargs: str | list[str]) -> str:
 
 def is_localhost(request: Request) -> bool:
     return request.url.hostname in {"127.0.0.1", "localhost"}
+
+
+def get_ip_address(request: Request) -> str | None:
+    """
+    Get the client's IP address.
+
+    Favor the highly trusted `True-Client-IP` header if present (set by Cloudflare),
+    otherwise fall back to the request's client host.
+    """
+    try:
+        return request.headers["True-Client-IP"]
+    except KeyError:
+        pass
+
+    if request.client:
+        return request.client.host
+
+    return None

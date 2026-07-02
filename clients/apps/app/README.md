@@ -140,7 +140,7 @@ eas build --profile preview --platform ios   # Rebuild with the device included
 
 Once the build finishes, EAS gives you a URL. Open it on your phone to install directly (no TestFlight needed). For Android, you just download and install the APK.
 
-You don't need to rebuild the preview build for every change — only when native code changes. Day-to-day, you push OTA updates to it via `eas update --channel preview`.
+You don't need to rebuild the preview build for every change — only when native code changes. Day-to-day, you push OTA updates to it via `pnpm ota --channel preview`.
 
 ### Recommended workflow
 

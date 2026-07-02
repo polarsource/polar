@@ -65,7 +65,8 @@ dependencies = [
   "anyio>=4.13.0",
   "markdown-it-py>=4.2.0",
   "tzdata>=2026.2",
-  "reauth==0.1.8",
+  "reauth==0.2.0",
+  "langcodes>=3.5.1",
 ]
 
 [dependency-groups]
@@ -85,7 +86,7 @@ dev = [
   "pytest-cov>=5.0.0",
   "types-python-slugify>=8.0.0.3",
   "types-requests>=2.33.0.20260518",
-  "boto3-stubs[s3,sqs,lambda]>=1.43.26",
+  "boto3-stubs[s3,sqs,lambda,scheduler]>=1.43.26",
   "freezegun>=1.5.1",
   "fakeredis[lua]>=2.36.1",
   "pytest-xdist[psutil]>=3.8.0",

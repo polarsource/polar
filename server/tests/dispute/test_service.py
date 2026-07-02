@@ -7,13 +7,16 @@ from pytest_mock import MockerFixture
 
 from polar.benefit.grant.service import BenefitGrantService
 from polar.dispute.dispute_case import dispute_case as dispute_case_service
-from polar.dispute.service import DisputePaymentNotFoundError
+from polar.dispute.service import DisputeNotOpenError, DisputePaymentNotFoundError
 from polar.dispute.service import dispute as dispute_service
 from polar.enums import PaymentProcessor, TaxProcessor
 from polar.integrations.chargeback_stop.types import ChargebackStopAlert
 from polar.models import Customer, Organization, Product
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
-from polar.models.support_case import DisputeSupportCase, SupportCaseMessageType
+from polar.models.support_case import (
+    DisputeSupportCase,
+    SupportCaseMessageType,
+)
 from polar.postgres import AsyncSession
 from polar.refund.service import RefundService
 from polar.support_case.repository import SupportCaseMessageRepository
@@ -1218,3 +1221,65 @@ class TestUpsertFromChargebackStop:
             == DisputeAlertProcessor.chargeback_stop
         )
         assert updated_dispute.dispute_alert_processor_id == alert["id"]
+
+
+@pytest.mark.asyncio
+class TestAccept:
+    async def test_concedes_and_marks_lost(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        dispute_transaction_service_mock: MagicMock,
+        benefit_grant_service_mock: MagicMock,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer, product=product)
+        payment = await create_payment(save_fixture, organization, order=order)
+        dispute = await create_dispute(save_fixture, order, payment)
+        case = await dispute_case_service.open_case(
+            session, dispute, organization=organization
+        )
+
+        close_mock = mocker.patch("polar.dispute.service.stripe_service.close_dispute")
+        close_mock.return_value = build_stripe_dispute(
+            status="lost", balance_transactions=[]
+        )
+
+        result = await dispute_service.accept(session, dispute)
+
+        # Conceded with the processor, settled as lost.
+        close_mock.assert_awaited_once_with(dispute.payment_processor_id)
+        assert result.status == DisputeStatus.lost
+        # Both the merchant's decision and the resulting loss land on the thread.
+        message_types = {
+            message.type
+            for message in await SupportCaseMessageRepository.from_session(
+                session
+            ).list_by_case(case.id, visible_to=None)
+        }
+        assert SupportCaseMessageType.merchant_accepted in message_types
+        assert SupportCaseMessageType.dispute_lost in message_types
+
+    async def test_raises_when_not_awaiting_response(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer, product=product)
+        payment = await create_payment(save_fixture, organization, order=order)
+        dispute = await create_dispute(
+            save_fixture, order, payment, status=DisputeStatus.under_review
+        )
+        close_mock = mocker.patch("polar.dispute.service.stripe_service.close_dispute")
+
+        with pytest.raises(DisputeNotOpenError):
+            await dispute_service.accept(session, dispute)
+
+        close_mock.assert_not_awaited()

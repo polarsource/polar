@@ -12,7 +12,12 @@ from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.organization_review.schemas import ActorType
 
 from ....components import card
-from ._shared import RISK_LEVEL_BADGE, VERDICT_BADGE, render_dimension
+from ._shared import (
+    RISK_LEVEL_BADGE,
+    VERDICT_BADGE,
+    render_dimension,
+    render_review_context_badge,
+)
 
 # Badge classes for decision types
 DECISION_BADGE: dict[str, str] = {
@@ -74,6 +79,7 @@ class ReviewsSection:
                 with tag.div(classes="flex items-center gap-3"):
                     with tag.span(classes="text-sm font-medium"):
                         text(review.reviewed_at.strftime("%Y-%m-%d %H:%M UTC"))
+                    render_review_context_badge(parsed.review_type)
                     with tag.span(classes="text-xs text-base-content/60"):
                         text(review.model_used)
 

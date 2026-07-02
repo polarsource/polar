@@ -3,7 +3,6 @@
 import GetStartedButton from '@/components/Auth/GetStartedButton'
 import { Button } from '@polar-sh/orbit'
 import { motion } from 'motion/react'
-import Link from 'next/link'
 import { ComponentType, PropsWithChildren, ReactNode } from 'react'
 import { Section } from '../Section'
 
@@ -56,11 +55,11 @@ export const FeaturePageHeader = ({
       >
         <GetStartedButton size="lg" text="Get Started" />
         {docsHref ? (
-          <Link href={docsHref}>
+          <a href={docsHref}>
             <Button variant="ghost" className="rounded-full" size="lg">
               View Documentation
             </Button>
-          </Link>
+          </a>
         ) : null}
       </motion.div>
     </motion.section>

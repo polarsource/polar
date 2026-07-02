@@ -7,7 +7,7 @@ import {
 } from './ui/button'
 
 const buttonVariants = cva(
-  'relative font-normal inline-flex items-center cursor-pointer font-display font-semibold select-none justify-center rounded-full text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap',
+  'relative inline-flex items-center cursor-pointer font-display font-[550] tracking-[0.01em] select-none justify-center rounded-full text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap',
   {
     variants: {
       variant: {
@@ -29,7 +29,7 @@ const buttonVariants = cva(
         default: 'h-10 px-5 py-3 text-sm',
         sm: 'h-8 px-3 py-1.5 text-xs',
         lg: 'h-12 px-5 py-4 text-sm',
-        icon: 'flex items-center justify-center h-8 w-8 p-2 text-sm',
+        icon: 'flex items-center justify-center aspect-square p-2 text-sm',
       },
     },
     defaultVariants: {
@@ -122,26 +122,3 @@ const LoadingSpinner = (props: {
     </>
   )
 }
-
-export const RawButton = ({
-  ref,
-  className,
-  variant,
-  size,
-  children,
-  ...props
-}: ButtonProps & {
-  ref?: React.RefObject<HTMLButtonElement>
-}) => {
-  return (
-    <ShadcnButton
-      className={twMerge(buttonVariants({ variant, size, className }))}
-      ref={ref}
-      {...props}
-    >
-      {children}
-    </ShadcnButton>
-  )
-}
-
-RawButton.displayName = 'RawButton'

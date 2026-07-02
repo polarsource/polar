@@ -37,7 +37,6 @@ resource "render_postgres" "db" {
   environment_id = local.environment_id
   name           = "db-test"
   database_name  = "polar_cpit"
-  database_user  = "polar_cpit_user"
   plan           = "pro_4gb"
   region         = "ohio"
   version        = "15"
@@ -53,7 +52,6 @@ resource "render_postgres" "db" {
     prevent_destroy = true
     ignore_changes = [
       ip_allow_list,
-      database_user,
       database_name,
     ]
   }
@@ -219,6 +217,11 @@ module "test" {
     files_download_secret = var.s3_files_download_secret
   }
 
+  aws_kms_config = {
+    key_id   = one(module.secrets_kms[*].key_arn)
+    role_arn = one(module.secrets_kms[*].role_arn)
+  }
+
   github_secrets = {
     client_id                           = var.github_client_id
     client_secret                       = var.github_client_secret
@@ -272,6 +275,57 @@ module "test" {
   }
 
   depends_on = [render_registry_credential.ghcr, render_postgres.db, render_redis.redis]
+}
+
+# =============================================================================
+# PgBouncer
+# =============================================================================
+
+module "pgbouncer" {
+  count  = local.test_enabled ? 1 : 0
+  source = "../modules/pgbouncer"
+
+  environment            = "test"
+  render_environment_id  = local.environment_id
+  registry_credential_id = render_registry_credential.ghcr.id
+
+  database = {
+    host     = local.db_internal_host
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
+  }
+
+  pool_config = {
+    max_client_conn   = "1000"
+    default_pool_size = "20"
+  }
+
+  depends_on = [render_registry_credential.ghcr, render_postgres.db]
+}
+
+module "pgbouncer_read" {
+  count  = local.test_enabled ? 1 : 0
+  source = "../modules/pgbouncer"
+
+  name                   = "pgbouncer-read"
+  environment            = "test"
+  render_environment_id  = local.environment_id
+  registry_credential_id = render_registry_credential.ghcr.id
+
+  database = {
+    host     = local.read_replica.id
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
+  }
+
+  pool_config = {
+    max_client_conn   = "1000"
+    default_pool_size = "20"
+  }
+
+  depends_on = [render_registry_credential.ghcr, render_postgres.db]
 }
 
 # =============================================================================

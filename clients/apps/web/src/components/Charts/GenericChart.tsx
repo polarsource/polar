@@ -69,6 +69,8 @@ interface GenericChartProps<T extends Record<string, unknown>> {
   xAxisKey: keyof T
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   xAxisFormatter?: (value: any) => string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  labelFormatter?: (value: any) => string
   valueFormatter?: (value: number, seriesKey: string) => React.ReactNode
   height?: number
   width?: number
@@ -88,6 +90,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
   series,
   xAxisKey,
   xAxisFormatter,
+  labelFormatter,
   valueFormatter,
   height,
   width,
@@ -215,6 +218,19 @@ export const GenericChart = <T extends Record<string, unknown>>({
     [valueFormatter],
   )
 
+  // Tooltip title = the formatted value of the hovered X-axis point (e.g. the
+  // date), read straight from the data row so it works whether the axis value
+  // is a string or a Date. Falls back to the axis tick formatter.
+  const tooltipLabelFormatter = useMemo(() => {
+    const fmt = labelFormatter ?? xAxisFormatter
+    if (!fmt) return undefined
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (value: any, items: any) => {
+      const raw = items?.[0]?.payload?.[xAxisKey as string]
+      return fmt(raw ?? value)
+    }
+  }, [labelFormatter, xAxisFormatter, xAxisKey])
+
   const primarySeries = series[0]
   const gradientInfo = useMemo(() => {
     if (!primarySeries) return { type: 'positive' as const, zeroOffset: 1 }
@@ -306,7 +322,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
             activeIndex={activeIndex}
             className="text-black dark:text-white"
             indicator="dot"
-            labelKey={primarySeries?.key}
+            labelFormatter={tooltipLabelFormatter}
             formatter={formatter}
           />
         )}
@@ -462,6 +478,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
     ticks,
     xAxisKey,
     xAxisFormatter,
+    tooltipLabelFormatter,
     formatter,
     series,
     primarySeries,

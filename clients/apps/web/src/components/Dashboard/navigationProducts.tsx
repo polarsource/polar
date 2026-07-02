@@ -11,8 +11,9 @@ import HiveOutlined from '@mui/icons-material/HiveOutlined'
 import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined'
 import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
+import SignalCellularAltOutlined from '@mui/icons-material/SignalCellularAltOutlined'
 import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined'
-import TrendingUp from '@mui/icons-material/TrendingUp'
+import TrendingDown from '@mui/icons-material/TrendingDown'
 import { schemas } from '@polar-sh/client'
 import { usePathname } from 'next/navigation'
 import { ReactNode } from 'react'
@@ -139,7 +140,7 @@ const compassRoutesList = (org?: schemas['Organization']): Route[] => [
   {
     id: 'metrics',
     title: 'Metrics',
-    icon: <TrendingUp fontSize="inherit" />,
+    icon: <SignalCellularAltOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/analytics/metrics`,
     if: true,
   },
@@ -153,7 +154,7 @@ const compassRoutesList = (org?: schemas['Organization']): Route[] => [
   {
     id: 'costs',
     title: 'Costs',
-    icon: <AttachMoneyOutlined fontSize="inherit" />,
+    icon: <TrendingDown fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/analytics/costs`,
     if: true,
   },

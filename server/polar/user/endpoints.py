@@ -10,6 +10,7 @@ from polar.authz.dependencies import (
     AuthorizeWebUserRead,
     AuthorizeWebUserWrite,
 )
+from polar.authz.repository import AuthzRepository
 from polar.customer_portal.endpoints.downloadables import router as downloadables_router
 from polar.customer_portal.endpoints.license_keys import router as license_keys_router
 from polar.customer_portal.endpoints.order import router as order_router
@@ -42,6 +43,7 @@ from polar.user_organization.service import (
 )
 
 from .schemas import (
+    MemberOrganization,
     UserDeletionResponse,
     UserIdentityVerification,
     UserRead,
@@ -65,19 +67,26 @@ async def get_authenticated(
 ) -> UserRead:
     user = auth_subject.subject
     repository = UserOrganizationRepository.from_session(session)
-    # Raw membership, intersected below with the session's organization scope.
+    # Raw membership; `organizations` is narrowed to the session's accessible
+    # set (session scope + SSO enforcement) via the shared authz chokepoint,
+    # while `member_organizations` exposes every membership so the frontend can
+    # tell "no access" apart from "not a member".
     org_with_roles = await repository.get_organizations_with_role(user.id)  # noqa: org-scope
-    if auth_subject.organization_ids is not None:
-        org_with_roles = [
-            (org, role)
-            for org, role in org_with_roles
-            if org.id in auth_subject.organization_ids
-        ]
+    accessible_ids = await AuthzRepository.from_session(session).get_user_org_ids(
+        auth_subject
+    )
     return UserRead.model_validate(user).model_copy(
         update={
             "organizations": [
                 OrganizationWithRole.from_organization(org, role)
                 for org, role in org_with_roles
+                if org.id in accessible_ids
+            ],
+            "member_organizations": [
+                MemberOrganization(
+                    id=org.id, slug=org.slug, requires_sso=org.sso_enforced
+                )
+                for org, _ in org_with_roles
             ],
             "organization_scoped": auth_subject.organization_ids is not None,
         }

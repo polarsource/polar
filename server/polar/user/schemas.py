@@ -29,6 +29,14 @@ class OAuthAccountRead(TimestampedSchema):
     account_username: str | None
 
 
+class MemberOrganization(Schema):
+    id: UUID4
+    slug: str
+    requires_sso: bool = Field(
+        description="Whether this organization enforces SSO.",
+    )
+
+
 class UserRead(UserBase, TimestampedSchema):
     id: uuid.UUID
     accepted_terms_of_service: bool
@@ -43,8 +51,18 @@ class UserRead(UserBase, TimestampedSchema):
     organizations: list[OrganizationWithRole] = Field(
         default_factory=list,
         description=(
-            "Organizations the user is a member of, with their role on each. "
-            "Populated by `GET /v1/users/me`; empty otherwise."
+            "Organizations the user is a member of and can access in the "
+            "current session, with their role on each. Populated by "
+            "`GET /v1/users/me`; empty otherwise."
+        ),
+    )
+    member_organizations: list[MemberOrganization] = Field(
+        default_factory=list,
+        description=(
+            "All organizations the user is a member of, regardless of whether "
+            "they're accessible in the current session. Compare with "
+            "`organizations` (the accessible subset) to determine access. "
+            "Populated by `GET /v1/users/me`."
         ),
     )
     organization_scoped: bool = Field(

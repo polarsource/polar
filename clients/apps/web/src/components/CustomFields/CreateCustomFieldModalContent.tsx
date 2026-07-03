@@ -1,5 +1,6 @@
 import { useCreateCustomField } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
+import { stripEmptyProperties } from '@/utils/object'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -37,8 +38,10 @@ const CreateCustomFieldModalContent = ({
 
   const onSubmit: SubmitHandler<schemas['CustomFieldCreate']> = useCallback(
     async (customFieldCreate) => {
-      const { data: customField, error } =
-        await createCustomField.mutateAsync(customFieldCreate)
+      const { data: customField, error } = await createCustomField.mutateAsync({
+        ...customFieldCreate,
+        properties: stripEmptyProperties(customFieldCreate.properties),
+      } as schemas['CustomFieldCreate'])
       if (error) {
         if (error.detail) {
           setValidationErrors(error.detail, setError, 1, [

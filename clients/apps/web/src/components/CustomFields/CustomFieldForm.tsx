@@ -387,12 +387,6 @@ const CustomFieldForm: React.FC<CustomFieldFormBaseProps> = ({ update }) => {
             <FormField
               control={control}
               name="properties.form_label"
-              rules={{
-                minLength: {
-                  value: 1,
-                  message: 'This field must not be empty',
-                },
-              }}
               render={({ field }) => {
                 return (
                   <FormItem>
@@ -412,12 +406,6 @@ const CustomFieldForm: React.FC<CustomFieldFormBaseProps> = ({ update }) => {
             <FormField
               control={control}
               name="properties.form_help_text"
-              rules={{
-                minLength: {
-                  value: 1,
-                  message: 'This field must not be empty',
-                },
-              }}
               render={({ field }) => {
                 return (
                   <FormItem>
@@ -436,12 +424,6 @@ const CustomFieldForm: React.FC<CustomFieldFormBaseProps> = ({ update }) => {
             <FormField
               control={control}
               name="properties.form_placeholder"
-              rules={{
-                minLength: {
-                  value: 1,
-                  message: 'This field must not be empty',
-                },
-              }}
               render={({ field }) => {
                 return (
                   <FormItem>

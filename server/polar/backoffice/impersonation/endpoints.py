@@ -53,24 +53,6 @@ async def start_impersonation(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
-    # Create a read-only impersonation session for the target user
-    token, impersonation_session = await auth_service._create_user_session(
-        session=session,
-        user=target_user,
-        user_agent=request.headers.get("User-Agent", ""),
-        scopes=list(READ_ONLY_SCOPES),
-        expire_in=timedelta(minutes=60),
-    )
-
-    admin_token = request.cookies.get(settings.IMPERSONATION_COOKIE_KEY)
-    if admin_token:
-        token_hash = get_token_hash(admin_token, secret=settings.SECRET)
-        if token_hash != admin_session.token:
-            admin_token = None
-    if not admin_token:
-        admin_token = request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
-
-    # Create response object
     org_repository = OrganizationRepository.from_session(session)
     user_orgs = await org_repository.get_all_by_user(target_user.id)
     target_org = next(
@@ -82,6 +64,26 @@ async def start_impersonation(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User has no organizations to impersonate into",
         )
+
+    # Scope the session to the organization so it can reach the org even when SSO
+    # is enforced (and can eventually break the glass if something is misconfigured).
+    token, impersonation_session = await auth_service._create_user_session(
+        session=session,
+        user=target_user,
+        user_agent=request.headers.get("User-Agent", ""),
+        scopes=list(READ_ONLY_SCOPES),
+        expire_in=timedelta(minutes=60),
+        organization_ids=frozenset({target_org.id}),
+    )
+
+    admin_token = request.cookies.get(settings.IMPERSONATION_COOKIE_KEY)
+    if admin_token:
+        token_hash = get_token_hash(admin_token, secret=settings.SECRET)
+        if token_hash != admin_session.token:
+            admin_token = None
+    if not admin_token:
+        admin_token = request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
+
     response = HXRedirectResponse(
         request, f"{settings.FRONTEND_BASE_URL}/dashboard/{target_org.slug}", 307
     )
@@ -144,14 +146,19 @@ async def end_impersonation(
         )
 
     # Get the current impersonated session to delete it
-    impersonated_user_id = None
+    impersonated_org_id = None
     current_token = request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
     if current_token:
         current_session = await auth_service._get_user_session_by_token(
             session, current_token
         )
         if current_session:
-            impersonated_user_id = current_session.user_id
+            # Impersonation sessions are scoped to a single organization; use it
+            # to send the admin back to that organization in the backoffice.
+            if current_session.organization_scopes:
+                impersonated_org_id = current_session.organization_scopes[
+                    0
+                ].organization_id
             await session.delete(current_session)
 
     # Validate the admin session is still valid
@@ -162,9 +169,9 @@ async def end_impersonation(
             detail="Admin session expired or invalid",
         )
 
-    if impersonated_user_id:
+    if impersonated_org_id:
         response = RedirectResponse(
-            settings.generate_backoffice_url(f"/users/{impersonated_user_id}")
+            settings.generate_backoffice_url(f"/organizations/{impersonated_org_id}")
         )
     else:
         response = RedirectResponse(settings.generate_backoffice_url("/"))

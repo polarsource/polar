@@ -16,16 +16,7 @@ With Polar, you can easily add such fields to your checkout using **Custom Field
 
 Custom Fields are managed at an organization's level. To create them, go to [**Settings → Custom Fields**](https://polar.sh/to/dashboard/settings/custom-fields). You'll see the list of all the available fields on your organization.
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/custom-fields/custom_fields.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/custom-fields/custom_fields.dark.png"
-/>
-
-Click on **New Custom Field** to create a new one.
+Click on **New Custom Field** to create a new one. You can also manage them programmatically using the [Custom Fields API](/api-reference/custom-fields/create).
 
 ### Type
 
@@ -45,9 +36,9 @@ Underneath, the data will be stored as a string.
 
 #### Number
 
-This will display a number input field. Under `Validation constraints`, you can add minimum and maximum validation.
+This will display a number input field. Under `Validation constraints`, you can add minimum (`Greater than or equal`) and maximum (`Less than or equal`) validation.
 
-Underneath, the data will be stored as a number.
+Underneath, the data will be stored as an integer.
 
 #### Date
 
@@ -63,22 +54,13 @@ Underneath, the data will be stored as a boolean (`true` or `false`).
 
 #### Select
 
-This will display a select field with a predefined set of options. Each option is a pair of `Value` and `Label`, the first one being the value that'll be stored underneath and the latter the one that will be shown to the customer.
+This will display a select field with a predefined set of options. Each option is a pair of `Value` and `Label`, the first one being the value that'll be stored underneath and the latter the one that will be shown to the customer. At least one option is required, and you can drag options to reorder them.
 
 ### Slug and name
 
-The slug determines the key that'll be used to store the data inside objects related to the checkout, like Orders and Subscriptions. It must be unique across your organization. You can change it afterwards, we'll automatically update the data to reflect the new slug.
+The slug determines the key that'll be used to store the data inside objects related to the checkout, like Orders and Subscriptions. It must be unique across your organization and can only contain lowercase letters, numbers, hyphens and underscores. You can change it afterwards, we'll automatically update the data stored on existing Checkouts, Orders and Subscriptions to reflect the new slug.
 
-The name is what we'll be displayed to you to recognize the field across your dashboard. By default, it'll also be the label of the field displayed to the customer, unless you customize it under `Form input options`.
-
-<img
-  className="block dark:hidden"
-  src="/assets/features/custom-fields/create_custom_field.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/custom-fields/create_custom_field.dark.png"
-/>
+The name is what will be displayed to you to recognize the field across your dashboard. By default, it'll also be the label of the field displayed to the customer, unless you customize it under `Form input options`.
 
 ### Form input options
 
@@ -88,31 +70,13 @@ Those options allow you to customize how the field is displayed to the customer.
 - The help text, displayed below the field
 - The placeholder, displayed inside the field when there is no value
 
-The label and help text supports basic Markdown syntax, so you can add bold, italic or even links.
-
-<img
-  className="block dark:hidden"
-  src="/assets/features/custom-fields/label_markdown.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/custom-fields/label_markdown.dark.png"
-/>
+The label and help text support basic Markdown syntax, so you can add bold, italic or even links.
 
 ## Add Custom Field to Checkout
 
-Custom Fields are enabled on Checkout specifically on each **product**. While [creating or updating](/features/products) a product, you can select the custom fields you want to include in the checkout for this product.
+Custom Fields are enabled on Checkout specifically on each **product**. While [creating or updating](/features/products) a product, expand the **Checkout Page** section and select the fields you want to include under **Checkout Fields**.
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/custom-fields/add_custom_field.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/custom-fields/add_custom_field.dark.png"
-/>
-
-Note that you can make the field `Required`.
+Note that you can make each field `Required` for that product.
 
 <Tip>
   If you make a **checkbox** field **required**, customers will have to check
@@ -121,34 +85,18 @@ Note that you can make the field `Required`.
 
 The fields are now added as part of the Checkout form for this product.
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/custom-fields/custom_fields_checkout.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/custom-fields/custom_fields_checkout.dark.png"
-/>
+When [creating a Checkout Session](/api-reference/checkouts/create-session) from the API, you can also prefill the fields by setting the `custom_field_data` property, keyed by the **slug** of each field.
 
 ## Read data
 
-Once you have added Custom Fields to your organization, they'll be automatically displayed as a column in your `Sales` page, both on Orders and Subscriptions. From there, you'll be able to see the data input by the customer.
-
-<img
-  className="block dark:hidden"
-  src="/assets/features/custom-fields/custom_field_data.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/custom-fields/custom_field_data.dark.png"
-/>
+The values input by the customer are stored on the Order or Subscription resulting from the checkout. From your dashboard, open an order or subscription from the **Sales** section: the values are displayed under the **Custom Fields** section of the detail view.
 
 This data is also available from the [Orders](/api-reference/orders/get) and [Subscriptions](/api-reference/subscriptions/get) API, under the `custom_field_data` property. Each value is referenced by the **slug** of the field.
 
 ```json
 {
   // ...
-  "custom_field_value": {
+  "custom_field_data": {
     "terms": true,
     "source": "social_media"
   }

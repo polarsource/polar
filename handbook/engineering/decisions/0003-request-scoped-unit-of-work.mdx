@@ -1,0 +1,46 @@
+---
+title: "ADR-0003: One request or task is one transaction"
+description: "The session commits once at the boundary; application code never calls session.commit()."
+---
+
+<Info>
+**Status**: Accepted
+
+**Area**: Backend
+
+**Date**: 2026-07-02
+</Info>
+
+## Context
+
+One request or task should be one database transaction: all its writes commit together at the
+end, or none do. If a handler calls `session.commit()` midway, its writes are already saved, so
+a later failure leaves the database half-applied and the automatic rollback can no longer undo
+it.
+
+## Decision
+
+Application code never calls `session.commit()`. The single commit happens at the edge of the
+request (in middleware) or task (in the worker's session context): commit on success, rollback
+on exception. Call `session.flush()` when you need database-generated values (like IDs) before
+that final commit. Read handlers take `AsyncReadSession` (routed to the read replica); anything
+that writes takes `AsyncSession`.
+
+## Consequences
+
+- Each request or task is all-or-nothing.
+- Sessions use `expire_on_commit=False`, so ORM objects stay usable after the final commit.
+  Endpoints return the ORM model directly, and FastAPI serializes it after the handler returns.
+- Background tasks follow the same rule: open a session, let it commit at the end.
+
+## Alternatives considered
+
+- **Commit as you go inside services**: a later failure leaves partial writes behind, and one
+  logical operation gets split across many transactions.
+
+## References
+
+- `server/polar/postgres.py` (request middleware, `get_db_session`),
+  `server/polar/worker/_sqlalchemy.py` (task session).
+- `server/polar/kit/db/postgres.py` (`AsyncReadSession` / `AsyncSession`).
+- `server/AGENTS.md`, "CRITICAL: Never call `session.commit()`".

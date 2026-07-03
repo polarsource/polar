@@ -1,0 +1,89 @@
+---
+title: "Architecture Decision Records"
+description: "Short, immutable records of the significant, cross-cutting decisions behind Polar."
+---
+
+An **Architecture Decision Record (ADR)** captures one significant decision: what we
+chose, why, and what it costs us.
+
+They are deliberately short. If you just joined and read the ADR log top to bottom, you
+should understand the load-bearing choices in the codebase in under an hour.
+
+## ADR vs. design document
+
+We already write [design documents](/engineering/design-documents/index): big,
+forward-looking RFCs that explore a *solution*. ADRs are the
+opposite shape:
+
+| | Design document | ADR |
+|---|---|---|
+| Answers | "What are we going to build?" | "Why is it this way?" |
+| Size | Pages | One page |
+| Lifespan | Goes stale after ship | Immutable; superseded, not edited |
+| Trigger | A feature or system worth designing | A decision worth remembering |
+
+A design doc can make several decisions; distil each into an ADR that links back. Reach for
+an ADR when the *decision* outlives the *document*.
+
+## When to write one
+
+Write an ADR when a decision is **significant and hard to reverse or re-litigate**:
+
+- It's cross-cutting (touches many modules, or both backend and frontend).
+- It's surprising: a newcomer would reasonably do the opposite.
+- It's a convention we enforce in review or lint, but whose *why* lives only in someone's head.
+- We picked one option over a real alternative and the trade-off matters.
+
+Don't write one for reversible, local, or obvious choices; a comment or a PR is enough.
+
+## Structure in a monorepo
+
+One **global, sequentially numbered** sequence for the whole repo (`NNNN-title.mdx`), not a
+separate log per package. Our most important decisions (the OpenAPI to generated-client
+seam, API versioning, auth) span tiers, and a single log keeps them findable.
+
+Capture the monorepo dimension with the **Area** field in each ADR's header
+(`Backend` / `Frontend` / `Infra` / `Cross-cutting`) instead of by splitting directories.
+It tells you (and an agent) which ADRs apply to the code you're touching.
+
+## Lifecycle
+
+An ADR's **Status** is one of:
+
+- **Accepted**: the decision stands; treat it as binding. An ADR in the repo is Accepted;
+  while it is still under discussion it lives in an open PR, not here.
+- **Superseded by [ADR-XXXX](...)**: replaced. We never delete or rewrite the decision; we
+  add a new ADR and point the old one at it.
+
+## Writing a new ADR
+
+1. Copy [`template.mdx`](/engineering/decisions/template) to `NNNN-title.mdx` with the next
+   free number.
+2. Fill in Context / Decision / Consequences. Keep it to a page.
+3. Add it to the **All decisions** list below and to the `Architecture Decisions` group in
+   `handbook/docs.json`.
+4. Open a PR. Review happens there, like design docs.
+
+## For AI agents and reviewers
+
+Agents working in this repo should treat **Accepted** ADRs as binding conventions:
+
+- **Read them for the *why*.** Before changing a load-bearing pattern, check for a
+  relevant ADR (grep `handbook/engineering/decisions/`).
+- **Flag violations.** If code contradicts an Accepted ADR, call it out and cite the ADR id
+  (e.g. "violates ADR-0004: raw Tailwind used for layout instead of Orbit Box").
+- **Suggest new ADRs.** If a PR makes a significant, cross-cutting, or hard-to-reverse
+  decision that no ADR covers, propose one (draft it from the template) rather than letting
+  the rationale vanish into the diff.
+
+The root `AGENTS.md` links here so this contract reaches agents working anywhere in the repo.
+To check a diff against these ADRs, run the `adr-check` skill.
+
+## All decisions
+
+- [ADR-0001: Record architecture decisions](/engineering/decisions/0001-record-architecture-decisions) · Cross-cutting · Accepted
+- [ADR-0002: Business errors are status-coded PolarError subclasses](/engineering/decisions/0002-status-coded-polar-errors) · Backend · Accepted
+- [ADR-0003: One request or task is one transaction](/engineering/decisions/0003-request-scoped-unit-of-work) · Backend · Accepted
+- [ADR-0004: Frontend UI is authored with Orbit Box and design tokens](/engineering/decisions/0004-orbit-box-design-system) · Frontend · Accepted
+- [ADR-0005: Authorization is AuthSubject plus scopes](/engineering/decisions/0005-auth-subject-and-scopes) · Backend · Accepted
+- [ADR-0006: Migrations and backfills are deploy-safe by construction](/engineering/decisions/0006-migration-and-backfill-safety) · Backend · Accepted

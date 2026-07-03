@@ -92,6 +92,21 @@ class SlackApp(RecordModel):
     def organization(cls) -> Mapped["Organization"]:
         return relationship(Organization, lazy="raise")
 
+    async def get_client_secret(self) -> str | None:
+        if self.client_secret_encrypted is not None:
+            return await self.client_secret_encrypted.decrypt(id=str(self.id))
+        return self.client_secret
+
+    async def get_signing_secret(self) -> str | None:
+        if self.signing_secret_encrypted is not None:
+            return await self.signing_secret_encrypted.decrypt(id=str(self.id))
+        return self.signing_secret
+
+    async def get_bot_token(self) -> str | None:
+        if self.bot_token_encrypted is not None:
+            return await self.bot_token_encrypted.decrypt(id=str(self.id))
+        return self.bot_token
+
     @classmethod
     async def encrypt_client_secret(
         cls, id: UUID, client_secret: str | None

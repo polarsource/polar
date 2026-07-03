@@ -79,25 +79,24 @@ class SlackAppService:
         if existing is not None and existing.organization_id != organization_id:
             raise SlackIntegrationAppIdAlreadyLinked()
 
+        existing_client_secret = (
+            await existing.get_client_secret() if existing else None
+        )
+        existing_signing_secret = (
+            await existing.get_signing_secret() if existing else None
+        )
+
         # First time pasting credentials for this app requires both secrets.
         has_existing_credentials = (
-            existing is not None
-            and existing.client_secret is not None
-            and existing.signing_secret is not None
+            existing_client_secret is not None and existing_signing_secret is not None
         )
         if update.client_secret is None and not has_existing_credentials:
             raise SlackIntegrationInvalidCredentials("missing_client_secret")
         if update.signing_secret is None and not has_existing_credentials:
             raise SlackIntegrationInvalidCredentials("missing_signing_secret")
 
-        client_secret = (
-            update.client_secret or (existing.client_secret if existing else None) or ""
-        )
-        signing_secret = (
-            update.signing_secret
-            or (existing.signing_secret if existing else None)
-            or ""
-        )
+        client_secret = update.client_secret or existing_client_secret or ""
+        signing_secret = update.signing_secret or existing_signing_secret or ""
 
         # Only round-trip to Slack when the credentials actually changed,
         # since the validation call costs a request and shouldn't run on
@@ -105,7 +104,7 @@ class SlackAppService:
         if (
             existing is None
             or update.client_id != existing.client_id
-            or client_secret != existing.client_secret
+            or client_secret != existing_client_secret
         ):
             await self._validate_credentials(
                 client_id=update.client_id,
@@ -210,15 +209,14 @@ class SlackAppService:
         self,
         integration: SlackApp,
     ) -> list[dict[str, Any]]:
-        if integration.bot_token is None:
+        bot_token = await integration.get_bot_token()
+        if bot_token is None:
             return []
 
         users: list[dict[str, Any]] = []
         cursor: str | None = None
         while True:
-            result = await self._client.users_list(
-                bot_token=integration.bot_token, cursor=cursor
-            )
+            result = await self._client.users_list(bot_token=bot_token, cursor=cursor)
             if not result.get("ok"):
                 break
             for member in result.get("members") or []:
@@ -253,16 +251,17 @@ class SlackAppService:
     ) -> SlackApp:
         repository = SlackAppRepository.from_session(session)
         integration = await repository.get_by_id(integration_id)
+        client_secret = await integration.get_client_secret() if integration else None
         if (
             integration is None
             or integration.client_id is None
-            or integration.client_secret is None
+            or client_secret is None
         ):
             raise SlackIntegrationNotConfigured()
 
         result = await self._client.oauth_v2_access(
             client_id=integration.client_id,
-            client_secret=integration.client_secret,
+            client_secret=client_secret,
             code=code,
             redirect_uri=redirect_uri,
         )

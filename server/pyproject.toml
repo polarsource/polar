@@ -67,6 +67,7 @@ dependencies = [
   "tzdata>=2026.2",
   "reauth==0.2.0",
   "langcodes>=3.5.1",
+  "pypdf>=6.14.2",
 ]
 
 [dependency-groups]

@@ -23,6 +23,7 @@ from polar.models.support_case import (
 )
 from polar.models.user_session import UserSession
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
+from polar.support_case.pdf import is_mergeable
 from polar.support_case.repository import (
     SupportCaseAttachmentRepository,
     SupportCaseMessageRepository,
@@ -35,8 +36,12 @@ from ..components import datatable, dispute_status_badge, support_tier_badge
 from ..components._tab_nav import Tab, tab_nav
 from ..dependencies import get_admin
 from ..layout import layout
-from ..organizations_v2.views.sections.support_case_section import SupportCaseSection
+from ..organizations_v2.views.sections.support_case_section import (
+    SupportCaseSection,
+    render_merged_pdfs_region,
+)
 from ..responses import HXRedirectResponse
+from ..toast import add_toast
 from .queries import TYPE_LABELS, Row, cases_statement
 from .urls import case_detail_url, is_safe_return_to
 
@@ -320,6 +325,98 @@ async def download_attachment(
         raise HTTPException(status_code=404, detail="Attachment not found")
     url, _ = file_service.generate_download_url(attachment.file)
     return RedirectResponse(url)
+
+
+@router.post(
+    "/{case_id}/attachments/merge",
+    name="support_cases:attachments_merge",
+    response_model=None,
+)
+async def merge_case_attachments(
+    request: Request,
+    case_id: UUID4,
+    session: AsyncSession = Depends(get_db_read_session),
+    user_session: UserSession = Depends(get_admin),
+) -> None:
+    """Enqueue the merge and respond with the region in its pending,
+    self-polling state."""
+    del user_session
+    form_data = await request.form()
+    attachments = await SupportCaseAttachmentRepository.from_session(
+        session
+    ).list_by_case(case_id)
+    merged_files = [a for a in attachments if a.message_id is None]
+
+    try:
+        selected_ids = {
+            uuid.UUID(str(raw)) for raw in form_data.getlist("attachment_ids")
+        }
+    except ValueError:
+        await add_toast(request, "Invalid attachment id.", "error")
+        return render_merged_pdfs_region(request, case_id, merged_files)
+    if not selected_ids:
+        await add_toast(request, "Select at least one attachment.", "error")
+        return render_merged_pdfs_region(request, case_id, merged_files)
+
+    selected = [a for a in attachments if a.id in selected_ids]
+    if len(selected) != len(selected_ids):
+        await add_toast(
+            request,
+            "Attachment not found — reload the page and try again.",
+            "error",
+        )
+        return render_merged_pdfs_region(request, case_id, merged_files)
+    unmergeable = [a.file.name for a in selected if not is_mergeable(a.file.mime_type)]
+    if unmergeable:
+        await add_toast(
+            request,
+            f"Cannot merge into PDF: {', '.join(unmergeable)}",
+            "error",
+        )
+        return render_merged_pdfs_region(request, case_id, merged_files)
+
+    enqueue_job(
+        "support_case.merge_attachments",
+        case_id=case_id,
+        attachment_ids=[attachment.id for attachment in selected],
+    )
+    render_merged_pdfs_region(
+        request,
+        case_id,
+        merged_files,
+        expected=len(merged_files) + 1,
+        merging=len(selected),
+    )
+
+
+@router.get(
+    "/{case_id}/attachments/merged",
+    name="support_cases:attachments_merged_partial",
+    response_model=None,
+)
+async def merged_attachments_partial(
+    request: Request,
+    case_id: UUID4,
+    expected: Annotated[int, Query(ge=0)] = 0,
+    merging: Annotated[int, Query(ge=0)] = 0,
+    attempts: Annotated[int, Query(ge=0)] = 0,
+    session: AsyncSession = Depends(get_db_read_session),
+    user_session: UserSession = Depends(get_admin),
+) -> None:
+    """The "Merged PDFs" region, polled while a merge is running."""
+    del user_session
+    attachments = await SupportCaseAttachmentRepository.from_session(
+        session
+    ).list_by_case(case_id)
+    merged_files = [a for a in attachments if a.message_id is None]
+    render_merged_pdfs_region(
+        request,
+        case_id,
+        merged_files,
+        expected=expected or None,
+        merging=merging or None,
+        attempts=attempts,
+    )
 
 
 @router.get("/{case_id}", name="support_cases:detail")

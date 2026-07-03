@@ -366,12 +366,12 @@ class TestRecordHumanDecision:
             reviewer_id=user.id,
             decision=DecisionType.DENY,
             reason="Crypto trading bot",
-            violated_aup_section=AUPSection.PP_19_TRADING_FINANCIAL,
+            violated_aup_section=AUPSection.TRADING_FINANCIAL,
         )
         await session.flush()
 
-        assert decision.violated_aup_section == AUPSection.PP_19_TRADING_FINANCIAL
-        assert decision.violated_aup_section.value == "pp_19_trading_financial"
+        assert decision.violated_aup_section == AUPSection.TRADING_FINANCIAL
+        assert decision.violated_aup_section.value == "trading_financial"
 
     async def test_violated_aup_section_defaults_none(
         self,
@@ -492,12 +492,12 @@ class TestSaveReviewDecision:
             review_context=ReviewContext.MANUAL,
             reviewer_id=user.id,
             reason="OSINT platform",
-            violated_aup_section=AUPSection.PP_36_OSINT,
+            violated_aup_section=AUPSection.OSINT,
         )
         await session.flush()
 
-        assert decision.violated_aup_section == AUPSection.PP_36_OSINT
-        assert decision.violated_aup_section.value == "pp_36_osint"
+        assert decision.violated_aup_section == AUPSection.OSINT
+        assert decision.violated_aup_section.value == "osint"
 
 
 @pytest.mark.asyncio

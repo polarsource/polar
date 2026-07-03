@@ -44,7 +44,7 @@ class TestDenyDialog:
             f"/organizations/{organization.id}/deny-dialog",
             data={
                 "override_reason": "Crypto trading bot",
-                "violated_aup_section": "pp_19_trading_financial",
+                "violated_aup_section": "trading_financial",
             },
         )
 
@@ -54,7 +54,7 @@ class TestDenyDialog:
             session
         ).get_current_decision(organization.id)
         assert current is not None
-        assert current.violated_aup_section == AUPSection.PP_19_TRADING_FINANCIAL
+        assert current.violated_aup_section == AUPSection.TRADING_FINANCIAL
 
     async def test_missing_aup_section_does_not_deny(
         self,

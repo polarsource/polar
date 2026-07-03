@@ -271,18 +271,28 @@ resource "render_env_group" "memory_profile" {
 resource "render_env_group" "database" {
   environment_id = var.render_environment_id
   name           = "database-${var.environment}"
-  env_vars = {
-    POLAR_POSTGRES_DATABASE      = { value = var.api_service_config.postgres_database }
-    POLAR_POSTGRES_HOST          = { value = var.postgres_config.host }
-    POLAR_POSTGRES_PORT          = { value = var.postgres_config.port }
-    POLAR_POSTGRES_USER          = { value = var.postgres_config.user }
-    POLAR_POSTGRES_PWD           = { value = var.postgres_config.password }
-    POLAR_POSTGRES_READ_DATABASE = { value = var.api_service_config.postgres_read_database }
-    POLAR_POSTGRES_READ_HOST     = { value = var.postgres_config.read_host }
-    POLAR_POSTGRES_READ_PORT     = { value = var.postgres_config.read_port }
-    POLAR_POSTGRES_READ_USER     = { value = var.postgres_config.read_user }
-    POLAR_POSTGRES_READ_PWD      = { value = var.postgres_config.read_password }
-  }
+  env_vars = merge(
+    {
+      POLAR_POSTGRES_DATABASE      = { value = var.api_service_config.postgres_database }
+      POLAR_POSTGRES_HOST          = { value = var.postgres_config.host }
+      POLAR_POSTGRES_PORT          = { value = var.postgres_config.port }
+      POLAR_POSTGRES_USER          = { value = var.postgres_config.user }
+      POLAR_POSTGRES_PWD           = { value = var.postgres_config.password }
+      POLAR_POSTGRES_READ_DATABASE = { value = var.api_service_config.postgres_read_database }
+      POLAR_POSTGRES_READ_HOST     = { value = var.postgres_config.read_host }
+      POLAR_POSTGRES_READ_PORT     = { value = var.postgres_config.read_port }
+      POLAR_POSTGRES_READ_USER     = { value = var.postgres_config.read_user }
+      POLAR_POSTGRES_READ_PWD      = { value = var.postgres_config.read_password }
+    },
+    var.postgres_config.host_fallback == null ? {} : {
+      POLAR_POSTGRES_HOST_FALLBACK = { value = var.postgres_config.host_fallback }
+      POLAR_POSTGRES_PORT_FALLBACK = { value = coalesce(var.postgres_config.port_fallback, var.postgres_config.port) }
+    },
+    var.postgres_config.read_host_fallback == null ? {} : {
+      POLAR_POSTGRES_READ_HOST_FALLBACK = { value = var.postgres_config.read_host_fallback }
+      POLAR_POSTGRES_READ_PORT_FALLBACK = { value = coalesce(var.postgres_config.read_port_fallback, var.postgres_config.read_port) }
+    },
+  )
 }
 
 resource "render_env_group" "redis" {

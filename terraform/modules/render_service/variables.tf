@@ -58,14 +58,18 @@ variable "workers" {
 variable "postgres_config" {
   description = "PostgreSQL connection configuration"
   type = object({
-    host          = string
-    port          = string
-    user          = string
-    password      = string
-    read_host     = string
-    read_port     = string
-    read_user     = string
-    read_password = string
+    host               = string
+    port               = string
+    user               = string
+    password           = string
+    host_fallback      = optional(string)
+    port_fallback      = optional(string)
+    read_host          = string
+    read_port          = string
+    read_user          = string
+    read_password      = string
+    read_host_fallback = optional(string)
+    read_port_fallback = optional(string)
   })
   sensitive = true
 }

@@ -281,11 +281,12 @@ async def events(
 
     repository = SlackAppRepository.from_session(session)
     integration = await repository.get_by_app_id(api_app_id)
-    if integration is None or integration.signing_secret is None:
+    signing_secret = await integration.get_signing_secret() if integration else None
+    if signing_secret is None:
         raise Unauthorized()
 
     if not verify_slack_signature(
-        signing_secret=integration.signing_secret,
+        signing_secret=signing_secret,
         request_body=body,
         signature_header=x_slack_signature,
         timestamp_header=x_slack_request_timestamp,

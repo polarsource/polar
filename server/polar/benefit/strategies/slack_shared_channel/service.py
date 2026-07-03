@@ -85,7 +85,7 @@ class BenefitSlackSharedChannelService(
             if team_invitees:
                 integration = await self._get_installed_integration(benefit)
                 await self._safe_invite_team(
-                    bot_token=cast(str, integration.bot_token),
+                    bot_token=cast(str, await integration.get_bot_token()),
                     channel=existing_channel_id,
                     users=team_invitees,
                     bound_logger=bound_logger,
@@ -122,7 +122,7 @@ class BenefitSlackSharedChannelService(
         integration = await self._get_installed_integration(benefit)
 
         context = self._build_context(customer)
-        bot_token = cast(str, integration.bot_token)
+        bot_token = cast(str, await integration.get_bot_token())
 
         existing_channel_id = grant_properties.get("channel_id")
         if existing_channel_id:
@@ -241,13 +241,14 @@ class BenefitSlackSharedChannelService(
             return self._revoked_properties(grant_properties, keep_channel=True)
 
         integration = await self._get_integration(benefit)
-        if integration is None or integration.bot_token is None:
+        bot_token = await integration.get_bot_token() if integration else None
+        if bot_token is None:
             bound_logger.info("Slack integration uninstalled; skipping archive")
             return self._revoked_properties(grant_properties, keep_channel=True)
 
         try:
             result = await self._client.conversations_archive(
-                bot_token=integration.bot_token, channel=channel_id
+                bot_token=bot_token, channel=channel_id
             )
         except httpx.HTTPError as e:
             bound_logger.warning("Slack archive failed", error=str(e))

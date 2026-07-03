@@ -44,6 +44,9 @@ export const Compass = () => {
     const startR = size * 0.2
     const bandWidth = (outerR - startR) / BAND_COUNT
 
+    // Scale stroke with the graphic size (≈1px at 250px)
+    const lineWidth = size * 0.005
+
     const bands = Array.from({ length: BAND_COUNT }, (_, i) => ({
       innerR: startR + i * bandWidth,
       outerR: startR + (i + 1) * bandWidth,
@@ -58,7 +61,7 @@ export const Compass = () => {
       lastTime = now
 
       ctx.clearRect(0, 0, size, size)
-      ctx.lineWidth = 2
+      ctx.lineWidth = lineWidth
 
       // Muted crosshair in the center
       const cross = size * 0.05
@@ -104,7 +107,7 @@ export const Compass = () => {
   }, [inView])
 
   return (
-    <div ref={wrapperRef}>
+    <div ref={wrapperRef} className="h-full w-full">
       <canvas ref={canvasRef} className="h-full w-full" />
     </div>
   )

@@ -791,7 +791,7 @@ export default function ClientPage({
 
   return (
     <DashboardBody
-      title="Cost Insights"
+      title="Costs"
       header={
         <DateRangePicker
           date={dateRange}

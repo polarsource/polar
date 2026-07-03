@@ -1,0 +1,56 @@
+server/polar/benefit/strategies/custom/service.py
+  s_5dfd63f013225b::t_ebe85038663e36 23
+  s_5dfd63f013225b::t_b5ecbcf516d2dc 1,5
+server/polar/benefit/strategies/license_keys/service.py
+  s_5dfd63f013225b::t_d6dd1fea0eedbd 36,53-54
+  s_5dfd63f013225b::t_efd67c26c20e90 3,12
+server/polar/benefit/strategies/discord/service.py
+  s_5dfd63f013225b::t_5b2f901676082b 41
+  s_5dfd63f013225b::t_99103937a278d7 1,15
+server/polar/benefit/strategies/feature_flag/service.py
+  s_5dfd63f013225b::t_5c1af3aa66a400 25
+  s_5dfd63f013225b::t_66190590e23cbd 1,5
+server/polar/benefit/strategies/github_repository/service.py
+  s_5dfd63f013225b::t_0561be063c3013 57
+  s_5dfd63f013225b::t_2ace053feea8db 3,21
+server/polar/benefit/strategies/meter_credit/service.py
+  s_5dfd63f013225b::t_f44c4e7c87fcc5 34
+  s_5dfd63f013225b::t_609a8c453bf1b3 3,14
+server/tests/benefit/strategies/test_license_keys.py
+  s_5dfd63f013225b::t_75d520d8a99243 2-7,15-16,18-27,32-33,36,38-66,68-90,92-115,117-123,125,127
+  s_5dfd63f013225b::t_0879c131b499f2 11-14
+  s_5dfd63f013225b::t_b6120e3bafc29f 1,8-10,17,34-35,37
+  s_5dfd63f013225b::t_8576bf8cc00ee7 28-31
+  s_5dfd63f013225b::t_4f1fbe5ae72092 67,91,116,126
+  s_5dfd63f013225b::t_a8d4c49d32185d 124
+server/polar/benefit/strategies/base/service.py
+  s_5dfd63f013225b::t_c96838bf92619c 101,115-117
+  s_5dfd63f013225b::t_d9a7471c0bde5b 1,6
+server/polar/benefit/grant/service.py
+  s_5dfd63f013225b::t_66d89da9e026b2 525
+  s_5dfd63f013225b::t_acf8622a89881f 241
+server/polar/benefit/strategies/downloadables/service.py
+  s_5dfd63f013225b::t_a40bf2eaba1a70 47
+  s_5dfd63f013225b::t_cf24efcf712c62 3,16
+server/polar/benefit/strategies/slack_shared_channel/service.py
+  s_5dfd63f013225b::t_c114fada40e3e4 70
+  s_5dfd63f013225b::t_4367ff52b7030b 2,22
+server/polar/license_key/service.py
+  s_5dfd63f013225b::t_25ff933eef012d 331,334,343,353
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "ee0bfdfd19abdf1f5284e98cd89879e9eddbf807",
+  "prompts": {},
+  "sessions": {
+    "s_5dfd63f013225b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a74d7cd8-14a4-4d49-9a5a-57ee5ad2f624",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

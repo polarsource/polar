@@ -113,14 +113,18 @@ module "test" {
   registry_credential_id = render_registry_credential.ghcr.id
 
   postgres_config = {
-    host          = local.db_internal_host
-    port          = local.db_port
-    user          = local.db_user
-    password      = local.db_password
-    read_host     = local.read_replica.id
-    read_port     = local.db_port
-    read_user     = local.db_user
-    read_password = local.db_password
+    host               = module.pgbouncer[0].host
+    port               = module.pgbouncer[0].port
+    user               = local.db_user
+    password           = local.db_password
+    host_fallback      = local.db_internal_host
+    port_fallback      = local.db_port
+    read_host          = module.pgbouncer_read[0].host
+    read_port          = module.pgbouncer_read[0].port
+    read_user          = local.db_user
+    read_password      = local.db_password
+    read_host_fallback = local.read_replica.id
+    read_port_fallback = local.db_port
   }
 
   redis_config = {

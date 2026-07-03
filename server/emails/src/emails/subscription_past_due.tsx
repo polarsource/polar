@@ -56,11 +56,6 @@ SubscriptionPastDue.PreviewProps = {
   email: 'john@example.com',
   organization,
   product,
-  subscription: {
-    id: '12345',
-    status: 'past_due',
-    ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-  },
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
   payment_url: 'https://invoice.stripe.com/i/acct_123/test',
 }

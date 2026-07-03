@@ -20622,6 +20622,11 @@ export interface components {
       /** Version */
       version?: string | null
     }
+    FileRead:
+      | components['schemas']['DownloadableFileRead']
+      | components['schemas']['ProductMediaFileRead']
+      | components['schemas']['OrganizationAvatarFileRead']
+      | components['schemas']['SupportCaseAttachmentFileRead']
     /**
      * FileServiceTypes
      * @enum {string}
@@ -21639,12 +21644,7 @@ export interface components {
     /** ListResource[FileRead] */
     ListResource_FileRead_: {
       /** Items */
-      items: (
-        | components['schemas']['DownloadableFileRead']
-        | components['schemas']['ProductMediaFileRead']
-        | components['schemas']['OrganizationAvatarFileRead']
-        | components['schemas']['SupportCaseAttachmentFileRead']
-      )[]
+      items: components['schemas']['FileRead'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[LicenseKeyRead] */
@@ -41400,11 +41400,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['DownloadableFileRead']
-            | components['schemas']['ProductMediaFileRead']
-            | components['schemas']['OrganizationAvatarFileRead']
-            | components['schemas']['SupportCaseAttachmentFileRead']
+          'application/json': components['schemas']['FileRead']
         }
       }
       /** @description You don't have the permission to update this file. */
@@ -41505,11 +41501,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['DownloadableFileRead']
-            | components['schemas']['ProductMediaFileRead']
-            | components['schemas']['OrganizationAvatarFileRead']
-            | components['schemas']['SupportCaseAttachmentFileRead']
+          'application/json': components['schemas']['FileRead']
         }
       }
       /** @description You don't have the permission to update this file. */

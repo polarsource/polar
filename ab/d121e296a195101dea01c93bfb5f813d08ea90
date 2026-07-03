@@ -1,0 +1,39 @@
+server/tests/subscription/test_service.py
+  s_055272d137234c::t_f2ef0b3b43e7ae 2043-2044
+  s_055272d137234c::t_54750f46173229 2033,2042,2045,2050,2055,2063-2064,2066-2069,2075-2076
+  s_055272d137234c::t_81d889206c7180 94
+  s_055272d137234c::t_4757fff17a8ac9 2034-2041,2046-2049,2051-2054,2056-2062,2065,2070-2074,2077
+server/polar/subscription/tasks.py
+  s_055272d137234c::t_018345ef51914a 86
+  s_055272d137234c::t_48022a6402a5de 87-89
+server/tests/subscription/test_tasks.py
+  s_055272d137234c::t_bc4c7f037bf6ac 165-168
+  s_055272d137234c::t_4e54c5b24cea11 13
+  s_055272d137234c::t_96efa1c76d4cf3 153-156,158-163,169-172,174-183
+  s_055272d137234c::t_e47eb0ec26a2b3 173
+  s_055272d137234c::t_46071f4d356e2a 2,7-8
+  s_055272d137234c::t_59d2ab1381f985 18
+  s_055272d137234c::t_3cdfd463bf35b3 157,164,184-185
+server/polar/subscription/service.py
+  s_055272d137234c::t_0deb54a2f9d9fc 225
+  s_055272d137234c::t_5aca9cfca3fe09 1035-1038,1041-1049,1070,1076
+  s_055272d137234c::t_d22df3e568e81d 1039,1055-1069,1077
+  s_055272d137234c::t_1a1a17407911b8 224,226-239
+  s_055272d137234c::t_2cc43c8e18c53d 1078
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "abd121e296a195101dea01c93bfb5f813d08ea90",
+  "prompts": {},
+  "sessions": {
+    "s_055272d137234c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee94dbe5-c15a-44e2-9fb8-aed3888c188f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

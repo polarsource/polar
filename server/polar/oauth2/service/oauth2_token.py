@@ -77,7 +77,7 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
 
     async def revoke_for_sso_enforcement(
         self, session: AsyncSession, organization_id: UUID
-    ) -> int:
+    ) -> None:
         """Revoke tokens scoped to an organization once it enforces SSO.
 
         Such tokens were scoped before enforcement (so through a non-SSO session);
@@ -85,18 +85,7 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
         handled at request time and are left untouched here.
         """
         repository = OAuth2TokenRepository.from_session(session)
-        tokens = await repository.get_scoped_to_organization(organization_id)
-        now = int(time.time())
-        for token in tokens:
-            token.access_token_revoked_at = now  # pyright: ignore
-            token.refresh_token_revoked_at = now  # pyright: ignore
-            session.add(token)
-        log.info(
-            "Revoke OAuth2 tokens scoped to SSO-enforced organization",
-            organization_id=str(organization_id),
-            count=len(tokens),
-        )
-        return len(tokens)
+        await repository.revoke_scoped_to_organization(organization_id)
 
     async def revoke_leaked(
         self,

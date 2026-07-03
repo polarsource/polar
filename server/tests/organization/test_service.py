@@ -60,6 +60,7 @@ from polar.organization.schemas import (
     OrganizationSocialPlatforms,
     OrganizationUpdate,
 )
+from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
 from polar.organization.service import (
     CannotCreateOrganizationError,
     OrganizationError,
@@ -5075,13 +5076,15 @@ class TestCancelExpiredOrganizationsSubscriptions:
 @pytest.mark.asyncio
 class TestUpdateSSOEnforcement:
     @pytest.mark.auth
-    async def test_enabling_enqueues_token_revocation(
+    async def test_enabling_revokes_tokens(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        revoke_mock = mocker.patch.object(
+            oauth2_token_service, "revoke_for_sso_enforcement"
+        )
         organization.sso_enforced = False
         session.add(organization)
         await session.flush()
@@ -5090,19 +5093,18 @@ class TestUpdateSSOEnforcement:
             session, organization, OrganizationUpdate(sso_enforced=True)
         )
 
-        enqueue_job_mock.assert_called_once_with(
-            "oauth2_token.revoke_for_sso_enforcement",
-            organization_id=organization.id,
-        )
+        revoke_mock.assert_awaited_once_with(session, organization.id)
 
     @pytest.mark.auth
-    async def test_already_enforced_does_not_enqueue(
+    async def test_already_enforced_does_not_revoke(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        revoke_mock = mocker.patch.object(
+            oauth2_token_service, "revoke_for_sso_enforcement"
+        )
         organization.sso_enforced = True
         session.add(organization)
         await session.flush()
@@ -5111,4 +5113,4 @@ class TestUpdateSSOEnforcement:
             session, organization, OrganizationUpdate(sso_enforced=True)
         )
 
-        enqueue_job_mock.assert_not_called()
+        revoke_mock.assert_not_awaited()

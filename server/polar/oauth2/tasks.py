@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
 
 from .service.oauth2_token import oauth2_token as oauth2_token_service
@@ -14,12 +12,3 @@ from .service.oauth2_token import oauth2_token as oauth2_token_service
 async def oauth2_token_delete_expired() -> None:
     async with AsyncSessionMaker() as session:
         await oauth2_token_service.delete_expired(session)
-
-
-@actor(
-    actor_name="oauth2_token.revoke_for_sso_enforcement",
-    priority=TaskPriority.LOW,
-)
-async def oauth2_token_revoke_for_sso_enforcement(organization_id: UUID) -> None:
-    async with AsyncSessionMaker() as session:
-        await oauth2_token_service.revoke_for_sso_enforcement(session, organization_id)

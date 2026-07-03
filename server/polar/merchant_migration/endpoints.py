@@ -4,7 +4,7 @@ from fastapi import Depends, Query, Request
 from fastapi.responses import RedirectResponse
 from pydantic import UUID4
 
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
 from polar.models import MerchantMigration
@@ -15,6 +15,12 @@ from polar.routing import APIRouter
 
 from .auth import MerchantMigrationRead, MerchantMigrationWrite
 from .schemas import MerchantMigration as MerchantMigrationSchema
+from .schemas import PrecheckReport
+from .service import (
+    MerchantMigrationNotFound,
+    SourceNotConnected,
+    UnsupportedMigrationSource,
+)
 from .service import merchant_migration as merchant_migration_service
 
 router = APIRouter(
@@ -80,3 +86,30 @@ async def get(
     if migration is None:
         raise ResourceNotFound()
     return migration
+
+
+@router.post(
+    "/{id}/precheck",
+    response_model=PrecheckReport,
+    summary="Run Merchant Migration Pre-check",
+    responses={
+        400: {
+            "description": "The source is not connected or isn't supported.",
+            "model": SourceNotConnected.schema() | UnsupportedMigrationSource.schema(),
+        },
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+    },
+)
+async def precheck(
+    id: UUID4,
+    auth_subject: MerchantMigrationWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> PrecheckReport:
+    return await merchant_migration_service.run_precheck(session, auth_subject, id)

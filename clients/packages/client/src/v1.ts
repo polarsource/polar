@@ -4898,6 +4898,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/merchant-migrations/{id}/precheck': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Run Merchant Migration Pre-check
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['merchant-migrations:precheck']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/email-update/request': {
     parameters: {
       query?: never
@@ -22182,6 +22202,17 @@ export interface components {
       organization_id: string
       source_platform: components['schemas']['MerchantMigrationSourcePlatform']
     }
+    /** MerchantMigrationNotFound */
+    MerchantMigrationNotFound: {
+      /**
+       * Error
+       * @example MerchantMigrationNotFound
+       * @constant
+       */
+      error: 'MerchantMigrationNotFound'
+      /** Detail */
+      detail: string
+    }
     /**
      * MerchantMigrationSourcePlatform
      * @enum {string}
@@ -27976,6 +28007,28 @@ export interface components {
        */
       role?: string | null
     }
+    /** PrecheckIssue */
+    PrecheckIssue: {
+      level: components['schemas']['PrecheckIssueLevel']
+      /** Code */
+      code: string
+      /** Message */
+      message: string
+      /** Source Id */
+      source_id: string | null
+    }
+    /**
+     * PrecheckIssueLevel
+     * @enum {string}
+     */
+    PrecheckIssueLevel: 'blocker' | 'warning'
+    /** PrecheckReport */
+    PrecheckReport: {
+      /** Can Start */
+      can_start: boolean
+      /** Issues */
+      issues: components['schemas']['PrecheckIssue'][]
+    }
     /**
      * PresentmentCurrency
      * @enum {string}
@@ -30276,6 +30329,17 @@ export interface components {
        * @description Active, non-bot users in the connected Slack workspace.
        */
       users: components['schemas']['SlackWorkspaceUser'][]
+    }
+    /** SourceNotConnected */
+    SourceNotConnected: {
+      /**
+       * Error
+       * @example SourceNotConnected
+       * @constant
+       */
+      error: 'SourceNotConnected'
+      /** Detail */
+      detail: string
     }
     /**
      * StatisticsPeriod
@@ -32955,6 +33019,17 @@ export interface components {
       func: 'unique'
       /** Property */
       property: string
+    }
+    /** UnsupportedMigrationSource */
+    UnsupportedMigrationSource: {
+      /**
+       * Error
+       * @example UnsupportedMigrationSource
+       * @constant
+       */
+      error: 'UnsupportedMigrationSource'
+      /** Detail */
+      detail: string
     }
     /**
      * UserDeletionBlockedReason
@@ -47863,6 +47938,66 @@ export interface operations {
       }
     }
   }
+  'merchant-migrations:precheck': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PrecheckReport']
+        }
+      }
+      /** @description The source is not connected or isn't supported. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['SourceNotConnected']
+            | components['schemas']['UnsupportedMigrationSource']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'email-update:request_email_update': {
     parameters: {
       query?: never
@@ -61160,6 +61295,9 @@ export const pledgeStateValues: ReadonlyArray<
   'charge_disputed',
   'cancelled',
 ]
+export const precheckIssueLevelValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PrecheckIssueLevel']
+> = ['blocker', 'warning']
 export const presentmentCurrencyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PresentmentCurrency']
 > = [

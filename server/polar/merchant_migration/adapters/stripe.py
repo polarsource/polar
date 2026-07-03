@@ -55,11 +55,17 @@ class StripeAdapter:
         except stripe_lib.StripeError:
             pass
         try:
-            connected = await self._client.v1.accounts.list_async(params={"limit": 1})
-            is_connect_platform = len(connected.data) > 0
+            # Only Connect platforms may list connected accounts; a non-platform
+            # gets a permission error. So the call *succeeding* — not the number
+            # of accounts returned — is what identifies a platform (a platform
+            # with zero connected accounts still succeeds here).
+            await self._client.v1.accounts.list_async(params={"limit": 1})
+            is_connect_platform = True
         except stripe_lib.StripeError:
             pass
-        return CanonicalAccount(country=country, is_connect_platform=is_connect_platform)
+        return CanonicalAccount(
+            country=country, is_connect_platform=is_connect_platform
+        )
 
     async def _extract_products(self) -> AsyncIterator[CanonicalProduct]:
         # Buffer + group prices per (product, interval); catalogs are small,

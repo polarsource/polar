@@ -1,0 +1,57 @@
+server/polar/merchant_migration/endpoints.py
+  s_28ea492cb26938::t_8340e14b10c79a 18-22,88-110
+server/polar/merchant_migration/canonical.py
+  s_3fdbc7df8c9e35::t_fdcf0ba3b40d5d 1-100
+server/tests/merchant_migration/test_service.py
+  s_28ea492cb26938::t_369419e61f1a0c 1-2,9-13,15-18,35-43,136-241
+server/polar/merchant_migration/adapters/__init__.py
+  s_28ea492cb26938::t_6119e87f2480ee 1-4
+server/polar/merchant_migration/schemas.py
+  s_28ea492cb26938::t_1b60d83a516d4f 1-2,5,9-25
+server/tests/merchant_migration/test_precheck.py
+  s_28ea492cb26938::t_33d5f7b07fceb9 1-254
+server/polar/merchant_migration/adapters/base.py
+  s_3fdbc7df8c9e35::t_0050f8f33f2cf3 1-14
+server/polar/merchant_migration/service.py
+  s_28ea492cb26938::t_e7fcbc235425d7 18,21-22,24,65-81,104-170
+server/polar/merchant_migration/adapters/stripe.py
+  s_3fdbc7df8c9e35::t_1ef89491198305 1-198
+server/tests/merchant_migration/test_endpoints.py
+  s_aa91bef2f613ad::t_2df269751317ab 1,210-270
+server/polar/merchant_migration/precheck.py
+  s_28ea492cb26938::t_66b6702980b9af 1-266
+clients/packages/client/src/v1.ts
+  s_28ea492cb26938::t_f990db3bc624eb 4901-4920,22205-22215,28010-28031,30333-30343,47930-47978,61276-61278
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "06bdd4b7c220cf814e87117b933827f380cf06e9",
+  "prompts": {},
+  "sessions": {
+    "s_28ea492cb26938": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3cdc938-a7ce-4baa-bd20-7ff6afb5d3d6",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_3fdbc7df8c9e35": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "db41ec7a-210a-4431-b8dc-4a9a8e12678d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_aa91bef2f613ad": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "aa4d767d-ab95-4188-8c1a-945538188f23",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

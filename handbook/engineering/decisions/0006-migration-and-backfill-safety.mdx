@@ -33,10 +33,13 @@ Two things make migrations risky during a deploy:
   `SET NOT NULL` then doubles as a check that the backfill completed.
 - Keep migration PRs isolated from application code.
 
-The local-only guard is a plain inline check. `settings` comes from `polar.config`, which
-`migrations/env.py` already imports:
+The local-only guard is a plain inline check. Import `settings` in the migration (from
+`polar.config`, the same module `migrations/env.py` already imports); `is_development()` is
+true only when `POLAR_ENV=development`, which is local:
 
 ```python
+from polar.config import settings
+
 def upgrade() -> None:
     # Local dev only: deployed environments run the batched backfill first.
     if settings.is_development():

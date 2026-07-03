@@ -51,6 +51,43 @@ export const listSubscriptions = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List subscriptions of the authenticated customer.
+ *
+ * **Scopes**: `customer_portal:read` `customer_portal:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<CustomerSubscription>} A generator that yields items of type CustomerSubscription.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistSubscriptions = (client: ClientBase) => {
+  return async function* (query?: {
+    product_id?: string | string[] | null;
+    active?: boolean | null;
+    query?: string | null;
+    page?: number;
+    limit?: number;
+    sorting?: CustomerSubscriptionSortProperty[] | null;
+  }): AsyncGenerator<CustomerSubscription> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listSubscriptions(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const getSubscriptions = (client: ClientBase) => {
   /**
    * Get a subscription for the authenticated customer.
@@ -157,6 +194,7 @@ export function createSubscriptionsService(client: ClientBase) {
     get: getSubscriptions(client),
     cancel: cancelSubscriptions(client),
     update: updateSubscriptions(client),
+    iterlist: iterlistSubscriptions(client),
   };
 }
 

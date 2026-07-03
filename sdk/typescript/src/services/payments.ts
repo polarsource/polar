@@ -47,6 +47,47 @@ export const listPayments = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List payments.
+ *
+ * **Scopes**: `payments:read`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<Payment>} A generator that yields items of type Payment.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistPayments = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    checkout_id?: string | string[] | null;
+    order_id?: string | string[] | null;
+    customer_id?: string | string[] | null;
+    status?: PaymentStatus | PaymentStatus[] | null;
+    method?: string | string[] | null;
+    customer_email?: string | string[] | null;
+    page?: number;
+    limit?: number;
+    sorting?: PaymentSortProperty[] | null;
+  }): AsyncGenerator<Payment> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listPayments(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const getPayments = (client: ClientBase) => {
   /**
    * Get a payment by ID.
@@ -84,6 +125,7 @@ export function createPaymentsService(client: ClientBase) {
   return {
     list: listPayments(client),
     get: getPayments(client),
+    iterlist: iterlistPayments(client),
   };
 }
 

@@ -70,6 +70,46 @@ export const listCheckouts = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List checkout sessions.
+ *
+ * **Scopes**: `checkouts:read` `checkouts:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<Checkout>} A generator that yields items of type Checkout.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistCheckouts = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    product_id?: string | string[] | null;
+    customer_id?: string | string[] | null;
+    external_customer_id?: string | string[] | null;
+    status?: CheckoutStatus | CheckoutStatus[] | null;
+    query?: string | null;
+    page?: number;
+    limit?: number;
+    sorting?: CheckoutSortProperty[] | null;
+  }): AsyncGenerator<Checkout> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listCheckouts(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const createCheckouts = (client: ClientBase) => {
   /**
    * Create a checkout session.
@@ -278,6 +318,7 @@ export function createCheckoutsService(client: ClientBase) {
     clientGet: clientGetCheckouts(client),
     clientUpdate: clientUpdateCheckouts(client),
     clientConfirm: clientConfirmCheckouts(client),
+    iterlist: iterlistCheckouts(client),
   };
 }
 

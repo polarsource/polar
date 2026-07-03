@@ -44,6 +44,42 @@ export const listDiscounts = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List discounts.
+ *
+ * **Scopes**: `discounts:read` `discounts:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<Discount>} A generator that yields items of type Discount.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistDiscounts = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    query?: string | null;
+    page?: number;
+    limit?: number;
+    sorting?: DiscountSortProperty[] | null;
+  }): AsyncGenerator<Discount> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listDiscounts(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const createDiscounts = (client: ClientBase) => {
   /**
    * Create a discount.
@@ -171,6 +207,7 @@ export function createDiscountsService(client: ClientBase) {
     get: getDiscounts(client),
     delete: deleteDiscounts(client),
     update: updateDiscounts(client),
+    iterlist: iterlistDiscounts(client),
   };
 }
 

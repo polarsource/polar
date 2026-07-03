@@ -59,6 +59,44 @@ export const listLicenseKeys = (client: ClientBase) => {
     });
   };
 };
+/**
+ * Get license keys connected to the given organization & filters.
+ *
+ * **Scopes**: `license_keys:read` `license_keys:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<LicenseKeyRead>} A generator that yields items of type LicenseKeyRead.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {Unauthorized} Not authorized to manage license key.
+ * @throws {ResourceNotFound} License key not found.
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistLicenseKeys = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    benefit_id?: string | string[] | null;
+    status?: LicenseKeyStatus | LicenseKeyStatus[] | null;
+    page?: number;
+    limit?: number;
+  }): AsyncGenerator<LicenseKeyRead> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listLicenseKeys(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const getLicenseKeys = (client: ClientBase) => {
   /**
    * Get a license key.
@@ -266,6 +304,7 @@ export function createLicenseKeysService(client: ClientBase) {
     validate: validateLicenseKeys(client),
     activate: activateLicenseKeys(client),
     deactivate: deactivateLicenseKeys(client),
+    iterlist: iterlistLicenseKeys(client),
   };
 }
 

@@ -8,6 +8,9 @@ from polar.outputs import (
     AmbiguousExternalCustomerID as AmbiguousExternalCustomerIDModel,
 )
 from polar.outputs import (
+    CannotCreateOrganizationError as CannotCreateOrganizationErrorModel,
+)
+from polar.outputs import (
     CheckoutForbiddenError as CheckoutForbiddenErrorModel,
 )
 from polar.outputs import (
@@ -71,6 +74,9 @@ from polar.outputs import (
     ResourceNotFound as ResourceNotFoundModel,
 )
 from polar.outputs import (
+    SSOEnforcementRequiresConnection as SSOEnforcementRequiresConnectionModel,
+)
+from polar.outputs import (
     SubscriptionLocked as SubscriptionLockedModel,
 )
 from polar.outputs import (
@@ -83,6 +89,17 @@ class HTTPValidationError(PolarClientError):
     error: HTTPValidationErrorModel
 
     def __init__(self, status_code: int, error: HTTPValidationErrorModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class CannotCreateOrganizationError(PolarClientError):
+    error_type = CannotCreateOrganizationErrorModel
+    error: CannotCreateOrganizationErrorModel
+
+    def __init__(
+        self, status_code: int, error: CannotCreateOrganizationErrorModel
+    ) -> None:
         self.error = error
         super().__init__(status_code, error)
 
@@ -101,6 +118,17 @@ class NotPermitted(PolarClientError):
     error: NotPermittedModel
 
     def __init__(self, status_code: int, error: NotPermittedModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class SSOEnforcementRequiresConnection(PolarClientError):
+    error_type = SSOEnforcementRequiresConnectionModel
+    error: SSOEnforcementRequiresConnectionModel
+
+    def __init__(
+        self, status_code: int, error: SSOEnforcementRequiresConnectionModel
+    ) -> None:
         self.error = error
         super().__init__(status_code, error)
 

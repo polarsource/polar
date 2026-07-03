@@ -3,6 +3,7 @@ import type { WebhookEndpointCreate, WebhookEndpointUpdate } from "../models/inp
 import type {
   ListResourceWebhookDelivery,
   ListResourceWebhookEndpoint,
+  WebhookDelivery,
   WebhookEndpoint,
 } from "../models/outputs";
 import type { WebhookEventType } from "../models/literals";
@@ -42,6 +43,40 @@ export const listWebhookEndpointsWebhooks = (client: ClientBase) => {
     return client.parseResponse<ListResourceWebhookEndpoint>(response, "json", {
       422: HTTPValidationError,
     });
+  };
+};
+/**
+ * List webhook endpoints.
+ *
+ * **Scopes**: `webhooks:read` `webhooks:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<WebhookEndpoint>} A generator that yields items of type WebhookEndpoint.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistWebhookEndpointsWebhooks = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    page?: number;
+    limit?: number;
+  }): AsyncGenerator<WebhookEndpoint> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listWebhookEndpointsWebhooks(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
   };
 };
 export const createWebhookEndpointWebhooks = (client: ClientBase) => {
@@ -251,6 +286,48 @@ export const listWebhookDeliveriesWebhooks = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List webhook deliveries.
+ *
+ * Deliveries are all the attempts to deliver a webhook event to an endpoint.
+ *
+ * **Scopes**: `webhooks:read` `webhooks:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<WebhookDelivery>} A generator that yields items of type WebhookDelivery.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistWebhookDeliveriesWebhooks = (client: ClientBase) => {
+  return async function* (query?: {
+    endpoint_id?: string | string[] | null;
+    start_timestamp?: string | null;
+    end_timestamp?: string | null;
+    succeeded?: boolean | null;
+    query?: string | null;
+    http_code_class?: ("2xx" | "3xx" | "4xx" | "5xx") | null;
+    event_type?: WebhookEventType | WebhookEventType[] | null;
+    page?: number;
+    limit?: number;
+  }): AsyncGenerator<WebhookDelivery> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listWebhookDeliveriesWebhooks(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const redeliverWebhookEventWebhooks = (client: ClientBase) => {
   /**
    * Schedule the re-delivery of a webhook event.
@@ -294,6 +371,8 @@ export function createWebhooksService(client: ClientBase) {
     resetWebhookEndpointSecret: resetWebhookEndpointSecretWebhooks(client),
     listWebhookDeliveries: listWebhookDeliveriesWebhooks(client),
     redeliverWebhookEvent: redeliverWebhookEventWebhooks(client),
+    iterlistWebhookEndpoints: iterlistWebhookEndpointsWebhooks(client),
+    iterlistWebhookDeliveries: iterlistWebhookDeliveriesWebhooks(client),
   };
 }
 

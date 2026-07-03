@@ -2652,6 +2652,9 @@ class OrganizationUpdate(typing.TypedDict):
     default_tax_behavior: typing.NotRequired[TaxBehaviorOption | None]
     """Default tax behavior applied on products."""
 
+    sso_enforced: typing.NotRequired[bool | None]
+    """Whether members must access this organization through its SSO connection. Turning this on requires an active SSO session for this organization and at least one enabled SSO connection."""
+
 
 class ProductBenefitsUpdate(typing.TypedDict):
     """Schema to update the benefits granted by a product."""

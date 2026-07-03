@@ -1844,6 +1844,13 @@ class BenefitUpdatedEvent:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class CannotCreateOrganizationError:
+    error: typing.Literal["CannotCreateOrganizationError"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class CardPayment:
     """Schema of a payment with a card payment method."""
 
@@ -5389,6 +5396,9 @@ class EventName:
     name: str
     """The name of the event."""
 
+    label: str
+    """Human readable label of the event."""
+
     source: EventSource
 
     occurrences: int
@@ -6061,12 +6071,7 @@ class ListResourceEventTypeWithStats:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class ListResourceFileRead:
-    items: list[
-        DownloadableFileRead
-        | ProductMediaFileRead
-        | OrganizationAvatarFileRead
-        | SupportCaseAttachmentFileRead
-    ]
+    items: list[FileRead]
 
     pagination: Pagination
 
@@ -7420,6 +7425,9 @@ class Organization:
     details_submitted_at: str | None
     """When the business details were submitted for review."""
 
+    sso_enforced: bool
+    """Whether members must access this organization through its SSO connection."""
+
     default_presentment_currency: str
     """Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available."""
 
@@ -7575,6 +7583,9 @@ class OrganizationFeatureSettings:
 
     disputes_enabled: bool = False
     """If this organization has the disputes dashboard enabled"""
+
+    sso_enabled: bool = False
+    """If this organization has single sign-on configuration enabled"""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -8200,6 +8211,13 @@ class S3FileUploadPart:
     expires_at: str
 
     headers: dict[str, str] = dataclasses.field(default_factory=dict)
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class SSOEnforcementRequiresConnection:
+    error: typing.Literal["SSOEnforcementRequiresConnection"]
+
+    detail: str
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -9489,6 +9507,13 @@ Discount: typing.TypeAlias = (
     | DiscountFixedRepeatDuration
     | DiscountPercentageOnceForeverDuration
     | DiscountPercentageRepeatDuration
+)
+
+FileRead: typing.TypeAlias = (
+    DownloadableFileRead
+    | ProductMediaFileRead
+    | OrganizationAvatarFileRead
+    | SupportCaseAttachmentFileRead
 )
 
 LegacyRecurringProductPrice: typing.TypeAlias = (

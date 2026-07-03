@@ -60,6 +60,49 @@ export const listOrders = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List orders.
+ *
+ * **Scopes**: `orders:read`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<Order>} A generator that yields items of type Order.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistOrders = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    product_id?: string | string[] | null;
+    product_billing_type?: ProductBillingType | ProductBillingType[] | null;
+    discount_id?: string | string[] | null;
+    customer_id?: string | string[] | null;
+    external_customer_id?: string | string[] | null;
+    checkout_id?: string | string[] | null;
+    subscription_id?: string | string[] | null;
+    page?: number;
+    limit?: number;
+    sorting?: OrderSortProperty[] | null;
+    metadata?: MetadataQuery;
+  }): AsyncGenerator<Order> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listOrders(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const createOrders = (client: ClientBase) => {
   /**
    * Create a draft order for an off-session charge against a saved payment
@@ -334,6 +377,7 @@ export function createOrdersService(client: ClientBase) {
     invoice: invoiceOrders(client),
     generateInvoice: generateInvoiceOrders(client),
     receipt: receiptOrders(client),
+    iterlist: iterlistOrders(client),
   };
 }
 

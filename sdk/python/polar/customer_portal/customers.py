@@ -27,6 +27,7 @@ from polar.inputs import (
 )
 from polar.outputs import (
     CustomerEmailUpdateVerifyResponse,
+    CustomerPaymentMethod,
     CustomerPaymentMethodCreateResponse,
     CustomerPortalCustomer,
     ListResourceCustomerPaymentMethod,
@@ -119,6 +120,37 @@ class CustomersSync(SyncServiceBase):
         return parse_response_json(
             response, ListResourceCustomerPaymentMethod, method_errors
         )
+
+    def iter_list_payment_methods(
+        self,
+        *,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.Generator[CustomerPaymentMethod]:
+        """
+        Get saved payment methods of the authenticated customer.
+
+        Args:
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            A generator that yields items of type CustomerPaymentMethod.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list_payment_methods(
+                page=page,
+                limit=limit,
+            )
+            yield from response.items
+            if page == response.pagination.max_page:
+                break
+            page += 1
 
     def add_payment_method(
         self,
@@ -396,6 +428,38 @@ class CustomersAsync(AsyncServiceBase):
         return parse_response_json(
             response, ListResourceCustomerPaymentMethod, method_errors
         )
+
+    async def iter_list_payment_methods(
+        self,
+        *,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.AsyncGenerator[CustomerPaymentMethod]:
+        """
+        Get saved payment methods of the authenticated customer.
+
+        Args:
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            An async generator that yields items of type CustomerPaymentMethod.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list_payment_methods(
+                page=page,
+                limit=limit,
+            )
+            for item in response.items:
+                yield item
+            if page == response.pagination.max_page:
+                break
+            page += 1
 
     async def add_payment_method(
         self,

@@ -83,6 +83,51 @@ class CustomFieldsSync(SyncServiceBase):
         }
         return parse_response_json(response, ListResourceCustomField, method_errors)
 
+    def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        query: str | None = None,
+        type: CustomFieldType | builtins.list[CustomFieldType] | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[CustomFieldSortProperty] | None = ["slug"],
+    ) -> typing.Generator[CustomField]:
+        """
+        List custom fields.
+
+        **Scopes**: `custom_fields:read` `custom_fields:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            query: Filter by custom field name or slug.
+            type: Filter by custom field type.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+
+        Returns:
+            A generator that yields items of type CustomField.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list(
+                organization_id=organization_id,
+                query=query,
+                type=type,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+            )
+            yield from response.items
+            if page == response.pagination.max_page:
+                break
+            page += 1
+
     @typing.overload
     def create(
         self,
@@ -328,6 +373,52 @@ class CustomFieldsAsync(AsyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, ListResourceCustomField, method_errors)
+
+    async def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        query: str | None = None,
+        type: CustomFieldType | builtins.list[CustomFieldType] | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[CustomFieldSortProperty] | None = ["slug"],
+    ) -> typing.AsyncGenerator[CustomField]:
+        """
+        List custom fields.
+
+        **Scopes**: `custom_fields:read` `custom_fields:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            query: Filter by custom field name or slug.
+            type: Filter by custom field type.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+
+        Returns:
+            An async generator that yields items of type CustomField.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list(
+                organization_id=organization_id,
+                query=query,
+                type=type,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+            )
+            for item in response.items:
+                yield item
+            if page == response.pagination.max_page:
+                break
+            page += 1
 
     @typing.overload
     async def create(

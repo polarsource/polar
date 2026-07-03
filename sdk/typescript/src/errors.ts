@@ -2,8 +2,10 @@ import { PolarClientError } from "./base";
 import type {
   AlreadyCanceledSubscription as AlreadyCanceledSubscriptionModel,
   AmbiguousExternalCustomerID as AmbiguousExternalCustomerIDModel,
+  CannotCreateOrganizationError as CannotCreateOrganizationErrorModel,
   CheckoutForbiddenError as CheckoutForbiddenErrorModel,
   CustomerNotReady as CustomerNotReadyModel,
+  DisputeNotOpenError as DisputeNotOpenErrorModel,
   ExpiredCheckoutError as ExpiredCheckoutErrorModel,
   HTTPValidationError as HTTPValidationErrorModel,
   ManualRetryLimitExceeded as ManualRetryLimitExceededModel,
@@ -22,6 +24,7 @@ import type {
   PaymentMethodSetupFailed as PaymentMethodSetupFailedModel,
   RefundedAlready as RefundedAlreadyModel,
   ResourceNotFound as ResourceNotFoundModel,
+  SSOEnforcementRequiresConnection as SSOEnforcementRequiresConnectionModel,
   SubscriptionLocked as SubscriptionLockedModel,
   Unauthorized as UnauthorizedModel,
 } from "./models/outputs";
@@ -35,6 +38,18 @@ export class HTTPValidationError extends PolarClientError<HTTPValidationErrorMod
   ) {
     super(statusCode, error);
     this.name = "HTTPValidationError";
+  }
+}
+/**
+ * Forbidden
+ */
+export class CannotCreateOrganizationError extends PolarClientError<CannotCreateOrganizationErrorModel> {
+  constructor(
+    public readonly statusCode: 403,
+    public readonly error: CannotCreateOrganizationErrorModel,
+  ) {
+    super(statusCode, error);
+    this.name = "CannotCreateOrganizationError";
   }
 }
 /**
@@ -59,6 +74,18 @@ export class NotPermitted extends PolarClientError<NotPermittedModel> {
   ) {
     super(statusCode, error);
     this.name = "NotPermitted";
+  }
+}
+/**
+ * Cannot enforce SSO without an enabled connection.
+ */
+export class SSOEnforcementRequiresConnection extends PolarClientError<SSOEnforcementRequiresConnectionModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: SSOEnforcementRequiresConnectionModel,
+  ) {
+    super(statusCode, error);
+    this.name = "SSOEnforcementRequiresConnection";
   }
 }
 /**
@@ -171,6 +198,18 @@ export class RefundedAlready extends PolarClientError<RefundedAlreadyModel> {
   ) {
     super(statusCode, error);
     this.name = "RefundedAlready";
+  }
+}
+/**
+ * Conflict
+ */
+export class DisputeNotOpenError extends PolarClientError<DisputeNotOpenErrorModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: DisputeNotOpenErrorModel,
+  ) {
+    super(statusCode, error);
+    this.name = "DisputeNotOpenError";
   }
 }
 /**

@@ -916,7 +916,7 @@ export type PaymentTrigger =
   | "retry_payment_method_update"
   | "retry_admin";
 /**
- * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
+ * Permission
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
 /**
@@ -1156,6 +1156,7 @@ export type Scope =
   | "wallets:read"
   | "wallets:write"
   | "disputes:read"
+  | "disputes:write"
   | "customer_meters:read"
   | "customer_sessions:write"
   | "member_sessions:write"

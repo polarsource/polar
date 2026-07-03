@@ -61,6 +61,42 @@ export const listOrders = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List orders of the authenticated customer.
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<CustomerOrder>} A generator that yields items of type CustomerOrder.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistOrders = (client: ClientBase) => {
+  return async function* (query?: {
+    product_id?: string | string[] | null;
+    product_billing_type?: ProductBillingType | ProductBillingType[] | null;
+    subscription_id?: string | string[] | null;
+    query?: string | null;
+    page?: number;
+    limit?: number;
+    sorting?: CustomerOrderSortProperty[] | null;
+  }): AsyncGenerator<CustomerOrder> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listOrders(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const getOrders = (client: ClientBase) => {
   /**
    * Get an order by ID for the authenticated customer.
@@ -293,6 +329,7 @@ export function createOrdersService(client: ClientBase) {
     receipt: receiptOrders(client),
     getPaymentStatus: getPaymentStatusOrders(client),
     confirmRetryPayment: confirmRetryPaymentOrders(client),
+    iterlist: iterlistOrders(client),
   };
 }
 

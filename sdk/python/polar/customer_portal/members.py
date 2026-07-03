@@ -76,6 +76,41 @@ class MembersSync(SyncServiceBase):
             response, ListResourceCustomerPortalMember, method_errors
         )
 
+    def iter_list_members(
+        self,
+        *,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.Generator[CustomerPortalMember]:
+        """
+        List all members of the customer's team.
+
+        Only available to owners and billing managers of team customers.
+
+        Args:
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            A generator that yields items of type CustomerPortalMember.
+
+        Raises:
+            ListMembers401Error: Authentication required
+            ListMembers403Error: Not permitted - requires owner or billing manager role
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list_members(
+                page=page,
+                limit=limit,
+            )
+            yield from response.items
+            if page == response.pagination.max_page:
+                break
+            page += 1
+
     def add_member(
         self,
         **kwargs: typing.Unpack[CustomerPortalMemberCreate],
@@ -247,6 +282,42 @@ class MembersAsync(AsyncServiceBase):
         return parse_response_json(
             response, ListResourceCustomerPortalMember, method_errors
         )
+
+    async def iter_list_members(
+        self,
+        *,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.AsyncGenerator[CustomerPortalMember]:
+        """
+        List all members of the customer's team.
+
+        Only available to owners and billing managers of team customers.
+
+        Args:
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            An async generator that yields items of type CustomerPortalMember.
+
+        Raises:
+            ListMembers401Error: Authentication required
+            ListMembers403Error: Not permitted - requires owner or billing manager role
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list_members(
+                page=page,
+                limit=limit,
+            )
+            for item in response.items:
+                yield item
+            if page == response.pagination.max_page:
+                break
+            page += 1
 
     async def add_member(
         self,

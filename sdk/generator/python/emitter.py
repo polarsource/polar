@@ -236,6 +236,14 @@ class PythonEmitter(EmitterBase):
                 )
                 imports["enum"].update(_collect_enum_names(method.response, self.ir))
 
+            if method.pagination is not None:
+                imports["output"].update(
+                    _collect_type_ref_names(method.pagination.item_schema, self.ir)
+                )
+                imports["enum"].update(
+                    _collect_enum_names(method.pagination.item_schema, self.ir)
+                )
+
             # Collect type names and enum imports from path and query parameters
             for param in method.path_params + method.query_params:
                 imports["enum"].update(_collect_enum_names(param.type, self.ir))

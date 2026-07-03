@@ -47,6 +47,44 @@ export const listMeters = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List meters.
+ *
+ * **Scopes**: `meters:read` `meters:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<Meter>} A generator that yields items of type Meter.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistMeters = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    query?: string | null;
+    is_archived?: boolean | null;
+    page?: number;
+    limit?: number;
+    sorting?: MeterSortProperty[] | null;
+    metadata?: MetadataQuery;
+  }): AsyncGenerator<Meter> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listMeters(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const createMeters = (client: ClientBase) => {
   /**
    * Create a meter.
@@ -190,6 +228,7 @@ export function createMetersService(client: ClientBase) {
     get: getMeters(client),
     update: updateMeters(client),
     quantities: quantitiesMeters(client),
+    iterlist: iterlistMeters(client),
   };
 }
 

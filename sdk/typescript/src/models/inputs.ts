@@ -1,34 +1,34 @@
 import type {
-  Permission,
-  SeatTierType,
-  PresentmentCurrency,
+  CustomerType,
+  Func,
   DiscountDuration,
-  DiscountType,
-  Timeframe,
-  ProductVisibility,
-  SubType,
-  MeterUnit,
-  CustomerCancellationReason,
-  TaxBehaviorOption,
-  PaymentProcessor,
-  OrganizationSocialPlatforms,
-  PublicSubscriptionProrationBehavior,
-  MemberRole,
   RecurringInterval,
+  PaymentProcessor,
+  CountryAlpha2Input,
+  Role,
+  WebhookFormat,
+  TaxBehaviorOption,
+  PresentmentCurrency,
+  Permission,
+  PublicSubscriptionProrationBehavior,
   TrialInterval,
+  ProductVisibility,
+  MeterUnit,
+  OrganizationSocialPlatforms,
+  BenefitVisibility,
+  DiscountType,
   SubscriptionProrationBehavior,
+  WebhookEventType,
+  SeatTierType,
+  FilterOperator,
+  CustomerCancellationReason,
+  LicenseKeyStatus,
+  Timeframe,
+  SubType,
+  MemberRole,
+  TokenEndpointAuthMethod,
   Reason,
   FilterConjunction,
-  BenefitVisibility,
-  TokenEndpointAuthMethod,
-  Func,
-  CustomerType,
-  CountryAlpha2Input,
-  WebhookFormat,
-  FilterOperator,
-  Role,
-  WebhookEventType,
-  LicenseKeyStatus,
 } from "./literals";
 /**
  * AddressInput
@@ -3787,6 +3787,10 @@ export interface OrganizationUpdate {
    * Default tax behavior applied on products.
    */
   default_tax_behavior?: TaxBehaviorOption | null;
+  /**
+   * Whether members must access this organization through its SSO connection. Turning this on requires an active SSO session for this organization and at least one enabled SSO connection.
+   */
+  sso_enforced?: boolean | null;
 } /**
  * Schema to update the benefits granted by a product.
  */
@@ -3921,6 +3925,14 @@ You can store up to **50 key-value pairs**.
    * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
    */
   recurring_interval_count?: number;
+  /**
+   * Optional meter cycle, independent of the billing interval. When set, overage settlement, meter resets and meter-credit grants run on this cadence rather than the billing interval — e.g. yearly billing with monthly credits. It must evenly divide the billing interval. If `None`, metered concerns follow the billing interval. **Once set, it can't be changed.**
+   */
+  meter_interval?: RecurringInterval | null;
+  /**
+   * Number of meter interval units. Defaults to 1 when `meter_interval` is set. Ignored when `meter_interval` is `None`.
+   */
+  meter_interval_count?: number | null;
 } /**
  * Schema to create a file to be used as a product media file.
  */

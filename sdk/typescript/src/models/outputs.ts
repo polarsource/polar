@@ -1,51 +1,51 @@
 import type {
-  BillingAddressFieldMode,
-  Permission,
-  SeatTierType,
-  FileServiceTypes,
-  Scope,
-  CheckoutStatus,
-  EventSource,
-  DisputeStatus,
-  DiscountDuration,
-  DiscountType,
-  Timeframe,
-  ProductVisibility,
-  SubscriptionStatus,
+  CustomerType,
   Status,
-  SubType,
-  MeterUnit,
-  CustomerCancellationReason,
-  TaxBehaviorOption,
-  PaymentProcessor,
-  CountryAlpha2,
-  OrganizationSocialPlatforms,
-  RefundStatus,
-  OrganizationStatus,
-  OrderBillingReason,
-  PublicSubscriptionProrationBehavior,
-  RefundReason,
-  MemberRole,
+  Func,
+  TokenType,
+  DiscountDuration,
+  SubscriptionStatus,
+  MetricType,
+  OrderStatus,
   RecurringInterval,
+  FileServiceTypes,
+  PaymentProcessor,
+  OrderBillingReason,
+  WebhookFormat,
+  SeatStatus,
+  TaxBehavior,
+  Scope,
+  TaxBehaviorOption,
+  PublicSubscriptionProrationBehavior,
+  Permission,
+  PaymentStatus,
+  TrialInterval,
+  ProductPriceSource,
+  ProductVisibility,
+  CountryAlpha2,
+  CheckoutStatus,
+  MeterUnit,
+  PaymentTrigger,
+  OrganizationSocialPlatforms,
+  BenefitVisibility,
+  DiscountType,
+  BillingAddressFieldMode,
   BenefitType,
   SubscriptionProrationBehavior,
-  TrialInterval,
-  FilterConjunction,
-  BenefitVisibility,
-  SeatStatus,
-  Func,
-  PaymentTrigger,
-  ProductPriceSource,
-  CustomerType,
-  MetricType,
-  WebhookFormat,
-  FilterOperator,
-  PaymentStatus,
-  TaxBehavior,
-  OrderStatus,
   WebhookEventType,
+  RefundReason,
+  EventSource,
+  SeatTierType,
+  RefundStatus,
+  FilterOperator,
+  CustomerCancellationReason,
   LicenseKeyStatus,
-  TokenType,
+  Timeframe,
+  SubType,
+  OrganizationStatus,
+  MemberRole,
+  FilterConjunction,
+  DisputeStatus,
 } from "./literals";
 /**
  * Address
@@ -2469,6 +2469,18 @@ export interface BenefitUpdatedEvent {
    */
   metadata: BenefitGrantMetadata;
 } /**
+ * CannotCreateOrganizationError
+ */
+export interface CannotCreateOrganizationError {
+  /**
+   * error
+   */
+  error: "CannotCreateOrganizationError";
+  /**
+   * detail
+   */
+  detail: string;
+} /**
  * Schema of a payment with a card payment method.
  */
 export interface CardPayment {
@@ -3177,6 +3189,14 @@ export interface CheckoutLinkProduct {
    */
   recurring_interval_count: number | null;
   /**
+   * The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval.
+   */
+  meter_interval: RecurringInterval | null;
+  /**
+   * Number of meter interval units. None when no meter cycle is set.
+   */
+  meter_interval_count: number | null;
+  /**
    * Whether the product is a subscription.
    */
   is_recurring: boolean;
@@ -3280,6 +3300,14 @@ export interface CheckoutProduct {
    * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
    */
   recurring_interval_count: number | null;
+  /**
+   * The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval.
+   */
+  meter_interval: RecurringInterval | null;
+  /**
+   * Number of meter interval units. None when no meter cycle is set.
+   */
+  meter_interval_count: number | null;
   /**
    * Whether the product is a subscription.
    */
@@ -5261,6 +5289,14 @@ export interface CustomerOrderProduct {
    */
   recurring_interval_count: number | null;
   /**
+   * The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval.
+   */
+  meter_interval: RecurringInterval | null;
+  /**
+   * Number of meter interval units. None when no meter cycle is set.
+   */
+  meter_interval_count: number | null;
+  /**
    * Whether the product is a subscription.
    */
   is_recurring: boolean;
@@ -5340,6 +5376,14 @@ export interface CustomerOrderSubscription {
    * The end timestamp of the current billing period.
    */
   current_period_end: string;
+  /**
+   * The start timestamp of the current meter period, if the product has a meter cycle set. Metered credits are granted and overage is settled on this cadence.
+   */
+  current_meter_period_start: string | null;
+  /**
+   * The end timestamp of the current meter period, if the product has a meter cycle set. This is when credits next renew.
+   */
+  current_meter_period_end: string | null;
   /**
    * The start timestamp of the trial period, if any.
    */
@@ -5728,6 +5772,14 @@ export interface CustomerProduct {
    * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
    */
   recurring_interval_count: number | null;
+  /**
+   * The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval.
+   */
+  meter_interval: RecurringInterval | null;
+  /**
+   * Number of meter interval units. None when no meter cycle is set.
+   */
+  meter_interval_count: number | null;
   /**
    * Whether the product is a subscription.
    */
@@ -6280,6 +6332,14 @@ export interface CustomerSubscription {
    */
   current_period_end: string;
   /**
+   * The start timestamp of the current meter period, if the product has a meter cycle set. Metered credits are granted and overage is settled on this cadence.
+   */
+  current_meter_period_start: string | null;
+  /**
+   * The end timestamp of the current meter period, if the product has a meter cycle set. This is when credits next renew.
+   */
+  current_meter_period_end: string | null;
+  /**
    * The start timestamp of the trial period, if any.
    */
   trial_start: string | null;
@@ -6455,6 +6515,14 @@ export interface CustomerSubscriptionProduct {
    * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
    */
   recurring_interval_count: number | null;
+  /**
+   * The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval.
+   */
+  meter_interval: RecurringInterval | null;
+  /**
+   * Number of meter interval units. None when no meter cycle is set.
+   */
+  meter_interval_count: number | null;
   /**
    * Whether the product is a subscription.
    */
@@ -7292,6 +7360,14 @@ export interface DiscountProduct {
    */
   recurring_interval_count: number | null;
   /**
+   * The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval.
+   */
+  meter_interval: RecurringInterval | null;
+  /**
+   * Number of meter interval units. None when no meter cycle is set.
+   */
+  meter_interval_count: number | null;
+  /**
    * Whether the product is a subscription.
    */
   is_recurring: boolean;
@@ -7446,6 +7522,18 @@ export interface DisputeCustomer {
    */
   avatar_url: string | null;
 } /**
+ * DisputeNotOpenError
+ */
+export interface DisputeNotOpenError {
+  /**
+   * error
+   */
+  error: "DisputeNotOpenError";
+  /**
+   * detail
+   */
+  detail: string;
+} /**
  * File to be associated with the downloadables benefit.
  */
 export interface DownloadableFileRead {
@@ -7549,6 +7637,10 @@ export interface EventName {
    * The name of the event.
    */
   name: string;
+  /**
+   * Human readable label of the event.
+   */
+  label: string;
   /**
    * source
    */
@@ -8632,12 +8724,7 @@ export interface ListResourceFileRead {
   /**
    * items
    */
-  items: (
-    | DownloadableFileRead
-    | ProductMediaFileRead
-    | OrganizationAvatarFileRead
-    | SupportCaseAttachmentFileRead
-  )[];
+  items: FileRead[];
   /**
    * pagination
    */
@@ -10429,6 +10516,14 @@ export interface OrderProduct {
    */
   recurring_interval_count: number | null;
   /**
+   * The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval.
+   */
+  meter_interval: RecurringInterval | null;
+  /**
+   * Number of meter interval units. None when no meter cycle is set.
+   */
+  meter_interval_count: number | null;
+  /**
    * Whether the product is a subscription.
    */
   is_recurring: boolean;
@@ -10572,6 +10667,14 @@ export interface OrderSubscription {
    * The end timestamp of the current billing period.
    */
   current_period_end: string;
+  /**
+   * The start timestamp of the current meter period, if the product has a meter cycle set. Metered credits are granted and overage is settled on this cadence.
+   */
+  current_meter_period_start: string | null;
+  /**
+   * The end timestamp of the current meter period, if the product has a meter cycle set. This is when credits next renew.
+   */
+  current_meter_period_end: string | null;
   /**
    * The start timestamp of the trial period, if any.
    */
@@ -10764,6 +10867,10 @@ export interface Organization {
    * When the business details were submitted for review.
    */
   details_submitted_at: string | null;
+  /**
+   * Whether members must access this organization through its SSO connection.
+   */
+  sso_enforced: boolean;
   /**
    * Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available.
    */
@@ -11016,6 +11123,10 @@ export interface OrganizationFeatureSettings {
    * If this organization has the disputes dashboard enabled
    */
   disputes_enabled?: boolean;
+  /**
+   * If this organization has single sign-on configuration enabled
+   */
+  sso_enabled?: boolean;
 } /**
  * OrganizationNotReadyForPayments
  */
@@ -11344,6 +11455,14 @@ export interface Product {
    * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
    */
   recurring_interval_count: number | null;
+  /**
+   * The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval.
+   */
+  meter_interval: RecurringInterval | null;
+  /**
+   * Number of meter interval units. None when no meter cycle is set.
+   */
+  meter_interval_count: number | null;
   /**
    * Whether the product is a subscription.
    */
@@ -11937,6 +12056,18 @@ export interface S3FileUploadPart {
    */
   headers?: Record<string, string>;
 } /**
+ * SSOEnforcementRequiresConnection
+ */
+export interface SSOEnforcementRequiresConnection {
+  /**
+   * error
+   */
+  error: "SSOEnforcementRequiresConnection";
+  /**
+   * detail
+   */
+  detail: string;
+} /**
  * Read-only information about a seat claim invitation.
 Safe for email scanners - no side effects when fetched.
  */
@@ -12025,6 +12156,14 @@ export interface Subscription {
    * The end timestamp of the current billing period.
    */
   current_period_end: string;
+  /**
+   * The start timestamp of the current meter period, if the product has a meter cycle set. Metered credits are granted and overage is settled on this cadence.
+   */
+  current_meter_period_start: string | null;
+  /**
+   * The end timestamp of the current meter period, if the product has a meter cycle set. This is when credits next renew.
+   */
+  current_meter_period_end: string | null;
   /**
    * The start timestamp of the trial period, if any.
    */
@@ -13790,6 +13929,14 @@ export type Discount =
   | DiscountFixedRepeatDuration
   | DiscountPercentageOnceForeverDuration
   | DiscountPercentageRepeatDuration;
+/**
+ * FileRead
+ */
+export type FileRead =
+  | DownloadableFileRead
+  | ProductMediaFileRead
+  | OrganizationAvatarFileRead
+  | SupportCaseAttachmentFileRead;
 /**
  * LegacyRecurringProductPrice
  */

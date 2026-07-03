@@ -354,6 +354,18 @@ class TypeScriptEmitter(EmitterBase):
             for error in method.errors:
                 imports["errors"].add(error.name)
 
+            # Collect imports for pagination item schemas
+            if method.pagination is not None:
+                imports["outputs"].update(
+                    _collect_type_ref_names(method.pagination.item_schema, self.ir)
+                )
+                imports["outputs"].update(
+                    collect_union_imports(method.pagination.item_schema, self.ir)
+                )
+                imports["literals"].update(
+                    _collect_enum_names(method.pagination.item_schema, self.ir)
+                )
+
         # Collect sub-service imports
         for sub_service in service.services:
             imports["services"].add(sub_service.name)

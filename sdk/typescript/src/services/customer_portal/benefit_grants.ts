@@ -54,6 +54,47 @@ export const listBenefitGrants = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List benefits grants of the authenticated customer.
+ *
+ * **Scopes**: `customer_portal:read` `customer_portal:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<CustomerBenefitGrant>} A generator that yields items of type CustomerBenefitGrant.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistBenefitGrants = (client: ClientBase) => {
+  return async function* (query?: {
+    query?: string | null;
+    type?: BenefitType | BenefitType[] | null;
+    benefit_id?: string | string[] | null;
+    checkout_id?: string | string[] | null;
+    order_id?: string | string[] | null;
+    subscription_id?: string | string[] | null;
+    member_id?: string | string[] | null;
+    page?: number;
+    limit?: number;
+    sorting?: CustomerBenefitGrantSortProperty[] | null;
+  }): AsyncGenerator<CustomerBenefitGrant> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listBenefitGrants(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const getBenefitGrants = (client: ClientBase) => {
   /**
    * Get a benefit grant by ID for the authenticated customer.
@@ -127,6 +168,7 @@ export function createBenefitGrantsService(client: ClientBase) {
     list: listBenefitGrants(client),
     get: getBenefitGrants(client),
     update: updateBenefitGrants(client),
+    iterlist: iterlistBenefitGrants(client),
   };
 }
 

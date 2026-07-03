@@ -548,6 +548,10 @@ class OrganizationService:
                 session, organization, update_schema.default_presentment_currency
             )
 
+        sso_newly_enforced = (
+            update_schema.sso_enforced is True and not organization.sso_enforced
+        )
+
         update_dict = update_schema.model_dump(
             by_alias=True,
             exclude_unset=True,
@@ -565,6 +569,12 @@ class OrganizationService:
             )
 
         organization = await repository.update(organization, update_dict=update_dict)
+
+        if sso_newly_enforced:
+            enqueue_job(
+                "oauth2_token.revoke_for_sso_enforcement",
+                organization_id=organization.id,
+            )
 
         await self._after_update(session, organization)
         return organization

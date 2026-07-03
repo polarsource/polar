@@ -1,5 +1,6 @@
 import time
 from typing import cast
+from uuid import UUID
 
 import structlog
 from sqlalchemy import select
@@ -73,6 +74,29 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
         if APP_CLIENT_ID is not None:
             exclude_client_ids.append(APP_CLIENT_ID)
         await repository.delete_expired(exclude_client_ids=exclude_client_ids)
+
+    async def revoke_for_sso_enforcement(
+        self, session: AsyncSession, organization_id: UUID
+    ) -> int:
+        """Revoke tokens scoped to an organization once it enforces SSO.
+
+        Such tokens were scoped before enforcement (so through a non-SSO session);
+        revoking forces the app to re-consent through SSO. Unrestricted tokens are
+        handled at request time and are left untouched here.
+        """
+        repository = OAuth2TokenRepository.from_session(session)
+        tokens = await repository.get_scoped_to_organization(organization_id)
+        now = int(time.time())
+        for token in tokens:
+            token.access_token_revoked_at = now  # pyright: ignore
+            token.refresh_token_revoked_at = now  # pyright: ignore
+            session.add(token)
+        log.info(
+            "Revoke OAuth2 tokens scoped to SSO-enforced organization",
+            organization_id=str(organization_id),
+            count=len(tokens),
+        )
+        return len(tokens)
 
     async def revoke_leaked(
         self,

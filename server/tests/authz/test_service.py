@@ -5,7 +5,7 @@ import pytest
 
 from polar.auth.models import AuthSubject
 from polar.authz.service import get_accessible_org_ids, get_accessible_organization
-from polar.models import Organization, PersonalAccessToken, User
+from polar.models import OAuth2Token, Organization, PersonalAccessToken, User
 from polar.models.organization import OrganizationStatus
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
@@ -179,7 +179,7 @@ class TestGetAccessibleOrgIdsSSOEnforced:
         assert result == {organization.id}
 
     @pytest.mark.auth
-    async def test_token_credential_exempt(
+    async def test_personal_access_token_exempt(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
@@ -188,8 +188,42 @@ class TestGetAccessibleOrgIdsSSOEnforced:
     ) -> None:
         organization.sso_enforced = True
         await session.flush()
-        # PAT / OAuth credentials are not user sessions and stay exempt.
+        # A PAT is the user's own credential and stays exempt from SSO enforcement.
         auth_subject.session = MagicMock(spec=PersonalAccessToken)
+
+        result = await get_accessible_org_ids(session, auth_subject)
+        assert result == {organization.id}
+
+    @pytest.mark.auth
+    async def test_unrestricted_oauth2_token_denied_enforced_org(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.sso_enforced = True
+        await session.flush()
+        # An unrestricted OAuth2 token (no down-scope) can't reach enforced orgs.
+        auth_subject.session = MagicMock(spec=OAuth2Token)
+        auth_subject.organization_ids = None
+
+        result = await get_accessible_org_ids(session, auth_subject)
+        assert result == set()
+
+    @pytest.mark.auth
+    async def test_scoped_oauth2_token_allowed_enforced_org(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.sso_enforced = True
+        await session.flush()
+        # A token explicitly scoped to the org (only issuable via SSO) is allowed.
+        auth_subject.session = MagicMock(spec=OAuth2Token)
+        auth_subject.organization_ids = frozenset({organization.id})
 
         result = await get_accessible_org_ids(session, auth_subject)
         assert result == {organization.id}

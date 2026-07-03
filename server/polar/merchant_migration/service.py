@@ -17,11 +17,11 @@ from polar.models.merchant_migration import (
 )
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
+from polar.worker import enqueue_job
 
 from .adapters import SourceAdapter, StripeAdapter
 from .precheck import precheck_engine
 from .repository import MerchantMigrationRepository
-from .schemas import PrecheckReport
 from .stripe_oauth import (
     StripeAppNotConfigured,
     StripeOAuthError,
@@ -101,14 +101,15 @@ class MerchantMigrationService:
         )
         return await repository.get_one_or_none(statement)
 
-    async def run_precheck(
+    async def enqueue_precheck(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
-    ) -> PrecheckReport:
-        """Read the connected source, normalize it, and report whether it can be
-        imported. Advances the migration from source setup to the precheck step.
+    ) -> MerchantMigration:
+        """Validate the request and schedule the precheck. Reading the source can
+        be slow on large accounts, so the extraction and evaluation run in a
+        background task; the report lands on ``migration.precheck_report``.
         """
         repository = MerchantMigrationRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).where(
@@ -123,6 +124,18 @@ class MerchantMigrationService:
             migration.organization_id,
             OrganizationPermission.organization_manage,
         )
+        self._validate_source(migration)
+
+        enqueue_job("merchant_migration.precheck", migration_id=migration.id)
+        return migration
+
+    async def execute_precheck(self, session: AsyncSession, migration_id: UUID) -> None:
+        """Background body: read the connected source, run the precheck, store the
+        report, and advance the migration to the precheck step."""
+        repository = MerchantMigrationRepository.from_session(session)
+        migration = await repository.get_by_id(migration_id)
+        if migration is None:
+            raise MerchantMigrationNotFound()
 
         organization = await OrganizationRepository.from_session(session).get_by_id(
             migration.organization_id
@@ -134,15 +147,23 @@ class MerchantMigrationService:
         report = await precheck_engine.run(adapter.extract(), organization)
 
         await repository.update(
-            migration, update_dict={"step": MerchantMigrationStep.pre_check}
+            migration,
+            update_dict={
+                "precheck_report": report.model_dump(mode="json"),
+                "step": MerchantMigrationStep.pre_check,
+            },
         )
-        return report
+
+    def _validate_source(self, migration: MerchantMigration) -> None:
+        if migration.source_platform != MerchantMigrationSourcePlatform.stripe:
+            raise UnsupportedMigrationSource(migration.source_platform)
+        if not migration.source_credentials.get("refresh_token_encrypted"):
+            raise SourceNotConnected()
 
     async def _build_adapter(
         self, session: AsyncSession, migration: MerchantMigration
     ) -> SourceAdapter:
-        if migration.source_platform != MerchantMigrationSourcePlatform.stripe:
-            raise UnsupportedMigrationSource(migration.source_platform)
+        self._validate_source(migration)
         access_token = await self._refresh_stripe_access_token(session, migration)
         return StripeAdapter(access_token)
 

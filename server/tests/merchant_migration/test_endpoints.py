@@ -1,4 +1,3 @@
-from collections.abc import AsyncIterator
 from urllib.parse import parse_qs, urlparse
 from uuid import uuid4
 
@@ -217,7 +216,7 @@ class TestPrecheck:
         assert response.status_code == 401
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
-    async def test_runs_and_returns_report(
+    async def test_schedules_precheck(
         self,
         client: AsyncClient,
         session: AsyncSession,
@@ -230,15 +229,7 @@ class TestPrecheck:
             "polar.merchant_migration.service.stripe_oauth.exchange_code",
             return_value=build_stripe_oauth_token(),
         )
-        mocker.patch(
-            "polar.merchant_migration.service.stripe_oauth.refresh",
-            return_value=build_stripe_oauth_token("rt_new"),
-        )
-        adapter = mocker.MagicMock()
-        adapter.extract.return_value = _empty_extract()
-        mocker.patch(
-            "polar.merchant_migration.service.StripeAdapter", return_value=adapter
-        )
+        enqueue_job = mocker.patch("polar.merchant_migration.service.enqueue_job")
 
         authorize = await client.get(
             "/v1/merchant-migrations/stripe/authorize",
@@ -257,15 +248,13 @@ class TestPrecheck:
         assert migration is not None
 
         response = await client.post(f"/v1/merchant-migrations/{migration.id}/precheck")
-        assert response.status_code == 200
+        assert response.status_code == 202
         json_body = response.json()
-        assert json_body["can_start"] is True
-        assert json_body["issues"] == []
-
-
-async def _empty_extract() -> AsyncIterator[object]:
-    return
-    yield
+        assert json_body["id"] == str(migration.id)
+        assert json_body["precheck_report"] is None
+        enqueue_job.assert_called_once_with(
+            "merchant_migration.precheck", migration_id=migration.id
+        )
 
 
 async def _create_migration(

@@ -26,3 +26,5 @@ class PrecheckReport(Schema):
 class MerchantMigration(IDSchema, TimestampedSchema):
     organization_id: UUID4
     source_platform: MerchantMigrationSourcePlatform
+    # Null until the precheck task has run at least once.
+    precheck_report: PrecheckReport | None = None

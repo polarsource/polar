@@ -22201,6 +22201,7 @@ export interface components {
        */
       organization_id: string
       source_platform: components['schemas']['MerchantMigrationSourcePlatform']
+      precheck_report?: components['schemas']['PrecheckReport'] | null
     }
     /** MerchantMigrationNotFound */
     MerchantMigrationNotFound: {
@@ -47949,13 +47950,13 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description Successful Response */
-      200: {
+      /** @description Pre-check scheduled. */
+      202: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['PrecheckReport']
+          'application/json': components['schemas']['MerchantMigration']
         }
       }
       /** @description The source is not connected or isn't supported. */

@@ -63,6 +63,11 @@ class MerchantMigration(RecordModel):
     pan_transfer_steps: Mapped[list[dict[str, Any]]] = mapped_column(
         JSONB, nullable=False, default=list
     )
+    # The latest PrecheckReport (a serialized schemas.PrecheckReport), computed by
+    # the precheck background task. Null until the first run completes.
+    precheck_report: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB, nullable=True, default=None
+    )
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:

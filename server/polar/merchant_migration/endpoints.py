@@ -15,7 +15,6 @@ from polar.routing import APIRouter
 
 from .auth import MerchantMigrationRead, MerchantMigrationWrite
 from .schemas import MerchantMigration as MerchantMigrationSchema
-from .schemas import PrecheckReport
 from .service import (
     MerchantMigrationNotFound,
     SourceNotConnected,
@@ -90,9 +89,11 @@ async def get(
 
 @router.post(
     "/{id}/precheck",
-    response_model=PrecheckReport,
+    response_model=MerchantMigrationSchema,
+    status_code=202,
     summary="Run Merchant Migration Pre-check",
     responses={
+        202: {"description": "Pre-check scheduled."},
         400: {
             "description": "The source is not connected or isn't supported.",
             "model": SourceNotConnected.schema() | UnsupportedMigrationSource.schema(),
@@ -111,5 +112,5 @@ async def precheck(
     id: UUID4,
     auth_subject: MerchantMigrationWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> PrecheckReport:
-    return await merchant_migration_service.run_precheck(session, auth_subject, id)
+) -> MerchantMigration:
+    return await merchant_migration_service.enqueue_precheck(session, auth_subject, id)

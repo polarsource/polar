@@ -37,6 +37,7 @@ dev web                 # Start frontend (port 3000)
 dev web --port 3001     # Start on custom port
 dev worker              # Start background job worker
 dev switch my-branch    # Stop web, checkout branch, wipe .next, relaunch web
+dev switch -b my-branch # ...creating the branch (git checkout -b)
 dev switch -i my-branch # ...and reinstall JS deps (skips package prebuilds)
 ```
 

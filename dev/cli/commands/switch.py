@@ -60,6 +60,10 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     @app.command()
     def switch(
         branch: Annotated[str, typer.Argument(help="Branch to switch to")],
+        create: Annotated[
+            bool,
+            typer.Option("--create", "-b", help="Create the branch (git checkout -b)"),
+        ] = False,
         install: Annotated[
             bool,
             typer.Option(
@@ -110,8 +114,11 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             _kill_port(DEFAULT_WEB_PORT)
             _wait_port_free(DEFAULT_WEB_PORT, timeout=3.0)
 
-        console.print(f"[blue]Switching to[/blue] [bold]{branch}[/bold]")
-        result = run_command(["git", "checkout", branch], cwd=ROOT_DIR)
+        checkout = ["git", "checkout", *(["-b"] if create else []), branch]
+        console.print(
+            f"[blue]{'Creating' if create else 'Switching to'}[/blue] [bold]{branch}[/bold]"
+        )
+        result = run_command(checkout, cwd=ROOT_DIR)
         if not result or result.returncode != 0:
             console.print("[red]Checkout failed[/red]")
             relaunch()

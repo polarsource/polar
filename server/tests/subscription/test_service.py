@@ -2251,10 +2251,9 @@ class TestMarkActive:
         updated = await subscription_service.mark_active(session, subscription)
 
         assert updated.status == SubscriptionStatus.active
-        # Frozen-window usage is billed (force) and the meter reset before the
-        # credits are re-granted.
+        # Frozen-window usage is settled and the meter reset before the credits are
+        # re-granted.
         settle_mock.assert_called_once()
-        assert settle_mock.call_args.kwargs.get("force") is True
         reset_mock.assert_called_once()
 
     async def test_recovery_skips_meter_settlement_for_non_meter_product(

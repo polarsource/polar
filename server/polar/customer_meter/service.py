@@ -244,23 +244,20 @@ class CustomerMeterService:
 
         return await repository.update(customer_meter), True
 
-    async def _get_window_usage_and_credits(
+    async def get_rollover_units(
         self, session: AsyncSession, customer: Customer, meter: Meter
-    ) -> tuple[float, int, int] | None:
-        """
-        Current-window usage and credits: ``(usage_units, non_rollover_credits,
-        rollover_credits)``, or ``None`` when the window is empty. Shared by
-        ``get_rollover_units`` (positive balance) and ``get_overage_units``
-        (negative balance).
-        """
+    ) -> int:
         last_event = await self._get_latest_current_window_event(
             session, customer, meter
         )
+
         if last_event is None:
-            return None
+            return 0
 
         event_repository = EventRepository.from_session(session)
+
         usage_units = await self._get_usage_quantity(session, customer, meter)
+
         credit_events = await self._get_credit_events(customer, meter, event_repository)
         non_rollover_units = non_negative_running_sum(
             event.user_metadata["units"]
@@ -272,35 +269,9 @@ class CustomerMeterService:
             for event in credit_events
             if event.user_metadata["rollover"]
         )
-        return usage_units, non_rollover_units, rollover_units
-
-    async def get_rollover_units(
-        self, session: AsyncSession, customer: Customer, meter: Meter
-    ) -> int:
-        window = await self._get_window_usage_and_credits(session, customer, meter)
-        if window is None:
-            return 0
-        usage_units, non_rollover_units, rollover_units = window
         balance = non_rollover_units + rollover_units - usage_units
-        return max(0, min(int(balance), rollover_units))
 
-    async def get_overage_units(
-        self, session: AsyncSession, customer: Customer, meter: Meter
-    ) -> Decimal:
-        """
-        Units consumed in the current window beyond all credits — the symmetric
-        twin of ``get_rollover_units``. Rollover carries the positive balance
-        (unused credits) forward; this returns the negative balance (unbilled
-        overage) so it can be carried forward as a billable debt.
-        """
-        window = await self._get_window_usage_and_credits(session, customer, meter)
-        if window is None:
-            return Decimal(0)
-        usage_units, non_rollover_units, rollover_units = window
-        overage = Decimal(str(usage_units)) - Decimal(
-            non_rollover_units + rollover_units
-        )
-        return max(Decimal(0), overage)
+        return max(0, min(int(balance), rollover_units))
 
     async def _get_latest_current_window_event(
         self,

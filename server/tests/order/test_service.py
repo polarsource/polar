@@ -2264,43 +2264,28 @@ class TestSettleMeterCycleOrder:
             payment_method=payment_method,
         )
 
-    async def test_accumulates_sub_minimum_without_settling(
+    async def _add_metered_usage(
         self,
-        mocker: MockerFixture,
         save_fixture: SaveFixture,
-        session: AsyncSession,
         organization: Organization,
         customer: Customer,
+        subscription: Subscription,
+        *,
+        units: int,
     ) -> None:
-        # 10 cents / unit; 2 units = $0.20, below the $0.50 minimum.
-        subscription = await self._metered_subscription(
-            save_fixture, organization, customer, unit_amount=Decimal(10)
-        )
-        subscription_meter = subscription.meters[0]
-        assert subscription_meter.carried_units == 0
+        # The default meter counts events named METER_TEST_EVENT, so each event is
+        # one unit. Each usage event gets a pending metered billing entry.
+        metered_price = subscription.subscription_product_prices[0]
+        for _ in range(units):
+            event = await create_event(
+                save_fixture, organization=organization, customer=customer
+            )
+            await save_fixture(
+                BillingEntry.from_metered_event(customer, metered_price, event)
+            )
 
-        mocker.patch(
-            "polar.order.service.customer_meter_service.get_overage_units",
-            new=AsyncMock(return_value=Decimal(2)),
-        )
-
-        # First boundary: carries, no order.
-        order = await order_service.settle_meter_cycle_order(
-            session, subscription, utc_now()
-        )
-        assert order is None
-        assert subscription_meter.carried_units == Decimal(2)
-
-        # Second boundary: accumulates further, still below the minimum.
-        order = await order_service.settle_meter_cycle_order(
-            session, subscription, utc_now()
-        )
-        assert order is None
-        assert subscription_meter.carried_units == Decimal(4)
-
-    async def test_settles_when_carried_clears_minimum(
+    async def test_settles_usage(
         self,
-        mocker: MockerFixture,
         calculate_tax_mock: MagicMock,
         enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
@@ -2313,7 +2298,7 @@ class TestSettleMeterCycleOrder:
             organization=organization,
             billing_address=Address(country=CountryAlpha2("FR")),
         )
-        # 30 cents / unit; 2 units = $0.60, clears the $0.50 minimum.
+        # 30 cents / unit; 2 units = $0.60.
         subscription = await self._metered_subscription(
             save_fixture,
             organization,
@@ -2321,28 +2306,71 @@ class TestSettleMeterCycleOrder:
             unit_amount=Decimal(30),
             payment_method=payment_method,
         )
-        subscription_meter = subscription.meters[0]
-
-        mocker.patch(
-            "polar.order.service.customer_meter_service.get_overage_units",
-            new=AsyncMock(return_value=Decimal(2)),
+        await self._add_metered_usage(
+            save_fixture, organization, customer, subscription, units=2
         )
 
-        order = await order_service.settle_meter_cycle_order(
-            session, subscription, utc_now()
-        )
+        order = await order_service.settle_meter_cycle_order(session, subscription)
 
         assert order is not None
         assert (
             order.billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
         )
         assert order.subtotal_amount == 60
-        # Carry cleared once billed.
-        assert subscription_meter.carried_units == 0
+
+    async def test_sub_minimum_still_creates_order(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        payment_method: PaymentMethod,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        # 10 cents / unit; 2 units = $0.20, below the $0.50 minimum. It's no longer
+        # carried — the order is still created, and the standard order flow routes
+        # the sub-minimum amount to the customer balance.
+        subscription = await self._metered_subscription(
+            save_fixture,
+            organization,
+            customer,
+            unit_amount=Decimal(10),
+            payment_method=payment_method,
+        )
+        await self._add_metered_usage(
+            save_fixture, organization, customer, subscription, units=2
+        )
+
+        order = await order_service.settle_meter_cycle_order(session, subscription)
+
+        assert order is not None
+        assert (
+            order.billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
+        )
+        assert order.subtotal_amount == 20
+
+    async def test_no_pending_usage_returns_none(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        subscription = await self._metered_subscription(
+            save_fixture, organization, customer, unit_amount=Decimal(30)
+        )
+
+        order = await order_service.settle_meter_cycle_order(session, subscription)
+
+        assert order is None
 
     async def test_percentage_discount_applies_to_meter_cycle_order(
         self,
-        mocker: MockerFixture,
         calculate_tax_mock: MagicMock,
         enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
@@ -2361,6 +2389,9 @@ class TestSettleMeterCycleOrder:
             customer,
             unit_amount=Decimal(30),
             payment_method=payment_method,
+        )
+        await self._add_metered_usage(
+            save_fixture, organization, customer, subscription, units=2
         )
         discount = await create_discount(
             save_fixture,
@@ -2372,14 +2403,7 @@ class TestSettleMeterCycleOrder:
         subscription.discount = discount
         await save_fixture(subscription)
 
-        mocker.patch(
-            "polar.order.service.customer_meter_service.get_overage_units",
-            new=AsyncMock(return_value=Decimal(2)),
-        )
-
-        order = await order_service.settle_meter_cycle_order(
-            session, subscription, utc_now()
-        )
+        order = await order_service.settle_meter_cycle_order(session, subscription)
 
         assert order is not None
         assert order.subtotal_amount == 60
@@ -2389,7 +2413,6 @@ class TestSettleMeterCycleOrder:
 
     async def test_fixed_discount_excluded_from_meter_cycle_order(
         self,
-        mocker: MockerFixture,
         calculate_tax_mock: MagicMock,
         enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
@@ -2409,6 +2432,9 @@ class TestSettleMeterCycleOrder:
             unit_amount=Decimal(30),
             payment_method=payment_method,
         )
+        await self._add_metered_usage(
+            save_fixture, organization, customer, subscription, units=2
+        )
         discount = await create_discount(
             save_fixture,
             type=DiscountType.fixed,
@@ -2419,14 +2445,7 @@ class TestSettleMeterCycleOrder:
         subscription.discount = discount
         await save_fixture(subscription)
 
-        mocker.patch(
-            "polar.order.service.customer_meter_service.get_overage_units",
-            new=AsyncMock(return_value=Decimal(2)),
-        )
-
-        order = await order_service.settle_meter_cycle_order(
-            session, subscription, utc_now()
-        )
+        order = await order_service.settle_meter_cycle_order(session, subscription)
 
         assert order is not None
         assert order.subtotal_amount == 60
@@ -2434,34 +2453,6 @@ class TestSettleMeterCycleOrder:
         # multiply the giveaway by the settlement frequency, so they're excluded.
         assert order.discount_id is None
         assert order.discount_amount == 0
-
-    async def test_no_active_price_does_not_accumulate(
-        self,
-        mocker: MockerFixture,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        subscription = await self._metered_subscription(
-            save_fixture, organization, customer, unit_amount=Decimal(30)
-        )
-        subscription_meter = subscription.meters[0]
-
-        mocker.patch(
-            "polar.order.service.customer_meter_service.get_overage_units",
-            new=AsyncMock(return_value=Decimal(5)),
-        )
-        # No active metered price for the meter — e.g. it was removed from the
-        # product. Overage must not pile onto carried_units unbounded.
-        mocker.patch.object(order_service, "_active_metered_price", return_value=None)
-
-        order = await order_service.settle_meter_cycle_order(
-            session, subscription, utc_now()
-        )
-
-        assert order is None
-        assert subscription_meter.carried_units == 0
 
 
 @pytest.mark.asyncio

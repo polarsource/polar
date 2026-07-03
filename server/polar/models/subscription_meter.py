@@ -20,7 +20,6 @@ class SubscriptionMeter(RecordModel):
     consumed_units: Mapped[Decimal] = mapped_column(Numeric, nullable=False, default=0)
     credited_units: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     amount: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
-    carried_units: Mapped[Decimal] = mapped_column(Numeric, nullable=False, default=0)
 
     subscription_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("subscriptions.id", ondelete="cascade"), nullable=False

@@ -74,14 +74,6 @@ resource "render_redis" "redis" {
 }
 
 # =============================================================================
-# Cloudflare IP Ranges
-# =============================================================================
-
-module "cloudflare_ips" {
-  source = "../modules/cloudflare_ips"
-}
-
-# =============================================================================
 # Test
 # =============================================================================
 locals {
@@ -143,7 +135,7 @@ module "test" {
     cors_origins           = "[\"https://test.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = [{ name = "test-api.polar.sh" }]
     web_concurrency        = "2"
-    forwarded_allow_ips    = module.cloudflare_ips.all_ranges
+    forwarded_allow_ips    = "*"
     database_pool_size     = "10"
     postgres_database      = local.db_name
     postgres_read_database = local.db_name

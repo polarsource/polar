@@ -71,14 +71,6 @@ locals {
 }
 
 # =============================================================================
-# Cloudflare IP Ranges
-# =============================================================================
-
-module "cloudflare_ips" {
-  source = "../modules/cloudflare_ips"
-}
-
-# =============================================================================
 # Sandbox
 # =============================================================================
 
@@ -131,7 +123,7 @@ module "sandbox" {
     cors_origins           = "[\"https://sandbox.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = [{ name = "sandbox-api.polar.sh" }]
     web_concurrency        = "2"
-    forwarded_allow_ips    = module.cloudflare_ips.all_ranges
+    forwarded_allow_ips    = "*"
     database_pool_size     = "10"
     postgres_database      = "polar_sandbox"
     postgres_read_database = "polar_sandbox"

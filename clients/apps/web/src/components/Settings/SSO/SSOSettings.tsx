@@ -14,12 +14,18 @@ import { schemas } from '@polar-sh/client'
 import { Button, InlineModal, ListGroup, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
+import { ConfirmModal } from '../../Modal/ConfirmModal'
 import { useModal } from '../../Modal/useModal'
 import EditSSOConnectionModal from './EditSSOConnectionModal'
 import NewSSOConnectionModal from './NewSSOConnectionModal'
 
 const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
   const { isShown, show, hide } = useModal()
+  const {
+    isShown: enforceModalShown,
+    show: showEnforceModal,
+    hide: hideEnforceModal,
+  } = useModal()
   const { currentUser } = useAuth()
   const connections = useSSOConnections(org.id)
   const updateOrganization = useUpdateOrganization()
@@ -32,19 +38,10 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
   // `organization_scoped` here means "signed in via this org's SSO".
   const canEnforce = currentUser?.organization_scoped ?? false
 
-  const toggleEnforced = async () => {
-    const enabling = !org.sso_enforced
-    if (
-      enabling &&
-      !window.confirm(
-        'Enforce SSO for this organization? Third-party apps that members authorized for this organization will be disconnected and must re-authorize through SSO.',
-      )
-    ) {
-      return
-    }
+  const applyEnforced = async (sso_enforced: boolean) => {
     const { error } = await updateOrganization.mutateAsync({
       id: org.id,
-      body: { sso_enforced: !org.sso_enforced },
+      body: { sso_enforced },
     })
     if (error) {
       toast({
@@ -108,7 +105,9 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
           </Box>
           <Button
             variant="secondary"
-            onClick={toggleEnforced}
+            onClick={() =>
+              org.sso_enforced ? applyEnforced(false) : showEnforceModal()
+            }
             loading={updateOrganization.isPending}
             disabled={
               !org.sso_enforced && (!canEnforce || !hasEnabledConnection)
@@ -118,6 +117,15 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
           </Button>
         </Box>
       </Box>
+      <ConfirmModal
+        isShown={enforceModalShown}
+        hide={hideEnforceModal}
+        onConfirm={() => applyEnforced(true)}
+        title="Enforce SSO"
+        description="Members will have to sign in through SSO to access this organization. Third-party apps they authorized for this organization will be disconnected and must be re-authorized through SSO."
+        destructive
+        destructiveText="Enforce"
+      />
       <InlineModal
         isShown={isShown}
         hide={hide}
@@ -137,6 +145,11 @@ const SSOConnectionRow = ({
   connection: schemas['OrganizationSSOConnection']
 }) => {
   const { isShown, show, hide } = useModal()
+  const {
+    isShown: deleteModalShown,
+    show: showDeleteModal,
+    hide: hideDeleteModal,
+  } = useModal()
   const updateConnection = useUpdateSSOConnection(org.id, connection.id)
   const deleteConnection = useDeleteSSOConnection(org.id)
 
@@ -153,13 +166,6 @@ const SSOConnectionRow = ({
   }
 
   const onDelete = async () => {
-    if (
-      !window.confirm(
-        'Delete this SSO connection? Members will no longer be able to sign in with it.',
-      )
-    ) {
-      return
-    }
     const { error } = await deleteConnection.mutateAsync(connection.id)
     if (error) {
       toast({
@@ -198,13 +204,21 @@ const SSOConnectionRow = ({
           </Button>
           <Button
             variant="ghost"
-            onClick={onDelete}
+            onClick={showDeleteModal}
             loading={deleteConnection.isPending}
           >
             Delete
           </Button>
         </Box>
       </Box>
+      <ConfirmModal
+        isShown={deleteModalShown}
+        hide={hideDeleteModal}
+        onConfirm={onDelete}
+        title="Delete SSO connection"
+        description="Members will no longer be able to sign in with this connection."
+        destructive
+      />
       <InlineModal
         isShown={isShown}
         hide={hide}

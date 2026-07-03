@@ -1399,10 +1399,9 @@ class OrderService:
         number, balance impact, optional meter reset, then payment."""
         customer = subscription.customer
 
-        # Fixed discounts are per-order, so applying one to every meter-cycle
-        # settlement would multiply the giveaway by the settlement frequency (e.g.
-        # $10 off ×12 monthly meter-cycle orders on an annual plan). Percentage
-        # discounts are settlement-cadence-invariant and still apply. See issue #154.
+        # Fixed discounts are per-order, so applying one per meter-cycle settlement
+        # multiplies the giveaway by cadence; percentage discounts are
+        # cadence-invariant and still apply. See #154.
         discount = subscription.discount
         if (
             billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
@@ -2994,11 +2993,8 @@ class OrderService:
             )
             return order
 
-        # Meter-cycle settlement failures retry the payment but never escalate the
-        # subscription: a small mid-term overage charge must not drive a prepaid
-        # plan to past_due or revoke it. We still dun the order on the standard
-        # retry schedule, capping at `void` once retries are exhausted so it never
-        # lingers pending.
+        # A failed meter-cycle charge must not escalate the subscription (past_due
+        # or revoke) — a small overage can't cancel a prepaid plan; dun it retry-only.
         if order.billing_reason == OrderBillingReasonInternal.subscription_meter_cycle:
             return await self._handle_meter_cycle_dunning_attempt(session, order)
 
@@ -3134,13 +3130,8 @@ class OrderService:
     async def _handle_meter_cycle_dunning_attempt(
         self, session: AsyncSession, order: Order
     ) -> Order:
-        """Retry-only dunning for meter-cycle orders.
-
-        Reschedules payment on the standard dunning intervals without touching
-        the subscription (no past_due, no revoke) — overage debt can't cancel a
-        prepaid plan. Once retries are exhausted the order is voided so it never
-        lingers pending.
-        """
+        """Reschedule payment on the dunning intervals without touching the
+        subscription; void once retries are exhausted."""
         repository = OrderRepository.from_session(session)
 
         if order.is_void:
@@ -3153,10 +3144,9 @@ class OrderService:
             order.id
         )
 
-        # failed_attempts counts every failure so far, including this one; once it
-        # exceeds the configured intervals there are no retries left. Void through
-        # the canonical path so the merchant is notified that we've stopped trying
-        # to collect this overage (order.updated webhook + order_voided event).
+        # failed_attempts includes this failure, so > len(intervals) means retries
+        # are exhausted. Void via the canonical path to notify the merchant
+        # (order_voided event + order.updated webhook).
         if failed_attempts > len(settings.DUNNING_RETRY_INTERVALS):
             return await self.void(session, order)
 

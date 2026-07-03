@@ -1010,16 +1010,11 @@ class SubscriptionService:
             if previous_status == SubscriptionStatus.trialing:
                 subscription.status = SubscriptionStatus.active
 
-        # Settle the closing meter period before re-arming the clock and consume its
-        # metered entries, so the renewal order enqueued below bills only static
-        # prices. A trial has no meter clock, so this is a no-op until conversion.
-        if subscription.current_meter_period_end is not None:
-            await self._settle_meter_cycle(session, subscription)
+        # Meter period coincides with billing here, so we don't settle it
+        # separately: the renewal order below sweeps its pending entries too.
 
-        # Re-arm the meter clock off the new billing period. At the billing boundary
-        # both clocks coincide, so the full cycle settles the final meter period and
-        # the meter clock simply restarts. Also covers trial conversion, where the
-        # meter clock starts for the first time.
+        # Re-arm the meter clock off the new billing period (also starts it at
+        # trial conversion).
         if not revoke:
             subscription.initialize_meter_period(subscription.current_period_start)
 
@@ -1203,9 +1198,8 @@ class SubscriptionService:
             or subscription.meter_interval is None
             or subscription.meter_interval_count is None
         ):
-            # No meter cycle to run, but the scheduler locked the row on dispatch —
-            # clear the lock, or the subscription is never picked up again (billing
-            # renewal included).
+            # No meter cycle, but dispatch locked the row: clear it or the
+            # subscription (billing renewal included) never cycles again.
             repository = SubscriptionRepository.from_session(session)
             return await repository.update(
                 subscription, update_dict={"scheduler_locked_at": None}
@@ -1213,12 +1207,9 @@ class SubscriptionService:
 
         now = utc_now()
 
-        # Freeze the meter cycle while the subscription isn't active (e.g.
-        # past_due): fast-forward the clock past every elapsed boundary so the
-        # scheduler re-arms, but don't settle, reset, or re-grant. Usage keeps
-        # accruing and is billed on recovery (see ``mark_active``); granting for an
-        # unpaid period would hand out a paid-tier allowance the customer didn't
-        # pay for. Nothing is billed here, so fast-forwarding is safe.
+        # Frozen while inactive (e.g. past_due): advance the clock so the scheduler
+        # re-arms, but don't settle/reset/grant — granting for unpaid time hands out
+        # a paid-tier allowance. Usage accrues and bills on recovery (mark_active).
         if not subscription.active:
             period_end = boundary
             while period_end <= now:
@@ -1240,15 +1231,12 @@ class SubscriptionService:
             subscription.meter_interval_count,
         )
         if next_period_end <= now:
-            # More than one meter period has elapsed. Replaying settle/reset/grant
-            # per missed period is unsafe — grants are asynchronous and would race
-            # the following period's settlement — so bail without clearing the
-            # scheduler lock: the subscription stops cycling and Sentry pages for a
-            # human to catch it up manually.
+            # >1 period elapsed. Replaying per period is unsafe — async grants would
+            # race the next settlement — so halt (lock left set) and page for a
+            # manual catch-up.
             raise SubscriptionMeterCycleLag(subscription, boundary, now)
 
-        # Exactly one period elapsed: settle its window (settle before reset —
-        # settlement reads the closing window), then reset, re-grant, and advance.
+        # Settle before reset: settlement reads the window that reset closes.
         await self._settle_meter_cycle(session, subscription)
         await self.reset_meters(session, subscription)
         enqueue_job(
@@ -1676,9 +1664,8 @@ class SubscriptionService:
                         assert new_trial_end is not None
                         subscription.trial_end = new_trial_end
                         subscription.current_period_end = new_trial_end
-                # Re-arm the meter clock from the new product's cadence (or clear it
-                # if the new product has no meter cycle) so it can't be left orphaned
-                # — pointing at a boundary that never advances. Empty during a trial.
+                # Re-arm the meter clock from the new product's cadence (cleared if
+                # it has none) so it isn't left on a stale boundary. None in a trial.
                 subscription.initialize_meter_period(
                     None if was_trialing else subscription.current_period_start
                 )
@@ -3745,10 +3732,8 @@ class SubscriptionService:
             update_dict={"status": SubscriptionStatus.active, "past_due_at": None},
         )
 
-        # Recover the meter cycle. It was frozen while past_due (see
-        # ``cycle_meters``), so usage kept accruing on the meters without
-        # being settled. Bill that accrued usage now, then reset the meters so the
-        # credits re-granted below start from a clean window.
+        # Meter cycle was frozen while past_due, so usage accrued unsettled: bill it
+        # now and reset so the credits re-granted below start from a clean window.
         if (
             previous_status == SubscriptionStatus.past_due
             and subscription.meter_interval is not None

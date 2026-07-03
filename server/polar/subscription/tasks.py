@@ -76,17 +76,14 @@ async def subscription_cycle(subscription_id: uuid.UUID, force: bool = False) ->
             return
 
         if billing_due:
-            # Billing boundary wins: the full cycle settles the final meter
-            # period and re-arms the meter clock.
+            # Billing boundary wins: the full cycle also settles the meter period.
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
                 await subscription_service.cycle(session, ctx, subscription)
         else:
-            # A meter clock lagging more than one period raises
-            # SubscriptionMeterCycleLag; we let it propagate. cycle_meters leaves
-            # the scheduler lock set, so the subscription stays halted until a
-            # human catches it up.
+            # cycle_meters raises SubscriptionMeterCycleLag on a multi-period lag; we
+            # let it propagate — the subscription stays halted (lock set) for a human.
             await subscription_service.cycle_meters(session, subscription)
 
 

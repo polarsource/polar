@@ -2456,6 +2456,47 @@ class TestCycle:
         )
         assert updated.current_meter_period_end == expected_end
 
+    async def test_cycle_does_not_settle_meter_separately(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # At the billing boundary the meter period coincides; the renewal order
+        # sweeps the pending entries and bills the closing period's usage as line
+        # items, so cycle() must NOT create a separate meter-cycle order.
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_start = subscription.current_period_start
+        subscription.current_meter_period_end = subscription.current_period_end
+        await save_fixture(subscription)
+
+        settle_mock = mocker.patch.object(subscription_service, "_settle_meter_cycle")
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.cycle(session, ctx, subscription)
+
+        settle_mock.assert_not_called()
+        order_calls = [
+            call
+            for call in enqueue_job_mock.call_args_list
+            if call.args and call.args[0] == "order.create_subscription_order"
+        ]
+        assert len(order_calls) == 1
+
 
 @pytest.mark.asyncio
 class TestCycleMeters:
@@ -2486,7 +2527,6 @@ class TestCycleMeters:
 
         updated = await subscription_service.cycle_meters(session, subscription)
 
-        # Meter clock advanced one period; billing period untouched.
         assert updated.current_meter_period_start == meter_period_end
         assert updated.current_meter_period_end is not None
         assert updated.current_meter_period_end > now
@@ -2514,9 +2554,6 @@ class TestCycleMeters:
         customer: Customer,
         mocker: MockerFixture,
     ) -> None:
-        # Worker lagged more than one meter period. Auto-replaying is unsafe
-        # (async grants race the next settlement), so we bail: raise, and leave the
-        # scheduler lock set so the subscription stops cycling.
         locked_at = utc_now()
         subscription = await create_active_subscription(
             save_fixture,
@@ -2538,8 +2575,6 @@ class TestCycleMeters:
         with pytest.raises(SubscriptionMeterCycleLag):
             await subscription_service.cycle_meters(session, subscription)
 
-        # Bailed before any settlement / reset / grant, and the scheduler lock is
-        # left set so the subscription won't be re-dispatched until a human acts.
         settle_mock.assert_not_called()
         reset_mock.assert_not_called()
         grant_calls = [
@@ -2617,63 +2652,6 @@ class TestCycleMeters:
             if call.args and call.args[0] == "benefit.enqueue_benefit_grant_cycles"
         ]
         assert grant_calls == []
-
-
-@pytest.mark.asyncio
-class TestMarkActive:
-    async def test_recovers_meter_cycle_from_past_due(
-        self,
-        session: AsyncSession,
-        enqueue_job_mock: MagicMock,
-        save_fixture: SaveFixture,
-        product: Product,
-        customer: Customer,
-        mocker: MockerFixture,
-    ) -> None:
-        subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer
-        )
-        subscription.meter_interval = SubscriptionRecurringInterval.month
-        subscription.meter_interval_count = 1
-        subscription.status = SubscriptionStatus.past_due
-        subscription.past_due_at = utc_now()
-        await save_fixture(subscription)
-
-        settle_mock = mocker.patch.object(subscription_service, "_settle_meter_cycle")
-        reset_mock = mocker.patch.object(subscription_service, "reset_meters")
-
-        updated = await subscription_service.mark_active(session, subscription)
-
-        assert updated.status == SubscriptionStatus.active
-        # Frozen-window usage is settled and the meter reset before the credits are
-        # re-granted.
-        settle_mock.assert_called_once()
-        reset_mock.assert_called_once()
-
-    async def test_recovery_skips_meter_settlement_for_non_meter_product(
-        self,
-        session: AsyncSession,
-        enqueue_job_mock: MagicMock,
-        save_fixture: SaveFixture,
-        product: Product,
-        customer: Customer,
-        mocker: MockerFixture,
-    ) -> None:
-        subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer
-        )
-        subscription.status = SubscriptionStatus.past_due
-        subscription.past_due_at = utc_now()
-        await save_fixture(subscription)
-
-        settle_mock = mocker.patch.object(subscription_service, "_settle_meter_cycle")
-        reset_mock = mocker.patch.object(subscription_service, "reset_meters")
-
-        updated = await subscription_service.mark_active(session, subscription)
-
-        assert updated.status == SubscriptionStatus.active
-        settle_mock.assert_not_called()
-        reset_mock.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -6666,6 +6644,58 @@ class TestMarkPastDue:
 
 @pytest.mark.asyncio
 class TestMarkActive:
+    async def test_recovers_meter_cycle_from_past_due(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        mocker: MockerFixture,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now()
+        await save_fixture(subscription)
+
+        settle_mock = mocker.patch.object(subscription_service, "_settle_meter_cycle")
+        reset_mock = mocker.patch.object(subscription_service, "reset_meters")
+
+        updated = await subscription_service.mark_active(session, subscription)
+
+        assert updated.status == SubscriptionStatus.active
+        settle_mock.assert_called_once()
+        reset_mock.assert_called_once()
+
+    async def test_recovery_skips_meter_settlement_for_non_meter_product(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        mocker: MockerFixture,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now()
+        await save_fixture(subscription)
+
+        settle_mock = mocker.patch.object(subscription_service, "_settle_meter_cycle")
+        reset_mock = mocker.patch.object(subscription_service, "reset_meters")
+
+        updated = await subscription_service.mark_active(session, subscription)
+
+        assert updated.status == SubscriptionStatus.active
+        settle_mock.assert_not_called()
+        reset_mock.assert_not_called()
+
     async def test_recovery_re_grants_benefits(
         self,
         session: AsyncSession,

@@ -265,11 +265,6 @@ class TestSubscriptionCycle:
         product: Product,
         customer: Customer,
     ) -> None:
-        # Meter clock more than one period behind: cycle_meters raises
-        # SubscriptionMeterCycleLag, and the task lets it propagate rather than
-        # clearing the lock — leaving the subscription halted until a human catches
-        # it up. The lock staying set is covered by TestCycleMeters; here we assert
-        # the task doesn't swallow.
         subscription = await create_active_subscription(
             save_fixture,
             product=product,

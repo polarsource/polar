@@ -229,10 +229,26 @@ export default {
   },
   intervals: {
     short: {
-      day: '日',
-      week: '週',
-      month: '月',
-      year: '年',
+      day: {
+        _mode: 'plural',
+        '=1': '日',
+        other: '#日',
+      },
+      week: {
+        _mode: 'plural',
+        '=1': '週',
+        other: '#週間',
+      },
+      month: {
+        _mode: 'plural',
+        '=1': '月',
+        other: '#ヶ月',
+      },
+      year: {
+        _mode: 'plural',
+        '=1': '年',
+        other: '#年',
+      },
     },
   },
   benefitTypes: {

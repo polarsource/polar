@@ -228,10 +228,26 @@ export default {
   },
   intervals: {
     short: {
-      day: 'dz.',
-      week: 'tyg.',
-      month: 'mies.',
-      year: 'r.',
+      day: {
+        _mode: 'plural',
+        '=1': 'dz.',
+        other: '# dz.',
+      },
+      week: {
+        _mode: 'plural',
+        '=1': 'tyg.',
+        other: '# tyg.',
+      },
+      month: {
+        _mode: 'plural',
+        '=1': 'mies.',
+        other: '# mies.',
+      },
+      year: {
+        _mode: 'plural',
+        '=1': 'r.',
+        other: '# l.',
+      },
     },
   },
   benefitTypes: {

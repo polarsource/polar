@@ -276,10 +276,26 @@ export default {
   },
   intervals: {
     short: {
-      day: 'dy',
-      week: 'wk',
-      month: 'mo',
-      year: 'yr',
+      day: {
+        _mode: 'plural',
+        '=1': 'dy',
+        other: '# dy',
+      },
+      week: {
+        _mode: 'plural',
+        '=1': 'wk',
+        other: '# wk',
+      },
+      month: {
+        _mode: 'plural',
+        '=1': 'mo',
+        other: '# mo',
+      },
+      year: {
+        _mode: 'plural',
+        '=1': 'yr',
+        other: '# yr',
+      },
     },
   },
   benefitTypes: {

@@ -224,10 +224,26 @@ export default {
   },
   intervals: {
     short: {
-      day: '일',
-      week: '주',
-      month: '월',
-      year: '년',
+      day: {
+        _mode: 'plural',
+        '=1': '일',
+        other: '#일',
+      },
+      week: {
+        _mode: 'plural',
+        '=1': '주',
+        other: '#주',
+      },
+      month: {
+        _mode: 'plural',
+        '=1': '월',
+        other: '#개월',
+      },
+      year: {
+        _mode: 'plural',
+        '=1': '년',
+        other: '#년',
+      },
     },
   },
   benefitTypes: {

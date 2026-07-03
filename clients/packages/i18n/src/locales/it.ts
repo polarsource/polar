@@ -228,10 +228,26 @@ export default {
   },
   intervals: {
     short: {
-      day: 'g',
-      week: 'sett',
-      month: 'mese',
-      year: 'anno',
+      day: {
+        _mode: 'plural',
+        '=1': 'g',
+        other: '# giorni',
+      },
+      week: {
+        _mode: 'plural',
+        '=1': 'sett',
+        other: '# settimane',
+      },
+      month: {
+        _mode: 'plural',
+        '=1': 'mese',
+        other: '# mesi',
+      },
+      year: {
+        _mode: 'plural',
+        '=1': 'anno',
+        other: '# anni',
+      },
     },
   },
   benefitTypes: {

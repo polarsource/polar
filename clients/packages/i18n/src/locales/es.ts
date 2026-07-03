@@ -227,10 +227,26 @@ export default {
   },
   intervals: {
     short: {
-      day: 'd',
-      week: 'sem',
-      month: 'm',
-      year: 'a',
+      day: {
+        _mode: 'plural',
+        '=1': 'd',
+        other: '# días',
+      },
+      week: {
+        _mode: 'plural',
+        '=1': 'sem',
+        other: '# sem',
+      },
+      month: {
+        _mode: 'plural',
+        '=1': 'm',
+        other: '# meses',
+      },
+      year: {
+        _mode: 'plural',
+        '=1': 'a',
+        other: '# años',
+      },
     },
   },
   benefitTypes: {

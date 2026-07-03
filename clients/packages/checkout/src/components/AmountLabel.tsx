@@ -1,8 +1,7 @@
 import type { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import type { AcceptedLocale } from '@polar-sh/i18n'
-import { getTranslations } from '@polar-sh/i18n'
-import { formatOrdinal } from '@polar-sh/i18n/formatters/ordinal'
+import { useTranslations } from '@polar-sh/i18n'
 import { useMemo } from 'react'
 
 interface AmountLabelProps {
@@ -22,16 +21,16 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
   mode,
   locale,
 }) => {
+  const t = useTranslations(locale ?? 'en')
   const intervalDisplay = useMemo(() => {
     if (!interval) {
       return ''
     }
-    const t = getTranslations(locale ?? 'en')
-    const count = intervalCount && intervalCount > 1 ? intervalCount : null
-    const prefix = count ? `${formatOrdinal(count, locale ?? 'en')} ` : ''
-    const formatted = `${prefix}${t.intervals.short[interval]}`
+    const formatted = t(`intervals.short.${interval}`, {
+      count: intervalCount ?? 1,
+    })
     return formatted ? ` / ${formatted}` : ''
-  }, [interval, intervalCount, locale])
+  }, [interval, intervalCount, t])
 
   return (
     <div className="flex flex-row items-baseline gap-x-1">

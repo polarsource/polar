@@ -226,10 +226,26 @@ export default {
   },
   intervals: {
     short: {
-      day: 'g',
-      week: 'h',
-      month: 'a',
-      year: 'y',
+      day: {
+        _mode: 'plural',
+        '=1': 'g',
+        other: '# gün',
+      },
+      week: {
+        _mode: 'plural',
+        '=1': 'h',
+        other: '# hafta',
+      },
+      month: {
+        _mode: 'plural',
+        '=1': 'a',
+        other: '# ay',
+      },
+      year: {
+        _mode: 'plural',
+        '=1': 'y',
+        other: '# yıl',
+      },
     },
   },
   benefitTypes: {

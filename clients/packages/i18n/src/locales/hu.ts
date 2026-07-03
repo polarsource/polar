@@ -226,10 +226,26 @@ export default {
   },
   intervals: {
     short: {
-      day: 'nap',
-      week: 'hét',
-      month: 'hó',
-      year: 'év',
+      day: {
+        _mode: 'plural',
+        '=1': 'nap',
+        other: '# nap',
+      },
+      week: {
+        _mode: 'plural',
+        '=1': 'hét',
+        other: '# hét',
+      },
+      month: {
+        _mode: 'plural',
+        '=1': 'hó',
+        other: '# hó',
+      },
+      year: {
+        _mode: 'plural',
+        '=1': 'év',
+        other: '# év',
+      },
     },
   },
   benefitTypes: {

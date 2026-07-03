@@ -7,6 +7,7 @@ import { useCallback } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import CustomFieldForm from './CustomFieldForm'
+import { stripEmptyCustomFieldProperties } from './utils'
 
 interface CreateCustomFieldModalContentProps {
   organization: schemas['Organization']
@@ -37,8 +38,9 @@ const CreateCustomFieldModalContent = ({
 
   const onSubmit: SubmitHandler<schemas['CustomFieldCreate']> = useCallback(
     async (customFieldCreate) => {
-      const { data: customField, error } =
-        await createCustomField.mutateAsync(customFieldCreate)
+      const { data: customField, error } = await createCustomField.mutateAsync(
+        stripEmptyCustomFieldProperties(customFieldCreate),
+      )
       if (error) {
         if (error.detail) {
           setValidationErrors(error.detail, setError, 1, [

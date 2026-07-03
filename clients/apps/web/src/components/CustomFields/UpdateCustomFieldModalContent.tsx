@@ -7,6 +7,7 @@ import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import CustomFieldForm from './CustomFieldForm'
+import { stripEmptyCustomFieldProperties } from './utils'
 
 interface UpdateCustomFieldModalContentProps {
   customField: schemas['CustomField']
@@ -35,8 +36,9 @@ const UpdateCustomFieldModalContent = ({
 
   const onSubmit = useCallback(
     async (customFieldUpdate: schemas['CustomFieldUpdate']) => {
-      const { data: customField, error } =
-        await updateCustomField.mutateAsync(customFieldUpdate)
+      const { data: customField, error } = await updateCustomField.mutateAsync(
+        stripEmptyCustomFieldProperties(customFieldUpdate),
+      )
 
       if (error) {
         if (isValidationError(error.detail)) {

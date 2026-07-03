@@ -64,14 +64,12 @@ here: it would drift from the ADRs. The ADR text is the source of truth.
 
 ### 4. Report
 
-Keep it short and scannable:
+Be terse. Do not narrate which ADRs you checked, list applicable/not-applicable
+ADRs, or explain your process.
 
-- **Violations**, most severe first. For each: the ADR id and title, the
-  `file:line`, one line on what breaks the rule, and the fix.
-- **Uncovered decisions**: if the change makes a significant, cross-cutting, or
-  hard-to-reverse decision that no ADR covers, say so and offer to draft one from
-  `handbook/engineering/decisions/template.mdx`.
-- If nothing conflicts and nothing new is ADR-worthy, say so in one line, and list
-  which ADRs you checked and which were not applicable to this diff.
+- **No violations**: reply with exactly `No violations` and nothing else.
+- **Violations found**: list them most severe first. For each, reference the ADR
+  (id and title) and the violation: the `file:line`, one line on what breaks the
+  rule, and the fix.
 
 This skill reviews and reports. It does not edit code; fixes are a follow-up.

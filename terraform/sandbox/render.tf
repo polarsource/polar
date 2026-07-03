@@ -68,6 +68,10 @@ locals {
   # Production Redis connection info - for the drain worker
   production_redis_host = data.render_redis.redis.id
   production_redis_port = "6379"
+
+  # Forwarded allow IPs: Cloudflare ranges + Render proxy
+  render_proxy_cidr   = "10.0.0.0/8"
+  forwarded_allow_ips = "${module.cloudflare_ips.all_ranges},${local.render_proxy_cidr}"
 }
 
 # =============================================================================
@@ -131,7 +135,7 @@ module "sandbox" {
     cors_origins           = "[\"https://sandbox.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = [{ name = "sandbox-api.polar.sh" }]
     web_concurrency        = "2"
-    forwarded_allow_ips    = module.cloudflare_ips.all_ranges
+    forwarded_allow_ips    = local.forwarded_allow_ips
     database_pool_size     = "10"
     postgres_database      = "polar_sandbox"
     postgres_read_database = "polar_sandbox"

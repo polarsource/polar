@@ -29,6 +29,10 @@ locals {
   # Redis connection info
   redis_host = render_redis.redis.id
   redis_port = "6379"
+
+  # Forwarded allow IPs: Cloudflare ranges + Render proxy
+  render_proxy_cidr   = "10.0.0.0/8"
+  forwarded_allow_ips = "${module.cloudflare_ips.all_ranges},${local.render_proxy_cidr}"
 }
 
 # =============================================================================
@@ -153,7 +157,7 @@ module "production" {
     custom_domains         = [{ name = "api.polar.sh" }, { name = "api-alt.polar.sh" }, { name = "buy.polar.sh" }, { name = "backoffice.polar.sh" }]
     plan                   = "pro_plus"
     web_concurrency        = "6"
-    forwarded_allow_ips    = module.cloudflare_ips.all_ranges
+    forwarded_allow_ips    = local.forwarded_allow_ips
   }
 
   postgres_config = {

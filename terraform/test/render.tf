@@ -102,6 +102,10 @@ locals {
   # Redis connection info
   redis_host = local.test_enabled ? render_redis.redis[0].id : ""
   redis_port = "6379"
+
+  # Forwarded allow IPs: Cloudflare ranges + Render proxy
+  render_proxy_cidr   = "10.0.0.0/8"
+  forwarded_allow_ips = "${module.cloudflare_ips.all_ranges},${local.render_proxy_cidr}"
 }
 
 module "test" {
@@ -143,7 +147,7 @@ module "test" {
     cors_origins           = "[\"https://test.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = [{ name = "test-api.polar.sh" }]
     web_concurrency        = "2"
-    forwarded_allow_ips    = module.cloudflare_ips.all_ranges
+    forwarded_allow_ips    = local.forwarded_allow_ips
     database_pool_size     = "10"
     postgres_database      = local.db_name
     postgres_read_database = local.db_name

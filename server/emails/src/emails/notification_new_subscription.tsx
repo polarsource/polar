@@ -5,10 +5,7 @@ export function NotificationNewSubscription({
   subscriber_name,
   subscriber_email,
   formatted_price_with_interval,
-  formatted_price_amount,
   tier_name,
-  tier_price_amount,
-  tier_price_recurring_interval,
 }: schemas['MaintainerNewPaidSubscriptionNotificationPayload']) {
   const formattedName = subscriber_email ? (
     <>
@@ -23,11 +20,7 @@ export function NotificationNewSubscription({
     </Text>
   )
 
-  const priceDisplay =
-    formatted_price_with_interval ??
-    (tier_price_amount
-      ? `${formatted_price_amount}/${tier_price_recurring_interval}`
-      : 'free')
+  const priceDisplay = formatted_price_with_interval
 
   return (
     <WrapperPolar preview={`New ${tier_name} subscriber`}>

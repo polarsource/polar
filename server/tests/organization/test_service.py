@@ -5070,3 +5070,45 @@ class TestCancelExpiredOrganizationsSubscriptions:
 
         assert organization.id not in {org.id for org in result}
         enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestUpdateSSOEnforcement:
+    @pytest.mark.auth
+    async def test_enabling_enqueues_token_revocation(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        organization.sso_enforced = False
+        session.add(organization)
+        await session.flush()
+
+        await organization_service.update(
+            session, organization, OrganizationUpdate(sso_enforced=True)
+        )
+
+        enqueue_job_mock.assert_called_once_with(
+            "oauth2_token.revoke_for_sso_enforcement",
+            organization_id=organization.id,
+        )
+
+    @pytest.mark.auth
+    async def test_already_enforced_does_not_enqueue(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        organization.sso_enforced = True
+        session.add(organization)
+        await session.flush()
+
+        await organization_service.update(
+            session, organization, OrganizationUpdate(sso_enforced=True)
+        )
+
+        enqueue_job_mock.assert_not_called()

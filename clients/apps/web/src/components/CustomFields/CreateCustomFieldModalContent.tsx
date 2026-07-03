@@ -38,12 +38,10 @@ const CreateCustomFieldModalContent = ({
 
   const onSubmit: SubmitHandler<schemas['CustomFieldCreate']> = useCallback(
     async (customFieldCreate) => {
-      const { data: customField, error } = await createCustomField.mutateAsync(
-        {
-          ...customFieldCreate,
-          properties: stripEmptyProperties(customFieldCreate.properties),
-        } as schemas['CustomFieldCreate'],
-      )
+      const { data: customField, error } = await createCustomField.mutateAsync({
+        ...customFieldCreate,
+        properties: stripEmptyProperties(customFieldCreate.properties),
+      } as schemas['CustomFieldCreate'])
       if (error) {
         if (error.detail) {
           setValidationErrors(error.detail, setError, 1, [

@@ -36,12 +36,10 @@ const UpdateCustomFieldModalContent = ({
 
   const onSubmit = useCallback(
     async (customFieldUpdate: schemas['CustomFieldUpdate']) => {
-      const { data: customField, error } = await updateCustomField.mutateAsync(
-        {
-          ...customFieldUpdate,
-          properties: stripEmptyProperties(customFieldUpdate.properties),
-        } as schemas['CustomFieldUpdate'],
-      )
+      const { data: customField, error } = await updateCustomField.mutateAsync({
+        ...customFieldUpdate,
+        properties: stripEmptyProperties(customFieldUpdate.properties),
+      } as schemas['CustomFieldUpdate'])
 
       if (error) {
         if (isValidationError(error.detail)) {

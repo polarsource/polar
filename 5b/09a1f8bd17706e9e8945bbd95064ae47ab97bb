@@ -1,0 +1,29 @@
+handbook/engineering/decisions/0004-orbit-box-design-system.mdx
+  s_5861e605661360::t_f64be4691efa8e 24-25
+handbook/engineering/decisions/0006-migration-and-backfill-safety.mdx
+  s_5861e605661360::t_7e563eb64ecc25 31-34
+  s_5861e605661360::t_b70849bf120789 44-45
+  s_5861e605661360::t_9ee193bf3699a7 49-53
+.agents/skills/adr-check/SKILL.md
+  s_5861e605661360::t_a4563f4a23c94c 39-41
+handbook/engineering/decisions/0005-auth-subject-and-scopes.mdx
+  s_5861e605661360::t_1e8867168cd52b 27
+handbook/engineering/decisions/index.mdx
+  s_5861e605661360::t_ee2454aa95b334 79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "5b09a1f8bd17706e9e8945bbd95064ae47ab97bb",
+  "prompts": {},
+  "sessions": {
+    "s_5861e605661360": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "398f2c87-0e83-40a9-a21d-f3d84e9d6674",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

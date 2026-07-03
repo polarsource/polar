@@ -1,0 +1,29 @@
+server/polar/benefit/strategies/slack_shared_channel/service.py
+  s_3fdbc7df8c9e35::t_9b041a323a3e9a 331-333,335-336,340
+  s_3fdbc7df8c9e35::t_9c48906f411927 122
+  s_3fdbc7df8c9e35::t_ed6e307f09ca63 86,88
+  s_3fdbc7df8c9e35::t_f028945ff6fb02 318
+server/polar/integrations/slack/endpoints.py
+  s_3fdbc7df8c9e35::t_c6c066dea718ec 125
+server/tests/benefit/strategies/test_slack_shared_channel.py
+  s_3fdbc7df8c9e35::t_538af86c2007b9 1202,1204-1231
+  s_3fdbc7df8c9e35::t_c096d8764e6e9e 55,57,65-70,72-76
+  s_3fdbc7df8c9e35::t_d47424cbf0de3d 1201
+  s_3fdbc7df8c9e35::t_83c10820b9ed07 1203
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "ecff6c06fb31dfdfb265a147160c98a27d61b7b5",
+  "prompts": {},
+  "sessions": {
+    "s_3fdbc7df8c9e35": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "db41ec7a-210a-4431-b8dc-4a9a8e12678d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

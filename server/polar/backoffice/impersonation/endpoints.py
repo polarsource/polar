@@ -66,7 +66,7 @@ async def start_impersonation(
         )
 
     # Scope the session to the organization so it can reach the org even when SSO
-    # is enforced (and eventually break the glass if something is missconfigured).
+    # is enforced (and can eventually break the glass if something is misconfigured).
     token, impersonation_session = await auth_service._create_user_session(
         session=session,
         user=target_user,

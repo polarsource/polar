@@ -26,6 +26,8 @@ from polar.payout.service import (
     InvoiceAlreadyExists,
     MissingInvoiceBillingDetails,
     OrganizationCannotPayout,
+    PayoutCanceled,
+    PayoutHeld,
     PayoutIntervalLimitReached,
     PayoutNotCancelable,
     PayoutNotSucceeded,
@@ -635,6 +637,64 @@ class TestTriggerStripePayouts:
         enqueue_job_mock.assert_any_call(
             "payout.trigger_stripe_payout", payout_id=payout_3.id
         )
+
+
+@pytest.mark.asyncio
+class TestTriggerStripePayout:
+    async def test_canceled_raises(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        account = await create_account(save_fixture, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.canceled,
+            attempts=[],
+        )
+
+        with pytest.raises(PayoutCanceled):
+            await payout_service.trigger_stripe_payout(session, payout)
+
+        stripe_service_mock.retrieve_balance.assert_not_called()
+        stripe_service_mock.create_payout.assert_not_called()
+
+    async def test_held_raises(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        # A held payout (org under review) must never reach Stripe, even through
+        # the manual retry/trigger path, or funds from other payouts in the same
+        # Connect account could be paid out against it.
+        account = await create_account(save_fixture, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.held,
+            attempts=[],
+        )
+
+        with pytest.raises(PayoutHeld):
+            await payout_service.trigger_stripe_payout(session, payout)
+
+        stripe_service_mock.retrieve_balance.assert_not_called()
+        stripe_service_mock.create_payout.assert_not_called()
 
 
 @pytest.mark.asyncio

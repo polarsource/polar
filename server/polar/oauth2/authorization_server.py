@@ -413,7 +413,6 @@ class AuthorizationServer(_AuthorizationServer):
         request: Request,
         grant_user: User | None = None,
         save_consent: bool = False,
-        session_organization_ids: frozenset[uuid.UUID] | None = None,
     ) -> typing.Any:
         if not isinstance(request, StarletteOAuth2Request):
             oauth2_request = self.create_oauth2_request(request)
@@ -424,8 +423,6 @@ class AuthorizationServer(_AuthorizationServer):
             grant: AuthorizationCodeGrant = self.get_authorization_grant(oauth2_request)
         except UnsupportedResponseTypeError as error:
             return self.handle_error_response(oauth2_request, error)
-
-        grant.session_organization_ids = session_organization_ids
 
         try:
             redirect_uri = grant.validate_authorization_request()

@@ -18,7 +18,8 @@ from authlib.oidc.core.grants import OpenIDToken as _OpenIDToken
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from polar.authz.repository import select_user_org_ids
+from polar.auth.models import AuthSubject
+from polar.authz.repository import select_accessible_org_ids
 from polar.config import settings
 from polar.kit.crypto import generate_token, get_token_hash
 from polar.models import (
@@ -55,9 +56,6 @@ def _exists_nonce(
 class SubTypeGrantMixin:
     sub_type: SubType | None = None
     sub: User | Organization | None = None
-    # Down-scope of the session authenticating the consent; bounds the orgs the
-    # issued token may be scoped to. ``None`` means an unrestricted session.
-    session_organization_ids: frozenset[uuid.UUID] | None = None
     # The OAuth server only issues user tokens now. ``sub_type=organization``
     # is kept as a hint that forces the token to a single org down-scope.
     requires_single_organization: bool = False
@@ -109,7 +107,7 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
         self, code: str, request: StarletteOAuth2Request
     ) -> OAuth2AuthorizationCode:
         payload = request.payload
-        assert payload is not None
+        assert isinstance(payload, StarletteOAuth2Payload)
 
         nonce = payload.data.get("nonce")
         code_challenge = payload.data.get("code_challenge")
@@ -131,10 +129,11 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
         authorization_code.sub = self.sub
 
         if self.sub_type == SubType.user:
+            assert request.auth_subject is not None
             authorization_code.organization_scopes = [
                 OAuth2AuthorizationCodeOrganization(organization_id=organization_id)
                 for organization_id in self._resolve_organization_ids(
-                    typing.cast(User, self.sub), payload
+                    request.auth_subject, payload
                 )
             ]
 
@@ -143,28 +142,20 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
         return authorization_code
 
     def _resolve_organization_ids(
-        self, user: User, payload: StarletteOAuth2Payload
+        self, auth_subject: AuthSubject[User], payload: StarletteOAuth2Payload
     ) -> list[uuid.UUID]:
         """Organizations the issued token is down-scoped to.
 
-        The consent-time selection, validated against the orgs the
-        authenticating session can access (membership intersected with the
-        session's own down-scope). An empty selection inherits the session's
-        down-scope, so a token can never be broader than its session.
+        The consent-time selection, validated against the orgs the authenticating
+        session can access: membership intersected with the session's own
+        down-scope. A non-SSO session may not explicitly select an SSO-enforced org
+        Unrestricted token are filtered at request time instead (``select_accessible_org_ids``).
         """
-        member_organization_ids = set(
-            # Intersected with the session's down-scope just below.
-            self.server.session.execute(select_user_org_ids(user.id))  # noqa: org-scope
+        accessible_organization_ids = set(
+            self.server.session.execute(select_accessible_org_ids(auth_subject))
             .scalars()
             .all()
         )
-        if self.session_organization_ids is not None:
-            member_organization_ids &= self.session_organization_ids
-            # A scoped session with no accessible organizations can't be
-            # represented as a down-scope (no rows == unrestricted), so refuse
-            # to issue rather than silently widen the token.
-            if not member_organization_ids:
-                raise InvalidRequestError("The session has no accessible organizations")
 
         try:
             selected = {
@@ -174,17 +165,20 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
             raise InvalidRequestError("Invalid 'organizations' UUID") from e
 
         for organization_id in selected:
-            if organization_id not in member_organization_ids:
+            if organization_id not in accessible_organization_ids:
                 raise InvalidRequestError(
-                    f"You are not a member of organization {organization_id}"
+                    f"Organization {organization_id} is not accessible"
                 )
 
         if selected:
             result = list(selected)
-        elif self.session_organization_ids is not None:
-            # No explicit selection: inherit the session's down-scope (if any)
-            # so the token is never broader than the session.
-            result = list(member_organization_ids)
+        elif auth_subject.organization_ids is not None:
+            # No explicit selection over a scoped session: inherit its down-scope
+            # so the token is never broader than the session. An empty set can't
+            # be expressed as a down-scope (no rows == unrestricted), so refuse.
+            if not accessible_organization_ids:
+                raise InvalidRequestError("The session has no accessible organizations")
+            result = list(accessible_organization_ids)
         else:
             result = []
 
@@ -200,7 +194,7 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
                 log.warning(
                     "oauth2.organization_sub_type_multiple_orgs",
                     client_id=payload.client_id,
-                    user_id=str(user.id),
+                    user_id=str(auth_subject.subject.id),
                     organization_ids=[str(value) for value in result],
                 )
                 result = [sorted(result, key=str)[0]]

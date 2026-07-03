@@ -112,6 +112,14 @@ resource "render_redis" "redis" {
 }
 
 # =============================================================================
+# Cloudflare IP Ranges
+# =============================================================================
+
+module "cloudflare_ips" {
+  source = "../modules/cloudflare_ips"
+}
+
+# =============================================================================
 # Production
 # =============================================================================
 
@@ -145,6 +153,7 @@ module "production" {
     custom_domains         = [{ name = "api.polar.sh" }, { name = "api-alt.polar.sh" }, { name = "buy.polar.sh" }, { name = "backoffice.polar.sh" }]
     plan                   = "pro_plus"
     web_concurrency        = "6"
+    forwarded_allow_ips    = module.cloudflare_ips.all_ranges
   }
 
   postgres_config = {

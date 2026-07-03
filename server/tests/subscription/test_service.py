@@ -2062,6 +2062,47 @@ class TestCycle:
         )
         assert updated.current_meter_period_end == expected_end
 
+    async def test_cycle_does_not_settle_meter_separately(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # At the billing boundary the meter period coincides; the renewal order
+        # sweeps the pending entries and bills the closing period's usage as line
+        # items, so cycle() must NOT create a separate meter-cycle order.
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_start = subscription.current_period_start
+        subscription.current_meter_period_end = subscription.current_period_end
+        await save_fixture(subscription)
+
+        settle_mock = mocker.patch.object(subscription_service, "_settle_meter_cycle")
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.cycle(session, ctx, subscription)
+
+        settle_mock.assert_not_called()
+        order_calls = [
+            call
+            for call in enqueue_job_mock.call_args_list
+            if call.args and call.args[0] == "order.create_subscription_order"
+        ]
+        assert len(order_calls) == 1
+
 
 @pytest.mark.asyncio
 class TestCycleMeters:

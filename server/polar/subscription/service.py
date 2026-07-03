@@ -920,16 +920,12 @@ class SubscriptionService:
         if previous_status == SubscriptionStatus.trialing:
             subscription.status = SubscriptionStatus.active
 
-        # Settle the closing meter period before re-arming the clock and consume its
-        # metered entries, so the renewal order enqueued below bills only static
-        # prices. A trial has no meter clock, so this is a no-op until conversion.
-        if subscription.current_meter_period_end is not None:
-            await self._settle_meter_cycle(session, subscription)
+        # At the billing boundary the meter period coincides, so we don't settle it
+        # separately: the renewal order enqueued below sweeps the pending entries and
+        # bills the closing period's usage as line items on that same invoice.
 
-        # Re-arm the meter clock off the new billing period. At the billing boundary
-        # both clocks coincide, so the full cycle settles the final meter period and
-        # the meter clock simply restarts. Also covers trial conversion, where the
-        # meter clock starts for the first time.
+        # Re-arm the meter clock off the new billing period. Also covers trial
+        # conversion, where the meter clock starts for the first time.
         if not revoke:
             subscription.initialize_meter_period(subscription.current_period_start)
 

@@ -1,5 +1,6 @@
 import { useUpdateCustomField } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
+import { stripEmptyProperties } from '@/utils/object'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -7,7 +8,6 @@ import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import CustomFieldForm from './CustomFieldForm'
-import { stripEmptyCustomFieldProperties } from './utils'
 
 interface UpdateCustomFieldModalContentProps {
   customField: schemas['CustomField']
@@ -37,7 +37,10 @@ const UpdateCustomFieldModalContent = ({
   const onSubmit = useCallback(
     async (customFieldUpdate: schemas['CustomFieldUpdate']) => {
       const { data: customField, error } = await updateCustomField.mutateAsync(
-        stripEmptyCustomFieldProperties(customFieldUpdate),
+        {
+          ...customFieldUpdate,
+          properties: stripEmptyProperties(customFieldUpdate.properties),
+        } as schemas['CustomFieldUpdate'],
       )
 
       if (error) {

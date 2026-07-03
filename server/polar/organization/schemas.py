@@ -578,6 +578,14 @@ class OrganizationUpdate(Schema):
     default_tax_behavior: TaxBehaviorOption | None = Field(
         None, description="Default tax behavior applied on products."
     )
+    sso_enforced: bool | None = Field(
+        None,
+        description=(
+            "Whether members must access this organization through its SSO "
+            "connection. Turning this on requires an active SSO session for "
+            "this organization and at least one enabled SSO connection."
+        ),
+    )
 
 
 class OrganizationReviewSubmissionDetails(Schema):

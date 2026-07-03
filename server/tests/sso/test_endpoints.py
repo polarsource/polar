@@ -4,7 +4,13 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
-from polar.models import Organization, OrganizationSSOConnection, UserOrganization
+from polar.auth.models import AuthSubject
+from polar.models import (
+    Organization,
+    OrganizationSSOConnection,
+    User,
+    UserOrganization,
+)
 from polar.models.organization_sso_connection import (
     OIDCAuthMethod,
     OIDCConfiguration,
@@ -391,6 +397,51 @@ class TestUpdateSSOConnection:
         )
         assert response.status_code == 404
 
+    @pytest.mark.auth
+    async def test_disable_last_connection_rejected_when_enforced(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        sso_enabled_organization: Organization,
+        user_organization: UserOrganization,
+        sso_connection: OrganizationSSOConnection,
+    ) -> None:
+        organization.sso_enforced = True
+        await save_fixture(organization)
+        auth_subject.organization_ids = frozenset({organization.id})
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}/sso-connections/{sso_connection.id}",
+            json={"enabled": False},
+        )
+
+        assert response.status_code == 409
+
+    @pytest.mark.auth
+    async def test_disable_connection_allowed_when_another_enabled(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        sso_enabled_organization: Organization,
+        user_organization: UserOrganization,
+        sso_connection: OrganizationSSOConnection,
+    ) -> None:
+        await create_sso_connection(save_fixture, organization)
+        organization.sso_enforced = True
+        await save_fixture(organization)
+        auth_subject.organization_ids = frozenset({organization.id})
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}/sso-connections/{sso_connection.id}",
+            json={"enabled": False},
+        )
+
+        assert response.status_code == 200
+
 
 @pytest.mark.asyncio
 class TestDeleteSSOConnection:
@@ -464,6 +515,27 @@ class TestDeleteSSOConnection:
             f"/v1/organizations/{organization.id}/sso-connections/{uuid.uuid4()}"
         )
         assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_delete_last_connection_rejected_when_enforced(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        sso_enabled_organization: Organization,
+        user_organization: UserOrganization,
+        sso_connection: OrganizationSSOConnection,
+    ) -> None:
+        organization.sso_enforced = True
+        await save_fixture(organization)
+        auth_subject.organization_ids = frozenset({organization.id})
+
+        response = await client.delete(
+            f"/v1/organizations/{organization.id}/sso-connections/{sso_connection.id}"
+        )
+
+        assert response.status_code == 409
 
 
 @pytest.mark.asyncio

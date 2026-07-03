@@ -74,6 +74,7 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.routing import APIRouter
+from polar.sso.repository import OrganizationSSOConnectionRepository
 from polar.startup_program.service import (
     StartupProgramError,
 )
@@ -123,7 +124,7 @@ from .schemas import (
     OrganizationValidateWebsiteRequest,
     OrganizationValidateWebsiteResponse,
 )
-from .service import CannotCreateOrganizationError
+from .service import CannotCreateOrganizationError, SSOEnforcementRequiresConnection
 from .service import organization as organization_service
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
@@ -304,6 +305,10 @@ async def check_slug(
             "model": NotPermitted.schema(),
         },
         404: OrganizationNotFound,
+        409: {
+            "description": "Cannot enforce SSO without an enabled connection.",
+            "model": SSOEnforcementRequiresConnection.schema(),
+        },
     },
     tags=[APITag.public],
 )
@@ -313,6 +318,24 @@ async def update(
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
     """Update an organization."""
+    if organization_update.sso_enforced:
+        # Only allow enforcing SSO from a session already authenticated through
+        # this organization's SSO — proof it works — and only while an enabled
+        # connection exists, so an admin can't lock everyone out.
+        if (
+            authz.auth_subject.organization_ids is None
+            or authz.organization.id not in authz.auth_subject.organization_ids
+        ):
+            raise NotPermitted(
+                "You must be signed in through SSO for this organization to enforce it."
+            )
+        connection_repository = OrganizationSSOConnectionRepository.from_session(
+            session
+        )
+        if not await connection_repository.get_enabled_by_organization(
+            authz.organization.id
+        ):
+            raise SSOEnforcementRequiresConnection()
     return await organization_service.update(
         session, authz.organization, organization_update
     )

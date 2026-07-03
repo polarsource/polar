@@ -22,6 +22,15 @@ class SSONotEnabled(PolarError):
         )
 
 
+class LastSSOConnectionRequired(PolarError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This organization enforces SSO. Disable SSO enforcement before "
+            "removing its last enabled connection.",
+            409,
+        )
+
+
 class OrganizationSSOConnectionService:
     async def list(
         self,
@@ -67,9 +76,18 @@ class OrganizationSSOConnectionService:
     async def update(
         self,
         session: AsyncSession,
+        organization: Organization,
         connection: OrganizationSSOConnection,
         update: OrganizationSSOConnectionUpdate,
     ) -> OrganizationSSOConnection:
+        if (
+            update.enabled is False
+            and organization.sso_enforced
+            and not await self._has_other_enabled_connection(
+                session, organization, connection
+            )
+        ):
+            raise LastSSOConnectionRequired()
         repository = OrganizationSSOConnectionRepository.from_session(session)
         update_dict = update.model_dump(exclude_none=True)
         return await repository.update(connection, update_dict=update_dict)
@@ -77,10 +95,29 @@ class OrganizationSSOConnectionService:
     async def delete(
         self,
         session: AsyncSession,
+        organization: Organization,
         connection: OrganizationSSOConnection,
     ) -> OrganizationSSOConnection:
+        if (
+            connection.enabled
+            and organization.sso_enforced
+            and not await self._has_other_enabled_connection(
+                session, organization, connection
+            )
+        ):
+            raise LastSSOConnectionRequired()
         repository = OrganizationSSOConnectionRepository.from_session(session)
         return await repository.soft_delete(connection)
+
+    async def _has_other_enabled_connection(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        connection: OrganizationSSOConnection,
+    ) -> bool:
+        repository = OrganizationSSOConnectionRepository.from_session(session)
+        enabled = await repository.get_enabled_by_organization(organization.id)
+        return any(other.id != connection.id for other in enabled)
 
 
 organization_sso_connection = OrganizationSSOConnectionService()

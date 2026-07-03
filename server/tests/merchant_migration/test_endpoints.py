@@ -8,6 +8,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
 from polar.config import settings
+from polar.merchant_migration.canonical import CanonicalAccount
 from polar.merchant_migration.repository import MerchantMigrationRepository
 from polar.merchant_migration.stripe_oauth import StripeOAuthError
 from polar.models import MerchantMigration, Organization, UserOrganization
@@ -236,6 +237,9 @@ class TestPrecheck:
         )
         adapter = mocker.MagicMock()
         adapter.extract.return_value = _empty_extract()
+        adapter.get_source_account = mocker.AsyncMock(
+            return_value=CanonicalAccount(country="US", is_connect_platform=False)
+        )
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter", return_value=adapter
         )

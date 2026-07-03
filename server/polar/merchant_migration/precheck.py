@@ -18,6 +18,7 @@ from polar.models import Organization
 from polar.models.organization import OrganizationStatus
 
 from .canonical import (
+    CanonicalAccount,
     CanonicalCollectionMethod,
     CanonicalCustomer,
     CanonicalPrice,
@@ -52,8 +53,10 @@ class PrecheckEngine:
         self,
         records: AsyncIterable[CanonicalRecord],
         organization: Organization,
+        source_account: CanonicalAccount,
     ) -> PrecheckReport:
         issues: list[PrecheckIssue] = list(self._check_organization(organization))
+        issues.extend(self._check_account(source_account))
 
         products_by_name: dict[str, set[str]] = {}
         email_counts: Counter[str] = Counter()
@@ -94,6 +97,28 @@ class PrecheckEngine:
                 message=(
                     "The organization must be in a renewal-enabled status "
                     "(Review or Active) before migrating."
+                ),
+                source_id=None,
+            )
+
+    def _check_account(self, account: CanonicalAccount) -> Iterable[PrecheckIssue]:
+        if account.country == "IN":
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.blocker,
+                code="india_account",
+                message=(
+                    "India (RBI) accounts can't move card data across the border, "
+                    "so the card copy can't run."
+                ),
+                source_id=None,
+            )
+        if account.is_connect_platform:
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.blocker,
+                code="connect_platform_account",
+                message=(
+                    "The source is a Connect platform; only platform-account data "
+                    "is copyable, so it can't be migrated automatically."
                 ),
                 source_id=None,
             )

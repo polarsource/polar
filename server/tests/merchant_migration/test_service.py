@@ -7,6 +7,7 @@ from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.kit import jwt
 from polar.merchant_migration.canonical import (
+    CanonicalAccount,
     CanonicalPrice,
     CanonicalPricingScheme,
     CanonicalProduct,
@@ -40,6 +41,9 @@ class _FakeAdapter:
     async def extract(self) -> AsyncIterator[CanonicalRecord]:
         for record in self._records:
             yield record
+
+    async def get_source_account(self) -> CanonicalAccount:
+        return CanonicalAccount(country="US", is_connect_platform=False)
 
 
 @pytest.mark.asyncio

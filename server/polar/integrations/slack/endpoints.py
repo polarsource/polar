@@ -122,7 +122,7 @@ async def list_workspace_users(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> SlackWorkspaceUsersResponse:
     integration = await _get_writable_integration(session, auth_subject, integration_id)
-    if integration.bot_token is None:
+    if await integration.get_bot_token() is None:
         raise ResourceNotFound()
     users = await slack_app_service.list_workspace_users(integration)
     return SlackWorkspaceUsersResponse(users=[SlackWorkspaceUser(**u) for u in users])

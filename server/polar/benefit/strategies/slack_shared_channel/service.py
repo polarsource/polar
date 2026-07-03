@@ -83,9 +83,9 @@ class BenefitSlackSharedChannelService(
             properties = self._get_properties(benefit)
             team_invitees = properties.get("team_invitees") or []
             if team_invitees:
-                integration = await self._get_installed_integration(benefit)
+                _, bot_token = await self._get_installed_integration(benefit)
                 await self._safe_invite_team(
-                    bot_token=cast(str, await integration.get_bot_token()),
+                    bot_token=bot_token,
                     channel=existing_channel_id,
                     users=team_invitees,
                     bound_logger=bound_logger,
@@ -119,10 +119,9 @@ class BenefitSlackSharedChannelService(
         bound_logger: Any,
     ) -> BenefitGrantSlackSharedChannelProperties:
         properties = self._get_properties(benefit)
-        integration = await self._get_installed_integration(benefit)
+        _, bot_token = await self._get_installed_integration(benefit)
 
         context = self._build_context(customer)
-        bot_token = cast(str, await integration.get_bot_token())
 
         existing_channel_id = grant_properties.get("channel_id")
         if existing_channel_id:
@@ -316,7 +315,7 @@ class BenefitSlackSharedChannelService(
                     }
                 ]
             )
-        if integration.bot_token is None:
+        if await integration.get_bot_token() is None:
             raise BenefitPropertiesValidationError(
                 [
                     {
@@ -329,13 +328,16 @@ class BenefitSlackSharedChannelService(
             )
         return cast(BenefitSlackSharedChannelProperties, properties)
 
-    async def _get_installed_integration(self, benefit: Benefit) -> SlackApp:
+    async def _get_installed_integration(
+        self, benefit: Benefit
+    ) -> tuple[SlackApp, str]:
         integration = await self._get_integration(benefit)
-        if integration is None or integration.bot_token is None:
+        bot_token = await integration.get_bot_token() if integration else None
+        if integration is None or bot_token is None:
             raise BenefitActionRequiredError(
                 "The Slack integration is not installed for this benefit."
             )
-        return integration
+        return integration, bot_token
 
     async def _get_integration(self, benefit: Benefit) -> SlackApp | None:
         integration_id = benefit.properties.get("slack_integration_id")

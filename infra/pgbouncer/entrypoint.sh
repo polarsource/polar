@@ -30,7 +30,7 @@ reserve_pool_size = ${RESERVE_POOL_SIZE:-0}
 reserve_pool_timeout = ${RESERVE_POOL_TIMEOUT:-5}
 max_prepared_statements = ${MAX_PREPARED_STATEMENTS:-200}
 server_tls_sslmode = ${SERVER_TLS_SSLMODE:-prefer}
-ignore_startup_parameters = ${IGNORE_STARTUP_PARAMETERS:-extra_float_digits}
+ignore_startup_parameters = ${IGNORE_STARTUP_PARAMETERS:-extra_float_digits,statement_timeout}
 EOF
 
 exec pgbouncer /etc/pgbouncer/pgbouncer.ini

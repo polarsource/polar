@@ -435,11 +435,15 @@ class InvoiceGenerator(FPDF):
         # causing subsequent ASCII cells to render with the CJK font's
         # cmap. Re-resolve `current_font` from the canonical font_family +
         # font_style after delegating, so it always matches the logical
-        # font selection.
+        # font selection. When correcting such a drift, also clear
+        # `current_font_is_set_on_page` so fpdf re-emits the font-selection
+        # operator on the next cell; otherwise the corrected font never
+        # reaches the page and the text still renders with the stale cmap.
         super().set_font(family, style, size)
         fontkey = self.font_family + self.font_style
-        if fontkey in self.fonts:
+        if fontkey in self.fonts and self.current_font is not self.fonts[fontkey]:
             self.current_font = self.fonts[fontkey]
+            self.current_font_is_set_on_page = False
 
     def _shape_text(self, text: str) -> str:
         lines = text.split("\n")
@@ -543,6 +547,7 @@ class InvoiceGenerator(FPDF):
             new_y=YPos.NEXT,
         )
         if self.data.seller_additional_info:
+            self.set_font(style="")
             self.multi_cell(
                 80,
                 self.cell_height(),
@@ -574,6 +579,7 @@ class InvoiceGenerator(FPDF):
                 new_y=YPos.NEXT,
             )
         if self.data.customer_additional_info:
+            self.set_font(style="")
             self.multi_cell(
                 80,
                 self.cell_height(),

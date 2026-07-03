@@ -15,9 +15,13 @@ from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 
+from .adapters import SourceAdapter, StripeAdapter
+from .precheck import precheck_engine
 from .repository import MerchantMigrationRepository
+from .schemas import PrecheckReport
 from .stripe_oauth import (
     StripeAppNotConfigured,
     StripeOAuthError,
@@ -58,6 +62,23 @@ class InvalidStripeOAuthState(MerchantMigrationError):
         super().__init__(message, 400)
 
 
+class MerchantMigrationNotFound(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__("Merchant migration not found.", 404)
+
+
+class SourceNotConnected(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__("The migration source is not connected yet.", 400)
+
+
+class UnsupportedMigrationSource(MerchantMigrationError):
+    def __init__(self, source_platform: MerchantMigrationSourcePlatform) -> None:
+        super().__init__(
+            f"Migrations from {source_platform.value} are not supported yet.", 400
+        )
+
+
 @dataclass
 class StripeConnectResult:
     """Where the callback should send the merchant back, and an error message to
@@ -79,6 +100,73 @@ class MerchantMigrationService:
             MerchantMigration.id == migration_id
         )
         return await repository.get_one_or_none(statement)
+
+    async def run_precheck(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+    ) -> PrecheckReport:
+        """Read the connected source, normalize it, and report whether it can be
+        imported. Advances the migration from source setup to the precheck step.
+        """
+        repository = MerchantMigrationRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(
+            MerchantMigration.id == migration_id
+        )
+        migration = await repository.get_one_or_none(statement)
+        if migration is None:
+            raise MerchantMigrationNotFound()
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            migration.organization_id,
+            OrganizationPermission.organization_manage,
+        )
+
+        organization = await OrganizationRepository.from_session(session).get_by_id(
+            migration.organization_id
+        )
+        if organization is None:
+            raise MerchantMigrationNotFound()
+
+        adapter = await self._build_adapter(session, migration)
+        report = await precheck_engine.run(adapter.extract(), organization)
+
+        await repository.update(
+            migration, update_dict={"step": MerchantMigrationStep.pre_check}
+        )
+        return report
+
+    async def _build_adapter(
+        self, session: AsyncSession, migration: MerchantMigration
+    ) -> SourceAdapter:
+        if migration.source_platform != MerchantMigrationSourcePlatform.stripe:
+            raise UnsupportedMigrationSource(migration.source_platform)
+        access_token = await self._refresh_stripe_access_token(session, migration)
+        return StripeAdapter(access_token)
+
+    async def _refresh_stripe_access_token(
+        self, session: AsyncSession, migration: MerchantMigration
+    ) -> str:
+        """Mint a short-lived access token from the stored refresh token, and
+        persist the rotated refresh token Stripe returns."""
+        credentials = migration.source_credentials
+        encrypted = credentials.get("refresh_token_encrypted")
+        if not encrypted:
+            raise SourceNotConnected()
+
+        refresh_token = await EncryptedString(
+            encrypted, SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT
+        ).decrypt(id=str(migration.id))
+        token = await stripe_oauth.refresh(refresh_token)
+
+        new_credentials = await self._build_stripe_credentials(migration, token)
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.update(
+            migration, update_dict={"source_credentials": dict(new_credentials)}
+        )
+        return token.access_token
 
     async def create_stripe_authorization_url(
         self,

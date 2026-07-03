@@ -1,10 +1,22 @@
+from collections.abc import AsyncIterator
+
 import pytest
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.kit import jwt
+from polar.merchant_migration.canonical import (
+    CanonicalPrice,
+    CanonicalPricingScheme,
+    CanonicalProduct,
+    CanonicalRecord,
+)
 from polar.merchant_migration.repository import MerchantMigrationRepository
+from polar.merchant_migration.service import (
+    SourceNotConnected,
+    UnsupportedMigrationSource,
+)
 from polar.merchant_migration.service import merchant_migration as service
 from polar.models import (
     MerchantMigration,
@@ -19,6 +31,15 @@ from polar.models.merchant_migration import (
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.merchant_migration._helpers import build_stripe_oauth_token
+
+
+class _FakeAdapter:
+    def __init__(self, records: list[CanonicalRecord]) -> None:
+        self._records = records
+
+    async def extract(self) -> AsyncIterator[CanonicalRecord]:
+        for record in self._records:
+            yield record
 
 
 @pytest.mark.asyncio
@@ -113,3 +134,114 @@ class TestCompleteStripeAuthorization:
         # the refresh token is stored as ciphertext, never in clear text
         assert credentials["refresh_token_encrypted"] != "rt_secret"
         assert credentials["refresh_token_encrypted"].startswith("v1.")
+
+
+async def _create_connected_migration(
+    save_fixture: SaveFixture, organization: Organization
+) -> MerchantMigration:
+    migration = MerchantMigration(
+        organization_id=organization.id,
+        source_platform=MerchantMigrationSourcePlatform.stripe,
+        step=MerchantMigrationStep.source_setup,
+    )
+    await save_fixture(migration)
+    credentials = await service._build_stripe_credentials(
+        migration, build_stripe_oauth_token("rt_old")
+    )
+    migration.source_credentials = dict(credentials)
+    await save_fixture(migration)
+    return migration
+
+
+@pytest.mark.asyncio
+class TestRunPrecheck:
+    @pytest.mark.auth
+    async def test_extracts_rotates_token_and_advances_step(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _create_connected_migration(save_fixture, organization)
+        old_ciphertext = migration.source_credentials["refresh_token_encrypted"]
+
+        refresh = mocker.patch(
+            "polar.merchant_migration.service.stripe_oauth.refresh",
+            return_value=build_stripe_oauth_token("rt_new"),
+        )
+        adapter = _FakeAdapter(
+            [
+                CanonicalProduct(
+                    source_id="prod_1:month:1",
+                    product_source_id="prod_1",
+                    name="Pro",
+                    recurring_interval="month",
+                    recurring_interval_count=1,
+                    prices=[
+                        CanonicalPrice(
+                            source_id="price_1",
+                            currency="usd",
+                            amount=1000,
+                            pricing_scheme=CanonicalPricingScheme.fixed,
+                        )
+                    ],
+                )
+            ]
+        )
+        stripe_adapter = mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter", return_value=adapter
+        )
+
+        report = await service.run_precheck(session, auth_subject, migration.id)
+
+        assert report.can_start is True
+        refresh.assert_awaited_once_with("rt_old")
+        stripe_adapter.assert_called_once_with("rk_test")
+
+        repository = MerchantMigrationRepository.from_session(session)
+        updated = await repository.get_by_id(migration.id)
+        assert updated is not None
+        assert updated.step == MerchantMigrationStep.pre_check
+        # the rotated refresh token is re-persisted as fresh ciphertext
+        assert updated.source_credentials["refresh_token_encrypted"] != old_ciphertext
+
+    @pytest.mark.auth
+    async def test_source_not_connected(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = MerchantMigration(
+            organization_id=organization.id,
+            source_platform=MerchantMigrationSourcePlatform.stripe,
+            step=MerchantMigrationStep.source_setup,
+        )
+        await save_fixture(migration)
+
+        with pytest.raises(SourceNotConnected):
+            await service.run_precheck(session, auth_subject, migration.id)
+
+    @pytest.mark.auth
+    async def test_unsupported_source(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = MerchantMigration(
+            organization_id=organization.id,
+            source_platform=MerchantMigrationSourcePlatform.paddle,
+            step=MerchantMigrationStep.source_setup,
+        )
+        await save_fixture(migration)
+
+        with pytest.raises(UnsupportedMigrationSource):
+            await service.run_precheck(session, auth_subject, migration.id)

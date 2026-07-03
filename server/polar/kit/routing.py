@@ -1,7 +1,8 @@
 import functools
 import inspect
+import re
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Literal, TypedDict
 
 from fastapi import APIRouter as _APIRouter
 from fastapi.routing import APIRoute
@@ -149,6 +150,11 @@ class SpeakeasyPaginationAPIRoute(APIRoute):
             }
 
 
+class PaginationExtension(TypedDict):
+    type: Literal["page_limit"]
+    item_schema: dict[str, Any]
+
+
 class PaginationAPIRoute(APIRoute):
     """
     A subclass of `APIRoute` that automatically adds `x-polar-pagination` property
@@ -164,7 +170,17 @@ class PaginationAPIRoute(APIRoute):
             and ListResource in response_model.mro()
         ):
             openapi_extra = self.openapi_extra or {}
-            self.openapi_extra = {**openapi_extra, "x-polar-pagination": "page_limit"}
+            item_schema_name_match = re.match(
+                r"ListResource\[(.+)\]", response_model.__name__
+            )
+            if item_schema_name_match is None:
+                return
+            item_schema_name = item_schema_name_match.group(1)
+            pagination: PaginationExtension = {
+                "type": "page_limit",
+                "item_schema": {"$ref": f"#/components/schemas/{item_schema_name}"},
+            }
+            self.openapi_extra = {**openapi_extra, "x-polar-pagination": pagination}
 
 
 def _inherit_signature_from[**P, T](

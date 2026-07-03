@@ -1,6 +1,6 @@
 import contextlib
 from collections.abc import AsyncIterator
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Unpack, cast
 
 import structlog
 from githubkit.exception import (
@@ -18,6 +18,7 @@ from polar.integrations.github_repository_benefit.service import (
 )
 from polar.logging import Logger
 from polar.models import Benefit, Customer, Member, Organization, User
+from polar.models.benefit_grant import BenefitGrantScopeArgs
 from polar.models.customer import CustomerOAuthPlatform
 
 from ..base.service import (
@@ -53,6 +54,7 @@ class BenefitGitHubRepositoryService(
         update: bool = False,
         attempt: int = 1,
         member: Member | None = None,
+        **scope: Unpack[BenefitGrantScopeArgs],
     ) -> BenefitGrantGitHubRepositoryProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),

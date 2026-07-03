@@ -1,5 +1,5 @@
 import secrets
-from typing import Any, cast
+from typing import Any, Unpack, cast
 from uuid import UUID
 
 import httpx
@@ -19,6 +19,7 @@ from polar.models import (
     SlackApp,
     User,
 )
+from polar.models.benefit_grant import BenefitGrantScopeArgs
 
 from ..base.service import (
     BenefitActionRequiredError,
@@ -66,6 +67,7 @@ class BenefitSlackSharedChannelService(
         update: bool = False,
         attempt: int = 1,
         member: Member | None = None,
+        **scope: Unpack[BenefitGrantScopeArgs],
     ) -> BenefitGrantSlackSharedChannelProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id), customer_id=str(customer.id)

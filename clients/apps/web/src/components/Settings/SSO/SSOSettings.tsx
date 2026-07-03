@@ -33,6 +33,15 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
   const canEnforce = currentUser?.organization_scoped ?? false
 
   const toggleEnforced = async () => {
+    const enabling = !org.sso_enforced
+    if (
+      enabling &&
+      !window.confirm(
+        'Enforce SSO for this organization? Third-party apps that members authorized for this organization will be disconnected and must re-authorize through SSO.',
+      )
+    ) {
+      return
+    }
     const { error } = await updateOrganization.mutateAsync({
       id: org.id,
       body: { sso_enforced: !org.sso_enforced },

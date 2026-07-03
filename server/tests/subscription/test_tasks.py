@@ -4,16 +4,18 @@ from datetime import timedelta
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
 from polar.models import Customer, Organization, Product, Subscription
 from polar.models.organization import OrganizationStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
-from polar.subscription.service import SubscriptionService
+from polar.subscription.service import SubscriptionMeterCycleLag, SubscriptionService
 from polar.subscription.tasks import (  # type: ignore[attr-defined]
     SubscriptionDoesNotExist,
     SubscriptionTierDoesNotExist,
     subscription_cancel_for_organization,
+    subscription_cycle,
     subscription_enqueue_benefits_grants,
     subscription_resume,
     subscription_service,
@@ -252,3 +254,36 @@ class TestSubscriptionResume:
         await subscription_resume(subscription.id)
 
         resume_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestSubscriptionCycle:
+    async def test_multi_period_lag_raises_and_halts(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Meter clock more than one period behind: cycle_meters raises
+        # SubscriptionMeterCycleLag, and the task lets it propagate rather than
+        # clearing the lock — leaving the subscription halted until a human catches
+        # it up. The lock staying set is covered by TestCycleMeters; here we assert
+        # the task doesn't swallow.
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        now = utc_now()
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_start = now - timedelta(days=93)
+        subscription.current_meter_period_end = now - timedelta(days=62)
+        await save_fixture(subscription)
+
+        session.expunge_all()
+
+        with pytest.raises(SubscriptionMeterCycleLag):
+            await subscription_cycle(subscription.id)

@@ -12,6 +12,7 @@ from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn
 from pydantic_ai.models import Model, infer_model, parse_model_id
 from pydantic_ai.providers.gateway import gateway_provider
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy import URL
 
 from polar.enums import EmailSender, TaxProcessor
 from polar.kit.address import Address, CountryAlpha2
@@ -166,6 +167,8 @@ class Settings(BaseSettings):
     POSTGRES_PWD: str = "polar"
     POSTGRES_HOST: str = "127.0.0.1"
     POSTGRES_PORT: int = 5432
+    POSTGRES_HOST_FALLBACK: str | None = None
+    POSTGRES_PORT_FALLBACK: int | None = None
     POSTGRES_DATABASE: str = "polar"
     POSTGRES_SSL: bool = False
     DATABASE_POOL_SIZE: int = 5
@@ -178,6 +181,8 @@ class Settings(BaseSettings):
     POSTGRES_READ_PWD: str | None = None
     POSTGRES_READ_HOST: str | None = None
     POSTGRES_READ_PORT: int | None = None
+    POSTGRES_READ_HOST_FALLBACK: str | None = None
+    POSTGRES_READ_PORT_FALLBACK: int | None = None
     POSTGRES_READ_DATABASE: str | None = None
 
     # Redis
@@ -553,16 +558,54 @@ class Settings(BaseSettings):
     def redis_url(self) -> str:
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
-    def get_postgres_dsn(self, driver: Literal["asyncpg", "psycopg2"]) -> str:
-        return str(
-            PostgresDsn.build(
-                scheme=f"postgresql+{driver}",
-                username=self.POSTGRES_USER,
-                password=self.POSTGRES_PWD,
-                host=self.POSTGRES_HOST,
-                port=self.POSTGRES_PORT,
-                path=self.POSTGRES_DATABASE,
+    def _build_postgres_dsn(
+        self,
+        driver: Literal["asyncpg", "psycopg2"],
+        *,
+        username: str | None,
+        password: str | None,
+        host: str | None,
+        port: int | None,
+        database: str | None,
+        fallback_host: str | None,
+        fallback_port: int | None,
+    ) -> str:
+        if fallback_host is None:
+            return str(
+                PostgresDsn.build(
+                    scheme=f"postgresql+{driver}",
+                    username=username,
+                    password=password,
+                    host=host,
+                    port=port,
+                    path=database,
+                )
             )
+        return str(
+            URL.create(
+                f"postgresql+{driver}",
+                username=username,
+                password=password,
+                database=database,
+                query={
+                    "host": [
+                        f"{host}:{port}",
+                        f"{fallback_host}:{fallback_port or port}",
+                    ]
+                },
+            )
+        )
+
+    def get_postgres_dsn(self, driver: Literal["asyncpg", "psycopg2"]) -> str:
+        return self._build_postgres_dsn(
+            driver,
+            username=self.POSTGRES_USER,
+            password=self.POSTGRES_PWD,
+            host=self.POSTGRES_HOST,
+            port=self.POSTGRES_PORT,
+            database=self.POSTGRES_DATABASE,
+            fallback_host=self.POSTGRES_HOST_FALLBACK,
+            fallback_port=self.POSTGRES_PORT_FALLBACK,
         )
 
     def is_read_replica_configured(self) -> bool:
@@ -582,15 +625,15 @@ class Settings(BaseSettings):
         if not self.is_read_replica_configured():
             return None
 
-        return str(
-            PostgresDsn.build(
-                scheme=f"postgresql+{driver}",
-                username=self.POSTGRES_READ_USER,
-                password=self.POSTGRES_READ_PWD,
-                host=self.POSTGRES_READ_HOST,
-                port=self.POSTGRES_READ_PORT,
-                path=self.POSTGRES_READ_DATABASE,
-            )
+        return self._build_postgres_dsn(
+            driver,
+            username=self.POSTGRES_READ_USER,
+            password=self.POSTGRES_READ_PWD,
+            host=self.POSTGRES_READ_HOST,
+            port=self.POSTGRES_READ_PORT,
+            database=self.POSTGRES_READ_DATABASE,
+            fallback_host=self.POSTGRES_READ_HOST_FALLBACK,
+            fallback_port=self.POSTGRES_READ_PORT_FALLBACK,
         )
 
     def is_environment(self, environments: set[Environment]) -> bool:

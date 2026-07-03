@@ -36,6 +36,9 @@ git diff --name-only                # unstaged
 git diff --name-only --staged       # staged
 ```
 
+This assumes the branch targets `main` (the default). If the PR targets another branch, diff
+against that base instead.
+
 Then read the actual hunks for the changed files (`git diff main...HEAD -- <file>`).
 
 ### 2. Load the ADRs (dynamically, never hardcode the list)

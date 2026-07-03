@@ -28,7 +28,10 @@ Two things make migrations risky during a deploy:
   `SET LOCAL lock_timeout = '5s'` from the template.
 - Add a NOT NULL column across separate PRs: add it nullable, backfill with a batched script
   (`run_batched_update`), then enforce NOT NULL.
-- Never run an unbatched, table-rewriting `UPDATE` inside a migration.
+- The enforce migration still includes an inline `UPDATE ... WHERE col IS NULL` so fresh and
+  local databases (where the script never ran) work naturally. In production, run the batched
+  backfill first and confirm it before deploying, so that `UPDATE` matches almost no rows and
+  never rewrites the table under lock.
 - Keep migration PRs isolated from application code.
 
 ## Consequences
@@ -38,13 +41,16 @@ Two things make migrations risky during a deploy:
 - Code never ships ahead of the schema it needs.
 - CI enforces this: a "Migration Isolation Check" gates which files travel together, and
   `alembic check` catches model-versus-migration drift.
-- The no-unbatched-`UPDATE` rule relies on convention, review, and the lock-timeout safety net,
-  not a static lint.
+- The inline `UPDATE` is safe only because the batched backfill runs first in production; that
+  ordering is convention and review, backed by the lock-timeout net, not a static lint.
 
 ## Alternatives considered
 
-- **One-shot NOT NULL with an inline `UPDATE`, or shipping a migration with its dependent code**:
-  rewrites the table under lock during deploy and breaks the API-before-workers ordering.
+- **Add NOT NULL in one step and let the migration's `UPDATE` backfill every row**: rewrites the
+  table under lock during deploy. The inline `UPDATE` stays only as a fallback for fresh and local
+  databases; the batched script does the real backfill first.
+- **Ship a migration in the same PR as the code that depends on it**: breaks the
+  API-before-workers ordering.
 
 ## References
 

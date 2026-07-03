@@ -24,7 +24,7 @@ across all of them, with no ambient trust and no "forgot to check the token type
 Two independent layers.
 
 **1. Who is calling, and with what scopes.** Every request resolves to a typed
-`AuthSubject[T]`: a User, Organization, Customer, or Anonymous. An endpoint protects itself
+`AuthSubject[T]`: a User, Organization, Customer, Member, or Anonymous. An endpoint protects itself
 by depending on a per-module `Authenticator` (defined in that module's `auth.py`), which fixes
 the `allowed_subjects` it accepts and the `required_scopes` it needs. Rules of thumb:
 

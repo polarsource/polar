@@ -31,6 +31,7 @@ from polar.support_case.repository import (
     SupportCaseMessageRepository,
     SupportCaseParticipantRepository,
 )
+from polar.support_case.schemas import ReviewAppealSupportCaseMessageCreate
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_organization_review
 
@@ -40,6 +41,12 @@ _post_appeal_greeting = post_appeal_greeting.__wrapped__  # type: ignore[attr-de
 @contextlib.asynccontextmanager
 async def _session_maker(session: AsyncSession) -> AsyncIterator[AsyncSession]:
     yield session
+
+
+def _reply(body: str) -> ReviewAppealSupportCaseMessageCreate:
+    return ReviewAppealSupportCaseMessageCreate(
+        type=SupportCaseType.review_appeal, body=body
+    )
 
 
 @pytest_asyncio.fixture
@@ -160,9 +167,9 @@ class TestReplyAndLock:
         await appeal_case_service.add_reply(
             session,
             case,
+            _reply("some more info"),
             author_kind=SupportCaseMessageAuthorKind.merchant,
             author_user=user,
-            body="some more info",
         )
 
         await appeal_case_service.record_decision(
@@ -176,9 +183,9 @@ class TestReplyAndLock:
             await appeal_case_service.add_reply(
                 session,
                 case,
+                _reply("please reconsider again"),
                 author_kind=SupportCaseMessageAuthorKind.merchant,
                 author_user=user,
-                body="please reconsider again",
             )
 
 
@@ -207,9 +214,9 @@ class TestReplyNotifiesMerchant:
         message = await appeal_case_service.add_reply(
             session,
             case,
+            _reply("staff reply"),
             author_kind=SupportCaseMessageAuthorKind.platform,
             author_user=user,
-            body="staff reply",
         )
         enqueue.assert_called_once_with(
             "support_case.notify_organization_of_new_message", message_id=message.id
@@ -239,9 +246,9 @@ class TestReplyNotifiesMerchant:
         await appeal_case_service.add_reply(
             session,
             case,
+            _reply("internal staff note"),
             author_kind=SupportCaseMessageAuthorKind.platform,
             author_user=user,
-            body="internal staff note",
             internal=True,
         )
         enqueue.assert_not_called()

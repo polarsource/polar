@@ -95,7 +95,12 @@ export const DisputeConversation = ({
         allowAttachments: true,
         placeholder: 'Write a reply…',
         onSend: (text, fileIds) =>
-          reply.mutateAsync({ caseId, body: text, file_ids: fileIds }),
+          reply.mutateAsync({
+            caseId,
+            type: 'dispute',
+            body: text,
+            file_ids: fileIds,
+          }),
       }}
     />
   )

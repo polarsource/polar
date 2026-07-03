@@ -142,7 +142,12 @@ const HumanReviewCase = ({ organization }: Props) => {
           : 'Tell us why your organization should be approved…',
         onSend: (text, fileIds) =>
           caseId
-            ? reply.mutateAsync({ caseId, body: text, file_ids: fileIds })
+            ? reply.mutateAsync({
+                caseId,
+                type: 'review_appeal',
+                body: text,
+                file_ids: fileIds,
+              })
             : requestReview.mutateAsync({ reason: text }),
       }}
     />

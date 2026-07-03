@@ -1,10 +1,15 @@
-from typing import Annotated, Self
+from typing import Annotated, Literal, Self
 
 from fastapi import Path
-from pydantic import UUID4, Field, model_validator
+from pydantic import UUID4, Discriminator, Field, model_validator
 
 from polar.exceptions import ResourceNotFound
-from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.schemas import (
+    IDSchema,
+    Schema,
+    SetSchemaReference,
+    TimestampedSchema,
+)
 from polar.models.support_case import (
     DisputeWinReason,
     SupportCaseMessageAuthorKind,
@@ -51,24 +56,11 @@ class SupportCaseThread(Schema):
     is_open: bool
 
 
-class SupportCaseMessageCreate(Schema):
+class SupportCaseMessageCreateBase(Schema):
     """A reply: free text, attachments (already uploaded files), or both."""
 
     body: str | None = Field(default=None, min_length=1, max_length=5000)
     file_ids: list[UUID4] = Field(default_factory=list, max_length=10)
-    dispute_win_reason: DisputeWinReason | None = Field(
-        default=None,
-        description=(
-            "For a dispute case, the merchant's stated grounds for contesting. "
-            "Set on the counter submission; ignored for other case types."
-        ),
-    )
-    dispute_win_reason_other: str | None = Field(
-        default=None,
-        min_length=1,
-        max_length=500,
-        description="Free-text detail when `dispute_win_reason` is `other`.",
-    )
 
     @model_validator(mode="after")
     def _require_content(self) -> Self:
@@ -76,24 +68,50 @@ class SupportCaseMessageCreate(Schema):
             raise ValueError("A reply needs a body, an attachment, or both.")
         return self
 
+
+class ReviewAppealSupportCaseMessageCreate(SupportCaseMessageCreateBase):
+    """A reply on a review-appeal case."""
+
+    type: Literal[SupportCaseType.review_appeal]
+
+
+class DisputeSupportCaseMessageCreate(SupportCaseMessageCreateBase):
+    """A reply on a dispute case."""
+
+    type: Literal[SupportCaseType.dispute]
+    win_reason: DisputeWinReason | None = Field(
+        default=None,
+        description=(
+            "The merchant's stated grounds for contesting, "
+            "set on the counter submission."
+        ),
+    )
+    win_reason_other: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=500,
+        description="Free-text detail when `win_reason` is `other`.",
+    )
+
     @model_validator(mode="after")
     def _validate_win_reason(self) -> Self:
         if (
-            self.dispute_win_reason_other is not None
-            and self.dispute_win_reason != DisputeWinReason.other
+            self.win_reason_other is not None
+            and self.win_reason != DisputeWinReason.other
         ):
             raise ValueError(
-                "dispute_win_reason_other is only allowed when "
-                "dispute_win_reason is `other`."
+                "win_reason_other is only allowed when win_reason is `other`."
             )
-        if (
-            self.dispute_win_reason == DisputeWinReason.other
-            and not self.dispute_win_reason_other
-        ):
-            raise ValueError(
-                "dispute_win_reason `other` requires dispute_win_reason_other."
-            )
+        if self.win_reason == DisputeWinReason.other and not self.win_reason_other:
+            raise ValueError("win_reason `other` requires win_reason_other.")
         return self
+
+
+SupportCaseMessageCreate = Annotated[
+    ReviewAppealSupportCaseMessageCreate | DisputeSupportCaseMessageCreate,
+    Discriminator("type"),
+    SetSchemaReference("SupportCaseMessageCreate"),
+]
 
 
 class HumanReviewRequest(Schema):

@@ -19,6 +19,7 @@ from polar.kit.utils import utc_now
 from polar.models import UserSession
 
 from ..sub_type import SubType, SubTypeValue
+from .organization_scope import sso_enforced_organization_ids
 
 
 class WebGrant(BaseGrant, TokenEndpointMixin):
@@ -112,6 +113,12 @@ class WebGrant(BaseGrant, TokenEndpointMixin):
             )
             if session_organization_ids:
                 member_organization_ids &= session_organization_ids
+            else:
+                # A non-SSO session can't scope a token to an SSO-enforced org;
+                # those are reachable only through an SSO-scoped session.
+                member_organization_ids -= sso_enforced_organization_ids(
+                    self.server.session, member_organization_ids
+                )
             if sub_uuid not in member_organization_ids:
                 raise InvalidGrantError()
             self.request.organization_ids = [sub_uuid]

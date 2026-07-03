@@ -34,6 +34,7 @@ from ..requests import StarletteOAuth2Payload, StarletteOAuth2Request
 from ..service.oauth2_grant import oauth2_grant as oauth2_grant_service
 from ..sub_type import SubType, SubTypeValue
 from ..userinfo import UserInfo, generate_user_info
+from .organization_scope import sso_enforced_organization_ids
 
 if typing.TYPE_CHECKING:
     from ..authorization_server import AuthorizationServer
@@ -147,17 +148,18 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
     ) -> list[uuid.UUID]:
         """Organizations the issued token is down-scoped to.
 
-        The consent-time selection, validated against the orgs the
-        authenticating session can access (membership intersected with the
-        session's own down-scope). An empty selection inherits the session's
-        down-scope, so a token can never be broader than its session.
+        The consent-time selection, validated against the orgs the authenticating
+        session can access: membership intersected with the session's own
+        down-scope. A non-SSO session may not explicitly select an SSO-enforced org
+        Unrestricted token are filtered at request time instead (``select_accessible_org_ids``).
         """
         member_organization_ids = set(
-            # Intersected with the session's down-scope just below.
             self.server.session.execute(select_user_org_ids(user.id))  # noqa: org-scope
             .scalars()
             .all()
         )
+
+        excluded_sso_organization_ids: set[uuid.UUID] = set()
         if self.session_organization_ids is not None:
             member_organization_ids &= self.session_organization_ids
             # A scoped session with no accessible organizations can't be
@@ -165,6 +167,10 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
             # to issue rather than silently widen the token.
             if not member_organization_ids:
                 raise InvalidRequestError("The session has no accessible organizations")
+        else:
+            excluded_sso_organization_ids = sso_enforced_organization_ids(
+                self.server.session, member_organization_ids
+            )
 
         try:
             selected = {
@@ -174,6 +180,11 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
             raise InvalidRequestError("Invalid 'organizations' UUID") from e
 
         for organization_id in selected:
+            if organization_id in excluded_sso_organization_ids:
+                raise InvalidRequestError(
+                    f"Organization {organization_id} enforces SSO; authenticate "
+                    "through its SSO connection to authorize access"
+                )
             if organization_id not in member_organization_ids:
                 raise InvalidRequestError(
                     f"You are not a member of organization {organization_id}"

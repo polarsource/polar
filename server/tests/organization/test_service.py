@@ -43,6 +43,7 @@ from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_review import OrganizationReview
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
+from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import (
     LegacyOrganizationStatus,
@@ -60,7 +61,6 @@ from polar.organization.schemas import (
     OrganizationSocialPlatforms,
     OrganizationUpdate,
 )
-from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
 from polar.organization.service import (
     CannotCreateOrganizationError,
     OrganizationError,

@@ -1,7 +1,7 @@
 """Make custom_fields slug uniqueness ignore soft-deleted rows
 
 Revision ID: d3f5a9c47e21
-Revises: b181f0be8208
+Revises: fef393bb1f53
 Create Date: 2026-07-03 10:00:00.000000
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "d3f5a9c47e21"
-down_revision = "b181f0be8208"
+down_revision = "fef393bb1f53"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

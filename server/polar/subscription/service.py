@@ -221,6 +221,22 @@ class AboveMaximumSeats(SubscriptionError):
         super().__init__(message, 400)
 
 
+class SubscriptionMeterCycleLag(SubscriptionError):
+    """The meter clock fell more than one period behind; needs manual intervention."""
+
+    def __init__(
+        self, subscription: Subscription, meter_period_end: datetime, now: datetime
+    ) -> None:
+        self.subscription = subscription
+        self.meter_period_end = meter_period_end
+        message = (
+            f"Subscription {subscription.id} meter clock is more than one period "
+            f"behind (period end {meter_period_end.isoformat()}, now "
+            f"{now.isoformat()}); halting the meter cycle pending manual intervention."
+        )
+        super().__init__(message)
+
+
 @overload
 def _from_timestamp(t: int) -> datetime: ...
 
@@ -1030,44 +1046,52 @@ class SubscriptionService:
                 subscription, update_dict={"scheduler_locked_at": None}
             )
 
-        # Advance the clock first, looping in case the worker lagged several
-        # periods; get_next_period re-clamps to the anchor day each step, so no
-        # drift accumulates.
         now = utc_now()
-        last_boundary = settle_through
-        current_meter_period_end = settle_through
-        while current_meter_period_end <= now:
-            last_boundary = current_meter_period_end
-            subscription.current_meter_period_start = current_meter_period_end
-            current_meter_period_end = subscription.meter_interval.get_next_period(
-                current_meter_period_end,
-                subscription.anchor_day,
-                subscription.meter_interval_count,
-            )
-        subscription.current_meter_period_end = current_meter_period_end
 
         # Freeze the meter cycle while the subscription isn't active (e.g.
-        # past_due): the clock keeps advancing above so the scheduler re-arms, but
-        # we don't settle, reset, or re-grant. Usage keeps accruing on the meters
-        # and is billed when the subscription recovers (see ``mark_active``);
-        # granting credits for an unpaid period would hand out a paid-tier
-        # allowance for time the customer didn't pay for.
+        # past_due): fast-forward the clock past every elapsed boundary so the
+        # scheduler re-arms, but don't settle, reset, or re-grant. Usage keeps
+        # accruing and is billed on recovery (see ``mark_active``); granting for an
+        # unpaid period would hand out a paid-tier allowance the customer didn't
+        # pay for. Nothing is billed here, so fast-forwarding is safe.
         if not subscription.active:
+            period_end = settle_through
+            while period_end <= now:
+                subscription.current_meter_period_start = period_end
+                period_end = subscription.meter_interval.get_next_period(
+                    period_end,
+                    subscription.anchor_day,
+                    subscription.meter_interval_count,
+                )
+            subscription.current_meter_period_end = period_end
             repository = SubscriptionRepository.from_session(session)
             return await repository.update(
                 subscription, update_dict={"scheduler_locked_at": None}
             )
 
-        # Settle before resetting — it reads the closing window. Consume entries
-        # through the last elapsed boundary: get_overage_units bills the whole
-        # lagged window, so settling only the first period would leave later
-        # periods' entries pending and mis-attributed to a future order.
-        await self._settle_meter_cycle(session, subscription, last_boundary)
+        next_period_end = subscription.meter_interval.get_next_period(
+            settle_through,
+            subscription.anchor_day,
+            subscription.meter_interval_count,
+        )
+        if next_period_end <= now:
+            # More than one meter period has elapsed. Replaying settle/reset/grant
+            # per missed period is unsafe — grants are asynchronous and would race
+            # the following period's settlement — so bail without clearing the
+            # scheduler lock: the subscription stops cycling and Sentry pages for a
+            # human to catch it up manually.
+            raise SubscriptionMeterCycleLag(subscription, settle_through, now)
 
+        # Exactly one period elapsed: settle its window (settle before reset —
+        # settlement reads the closing window), then reset, re-grant, and advance.
+        await self._settle_meter_cycle(session, subscription, settle_through)
         await self.reset_meters(session, subscription)
         enqueue_job(
             "benefit.enqueue_benefit_grant_cycles", subscription_id=subscription.id
         )
+
+        subscription.current_meter_period_start = settle_through
+        subscription.current_meter_period_end = next_period_end
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(

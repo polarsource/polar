@@ -83,6 +83,10 @@ async def subscription_cycle(subscription_id: uuid.UUID, force: bool = False) ->
             ) as ctx:
                 await subscription_service.cycle(session, ctx, subscription)
         else:
+            # A meter clock lagging more than one period raises
+            # SubscriptionMeterCycleLag; we let it propagate. cycle_meters leaves
+            # the scheduler lock set, so the subscription stays halted until a
+            # human catches it up.
             await subscription_service.cycle_meters(session, subscription)
 
 

@@ -91,6 +91,7 @@ from polar.subscription.service import (
     NotARecurringProduct,
     NotASeatBasedSubscription,
     SeatsAlreadyAssigned,
+    SubscriptionMeterCycleLag,
     SubscriptionUpdateContext,
 )
 from polar.subscription.service import subscription as subscription_service
@@ -2109,6 +2110,51 @@ class TestCycleMeters:
             if call.args and call.args[0] == "order.create_subscription_order"
         ]
         assert order_calls == []
+
+    async def test_raises_and_halts_on_multi_period_lag(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        mocker: MockerFixture,
+    ) -> None:
+        # Worker lagged more than one meter period. Auto-replaying is unsafe
+        # (async grants race the next settlement), so we bail: raise, and leave the
+        # scheduler lock set so the subscription stops cycling.
+        locked_at = utc_now()
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=locked_at,
+        )
+        now = utc_now()
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        # Two+ periods elapsed: the boundary sits ~2 months in the past.
+        subscription.current_meter_period_start = now - timedelta(days=93)
+        subscription.current_meter_period_end = now - timedelta(days=62)
+        await save_fixture(subscription)
+
+        settle_mock = mocker.patch.object(subscription_service, "_settle_meter_cycle")
+        reset_mock = mocker.patch.object(subscription_service, "reset_meters")
+
+        with pytest.raises(SubscriptionMeterCycleLag):
+            await subscription_service.cycle_meters(session, subscription)
+
+        # Bailed before any settlement / reset / grant, and the scheduler lock is
+        # left set so the subscription won't be re-dispatched until a human acts.
+        settle_mock.assert_not_called()
+        reset_mock.assert_not_called()
+        grant_calls = [
+            c
+            for c in enqueue_job_mock.call_args_list
+            if c.args and c.args[0] == "benefit.enqueue_benefit_grant_cycles"
+        ]
+        assert grant_calls == []
+        assert subscription.scheduler_locked_at == locked_at
 
     async def test_orphaned_clock_still_clears_scheduler_lock(
         self,

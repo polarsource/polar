@@ -36,7 +36,7 @@ BASE_AMOUNT = 1500  # $15 / year base price
 UNIT_AMOUNT_CENTS = 100  # $1 per metered unit
 USAGE_UNITS = 3  # $3 overage — clears the $0.50 minimum
 
-_USAGE_AUTH = pytest.mark.auth(
+auth_subject_fixture = pytest.mark.auth(
     AuthSubjectFixture(
         subject="user",
         scopes={
@@ -53,7 +53,7 @@ _USAGE_AUTH = pytest.mark.auth(
 
 @pytest.mark.asyncio
 class TestUsageCycle:
-    @_USAGE_AUTH
+    @auth_subject_fixture
     async def test_monthly_meter_cycle_settles_overage(
         self,
         client: AsyncClient,

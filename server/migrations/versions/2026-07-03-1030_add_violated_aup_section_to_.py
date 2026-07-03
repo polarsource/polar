@@ -1,7 +1,7 @@
 """add violated_aup_section to organization_review_feedback
 
 Revision ID: 94bf1c4552b6
-Revises: b181f0be8208
+Revises: fef393bb1f53
 Create Date: 2026-07-03 10:30:00.000000
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "94bf1c4552b6"
-down_revision = "b181f0be8208"
+down_revision = "fef393bb1f53"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

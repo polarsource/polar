@@ -1,0 +1,129 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationSteps.tsx
+  s_7debf674f53741::t_18f31d57d70981 1-2,4,6-7,16,21,27,30-31,35-37
+  s_7debf674f53741::t_be56f522d7596e 3,5,8-15,17-20,22-26,28-29,32-34
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationsPage.tsx
+  s_7debf674f53741::t_a3e57988fa34bd 52-53,104
+  s_7debf674f53741::t_a6c0766ebca719 9
+  s_7debf674f53741::t_3ffcad0d5a6adc 7,13-20,43,51,64,68,70,76,80,87,102,109-114,116-119,125,127-128,131-133,141-142,146-147,150
+  s_7debf674f53741::t_8c3abea3922a4b 11,29-30,32,34,37,44-50,54,58,61,65,69,71-72,74-75,129,148
+  s_7debf674f53741::t_e52eb25d52b186 4-5,10,12,23,25-28,31,33,35-36,38-39,41,55-57,59-60,66,73,79,81-86,88-101,115,120-124,126,130,134-140,143-145,149,151-152
+  s_7debf674f53741::t_4883d6a90f8da4 1-3
+  s_7debf674f53741::t_f77a91e5e9f439 6
+  s_7debf674f53741::t_a4924d36c11a8c 8
+  s_7debf674f53741::t_47e73f9d93fa81 21-22
+  s_7debf674f53741::t_1aa5aa82e057ae 24
+  s_7debf674f53741::t_b0c409ece3f3c9 40
+  s_7debf674f53741::t_3df9209ae19006 42
+  s_7debf674f53741::t_789fd8b67b0f0a 62-63
+  s_7debf674f53741::t_bb5aacddc447e5 67
+  s_7debf674f53741::t_066a118a0b19ad 77-78
+  s_7debf674f53741::t_ee9503e3d2461c 103
+  s_7debf674f53741::t_66d811754228e5 105-108
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/page.tsx
+  s_7debf674f53741::t_be82be6f6b6cdd 27
+  s_7debf674f53741::t_147e3e22a7c3be 24-26
+  s_7debf674f53741::t_d32a0239e8264b 28
+  s_7debf674f53741::t_eadaccae3f8704 1-23
+server/polar/models/organization.py
+  s_7debf674f53741::t_7b3b72f67b6db7 638-641
+server/tests/merchant_migration/test_service.py
+  s_7debf674f53741::t_29b778b77ac530 2-3
+  s_7debf674f53741::t_daa27cb348e4c8 17,47-93,97,108-114,119,128
+  s_7debf674f53741::t_cd5f64eb1eb9ec 101
+  s_7debf674f53741::t_4955628ccc7149 126
+  s_7debf674f53741::t_fa380f17f2fc41 127
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ConnectGuide.tsx
+  s_7debf674f53741::t_a0c6aed1be6273 1-54
+server/polar/merchant_migration/stripe_oauth.py
+  s_7debf674f53741::t_bb6710e2e15ac2 72-73
+  s_7debf674f53741::t_a38275ca49823b 95
+server/polar/organization/schemas.py
+  s_7debf674f53741::t_6801e531119cb2 190-196
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/StripeMark.tsx
+  s_7debf674f53741::t_f9e3a5d54ea7ab 1-32
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.ts
+  s_7debf674f53741::t_3be5138e070e76 1-4,25,33,45-47,52-53,60,63,66-67,73,75
+  s_7debf674f53741::t_65de8773c897be 61-62,64-65
+  s_7debf674f53741::t_ea1ddeeb1417bf 5-24,26-32,34-44,48-51,54-59,70-72,74
+  s_7debf674f53741::t_ac1cd9134dc76e 68-69
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationCard.tsx
+  s_7debf674f53741::t_60d11984b11042 66
+  s_7debf674f53741::t_a04012b1eb1491 1-3,5-6,8-12,16-17,19-65,67-85
+  s_7debf674f53741::t_cb3c781f42586a 4
+  s_7debf674f53741::t_acfdb63ba62139 13-15,18
+  s_7debf674f53741::t_5cb1473c2fb563 7
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/CreateMigrationModal.tsx
+  s_7debf674f53741::t_bb59f0dc56a55a 1-2,4,6-10,12-14,16-29,51,58,60,66-68,70-71
+  s_7debf674f53741::t_c88a90533de500 3,5,11,15,30-50,52-57,59,61-65,69
+server/polar/merchant_migration/service.py
+  s_7debf674f53741::t_7e8c0275200b55 329-334
+  s_7debf674f53741::t_0664afce87005f 36-37
+  s_7debf674f53741::t_0cf10353a14708 164-181
+  s_7debf674f53741::t_e122f213324d7f 88-94
+  s_7debf674f53741::t_6ae176fe921ded 12
+  s_7debf674f53741::t_1d48b4023ba9ac 16,22
+  s_7debf674f53741::t_467d6ee1dadb87 95-99
+  s_7debf674f53741::t_718bcbf43b899f 122-140,249-256
+  s_7debf674f53741::t_17a83a332ef0ed 1
+  s_7debf674f53741::t_50fc943e6e602a 6-7
+  s_7debf674f53741::t_9dcc7a3fd8f36f 141-163,262,266-268,272,275-277
+  s_7debf674f53741::t_ca54a4c6d15c4b 291-294
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationTimeline.tsx
+  s_7debf674f53741::t_6c0ad19c5a51fb 1-39,41-46,50-131
+  s_7debf674f53741::t_079cb9ad3c69ce 40
+  s_7debf674f53741::t_627b0ecdce36a8 47-49
+server/polar/merchant_migration/schemas.py
+  s_7debf674f53741::t_1e46fa8a6ab4c5 5,10-19
+  s_7debf674f53741::t_ea286d7a4de445 3,6-9,41-55
+server/tests/merchant_migration/test_endpoints.py
+  s_7debf674f53741::t_5b0997bcca40b1 193,199
+  s_7debf674f53741::t_496c665a290f2a 11,40-118,124,129-134,137,140-142,148,154,157,172,175,183,200,208,220-222,224,237,240,262,269
+  s_7debf674f53741::t_e014bc960deba1 145-147,149-153,155-156,165,171
+  s_7debf674f53741::t_1ccbb2b0dcf5f7 144,377-413
+  s_7debf674f53741::t_e65f19167608c4 326-376
+  s_7debf674f53741::t_f75c116219622e 230,236
+  s_7debf674f53741::t_c24a8334cfbad6 30-39
+  s_7debf674f53741::t_fafddcd2aa5f7f 255,261
+  s_7debf674f53741::t_5911bf836cc606 143
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/page.tsx
+  s_7debf674f53741::t_9db06d2fe6439b 1-40
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_7debf674f53741::t_319c4ef94ab662 95,151
+  s_7debf674f53741::t_b79d80e4a7d36f 1-11,13-17,20-53,56-84,117-137,139-142,144,161,177,184-185
+  s_7debf674f53741::t_7d37124d9d3ffb 12,18-19,54-55,85-94,96-116,138,143,145-150,152-160,162-176,178-183
+server/polar/models/merchant_migration.py
+  s_7debf674f53741::t_3aba6824cb9323 70-87
+clients/apps/web/src/components/Dashboard/navigation.tsx
+  s_7debf674f53741::t_45852eb1734830 388-392
+server/polar/merchant_migration/endpoints.py
+  s_7debf674f53741::t_addf8236de2c69 75-88
+  s_7debf674f53741::t_17a83a332ef0ed 10
+  s_7debf674f53741::t_95ca907870d90c 59-74,91,101
+  s_7debf674f53741::t_c4b5b623ee50f6 35-58
+clients/apps/web/src/hooks/queries/merchantMigrations.ts
+  s_7debf674f53741::t_0876629fb78d2c 18-29
+  s_7debf674f53741::t_7380a5368751ab 2,5-15,42
+  s_7debf674f53741::t_289df58e4259bc 1,3-4,16-17,30-41
+  s_7debf674f53741::t_1d6e0122a42858 43-58
+server/polar/config.py
+  s_7debf674f53741::t_dc174fafc81d4a 272-275
+  s_7debf674f53741::t_89e03c6b986513 276-279
+clients/packages/client/src/v1.ts
+  s_7debf674f53741::t_4654bb4a32368f 4881-4904,4919-4923,21670-21675,22217-22248,22256-22267,25696-25701,47912-47979,48018-48053,59774-59784
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "c050153bfd7b2d651f38d92bbb25ba6319f8fd39",
+  "prompts": {},
+  "sessions": {
+    "s_7debf674f53741": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "362e7a6e-f287-4300-b636-9e222c4dbce3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

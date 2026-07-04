@@ -406,7 +406,7 @@ export default function ClientPage({
                     <Link
                       key={s.event_type_id}
                       href={spanHref(s)}
-                      className="dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50"
+                      className="dark:border-polar-700 dark:hover:bg-polar-800 flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 dark:bg-transparent"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span className="text-sm leading-snug font-medium dark:text-white">
@@ -547,7 +547,7 @@ export default function ClientPage({
                       <Link
                         key={s.event_id}
                         href={`/dashboard/${organization.slug}/analytics/events/${s.event_id}`}
-                        className="dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50"
+                        className="dark:border-polar-700 dark:hover:bg-polar-800 flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 dark:bg-transparent"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex min-w-0 flex-col gap-1">

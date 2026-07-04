@@ -1,0 +1,25 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/PrecheckSummary.tsx
+  s_7debf674f53741::t_2dd0e3ea3234a6 98
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_7debf674f53741::t_b5a8ac2b4ad376 55
+  s_7debf674f53741::t_27aa63378f0d18 85
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/PrecheckPanel.tsx
+  s_7debf674f53741::t_b62775fe1dcff6 14
+  s_7debf674f53741::t_19d3defc986593 76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "dd617e415c5dd2e862e0b49a2faac352e236a2e5",
+  "prompts": {},
+  "sessions": {
+    "s_7debf674f53741": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "362e7a6e-f287-4300-b636-9e222c4dbce3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

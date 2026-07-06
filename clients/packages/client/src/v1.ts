@@ -19958,6 +19958,28 @@ export interface components {
       | 'lost'
       | 'won'
     /**
+     * DisputeSupportCaseMessageCreate
+     * @description A reply on a dispute case.
+     */
+    DisputeSupportCaseMessageCreate: {
+      /** Body */
+      body?: string | null
+      /** File Ids */
+      file_ids?: string[]
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'dispute'
+      /** @description The merchant's stated grounds for contesting, set on the counter submission. */
+      win_reason?: components['schemas']['DisputeWinReason'] | null
+      /**
+       * Win Reason Other
+       * @description Free-text detail when `win_reason` is `other`.
+       */
+      win_reason_other?: string | null
+    }
+    /**
      * DisputeWinReason
      * @description Why the merchant believes they should win the chargeback.
      *
@@ -29769,6 +29791,21 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /**
+     * ReviewAppealSupportCaseMessageCreate
+     * @description A reply on a review-appeal case.
+     */
+    ReviewAppealSupportCaseMessageCreate: {
+      /** Body */
+      body?: string | null
+      /** File Ids */
+      file_ids?: string[]
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'review_appeal'
+    }
     /** RevokeTokenResponse */
     RevokeTokenResponse: Record<string, never>
     /** S3DownloadURL */
@@ -32420,23 +32457,9 @@ export interface components {
       | 'merchant'
       | 'customer'
       | 'system'
-    /**
-     * SupportCaseMessageCreate
-     * @description A reply: free text, attachments (already uploaded files), or both.
-     */
-    SupportCaseMessageCreate: {
-      /** Body */
-      body?: string | null
-      /** File Ids */
-      file_ids?: string[]
-      /** @description For a dispute case, the merchant's stated grounds for contesting. Set on the counter submission; ignored for other case types. */
-      dispute_win_reason?: components['schemas']['DisputeWinReason'] | null
-      /**
-       * Dispute Win Reason Other
-       * @description Free-text detail when `dispute_win_reason` is `other`.
-       */
-      dispute_win_reason_other?: string | null
-    }
+    SupportCaseMessageCreate:
+      | components['schemas']['ReviewAppealSupportCaseMessageCreate']
+      | components['schemas']['DisputeSupportCaseMessageCreate']
     /**
      * SupportCaseMessageType
      * @description Known message types. Stored as a plain string column (not a DB enum):
@@ -59620,6 +59643,9 @@ export const disputeStatusValues: ReadonlyArray<
   'lost',
   'won',
 ]
+export const disputeSupportCaseMessageCreateTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['DisputeSupportCaseMessageCreate']['type']
+> = ['dispute']
 export const disputeWinReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DisputeWinReason']
 > = [
@@ -61544,6 +61570,9 @@ export const refundSortPropertyValues: ReadonlyArray<
 export const refundStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RefundStatus']
 > = ['pending', 'succeeded', 'failed', 'canceled']
+export const reviewAppealSupportCaseMessageCreateTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ReviewAppealSupportCaseMessageCreate']['type']
+> = ['review_appeal']
 export const sSOFactorTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SSOFactor']['type']
 > = ['sso']

@@ -76,10 +76,11 @@ export const DisputeRespondView = ({ organization, dispute }: Props) => {
     }
     const result = await reply.mutateAsync({
       caseId,
+      type: 'dispute',
       body: explanation.trim(),
       file_ids: evidence.fileIds,
-      dispute_win_reason: reason || null,
-      dispute_win_reason_other: reason === 'other' ? otherReason.trim() : null,
+      win_reason: reason || null,
+      win_reason_other: reason === 'other' ? otherReason.trim() : null,
     })
     if (result.error) {
       toast({

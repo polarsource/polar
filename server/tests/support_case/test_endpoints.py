@@ -118,7 +118,8 @@ class TestReplyToSupportCase:
     ) -> None:
         case = await create_appeal_case(save_fixture, organization)
         response = await client.post(
-            f"/v1/support-cases/{case.id}/messages", json={"body": "hello"}
+            f"/v1/support-cases/{case.id}/messages",
+            json={"type": "review_appeal", "body": "hello"},
         )
         assert response.status_code == 401
 
@@ -133,7 +134,7 @@ class TestReplyToSupportCase:
         case = await create_appeal_case(save_fixture, organization)
         response = await client.post(
             f"/v1/support-cases/{case.id}/messages",
-            json={"body": "here is more detail"},
+            json={"type": "review_appeal", "body": "here is more detail"},
         )
         assert response.status_code == 201
         assert response.json()["body"] == "here is more detail"
@@ -153,7 +154,11 @@ class TestReplyToSupportCase:
 
         response = await client.post(
             f"/v1/support-cases/{case.id}/messages",
-            json={"body": "see attached", "file_ids": [str(file.id)]},
+            json={
+                "type": "review_appeal",
+                "body": "see attached",
+                "file_ids": [str(file.id)],
+            },
         )
         assert response.status_code == 201
 
@@ -180,7 +185,7 @@ class TestReplyToSupportCase:
 
         response = await client.post(
             f"/v1/support-cases/{case.id}/messages",
-            json={"file_ids": [str(file.id)]},
+            json={"type": "review_appeal", "file_ids": [str(file.id)]},
         )
         assert response.status_code == 404
 
@@ -203,9 +208,25 @@ class TestReplyToSupportCase:
         await session.flush()
 
         response = await client.post(
-            f"/v1/support-cases/{case.id}/messages", json={"body": "reopen?"}
+            f"/v1/support-cases/{case.id}/messages",
+            json={"type": "review_appeal", "body": "reopen?"},
         )
         assert response.status_code == 409
+
+    @pytest.mark.auth
+    async def test_reply_type_must_match_case_type(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        case = await create_appeal_case(save_fixture, organization)
+        response = await client.post(
+            f"/v1/support-cases/{case.id}/messages",
+            json={"type": "dispute", "body": "wrong reply type"},
+        )
+        assert response.status_code == 422
 
     @pytest.mark.auth
     async def test_dispute_case_accepts_reply(
@@ -219,7 +240,8 @@ class TestReplyToSupportCase:
     ) -> None:
         case = await create_dispute_case(save_fixture, organization, customer, product)
         response = await client.post(
-            f"/v1/support-cases/{case.id}/messages", json={"body": "my evidence"}
+            f"/v1/support-cases/{case.id}/messages",
+            json={"type": "dispute", "body": "my evidence"},
         )
         assert response.status_code == 201
         assert response.json()["body"] == "my evidence"
@@ -241,8 +263,9 @@ class TestReplyToSupportCase:
         response = await client.post(
             f"/v1/support-cases/{case.id}/messages",
             json={
+                "type": "dispute",
                 "body": "my evidence",
-                "dispute_win_reason": "cardholder_withdrew",
+                "win_reason": "cardholder_withdrew",
             },
         )
         assert response.status_code == 201
@@ -270,9 +293,10 @@ class TestReplyToSupportCase:
         response = await client.post(
             f"/v1/support-cases/{case.id}/messages",
             json={
+                "type": "dispute",
                 "body": "my evidence",
-                "dispute_win_reason": "other",
-                "dispute_win_reason_other": "The subscription was reactivated",
+                "win_reason": "other",
+                "win_reason_other": "The subscription was reactivated",
             },
         )
         assert response.status_code == 201
@@ -302,8 +326,9 @@ class TestReplyToSupportCase:
         response = await client.post(
             f"/v1/support-cases/{case.id}/messages",
             json={
+                "type": "dispute",
                 "body": "my evidence",
-                "dispute_win_reason_other": "would be silently lost",
+                "win_reason_other": "would be silently lost",
             },
         )
         assert response.status_code == 422
@@ -321,7 +346,7 @@ class TestReplyToSupportCase:
         case = await create_dispute_case(save_fixture, organization, customer, product)
         response = await client.post(
             f"/v1/support-cases/{case.id}/messages",
-            json={"body": "my evidence", "dispute_win_reason": "other"},
+            json={"type": "dispute", "body": "my evidence", "win_reason": "other"},
         )
         assert response.status_code == 422
 
@@ -340,7 +365,8 @@ class TestReplyToSupportCase:
         enqueue = mocker.patch("polar.dispute.dispute_case.enqueue_job")
 
         await client.post(
-            f"/v1/support-cases/{case.id}/messages", json={"body": "my evidence"}
+            f"/v1/support-cases/{case.id}/messages",
+            json={"type": "dispute", "body": "my evidence"},
         )
         enqueue.assert_any_call(
             "dispute.post_dispute_greeting",
@@ -351,7 +377,7 @@ class TestReplyToSupportCase:
         enqueue.reset_mock()
         await client.post(
             f"/v1/support-cases/{case.id}/messages",
-            json={"body": "one more thing"},
+            json={"type": "dispute", "body": "one more thing"},
         )
         greeting_calls = [
             call
@@ -377,7 +403,7 @@ class TestDownloadSupportCaseAttachment:
         await session.flush()
         await client.post(
             f"/v1/support-cases/{case.id}/messages",
-            json={"file_ids": [str(file.id)]},
+            json={"type": "review_appeal", "file_ids": [str(file.id)]},
         )
 
         thread = await client.get(f"/v1/support-cases/{case.id}")

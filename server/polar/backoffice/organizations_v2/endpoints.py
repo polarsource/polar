@@ -62,6 +62,7 @@ from polar.models.organization_review import OrganizationReview
 from polar.models.support_case import (
     ReviewAppealSupportCase,
     SupportCaseMessageAuthorKind,
+    SupportCaseType,
 )
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
@@ -101,6 +102,7 @@ from polar.startup_program.service import (
 from polar.support_case.repository import (
     SupportCaseMessageRepository,
 )
+from polar.support_case.schemas import ReviewAppealSupportCaseMessageCreate
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.worker import enqueue_job
 
@@ -1737,6 +1739,8 @@ async def appeal_case_approve_dialog(
                 "An internal note is required to approve — it overrides the AI's "
                 "denial."
             )
+        elif len(internal_note) > 5000:
+            error_message = "The internal note must be at most 5000 characters."
         elif not await message_repository.is_open(case.id):
             error_message = "This appeal case is already closed."
         else:
@@ -1752,9 +1756,11 @@ async def appeal_case_approve_dialog(
                 await appeal_case_service.add_reply(
                     session,
                     case,
+                    ReviewAppealSupportCaseMessageCreate(
+                        type=SupportCaseType.review_appeal, body=internal_note
+                    ),
                     author_kind=SupportCaseMessageAuthorKind.platform,
                     author_user=user_session.user,
-                    body=internal_note,
                     internal=True,
                 )
                 await organization_service.backoffice_approve(
@@ -1806,6 +1812,7 @@ async def appeal_case_approve_dialog(
                     "Staff-only — recorded for future reviews.",
                     rows="3",
                     required=True,
+                    maxlength="5000",
                 ):
                     pass
             with tag.div(classes="form-control"):

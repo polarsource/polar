@@ -2,7 +2,11 @@ from fastapi import Depends
 from fastapi.responses import RedirectResponse
 
 from polar.dispute.dispute_case import dispute_case as dispute_case_service
-from polar.exceptions import PolarError, ResourceNotFound
+from polar.exceptions import (
+    PolarError,
+    PolarRequestValidationError,
+    ResourceNotFound,
+)
 from polar.file.service import file as file_service
 from polar.models import File
 from polar.models.file import FileServiceTypes
@@ -27,6 +31,8 @@ from polar.routing import APIRouter
 
 from . import auth
 from .schemas import (
+    DisputeSupportCaseMessageCreate,
+    ReviewAppealSupportCaseMessageCreate,
     SupportCaseAttachmentID,
     SupportCaseID,
     SupportCaseMessageCreate,
@@ -42,6 +48,21 @@ router = APIRouter(prefix="/support-cases", tags=["support-cases", APITag.privat
 class CaseRepliesNotSupportedError(PolarError):
     def __init__(self, case: SupportCase) -> None:
         super().__init__(f"Replies to {case.type} cases are not supported yet.", 409)
+
+
+def _reply_type_mismatch(
+    message: ReviewAppealSupportCaseMessageCreate | DisputeSupportCaseMessageCreate,
+) -> PolarRequestValidationError:
+    return PolarRequestValidationError(
+        [
+            {
+                "type": "value_error",
+                "loc": ("body", "type"),
+                "msg": "Reply type does not match the support case type.",
+                "input": message.type,
+            }
+        ]
+    )
 
 
 @router.get(
@@ -121,24 +142,26 @@ async def reply_to_support_case(
         files.append(file)
 
     if isinstance(case, ReviewAppealSupportCase):
+        if not isinstance(message, ReviewAppealSupportCaseMessageCreate):
+            raise _reply_type_mismatch(message)
         return await appeal_case_service.add_reply(
             session,
             case,
+            message,
             author_kind=SupportCaseMessageAuthorKind.merchant,
             author_user=auth_subject.subject,
-            body=message.body,
             files=files,
         )
     if isinstance(case, DisputeSupportCase):
+        if not isinstance(message, DisputeSupportCaseMessageCreate):
+            raise _reply_type_mismatch(message)
         return await dispute_case_service.add_reply(
             session,
             case,
+            message,
             author_kind=SupportCaseMessageAuthorKind.merchant,
             author_user=auth_subject.subject,
-            body=message.body,
             files=files,
-            win_reason=message.dispute_win_reason,
-            win_reason_other=message.dispute_win_reason_other,
         )
     raise CaseRepliesNotSupportedError(case)
 

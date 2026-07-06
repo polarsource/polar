@@ -433,25 +433,11 @@ export const useReplyToSupportCase = () =>
   useMutation({
     mutationFn: ({
       caseId,
-      body,
-      file_ids,
-      dispute_win_reason,
-      dispute_win_reason_other,
-    }: {
-      caseId: string
-      body?: string
-      file_ids?: string[]
-      dispute_win_reason?: schemas['DisputeWinReason'] | null
-      dispute_win_reason_other?: string | null
-    }) =>
+      ...payload
+    }: { caseId: string } & schemas['SupportCaseMessageCreate']) =>
       api.POST('/v1/support-cases/{id}/messages', {
         params: { path: { id: caseId } },
-        body: {
-          body: body || null,
-          file_ids,
-          dispute_win_reason,
-          dispute_win_reason_other,
-        },
+        body: { ...payload, body: payload.body || null },
       }),
     onSuccess: async (result, { caseId }) => {
       if (result.error) return

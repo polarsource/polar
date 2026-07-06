@@ -545,3 +545,16 @@ class TestCheckoutConversionDetector:
         )
 
         assert insight is None
+
+    def test_no_insight_with_partial_prior_window(self) -> None:
+        # Only 45 days of history: the prior slice would be a partial 15-day
+        # window, so comparing rates would be misleading — stay silent.
+        checkouts = [0.0] * 5 + [20.0] + [0.0] * 24 + [20.0] + [0.0] * 14
+        succeeded = [0.0] * 5 + [16.0] + [0.0] * 24 + [11.0] + [0.0] * 14
+        assert len(checkouts) == 45
+
+        insight = CheckoutConversionDetector().evaluate(
+            _context(_response_from(checkouts=checkouts, succeeded_checkouts=succeeded))
+        )
+
+        assert insight is None

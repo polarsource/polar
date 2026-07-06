@@ -32,7 +32,9 @@ class CheckoutConversionDetector(Detector):
 
         checkouts = series(response, "checkouts")
         succeeded = series(response, "succeeded_checkouts")
-        if len(checkouts) <= _WINDOW_DAYS:
+        # Need two full 30-day windows to compare; a shorter history would make
+        # `prior` a partial slice while the copy still claims "the prior 30 days".
+        if len(checkouts) < 2 * _WINDOW_DAYS:
             return None
 
         recent_checkouts = sum(checkouts[-_WINDOW_DAYS:])

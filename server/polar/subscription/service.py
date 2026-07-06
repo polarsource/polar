@@ -115,6 +115,8 @@ from .schemas import (
     SubscriptionChargePreviewProration,
     SubscriptionCreate,
     SubscriptionCreateCustomer,
+    SubscriptionPause,
+    SubscriptionResume,
     SubscriptionRevoke,
     SubscriptionUpdate,
     SubscriptionUpdateBase,
@@ -174,6 +176,27 @@ class SubscriptionLocked(SubscriptionError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
         message = "This subscription is pending an update."
+        super().__init__(message, 409)
+
+
+class CannotPauseSubscription(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = "This subscription cannot be paused."
+        super().__init__(message, 409)
+
+
+class NoScheduledPause(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = "This subscription is not scheduled to be paused."
+        super().__init__(message, 409)
+
+
+class NotPausedSubscription(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = "This subscription is not paused."
         super().__init__(message, 409)
 
 
@@ -1105,6 +1128,19 @@ class SubscriptionService:
                 immediately=True,
             )
 
+        if isinstance(update, SubscriptionPause):
+            if update.pause_at_period_end:
+                subscription = await self.pause(
+                    session, ctx, subscription, resumes_at=update.resumes_at
+                )
+            else:
+                subscription = await self.cancel_scheduled_pause(
+                    session, ctx, subscription
+                )
+
+        if isinstance(update, SubscriptionResume):
+            subscription = await self.resume(session, ctx, subscription)
+
         if isinstance(update, SubscriptionUpdateClear):
             subscription = await self.clear_pending_update(session, ctx, subscription)
 
@@ -1850,6 +1886,91 @@ class SubscriptionService:
             customer_reason=customer_reason,
             customer_comment=customer_comment,
         )
+
+    async def pause(
+        self,
+        session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
+        subscription: Subscription,
+        *,
+        resumes_at: datetime | None = None,
+    ) -> Subscription:
+        if not subscription.can_pause():
+            raise CannotPauseSubscription(subscription)
+
+        if resumes_at is not None and resumes_at <= subscription.current_period_end:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "resumes_at"),
+                        "msg": "resumes_at must be after the current period end.",
+                        "input": resumes_at,
+                    }
+                ]
+            )
+
+        subscription.pause_at_period_end = True
+        subscription.resumes_at = resumes_at
+        session.add(subscription)
+        return subscription
+
+    async def cancel_scheduled_pause(
+        self,
+        session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
+        subscription: Subscription,
+    ) -> Subscription:
+        if not subscription.can_cancel_scheduled_pause():
+            raise NoScheduledPause(subscription)
+
+        subscription.pause_at_period_end = False
+        subscription.resumes_at = None
+        session.add(subscription)
+        return subscription
+
+    async def resume(
+        self,
+        session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
+        subscription: Subscription,
+    ) -> Subscription:
+        if not subscription.can_resume():
+            raise NotPausedSubscription(subscription)
+
+        now = utc_now()
+        subscription.status = SubscriptionStatus.active
+        subscription.paused_at = None
+        subscription.resumes_at = None
+
+        # Start a fresh billing period from now and charge immediately.
+        subscription.current_period_start = now
+        subscription.anchor_day = now.day
+        subscription.current_period_end = (
+            subscription.recurring_interval.get_next_period(
+                now, subscription.anchor_day, subscription.recurring_interval_count
+            )
+        )
+        subscription.initialize_meter_period(now)
+
+        await self.enqueue_benefits_grants(session, subscription)
+        await self._create_cycle_billing_entries(session, subscription)
+
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.update(subscription)
+
+        enqueue_job(
+            "order.create_subscription_order",
+            subscription.id,
+            OrderBillingReasonInternal.subscription_cycle,
+        )
+
+        log.info(
+            "subscription.resumed",
+            id=subscription.id,
+            current_period_end=subscription.current_period_end,
+        )
+        return subscription
 
     async def cancel_customer(
         self, session: AsyncSession, customer_id: uuid.UUID

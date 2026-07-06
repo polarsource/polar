@@ -17,10 +17,14 @@ import { toast } from '../Toast/use-toast'
 export interface TOTPSetupModalProps {
   isShown: boolean
   hide: () => void
-  onEnabled: () => void
+  onEnabled: (backupCodes: string[]) => void
 }
 
-const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
+const TOTPSetupContent = ({
+  onEnabled,
+}: {
+  onEnabled: (backupCodes: string[]) => void
+}) => {
   const [code, setCode] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [invalidCodeError, setInvalidCodeError] = useState<boolean>(false)
@@ -150,14 +154,14 @@ const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
       return
     }
     setError(null)
-    const { error } = await totpEnable.mutateAsync(code)
+    const { data, error } = await totpEnable.mutateAsync(code)
     if (error) {
       setError('Invalid code. Please try again.')
       setInvalidCodeError(true)
       return
     }
     toast({ title: 'Two-factor authentication enabled' })
-    onEnabled()
+    onEnabled(data?.codes ?? [])
   }
 
   const handleCodeChange = (value: string) => {

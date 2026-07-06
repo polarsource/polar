@@ -11,12 +11,14 @@ from reauth.authentication_session import (
 from reauth.factors.backup_codes import (
     AlreadyUsedBackupCodeException,
     InvalidBackupCodeException,
+    NotEnrolledBackupCodesException,
 )
 from reauth.factors.email_otp import ExpiredOTPException, InvalidOTPException
 from reauth.factors.totp import (
     AlreadyEnabledTOTPException,
     AlreadyEnrolledTOTPException,
     InvalidTOTPCodeException,
+    NotEnabledTOTPException,
     NotEnrolledTOTPException,
 )
 
@@ -56,12 +58,14 @@ from .oauth2.router import get_oauth_link_router, get_oauth_login_router
 from .schemas import AuthenticationSession as AuthenticationSessionSchema
 from .schemas import (
     AuthenticationSessionStart,
+    BackupCodesEnroll,
     BackupCodesEnrollment,
     BackupCodesStatus,
     BackupCodesVerify,
     EmailOTPRequest,
     EmailOTPVerify,
     LoginMethod,
+    TOTPDelete,
     TOTPEnable,
     TOTPEnrollment,
     TOTPStatus,
@@ -238,6 +242,34 @@ async def email_otp_verify(
     return await authentication_session_service.to_schema(authentication_session)
 
 
+async def _verify_second_factor(
+    identity_id: UUID,
+    code: str | None,
+    totp_factor: TOTPFactor,
+    backup_codes_factor: BackupCodesFactor,
+) -> None:
+    if code is None:
+        raise PolarAuthError("Verification code required", 403)
+    if len(code) == totp_factor.code_length and code.isdigit():
+        try:
+            await totp_factor.verify(identity_id, code)
+        except (
+            NotEnrolledTOTPException,
+            NotEnabledTOTPException,
+            InvalidTOTPCodeException,
+        ) as e:
+            raise PolarAuthError("Invalid verification code", 403) from e
+    else:
+        try:
+            await backup_codes_factor.verify(identity_id, code)
+        except (
+            NotEnrolledBackupCodesException,
+            InvalidBackupCodeException,
+            AlreadyUsedBackupCodeException,
+        ) as e:
+            raise PolarAuthError("Invalid verification code", 403) from e
+
+
 @router.get("/totp", responses={404: {"description": "TOTP factor not enrolled"}})
 async def totp_status(
     auth_subject: AuthorizeWebUserRead,
@@ -271,12 +303,25 @@ async def totp_enroll(
     )
 
 
-@router.post("/totp/enable", status_code=202)
+@router.post(
+    "/totp/enable",
+    responses={
+        403: {
+            "description": "TOTP factor not enrolled or invalid code",
+            "model": PolarAuthError.schema(),
+        },
+        409: {
+            "description": "TOTP factor already enabled",
+            "model": PolarAuthError.schema(),
+        },
+    },
+)
 async def totp_enable(
     enable: TOTPEnable,
     auth_subject: AuthorizeWebUserWrite,
     totp_factor: TOTPFactor = Depends(get_totp_factor),
-) -> None:
+    backup_codes_factor: BackupCodesFactor = Depends(get_backup_codes_factor),
+) -> BackupCodesEnrollment:
     user = auth_subject.subject
     try:
         await totp_factor.enable(user.id, enable.code)
@@ -286,12 +331,25 @@ async def totp_enable(
         raise PolarAuthError("TOTP factor already enabled", 409) from e
     except InvalidTOTPCodeException as e:
         raise PolarAuthError("Invalid TOTP code", 403) from e
-    return None
+
+    codes, _ = await backup_codes_factor.enroll(user.id)
+    return BackupCodesEnrollment(codes=codes)
 
 
-@router.delete("/totp", status_code=204)
+@router.delete(
+    "/totp",
+    status_code=204,
+    responses={
+        403: {
+            "description": "Invalid or missing verification code",
+            "model": PolarAuthError.schema(),
+        },
+        404: {"description": "TOTP factor not enrolled"},
+    },
+)
 async def totp_delete(
     auth_subject: AuthorizeWebUserWrite,
+    totp_delete: TOTPDelete | None = None,
     totp_factor: TOTPFactor = Depends(get_totp_factor),
     backup_codes_factor: BackupCodesFactor = Depends(get_backup_codes_factor),
 ) -> None:
@@ -299,6 +357,9 @@ async def totp_delete(
     enrollment = await totp_factor.get_by_identity_id(user.id)
     if enrollment is None:
         raise ResourceNotFound()
+    if enrollment.enabled:
+        code = totp_delete.code if totp_delete is not None else None
+        await _verify_second_factor(user.id, code, totp_factor, backup_codes_factor)
     await totp_factor.delete(enrollment)
 
     # Disable backup codes as well since they are meant to be used as a backup for TOTP
@@ -354,12 +415,27 @@ async def backup_codes_status(
     )
 
 
-@router.post("/backup-codes", status_code=201)
+@router.post(
+    "/backup-codes",
+    status_code=201,
+    responses={
+        403: {
+            "description": "Invalid or missing verification code",
+            "model": PolarAuthError.schema(),
+        }
+    },
+)
 async def backup_codes_enroll(
     auth_subject: AuthorizeWebUserWrite,
+    backup_codes_enroll: BackupCodesEnroll | None = None,
+    totp_factor: TOTPFactor = Depends(get_totp_factor),
     backup_codes_factor: BackupCodesFactor = Depends(get_backup_codes_factor),
 ) -> BackupCodesEnrollment:
     user = auth_subject.subject
+    totp_enrollment = await totp_factor.get_enrollment(user.id)
+    if totp_enrollment is not None:
+        code = backup_codes_enroll.code if backup_codes_enroll is not None else None
+        await _verify_second_factor(user.id, code, totp_factor, backup_codes_factor)
     codes, _ = await backup_codes_factor.enroll(user.id)
     return BackupCodesEnrollment(codes=codes)
 

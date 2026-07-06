@@ -94,6 +94,14 @@ class TOTPVerify(Schema):
     code: str
 
 
+class TOTPDelete(Schema):
+    code: str | None = None
+
+
+class BackupCodesEnroll(Schema):
+    code: str | None = None
+
+
 class BackupCodesEnrollment(Schema):
     codes: list[str]
 

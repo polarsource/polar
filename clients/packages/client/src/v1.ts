@@ -7545,6 +7545,11 @@ export interface components {
       | 'notifications:write'
       | 'notification_recipients:read'
       | 'notification_recipients:write'
+    /** BackupCodesEnroll */
+    BackupCodesEnroll: {
+      /** Code */
+      code?: string | null
+    }
     /** BackupCodesEnrollment */
     BackupCodesEnrollment: {
       /** Codes */
@@ -28000,6 +28005,17 @@ export interface components {
       | 'disputed'
       | 'charge_disputed'
       | 'cancelled'
+    /** PolarAuthError */
+    PolarAuthError: {
+      /**
+       * Error
+       * @example PolarAuthError
+       * @constant
+       */
+      error: 'PolarAuthError'
+      /** Detail */
+      detail: string
+    }
     /** PolarSelfPaymentMethodInUse */
     PolarSelfPaymentMethodInUse: {
       /**
@@ -32528,6 +32544,11 @@ export interface components {
       | components['schemas']['BalanceRefundReversalEvent']
       | components['schemas']['BalanceDisputeEvent']
       | components['schemas']['BalanceDisputeReversalEvent']
+    /** TOTPDelete */
+    TOTPDelete: {
+      /** Code */
+      code?: string | null
+    }
     /** TOTPEnable */
     TOTPEnable: {
       /** Code */
@@ -38779,7 +38800,11 @@ export interface operations {
       path?: never
       cookie?: never
     }
-    requestBody?: never
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['TOTPDelete'] | null
+      }
+    }
     responses: {
       /** @description Successful Response */
       204: {
@@ -38787,6 +38812,31 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
+      }
+      /** @description Invalid or missing verification code */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PolarAuthError']
+        }
+      }
+      /** @description TOTP factor not enrolled */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
       }
     }
   }
@@ -38804,12 +38854,30 @@ export interface operations {
     }
     responses: {
       /** @description Successful Response */
-      202: {
+      200: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': unknown
+          'application/json': components['schemas']['BackupCodesEnrollment']
+        }
+      }
+      /** @description TOTP factor not enrolled or invalid code */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PolarAuthError']
+        }
+      }
+      /** @description TOTP factor already enabled */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PolarAuthError']
         }
       }
       /** @description Validation Error */
@@ -38890,7 +38958,11 @@ export interface operations {
       path?: never
       cookie?: never
     }
-    requestBody?: never
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['BackupCodesEnroll'] | null
+      }
+    }
     responses: {
       /** @description Successful Response */
       201: {
@@ -38899,6 +38971,24 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['BackupCodesEnrollment']
+        }
+      }
+      /** @description Invalid or missing verification code */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PolarAuthError']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
         }
       }
     }

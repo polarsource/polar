@@ -6,15 +6,14 @@ import {
   useTOTPStatus,
   useTOTPDelete,
 } from '@/hooks'
-import { extractApiErrorMessage } from '@/utils/api/errors'
 import { Button } from '@polar-sh/orbit'
 import { ListGroup } from '@polar-sh/orbit'
-import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { useState } from 'react'
 import TOTPSetupModal from './TOTPSetupModal'
 import BackupCodesModal from './BackupCodesModal'
 import BackupCodesRegenerateModal from './BackupCodesRegenerateModal'
+import TwoFactorCodeModal from './TwoFactorCodeModal'
 import { toast } from '../Toast/use-toast'
 import { KeyRoundIcon, ShieldCheckIcon } from 'lucide-react'
 
@@ -75,21 +74,31 @@ const TwoFactorSettings = () => {
     hide: hideBackupCodesRegenerateModal,
   } = useModal()
 
+  const {
+    isShown: isBackupCodesGenerateModalShown,
+    show: showBackupCodesGenerateModal,
+    hide: hideBackupCodesGenerateModal,
+  } = useModal()
+
   const [newBackupCodes, setNewBackupCodes] = useState<string[] | null>(null)
 
-  const handleDeleteTOTP = async () => {
-    const { error } = await totpDelete.mutateAsync()
-    if (error) {
-      toast({
-        title: 'Error',
-        description: extractApiErrorMessage(error),
-        variant: 'error',
-      })
-      return
+  const handleDeleteTOTP = async (code: string) => {
+    const result = await totpDelete.mutateAsync(code)
+    if (!result.error) {
+      await totpStatus.refetch()
+      toast({ title: 'Two-factor authentication disabled' })
     }
-    await totpStatus.refetch()
-    hideDeleteConfirmModal()
-    toast({ title: 'Two-factor authentication disabled' })
+    return result
+  }
+
+  const handleBackupCodesEnroll = async (code?: string) => {
+    const result = await backupCodesEnroll.mutateAsync(code)
+    if (result.data?.codes) {
+      setNewBackupCodes(result.data.codes)
+      await backupCodesStatus.refetch()
+      showBackupCodesModal()
+    }
+    return result
   }
 
   return (
@@ -142,23 +151,7 @@ const TwoFactorSettings = () => {
                   </Button>
                 ) : (
                   <Button
-                    onClick={async () => {
-                      const { data, error } =
-                        await backupCodesEnroll.mutateAsync()
-                      if (error) {
-                        toast({
-                          title: 'Error',
-                          description: extractApiErrorMessage(error),
-                          variant: 'error',
-                        })
-                        return
-                      }
-                      if (data?.codes) {
-                        setNewBackupCodes(data.codes)
-                        await backupCodesStatus.refetch()
-                        showBackupCodesModal()
-                      }
-                    }}
+                    onClick={showBackupCodesGenerateModal}
                     loading={backupCodesEnroll.isPending}
                   >
                     Generate
@@ -173,57 +166,38 @@ const TwoFactorSettings = () => {
       <TOTPSetupModal
         isShown={isTOTPModalShown}
         hide={hideTOTPModal}
-        onEnabled={async () => {
+        onEnabled={async (backupCodes) => {
           hideTOTPModal()
           await totpStatus.refetch()
-          const { data, error } = await backupCodesEnroll.mutateAsync()
-          if (error) {
-            toast({
-              title: 'Error',
-              description: extractApiErrorMessage(error),
-              variant: 'error',
-            })
-            return
-          }
-          if (data?.codes) {
-            setNewBackupCodes(data.codes)
-            await backupCodesStatus.refetch()
-            showBackupCodesModal()
-          }
+          setNewBackupCodes(backupCodes)
+          await backupCodesStatus.refetch()
+          showBackupCodesModal()
         }}
       />
 
-      <ConfirmModal
+      <TwoFactorCodeModal
         isShown={isDeleteConfirmShown}
         hide={hideDeleteConfirmModal}
         title="Disable Authenticator App?"
         description="You'll no longer be asked for a code when you sign in, and your backup codes will stop working. You can turn it back on anytime."
         destructive
-        destructiveText="Disable"
+        confirmLabel="Disable"
         onConfirm={handleDeleteTOTP}
+      />
+
+      <TwoFactorCodeModal
+        isShown={isBackupCodesGenerateModalShown}
+        hide={hideBackupCodesGenerateModal}
+        title="Generate Backup Codes"
+        description="Backup codes let you sign in if you lose access to your authenticator app."
+        confirmLabel="Generate"
+        onConfirm={handleBackupCodesEnroll}
       />
 
       <BackupCodesRegenerateModal
         isShown={isBackupCodesRegenerateModalShown}
         hide={hideBackupCodesRegenerateModal}
-        onRegenerate={async () => {
-          const { data, error } = await backupCodesEnroll.mutateAsync()
-          if (error) {
-            toast({
-              title: 'Error',
-              description: extractApiErrorMessage(error),
-              variant: 'error',
-            })
-            return null
-          }
-          if (data?.codes) {
-            setNewBackupCodes(data.codes)
-            await backupCodesStatus.refetch()
-            showBackupCodesModal()
-            return data
-          }
-          return null
-        }}
+        onRegenerate={handleBackupCodesEnroll}
       />
 
       <BackupCodesModal

@@ -1,11 +1,11 @@
 'use client'
 
-import { ConfirmModal } from '@/components/Modal/ConfirmModal'
+import TwoFactorCodeModal from './TwoFactorCodeModal'
 
 interface BackupCodesRegenerateModalProps {
   isShown: boolean
   hide: () => void
-  onRegenerate: () => Promise<{ codes: string[] } | null>
+  onRegenerate: (code: string) => Promise<{ error?: { detail?: unknown } }>
 }
 
 export default function BackupCodesRegenerateModal({
@@ -13,20 +13,15 @@ export default function BackupCodesRegenerateModal({
   hide,
   onRegenerate,
 }: BackupCodesRegenerateModalProps) {
-  const handleConfirm = async () => {
-    await onRegenerate()
-    hide()
-  }
-
   return (
-    <ConfirmModal
+    <TwoFactorCodeModal
       isShown={isShown}
       hide={hide}
       title="Regenerate backup codes?"
       description="Your current backup codes will stop working immediately and be replaced with new backup codes."
       destructive
-      destructiveText="Regenerate"
-      onConfirm={handleConfirm}
+      confirmLabel="Regenerate"
+      onConfirm={onRegenerate}
     />
   )
 }

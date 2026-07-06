@@ -114,7 +114,8 @@ export const useTOTPEnable = () =>
 
 export const useTOTPDelete = () =>
   useMutation({
-    mutationFn: () => api.DELETE('/v1/auth/totp'),
+    mutationFn: (code: string) =>
+      api.DELETE('/v1/auth/totp', { body: { code } }),
   })
 
 export const useBackupCodesStatus = () =>
@@ -131,5 +132,6 @@ export const useBackupCodesStatus = () =>
 
 export const useBackupCodesEnroll = () =>
   useMutation({
-    mutationFn: () => api.POST('/v1/auth/backup-codes', {}),
+    mutationFn: (code?: string) =>
+      api.POST('/v1/auth/backup-codes', { body: { code } }),
   })

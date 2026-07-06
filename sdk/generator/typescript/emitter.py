@@ -270,7 +270,7 @@ class TypeScriptEmitter(EmitterBase):
                 collect_enum_imports(variant, enum_imports, self.ir)
         return sorted(enum_imports)
 
-    def _get_output_enum_imports(self) -> set[str]:
+    def _get_output_enum_imports(self) -> list[str]:
         """Collect all enum imports needed for output models."""
         enum_imports: set[str] = set()
         for model in self.ir.output_models:
@@ -279,7 +279,7 @@ class TypeScriptEmitter(EmitterBase):
         for union in self.ir.output_unions:
             for variant in union.variants:
                 collect_enum_imports(variant, enum_imports, self.ir)
-        return enum_imports
+        return sorted(enum_imports)
 
     def _collect_all_errors(self) -> list[ErrorResponse]:
         """Collect all unique error responses from all services and methods."""

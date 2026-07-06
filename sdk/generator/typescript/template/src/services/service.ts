@@ -115,14 +115,13 @@ export const iter{{ method.name | camel }}{{ service.name }} = (
     {{ param.parameter_name }}: {{ param.type | ts_type }},
     {% endfor %}
     {% if method.query_params %}
-    query?: {
+    query{{ "?" if not method.query_params | selectattr("required", "eq", true) | list else "" }}: {
       {% for param in method.query_params %}
-      {{ param.name }}?: {{ param.type | ts_type }};
-      {% endfor %}
-    },
+      {{ param.name }}{% if not param.required %}?{% endif %}: {{ param.type | ts_type }};{% endfor %}
+    }{% if method.body %},{% endif %}
     {% endif %}
     {% if method.body %}
-    body: {{ method.body | ts_type }},
+    body: {{ method.body | ts_type }}
     {% endif %}
   ): AsyncGenerator<{{ method.pagination.item_schema | ts_type }}> {
     let page: number;

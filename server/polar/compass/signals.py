@@ -55,3 +55,16 @@ def value_n_periods_ago(response: MetricsResponse, slug: str, n: int) -> float |
     if index < 0:
         return None
     return values[index]
+
+
+def sum_last_n_periods(response: MetricsResponse, slug: str, n: int) -> float:
+    """Total of a metric over the most recent `n` periods (a rolling window)."""
+    return sum(series(response, slug)[-n:])
+
+
+def format_currency(cents: float) -> str:
+    return f"${cents / 100:,.0f}"
+
+
+def format_pct(fraction: float) -> str:
+    return f"{abs(fraction) * 100:.0f}%"

@@ -30,11 +30,36 @@ class ConfidenceLevel(StrEnum):
     high = "high"
 
 
+class InsightSeverity(StrEnum):
+    """
+    How much the merchant should care, assigned per insight by its detector.
+
+    This is a property of what was *found*, not of the detector: the same MRR
+    detector emits `warning` when revenue falls and `info` when it grows. The
+    feed is ordered by severity first, so the most consequential reading always
+    leads.
+    """
+
+    critical = "critical"
+    """Actively losing money or a risk that needs action now."""
+    warning = "warning"
+    """A negative trend worth attention soon."""
+    opportunity = "opportunity"
+    """A positive lever worth pulling (savings, upsell, pricing)."""
+    info = "info"
+    """Notable movement; no action required."""
+
+
 class InsightAction(Schema):
     """A drill-down link that proves or acts on the insight."""
 
     label: str = Field(description="Button label.")
-    href: str = Field(description="Where the action takes the merchant.")
+    href: str = Field(
+        description=(
+            "Where the action takes the merchant, as a path relative to the "
+            "organization's dashboard root (e.g. `analytics/metrics?metric=mrr`)."
+        )
+    )
 
 
 class InsightDriver(Schema):
@@ -46,7 +71,9 @@ class InsightDriver(Schema):
     MRR scaffold leaves this empty until a dedicated Tinybird breakdown pipe lands.
     """
 
-    dimension: str = Field(description="What the drivers are grouped by, e.g. `product`.")
+    dimension: str = Field(
+        description="What the drivers are grouped by, e.g. `product`."
+    )
     label: str = Field(description="Human-readable name of this driver.")
     contribution_pct: float = Field(
         description="Share of the headline change attributable to this driver (0-1)."
@@ -66,6 +93,9 @@ class Insight(Schema):
     detector_id: str = Field(description="The detector that produced this insight.")
     category: InsightCategory
     category_label: str = Field(description="Visible label next to the category dot.")
+    severity: InsightSeverity = Field(
+        description="How much the merchant should care; the feed sorts on this first."
+    )
     title: str
     body: str
     why: str | None = Field(

@@ -1,7 +1,7 @@
 """Add insight_feedbacks
 
 Revision ID: 8b50a6c50168
-Revises: e5522ef4ec57
+Revises: 94bf1c4552b6
 Create Date: 2026-06-13 00:00:00.000000
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "8b50a6c50168"
-down_revision = "e5522ef4ec57"
+down_revision = "94bf1c4552b6"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 
@@ -75,7 +75,8 @@ def upgrade() -> None:
         "ix_insight_feedbacks_org_key",
         "insight_feedbacks",
         ["organization_id", "insight_key"],
-        unique=False,
+        unique=True,
+        postgresql_where=sa.text("deleted_at IS NULL"),
     )
     # ### end Alembic commands ###
 

@@ -1,6 +1,4 @@
-from polar.kit.time_queries import TimeInterval
-
-from ..schemas import Insight, InsightAction, InsightCategory
+from ..schemas import Insight, InsightAction, InsightCategory, InsightSeverity
 from ..signals import MetricSignal, latest, value_n_periods_ago
 from .base import Detector, DetectorContext, confidence_for_sample
 
@@ -26,14 +24,12 @@ class MRRGrowthDetector(Detector):
     id = "mrr_mom"
     category = InsightCategory.revenue
     category_label = "Revenue"
+    priority = 20
+    metric_slugs = ("monthly_recurring_revenue", "active_subscriptions")
+    lookback_days = _LOOKBACK_DAYS
 
-    async def evaluate(self, ctx: DetectorContext) -> Insight | None:
-        # +5 days of headroom so the lookback period is present in the series.
-        response = await ctx.metrics(
-            ["monthly_recurring_revenue", "active_subscriptions"],
-            days=_LOOKBACK_DAYS + 5,
-            interval=TimeInterval.day,
-        )
+    def evaluate(self, ctx: DetectorContext) -> Insight | None:
+        response = ctx.metrics
 
         current = latest(response, "monthly_recurring_revenue")
         baseline = value_n_periods_ago(
@@ -79,12 +75,15 @@ class MRRGrowthDetector(Detector):
         return self.build_insight(
             ctx,
             period_bucket=ctx.today.strftime("%Y-%m"),
+            # Severity follows the direction of the move: shrinking revenue
+            # needs attention, growing revenue is good news.
+            severity=InsightSeverity.info if grew else InsightSeverity.warning,
             title=title,
             body=body,
             why=why,
             confidence=confidence,
             primary_action=InsightAction(
                 label="View MRR trend",
-                href="metrics?metric=monthly_recurring_revenue",
+                href="analytics/metrics?metric=monthly_recurring_revenue",
             ),
         )

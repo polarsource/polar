@@ -7,9 +7,9 @@ import CodeOutlined from '@mui/icons-material/CodeOutlined'
 import DiamondOutlined from '@mui/icons-material/DiamondOutlined'
 import DiscountOutlined from '@mui/icons-material/DiscountOutlined'
 import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
+import ExploreOutlined from '@mui/icons-material/ExploreOutlined'
 import GavelOutlined from '@mui/icons-material/GavelOutlined'
 import HiveOutlined from '@mui/icons-material/HiveOutlined'
-import InsightsOutlined from '@mui/icons-material/InsightsOutlined'
 import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined'
 import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
@@ -238,12 +238,12 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
     if: true,
   },
   {
-    id: 'insights',
-    title: 'Insights',
-    icon: <InsightsOutlined fontSize="inherit" />,
-    link: `/dashboard/${org?.slug}/insights`,
+    id: 'compass',
+    title: 'Compass',
+    icon: <ExploreOutlined fontSize="inherit" />,
+    link: `/dashboard/${org?.slug}/compass`,
     checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/dashboard/${org?.slug}/insights`)
+      return currentRoute.startsWith(`/dashboard/${org?.slug}/compass`)
     },
     if: true,
   },

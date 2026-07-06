@@ -2174,6 +2174,125 @@ async def create_seed_data(
 
                 await session.flush()
 
+                # Compass insight scenario: the subscriptions above all start
+                # "now", so 30 days ago there was $0 MRR and every Compass
+                # detector has no baseline to compare against. Seed a set of
+                # backdated cohorts so each registered detector sees a real,
+                # material month-over-month move and emits an insight:
+                #   - base + growth: a base live a month ago plus recent adds
+                #     drives MRR growth and subscriber growth; the base being
+                #     higher-priced than the growth adds drags average revenue
+                #     per subscriber down (the ARPU detector).
+                #   - churn: subscriptions live a month ago that ended inside the
+                #     last 30 days feed the churn detector.
+                #   - trial: subscriptions still in trial carry trialing MRR the
+                #     trial-conversion detector reads.
+                # Metrics gate the historical window on `started_at`/`ended_at`,
+                # so backdating those is what places a subscription in the
+                # 30-day-ago baseline and the trailing churn window.
+                compass_product = recurring_products[0]
+                compass_price = next(
+                    (
+                        price
+                        for price in compass_product.all_prices
+                        if isinstance(price, ProductPriceFixed)
+                    ),
+                    None,
+                )
+                if compass_price is not None:
+                    base_amount = compass_price.price_amount
+                    growth_amount = base_amount // 2
+                    compass_cohorts: list[dict[str, Any]] = [
+                        {
+                            "label": "base",
+                            "count": 6,
+                            "started_ago": 45,
+                            "status": SubscriptionStatus.active,
+                            "amount": base_amount,
+                        },
+                        {
+                            "label": "growth",
+                            "count": 4,
+                            "started_ago": 10,
+                            "status": SubscriptionStatus.active,
+                            "amount": growth_amount,
+                        },
+                        {
+                            "label": "churn",
+                            "count": 3,
+                            "started_ago": 65,
+                            "ended_ago": 12,
+                            "status": SubscriptionStatus.canceled,
+                            "amount": base_amount,
+                        },
+                        {
+                            "label": "trial",
+                            "count": 5,
+                            "started_ago": 4,
+                            "trial_ends_in": 10,
+                            "status": SubscriptionStatus.trialing,
+                            "amount": base_amount,
+                        },
+                    ]
+                    compass_seq = 0
+                    for cohort in compass_cohorts:
+                        started = now - timedelta(days=cohort["started_ago"])
+                        ended_at = (
+                            now - timedelta(days=cohort["ended_ago"])
+                            if "ended_ago" in cohort
+                            else None
+                        )
+                        trial_end = (
+                            now + timedelta(days=cohort["trial_ends_in"])
+                            if "trial_ends_in" in cohort
+                            else None
+                        )
+                        amount = cohort["amount"]
+                        for _ in range(cohort["count"]):
+                            compass_seq += 1
+                            cohort_customer = await customer_service.create(
+                                session=session,
+                                customer_create=CustomerIndividualCreate(
+                                    email=f"compass_{compass_seq}@acme-corp.com",
+                                    name=f"Compass Customer {compass_seq}",
+                                    organization_id=organization.id,
+                                ),
+                                auth_subject=auth_subject,
+                            )
+                            cohort_subscription = Subscription(
+                                amount=amount,
+                                net_amount=amount,
+                                currency=compass_price.price_currency,
+                                tax_behavior=TaxBehavior.exclusive,
+                                recurring_interval=compass_product.recurring_interval,
+                                recurring_interval_count=1,
+                                status=cohort["status"],
+                                current_period_start=started,
+                                current_period_end=ended_at or now + timedelta(days=30),
+                                cancel_at_period_end=False,
+                                started_at=started,
+                                ended_at=ended_at,
+                                ends_at=ended_at,
+                                canceled_at=ended_at,
+                                trial_end=trial_end,
+                                customer_id=cohort_customer.id,
+                                organization_id=compass_product.organization_id,
+                                product_id=compass_product.id,
+                                anchor_day=started.day,
+                            )
+                            session.add(cohort_subscription)
+                            await session.flush()
+
+                            session.add(
+                                SubscriptionProductPrice(
+                                    subscription_id=cohort_subscription.id,
+                                    product_price_id=compass_price.id,
+                                    amount=amount,
+                                )
+                            )
+
+                    await session.flush()
+
         # Create seat-based customers with subscriptions and seats
         seat_based_customers = org_data.get("seat_based_customers", [])
         if seat_based_customers and seat_based_product and seat_based_price:

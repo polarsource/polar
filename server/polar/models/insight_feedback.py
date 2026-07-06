@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Index, String, Uuid
+from sqlalchemy import ForeignKey, Index, String, Uuid, text
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
@@ -35,7 +35,16 @@ class InsightFeedback(RecordModel):
 
     __tablename__ = "insight_feedbacks"
     __table_args__ = (
-        Index("ix_insight_feedbacks_org_key", "organization_id", "insight_key"),
+        # One live feedback row per insight per organization: feedback writes
+        # are idempotent (re-submitting updates the action), and the partial
+        # predicate keeps soft-deleted rows from blocking a new one.
+        Index(
+            "ix_insight_feedbacks_org_key",
+            "organization_id",
+            "insight_key",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
     )
 
     insight_key: Mapped[str] = mapped_column(String, nullable=False)

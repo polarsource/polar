@@ -1,25 +1,28 @@
 'use client'
 
+import { schemas } from '@polar-sh/client'
 import { Text, Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
-import type { Insight, InsightCategory } from './types'
 import { twMerge } from 'tailwind-merge'
 
-const categoryColor: Record<InsightCategory, string> = {
+const categoryColor: Record<schemas['InsightCategory'], string> = {
   growth: 'bg-green-500',
   product: 'bg-indigo-500',
   retention: 'bg-teal-500',
   revenue: 'bg-green-500',
   risk: 'bg-red-500',
+  cost: 'bg-amber-500',
 }
 
 export const InsightCard = ({
+  organization,
   insight,
-  onDismiss,
+  onFeedback,
 }: {
-  insight: Insight
-  onDismiss: () => void
+  organization: schemas['Organization']
+  insight: schemas['Insight']
+  onFeedback: (action: schemas['InsightFeedbackAction']) => void
 }) => {
   return (
     <Box
@@ -38,7 +41,7 @@ export const InsightCard = ({
               categoryColor[insight.category],
             )}
           />
-          <Text variant="body">{insight.categoryLabel}</Text>
+          <Text variant="body">{insight.category_label}</Text>
         </Box>
         <Text variant="heading-xxs" as="h3" wrap="balance">
           {insight.title}
@@ -54,20 +57,31 @@ export const InsightCard = ({
         columnGap="xl"
         rowGap="s"
       >
-        {insight.primaryAction && (
-          <Link href={insight.primaryAction.href}>
+        {insight.primary_action && (
+          <Link
+            href={`/dashboard/${organization.slug}/${insight.primary_action.href}`}
+          >
             <Button variant="secondary" size="sm">
-              {insight.primaryAction.label}
+              {insight.primary_action.label}
             </Button>
           </Link>
         )}
         <button
           type="button"
-          onClick={onDismiss}
+          onClick={() => onFeedback('dismiss')}
           className="dark:hover:text-polar-200 cursor-pointer bg-transparent p-0 text-xs text-gray-500 hover:text-gray-700"
         >
           Dismiss
         </button>
+        {insight.rejectable && (
+          <button
+            type="button"
+            onClick={() => onFeedback('not_useful')}
+            className="dark:hover:text-polar-200 cursor-pointer bg-transparent p-0 text-xs text-gray-500 hover:text-gray-700"
+          >
+            Not useful
+          </button>
+        )}
       </Box>
     </Box>
   )

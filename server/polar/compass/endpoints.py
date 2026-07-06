@@ -23,16 +23,16 @@ from .schemas import (
     InsightFeedbackCreate,
     InsightFeedbackResponse,
 )
-from .service import insights as insights_service
+from .service import compass as compass_service
 
-router = APIRouter(prefix="/insights", tags=["insights", APITag.private])
+router = APIRouter(prefix="/compass", tags=["compass", APITag.private])
 
 InsightKey = Annotated[str, Path(description="The deterministic insight key.")]
 
 
-@router.get("/", summary="List Insights", response_model=list[Insight])
+@router.get("/insights", summary="List Insights", response_model=list[Insight])
 async def list_insights(
-    auth_subject: auth.InsightsRead,
+    auth_subject: auth.CompassRead,
     timezone: TimeZoneName = Query(
         default="UTC",
         description="Timezone used to resolve the current period. Default is UTC.",
@@ -50,9 +50,9 @@ async def list_insights(
     List computed insights about your business.
 
     Insights are derived live from your metrics, narrated, and linked to a
-    drill-down. Dismissed insights are excluded.
+    drill-down. They are ordered by importance; dismissed insights are excluded.
     """
-    return await insights_service.list_insights(
+    return await compass_service.list_insights(
         session,
         auth_subject,
         timezone=ZoneInfo(timezone),
@@ -63,13 +63,13 @@ async def list_insights(
 
 
 @router.post(
-    "/{insight_key}/feedback",
+    "/insights/{insight_key}/feedback",
     summary="Submit Insight Feedback",
     response_model=InsightFeedbackResponse,
     status_code=201,
 )
 async def submit_feedback(
-    auth_subject: auth.InsightsWrite,
+    auth_subject: auth.CompassWrite,
     insight_key: InsightKey,
     body: InsightFeedbackCreate,
     session: AsyncSession = Depends(get_db_session),
@@ -78,9 +78,9 @@ async def submit_feedback(
     Record feedback on an insight.
 
     `dismiss` hides it from the feed; `not_useful` additionally feeds a negative
-    quality signal used to tune detectors.
+    quality signal used to tune detectors. Feedback is idempotent per insight.
     """
-    feedback = await insights_service.record_feedback(
+    feedback = await compass_service.record_feedback(
         session, auth_subject, insight_key=insight_key, create=body
     )
     return InsightFeedbackResponse(

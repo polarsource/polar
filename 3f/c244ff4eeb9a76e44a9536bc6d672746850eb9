@@ -1,0 +1,45 @@
+server/tests/merchant_migration/test_endpoints.py
+  s_7debf674f53741::t_2c5b2ffb9cd3ed 11,31-54,56-64,66-77,79-94,96-105,107-119,125,130-135,138,141,143,149,155,158,166,176,182,190,202-204,206,212,218,221,236,242,249,306-342,357,363,383
+  s_7debf674f53741::t_b501374d9f5473 55,65,78,95,106
+server/polar/models/organization.py
+  s_7debf674f53741::t_2c5b2ffb9cd3ed 638-641
+server/polar/merchant_migration/endpoints.py
+  s_7debf674f53741::t_2c5b2ffb9cd3ed 10,35-74,77,87
+  s_7debf674f53741::t_cba256c7ab7441 19
+clients/packages/client/src/v1.ts
+  s_7debf674f53741::t_0d617136ce12d6 4881-4904,21721-21726,22268-22293,22312-22323,25758-25763,48018-48085,59915-59925
+server/polar/merchant_migration/schemas.py
+  s_7debf674f53741::t_d628cef7573cfa 2
+  s_7debf674f53741::t_2c5b2ffb9cd3ed 4,7-19,41-49,56
+  s_7debf674f53741::t_5f3ff42b893e7e 50-55
+server/tests/merchant_migration/test_service.py
+  s_7debf674f53741::t_2c5b2ffb9cd3ed 2,18,51-76,81-84,89-103,107,111,118-123,128,135-137
+  s_7debf674f53741::t_ea1a19c607d94c 77-80,85-88
+server/polar/merchant_migration/service.py
+  s_7debf674f53741::t_bbd0b117bfbb5a 314
+  s_7debf674f53741::t_9504af9e0c1ba0 28
+  s_7debf674f53741::t_2c5b2ffb9cd3ed 1,6-7,12,16,36-37,88-99,122-130,135-162,233-240,246,250-252,256,259-260,309-313
+  s_7debf674f53741::t_7a41dcc9f810fe 131-134
+server/polar/models/merchant_migration.py
+  s_7debf674f53741::t_78e70fa8859a3e 78,80-81,86-87
+  s_7debf674f53741::t_2c5b2ffb9cd3ed 70-76,79,82
+  s_7debf674f53741::t_36ad938dff9c3e 77,83-85,88
+server/polar/organization/schemas.py
+  s_7debf674f53741::t_2c5b2ffb9cd3ed 190-196
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "3fc244ff4eeb9a76e44a9536bc6d672746850eb9",
+  "prompts": {},
+  "sessions": {
+    "s_7debf674f53741": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "362e7a6e-f287-4300-b636-9e222c4dbce3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

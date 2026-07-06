@@ -22278,7 +22278,7 @@ export interface components {
        * Source
        * @description Non-secret metadata about the connected source. The shape varies by provider (e.g. Stripe exposes `stripe_user_id`, `livemode`).
        */
-      source?: {
+      source: {
         [key: string]: unknown
       } | null
     }

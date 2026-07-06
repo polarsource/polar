@@ -59,16 +59,56 @@ resource "aws_s3_bucket" "customer_invoices" {
   bucket = "${local.name_prefix}-customer-invoices"
 }
 
+resource "aws_s3_bucket_server_side_encryption_configuration" "customer_invoices" {
+  bucket = aws_s3_bucket.customer_invoices.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
 resource "aws_s3_bucket" "customer_receipts" {
   bucket = "${local.name_prefix}-customer-receipts"
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "customer_receipts" {
+  bucket = aws_s3_bucket.customer_receipts.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
 }
 
 resource "aws_s3_bucket" "payout_invoices" {
   bucket = "${local.name_prefix}-payout-invoices"
 }
 
+resource "aws_s3_bucket_server_side_encryption_configuration" "payout_invoices" {
+  bucket = aws_s3_bucket.payout_invoices.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
 resource "aws_s3_bucket" "files" {
   bucket = "${local.full_name_prefix}-files"
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "files" {
+  bucket = aws_s3_bucket.files.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
 }
 
 resource "aws_s3_bucket_cors_configuration" "files" {
@@ -84,6 +124,16 @@ resource "aws_s3_bucket_cors_configuration" "files" {
 
 resource "aws_s3_bucket" "public_assets" {
   bucket = "${local.name_prefix}-public-assets"
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "public_assets" {
+  bucket = aws_s3_bucket.public_assets.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "public_assets" {
@@ -113,6 +163,16 @@ resource "aws_s3_bucket_policy" "public_assets" {
 
 resource "aws_s3_bucket" "public_files" {
   bucket = local.public_files_bucket
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "public_files" {
+  bucket = aws_s3_bucket.public_files.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "public_files" {
@@ -153,4 +213,14 @@ resource "aws_s3_bucket_cors_configuration" "public_files" {
 
 resource "aws_s3_bucket" "logs" {
   bucket = "${local.full_name_prefix}-logs"
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "logs" {
+  bucket = aws_s3_bucket.logs.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
 }

@@ -178,6 +178,16 @@ resource "aws_s3_bucket" "production_lambda_artifacts" {
   bucket = "polar-lambda-artifacts"
 }
 
+resource "aws_s3_bucket_server_side_encryption_configuration" "production_lambda_artifacts" {
+  bucket = aws_s3_bucket.production_lambda_artifacts.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
 resource "aws_s3_bucket_versioning" "production_lambda_artifacts" {
   bucket = aws_s3_bucket.production_lambda_artifacts.id
   versioning_configuration {
@@ -363,6 +373,18 @@ resource "aws_s3_bucket" "production_backups" {
   provider = aws.us_east_2
 
   bucket = "polar-sh-backups"
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "production_backups" {
+  provider = aws.us_east_2
+
+  bucket = aws_s3_bucket.production_backups.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "production_backups" {

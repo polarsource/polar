@@ -155,6 +155,7 @@ const STATUS_DISPLAY_NAMES: Record<schemas['SubscriptionStatus'], string> = {
   active: 'Active',
   trialing: 'Trialing',
   past_due: 'Past Due',
+  paused: 'Paused',
   unpaid: 'Unpaid',
   canceled: 'Canceled',
   incomplete: 'Incomplete',
@@ -165,10 +166,11 @@ const STATUS_ORDER: Record<schemas['SubscriptionStatus'], number> = {
   active: 0,
   trialing: 1,
   past_due: 2,
-  unpaid: 3,
-  incomplete: 4,
-  canceled: 5,
-  incomplete_expired: 6,
+  paused: 3,
+  unpaid: 4,
+  incomplete: 5,
+  canceled: 6,
+  incomplete_expired: 7,
 }
 
 const INTERVAL_LABELS: Record<schemas['RecurringInterval'], string> = {

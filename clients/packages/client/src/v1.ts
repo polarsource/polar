@@ -6275,6 +6275,55 @@ export interface webhooks {
     patch?: never
     trace?: never
   }
+  'subscription.paused': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * subscription.paused
+     * @description Sent when a subscription is paused and the customer temporarily loses access.
+     *
+     *     No order is created while paused. The subscription resumes either on its
+     *     scheduled resume date or when resumed manually, starting a new billing period.
+     *
+     *     **Discord & Slack support:** Full
+     */
+    post: operations['_endpointsubscription_paused_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'subscription.resumed': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * subscription.resumed
+     * @description Sent when a paused subscription resumes, restoring the customer's access.
+     *
+     *     Resuming starts a new billing period and charges the customer immediately.
+     *
+     *     **Discord & Slack support:** Full
+     */
+    post: operations['_endpointsubscription_resumed_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   'refund.created': {
     parameters: {
       query?: never
@@ -16662,6 +16711,21 @@ export interface components {
        */
       past_due_at?: string | null
       /**
+       * Pause At Period End
+       * @description Whether the subscription will be paused at the end of the current period.
+       */
+      pause_at_period_end: boolean
+      /**
+       * Paused At
+       * @description The timestamp when the subscription was paused.
+       */
+      paused_at?: string | null
+      /**
+       * Resumes At
+       * @description The timestamp when a paused subscription is scheduled to automatically resume, if set.
+       */
+      resumes_at?: string | null
+      /**
        * Customer Id
        * Format: uuid4
        * @description The ID of the subscribed customer.
@@ -17035,6 +17099,8 @@ export interface components {
       update_seats: boolean
       /** Update Plan */
       update_plan: boolean
+      /** Pause */
+      pause?: boolean
     }
     /** CustomerPortalUsageSettings */
     CustomerPortalUsageSettings: {
@@ -18103,6 +18169,21 @@ export interface components {
        */
       past_due_at?: string | null
       /**
+       * Pause At Period End
+       * @description Whether the subscription will be paused at the end of the current period.
+       */
+      pause_at_period_end: boolean
+      /**
+       * Paused At
+       * @description The timestamp when the subscription was paused.
+       */
+      paused_at?: string | null
+      /**
+       * Resumes At
+       * @description The timestamp when a paused subscription is scheduled to automatically resume, if set.
+       */
+      resumes_at?: string | null
+      /**
        * Customer Id
        * Format: uuid4
        * @description The ID of the subscribed customer.
@@ -18249,6 +18330,22 @@ export interface components {
        */
       name: string
     }
+    /** CustomerSubscriptionPause */
+    CustomerSubscriptionPause: {
+      /**
+       * Pause At Period End
+       * @description Pause an active subscription at the end of the current period.
+       *
+       *     Or cancel a scheduled pause on a subscription set to be paused at
+       *     period end.
+       */
+      pause_at_period_end: boolean
+      /**
+       * Resumes At
+       * @description Date at which the paused subscription should automatically resume. If not set, it stays paused until resumed. Must be after the current period end.
+       */
+      resumes_at?: string | null
+    }
     /** CustomerSubscriptionProduct */
     CustomerSubscriptionProduct: {
       /**
@@ -18337,6 +18434,15 @@ export interface components {
       medias: components['schemas']['ProductMediaFileRead'][]
       organization: components['schemas']['CustomerOrganization']
     }
+    /** CustomerSubscriptionResume */
+    CustomerSubscriptionResume: {
+      /**
+       * Resume
+       * @description Resume a paused subscription immediately, starting a new billing period and charging the customer.
+       * @constant
+       */
+      resume: true
+    }
     /**
      * CustomerSubscriptionSortProperty
      * @enum {string}
@@ -18356,6 +18462,8 @@ export interface components {
       | components['schemas']['CustomerSubscriptionUpdateProduct']
       | components['schemas']['CustomerSubscriptionUpdateSeats']
       | components['schemas']['CustomerSubscriptionCancel']
+      | components['schemas']['CustomerSubscriptionPause']
+      | components['schemas']['CustomerSubscriptionResume']
       | components['schemas']['CustomerSubscriptionUpdateClear']
     /** CustomerSubscriptionUpdateClear */
     CustomerSubscriptionUpdateClear: {
@@ -24364,6 +24472,21 @@ export interface components {
        */
       past_due_at?: string | null
       /**
+       * Pause At Period End
+       * @description Whether the subscription will be paused at the end of the current period.
+       */
+      pause_at_period_end: boolean
+      /**
+       * Paused At
+       * @description The timestamp when the subscription was paused.
+       */
+      paused_at?: string | null
+      /**
+       * Resumes At
+       * @description The timestamp when a paused subscription is scheduled to automatically resume, if set.
+       */
+      resumes_at?: string | null
+      /**
        * Customer Id
        * Format: uuid4
        * @description The ID of the subscribed customer.
@@ -25492,6 +25615,10 @@ export interface components {
       subscription_cycled_after_trial: boolean
       /** Subscription Past Due */
       subscription_past_due: boolean
+      /** Subscription Paused */
+      subscription_paused: boolean
+      /** Subscription Resumed */
+      subscription_resumed: boolean
       /** Subscription Renewal Reminder */
       subscription_renewal_reminder: boolean
       /** Subscription Revoked */
@@ -30664,6 +30791,21 @@ export interface components {
        */
       past_due_at?: string | null
       /**
+       * Pause At Period End
+       * @description Whether the subscription will be paused at the end of the current period.
+       */
+      pause_at_period_end: boolean
+      /**
+       * Paused At
+       * @description The timestamp when the subscription was paused.
+       */
+      paused_at?: string | null
+      /**
+       * Resumes At
+       * @description The timestamp when a paused subscription is scheduled to automatically resume, if set.
+       */
+      resumes_at?: string | null
+      /**
        * Customer Id
        * Format: uuid4
        * @description The ID of the subscribed customer.
@@ -31514,6 +31656,25 @@ export interface components {
       /** Recurring Interval Count */
       recurring_interval_count?: number
     }
+    /** SubscriptionPause */
+    SubscriptionPause: {
+      /**
+       * Pause At Period End
+       * @description Pause an active subscription at the end of the current period.
+       *
+       *     Or cancel a scheduled pause on a subscription set to be paused at
+       *     period end.
+       */
+      pause_at_period_end: boolean
+      /**
+       * Resumes At
+       * @description Date at which the paused subscription should automatically resume.
+       *
+       *     If not set, the subscription stays paused until it is resumed manually.
+       *     Must be after the current period end.
+       */
+      resumes_at?: string | null
+    }
     /**
      * SubscriptionProductUpdatedEvent
      * @description An event created by Polar when a subscription changes the product.
@@ -31696,6 +31857,15 @@ export interface components {
       recurring_interval?: string
       /** Recurring Interval Count */
       recurring_interval_count?: number
+    }
+    /** SubscriptionResume */
+    SubscriptionResume: {
+      /**
+       * Resume
+       * @description Resume a paused subscription immediately, starting a new billing period and charging the customer.
+       * @constant
+       */
+      resume: true
     }
     /** SubscriptionRevoke */
     SubscriptionRevoke: {
@@ -31952,6 +32122,7 @@ export interface components {
       | 'past_due'
       | 'canceled'
       | 'unpaid'
+      | 'paused'
     /**
      * SubscriptionUncanceledEvent
      * @description An event created by Polar when a subscription cancellation is reversed.
@@ -32048,6 +32219,8 @@ export interface components {
       | components['schemas']['SubscriptionUpdateBillingPeriod']
       | components['schemas']['SubscriptionCancel']
       | components['schemas']['SubscriptionRevoke']
+      | components['schemas']['SubscriptionPause']
+      | components['schemas']['SubscriptionResume']
       | components['schemas']['SubscriptionUpdateClear']
     /** SubscriptionUpdateBase */
     SubscriptionUpdateBase: {
@@ -34321,6 +34494,8 @@ export interface components {
       | 'subscription.uncanceled'
       | 'subscription.revoked'
       | 'subscription.past_due'
+      | 'subscription.paused'
+      | 'subscription.resumed'
       | 'refund.created'
       | 'refund.updated'
       | 'product.created'
@@ -34687,6 +34862,51 @@ export interface components {
        * @constant
        */
       type: 'subscription.past_due'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Subscription']
+    }
+    /**
+     * WebhookSubscriptionPausedPayload
+     * @description Sent when a subscription is paused and the customer temporarily loses access.
+     *
+     *     No order is created while paused. The subscription resumes either on its
+     *     scheduled resume date or when resumed manually, starting a new billing period.
+     *
+     *     **Discord & Slack support:** Full
+     */
+    WebhookSubscriptionPausedPayload: {
+      /**
+       * Type
+       * @example subscription.paused
+       * @constant
+       */
+      type: 'subscription.paused'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Subscription']
+    }
+    /**
+     * WebhookSubscriptionResumedPayload
+     * @description Sent when a paused subscription resumes, restoring the customer's access.
+     *
+     *     Resuming starts a new billing period and charges the customer immediately.
+     *
+     *     **Discord & Slack support:** Full
+     */
+    WebhookSubscriptionResumedPayload: {
+      /**
+       * Type
+       * @example subscription.resumed
+       * @constant
+       */
+      type: 'subscription.resumed'
       /**
        * Timestamp
        * Format: date-time
@@ -53549,6 +53769,72 @@ export interface operations {
       }
     }
   }
+  _endpointsubscription_paused_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookSubscriptionPausedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointsubscription_resumed_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookSubscriptionResumedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   _endpointrefund_created_post: {
     parameters: {
       query?: never
@@ -61849,6 +62135,7 @@ export const subscriptionStatusValues: ReadonlyArray<
   'past_due',
   'canceled',
   'unpaid',
+  'paused',
 ]
 export const subscriptionUncanceledEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionUncanceledEvent']['name']
@@ -62299,6 +62586,8 @@ export const webhookEventTypeValues: ReadonlyArray<
   'subscription.uncanceled',
   'subscription.revoked',
   'subscription.past_due',
+  'subscription.paused',
+  'subscription.resumed',
   'refund.created',
   'refund.updated',
   'product.created',

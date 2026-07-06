@@ -81,6 +81,6 @@ class ChurnSpikeDetector(Detector):
             confidence=confidence,
             primary_action=InsightAction(
                 label="View churn",
-                href="analytics/metrics?metric=churned_subscriptions",
+                metric="churned_subscriptions",
             ),
         )

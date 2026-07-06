@@ -1,5 +1,6 @@
 'use client'
 
+import { getMetricGroupSlug } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { Text, Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -18,12 +19,21 @@ const categoryColor: Record<schemas['InsightCategory'], string> = {
 export const InsightCard = ({
   organization,
   insight,
-  onFeedback,
 }: {
   organization: schemas['Organization']
   insight: schemas['Insight']
-  onFeedback: (action: schemas['InsightFeedbackAction']) => void
 }) => {
+  const action = insight.primary_action
+  // The backend names the metric behind the insight; the client owns routing
+  // and resolves it to that metric's analytics page (grouped by category).
+  const metricsBase = `/dashboard/${organization.slug}/analytics/metrics`
+  const actionHref = action
+    ? (() => {
+        const group = getMetricGroupSlug(action.metric)
+        return group ? `${metricsBase}/${group}` : metricsBase
+      })()
+    : null
+
   return (
     <Box
       as="article"
@@ -57,30 +67,12 @@ export const InsightCard = ({
         columnGap="xl"
         rowGap="s"
       >
-        {insight.primary_action && (
-          <Link
-            href={`/dashboard/${organization.slug}/${insight.primary_action.href}`}
-          >
+        {action && actionHref && (
+          <Link href={actionHref}>
             <Button variant="secondary" size="sm">
-              {insight.primary_action.label}
+              {action.label}
             </Button>
           </Link>
-        )}
-        <button
-          type="button"
-          onClick={() => onFeedback('dismiss')}
-          className="dark:hover:text-polar-200 cursor-pointer bg-transparent p-0 text-xs text-gray-500 hover:text-gray-700"
-        >
-          Dismiss
-        </button>
-        {insight.rejectable && (
-          <button
-            type="button"
-            onClick={() => onFeedback('not_useful')}
-            className="dark:hover:text-polar-200 cursor-pointer bg-transparent p-0 text-xs text-gray-500 hover:text-gray-700"
-          >
-            Not useful
-          </button>
         )}
       </Box>
     </Box>

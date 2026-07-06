@@ -22,6 +22,16 @@ async def main() -> None:
     tz = ZoneInfo("UTC")
     today = date.today()
 
+    slugs = sorted({slug for d in DETECTORS for slug in d.metric_slugs})
+    days = max(d.lookback_days for d in DETECTORS) + 5
+    probe = [
+        *slugs,
+        "gross_margin_percentage",
+        "cost_per_user",
+        "costs",
+        "revenue",
+    ]
+
     async with sessionmaker() as session:
         orgs = (await session.execute(select(Organization).limit(20))).scalars().all()
         for org in orgs:
@@ -31,25 +41,28 @@ async def main() -> None:
             response = await metrics_service.get_metrics(
                 session,
                 auth_subject,
-                start_date=today - timedelta(days=35),
+                start_date=today - timedelta(days=days),
                 end_date=today,
                 timezone=tz,
                 interval=TimeInterval.day,
                 organization_id=[org.id],
-                metrics=["monthly_recurring_revenue", "active_subscriptions"],
+                metrics=sorted(set(probe)),
             )
-            mrr_now = latest(response, "monthly_recurring_revenue")
-            mrr_base = value_n_periods_ago(response, "monthly_recurring_revenue", 30)
-            subs = int(latest(response, "active_subscriptions"))
             ctx = DetectorContext(
                 organization_id=org.id, timezone=tz, today=today, metrics=response
             )
             insights = [i for d in DETECTORS if (i := d.evaluate(ctx)) is not None]
             titles = [f"{i.title} [{i.severity}]" for i in insights]
+            margin_now = latest(response, "gross_margin_percentage")
+            margin_base = value_n_periods_ago(response, "gross_margin_percentage", 30)
+            cpu_now = latest(response, "cost_per_user")
+            cpu_base = value_n_periods_ago(response, "cost_per_user", 30)
             print(
-                f"{org.slug:<24} now={mrr_now / 100:>8.2f} "
-                f"30d={('n/a' if mrr_base is None else f'{mrr_base / 100:.2f}'):>8} "
-                f"subs={subs:>3} -> {titles}"
+                f"{org.slug:<24} "
+                f"margin={margin_now:>6.3f} (30d={margin_base}) "
+                f"cost/user={cpu_now / 100:>7.2f} (30d="
+                f"{'n/a' if cpu_base is None else f'{cpu_base / 100:.2f}'}) "
+                f"-> {titles}"
             )
 
 

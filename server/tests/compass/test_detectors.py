@@ -7,6 +7,9 @@ import pytest
 from polar.compass.detectors.arpu import ARPUMovementDetector
 from polar.compass.detectors.base import DetectorContext, confidence_for_sample
 from polar.compass.detectors.churn import ChurnSpikeDetector
+from polar.compass.detectors.conversion import CheckoutConversionDetector
+from polar.compass.detectors.cost_per_user import CostPerUserDetector
+from polar.compass.detectors.margin import GrossMarginDetector
 from polar.compass.detectors.mrr import MRRGrowthDetector
 from polar.compass.detectors.subscribers import SubscriberGrowthDetector
 from polar.compass.detectors.trials import TrialConversionDetector
@@ -336,6 +339,206 @@ class TestTrialConversionDetector:
                     active_subscriptions=subs,
                 )
             )
+        )
+
+        assert insight is None
+
+
+class TestGrossMarginDetector:
+    def test_fires_when_margin_is_thin(self) -> None:
+        margin = [0.55] * 36  # stable but under the 70% healthy bar
+        subs = [50.0] * 36
+
+        insight = GrossMarginDetector().evaluate(
+            _context(
+                _response_from(
+                    gross_margin_percentage=margin, active_subscriptions=subs
+                )
+            )
+        )
+
+        assert insight is not None
+        assert insight.category is InsightCategory.cost
+        assert insight.severity is InsightSeverity.warning
+        assert "Gross margin is 55%" in insight.title
+        assert insight.detector_id == "gross_margin"
+
+    def test_compression_is_flagged(self) -> None:
+        margin = [0.80] * 6 + [0.75] * 29 + [0.68]
+        subs = [50.0] * 36
+
+        insight = GrossMarginDetector().evaluate(
+            _context(
+                _response_from(
+                    gross_margin_percentage=margin, active_subscriptions=subs
+                )
+            )
+        )
+
+        assert insight is not None
+        assert "compressed to 68%" in insight.title
+        assert insight.severity is InsightSeverity.warning
+
+    def test_deep_loss_is_critical(self) -> None:
+        margin = [0.30] * 36
+        subs = [50.0] * 36
+
+        insight = GrossMarginDetector().evaluate(
+            _context(
+                _response_from(
+                    gross_margin_percentage=margin, active_subscriptions=subs
+                )
+            )
+        )
+
+        assert insight is not None
+        assert insight.severity is InsightSeverity.critical
+
+    def test_improvement_is_an_opportunity(self) -> None:
+        margin = [0.78] * 6 + [0.85] * 29 + [0.90]
+        subs = [50.0] * 36
+
+        insight = GrossMarginDetector().evaluate(
+            _context(
+                _response_from(
+                    gross_margin_percentage=margin, active_subscriptions=subs
+                )
+            )
+        )
+
+        assert insight is not None
+        assert insight.severity is InsightSeverity.opportunity
+        assert "improved to 90%" in insight.title
+
+    def test_silent_without_cost_data(self) -> None:
+        # No Tinybird cost/revenue data resolves margin to 0 — stay quiet.
+        margin = [0.0] * 36
+        subs = [50.0] * 36
+
+        insight = GrossMarginDetector().evaluate(
+            _context(
+                _response_from(
+                    gross_margin_percentage=margin, active_subscriptions=subs
+                )
+            )
+        )
+
+        assert insight is None
+
+    def test_no_insight_when_healthy_and_stable(self) -> None:
+        margin = [0.88] * 36
+        subs = [50.0] * 36
+
+        insight = GrossMarginDetector().evaluate(
+            _context(
+                _response_from(
+                    gross_margin_percentage=margin, active_subscriptions=subs
+                )
+            )
+        )
+
+        assert insight is None
+
+
+class TestCostPerUserDetector:
+    def test_fires_when_cost_rises(self) -> None:
+        # Cost per user (cents) climbs from $2.00 to $3.00.
+        cpu = [200.0] * 6 + [250.0] * 29 + [300.0]
+        subs = [50.0] * 36
+
+        insight = CostPerUserDetector().evaluate(
+            _context(_response_from(cost_per_user=cpu, active_subscriptions=subs))
+        )
+
+        assert insight is not None
+        assert insight.category is InsightCategory.cost
+        assert insight.severity is InsightSeverity.warning
+        assert "rose 50%" in insight.title
+        assert insight.detector_id == "cost_per_user"
+
+    def test_decline_is_an_opportunity(self) -> None:
+        cpu = [300.0] * 6 + [250.0] * 29 + [200.0]
+        subs = [50.0] * 36
+
+        insight = CostPerUserDetector().evaluate(
+            _context(_response_from(cost_per_user=cpu, active_subscriptions=subs))
+        )
+
+        assert insight is not None
+        assert insight.severity is InsightSeverity.opportunity
+        assert "fell" in insight.title
+
+    def test_silent_when_cost_negligible(self) -> None:
+        # Sub-dollar cost per user is noise, not a signal.
+        cpu = [3.0] * 6 + [4.0] * 29 + [6.0]
+        subs = [50.0] * 36
+
+        insight = CostPerUserDetector().evaluate(
+            _context(_response_from(cost_per_user=cpu, active_subscriptions=subs))
+        )
+
+        assert insight is None
+
+
+class TestCheckoutConversionDetector:
+    def test_fires_when_conversion_drops(self) -> None:
+        # 66 daily periods. Prior 30d: 20 checkouts, 16 succeeded (80%).
+        # Recent 30d: 20 checkouts, 11 succeeded (55%) → down 25 points.
+        checkouts = [0.0] * 6 + [20.0] + [0.0] * 29 + [20.0] + [0.0] * 29
+        succeeded = [0.0] * 6 + [16.0] + [0.0] * 29 + [11.0] + [0.0] * 29
+
+        insight = CheckoutConversionDetector().evaluate(
+            _context(_response_from(checkouts=checkouts, succeeded_checkouts=succeeded))
+        )
+
+        assert insight is not None
+        assert insight.category is InsightCategory.product
+        assert insight.severity is InsightSeverity.warning
+        assert "fell to 55%" in insight.title
+        assert "down 25 points from 80%" in insight.body
+        assert insight.detector_id == "checkout_conversion"
+
+    def test_improvement_is_an_opportunity(self) -> None:
+        checkouts = [0.0] * 6 + [20.0] + [0.0] * 29 + [20.0] + [0.0] * 29
+        succeeded = [0.0] * 6 + [11.0] + [0.0] * 29 + [16.0] + [0.0] * 29
+
+        insight = CheckoutConversionDetector().evaluate(
+            _context(_response_from(checkouts=checkouts, succeeded_checkouts=succeeded))
+        )
+
+        assert insight is not None
+        assert insight.severity is InsightSeverity.opportunity
+        assert "rose to 80%" in insight.title
+
+    def test_no_insight_on_immaterial_change(self) -> None:
+        # 80% → 78%, under the 5-point bar.
+        checkouts = [0.0] * 6 + [20.0] + [0.0] * 29 + [50.0] + [0.0] * 29
+        succeeded = [0.0] * 6 + [16.0] + [0.0] * 29 + [39.0] + [0.0] * 29
+
+        insight = CheckoutConversionDetector().evaluate(
+            _context(_response_from(checkouts=checkouts, succeeded_checkouts=succeeded))
+        )
+
+        assert insight is None
+
+    def test_suppressed_when_recent_volume_too_small(self) -> None:
+        # Only 3 recent checkouts — below the confidence floor.
+        checkouts = [0.0] * 6 + [20.0] + [0.0] * 29 + [3.0] + [0.0] * 29
+        succeeded = [0.0] * 6 + [16.0] + [0.0] * 29 + [0.0] + [0.0] * 29
+
+        insight = CheckoutConversionDetector().evaluate(
+            _context(_response_from(checkouts=checkouts, succeeded_checkouts=succeeded))
+        )
+
+        assert insight is None
+
+    def test_no_insight_without_prior_baseline(self) -> None:
+        # A recent funnel with no prior-window volume to compare against.
+        checkouts = [0.0] * 36 + [20.0] + [0.0] * 29
+        succeeded = [0.0] * 36 + [11.0] + [0.0] * 29
+
+        insight = CheckoutConversionDetector().evaluate(
+            _context(_response_from(checkouts=checkouts, succeeded_checkouts=succeeded))
         )
 
         assert insight is None

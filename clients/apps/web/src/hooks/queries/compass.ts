@@ -1,7 +1,6 @@
-import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { paths, schemas, unwrap } from '@polar-sh/client'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { paths, unwrap } from '@polar-sh/client'
+import { useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 type CompassTimezone = NonNullable<
@@ -26,29 +25,4 @@ export const useCompassInsights = (organizationId: string) =>
         }),
       ),
     retry: defaultRetry,
-  })
-
-export const useInsightFeedback = (organizationId: string) =>
-  useMutation({
-    mutationFn: ({
-      insightKey,
-      action,
-    }: {
-      insightKey: string
-      action: schemas['InsightFeedbackAction']
-    }) =>
-      api.POST('/v1/compass/insights/{insight_key}/feedback', {
-        params: { path: { insight_key: insightKey } },
-        body: { action },
-      }),
-    onSuccess: (result) => {
-      if (result.error) {
-        return
-      }
-      // The list endpoint excludes insights with feedback, so a refetch is
-      // what actually removes the card.
-      getQueryClient().invalidateQueries({
-        queryKey: ['compass_insights', { organizationId }],
-      })
-    },
   })

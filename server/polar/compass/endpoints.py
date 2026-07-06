@@ -1,33 +1,20 @@
-from typing import Annotated
 from zoneinfo import ZoneInfo
 
-from fastapi import Depends, Path, Query
+from fastapi import Depends, Query
 from pydantic_extra_types.timezone_name import TimeZoneName
 
 from polar.kit.schemas import MultipleQueryFilter
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.postgres import (
-    AsyncReadSession,
-    AsyncSession,
-    get_db_read_session,
-    get_db_session,
-)
+from polar.postgres import AsyncReadSession, get_db_read_session
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from . import auth
-from .schemas import (
-    Insight,
-    InsightCategory,
-    InsightFeedbackCreate,
-    InsightFeedbackResponse,
-)
+from .schemas import Insight, InsightCategory
 from .service import compass as compass_service
 
 router = APIRouter(prefix="/compass", tags=["compass", APITag.private])
-
-InsightKey = Annotated[str, Path(description="The deterministic insight key.")]
 
 
 @router.get("/insights", summary="List Insights", response_model=list[Insight])
@@ -50,7 +37,7 @@ async def list_insights(
     List computed insights about your business.
 
     Insights are derived live from your metrics, narrated, and linked to a
-    drill-down. They are ordered by importance; dismissed insights are excluded.
+    drill-down. They are ordered by importance.
     """
     return await compass_service.list_insights(
         session,
@@ -59,30 +46,4 @@ async def list_insights(
         organization_id=organization_id,
         category=category,
         redis=redis,
-    )
-
-
-@router.post(
-    "/insights/{insight_key}/feedback",
-    summary="Submit Insight Feedback",
-    response_model=InsightFeedbackResponse,
-    status_code=201,
-)
-async def submit_feedback(
-    auth_subject: auth.CompassWrite,
-    insight_key: InsightKey,
-    body: InsightFeedbackCreate,
-    session: AsyncSession = Depends(get_db_session),
-) -> InsightFeedbackResponse:
-    """
-    Record feedback on an insight.
-
-    `dismiss` hides it from the feed; `not_useful` additionally feeds a negative
-    quality signal used to tune detectors. Feedback is idempotent per insight.
-    """
-    feedback = await compass_service.record_feedback(
-        session, auth_subject, insight_key=insight_key, create=body
-    )
-    return InsightFeedbackResponse(
-        insight_key=feedback.insight_key, action=feedback.action
     )

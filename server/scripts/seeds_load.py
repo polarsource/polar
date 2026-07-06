@@ -59,6 +59,8 @@ from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOp
 from polar.meter.schemas import MeterCreate
 from polar.meter.service import meter as meter_service
 from polar.models.benefit import BenefitType
+from polar.models.checkout import Checkout, CheckoutStatus
+from polar.models.checkout_product import CheckoutProduct
 from polar.models.customer import Customer
 from polar.models.customer_seat import CustomerSeat, SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
@@ -2288,6 +2290,53 @@ async def create_seed_data(
                                     subscription_id=cohort_subscription.id,
                                     product_price_id=compass_price.id,
                                     amount=amount,
+                                )
+                            )
+
+                    await session.flush()
+
+                    # Checkout history for the Compass conversion detector, which
+                    # compares the trailing 30-day checkout conversion rate against
+                    # the prior 30 days. Seed two windows with a deliberate drop —
+                    # 80% a month ago down to 55% now — so the detector fires.
+                    # Post-cutoff checkouts are counted by `opened_at`, so each row
+                    # carries it in `analytics_metadata`.
+                    # (window label, days-ago range, total, succeeded):
+                    checkout_windows = (
+                        ("prior", range(35, 55), 20, 16),
+                        ("recent", range(3, 23), 20, 11),
+                    )
+                    for _label, day_range, total, succeeded in checkout_windows:
+                        offsets = list(day_range)
+                        for index in range(total):
+                            opened = now - timedelta(days=offsets[index % len(offsets)])
+                            converted = index < succeeded
+                            checkout = Checkout(
+                                payment_processor=PaymentProcessor.stripe,
+                                status=(
+                                    CheckoutStatus.succeeded
+                                    if converted
+                                    else CheckoutStatus.expired
+                                ),
+                                client_secret=generate_token(prefix="polar_c_"),
+                                expires_at=opened + timedelta(days=1),
+                                created_at=opened,
+                                allow_discount_codes=True,
+                                require_billing_address=False,
+                                is_business_customer=False,
+                                amount=compass_price.price_amount,
+                                net_amount=compass_price.price_amount,
+                                currency=compass_price.price_currency,
+                                organization_id=organization.id,
+                                analytics_metadata={"opened_at": opened.isoformat()},
+                            )
+                            session.add(checkout)
+                            await session.flush()
+                            session.add(
+                                CheckoutProduct(
+                                    checkout_id=checkout.id,
+                                    product_id=compass_product.id,
+                                    order=0,
                                 )
                             )
 

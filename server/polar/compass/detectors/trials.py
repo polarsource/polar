@@ -70,6 +70,6 @@ class TrialConversionDetector(Detector):
             confidence=confidence,
             primary_action=InsightAction(
                 label="View trials",
-                href="analytics/metrics?metric=trial_monthly_recurring_revenue",
+                metric="trial_monthly_recurring_revenue",
             ),
         )

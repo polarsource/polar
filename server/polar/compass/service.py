@@ -5,25 +5,20 @@ from zoneinfo import ZoneInfo
 
 import structlog
 
-from polar.auth.models import AuthSubject, Organization, User, is_user
+from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
-from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.time_queries import TimeInterval
 from polar.logging import Logger
 from polar.metrics.service import metrics as metrics_service
-from polar.models import InsightFeedback
-from polar.postgres import AsyncReadSession, AsyncSession
+from polar.postgres import AsyncReadSession
 from polar.redis import Redis
 
-from .detectors import DETECTOR_IDS, DETECTORS, Detector, DetectorContext
-from .keys import ParsedInsightKey, parse_insight_key
-from .repository import InsightFeedbackRepository
+from .detectors import DETECTORS, Detector, DetectorContext
 from .schemas import (
     ConfidenceLevel,
     Insight,
     InsightCategory,
-    InsightFeedbackCreate,
     InsightSeverity,
 )
 
@@ -129,13 +124,7 @@ class CompassService:
                 _CONFIDENCE_RANK[i.confidence],
             )
         )
-
-        # Hide anything the merchant has already dismissed or flagged.
-        repository = InsightFeedbackRepository.from_session(session)
-        suppressed = await repository.get_keys_with_feedback(
-            list(org_ids), [insight.id for insight in insights]
-        )
-        return [insight for insight in insights if insight.id not in suppressed]
+        return insights
 
     def _select_detectors(
         self, category: Sequence[InsightCategory] | None
@@ -144,74 +133,6 @@ class CompassService:
             return DETECTORS
         wanted = set(category)
         return [d for d in DETECTORS if d.category in wanted]
-
-    async def record_feedback(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        *,
-        insight_key: str,
-        create: InsightFeedbackCreate,
-    ) -> InsightFeedback:
-        key = self._validated_key(insight_key)
-
-        org_ids = await get_accessible_org_ids(
-            session, auth_subject, permission=OrganizationPermission.analytics_read
-        )
-        if key.organization_id not in org_ids:
-            raise NotPermitted()
-
-        repository = InsightFeedbackRepository.from_session(session)
-        existing = await repository.get_by_organization_and_key(
-            key.organization_id, insight_key
-        )
-        if existing is not None:
-            # Idempotent: re-submitting (double click, retry) updates the
-            # action instead of accumulating duplicate rows.
-            return await repository.update(
-                existing, update_dict={"action": create.action}, flush=True
-            )
-
-        feedback = InsightFeedback(
-            insight_key=insight_key,
-            detector_id=key.detector_id,
-            action=create.action,
-            organization_id=key.organization_id,
-            user_id=auth_subject.subject.id if is_user(auth_subject) else None,
-        )
-        return await repository.create(feedback, flush=True)
-
-    def _validated_key(self, insight_key: str) -> ParsedInsightKey:
-        """Parse the key and require a registered detector.
-
-        Only keys a detector can actually produce are accepted, so clients
-        can't pre-suppress arbitrary future keys.
-        """
-        try:
-            key = parse_insight_key(insight_key)
-        except ValueError as e:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "loc": ("path", "insight_key"),
-                        "msg": "Malformed insight key.",
-                        "type": "value_error",
-                        "input": insight_key,
-                    }
-                ]
-            ) from e
-        if key.detector_id not in DETECTOR_IDS:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "loc": ("path", "insight_key"),
-                        "msg": "Unknown detector.",
-                        "type": "value_error",
-                        "input": insight_key,
-                    }
-                ]
-            )
-        return key
 
 
 compass = CompassService()

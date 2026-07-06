@@ -76,6 +76,6 @@ class SubscriberGrowthDetector(Detector):
             confidence=confidence,
             primary_action=InsightAction(
                 label="View subscriptions",
-                href="analytics/metrics?metric=active_subscriptions",
+                metric="active_subscriptions",
             ),
         )

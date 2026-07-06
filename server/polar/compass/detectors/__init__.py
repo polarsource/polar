@@ -9,6 +9,9 @@ each organization and collects whatever fires.
 from .arpu import ARPUMovementDetector
 from .base import Detector, DetectorContext
 from .churn import ChurnSpikeDetector
+from .conversion import CheckoutConversionDetector
+from .cost_per_user import CostPerUserDetector
+from .margin import GrossMarginDetector
 from .mrr import MRRGrowthDetector
 from .subscribers import SubscriberGrowthDetector
 from .trials import TrialConversionDetector
@@ -19,6 +22,9 @@ DETECTORS: list[Detector] = [
     ARPUMovementDetector(),
     ChurnSpikeDetector(),
     TrialConversionDetector(),
+    GrossMarginDetector(),
+    CostPerUserDetector(),
+    CheckoutConversionDetector(),
 ]
 
 DETECTOR_IDS: frozenset[str] = frozenset(detector.id for detector in DETECTORS)

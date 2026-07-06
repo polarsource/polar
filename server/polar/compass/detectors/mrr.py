@@ -84,6 +84,6 @@ class MRRGrowthDetector(Detector):
             confidence=confidence,
             primary_action=InsightAction(
                 label="View MRR trend",
-                href="analytics/metrics?metric=monthly_recurring_revenue",
+                metric="monthly_recurring_revenue",
             ),
         )

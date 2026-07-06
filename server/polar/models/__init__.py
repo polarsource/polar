@@ -32,7 +32,6 @@ from .event_type import EventType
 from .external_event import ExternalEvent
 from .feedback import Feedback, FeedbackStatus, FeedbackType
 from .file import File
-from .insight_feedback import InsightFeedback, InsightFeedbackAction
 from .issue_reward import IssueReward
 from .license_key import LicenseKey
 from .license_key_activation import LicenseKeyActivation
@@ -155,8 +154,6 @@ __all__ = [
     "FeedbackStatus",
     "FeedbackType",
     "File",
-    "InsightFeedback",
-    "InsightFeedbackAction",
     "IssueReward",
     "LegacyRecurringProductPriceCustom",
     "LegacyRecurringProductPriceFixed",

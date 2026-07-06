@@ -1,6 +1,6 @@
 'use client'
 
-import { useCompassInsights, useInsightFeedback } from '@/hooks/queries'
+import { useCompassInsights } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -29,9 +29,8 @@ interface CompassWidgetProps {
 
 /**
  * Compass insights widget, fed by the Compass API. The feed arrives ordered by
- * severity (most consequential first) with dismissed insights already
- * excluded, so the home preview's top slice is always what the merchant
- * should care about most.
+ * severity (most consequential first), so the home preview's top slice is
+ * always what the merchant should care about most.
  *
  * Outer chrome mirrors PlanUpsell's connected 3-column grid: one rounded
  * border around the whole block, internal dividers between cells (left on lg,
@@ -45,7 +44,6 @@ export const CompassWidget = ({
   hideWhenEmpty = false,
 }: CompassWidgetProps) => {
   const { data: insights, isLoading } = useCompassInsights(organization.id)
-  const feedback = useInsightFeedback(organization.id)
 
   const shown =
     limit != null ? (insights ?? []).slice(0, limit) : (insights ?? [])
@@ -120,13 +118,7 @@ export const CompassWidget = ({
                     : { base: idx === 0 ? 0 : 1, lg: row === 0 ? 0 : 1 }
                 }
               >
-                <InsightCard
-                  organization={organization}
-                  insight={insight}
-                  onFeedback={(action) =>
-                    feedback.mutate({ insightKey: insight.id, action })
-                  }
-                />
+                <InsightCard organization={organization} insight={insight} />
               </Box>
             )
           })}

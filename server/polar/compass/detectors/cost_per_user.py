@@ -10,32 +10,36 @@ from .base import Detector, DetectorContext, confidence_for_sample
 
 # Fire only on a material month-over-month move, so the feed stays signal, not noise.
 _MATERIAL_DELTA = 0.05
+# Ignore sub-dollar unit costs so cent-level noise doesn't produce alarming percentages.
+_MIN_COST_PER_USER = 100
 _LOOKBACK_DAYS = 30
 
 
-class ARPUMovementDetector(Detector):
+class CostPerUserDetector(Detector):
     """
-    Month-over-month movement in average revenue per subscriber.
+    Month-over-month movement in cost to serve each subscriber.
 
-    ARPU rising means pricing power or upsell landing; falling means the base is
-    diluting toward cheaper plans. Confidence is gated on the active subscription
-    count so the average isn't dominated by one or two accounts.
+    Rising cost per user is the early warning that unit economics are drifting
+    before it shows up in margin. Reads the cost-adjusted `cost_per_user`; stays
+    silent when there's no meaningful cost data (sub-dollar) so cent-level noise
+    doesn't fire a card.
     """
 
-    id = "arpu_mom"
-    category = InsightCategory.revenue
-    category_label = "Revenue"
-    priority = 40
-    metric_slugs = ("average_revenue_per_user", "active_subscriptions")
+    id = "cost_per_user"
+    category = InsightCategory.cost
+    category_label = "Costs"
+    priority = 45
+    metric_slugs = ("cost_per_user", "active_subscriptions")
     lookback_days = _LOOKBACK_DAYS
 
     def evaluate(self, ctx: DetectorContext) -> Insight | None:
         response = ctx.metrics
 
-        current = latest(response, "average_revenue_per_user")
-        baseline = value_n_periods_ago(
-            response, "average_revenue_per_user", _LOOKBACK_DAYS
-        )
+        current = latest(response, "cost_per_user")
+        if current < _MIN_COST_PER_USER:
+            return None
+
+        baseline = value_n_periods_ago(response, "cost_per_user", _LOOKBACK_DAYS)
         if baseline is None or baseline == 0:
             return None
 
@@ -45,7 +49,7 @@ class ARPUMovementDetector(Detector):
             return None
 
         signal = MetricSignal(
-            slug="average_revenue_per_user",
+            slug="cost_per_user",
             current=current,
             baseline=baseline,
             sample_n=sample_n,
@@ -54,38 +58,37 @@ class ARPUMovementDetector(Detector):
         if delta_pct is None or abs(delta_pct) < _MATERIAL_DELTA:
             return None
 
-        grew = delta_pct > 0
+        rose = delta_pct > 0
         pct_str = format_pct(delta_pct)
         title = (
-            f"Revenue per subscriber grew {pct_str}"
-            if grew
-            else f"Revenue per subscriber fell {pct_str}"
+            f"Cost per subscriber rose {pct_str}"
+            if rose
+            else f"Cost per subscriber fell {pct_str}"
         )
-        direction = "up" if grew else "down"
+        direction = "up" if rose else "down"
         body = (
-            f"Average revenue per subscriber is {format_currency(current)}, "
+            f"It costs {format_currency(current)} to serve each subscriber, "
             f"{direction} {format_currency(abs(signal.delta_abs))} "
             f"from {format_currency(baseline)} 30 days ago "
             f"across {sample_n} active subscriptions."
         )
         why = (
-            "Triggered by a month-over-month change in average revenue per "
-            f"subscriber of at least 5%, across {sample_n} active subscriptions "
+            "Triggered by a month-over-month change in cost per subscriber of at "
+            f"least 5%, across {sample_n} active subscriptions "
             f"({confidence.value} confidence)."
         )
 
         return self.build_insight(
             ctx,
             period_bucket=ctx.today.strftime("%Y-%m"),
-            # Rising ARPU is a lever worth leaning into; falling ARPU erodes unit
-            # economics and needs attention.
-            severity=InsightSeverity.opportunity if grew else InsightSeverity.warning,
+            # Rising cost erodes unit economics; falling cost is a win to build on.
+            severity=InsightSeverity.warning if rose else InsightSeverity.opportunity,
             title=title,
             body=body,
             why=why,
             confidence=confidence,
             primary_action=InsightAction(
-                label="View ARPU trend",
-                metric="average_revenue_per_user",
+                label="View cost per user",
+                metric="cost_per_user",
             ),
         )

@@ -3057,38 +3057,13 @@ export interface paths {
      * @description List computed insights about your business.
      *
      *     Insights are derived live from your metrics, narrated, and linked to a
-     *     drill-down. They are ordered by importance; dismissed insights are excluded.
+     *     drill-down. They are ordered by importance.
      *
      *     **Scopes**: `metrics:read`
      */
     get: operations['compass:list_insights']
     put?: never
     post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/compass/insights/{insight_key}/feedback': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Submit Insight Feedback
-     * @description Record feedback on an insight.
-     *
-     *     `dismiss` hides it from the feed; `not_useful` additionally feeds a negative
-     *     quality signal used to tune detectors. Feedback is idempotent per insight.
-     *
-     *     **Scopes**: `metrics:write`
-     */
-    post: operations['compass:submit_feedback']
     delete?: never
     options?: never
     head?: never
@@ -20990,16 +20965,10 @@ export interface components {
        * @description Top contributors to the headline change.
        */
       drivers?: components['schemas']['InsightDriver'][]
-      /**
-       * Rejectable
-       * @description When true, render a 'Not useful' button alongside Dismiss.
-       * @default true
-       */
-      rejectable: boolean
     }
     /**
      * InsightAction
-     * @description A drill-down link that proves or acts on the insight.
+     * @description A drill-down that points at the metric behind the insight.
      */
     InsightAction: {
       /**
@@ -21008,10 +20977,10 @@ export interface components {
        */
       label: string
       /**
-       * Href
-       * @description Where the action takes the merchant.
+       * Metric
+       * @description Slug of the metric this insight is about (e.g. `monthly_recurring_revenue`). The client owns the routing and resolves it to the matching analytics page.
        */
-      href: string
+      metric: string
     }
     /**
      * InsightCategory
@@ -21054,29 +21023,6 @@ export interface components {
        * @description This driver's contribution in the metric's unit.
        */
       value: number
-    }
-    /**
-     * InsightFeedbackAction
-     * @description How a merchant reacted to an insight.
-     * @enum {string}
-     */
-    InsightFeedbackAction: 'dismiss' | 'not_useful'
-    /**
-     * InsightFeedbackCreate
-     * @description A merchant's reaction to an insight.
-     */
-    InsightFeedbackCreate: {
-      /** @description `dismiss` hides the insight; `not_useful` is a negative quality signal. */
-      action: components['schemas']['InsightFeedbackAction']
-    }
-    /**
-     * InsightFeedbackResponse
-     * @description Acknowledges recorded feedback.
-     */
-    InsightFeedbackResponse: {
-      /** Insight Key */
-      insight_key: string
-      action: components['schemas']['InsightFeedbackAction']
     }
     /**
      * InsightSeverity
@@ -43897,42 +43843,6 @@ export interface operations {
       }
     }
   }
-  'compass:submit_feedback': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The deterministic insight key. */
-        insight_key: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['InsightFeedbackCreate']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['InsightFeedbackResponse']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
   'license_keys:list': {
     parameters: {
       query?: {
@@ -61209,9 +61119,6 @@ export const identityVerificationStatusValues: ReadonlyArray<
 export const insightCategoryValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['InsightCategory']
 > = ['revenue', 'retention', 'growth', 'risk', 'cost', 'product']
-export const insightFeedbackActionValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['InsightFeedbackAction']
-> = ['dismiss', 'not_useful']
 export const insightSeverityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['InsightSeverity']
 > = ['critical', 'warning', 'opportunity', 'info']

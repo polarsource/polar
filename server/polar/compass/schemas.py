@@ -3,7 +3,6 @@ from enum import StrEnum
 from pydantic import Field
 
 from polar.kit.schemas import Schema
-from polar.models.insight_feedback import InsightFeedbackAction
 
 
 class InsightCategory(StrEnum):
@@ -51,13 +50,14 @@ class InsightSeverity(StrEnum):
 
 
 class InsightAction(Schema):
-    """A drill-down link that proves or acts on the insight."""
+    """A drill-down that points at the metric behind the insight."""
 
     label: str = Field(description="Button label.")
-    href: str = Field(
+    metric: str = Field(
         description=(
-            "Where the action takes the merchant, as a path relative to the "
-            "organization's dashboard root (e.g. `analytics/metrics?metric=mrr`)."
+            "Slug of the metric this insight is about (e.g. "
+            "`monthly_recurring_revenue`). The client owns the routing and "
+            "resolves it to the matching analytics page."
         )
     )
 
@@ -108,22 +108,3 @@ class Insight(Schema):
         default_factory=list,
         description="Top contributors to the headline change.",
     )
-    rejectable: bool = Field(
-        default=True,
-        description="When true, render a 'Not useful' button alongside Dismiss.",
-    )
-
-
-class InsightFeedbackCreate(Schema):
-    """A merchant's reaction to an insight."""
-
-    action: InsightFeedbackAction = Field(
-        description="`dismiss` hides the insight; `not_useful` is a negative quality signal."
-    )
-
-
-class InsightFeedbackResponse(Schema):
-    """Acknowledges recorded feedback."""
-
-    insight_key: str
-    action: InsightFeedbackAction

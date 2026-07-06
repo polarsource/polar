@@ -11,6 +11,8 @@ const OPEN_DISPUTE_STATUSES: schemas['DisputeStatus'][] = [
   'early_warning',
 ]
 
+const ACTION_REQUIRED_STATUS: schemas['DisputeStatus'] = 'needs_response'
+
 interface DisputesBannerProps {
   organization: schemas['Organization']
 }
@@ -46,7 +48,9 @@ export const DisputesBanner = ({ organization }: DisputesBannerProps) => {
         {
           text: single ? 'Review dispute' : 'Review disputes',
           onClick: () => {
-            router.push(`/dashboard/${organization.slug}/sales/disputes`)
+            router.push(
+              `/dashboard/${organization.slug}/sales/disputes?status=${ACTION_REQUIRED_STATUS}`,
+            )
           },
         },
       ]}

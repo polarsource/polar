@@ -31,6 +31,7 @@ export const useDisputes = (
     NonNullable<operations['disputes:list']['parameters']['query']>,
     'organization_id'
   >,
+  enabled: boolean = true,
 ) =>
   useQuery({
     queryKey: ['disputes', { organizationId, parameters }],
@@ -43,4 +44,5 @@ export const useDisputes = (
         }),
       ),
     retry: defaultRetry,
+    enabled,
   })

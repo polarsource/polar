@@ -150,6 +150,47 @@ async def subscription_cancel_customer(customer_id: uuid.UUID) -> None:
 
 
 @actor(
+    actor_name="subscription.scan_paused_resumptions",
+    cron_trigger=CronTrigger.from_crontab("15 * * * *"),
+    priority=TaskPriority.LOW,
+)
+async def scan_paused_resumptions() -> None:
+    """Scan for paused subscriptions due to resume and fan out."""
+    now = utc_now()
+    async with AsyncSessionMaker() as session:
+        repository = SubscriptionRepository.from_session(session)
+        subscriptions = await repository.get_subscriptions_to_resume(now)
+
+    for sub in subscriptions:
+        enqueue_job("subscription.resume", sub.id)
+
+
+@actor(actor_name="subscription.resume", priority=TaskPriority.MEDIUM)
+async def subscription_resume(subscription_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.get_by_id(
+            subscription_id,
+            options=repository.get_eager_options(),
+            for_update=True,
+        )
+        if subscription is None:
+            raise SubscriptionDoesNotExist(subscription_id)
+
+        if not subscription.can_resume():
+            log.info(
+                "Subscription is no longer paused, skipping resume",
+                subscription_id=subscription_id,
+            )
+            return
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.resume(session, ctx, subscription)
+
+
+@actor(
     actor_name="subscription.scan_renewal_reminders",
     cron_trigger=CronTrigger.from_crontab("30 * * * *"),
     priority=TaskPriority.LOW,

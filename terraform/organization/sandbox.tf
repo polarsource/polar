@@ -7,6 +7,7 @@ module "sandbox_s3_buckets" {
   environment                 = "sandbox"
   allowed_origins             = ["https://sandbox.polar.sh"]
   public_files_bucket_name    = "polar-public-sandbox-files"
+  malware_protection_enabled  = true
   malware_protection_role_arn = module.sandbox_malware_protection.role_arn
 }
 

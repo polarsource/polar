@@ -172,6 +172,7 @@ module "production_s3_buckets" {
 
   environment                 = "production"
   allowed_origins             = ["https://polar.sh"]
+  malware_protection_enabled  = true
   malware_protection_role_arn = module.production_malware_protection.role_arn
 }
 

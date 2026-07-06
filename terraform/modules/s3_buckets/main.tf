@@ -31,8 +31,14 @@ variable "public_files_bucket_name" {
   default     = null
 }
 
+variable "malware_protection_enabled" {
+  description = "Enable tag-based access control for GuardDuty Malware Protection scan results on the files and public files buckets"
+  type        = bool
+  default     = false
+}
+
 variable "malware_protection_role_arn" {
-  description = "GuardDuty Malware Protection role allowed to manage the scan status tag; enables tag-based access control on the files and public files buckets"
+  description = "GuardDuty Malware Protection role allowed to manage the scan status tag"
   type        = string
   default     = null
 }
@@ -42,10 +48,10 @@ locals {
   full_name_prefix    = "polar-${var.environment}"
   public_files_bucket = coalesce(var.public_files_bucket_name, "${local.name_prefix}-public-files")
 
-  malware_scan_protected_buckets = var.malware_protection_role_arn == null ? {} : {
+  malware_scan_protected_buckets = var.malware_protection_enabled ? {
     files        = aws_s3_bucket.files.arn
     public_files = aws_s3_bucket.public_files.arn
-  }
+  } : {}
 
   malware_scan_tbac_statements = {
     for key, bucket_arn in local.malware_scan_protected_buckets :
@@ -174,7 +180,7 @@ resource "aws_s3_bucket_cors_configuration" "files" {
 }
 
 resource "aws_s3_bucket_policy" "files" {
-  count = var.malware_protection_role_arn == null ? 0 : 1
+  count = var.malware_protection_enabled ? 1 : 0
 
   bucket = aws_s3_bucket.files.id
   policy = jsonencode({

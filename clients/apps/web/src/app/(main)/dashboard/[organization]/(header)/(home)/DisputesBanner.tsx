@@ -34,7 +34,6 @@ export const DisputesBanner = ({ organization }: DisputesBannerProps) => {
   const single = count === 1
   return (
     <Alert
-      variant="warning"
       title={
         single ? 'You have an open dispute' : `You have ${count} open disputes`
       }

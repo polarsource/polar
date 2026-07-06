@@ -15,7 +15,8 @@ AWS Organization
 │   └── Test
 │       └── test
 └── Security
-    └── identity
+    ├── identity
+    └── security
 ```
 
 The management account owns the AWS Organization control plane. It should stay limited to
@@ -27,6 +28,9 @@ Application workloads live under the `Workloads` OU:
 - `Production` contains the public production environment.
 - `Sandbox` contains the sandbox production-class environment.
 - `Test` contains the staging/test environment.
+
+The `Security` OU holds the `identity` account (IAM Identity Center delegated administrator) and
+the `security` account (GuardDuty delegated administrator, managed from `terraform/security`).
 
 ## Guardrails
 

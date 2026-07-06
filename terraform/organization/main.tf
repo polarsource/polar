@@ -8,9 +8,14 @@ provider "aws" {
 }
 
 resource "aws_organizations_organization" "current" {
-  feature_set                   = "ALL"
-  aws_service_access_principals = ["account.amazonaws.com", "sso.amazonaws.com"]
-  enabled_policy_types          = ["SERVICE_CONTROL_POLICY"]
+  feature_set = "ALL"
+  aws_service_access_principals = [
+    "account.amazonaws.com",
+    "guardduty.amazonaws.com",
+    "malware-protection.guardduty.amazonaws.com",
+    "sso.amazonaws.com",
+  ]
+  enabled_policy_types = ["SERVICE_CONTROL_POLICY"]
 
   lifecycle {
     prevent_destroy = true

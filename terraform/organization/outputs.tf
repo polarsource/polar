@@ -39,6 +39,13 @@ output "identity_account" {
   }
 }
 
+output "security_account" {
+  value = {
+    id   = aws_organizations_account.security.id
+    name = aws_organizations_account.security.name
+  }
+}
+
 output "terraform_cloud_run_roles" {
   value = {
     production = module.terraform_cloud_run_role_production.role_arn

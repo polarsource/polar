@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
+from polar.compass.detectors import DETECTORS
 from polar.compass.detectors.arpu import ARPUMovementDetector
 from polar.compass.detectors.base import DetectorContext, confidence_for_sample
 from polar.compass.detectors.churn import ChurnSpikeDetector
@@ -678,6 +679,94 @@ class TestProductMarginDetector:
         insight = ProductMarginDetector().evaluate(_context_with_products([]))
 
         assert insight is None
+
+
+class TestInsightCopy:
+    def test_no_em_dashes_in_any_emitted_copy(self) -> None:
+        """Em dashes are banned in user-facing copy; use comma, colon or period."""
+        subs = [50.0] * 36
+        firing: list[Insight | None] = [
+            MRRGrowthDetector().evaluate(
+                _context(
+                    _response([100_000.0] * 6 + [110_000.0] * 29 + [120_000.0], subs)
+                )
+            ),
+            SubscriberGrowthDetector().evaluate(
+                _context(
+                    _response_from(
+                        active_subscriptions=[10.0] * 6 + [12.0] * 29 + [16.0]
+                    )
+                )
+            ),
+            ARPUMovementDetector().evaluate(
+                _context(
+                    _response_from(
+                        average_revenue_per_user=[25_000.0] * 6
+                        + [22_000.0] * 29
+                        + [19_400.0],
+                        active_subscriptions=subs,
+                    )
+                )
+            ),
+            # Churn with a rising prior window, so the extra sentence renders too.
+            ChurnSpikeDetector().evaluate(
+                _context(
+                    _response_from(
+                        churned_subscriptions=[0.0] * 6 + [1.0] * 30 + [2.0] * 30,
+                        active_subscriptions=[50.0] * 66,
+                    )
+                )
+            ),
+            TrialConversionDetector().evaluate(
+                _context(
+                    _response_from(
+                        trial_monthly_recurring_revenue=[0.0] * 35 + [100_000.0],
+                        monthly_recurring_revenue=[900_000.0] * 36,
+                        active_subscriptions=subs,
+                    )
+                )
+            ),
+            GrossMarginDetector().evaluate(
+                _context(
+                    _response_from(
+                        gross_margin_percentage=[0.8] * 6 + [0.75] * 29 + [0.55],
+                        active_subscriptions=subs,
+                    )
+                )
+            ),
+            CostPerUserDetector().evaluate(
+                _context(
+                    _response_from(
+                        cost_per_user=[200.0] * 6 + [250.0] * 29 + [300.0],
+                        active_subscriptions=subs,
+                    )
+                )
+            ),
+            CheckoutConversionDetector().evaluate(
+                _context(
+                    _response_from(
+                        checkouts=[0.0] * 6 + [20.0] + [0.0] * 29 + [20.0] + [0.0] * 29,
+                        succeeded_checkouts=[0.0] * 6
+                        + [16.0]
+                        + [0.0] * 29
+                        + [11.0]
+                        + [0.0] * 29,
+                    )
+                )
+            ),
+            ProductMarginDetector().evaluate(
+                _context_with_products([_product(margin=0.41)])
+            ),
+        ]
+
+        assert len(firing) == len(DETECTORS)
+        for insight in firing:
+            assert insight is not None, "every registered detector must fire here"
+            copy = [insight.title, insight.body, insight.why or ""]
+            if insight.primary_action is not None:
+                copy.append(insight.primary_action.label)
+            for text in copy:
+                assert "—" not in text, f"em dash in {insight.detector_id}: {text!r}"
 
 
 class TestInsightActionUnion:

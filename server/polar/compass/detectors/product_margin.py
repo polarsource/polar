@@ -92,8 +92,8 @@ class ProductMarginDetector(Detector):
         title = f"{worst.name} margin is down to {margin_str}"
         body = (
             f"{worst.name} keeps {margin_str} of its "
-            f"{format_currency(worst.price_amount)} price after costs — "
-            f"roughly {format_currency(cost_to_serve)} per customer goes to "
+            f"{format_currency(worst.price_amount)} price after costs. "
+            f"Roughly {format_currency(cost_to_serve)} per customer goes to "
             f"serving it, across {worst_subs} active subscriptions."
         )
         if suggested is not None:

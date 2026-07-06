@@ -60,7 +60,7 @@ class ChurnSpikeDetector(Detector):
         title = f"{churned_n} {subscriptions} churned this month"
         body = (
             f"{churned_n} {subscriptions} ended in the last 30 days, "
-            f"{rate_str} of an at-risk base of {at_risk} — you have {active_n} "
+            f"{rate_str} of an at-risk base of {at_risk}. You have {active_n} "
             f"active subscriptions today."
         )
 

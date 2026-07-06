@@ -422,6 +422,7 @@ class Settings(BaseSettings):
 
     # Application behaviours
     API_PAGINATION_MAX_LIMIT: int = 100
+    API_MAX_REQUEST_BODY_SIZE: int = 10 * 1024 * 1024
 
     ACCOUNT_PAYOUT_DELAY: timedelta = timedelta(seconds=1)
     ACCOUNT_DEFAULT_PAYOUT_INTERVAL: timedelta = timedelta(hours=24)

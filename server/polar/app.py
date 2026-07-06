@@ -40,6 +40,7 @@ from polar.middlewares import (
     CacheControlMiddleware,
     FlushEnqueuedWorkerJobsMiddleware,
     LogCorrelationIdMiddleware,
+    MaxBodySizeMiddleware,
     OperationalErrorMiddleware,
     PathRewriteMiddleware,
     SandboxResponseHeaderMiddleware,
@@ -222,6 +223,7 @@ def create_app() -> FastAPI:
         app.add_middleware(rate_limit.get_middleware, redis=rate_limit_redis)
     app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")
     app.add_middleware(LogCorrelationIdMiddleware)
+    app.add_middleware(MaxBodySizeMiddleware, limit=settings.API_MAX_REQUEST_BODY_SIZE)
     if not settings.is_testing():
         app.add_middleware(HttpMetricsMiddleware)
 

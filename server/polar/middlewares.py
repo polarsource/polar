@@ -146,6 +146,26 @@ class SandboxResponseHeaderMiddleware:
         await self.app(scope, receive, send_wrapper)
 
 
+class CacheControlMiddleware:
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def send_wrapper(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                message.setdefault("headers", [])
+                headers = MutableHeaders(scope=message)
+                if "cache-control" not in headers:
+                    headers["Cache-Control"] = "private, no-store"
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
+
+
 class OperationalErrorMiddleware:
     def __init__(self, app: ASGIApp) -> None:
         self.app = app

@@ -1,5 +1,7 @@
+from polar.metrics.aggregation import latest, series
+
 from ..schemas import Insight, InsightAction, InsightCategory, InsightSeverity
-from ..signals import format_pct, latest, series
+from ..signals import format_pct
 from .base import Detector, DetectorContext, confidence_for_sample
 
 _WINDOW_DAYS = 30

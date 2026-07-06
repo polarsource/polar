@@ -1,5 +1,7 @@
+from polar.metrics.aggregation import latest, value_n_periods_ago
+
 from ..schemas import Insight, InsightAction, InsightCategory, InsightSeverity
-from ..signals import format_pct, latest, value_n_periods_ago
+from ..signals import format_pct
 from .base import Detector, DetectorContext, confidence_for_sample
 
 # Below this a margin is thin enough to flag; below the critical bar it leads the feed.

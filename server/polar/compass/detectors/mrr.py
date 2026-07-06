@@ -1,5 +1,7 @@
+from polar.metrics.aggregation import latest, value_n_periods_ago
+
 from ..schemas import Insight, InsightAction, InsightCategory, InsightSeverity
-from ..signals import MetricSignal, latest, value_n_periods_ago
+from ..signals import MetricSignal
 from .base import Detector, DetectorContext, confidence_for_sample
 
 # Fire only on a material month-over-month move, so the feed stays signal, not noise.

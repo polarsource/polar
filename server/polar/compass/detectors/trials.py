@@ -1,5 +1,7 @@
+from polar.metrics.aggregation import latest
+
 from ..schemas import Insight, InsightAction, InsightCategory, InsightSeverity
-from ..signals import format_currency, format_pct, latest
+from ..signals import format_currency, format_pct
 from .base import Detector, DetectorContext, confidence_for_sample
 
 # Below this share of run-rate, the trial pipeline is too small to be worth a card.

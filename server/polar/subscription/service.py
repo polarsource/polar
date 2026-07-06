@@ -892,7 +892,7 @@ class SubscriptionService:
     async def _create_cycle_billing_entries(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
-        event = event = await event_service.create_event(
+        event = await event_service.create_event(
             session,
             build_system_event(
                 SystemEvent.subscription_cycled,

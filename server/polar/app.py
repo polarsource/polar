@@ -37,6 +37,7 @@ from polar.logfire import (
 from polar.logging import Logger
 from polar.logging import configure as configure_logging
 from polar.middlewares import (
+    CacheControlMiddleware,
     FlushEnqueuedWorkerJobsMiddleware,
     LogCorrelationIdMiddleware,
     OperationalErrorMiddleware,
@@ -211,6 +212,7 @@ def create_app() -> FastAPI:
     if settings.is_sandbox():
         app.add_middleware(SandboxResponseHeaderMiddleware)
     app.add_middleware(APIVersionMiddleware, current=CURRENT_API_VERSION)
+    app.add_middleware(CacheControlMiddleware)
     if not settings.is_testing():
         rate_limit_redis = create_redis("rate-limit")
         app.state.rate_limit_redis = rate_limit_redis

@@ -504,7 +504,8 @@ export const listPaymentMethodsCustomers = (client: ClientBase) => {
  *
  * **Scopes**: `customers:read` `customers:write`
  *
- * @param id - The customer ID.* @param query - Query parameters
+ * @param id - The customer ID.
+ * @param query - Query parameters
  * @returns {AsyncGenerator<PaymentMethod>} A generator that yields items of type PaymentMethod.
  * @throws {PolarNetworkError} When a network error occurs
  * @throws {PolarServerError} When the server returns a 5xx error
@@ -583,7 +584,8 @@ export const listPaymentMethodsExternalCustomers = (client: ClientBase) => {
  *
  * **Scopes**: `customers:read` `customers:write`
  *
- * @param external_id - The customer external ID.* @param query - Query parameters
+ * @param external_id - The customer external ID.
+ * @param query - Query parameters
  * @returns {AsyncGenerator<PaymentMethod>} A generator that yields items of type PaymentMethod.
  * @throws {PolarNetworkError} When a network error occurs
  * @throws {PolarServerError} When the server returns a 5xx error

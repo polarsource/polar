@@ -92,13 +92,13 @@ export const {{ method.name | camel }}{{ service.name }} = (
 {% endif %}
 *
 {% for param in method.path_params %}
-* @param {{ param.parameter_name }}{% if param.description %} - {{ param.description }}{% endif %}
+* @param {{ param.parameter_name }}{% if param.description %} - {{ param.description }}{% endif +%}
 {% endfor %}
 {% if method.query_params %}
 * @param query - Query parameters
 {% endif %}
 {% if method.body %}
-* @param body - Request body{% if method.body.description %}: {{ method.body.description }}{% endif %}
+* @param body - Request body{% if method.body.description %}: {{ method.body.description }}{% endif +%}
 {% endif %}
 * @returns {AsyncGenerator<{{ method.pagination.item_schema | ts_type }}>} A generator that yields items of type {{ method.pagination.item_schema | ts_type }}.
 * @throws {{'{'}}PolarNetworkError{{'}'}} When a network error occurs

@@ -295,7 +295,8 @@ export const grantsBenefits = (client: ClientBase) => {
  *
  * **Scopes**: `benefits:read` `benefits:write`
  *
- * @param id* @param query - Query parameters
+ * @param id
+ * @param query - Query parameters
  * @returns {AsyncGenerator<BenefitGrant>} A generator that yields items of type BenefitGrant.
  * @throws {PolarNetworkError} When a network error occurs
  * @throws {PolarServerError} When the server returns a 5xx error

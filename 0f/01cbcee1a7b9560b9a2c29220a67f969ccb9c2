@@ -1,0 +1,27 @@
+clients/apps/web/src/components/Orders/DownloadInvoice.tsx
+  s_0b64f7540f1e3a::t_8ae0d72bdc1ce6 34-35
+  s_0b64f7540f1e3a::t_63cbed9ae53339 123,127,139-141
+  s_0b64f7540f1e3a::t_6292ee9c092ce0 154,191-197,216-217,220,229-231,238,240,242
+  s_0b64f7540f1e3a::t_66915fdc257217 44
+  s_0b64f7540f1e3a::t_47e92bc9a88dc9 118-119
+  s_0b64f7540f1e3a::t_bae9932ff5814c 43,45-74,101,128,135-138,142-147,151-152,155-167,169-180,203,205-207,209,211,214-215,218-219,221-226
+  s_0b64f7540f1e3a::t_41b7036157c071 181-190,200-202
+clients/apps/web/src/components/DashboardOverview/OverviewSection.tsx
+  s_0b64f7540f1e3a::t_34a71bb39d89be 34-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "0f01cbcee1a7b9560b9a2c29220a67f969ccb9c2",
+  "prompts": {},
+  "sessions": {
+    "s_0b64f7540f1e3a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cba0ee58-8c84-4b98-bbeb-14d61154ccff",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

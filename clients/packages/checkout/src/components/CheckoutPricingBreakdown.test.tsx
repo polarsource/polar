@@ -581,7 +581,13 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows additional metered usage row', () => {
       const meteredPrice = createMeteredPrice({
         id: 'price_metered_1',
-        meter: { id: 'meter_1', name: 'API Calls', unit: 'scalar' as const },
+        meter: {
+          id: 'meter_1',
+          name: 'API Calls',
+          unit: 'scalar' as const,
+          custom_label: null,
+          custom_multiplier: null,
+        },
       })
       const checkout = createCheckout({
         amount: 999,
@@ -603,7 +609,13 @@ describe('CheckoutPricingBreakdown', () => {
       const meteredPrice = createMeteredPrice({
         id: 'price_metered_1',
         unit_amount: '900',
-        meter: { id: 'meter_1', name: 'Workspaces', unit: 'scalar' as const },
+        meter: {
+          id: 'meter_1',
+          name: 'Workspaces',
+          unit: 'scalar' as const,
+          custom_label: null,
+          custom_multiplier: null,
+        },
       })
       const checkout = createCheckout({
         amount: 999,
@@ -636,7 +648,13 @@ describe('CheckoutPricingBreakdown', () => {
       const meteredPrice = createMeteredPrice({
         id: 'price_metered_1',
         unit_amount: '900',
-        meter: { id: 'meter_1', name: 'Workspaces', unit: 'scalar' as const },
+        meter: {
+          id: 'meter_1',
+          name: 'Workspaces',
+          unit: 'scalar' as const,
+          custom_label: null,
+          custom_multiplier: null,
+        },
       })
       const checkout = createCheckout({
         amount: 999,

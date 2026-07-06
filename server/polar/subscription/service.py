@@ -798,6 +798,21 @@ class SubscriptionService:
             return subscription
 
         revoke = subscription.cancel_at_period_end
+
+        # Subscription is due to pause: it enters the paused state at the end of
+        # its current period instead of renewing. Benefits are revoked and no
+        # order is created; a scheduled or manual resume starts a new period. A
+        # scheduled cancellation takes precedence over a scheduled pause.
+        if not revoke and subscription.pause_at_period_end:
+            subscription.status = SubscriptionStatus.paused
+            subscription.paused_at = utc_now()
+            subscription.pause_at_period_end = False
+            await self.enqueue_benefits_grants(session, subscription)
+            repository = SubscriptionRepository.from_session(session)
+            return await repository.update(
+                subscription, update_dict={"scheduler_locked_at": None}
+            )
+
         previous_status = subscription.status
         previous_canceled = subscription.canceled
 

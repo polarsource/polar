@@ -33,25 +33,23 @@ class NotificationRecipientService:
         auth_subject: AuthSubject[User],
     ) -> NotificationRecipient:
         repository = NotificationRecipientRepository.from_session(session)
+        user_id = auth_subject.subject.id
+        expo_push_token = notification_recipient_create.expo_push_token
 
-        existing = await repository.get_by_expo_token(
-            notification_recipient_create.expo_push_token
+        # Same device previously registered under other accounts: remove those
+        # registrations so the old users stop receiving this device's pushes.
+        others = await repository.list_by_expo_token_excluding_user(
+            expo_push_token, user_id
         )
+        for recipient in others:
+            await repository.soft_delete(recipient)
 
-        if existing:
-            if existing.user_id == auth_subject.subject.id:
-                return existing
-            # Token registered by another user (same device, different account)
-            # Remove the old registration so we can create a new one
-            await repository.soft_delete(existing, flush=True)
-
-        return await repository.create(
+        return await repository.create_race_safe(
             NotificationRecipient(
-                user_id=auth_subject.subject.id,
+                user_id=user_id,
                 platform=notification_recipient_create.platform,
-                expo_push_token=notification_recipient_create.expo_push_token,
-            ),
-            flush=True,
+                expo_push_token=expo_push_token,
+            )
         )
 
     async def delete(

@@ -50,7 +50,9 @@ export const InsightCard = ({
         <Text variant="heading-xxs" as="h3" wrap="balance">
           {insight.title}
         </Text>
-        <Text color="muted">{insight.body}</Text>
+        <Text color="muted" variant="body">
+          {insight.body}
+        </Text>
       </Box>
 
       <Box

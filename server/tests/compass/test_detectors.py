@@ -80,8 +80,11 @@ class TestInsightKeys:
         [
             "nope",
             "mrr_mom:not-a-uuid:2026-02",
-            f"mrr_mom:{uuid.uuid4()}:",
-            f":{uuid.uuid4()}:2026-02",
+            # Fixed UUIDs, not `uuid.uuid4()`: parametrize values are evaluated at
+            # collection time, so a random value makes each pytest-xdist worker
+            # collect a different test id and the run aborts on the mismatch.
+            "mrr_mom:2b1e4f0a-0000-4000-8000-000000000000:",
+            ":2b1e4f0a-0000-4000-8000-000000000000:2026-02",
         ],
     )
     def test_malformed_keys_rejected(self, key: str) -> None:

@@ -123,14 +123,14 @@ class SeatAssignmentTarget:
     regardless of whether member_model_enabled is True or False.
     """
 
-    customer_id: uuid.UUID
-    """The customer_id to store on the seat.
+    customer: Customer | None
+    """The customer to store on the seat.
     - member_model_enabled=True: billing customer (purchaser)
     - member_model_enabled=False: seat member's customer
     """
 
-    member_id: uuid.UUID | None
-    """The member_id to store on the seat (if member was created)."""
+    member: Member | None
+    """The member to store on the seat (if member was created)."""
 
     email: str | None
     """The email to store on the seat.
@@ -349,34 +349,30 @@ class SeatService:
             seat.status = SeatStatus.claimed if immediate_claim else SeatStatus.pending
             seat.invitation_token = invitation_token
             seat.invitation_token_expires_at = token_expires_at
-            seat.customer_id = target.customer_id
-            seat.member_id = target.member_id
+            seat.customer = target.customer
+            seat.member = target.member
             seat.email = target.email
             seat.seat_metadata = metadata or {}
             seat.revoked_at = None
             seat.claimed_at = datetime.now(UTC) if immediate_claim else None
         else:
-            seat_data = {
-                "status": SeatStatus.claimed if immediate_claim else SeatStatus.pending,
-                "invitation_token": invitation_token,
-                "invitation_token_expires_at": token_expires_at,
-                "customer_id": target.customer_id,
-                "member_id": target.member_id,
-                "email": target.email,
-                "seat_metadata": metadata or {},
-                "claimed_at": datetime.now(UTC) if immediate_claim else None,
-            }
+            seat = CustomerSeat(
+                status=SeatStatus.claimed if immediate_claim else SeatStatus.pending,
+                invitation_token=invitation_token,
+                invitation_token_expires_at=token_expires_at,
+                customer=target.customer,
+                member=target.member,
+                email=target.email,
+                seat_metadata=metadata or {},
+                claimed_at=datetime.now(UTC) if immediate_claim else None,
+            )
             if is_subscription:
-                seat_data["subscription_id"] = source_id
+                seat.subscription_id = source_id
             else:
-                seat_data["order_id"] = source_id
-
-            seat = CustomerSeat(**seat_data)
+                seat.order_id = source_id
             session.add(seat)
 
         await session.flush()
-
-        await session.refresh(seat, ["member", "customer"])
 
         if immediate_claim:
             log.info(
@@ -881,8 +877,8 @@ class SeatService:
         member_id: uuid.UUID | None,
     ) -> SeatAssignmentTarget:
         # Backward compat: resolve customer_id/external_customer_id to email
+        customer_repository = CustomerRepository.from_session(session)
         if customer_id or external_customer_id:
-            customer_repository = CustomerRepository.from_session(session)
             if customer_id:
                 customer = await customer_repository.get_by_id_and_organization(
                     customer_id, organization_id
@@ -917,9 +913,13 @@ class SeatService:
         if existing_seat and not existing_seat.is_revoked():
             raise SeatAlreadyAssigned(member.email)
 
+        billing_customer = await customer_repository.get_by_id(
+            billing_customer_id, include_deleted=True
+        )
+
         return SeatAssignmentTarget(
-            customer_id=billing_customer_id,
-            member_id=member.id,
+            customer=billing_customer,
+            member=member,
             email=member.email,
             seat_member_email=member.email,
         )
@@ -1052,8 +1052,8 @@ class SeatService:
             )
 
         return SeatAssignmentTarget(
-            customer_id=customer.id,
-            member_id=member.id if member else None,
+            customer=customer,
+            member=member,
             email=customer.email,
             seat_member_email=customer.email,
         )

@@ -32,7 +32,6 @@ class PaymentBase(IDSchema, TimestampedSchema):
     )
     method: str = Field(description="The payment method used.", examples=["card"])
     trigger: PaymentTrigger | None = Field(
-        None,
         description=(
             "What initiated this payment attempt, e.g. initial purchase, "
             "subscription renewal, or an automated dunning retry."

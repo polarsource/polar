@@ -101,7 +101,7 @@ class TestRevokeSeatForMember:
             customer=billing_customer,
             status=SeatStatus.claimed,
             claimed_at=utc_now(),
-            member_id=member.id,
+            member=member,
             email=member.email,
         )
         seat_id = seat.id

@@ -12,6 +12,7 @@ from polar.authz.service import get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.time_queries import TimeInterval
 from polar.logging import Logger
+from polar.metrics.aggregation import latest
 from polar.metrics.schemas import MetricsResponse
 from polar.metrics.service import metrics as metrics_service
 from polar.models import Product
@@ -29,8 +30,6 @@ from .schemas import (
     InsightCategory,
     InsightSeverity,
 )
-from polar.metrics.aggregation import latest
-
 from .signals import ProductPricing
 
 log: Logger = structlog.get_logger()

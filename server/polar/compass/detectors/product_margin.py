@@ -1,13 +1,13 @@
 import math
 
+from polar.metrics.aggregation import latest
+
 from ..schemas import (
     AdjustPriceAction,
     Insight,
     InsightCategory,
     InsightSeverity,
 )
-from polar.metrics.aggregation import latest
-
 from ..signals import ProductPricing, format_currency, format_pct
 from .base import Detector, DetectorContext, confidence_for_sample
 

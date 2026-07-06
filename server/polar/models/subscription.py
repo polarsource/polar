@@ -211,12 +211,8 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
-    # Temporarily nullable while existing rows are backfilled to false
-    # out-of-band (scripts/backfill_subscription_pause_at_period_end.py); a
-    # follow-up migration sets NOT NULL and flips this to Mapped[bool]. New
-    # rows get false via the default.
-    pause_at_period_end: Mapped[bool | None] = mapped_column(
-        Boolean, nullable=True, default=False
+    pause_at_period_end: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
     )
     paused_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True

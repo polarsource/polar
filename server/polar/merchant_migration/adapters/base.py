@@ -1,7 +1,7 @@
 from collections.abc import AsyncIterator
 from typing import Protocol
 
-from ..canonical import CanonicalRecord
+from ..canonical import CanonicalAccount, CanonicalRecord
 
 
 class SourceAdapter(Protocol):
@@ -12,3 +12,5 @@ class SourceAdapter(Protocol):
     """
 
     def extract(self) -> AsyncIterator[CanonicalRecord]: ...
+
+    async def get_source_account(self) -> CanonicalAccount: ...

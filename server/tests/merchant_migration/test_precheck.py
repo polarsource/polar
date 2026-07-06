@@ -3,6 +3,7 @@ from collections.abc import AsyncIterator
 import pytest
 
 from polar.merchant_migration.canonical import (
+    CanonicalAccount,
     CanonicalCollectionMethod,
     CanonicalCustomer,
     CanonicalPaymentMethod,
@@ -31,6 +32,12 @@ def build_organization(
     status: OrganizationStatus = OrganizationStatus.ACTIVE,
 ) -> Organization:
     return Organization(status=status)
+
+
+def build_account(
+    *, country: str | None = "US", is_connect_platform: bool = False
+) -> CanonicalAccount:
+    return CanonicalAccount(country=country, is_connect_platform=is_connect_platform)
 
 
 def build_customer(
@@ -118,10 +125,12 @@ async def run(
     records: list[CanonicalRecord],
     *,
     organization: Organization | None = None,
+    account: CanonicalAccount | None = None,
 ) -> PrecheckReport:
     return await precheck_engine.run(
         aiter_records(records),
         organization or build_organization(),
+        account or build_account(),
     )
 
 
@@ -155,6 +164,16 @@ class TestPrecheckEngine:
         assert "organization_not_renewal_enabled" in codes(
             report, PrecheckIssueLevel.blocker
         )
+
+    async def test_india_account_blocks(self) -> None:
+        report = await run([build_product()], account=build_account(country="IN"))
+        assert "india_account" in codes(report, PrecheckIssueLevel.blocker)
+
+    async def test_connect_platform_account_blocks(self) -> None:
+        report = await run(
+            [build_product()], account=build_account(is_connect_platform=True)
+        )
+        assert "connect_platform_account" in codes(report, PrecheckIssueLevel.blocker)
 
     async def test_non_fixed_pricing_warns_and_can_start(self) -> None:
         report = await run(

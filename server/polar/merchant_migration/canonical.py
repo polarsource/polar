@@ -107,4 +107,12 @@ class CanonicalSubscription:
     type = MerchantMigrationRecordType.subscription
 
 
+@dataclass
+class CanonicalAccount:
+    """Source-account-level facts the precheck needs but that aren't per-record."""
+
+    country: str | None
+    is_connect_platform: bool
+
+
 CanonicalRecord = CanonicalProduct | CanonicalCustomer | CanonicalSubscription

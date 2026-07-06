@@ -131,7 +131,10 @@ class MerchantMigrationService:
             raise MerchantMigrationNotFound()
 
         adapter = await self._build_adapter(session, migration)
-        report = await precheck_engine.run(adapter.extract(), organization)
+        source_account = await adapter.get_source_account()
+        report = await precheck_engine.run(
+            adapter.extract(), organization, source_account
+        )
 
         await repository.update(
             migration, update_dict={"step": MerchantMigrationStep.pre_check}

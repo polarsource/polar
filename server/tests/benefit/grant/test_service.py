@@ -138,23 +138,12 @@ class TestGrantBenefit:
         existing.set_granted()
         await save_fixture(existing)
 
-        real_lookup = BenefitGrantRepository.get_by_benefit_and_scope
-        calls = 0
-
-        async def lookup_side_effect(
-            self: BenefitGrantRepository, *args: Any, **kwargs: Any
-        ) -> BenefitGrant | None:
-            nonlocal calls
-            calls += 1
-            if calls == 1:
-                return None
-            return await real_lookup(self, *args, **kwargs)
-
+        # First lookup misses (race), so our insert conflicts on the unique index;
+        # the recovery lookup then finds the existing grant.
         mocker.patch.object(
             BenefitGrantRepository,
             "get_by_benefit_and_scope",
-            autospec=True,
-            side_effect=lookup_side_effect,
+            side_effect=[None, existing],
         )
 
         grant = await benefit_grant_service.grant_benefit(

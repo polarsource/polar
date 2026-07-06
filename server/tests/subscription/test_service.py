@@ -4095,8 +4095,8 @@ class TestUpdateProduct:
             )
 
         # The auto-claimed billing-customer seat must enqueue exactly one grant
-        # job. A second enqueue would race two benefit.grant tasks on the same
-        # (subscription, member, benefit) and raise a duplicate-key IntegrityError.
+        # job; a second enqueue would spawn a redundant benefit.grant task for the
+        # same (subscription, member, benefit).
         benefit_grant_calls = [
             c
             for c in enqueue_job_mock.call_args_list

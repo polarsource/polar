@@ -1,3 +1,4 @@
+import { toast } from '@/components/Toast/use-toast'
 import { useCreateMerchantMigration } from '@/hooks/queries/merchantMigrations'
 import { schemas } from '@polar-sh/client'
 import { Button, InlineModalHeader, Text } from '@polar-sh/orbit'
@@ -23,6 +24,11 @@ export function CreateMigrationModal({
     })
     if (result.data) {
       onCreated(result.data)
+    } else {
+      toast({
+        title: 'Could not start migration',
+        description: 'Something went wrong. Please try again.',
+      })
     }
   }
 

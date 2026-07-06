@@ -635,6 +635,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def is_sso_enabled(self) -> bool:
         return self.feature_settings.get("sso_enabled", False)
 
+    @property
+    def is_compass_enabled(self) -> bool:
+        return self.feature_settings.get("compass_enabled", False)
+
     sso_enforced: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     #

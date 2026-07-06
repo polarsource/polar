@@ -1,10 +1,12 @@
 from typing import Annotated, Literal, Self
 
 from fastapi import Path
-from pydantic import UUID4, Discriminator, Field, model_validator
+from pydantic import UUID4, Discriminator, Field, TypeAdapter, model_validator
 
+from polar.dispute.schemas import Dispute
 from polar.exceptions import ResourceNotFound
 from polar.kit.schemas import (
+    ClassName,
     IDSchema,
     Schema,
     SetSchemaReference,
@@ -34,6 +36,30 @@ class SupportCaseMessage(IDSchema, TimestampedSchema):
 
 class SupportCase(IDSchema, TimestampedSchema):
     type: SupportCaseType
+
+
+class SupportCaseListItemBase(IDSchema, TimestampedSchema): ...
+
+
+class DisputeSupportCaseListItem(SupportCaseListItemBase):
+    type: Literal[SupportCaseType.dispute]
+    dispute: Dispute = Field(description="The dispute this case handles.")
+
+
+class ReviewAppealSupportCaseListItem(SupportCaseListItemBase):
+    type: Literal[SupportCaseType.review_appeal]
+
+
+SupportCaseListItem = Annotated[
+    DisputeSupportCaseListItem | ReviewAppealSupportCaseListItem,
+    Discriminator("type"),
+    SetSchemaReference("SupportCaseListItem"),
+    ClassName("SupportCaseListItem"),
+]
+
+SupportCaseListItemAdapter: TypeAdapter[SupportCaseListItem] = TypeAdapter[
+    SupportCaseListItem
+](SupportCaseListItem)
 
 
 class SupportCaseAttachmentFile(Schema):

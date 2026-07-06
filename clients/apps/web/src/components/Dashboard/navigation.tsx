@@ -7,6 +7,7 @@ import CodeOutlined from '@mui/icons-material/CodeOutlined'
 import DiamondOutlined from '@mui/icons-material/DiamondOutlined'
 import DiscountOutlined from '@mui/icons-material/DiscountOutlined'
 import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
+import ExploreOutlined from '@mui/icons-material/ExploreOutlined'
 import GavelOutlined from '@mui/icons-material/GavelOutlined'
 import HiveOutlined from '@mui/icons-material/HiveOutlined'
 import LinkOutlined from '@mui/icons-material/LinkOutlined'
@@ -188,6 +189,16 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
     checkIsActive: (currentRoute: string) =>
       currentRoute === `/dashboard/${org?.slug}`,
     if: true,
+  },
+  {
+    id: 'compass',
+    title: 'Compass',
+    icon: <ExploreOutlined fontSize="inherit" />,
+    link: `/dashboard/${org?.slug}/compass`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/dashboard/${org?.slug}/compass`)
+    },
+    if: !!org?.feature_settings?.compass_enabled,
   },
   {
     id: 'new-products',

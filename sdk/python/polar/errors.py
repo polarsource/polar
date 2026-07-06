@@ -5,10 +5,19 @@ from polar.outputs import (
     AlreadyCanceledSubscription as AlreadyCanceledSubscriptionModel,
 )
 from polar.outputs import (
+    AmbiguousExternalCustomerID as AmbiguousExternalCustomerIDModel,
+)
+from polar.outputs import (
+    CannotCreateOrganizationError as CannotCreateOrganizationErrorModel,
+)
+from polar.outputs import (
     CheckoutForbiddenError as CheckoutForbiddenErrorModel,
 )
 from polar.outputs import (
     CustomerNotReady as CustomerNotReadyModel,
+)
+from polar.outputs import (
+    DisputeNotOpenError as DisputeNotOpenErrorModel,
 )
 from polar.outputs import (
     ExpiredCheckoutError as ExpiredCheckoutErrorModel,
@@ -30,6 +39,9 @@ from polar.outputs import (
 )
 from polar.outputs import (
     OrderNotDraft as OrderNotDraftModel,
+)
+from polar.outputs import (
+    OrderNotEligibleForInvoice as OrderNotEligibleForInvoiceModel,
 )
 from polar.outputs import (
     OrderNotEligibleForRetry as OrderNotEligibleForRetryModel,
@@ -62,6 +74,9 @@ from polar.outputs import (
     ResourceNotFound as ResourceNotFoundModel,
 )
 from polar.outputs import (
+    SSOEnforcementRequiresConnection as SSOEnforcementRequiresConnectionModel,
+)
+from polar.outputs import (
     SubscriptionLocked as SubscriptionLockedModel,
 )
 from polar.outputs import (
@@ -74,6 +89,17 @@ class HTTPValidationError(PolarClientError):
     error: HTTPValidationErrorModel
 
     def __init__(self, status_code: int, error: HTTPValidationErrorModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class CannotCreateOrganizationError(PolarClientError):
+    error_type = CannotCreateOrganizationErrorModel
+    error: CannotCreateOrganizationErrorModel
+
+    def __init__(
+        self, status_code: int, error: CannotCreateOrganizationErrorModel
+    ) -> None:
         self.error = error
         super().__init__(status_code, error)
 
@@ -92,6 +118,17 @@ class NotPermitted(PolarClientError):
     error: NotPermittedModel
 
     def __init__(self, status_code: int, error: NotPermittedModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class SSOEnforcementRequiresConnection(PolarClientError):
+    error_type = SSOEnforcementRequiresConnectionModel
+    error: SSOEnforcementRequiresConnectionModel
+
+    def __init__(
+        self, status_code: int, error: SSOEnforcementRequiresConnectionModel
+    ) -> None:
         self.error = error
         super().__init__(status_code, error)
 
@@ -158,6 +195,17 @@ class OrderNotDraft(PolarClientError):
         super().__init__(status_code, error)
 
 
+class OrderNotEligibleForInvoice(PolarClientError):
+    error_type = OrderNotEligibleForInvoiceModel
+    error: OrderNotEligibleForInvoiceModel
+
+    def __init__(
+        self, status_code: int, error: OrderNotEligibleForInvoiceModel
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
 class MissingInvoiceBillingDetails(PolarClientError):
     error_type = MissingInvoiceBillingDetailsModel
     error: MissingInvoiceBillingDetailsModel
@@ -174,6 +222,15 @@ class RefundedAlready(PolarClientError):
     error: RefundedAlreadyModel
 
     def __init__(self, status_code: int, error: RefundedAlreadyModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class DisputeNotOpenError(PolarClientError):
+    error_type = DisputeNotOpenErrorModel
+    error: DisputeNotOpenErrorModel
+
+    def __init__(self, status_code: int, error: DisputeNotOpenErrorModel) -> None:
         self.error = error
         super().__init__(status_code, error)
 
@@ -232,11 +289,13 @@ class Unauthorized(PolarClientError):
         super().__init__(status_code, error)
 
 
-class CreateMember403Error(PolarClientError):
-    error_type = None
-    error: None
+class AmbiguousExternalCustomerID(PolarClientError):
+    error_type = AmbiguousExternalCustomerIDModel
+    error: AmbiguousExternalCustomerIDModel
 
-    def __init__(self, status_code: int, error: None) -> None:
+    def __init__(
+        self, status_code: int, error: AmbiguousExternalCustomerIDModel
+    ) -> None:
         self.error = error
         super().__init__(status_code, error)
 

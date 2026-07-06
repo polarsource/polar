@@ -1,6 +1,7 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type { CustomerPortalMemberCreate, CustomerPortalMemberUpdate } from "../../models/inputs";
 import type { CustomerPortalMember, ListResourceCustomerPortalMember } from "../../models/outputs";
+
 import {
   AddMember400Error,
   AddMember401Error,
@@ -54,6 +55,41 @@ export const listMembersMembers = (client: ClientBase) => {
       403: ListMembers403Error,
       422: HTTPValidationError,
     });
+  };
+};
+/**
+ * List all members of the customer's team.
+ *
+ * Only available to owners and billing managers of team customers.
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<CustomerPortalMember>} A generator that yields items of type CustomerPortalMember.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {ListMembers401Error} Authentication required
+ * @throws {ListMembers403Error} Not permitted - requires owner or billing manager role
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistMembersMembers = (client: ClientBase) => {
+  return async function* (query?: {
+    page?: number;
+    limit?: number;
+  }): AsyncGenerator<CustomerPortalMember> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listMembersMembers(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
   };
 };
 export const addMemberMembers = (client: ClientBase) => {
@@ -186,6 +222,7 @@ export function createMembersService(client: ClientBase) {
     addMember: addMemberMembers(client),
     removeMember: removeMemberMembers(client),
     updateMember: updateMemberMembers(client),
+    iterlistMembers: iterlistMembersMembers(client),
   };
 }
 

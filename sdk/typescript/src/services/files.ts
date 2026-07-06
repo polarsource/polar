@@ -1,13 +1,7 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { FileCreate, FilePatch, FileUploadCompleted } from "../models/inputs";
-import type {
-  DownloadableFileRead,
-  FileUpload,
-  ListResourceFileRead,
-  OrganizationAvatarFileRead,
-  ProductMediaFileRead,
-  SupportCaseAttachmentFileRead,
-} from "../models/outputs";
+import type { FileRead, FileUpload, ListResourceFileRead } from "../models/outputs";
+
 import { HTTPValidationError, NotPermitted, ResourceNotFound } from "../errors";
 
 export const listFiles = (client: ClientBase) => {
@@ -42,6 +36,41 @@ export const listFiles = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List files.
+ *
+ * **Scopes**: `files:read` `files:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<FileRead>} A generator that yields items of type FileRead.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistFiles = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    ids?: string | string[] | null;
+    page?: number;
+    limit?: number;
+  }): AsyncGenerator<FileRead> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listFiles(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const createFiles = (client: ClientBase) => {
   /**
    * Create a file.
@@ -72,22 +101,14 @@ export const uploadedFiles = (client: ClientBase) => {
    *
    * @param id_path - The file ID.
    * @param body - Request body
-   * @returns {DownloadableFileRead | ProductMediaFileRead | OrganizationAvatarFileRead | SupportCaseAttachmentFileRead}
+   * @returns {FileRead}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} You don't have the permission to update this file.
    * @throws {ResourceNotFound} File not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (
-    id_path: string,
-    body: FileUploadCompleted,
-  ): Promise<
-    | DownloadableFileRead
-    | ProductMediaFileRead
-    | OrganizationAvatarFileRead
-    | SupportCaseAttachmentFileRead
-  > => {
+  return async (id_path: string, body: FileUploadCompleted): Promise<FileRead> => {
     const pathParams = {
       id: id_path,
     };
@@ -100,12 +121,7 @@ export const uploadedFiles = (client: ClientBase) => {
       body,
     );
     const response = await client.sendRequest(request);
-    return client.parseResponse<
-      | DownloadableFileRead
-      | ProductMediaFileRead
-      | OrganizationAvatarFileRead
-      | SupportCaseAttachmentFileRead
-    >(response, "json", {
+    return client.parseResponse<FileRead>(response, "json", {
       403: NotPermitted,
       404: ResourceNotFound,
       422: HTTPValidationError,
@@ -154,34 +170,21 @@ export const updateFiles = (client: ClientBase) => {
    *
    * @param id - The file ID.
    * @param body - Request body
-   * @returns {DownloadableFileRead | ProductMediaFileRead | OrganizationAvatarFileRead | SupportCaseAttachmentFileRead}
+   * @returns {FileRead}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} You don't have the permission to update this file.
    * @throws {ResourceNotFound} File not found.
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (
-    id: string,
-    body: FilePatch,
-  ): Promise<
-    | DownloadableFileRead
-    | ProductMediaFileRead
-    | OrganizationAvatarFileRead
-    | SupportCaseAttachmentFileRead
-  > => {
+  return async (id: string, body: FilePatch): Promise<FileRead> => {
     const pathParams = {
       id: id,
     };
     const queryParams = {};
     const request = client.buildRequest("PATCH", "/v1/files/{id}", pathParams, queryParams, body);
     const response = await client.sendRequest(request);
-    return client.parseResponse<
-      | DownloadableFileRead
-      | ProductMediaFileRead
-      | OrganizationAvatarFileRead
-      | SupportCaseAttachmentFileRead
-    >(response, "json", {
+    return client.parseResponse<FileRead>(response, "json", {
       403: NotPermitted,
       404: ResourceNotFound,
       422: HTTPValidationError,
@@ -196,6 +199,7 @@ export function createFilesService(client: ClientBase) {
     uploaded: uploadedFiles(client),
     delete: deleteFiles(client),
     update: updateFiles(client),
+    iterlist: iterlistFiles(client),
   };
 }
 

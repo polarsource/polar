@@ -1,6 +1,7 @@
-import { ClientBase } from "../base";
-import type { ListResourceBenefitGrant } from "../models/outputs";
+import type { ClientBase } from "../base";
 import type { BenefitGrantSortProperty } from "../models/literals";
+import type { BenefitGrant, ListResourceBenefitGrant } from "../models/outputs";
+
 import { HTTPValidationError } from "../errors";
 
 export const listBenefitGrants = (client: ClientBase) => {
@@ -47,10 +48,49 @@ export const listBenefitGrants = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List benefit grants across all benefits accessible to the authenticated subject.
+ *
+ * **Scopes**: `benefits:read` `benefits:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<BenefitGrant>} A generator that yields items of type BenefitGrant.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistBenefitGrants = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    customer_id?: string | string[] | null;
+    external_customer_id?: string | string[] | null;
+    is_granted?: boolean | null;
+    page?: number;
+    limit?: number;
+    sorting?: BenefitGrantSortProperty[] | null;
+  }): AsyncGenerator<BenefitGrant> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listBenefitGrants(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 
 export function createBenefitGrantsService(client: ClientBase) {
   return {
     list: listBenefitGrants(client),
+    iterlist: iterlistBenefitGrants(client),
   };
 }
 

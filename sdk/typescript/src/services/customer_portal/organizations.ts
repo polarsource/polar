@@ -1,5 +1,6 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type { CustomerOrganizationData } from "../../models/outputs";
+
 import { HTTPValidationError, ResourceNotFound } from "../../errors";
 
 export const getOrganizations = (client: ClientBase) => {

@@ -8,6 +8,7 @@ from polar.errors import (
     HTTPValidationError,
     ManualRetryLimitExceeded,
     MissingInvoiceBillingDetails,
+    OrderNotEligibleForInvoice,
     OrderNotEligibleForRetry,
     PaymentAlreadyInProgress,
     ResourceNotFound,
@@ -80,6 +81,54 @@ class OrdersSync(SyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, ListResourceCustomerOrder, method_errors)
+
+    def iter_list(
+        self,
+        *,
+        product_id: str | builtins.list[str] | None = None,
+        product_billing_type: ProductBillingType
+        | builtins.list[ProductBillingType]
+        | None = None,
+        subscription_id: str | builtins.list[str] | None = None,
+        query: str | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[CustomerOrderSortProperty] | None = ["-created_at"],
+    ) -> typing.Generator[CustomerOrder, None, None]:
+        """
+        List orders of the authenticated customer.
+
+        Args:
+            product_id: Filter by product ID.
+            product_billing_type: Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
+            subscription_id: Filter by subscription ID.
+            query: Search by product or organization name.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+
+        Returns:
+            A generator that yields items of type CustomerOrder.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list(
+                product_id=product_id,
+                product_billing_type=product_billing_type,
+                subscription_id=subscription_id,
+                query=query,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     def get(
         self,
@@ -189,6 +238,7 @@ class OrdersSync(SyncServiceBase):
 
         Raises:
             ResourceNotFound: Order not found.
+            OrderNotEligibleForInvoice: Order is not eligible for invoice generation (invalid status).
             MissingInvoiceBillingDetails: Order is missing billing name or address.
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarServerError: Raised when the server returns a 5xx error response.
@@ -204,6 +254,7 @@ class OrdersSync(SyncServiceBase):
         response = self.client.send_request(request)
         method_errors = {
             404: ResourceNotFound,
+            409: OrderNotEligibleForInvoice,
             422: MissingInvoiceBillingDetails,
         }
         return parse_response_json(response, typing.Any, method_errors)
@@ -362,6 +413,55 @@ class OrdersAsync(AsyncServiceBase):
         }
         return parse_response_json(response, ListResourceCustomerOrder, method_errors)
 
+    async def iter_list(
+        self,
+        *,
+        product_id: str | builtins.list[str] | None = None,
+        product_billing_type: ProductBillingType
+        | builtins.list[ProductBillingType]
+        | None = None,
+        subscription_id: str | builtins.list[str] | None = None,
+        query: str | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[CustomerOrderSortProperty] | None = ["-created_at"],
+    ) -> typing.AsyncGenerator[CustomerOrder, None]:
+        """
+        List orders of the authenticated customer.
+
+        Args:
+            product_id: Filter by product ID.
+            product_billing_type: Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
+            subscription_id: Filter by subscription ID.
+            query: Search by product or organization name.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+
+        Returns:
+            An async generator that yields items of type CustomerOrder.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list(
+                product_id=product_id,
+                product_billing_type=product_billing_type,
+                subscription_id=subscription_id,
+                query=query,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     async def get(
         self,
         id: str,
@@ -470,6 +570,7 @@ class OrdersAsync(AsyncServiceBase):
 
         Raises:
             ResourceNotFound: Order not found.
+            OrderNotEligibleForInvoice: Order is not eligible for invoice generation (invalid status).
             MissingInvoiceBillingDetails: Order is missing billing name or address.
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarServerError: Raised when the server returns a 5xx error response.
@@ -485,6 +586,7 @@ class OrdersAsync(AsyncServiceBase):
         response = await self.client.send_request(request)
         method_errors = {
             404: ResourceNotFound,
+            409: OrderNotEligibleForInvoice,
             422: MissingInvoiceBillingDetails,
         }
         return parse_response_json(response, typing.Any, method_errors)

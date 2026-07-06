@@ -1,7 +1,8 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { CheckoutLinkCreate, CheckoutLinkUpdate } from "../models/inputs";
-import type { CheckoutLink, ListResourceCheckoutLink } from "../models/outputs";
 import type { CheckoutLinkSortProperty } from "../models/literals";
+import type { CheckoutLink, ListResourceCheckoutLink } from "../models/outputs";
+
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
 export const listCheckoutLinks = (client: ClientBase) => {
@@ -42,6 +43,42 @@ export const listCheckoutLinks = (client: ClientBase) => {
     return client.parseResponse<ListResourceCheckoutLink>(response, "json", {
       422: HTTPValidationError,
     });
+  };
+};
+/**
+ * List checkout links.
+ *
+ * **Scopes**: `checkout_links:read` `checkout_links:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<CheckoutLink>} A generator that yields items of type CheckoutLink.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistCheckoutLinks = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    product_id?: string | string[] | null;
+    page?: number;
+    limit?: number;
+    sorting?: CheckoutLinkSortProperty[] | null;
+  }): AsyncGenerator<CheckoutLink> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listCheckoutLinks(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
   };
 };
 export const createCheckoutLinks = (client: ClientBase) => {
@@ -177,6 +214,7 @@ export function createCheckoutLinksService(client: ClientBase) {
     get: getCheckoutLinks(client),
     delete: deleteCheckoutLinks(client),
     update: updateCheckoutLinks(client),
+    iterlist: iterlistCheckoutLinks(client),
   };
 }
 

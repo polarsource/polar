@@ -1,6 +1,7 @@
-import { ClientBase } from "../base";
-import type { ListResourceMember } from "../models/outputs";
+import type { ClientBase } from "../base";
 import type { MemberRole, MemberSortProperty } from "../models/literals";
+import type { ListResourceMember, Member } from "../models/outputs";
+
 import { HTTPValidationError } from "../errors";
 
 export const listMembersMembers = (client: ClientBase) => {
@@ -39,10 +40,48 @@ export const listMembersMembers = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List members with optional customer ID filter.
+ *
+ * **Scopes**: `members:read` `members:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<Member>} A generator that yields items of type Member.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistMembersMembers = (client: ClientBase) => {
+  return async function* (query?: {
+    customer_id?: string | null;
+    external_customer_id?: string | null;
+    role?: MemberRole | null;
+    page?: number;
+    limit?: number;
+    sorting?: MemberSortProperty[] | null;
+  }): AsyncGenerator<Member> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listMembersMembers(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 
 export function createMembersService(client: ClientBase) {
   return {
     listMembers: listMembersMembers(client),
+    iterlistMembers: iterlistMembersMembers(client),
   };
 }
 

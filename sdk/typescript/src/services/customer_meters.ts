@@ -1,6 +1,7 @@
-import { ClientBase } from "../base";
-import type { CustomerMeter, ListResourceCustomerMeter } from "../models/outputs";
+import type { ClientBase } from "../base";
 import type { CustomerMeterSortProperty } from "../models/literals";
+import type { CustomerMeter, ListResourceCustomerMeter } from "../models/outputs";
+
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
 export const listCustomerMeters = (client: ClientBase) => {
@@ -47,6 +48,44 @@ export const listCustomerMeters = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List customer meters.
+ *
+ * **Scopes**: `customer_meters:read`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<CustomerMeter>} A generator that yields items of type CustomerMeter.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistCustomerMeters = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    customer_id?: string | string[] | null;
+    external_customer_id?: string | string[] | null;
+    meter_id?: string | string[] | null;
+    page?: number;
+    limit?: number;
+    sorting?: CustomerMeterSortProperty[] | null;
+  }): AsyncGenerator<CustomerMeter> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listCustomerMeters(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const getCustomerMeters = (client: ClientBase) => {
   /**
    * Get a customer meter by ID.
@@ -84,6 +123,7 @@ export function createCustomerMetersService(client: ClientBase) {
   return {
     list: listCustomerMeters(client),
     get: getCustomerMeters(client),
+    iterlist: iterlistCustomerMeters(client),
   };
 }
 

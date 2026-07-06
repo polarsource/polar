@@ -39,6 +39,7 @@ from polar.literals import (
 )
 from polar.outputs import (
     Benefit,
+    BenefitGrant,
     ListResourceBenefit,
     ListResourceBenefitGrant,
 )
@@ -100,6 +101,60 @@ class BenefitsSync(SyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, ListResourceBenefit, method_errors)
+
+    def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        type: BenefitType | builtins.list[BenefitType] | None = None,
+        id: str | builtins.list[str] | None = None,
+        exclude_id: str | builtins.list[str] | None = None,
+        query: str | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[BenefitSortProperty] | None = ["-created_at"],
+        metadata: MetadataQuery = None,
+    ) -> typing.Generator[Benefit, None, None]:
+        """
+        List benefits.
+
+        **Scopes**: `benefits:read` `benefits:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            type: Filter by benefit type.
+            id: Filter by benefit IDs.
+            exclude_id: Exclude benefits with these IDs.
+            query: Filter by description.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+
+        Returns:
+            A generator that yields items of type Benefit.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list(
+                organization_id=organization_id,
+                type=type,
+                id=id,
+                exclude_id=exclude_id,
+                query=query,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+                metadata=metadata,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     @typing.overload
     def create(
@@ -395,6 +450,54 @@ class BenefitsSync(SyncServiceBase):
         }
         return parse_response_json(response, ListResourceBenefitGrant, method_errors)
 
+    def iter_grants(
+        self,
+        id: str,
+        *,
+        is_granted: bool | None = None,
+        customer_id: str | builtins.list[str] | None = None,
+        member_id: str | builtins.list[str] | None = None,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.Generator[BenefitGrant, None, None]:
+        """
+        List the individual grants for a benefit.
+
+        It's especially useful to check if a user has been granted a benefit.
+
+        **Scopes**: `benefits:read` `benefits:write`
+
+        Args:
+            id:
+            is_granted: Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned.
+            customer_id: Filter by customer.
+            member_id: Filter by member.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            A generator that yields items of type BenefitGrant.
+
+        Raises:
+            ResourceNotFound: Benefit not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.grants(
+                id=id,
+                is_granted=is_granted,
+                customer_id=customer_id,
+                member_id=member_id,
+                page=page,
+                limit=limit,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
 
 class BenefitsAsync(AsyncServiceBase):
     async def list(
@@ -452,6 +555,61 @@ class BenefitsAsync(AsyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, ListResourceBenefit, method_errors)
+
+    async def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        type: BenefitType | builtins.list[BenefitType] | None = None,
+        id: str | builtins.list[str] | None = None,
+        exclude_id: str | builtins.list[str] | None = None,
+        query: str | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[BenefitSortProperty] | None = ["-created_at"],
+        metadata: MetadataQuery = None,
+    ) -> typing.AsyncGenerator[Benefit, None]:
+        """
+        List benefits.
+
+        **Scopes**: `benefits:read` `benefits:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            type: Filter by benefit type.
+            id: Filter by benefit IDs.
+            exclude_id: Exclude benefits with these IDs.
+            query: Filter by description.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+
+        Returns:
+            An async generator that yields items of type Benefit.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list(
+                organization_id=organization_id,
+                type=type,
+                id=id,
+                exclude_id=exclude_id,
+                query=query,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+                metadata=metadata,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     @typing.overload
     async def create(
@@ -746,3 +904,52 @@ class BenefitsAsync(AsyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, ListResourceBenefitGrant, method_errors)
+
+    async def iter_grants(
+        self,
+        id: str,
+        *,
+        is_granted: bool | None = None,
+        customer_id: str | builtins.list[str] | None = None,
+        member_id: str | builtins.list[str] | None = None,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.AsyncGenerator[BenefitGrant, None]:
+        """
+        List the individual grants for a benefit.
+
+        It's especially useful to check if a user has been granted a benefit.
+
+        **Scopes**: `benefits:read` `benefits:write`
+
+        Args:
+            id:
+            is_granted: Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned.
+            customer_id: Filter by customer.
+            member_id: Filter by member.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            An async generator that yields items of type BenefitGrant.
+
+        Raises:
+            ResourceNotFound: Benefit not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.grants(
+                id=id,
+                is_granted=is_granted,
+                customer_id=customer_id,
+                member_id=member_id,
+                page=page,
+                limit=limit,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1

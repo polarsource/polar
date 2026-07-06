@@ -1,4 +1,4 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type {
   CustomerEmailUpdateRequest,
   CustomerEmailUpdateVerifyRequest,
@@ -8,10 +8,12 @@ import type {
 } from "../../models/inputs";
 import type {
   CustomerEmailUpdateVerifyResponse,
+  CustomerPaymentMethod,
   CustomerPaymentMethodCreateResponse,
   CustomerPortalCustomer,
   ListResourceCustomerPaymentMethod,
 } from "../../models/outputs";
+
 import {
   CheckEmailUpdate401Error,
   CustomerNotReady,
@@ -103,6 +105,37 @@ export const listPaymentMethodsCustomers = (client: ClientBase) => {
     return client.parseResponse<ListResourceCustomerPaymentMethod>(response, "json", {
       422: HTTPValidationError,
     });
+  };
+};
+/**
+ * Get saved payment methods of the authenticated customer.
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<CustomerPaymentMethod>} A generator that yields items of type CustomerPaymentMethod.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistPaymentMethodsCustomers = (client: ClientBase) => {
+  return async function* (query?: {
+    page?: number;
+    limit?: number;
+  }): AsyncGenerator<CustomerPaymentMethod> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listPaymentMethodsCustomers(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
   };
 };
 export const addPaymentMethodCustomers = (client: ClientBase) => {
@@ -295,6 +328,7 @@ export function createCustomersService(client: ClientBase) {
     requestEmailUpdate: requestEmailUpdateCustomers(client),
     checkEmailUpdate: checkEmailUpdateCustomers(client),
     verifyEmailUpdate: verifyEmailUpdateCustomers(client),
+    iterlistPaymentMethods: iterlistPaymentMethodsCustomers(client),
   };
 }
 

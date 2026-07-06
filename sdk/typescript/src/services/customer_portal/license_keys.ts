@@ -1,4 +1,4 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type {
   LicenseKeyActivate,
   LicenseKeyDeactivate,
@@ -6,10 +6,12 @@ import type {
 } from "../../models/inputs";
 import type {
   LicenseKeyActivationRead,
+  LicenseKeyRead,
   LicenseKeyWithActivations,
   ListResourceLicenseKeyRead,
   ValidatedLicenseKey,
 } from "../../models/outputs";
+
 import { HTTPValidationError, NotPermitted, ResourceNotFound, Unauthorized } from "../../errors";
 
 export const listLicenseKeys = (client: ClientBase) => {
@@ -48,6 +50,40 @@ export const listLicenseKeys = (client: ClientBase) => {
       404: ResourceNotFound,
       422: HTTPValidationError,
     });
+  };
+};
+/**
+ * **Scopes**: `customer_portal:read` `customer_portal:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<LicenseKeyRead>} A generator that yields items of type LicenseKeyRead.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {Unauthorized} Not authorized to manage license key.
+ * @throws {ResourceNotFound} License key not found.
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistLicenseKeys = (client: ClientBase) => {
+  return async function* (query?: {
+    benefit_id?: string | null;
+    page?: number;
+    limit?: number;
+  }): AsyncGenerator<LicenseKeyRead> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listLicenseKeys(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
   };
 };
 export const getLicenseKeys = (client: ClientBase) => {
@@ -191,6 +227,7 @@ export function createLicenseKeysService(client: ClientBase) {
     validate: validateLicenseKeys(client),
     activate: activateLicenseKeys(client),
     deactivate: deactivateLicenseKeys(client),
+    iterlist: iterlistLicenseKeys(client),
   };
 }
 

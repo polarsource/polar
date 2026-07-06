@@ -775,6 +775,14 @@ PaymentSortProperty: typing.TypeAlias = typing.Literal[
     "-method",
 ]
 PaymentStatus: typing.TypeAlias = typing.Literal["pending", "succeeded", "failed"]
+PaymentTrigger: typing.TypeAlias = typing.Literal[
+    "purchase",
+    "subscription_cycle",
+    "retry_dunning",
+    "retry_customer",
+    "retry_payment_method_update",
+    "retry_admin",
+]
 Permission: typing.TypeAlias = typing.Literal[
     "pull", "triage", "push", "maintain", "admin"
 ]
@@ -923,6 +931,16 @@ ProductVisibility: typing.TypeAlias = typing.Literal["draft", "private", "public
 PublicSubscriptionProrationBehavior: typing.TypeAlias = typing.Literal[
     "invoice", "prorate", "next_period"
 ]
+Reason: typing.TypeAlias = typing.Literal[
+    "duplicate",
+    "fraudulent",
+    "customer_request",
+    "service_disruption",
+    "satisfaction_guarantee",
+    "other",
+]
+"""Reason for the refund."""
+RecurringInterval: typing.TypeAlias = typing.Literal["day", "week", "month", "year"]
 RefundReason: typing.TypeAlias = typing.Literal[
     "duplicate",
     "fraudulent",
@@ -979,6 +997,7 @@ Scope: typing.TypeAlias = typing.Literal[
     "wallets:read",
     "wallets:write",
     "disputes:read",
+    "disputes:write",
     "customer_meters:read",
     "customer_sessions:write",
     "member_sessions:write",
@@ -1010,9 +1029,6 @@ Status: typing.TypeAlias = typing.Literal["active", "trialing"]
 SubType: typing.TypeAlias = typing.Literal["user", "organization"]
 SubscriptionProrationBehavior: typing.TypeAlias = typing.Literal[
     "invoice", "prorate", "next_period", "reset"
-]
-SubscriptionRecurringInterval: typing.TypeAlias = typing.Literal[
-    "day", "week", "month", "year"
 ]
 SubscriptionSortProperty: typing.TypeAlias = typing.Literal[
     "customer",

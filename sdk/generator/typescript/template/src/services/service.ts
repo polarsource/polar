@@ -1,4 +1,4 @@
-import { ClientBase } from "{{ base_import }}";
+import type { ClientBase } from "{{ base_import }}";
 {% if imports.inputs %}
 import type { {% for name in imports.inputs %}{{ name }}{% if not loop.last %}, {% endif %}{% endfor %}} from "{{ models_import }}/inputs";
 {% endif %}
@@ -85,12 +85,99 @@ export const {{ method.name | camel }}{{ service.name }} = (
     );
   };
 };
+{% if method.pagination %}
+/**
+{% if method.description %}
+{{ method.description | format_description }}
+{% endif %}
+*
+{% for param in method.path_params %}
+* @param {{ param.parameter_name }}{% if param.description %} - {{ param.description }}{% endif +%}
+{% endfor %}
+{% if method.query_params %}
+* @param query - Query parameters
+{% endif %}
+{% if method.body %}
+* @param body - Request body{% if method.body.description %}: {{ method.body.description }}{% endif +%}
+{% endif %}
+* @returns {AsyncGenerator<{{ method.pagination.item_schema | ts_type }}>} A generator that yields items of type {{ method.pagination.item_schema | ts_type }}.
+* @throws {{'{'}}PolarNetworkError{{'}'}} When a network error occurs
+* @throws {{'{'}}PolarServerError{{'}'}} When the server returns a 5xx error
+{% for error in method.errors %}
+* @throws {{'{'}}{{ error.name }}{{'}'}} {{ error.description or 'Error with status code ' + error.status_code }}
+{% endfor %}
+*/
+export const iter{{ method.name | camel }}{{ service.name }} = (
+  client: ClientBase,
+) => {
+  return async function* (
+    {% for param in method.path_params %}
+    {{ param.parameter_name }}: {{ param.type | ts_type }},
+    {% endfor %}
+    {% if method.query_params %}
+    query{{ "?" if not method.query_params | selectattr("required", "eq", true) | list else "" }}: {
+      {% for param in method.query_params %}
+      {{ param.name }}{% if not param.required %}?{% endif %}: {{ param.type | ts_type }};{% endfor %}
+    }{% if method.body %},{% endif %}
+    {% endif %}
+    {% if method.body %}
+    body: {{ method.body | ts_type }}
+    {% endif %}
+  ): AsyncGenerator<{{ method.pagination.item_schema | ts_type }}> {
+    let page: number;
+    {% if method.query_params %}
+    {% for param in method.query_params %}
+    {% if param.name == 'page' %}
+    page = query?.page ?? 1;
+    {% endif %}
+    {% endfor %}
+    {% else %}
+    page = 1;
+    {% endif %}
+    let limit: number | undefined;
+    {% if method.query_params %}
+    {% for param in method.query_params %}
+    {% if param.name == 'limit' %}
+    limit = query?.limit;
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+
+    while (true) {
+      const response = await {{ method.name | camel }}{{ service.name }}(client)(
+        {% for param in method.path_params %}
+        {{ param.parameter_name }},
+        {% endfor %}
+        {% if method.query_params %}
+        { ...query, page, limit },
+        {% else %}
+        { page, limit },
+        {% endif %}
+        {% if method.body %}
+        body
+        {% endif %}
+      );
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
+{% endif %}
 {% endfor %}
 
 export function create{{ service.name }}Service(client: ClientBase) {
   return {
     {% for method in service.methods %}
     {{ method.name | camel }}: {{ method.name | camel }}{{ service.name }}(client),{% endfor %}
+    {% for method in service.methods %}
+    {% if method.pagination %}
+    iter{{ method.name | camel }}: iter{{ method.name | camel }}{{ service.name }}(client),{% endif %}
+    {% endfor %}
     {% for sub_service in service.services %}
     {{ sub_service.name | camel }}: create{{ sub_service.name }}Service(client),{% endfor %}
   };

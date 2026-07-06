@@ -1,7 +1,8 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { MetricDashboardCreate, MetricDashboardUpdate } from "../models/inputs";
-import type { MetricDashboardSchema, MetricsLimits, MetricsResponse } from "../models/outputs";
 import type { ProductBillingType, TimeInterval, Timezone } from "../models/literals";
+import type { MetricDashboardSchema, MetricsLimits, MetricsResponse } from "../models/outputs";
+
 import { HTTPValidationError } from "../errors";
 
 export const getMetrics = (client: ClientBase) => {

@@ -15,6 +15,7 @@ from polar.errors import (
     HTTPValidationError,
     MissingInvoiceBillingDetails,
     OrderNotDraft,
+    OrderNotEligibleForInvoice,
     ResourceNotFound,
 )
 from polar.inputs import (
@@ -102,6 +103,71 @@ class OrdersSync(SyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, ListResourceOrder, method_errors)
+
+    def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        product_id: str | builtins.list[str] | None = None,
+        product_billing_type: ProductBillingType
+        | builtins.list[ProductBillingType]
+        | None = None,
+        discount_id: str | builtins.list[str] | None = None,
+        customer_id: str | builtins.list[str] | None = None,
+        external_customer_id: str | builtins.list[str] | None = None,
+        checkout_id: str | builtins.list[str] | None = None,
+        subscription_id: str | builtins.list[str] | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[OrderSortProperty] | None = ["-created_at"],
+        metadata: MetadataQuery = None,
+    ) -> typing.Generator[Order, None, None]:
+        """
+        List orders.
+
+        **Scopes**: `orders:read`
+
+        Args:
+            organization_id: Filter by organization ID.
+            product_id: Filter by product ID.
+            product_billing_type: Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
+            discount_id: Filter by discount ID.
+            customer_id: Filter by customer ID.
+            external_customer_id: Filter by customer external ID.
+            checkout_id: Filter by checkout ID.
+            subscription_id: Filter by subscription ID.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+
+        Returns:
+            A generator that yields items of type Order.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list(
+                organization_id=organization_id,
+                product_id=product_id,
+                product_billing_type=product_billing_type,
+                discount_id=discount_id,
+                customer_id=customer_id,
+                external_customer_id=external_customer_id,
+                checkout_id=checkout_id,
+                subscription_id=subscription_id,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+                metadata=metadata,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     def create(
         self,
@@ -336,6 +402,7 @@ class OrdersSync(SyncServiceBase):
 
         Raises:
             ResourceNotFound: Order not found.
+            OrderNotEligibleForInvoice: Order is not eligible for invoice generation (invalid status).
             MissingInvoiceBillingDetails: Order is missing billing name or address.
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarServerError: Raised when the server returns a 5xx error response.
@@ -351,6 +418,7 @@ class OrdersSync(SyncServiceBase):
         response = self.client.send_request(request)
         method_errors = {
             404: ResourceNotFound,
+            409: OrderNotEligibleForInvoice,
             422: MissingInvoiceBillingDetails,
         }
         return parse_response_json(response, typing.Any, method_errors)
@@ -456,6 +524,72 @@ class OrdersAsync(AsyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, ListResourceOrder, method_errors)
+
+    async def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        product_id: str | builtins.list[str] | None = None,
+        product_billing_type: ProductBillingType
+        | builtins.list[ProductBillingType]
+        | None = None,
+        discount_id: str | builtins.list[str] | None = None,
+        customer_id: str | builtins.list[str] | None = None,
+        external_customer_id: str | builtins.list[str] | None = None,
+        checkout_id: str | builtins.list[str] | None = None,
+        subscription_id: str | builtins.list[str] | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[OrderSortProperty] | None = ["-created_at"],
+        metadata: MetadataQuery = None,
+    ) -> typing.AsyncGenerator[Order, None]:
+        """
+        List orders.
+
+        **Scopes**: `orders:read`
+
+        Args:
+            organization_id: Filter by organization ID.
+            product_id: Filter by product ID.
+            product_billing_type: Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
+            discount_id: Filter by discount ID.
+            customer_id: Filter by customer ID.
+            external_customer_id: Filter by customer external ID.
+            checkout_id: Filter by checkout ID.
+            subscription_id: Filter by subscription ID.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+
+        Returns:
+            An async generator that yields items of type Order.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list(
+                organization_id=organization_id,
+                product_id=product_id,
+                product_billing_type=product_billing_type,
+                discount_id=discount_id,
+                customer_id=customer_id,
+                external_customer_id=external_customer_id,
+                checkout_id=checkout_id,
+                subscription_id=subscription_id,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+                metadata=metadata,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     async def create(
         self,
@@ -690,6 +824,7 @@ class OrdersAsync(AsyncServiceBase):
 
         Raises:
             ResourceNotFound: Order not found.
+            OrderNotEligibleForInvoice: Order is not eligible for invoice generation (invalid status).
             MissingInvoiceBillingDetails: Order is missing billing name or address.
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarServerError: Raised when the server returns a 5xx error response.
@@ -705,6 +840,7 @@ class OrdersAsync(AsyncServiceBase):
         response = await self.client.send_request(request)
         method_errors = {
             404: ResourceNotFound,
+            409: OrderNotEligibleForInvoice,
             422: MissingInvoiceBillingDetails,
         }
         return parse_response_json(response, typing.Any, method_errors)

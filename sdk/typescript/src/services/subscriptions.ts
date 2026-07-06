@@ -1,16 +1,17 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type {
   MetadataQuery,
   SubscriptionCreateCustomer,
   SubscriptionCreateExternalCustomer,
   SubscriptionUpdate,
 } from "../models/inputs";
-import type { ListResourceSubscription, Subscription } from "../models/outputs";
 import type {
   CustomerCancellationReason,
   SubscriptionSortProperty,
   SubscriptionStatus,
 } from "../models/literals";
+import type { ListResourceSubscription, Subscription } from "../models/outputs";
+
 import {
   AlreadyCanceledSubscription,
   HTTPValidationError,
@@ -77,6 +78,52 @@ export const listSubscriptions = (client: ClientBase) => {
     return client.parseResponse<ListResourceSubscription>(response, "json", {
       422: HTTPValidationError,
     });
+  };
+};
+/**
+ * List subscriptions.
+ *
+ * **Scopes**: `subscriptions:read` `subscriptions:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<Subscription>} A generator that yields items of type Subscription.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistSubscriptions = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    product_id?: string | string[] | null;
+    customer_id?: string | string[] | null;
+    external_customer_id?: string | string[] | null;
+    discount_id?: string | string[] | null;
+    active?: boolean | null;
+    status?: SubscriptionStatus | SubscriptionStatus[] | null;
+    cancel_at_period_end?: boolean | null;
+    customer_cancellation_reason?: CustomerCancellationReason | CustomerCancellationReason[] | null;
+    canceled_at_after?: string | null;
+    canceled_at_before?: string | null;
+    page?: number;
+    limit?: number;
+    sorting?: SubscriptionSortProperty[] | null;
+    metadata?: MetadataQuery;
+  }): AsyncGenerator<Subscription> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listSubscriptions(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
   };
 };
 export const createSubscriptions = (client: ClientBase) => {
@@ -260,6 +307,7 @@ export function createSubscriptionsService(client: ClientBase) {
     get: getSubscriptions(client),
     revoke: revokeSubscriptions(client),
     update: updateSubscriptions(client),
+    iterlist: iterlistSubscriptions(client),
   };
 }
 

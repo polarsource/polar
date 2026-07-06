@@ -224,6 +224,17 @@ class HTTPMethod(enum.StrEnum):
 type ResponseType = typing.Literal["json", "text", "none"]
 
 
+PAGINATION = "x-polar-pagination"
+type PaginationType = typing.Literal["page_limit"]
+
+
+class Pagination(BaseModel):
+    """Pagination metadata for a Method that returns a paginated list of items."""
+
+    type: PaginationType
+    item_schema: TypeRef
+
+
 class Method(BaseModel):
     """A single API endpoint grouped under a Service."""
 
@@ -238,6 +249,7 @@ class Method(BaseModel):
     response: TypeRef | None = None
     errors: list[ErrorResponse] = []
     deprecated: bool | None = None
+    pagination: Pagination | None = None
 
 
 class Service(BaseModel):
@@ -1053,6 +1065,27 @@ def generate_ir(
                         )
                     )
 
+                pagination: Pagination | None = None
+                if operation.__pydantic_extra__ and operation.__pydantic_extra__.get(
+                    PAGINATION
+                ):
+                    pagination_extension = operation.__pydantic_extra__[PAGINATION]
+                    pagination_type = pagination_extension["type"]
+                    item_schema = _convert_typeref(
+                        op.Reference.model_validate(
+                            pagination_extension["item_schema"]
+                        ),
+                        component_schemas,
+                        inline_schemas,
+                        referenced_names,
+                        output_names,
+                        normalize_model_name=normalize_model_name,
+                    )
+                    pagination = Pagination(
+                        type=pagination_type,
+                        item_schema=item_schema,
+                    )
+
                 method = Method(
                     name=method_name,
                     description=operation.description or None,
@@ -1065,6 +1098,7 @@ def generate_ir(
                     response=response,
                     errors=errors,
                     deprecated=True if operation.deprecated else None,
+                    pagination=pagination,
                 )
                 current_service.methods.append(method)
 

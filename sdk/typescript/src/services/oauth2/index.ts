@@ -1,4 +1,4 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type {
   AuthorizeResponseOrganization,
   AuthorizeResponseUser,
@@ -8,6 +8,7 @@ import type {
   UserInfoOrganization,
   UserInfoUser,
 } from "../../models/outputs";
+
 import { createClientsService } from "./clients";
 
 export const authorizeOauth2 = (client: ClientBase) => {

@@ -1,13 +1,15 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { EventsIngest, MetadataQuery } from "../models/inputs";
+import type { EventNamesSortProperty, EventSortProperty, EventSource } from "../models/literals";
 import type {
   Event,
+  EventName,
   EventsIngestResponse,
   ListResourceEvent,
   ListResourceEventName,
   ListResourceWithCursorPaginationEvent,
 } from "../models/outputs";
-import type { EventNamesSortProperty, EventSortProperty, EventSource } from "../models/literals";
+
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
 export const listEvents = (client: ClientBase) => {
@@ -116,6 +118,45 @@ export const listNamesEvents = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List event names.
+ *
+ * **Scopes**: `events:read` `events:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<EventName>} A generator that yields items of type EventName.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistNamesEvents = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    customer_id?: string | string[] | null;
+    external_customer_id?: string | string[] | null;
+    source?: EventSource | EventSource[] | null;
+    query?: string | null;
+    page?: number;
+    limit?: number;
+    sorting?: EventNamesSortProperty[] | null;
+  }): AsyncGenerator<EventName> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listNamesEvents(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const getEvents = (client: ClientBase) => {
   /**
    * Get an event by ID.
@@ -177,6 +218,7 @@ export function createEventsService(client: ClientBase) {
     listNames: listNamesEvents(client),
     get: getEvents(client),
     ingest: ingestEvents(client),
+    iterlistNames: iterlistNamesEvents(client),
   };
 }
 

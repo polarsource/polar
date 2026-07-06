@@ -1,7 +1,8 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { MetadataQuery, OrderCreate, OrderFinalize, OrderUpdate } from "../models/inputs";
-import type { ListResourceOrder, Order, OrderInvoice, OrderReceipt } from "../models/outputs";
 import type { OrderSortProperty, ProductBillingType } from "../models/literals";
+import type { ListResourceOrder, Order, OrderInvoice, OrderReceipt } from "../models/outputs";
+
 import {
   Finalize402Error,
   Finalize403Error,
@@ -58,6 +59,49 @@ export const listOrders = (client: ClientBase) => {
     return client.parseResponse<ListResourceOrder>(response, "json", {
       422: HTTPValidationError,
     });
+  };
+};
+/**
+ * List orders.
+ *
+ * **Scopes**: `orders:read`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<Order>} A generator that yields items of type Order.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistOrders = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    product_id?: string | string[] | null;
+    product_billing_type?: ProductBillingType | ProductBillingType[] | null;
+    discount_id?: string | string[] | null;
+    customer_id?: string | string[] | null;
+    external_customer_id?: string | string[] | null;
+    checkout_id?: string | string[] | null;
+    subscription_id?: string | string[] | null;
+    page?: number;
+    limit?: number;
+    sorting?: OrderSortProperty[] | null;
+    metadata?: MetadataQuery;
+  }): AsyncGenerator<Order> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listOrders(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
   };
 };
 export const createOrders = (client: ClientBase) => {
@@ -334,6 +378,7 @@ export function createOrdersService(client: ClientBase) {
     invoice: invoiceOrders(client),
     generateInvoice: generateInvoiceOrders(client),
     receipt: receiptOrders(client),
+    iterlist: iterlistOrders(client),
   };
 }
 

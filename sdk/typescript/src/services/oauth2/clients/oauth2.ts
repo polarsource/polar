@@ -1,8 +1,9 @@
-import { ClientBase } from "../../../base";
+import type { ClientBase } from "../../../base";
 import type {
   OAuth2ClientConfiguration,
   OAuth2ClientConfigurationUpdate,
 } from "../../../models/inputs";
+
 import { HTTPValidationError } from "../../../errors";
 
 export const createClientOauth2 = (client: ClientBase) => {

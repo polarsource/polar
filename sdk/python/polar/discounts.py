@@ -72,6 +72,48 @@ class DiscountsSync(SyncServiceBase):
         }
         return parse_response_json(response, ListResourceDiscount, method_errors)
 
+    def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        query: str | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[DiscountSortProperty] | None = ["-created_at"],
+    ) -> typing.Generator[Discount, None, None]:
+        """
+        List discounts.
+
+        **Scopes**: `discounts:read` `discounts:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            query: Filter by name.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+
+        Returns:
+            A generator that yields items of type Discount.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list(
+                organization_id=organization_id,
+                query=query,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     @typing.overload
     def create(
         self,
@@ -261,6 +303,49 @@ class DiscountsAsync(AsyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, ListResourceDiscount, method_errors)
+
+    async def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        query: str | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[DiscountSortProperty] | None = ["-created_at"],
+    ) -> typing.AsyncGenerator[Discount, None]:
+        """
+        List discounts.
+
+        **Scopes**: `discounts:read` `discounts:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            query: Filter by name.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+
+        Returns:
+            An async generator that yields items of type Discount.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list(
+                organization_id=organization_id,
+                query=query,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     @typing.overload
     async def create(

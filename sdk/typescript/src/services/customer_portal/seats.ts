@@ -1,10 +1,12 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type { CustomerSeatAssign } from "../../models/inputs";
 import type {
   CustomerSeat,
+  CustomerSubscription,
   ListResourceCustomerSubscription,
   SeatsList,
 } from "../../models/outputs";
+
 import {
   AssignSeat400Error,
   AssignSeat401Error,
@@ -199,6 +201,40 @@ export const listClaimedSubscriptionsSeats = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List all subscriptions where the authenticated customer has claimed a seat.
+ *
+ * **Scopes**: `customer_portal:read` `customer_portal:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<CustomerSubscription>} A generator that yields items of type CustomerSubscription.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {ListClaimedSubscriptions401Error} Authentication required
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistClaimedSubscriptionsSeats = (client: ClientBase) => {
+  return async function* (query?: {
+    page?: number;
+    limit?: number;
+  }): AsyncGenerator<CustomerSubscription> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listClaimedSubscriptionsSeats(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 
 export function createSeatsService(client: ClientBase) {
   return {
@@ -207,6 +243,7 @@ export function createSeatsService(client: ClientBase) {
     revokeSeat: revokeSeatSeats(client),
     resendInvitation: resendInvitationSeats(client),
     listClaimedSubscriptions: listClaimedSubscriptionsSeats(client),
+    iterlistClaimedSubscriptions: iterlistClaimedSubscriptionsSeats(client),
   };
 }
 

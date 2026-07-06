@@ -1,4 +1,4 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { SeatAssign, SeatClaim } from "../models/inputs";
 import type {
   CustomerSeat,
@@ -6,6 +6,7 @@ import type {
   SeatClaimInfo,
   SeatsList,
 } from "../models/outputs";
+
 import {
   AssignSeat400Error,
   AssignSeat401Error,

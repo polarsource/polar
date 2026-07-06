@@ -1,4 +1,4 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type {
   BenefitCreate,
   BenefitCustomUpdate,
@@ -11,8 +11,14 @@ import type {
   BenefitSlackSharedChannelUpdate,
   MetadataQuery,
 } from "../models/inputs";
-import type { Benefit, ListResourceBenefit, ListResourceBenefitGrant } from "../models/outputs";
 import type { BenefitSortProperty, BenefitType } from "../models/literals";
+import type {
+  Benefit,
+  BenefitGrant,
+  ListResourceBenefit,
+  ListResourceBenefitGrant,
+} from "../models/outputs";
+
 import { HTTPValidationError, NotPermitted, ResourceNotFound } from "../errors";
 
 export const listBenefits = (client: ClientBase) => {
@@ -55,6 +61,46 @@ export const listBenefits = (client: ClientBase) => {
     return client.parseResponse<ListResourceBenefit>(response, "json", {
       422: HTTPValidationError,
     });
+  };
+};
+/**
+ * List benefits.
+ *
+ * **Scopes**: `benefits:read` `benefits:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<Benefit>} A generator that yields items of type Benefit.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistBenefits = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    type?: BenefitType | BenefitType[] | null;
+    id?: string | string[] | null;
+    exclude_id?: string | string[] | null;
+    query?: string | null;
+    page?: number;
+    limit?: number;
+    sorting?: BenefitSortProperty[] | null;
+    metadata?: MetadataQuery;
+  }): AsyncGenerator<Benefit> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listBenefits(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
   };
 };
 export const createBenefits = (client: ClientBase) => {
@@ -243,6 +289,49 @@ export const grantsBenefits = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List the individual grants for a benefit.
+ *
+ * It's especially useful to check if a user has been granted a benefit.
+ *
+ * **Scopes**: `benefits:read` `benefits:write`
+ *
+ * @param id
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<BenefitGrant>} A generator that yields items of type BenefitGrant.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {ResourceNotFound} Benefit not found.
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const itergrantsBenefits = (client: ClientBase) => {
+  return async function* (
+    id: string,
+    query?: {
+      is_granted?: boolean | null;
+      customer_id?: string | string[] | null;
+      member_id?: string | string[] | null;
+      page?: number;
+      limit?: number;
+    },
+  ): AsyncGenerator<BenefitGrant> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await grantsBenefits(client)(id, { ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 
 export function createBenefitsService(client: ClientBase) {
   return {
@@ -252,6 +341,8 @@ export function createBenefitsService(client: ClientBase) {
     delete: deleteBenefits(client),
     update: updateBenefits(client),
     grants: grantsBenefits(client),
+    iterlist: iterlistBenefits(client),
+    itergrants: itergrantsBenefits(client),
   };
 }
 

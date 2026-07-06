@@ -1,9 +1,10 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type {
   CustomerSessionCustomerExternalIDCreate,
   CustomerSessionCustomerIDCreate,
 } from "../models/inputs";
 import type { CustomerSession } from "../models/outputs";
+
 import { HTTPValidationError } from "../errors";
 
 export const createCustomerSessions = (client: ClientBase) => {

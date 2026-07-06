@@ -14,6 +14,7 @@ import { ComponentType, RefObject, useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { AssistantPartView } from './AssistantBlocks'
 import { CompassInputBar } from './CompassInputBar'
+import { CompassWidget } from './CompassWidget'
 
 interface CompassConversationProps {
   active: boolean
@@ -124,38 +125,48 @@ export const CompassConversation = ({
       </div>
 
       <div className="flex w-full flex-1 justify-center overflow-y-auto px-6">
-        <div className="flex w-full max-w-[760px] flex-col gap-y-12">
+        <div className="flex w-full max-w-[760px] flex-col gap-y-8">
           <Text variant="heading-s">Compass</Text>
           {empty ? (
-            <div className="grid grid-cols-2 grid-rows-2 gap-4">
-              {PRESETS.map(({ question, action, Icon }) => (
-                <button
-                  key={question}
-                  type="button"
-                  onClick={() => onAsk(question)}
-                  className="dark:border-polar-700 dark:hover:border-polar-600 dark:hover:bg-polar-700 flex flex-col gap-3 rounded-2xl border border-gray-200 p-4 text-left transition-colors hover:border-gray-300 hover:bg-gray-50"
-                >
-                  <Box columnGap="m" alignItems="center">
-                    <Icon
-                      className="dark:text-polar-500 text-gray-400"
-                      style={{ fontSize: '1rem' }}
-                    />
-                    <Text>{question}</Text>
-                  </Box>
-                  <Box
-                    color="text-secondary"
-                    flexDirection="row"
-                    alignItems="center"
-                    columnGap="xs"
+            <Box display="flex" flexDirection="column" rowGap="2xl">
+              <div className="grid grid-cols-2 grid-rows-2 gap-4">
+                {PRESETS.map(({ question, action, Icon }) => (
+                  <button
+                    key={question}
+                    type="button"
+                    onClick={() => onAsk(question)}
+                    className="dark:border-polar-700 dark:hover:border-polar-600 dark:hover:bg-polar-700 flex flex-col gap-3 rounded-2xl border border-gray-200 p-4 text-left transition-colors hover:border-gray-300 hover:bg-gray-50"
                   >
-                    <Text variant="caption" color="muted">
-                      {action}
-                    </Text>
-                    <ChevronRight size={14} />
-                  </Box>
-                </button>
-              ))}
-            </div>
+                    <Box columnGap="m" alignItems="center">
+                      <Icon
+                        className="dark:text-polar-500 text-gray-400"
+                        style={{ fontSize: '1rem' }}
+                      />
+                      <Text>{question}</Text>
+                    </Box>
+                    <Box
+                      color="text-secondary"
+                      flexDirection="row"
+                      alignItems="center"
+                      columnGap="xs"
+                    >
+                      <Text variant="caption" color="muted">
+                        {action}
+                      </Text>
+                      <ChevronRight size={14} />
+                    </Box>
+                  </button>
+                ))}
+              </div>
+              <CompassWidget
+                organization={organization}
+                limit={3}
+                hideHeader
+                hideWhenEmpty
+                layout="column"
+                size="small"
+              />
+            </Box>
           ) : (
             <Box display="flex" flexDirection="column" rowGap="2xl">
               {messages.map((message) =>

@@ -86,10 +86,13 @@ from polar.subscription.service import (
     AboveMaximumSeats,
     AlreadyCanceledSubscription,
     BelowMinimumSeats,
+    CannotPauseSubscription,
     InactiveSubscription,
     MissingCheckoutCustomer,
+    NoScheduledPause,
     NotARecurringProduct,
     NotASeatBasedSubscription,
+    NotPausedSubscription,
     SeatsAlreadyAssigned,
     SubscriptionUpdateContext,
 )
@@ -118,7 +121,9 @@ from tests.fixtures.random_objects import (
     set_product_benefits,
 )
 
-Hooks = namedtuple("Hooks", "updated activated canceled uncanceled revoked")
+Hooks = namedtuple(
+    "Hooks", "updated activated canceled uncanceled revoked paused resumed"
+)
 HookNames = frozenset(Hooks._fields)
 
 
@@ -190,12 +195,16 @@ def subscription_hooks(mocker: MockerFixture) -> Hooks:
         subscription_service, "_on_subscription_uncanceled"
     )
     revoked = mocker.patch.object(subscription_service, "_on_subscription_revoked")
+    paused = mocker.patch.object(subscription_service, "_on_subscription_paused")
+    resumed = mocker.patch.object(subscription_service, "_on_subscription_resumed")
     return Hooks(
         updated=updated,
         activated=activated,
         canceled=canceled,
         uncanceled=uncanceled,
         revoked=revoked,
+        paused=paused,
+        resumed=resumed,
     )
 
 
@@ -2300,6 +2309,288 @@ class TestUncancel:
         assert updated_subscription.cancel_at_period_end is False
         assert updated_subscription.ends_at is None
         assert updated_subscription.canceled_at is None
+
+
+@pytest.mark.asyncio
+class TestPause:
+    async def test_not_active(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+        )
+
+        with pytest.raises(CannotPauseSubscription):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.pause(session, ctx, subscription)
+
+    async def test_scheduled_to_cancel(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            cancel_at_period_end=True,
+        )
+
+        with pytest.raises(CannotPauseSubscription):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.pause(session, ctx, subscription)
+
+    async def test_resumes_at_before_period_end(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        mocker.patch.object(subscription_service, "send_paused_email")
+        current_period_end = utc_now() + timedelta(days=30)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_end=current_period_end,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.pause(
+                    session,
+                    ctx,
+                    subscription,
+                    resumes_at=current_period_end - timedelta(days=1),
+                )
+
+    async def test_valid(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        send_paused_email_mock = mocker.patch.object(
+            subscription_service, "send_paused_email"
+        )
+        current_period_end = utc_now() + timedelta(days=30)
+        resumes_at = current_period_end + timedelta(days=30)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_end=current_period_end,
+        )
+        reset_hooks(subscription_hooks)
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.pause(
+                session, ctx, subscription, resumes_at=resumes_at
+            )
+
+        # Still active until the end of the current period, only scheduled to pause.
+        assert updated.status == SubscriptionStatus.active
+        assert updated.pause_at_period_end is True
+        assert updated.resumes_at == resumes_at
+        assert updated.paused_at is None
+        # Benefits stay granted; the customer is notified at request time.
+        enqueue_benefits_grants_mock.assert_not_called()
+        send_paused_email_mock.assert_called_once()
+        assert_hooks_called_once(subscription_hooks, {"updated"})
+
+    async def test_valid_indefinite(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        mocker.patch.object(subscription_service, "send_paused_email")
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.pause(session, ctx, subscription)
+
+        assert updated.pause_at_period_end is True
+        assert updated.resumes_at is None
+
+    async def test_cycle_pauses_at_period_end(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        enqueue_benefits_grants_mock: MagicMock,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription.pause_at_period_end = True
+        subscription.resumes_at = utc_now() + timedelta(days=60)
+        await save_fixture(subscription)
+        reset_hooks(subscription_hooks)
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.cycle(session, ctx, subscription)
+
+        assert updated.status == SubscriptionStatus.paused
+        assert updated.paused_at is not None
+        assert updated.pause_at_period_end is False
+        assert updated.scheduler_locked_at is None
+        # Benefits revoked, no order created for the paused period.
+        enqueue_benefits_grants_mock.assert_called_once_with(session, updated)
+        order_calls = [
+            call
+            for call in enqueue_job_mock.call_args_list
+            if call.args and call.args[0] == "order.create_subscription_order"
+        ]
+        assert order_calls == []
+        assert_hooks_called_once(subscription_hooks, {"updated", "paused"})
+
+
+@pytest.mark.asyncio
+class TestCancelScheduledPause:
+    async def test_not_scheduled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        with pytest.raises(NoScheduledPause):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.cancel_scheduled_pause(
+                    session, ctx, subscription
+                )
+
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.pause_at_period_end = True
+        subscription.resumes_at = utc_now() + timedelta(days=30)
+        await save_fixture(subscription)
+        reset_hooks(subscription_hooks)
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.cancel_scheduled_pause(
+                session, ctx, subscription
+            )
+
+        assert updated.status == SubscriptionStatus.active
+        assert updated.pause_at_period_end is False
+        assert updated.resumes_at is None
+        assert_hooks_called_once(subscription_hooks, {"updated"})
+
+
+@pytest.mark.asyncio
+class TestResume:
+    async def test_not_paused(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        with pytest.raises(NotPausedSubscription):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.resume(session, ctx, subscription)
+
+    async def test_valid(
+        self,
+        frozen_time: datetime,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        enqueue_benefits_grants_mock: MagicMock,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        subscription.paused_at = frozen_time - timedelta(days=10)
+        subscription.resumes_at = frozen_time
+        await save_fixture(subscription)
+        reset_hooks(subscription_hooks)
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.resume(session, ctx, subscription)
+
+        # A fresh billing period starts now and the customer is charged.
+        assert updated.status == SubscriptionStatus.active
+        assert updated.paused_at is None
+        assert updated.resumes_at is None
+        assert updated.current_period_start == frozen_time
+        assert updated.current_period_end is not None
+        assert updated.current_period_end > frozen_time
+        enqueue_benefits_grants_mock.assert_called_once_with(session, updated)
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order", subscription.id, ANY
+        )
+        assert_hooks_called_once(subscription_hooks, {"updated", "resumed"})
 
 
 async def create_event_billing_entry(

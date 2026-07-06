@@ -1,15 +1,19 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, Literal, TypedDict
 from uuid import UUID
+
+import structlog
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
 from polar.config import settings
-from polar.exceptions import PolarError
+from polar.exceptions import PolarError, ResourceNotFound
 from polar.kit import jwt
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
+from polar.kit.pagination import PaginationParams
 from polar.models import MerchantMigration
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
@@ -21,13 +25,15 @@ from polar.postgres import AsyncReadSession
 from .adapters import SourceAdapter, StripeAdapter
 from .precheck import precheck_engine
 from .repository import MerchantMigrationRepository
-from .schemas import PrecheckReport
+from .schemas import MerchantMigrationCreate, PrecheckReport
 from .stripe_oauth import (
     StripeAppNotConfigured,
     StripeOAuthError,
     StripeOAuthToken,
     stripe_oauth,
 )
+
+log = structlog.get_logger()
 
 OAUTH_STATE_JWT_TYPE: Literal["stripe_app_oauth"] = "stripe_app_oauth"
 # The state must survive the whole interactive consent on Stripe, so give it more
@@ -79,6 +85,18 @@ class UnsupportedMigrationSource(MerchantMigrationError):
         )
 
 
+class MerchantMigrationNotEnabled(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Merchant migration is not enabled for this organization.", 403
+        )
+
+
+class NotAStripeMigration(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__("This migration does not use Stripe as its source.", 400)
+
+
 @dataclass
 class StripeConnectResult:
     """Where the callback should send the merchant back, and an error message to
@@ -100,6 +118,47 @@ class MerchantMigrationService:
             MerchantMigration.id == migration_id
         )
         return await repository.get_one_or_none(statement)
+
+    async def list(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        organization_id: UUID,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[MerchantMigration], int]:
+        repository = MerchantMigrationRepository.from_session(session)
+        statement = (
+            repository.get_readable_statement(auth_subject)
+            .where(MerchantMigration.organization_id == organization_id)
+            .order_by(MerchantMigration.created_at.desc())
+        )
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
+
+    async def create(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        create_schema: MerchantMigrationCreate,
+    ) -> MerchantMigration:
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            create_schema.organization_id,
+            OrganizationPermission.organization_manage,
+        )
+        await self._assert_feature_enabled(session, create_schema.organization_id)
+        repository = MerchantMigrationRepository.from_session(session)
+        return await repository.create(
+            MerchantMigration(
+                organization_id=create_schema.organization_id,
+                source_platform=create_schema.source_platform,
+                step=MerchantMigrationStep.source_setup,
+            ),
+            flush=True,
+        )
 
     async def run_precheck(
         self,
@@ -171,25 +230,36 @@ class MerchantMigrationService:
         )
         return token.access_token
 
+    async def _assert_feature_enabled(
+        self, session: AsyncReadSession, organization_id: UUID
+    ) -> None:
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(organization_id)
+        if organization is None or not organization.is_merchant_migration_enabled:
+            raise MerchantMigrationNotEnabled()
+
     async def create_stripe_authorization_url(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         *,
-        organization_id: UUID,
+        migration_id: UUID,
         redirect_uri: str,
         return_to: str,
     ) -> str:
+        migration = await self.get(session, auth_subject, migration_id)
+        if migration is None:
+            raise ResourceNotFound()
         await assert_organization_permission(
             session,
             auth_subject,
-            organization_id,
+            migration.organization_id,
             OrganizationPermission.organization_manage,
         )
+        if migration.source_platform != MerchantMigrationSourcePlatform.stripe:
+            raise NotAStripeMigration()
         if not stripe_oauth.is_configured():
             raise StripeAppNotConfigured()
-
-        migration = await self._get_or_create_stripe_migration(session, organization_id)
 
         state = jwt.encode(
             data={
@@ -236,7 +306,12 @@ class MerchantMigrationService:
             await self._store_stripe_credentials(
                 session, auth_subject, UUID(state_data["migration_id"]), code
             )
-        except (StripeOAuthError, MerchantMigrationError):
+        except (StripeOAuthError, MerchantMigrationError) as e:
+            log.error(
+                "merchant_migration.stripe_authorization_failed",
+                migration_id=state_data.get("migration_id"),
+                error=str(e),
+            )
             return StripeConnectResult(
                 return_to=return_to, error="Failed to connect Stripe account."
             )
@@ -272,24 +347,6 @@ class MerchantMigrationService:
         credentials = await self._build_stripe_credentials(migration, token)
         await repository.update(
             migration, update_dict={"source_credentials": dict(credentials)}
-        )
-
-    async def _get_or_create_stripe_migration(
-        self, session: AsyncSession, organization_id: UUID
-    ) -> MerchantMigration:
-        repository = MerchantMigrationRepository.from_session(session)
-        migration = await repository.get_ongoing_by_source(
-            organization_id, MerchantMigrationSourcePlatform.stripe
-        )
-        if migration is not None:
-            return migration
-        return await repository.create(
-            MerchantMigration(
-                organization_id=organization_id,
-                source_platform=MerchantMigrationSourcePlatform.stripe,
-                step=MerchantMigrationStep.source_setup,
-            ),
-            flush=True,
         )
 
     async def _build_stripe_credentials(

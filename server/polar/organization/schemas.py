@@ -187,6 +187,13 @@ class OrganizationFeatureSettings(Schema):
             "(Billing / Compass / Customers) enabled in the dashboard"
         ),
     )
+    merchant_migration_enabled: bool = Field(
+        False,
+        description=(
+            "If this organization can migrate its billing from another "
+            "provider (e.g. Stripe) to Polar."
+        ),
+    )
 
 
 class OrganizationFeatureSettingsUpdate(Schema):

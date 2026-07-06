@@ -13,6 +13,7 @@ export const listCustomerMeters = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceCustomerMeter}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -56,6 +57,7 @@ export const listCustomerMeters = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<CustomerMeter>} A generator that yields items of type CustomerMeter.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
@@ -95,6 +97,7 @@ export const getCustomerMeters = (client: ClientBase) => {
    * @param id - The customer meter ID.
    * @returns {CustomerMeter}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Customer meter not found.
    * @throws {HTTPValidationError} Validation Error

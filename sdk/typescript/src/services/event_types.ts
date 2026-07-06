@@ -18,6 +18,7 @@ export const listEventTypes = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceEventTypeWithStats}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -67,6 +68,7 @@ export const listEventTypes = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<EventTypeWithStats>} A generator that yields items of type EventTypeWithStats.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
@@ -110,6 +112,7 @@ export const updateEventTypes = (client: ClientBase) => {
    * @param body - Request body
    * @returns {EventType}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {Update404Error} Not Found
    * @throws {HTTPValidationError} Validation Error

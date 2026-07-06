@@ -28,6 +28,7 @@ export const listMembersMembers = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceCustomerPortalMember}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ListMembers401Error} Authentication required
    * @throws {ListMembers403Error} Not permitted - requires owner or billing manager role
@@ -65,6 +66,7 @@ export const listMembersMembers = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<CustomerPortalMember>} A generator that yields items of type CustomerPortalMember.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {ListMembers401Error} Authentication required
  * @throws {ListMembers403Error} Not permitted - requires owner or billing manager role
@@ -105,6 +107,7 @@ export const addMemberMembers = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomerPortalMember}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {AddMember400Error} Invalid request or member already exists.
    * @throws {AddMember401Error} Authentication required
@@ -143,6 +146,7 @@ export const removeMemberMembers = (client: ClientBase) => {
    * @param id
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {RemoveMember400Error} Cannot remove the only owner.
    * @throws {RemoveMember401Error} Authentication required
@@ -186,6 +190,7 @@ export const updateMemberMembers = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomerPortalMember}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {UpdateMember400Error} Invalid role change.
    * @throws {UpdateMember401Error} Authentication required

@@ -14,6 +14,7 @@ export const listCustomFields = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceCustomField}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -55,6 +56,7 @@ export const listCustomFields = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<CustomField>} A generator that yields items of type CustomField.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
@@ -93,6 +95,7 @@ export const createCustomFields = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomField}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -121,6 +124,7 @@ export const getCustomFields = (client: ClientBase) => {
    * @param id - The custom field ID.
    * @returns {CustomField}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Custom field not found.
    * @throws {HTTPValidationError} Validation Error
@@ -153,6 +157,7 @@ export const deleteCustomFields = (client: ClientBase) => {
    * @param id - The custom field ID.
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Custom field not found.
    * @throws {HTTPValidationError} Validation Error
@@ -186,6 +191,7 @@ export const updateCustomFields = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomField}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Custom field not found.
    * @throws {HTTPValidationError} Validation Error

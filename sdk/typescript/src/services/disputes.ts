@@ -13,6 +13,7 @@ export const listDisputes = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceDispute}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -48,6 +49,7 @@ export const listDisputes = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<Dispute>} A generator that yields items of type Dispute.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
@@ -86,6 +88,7 @@ export const getDisputes = (client: ClientBase) => {
    * @param id - The dispute ID.
    * @returns {Dispute}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Dispute not found.
    * @throws {HTTPValidationError} Validation Error
@@ -121,6 +124,7 @@ export const acceptDisputes = (client: ClientBase) => {
    * @param id - The dispute ID.
    * @returns {Dispute}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Dispute not found.
    * @throws {DisputeNotOpenError} Conflict

@@ -55,6 +55,7 @@ class MembersSync(SyncServiceBase):
             ListMembers403Error: Not permitted - requires owner or billing manager role
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -99,6 +100,7 @@ class MembersSync(SyncServiceBase):
             ListMembers403Error: Not permitted - requires owner or billing manager role
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         while True:
@@ -133,6 +135,7 @@ class MembersSync(SyncServiceBase):
             AddMember403Error: Not permitted - requires owner or billing manager role
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -174,6 +177,7 @@ class MembersSync(SyncServiceBase):
             RemoveMember404Error: Member not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -219,6 +223,7 @@ class MembersSync(SyncServiceBase):
             UpdateMember404Error: Member not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -262,6 +267,7 @@ class MembersAsync(AsyncServiceBase):
             ListMembers403Error: Not permitted - requires owner or billing manager role
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -306,6 +312,7 @@ class MembersAsync(AsyncServiceBase):
             ListMembers403Error: Not permitted - requires owner or billing manager role
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         while True:
@@ -341,6 +348,7 @@ class MembersAsync(AsyncServiceBase):
             AddMember403Error: Not permitted - requires owner or billing manager role
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -382,6 +390,7 @@ class MembersAsync(AsyncServiceBase):
             RemoveMember404Error: Member not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -427,6 +436,7 @@ class MembersAsync(AsyncServiceBase):
             UpdateMember404Error: Member not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(

@@ -13,6 +13,7 @@ export const listPayments = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourcePayment}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -56,6 +57,7 @@ export const listPayments = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<Payment>} A generator that yields items of type Payment.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
@@ -98,6 +100,7 @@ export const getPayments = (client: ClientBase) => {
    * @param id - The payment ID.
    * @returns {Payment}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Payment not found.
    * @throws {HTTPValidationError} Validation Error

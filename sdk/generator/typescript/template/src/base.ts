@@ -26,6 +26,16 @@ export class PolarClientError<T = unknown> extends PolarError {
   }
 }
 
+export class PolarRateLimitError extends PolarClientError {
+  constructor(
+    public readonly statusCode: 429,
+    public readonly retryAfter: number | null = null,
+  ) {
+    super(statusCode, "Rate limit exceeded");
+    this.name = "PolarRateLimitError";
+  }
+}
+
 type PathParams = Record<string, string | number | boolean>;
 type QueryParamValue =
   | string
@@ -145,12 +155,19 @@ export class ClientBase {
   ): Promise<T> {
     const statusCode = response.status;
 
-    if (response.status >= 500 && response.status < 600) {
+    if (statusCode >= 500 && statusCode < 600) {
       const text = await response.text().catch(() => "");
       throw new PolarServerError(statusCode, text || "Server error");
     }
 
-    if (response.status >= 400 && response.status < 500) {
+    if (statusCode >= 400 && statusCode < 500) {
+      if (statusCode === 429) {
+        const retryAfter = response.headers.get("Retry-After");
+        throw new PolarRateLimitError(
+          statusCode,
+          retryAfter ? parseInt(retryAfter, 10) : null,
+        );
+      }
       if (errors?.[statusCode]) {
         const ErrorClass = errors[statusCode];
         const errorData = await response.json();

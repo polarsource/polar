@@ -22,6 +22,7 @@ export const listOrders = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceOrder}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -69,6 +70,7 @@ export const listOrders = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<Order>} A generator that yields items of type Order.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
@@ -117,6 +119,7 @@ export const createOrders = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Order}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -139,6 +142,7 @@ export const exportOrders = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {string}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -173,6 +177,7 @@ export const getOrders = (client: ClientBase) => {
    * @param id - The order ID.
    * @returns {Order}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Order not found.
    * @throws {HTTPValidationError} Validation Error
@@ -206,6 +211,7 @@ export const updateOrders = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Order}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Order not found.
    * @throws {HTTPValidationError} Validation Error
@@ -239,6 +245,7 @@ export const finalizeOrders = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Order}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {Finalize402Error} The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session.
    * @throws {Finalize403Error} Off-session charges are not enabled for this organization, or its account can't currently accept payments.
@@ -277,6 +284,7 @@ export const invoiceOrders = (client: ClientBase) => {
    * @param id - The order ID.
    * @returns {OrderInvoice}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Order not found.
    * @throws {HTTPValidationError} Validation Error
@@ -309,6 +317,7 @@ export const generateInvoiceOrders = (client: ClientBase) => {
    * @param id - The order ID.
    * @returns {unknown}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Order not found.
    * @throws {OrderNotEligibleForInvoice} Order is not eligible for invoice generation (invalid status).
@@ -343,6 +352,7 @@ export const receiptOrders = (client: ClientBase) => {
    * @param id - The order ID.
    * @returns {OrderReceipt}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Order not found.
    * @throws {HTTPValidationError} Validation Error

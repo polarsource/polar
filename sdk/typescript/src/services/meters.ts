@@ -19,6 +19,7 @@ export const listMeters = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceMeter}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -56,6 +57,7 @@ export const listMeters = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<Meter>} A generator that yields items of type Meter.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
@@ -95,6 +97,7 @@ export const createMeters = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Meter}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -117,6 +120,7 @@ export const getMeters = (client: ClientBase) => {
    * @param id - The meter ID.
    * @returns {Meter}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Meter not found.
    * @throws {HTTPValidationError} Validation Error
@@ -150,6 +154,7 @@ export const updateMeters = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Meter}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Meter not found.
    * @throws {HTTPValidationError} Validation Error
@@ -177,6 +182,7 @@ export const quantitiesMeters = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {MeterQuantities}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Meter not found.
    * @throws {HTTPValidationError} Validation Error

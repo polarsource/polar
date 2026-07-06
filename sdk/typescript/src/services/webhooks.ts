@@ -19,6 +19,7 @@ export const listWebhookEndpointsWebhooks = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceWebhookEndpoint}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -54,6 +55,7 @@ export const listWebhookEndpointsWebhooks = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<WebhookEndpoint>} A generator that yields items of type WebhookEndpoint.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
@@ -89,6 +91,7 @@ export const createWebhookEndpointWebhooks = (client: ClientBase) => {
    * @param body - Request body
    * @returns {WebhookEndpoint}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -117,6 +120,7 @@ export const getWebhookEndpointWebhooks = (client: ClientBase) => {
    * @param id - The webhook endpoint ID.
    * @returns {WebhookEndpoint}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Webhook endpoint not found.
    * @throws {HTTPValidationError} Validation Error
@@ -149,6 +153,7 @@ export const deleteWebhookEndpointWebhooks = (client: ClientBase) => {
    * @param id - The webhook endpoint ID.
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Webhook endpoint not found.
    * @throws {HTTPValidationError} Validation Error
@@ -182,6 +187,7 @@ export const updateWebhookEndpointWebhooks = (client: ClientBase) => {
    * @param body - Request body
    * @returns {WebhookEndpoint}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Webhook endpoint not found.
    * @throws {HTTPValidationError} Validation Error
@@ -214,6 +220,7 @@ export const resetWebhookEndpointSecretWebhooks = (client: ClientBase) => {
    * @param id - The webhook endpoint ID.
    * @returns {WebhookEndpoint}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Webhook endpoint not found.
    * @throws {HTTPValidationError} Validation Error
@@ -248,6 +255,7 @@ export const listWebhookDeliveriesWebhooks = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceWebhookDelivery}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -297,6 +305,7 @@ export const listWebhookDeliveriesWebhooks = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<WebhookDelivery>} A generator that yields items of type WebhookDelivery.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
@@ -338,6 +347,7 @@ export const redeliverWebhookEventWebhooks = (client: ClientBase) => {
    * @param id - The webhook event ID.
    * @returns {unknown}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Webhook event not found.
    * @throws {HTTPValidationError} Validation Error

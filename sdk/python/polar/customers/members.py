@@ -46,6 +46,7 @@ class MembersSync(SyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -85,6 +86,7 @@ class MembersSync(SyncServiceBase):
             AmbiguousExternalCustomerID: The external customer ID matches customers in several accessible organizations.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -123,6 +125,7 @@ class MembersSync(SyncServiceBase):
             ResourceNotFound: Member not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -159,6 +162,7 @@ class MembersSync(SyncServiceBase):
             ResourceNotFound: Member not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -199,6 +203,7 @@ class MembersSync(SyncServiceBase):
             ResourceNotFound: Member not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -237,6 +242,7 @@ class MembersSync(SyncServiceBase):
             AmbiguousExternalCustomerID: The external customer ID matches customers in several accessible organizations.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -275,6 +281,7 @@ class MembersSync(SyncServiceBase):
             AmbiguousExternalCustomerID: The external customer ID matches customers in several accessible organizations.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -315,6 +322,7 @@ class MembersSync(SyncServiceBase):
             AmbiguousExternalCustomerID: The external customer ID matches customers in several accessible organizations.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -359,6 +367,7 @@ class MembersAsync(AsyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -398,6 +407,7 @@ class MembersAsync(AsyncServiceBase):
             AmbiguousExternalCustomerID: The external customer ID matches customers in several accessible organizations.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -436,6 +446,7 @@ class MembersAsync(AsyncServiceBase):
             ResourceNotFound: Member not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -472,6 +483,7 @@ class MembersAsync(AsyncServiceBase):
             ResourceNotFound: Member not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -512,6 +524,7 @@ class MembersAsync(AsyncServiceBase):
             ResourceNotFound: Member not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -550,6 +563,7 @@ class MembersAsync(AsyncServiceBase):
             AmbiguousExternalCustomerID: The external customer ID matches customers in several accessible organizations.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -588,6 +602,7 @@ class MembersAsync(AsyncServiceBase):
             AmbiguousExternalCustomerID: The external customer ID matches customers in several accessible organizations.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -628,6 +643,7 @@ class MembersAsync(AsyncServiceBase):
             AmbiguousExternalCustomerID: The external customer ID matches customers in several accessible organizations.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(

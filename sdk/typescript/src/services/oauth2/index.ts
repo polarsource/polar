@@ -16,6 +16,7 @@ export const authorizeOauth2 = (client: ClientBase) => {
    *
    * @returns {AuthorizeResponseUser | AuthorizeResponseOrganization}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    */
   return async (): Promise<AuthorizeResponseUser | AuthorizeResponseOrganization> => {
@@ -42,6 +43,7 @@ export const requestTokenOauth2 = (client: ClientBase) => {
    *
    * @returns {TokenResponse}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    */
   return async (): Promise<TokenResponse> => {
@@ -64,6 +66,7 @@ export const revokeTokenOauth2 = (client: ClientBase) => {
    *
    * @returns {RevokeTokenResponse}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    */
   return async (): Promise<RevokeTokenResponse> => {
@@ -86,6 +89,7 @@ export const introspectTokenOauth2 = (client: ClientBase) => {
    *
    * @returns {IntrospectTokenResponse}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    */
   return async (): Promise<IntrospectTokenResponse> => {
@@ -108,6 +112,7 @@ export const userinfoOauth2 = (client: ClientBase) => {
    *
    * @returns {UserInfoUser | UserInfoOrganization}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    */
   return async (): Promise<UserInfoUser | UserInfoOrganization> => {

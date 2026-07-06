@@ -14,6 +14,7 @@ export const listCheckoutLinks = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceCheckoutLink}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -53,6 +54,7 @@ export const listCheckoutLinks = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<CheckoutLink>} A generator that yields items of type CheckoutLink.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
@@ -90,6 +92,7 @@ export const createCheckoutLinks = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CheckoutLink}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -118,6 +121,7 @@ export const getCheckoutLinks = (client: ClientBase) => {
    * @param id - The checkout link ID.
    * @returns {CheckoutLink}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Checkout link not found.
    * @throws {HTTPValidationError} Validation Error
@@ -150,6 +154,7 @@ export const deleteCheckoutLinks = (client: ClientBase) => {
    * @param id - The checkout link ID.
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Checkout link not found.
    * @throws {HTTPValidationError} Validation Error
@@ -183,6 +188,7 @@ export const updateCheckoutLinks = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CheckoutLink}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Checkout link not found.
    * @throws {HTTPValidationError} Validation Error

@@ -19,6 +19,7 @@ export const listSubscriptions = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceCustomerSubscription}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -60,6 +61,7 @@ export const listSubscriptions = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<CustomerSubscription>} A generator that yields items of type CustomerSubscription.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
@@ -98,6 +100,7 @@ export const getSubscriptions = (client: ClientBase) => {
    * @param id - The subscription ID.
    * @returns {CustomerSubscription}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Customer subscription was not found.
    * @throws {HTTPValidationError} Validation Error
@@ -128,6 +131,7 @@ export const cancelSubscriptions = (client: ClientBase) => {
    * @param id - The subscription ID.
    * @returns {CustomerSubscription}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {AlreadyCanceledSubscription} Customer subscription is already canceled or will be at the end of the period, or the user lacks billing permissions.
    * @throws {ResourceNotFound} Customer subscription was not found.
@@ -161,6 +165,7 @@ export const updateSubscriptions = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomerSubscription}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {PaymentFailed} Payment required to apply the subscription update.
    * @throws {AlreadyCanceledSubscription} Customer subscription is already canceled or will be at the end of the period, or the user lacks billing permissions.

@@ -4,8 +4,23 @@ module "test_s3_buckets" {
     aws = aws.us_east_2
   }
 
-  environment     = "test"
-  allowed_origins = ["https://test.polar.sh"]
+  environment                 = "test"
+  allowed_origins             = ["https://test.polar.sh"]
+  malware_protection_role_arn = module.test_malware_protection.role_arn
+}
+
+module "test_malware_protection" {
+  source = "../modules/malware_protection"
+  providers = {
+    aws = aws.us_east_2
+  }
+
+  environment = "test"
+  buckets = {
+    files        = module.test_s3_buckets.files_bucket_id
+    public_files = module.test_s3_buckets.public_files_bucket_id
+  }
+  permissions_boundary_arn = module.permission_boundary_management.policy_arn
 }
 
 module "test_application_access" {

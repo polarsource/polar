@@ -170,8 +170,23 @@ module "production_s3_buckets" {
     aws = aws.us_east_2
   }
 
-  environment     = "production"
-  allowed_origins = ["https://polar.sh"]
+  environment                 = "production"
+  allowed_origins             = ["https://polar.sh"]
+  malware_protection_role_arn = module.production_malware_protection.role_arn
+}
+
+module "production_malware_protection" {
+  source = "../modules/malware_protection"
+  providers = {
+    aws = aws.us_east_2
+  }
+
+  environment = "production"
+  buckets = {
+    files        = module.production_s3_buckets.files_bucket_id
+    public_files = module.production_s3_buckets.public_files_bucket_id
+  }
+  permissions_boundary_arn = module.permission_boundary_management.policy_arn
 }
 
 resource "aws_s3_bucket" "production_lambda_artifacts" {

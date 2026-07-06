@@ -404,6 +404,10 @@ resource "tfe_variable" "polar_scale_product_id_production" {
   category        = "terraform"
   description     = "Polar Scale-tier product ID for production"
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "customer_portal_url_overrides_production" {

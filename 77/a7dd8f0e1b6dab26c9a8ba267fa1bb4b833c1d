@@ -1,0 +1,26 @@
+server/tests/benefit/grant/test_service.py
+  s_aa5824f2cf77da::t_a4eab2b0c4e652 141-142,146
+server/migrations/versions/2026-06-29-1011_drop_legacy_benefit_grants_smb_key_.py
+  s_aa5824f2cf77da::t_a2e393359ccf44 24-25
+  s_aa5824f2cf77da::t_80b8ba47b25a3b 31-32
+server/tests/subscription/test_service.py
+  s_aa5824f2cf77da::t_dd440319e27afd 4098-4099
+server/polar/subscription/service.py
+  s_aa5824f2cf77da::t_529a33df0f823c 1329-1332
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "77a7dd8f0e1b6dab26c9a8ba267fa1bb4b833c1d",
+  "prompts": {},
+  "sessions": {
+    "s_aa5824f2cf77da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "19f4b5bb-8ad3-44db-afc8-29ec96bf6979",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

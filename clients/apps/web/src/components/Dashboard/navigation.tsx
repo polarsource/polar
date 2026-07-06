@@ -385,6 +385,11 @@ const organizationRoutesList = (
         link: `/dashboard/${org?.slug}/settings/sso`,
         if: !!org?.feature_settings?.sso_enabled,
       },
+      {
+        title: 'Migrations',
+        link: `/dashboard/${org?.slug}/settings/migrations`,
+        if: !!org?.feature_settings?.merchant_migration_enabled,
+      },
     ],
   },
 ]

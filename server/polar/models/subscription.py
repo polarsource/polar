@@ -66,6 +66,7 @@ class SubscriptionStatus(StrEnum):
     past_due = "past_due"
     canceled = "canceled"
     unpaid = "unpaid"
+    paused = "paused"
 
     @classmethod
     def incomplete_statuses(cls) -> set[Self]:
@@ -388,6 +389,15 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         )
 
     @hybrid_property
+    def paused(self) -> bool:
+        return self.status == SubscriptionStatus.paused
+
+    @paused.inplace.expression
+    @classmethod
+    def _paused_expression(cls) -> ColumnElement[bool]:
+        return cls.status == SubscriptionStatus.paused
+
+    @hybrid_property
     def canceled(self) -> bool:
         return self.canceled_at is not None
 
@@ -448,6 +458,11 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return cast(cls.past_due_at + total_interval, TIMESTAMP(timezone=True))
 
     def can_cancel(self, immediately: bool = False) -> bool:
+        # A paused subscription isn't billable, but can still be revoked
+        # immediately instead of having to be resumed first.
+        if immediately and self.status == SubscriptionStatus.paused:
+            return self.ended_at is None
+
         if not SubscriptionStatus.is_billable(self.status):
             return False
 
@@ -466,6 +481,22 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             self.cancel_at_period_end
             and self.status in SubscriptionStatus.billable_statuses()
         )
+
+    def can_pause(self) -> bool:
+        return (
+            self.status == SubscriptionStatus.active
+            and not self.cancel_at_period_end
+            and not self.pause_at_period_end
+            and self.ends_at is None
+        )
+
+    def can_cancel_scheduled_pause(self) -> bool:
+        return bool(self.pause_at_period_end) and (
+            self.status == SubscriptionStatus.active
+        )
+
+    def can_resume(self) -> bool:
+        return self.status == SubscriptionStatus.paused
 
     def update_amount_and_currency(
         self, prices: Sequence["SubscriptionProductPrice"], discount: "Discount | None"

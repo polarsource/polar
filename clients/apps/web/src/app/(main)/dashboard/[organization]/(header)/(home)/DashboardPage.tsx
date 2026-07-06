@@ -1,6 +1,7 @@
 'use client'
 
 import { OverviewSection } from '@/components/DashboardOverview/OverviewSection'
+import { CompassBox } from '@/components/Compass/CompassBox'
 import { CompassWidget } from '@/components/Compass/CompassWidget'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { PlanUpsell } from '@/components/Upsell/PlanUpsell'
@@ -20,7 +21,11 @@ interface OverviewPageProps {
 
 export default function OverviewPage({ organization }: OverviewPageProps) {
   return (
-    <DashboardBody className="gap-y-8 pb-16 md:gap-y-16" title={null}>
+    <DashboardBody
+      className="gap-y-8 md:gap-y-16"
+      wrapperClassName=" pb-40 md:pb-48"
+      title={null}
+    >
       <PlanUpsell organization={organization} />
       <OrganizationStatusBanner organization={organization} />
       <DisputesBanner organization={organization} />
@@ -34,6 +39,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
           <AccountWidget className={cellClassName} />
         </div>
       </div>
+      <CompassBox />
     </DashboardBody>
   )
 }

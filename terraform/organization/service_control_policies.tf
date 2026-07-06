@@ -127,6 +127,38 @@ locals {
       }
     }
 
+    region_restriction = {
+      name        = "RestrictRegions"
+      description = "Deny use of AWS regions other than us-east-1 and us-east-2 in workload accounts."
+      target_ids  = [aws_organizations_organizational_unit.workloads.id]
+      content = {
+        Version = "2012-10-17"
+        Statement = [
+          {
+            Sid    = "DenyRegionsOutsideAllowedList"
+            Effect = "Deny"
+            NotAction = [
+              "budgets:*",
+              "ce:*",
+              "cloudfront:*",
+              "health:*",
+              "iam:*",
+              "organizations:*",
+              "route53:*",
+              "sts:*",
+              "support:*",
+            ]
+            Resource = "*"
+            Condition = {
+              StringNotEquals = {
+                "aws:RequestedRegion" = ["us-east-1", "us-east-2"]
+              }
+            }
+          },
+        ]
+      }
+    }
+
     require_permissions_boundary = {
       name        = "RequirePermissionsBoundary"
       description = "Require the Polar permission boundary on IAM roles and users created in workload accounts, and protect it from removal."

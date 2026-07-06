@@ -4,9 +4,25 @@ module "sandbox_s3_buckets" {
     aws = aws.us_east_2
   }
 
-  environment              = "sandbox"
-  allowed_origins          = ["https://sandbox.polar.sh"]
-  public_files_bucket_name = "polar-public-sandbox-files"
+  environment                 = "sandbox"
+  allowed_origins             = ["https://sandbox.polar.sh"]
+  public_files_bucket_name    = "polar-public-sandbox-files"
+  malware_protection_enabled  = true
+  malware_protection_role_arn = module.sandbox_malware_protection.role_arn
+}
+
+module "sandbox_malware_protection" {
+  source = "../modules/malware_protection"
+  providers = {
+    aws = aws.us_east_2
+  }
+
+  environment = "sandbox"
+  buckets = {
+    files        = module.sandbox_s3_buckets.files_bucket_id
+    public_files = module.sandbox_s3_buckets.public_files_bucket_id
+  }
+  permissions_boundary_arn = module.permission_boundary_management.policy_arn
 }
 
 module "sandbox_application_access" {

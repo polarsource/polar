@@ -31,10 +31,67 @@ variable "public_files_bucket_name" {
   default     = null
 }
 
+variable "malware_protection_enabled" {
+  description = "Enable tag-based access control for GuardDuty Malware Protection scan results on the files and public files buckets"
+  type        = bool
+  default     = false
+}
+
+variable "malware_protection_role_arn" {
+  description = "GuardDuty Malware Protection role allowed to manage the scan status tag"
+  type        = string
+  default     = null
+}
+
 locals {
   name_prefix         = (var.environment == "production" ? "polar" : "polar-${var.environment}")
   full_name_prefix    = "polar-${var.environment}"
   public_files_bucket = coalesce(var.public_files_bucket_name, "${local.name_prefix}-public-files")
+
+  malware_scan_protected_buckets = var.malware_protection_enabled ? {
+    files        = aws_s3_bucket.files.arn
+    public_files = aws_s3_bucket.public_files.arn
+  } : {}
+
+  malware_scan_tbac_statements = {
+    for key, bucket_arn in local.malware_scan_protected_buckets :
+    key => [
+      {
+        Sid       = "DenyReadThreatsFound"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${bucket_arn}/*"
+        Condition = {
+          StringEquals = {
+            "s3:ExistingObjectTag/GuardDutyMalwareScanStatus" = "THREATS_FOUND"
+          }
+          ArnNotLike = {
+            "aws:PrincipalArn" = var.malware_protection_role_arn
+          }
+        }
+      },
+      {
+        Sid       = "DenyScanStatusTagTampering"
+        Effect    = "Deny"
+        Principal = "*"
+        Action = [
+          "s3:PutObject",
+          "s3:PutObjectTagging",
+          "s3:DeleteObjectTagging",
+        ]
+        Resource = "${bucket_arn}/*"
+        Condition = {
+          "ForAnyValue:StringEquals" = {
+            "s3:RequestObjectTagKeys" = "GuardDutyMalwareScanStatus"
+          }
+          ArnNotLike = {
+            "aws:PrincipalArn" = var.malware_protection_role_arn
+          }
+        }
+      },
+    ]
+  }
 }
 
 
@@ -122,6 +179,16 @@ resource "aws_s3_bucket_cors_configuration" "files" {
   }
 }
 
+resource "aws_s3_bucket_policy" "files" {
+  count = var.malware_protection_enabled ? 1 : 0
+
+  bucket = aws_s3_bucket.files.id
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = local.malware_scan_tbac_statements["files"]
+  })
+}
+
 resource "aws_s3_bucket" "public_assets" {
   bucket = "${local.name_prefix}-public-assets"
 }
@@ -187,15 +254,18 @@ resource "aws_s3_bucket_policy" "public_files" {
   bucket = aws_s3_bucket.public_files.id
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "PublicReadGetObject"
-        Effect    = "Allow"
-        Principal = "*"
-        Action    = "s3:GetObject"
-        Resource  = "${aws_s3_bucket.public_files.arn}/*"
-      }
-    ]
+    Statement = concat(
+      [
+        {
+          Sid       = "PublicReadGetObject"
+          Effect    = "Allow"
+          Principal = "*"
+          Action    = "s3:GetObject"
+          Resource  = "${aws_s3_bucket.public_files.arn}/*"
+        }
+      ],
+      lookup(local.malware_scan_tbac_statements, "public_files", []),
+    )
   })
   depends_on = [aws_s3_bucket_public_access_block.public_files]
 }

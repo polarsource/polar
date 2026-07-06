@@ -36,6 +36,7 @@ from polar.models.organization import (
     OrganizationCustomerPortalSettings,
     OrganizationStatus,
     OrganizationSubscriptionSettings,
+    _default_customer_email_settings,
 )
 from polar.models.organization_review import OrganizationReview
 from polar.models.support_case import ReviewAppealSupportCase
@@ -320,6 +321,20 @@ class OrganizationSocialLink(Schema):
         return data
 
 
+def _merge_customer_email_settings_defaults(value: Any) -> Any:
+    """Complete stored settings with defaults so reads tolerate keys added after
+    an organization's settings were last written (lazy materialization)."""
+    if isinstance(value, dict):
+        return {**_default_customer_email_settings, **value}
+    return value
+
+
+CustomerEmailSettings = Annotated[
+    OrganizationCustomerEmailSettings,
+    BeforeValidator(_merge_customer_email_settings_defaults),
+]
+
+
 class OrganizationBase(IDSchema, TimestampedSchema):
     name: str = Field(
         description="Organization name shown in checkout, customer portal, emails etc.",
@@ -407,7 +422,7 @@ class OrganizationPublicBase(OrganizationBase):
 
     feature_settings: SkipJsonSchema[OrganizationFeatureSettings | None]
     subscription_settings: SkipJsonSchema[OrganizationSubscriptionSettings]
-    customer_email_settings: SkipJsonSchema[OrganizationCustomerEmailSettings]
+    customer_email_settings: SkipJsonSchema[CustomerEmailSettings]
 
 
 class Organization(OrganizationBase):
@@ -442,7 +457,7 @@ class Organization(OrganizationBase):
     subscription_settings: OrganizationSubscriptionSettings = Field(
         description="Settings related to subscriptions management",
     )
-    customer_email_settings: OrganizationCustomerEmailSettings = Field(
+    customer_email_settings: CustomerEmailSettings = Field(
         description="Settings related to customer emails",
     )
     customer_portal_settings: OrganizationCustomerPortalSettings = Field(

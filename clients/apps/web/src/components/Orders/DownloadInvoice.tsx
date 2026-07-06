@@ -31,14 +31,46 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import EventEmitter from 'eventemitter3'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import type EventEmitter from 'eventemitter3'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { useCustomerPortalContext } from '../CustomerPortal/CustomerPortalProvider'
 
 type Variant = NonNullable<Parameters<typeof buttonVariants>[0]>['variant']
 type Size = NonNullable<Parameters<typeof buttonVariants>[0]>['size']
+
+const INVOICE_GENERATED_EVENT = 'order.invoice_generated'
+const INVOICE_GENERATION_TIMEOUT_MS = 30_000
+
+const openInNewTab = (url: string) => {
+  const newWindow = window.open(url, '_blank')
+  if (!newWindow) {
+    window.location.href = url
+  }
+}
+
+const waitForInvoice = (
+  eventEmitter: EventEmitter,
+  orderId: string,
+  timeoutMs: number,
+) =>
+  new Promise<boolean>((resolve) => {
+    const listener = ({ order_id }: { order_id: string }) => {
+      if (order_id !== orderId) return
+      cleanup()
+      resolve(true)
+    }
+    const timer = setTimeout(() => {
+      cleanup()
+      resolve(false)
+    }, timeoutMs)
+    const cleanup = () => {
+      clearTimeout(timer)
+      eventEmitter.off(INVOICE_GENERATED_EVENT, listener)
+    }
+    eventEmitter.on(INVOICE_GENERATED_EVENT, listener)
+  })
 
 const DownloadInvoice = ({
   order,
@@ -66,6 +98,7 @@ const DownloadInvoice = ({
   dropdown?: boolean
 }) => {
   const [loading, setLoading] = useState(false)
+  const inFlightRef = useRef(false)
   const { isShown, hide, show } = useModal()
   const form = useForm<schemas['OrderUpdate'] | schemas['CustomerOrderUpdate']>(
     {
@@ -82,85 +115,131 @@ const DownloadInvoice = ({
     handleSubmit,
     watch,
     setError,
-    formState: { errors },
+    clearErrors,
+    formState: { errors, isDirty },
   } = form
-  // eslint-disable-next-line react-hooks/incompatible-library
   const country = watch('billing_address.country')
 
-  const downloadInvoice = useCallback(async () => {
-    setLoading(true)
+  const fetchInvoiceUrl = useCallback(async (): Promise<string | null> => {
     const response = await api.GET(invoiceURL, {
       params: { path: { id: order.id } },
     })
-    if (response.error) {
-      setLoading(false)
-      return
-    }
-    const newWindow = window.open(response.data.url, '_blank')
-
-    if (!newWindow) {
-      window.location.href = response.data.url
-    }
-
-    setLoading(false)
-    hide()
-  }, [order, api, hide, invoiceURL])
+    return response.data?.url ?? null
+  }, [api, order.id, invoiceURL])
 
   const onDownload = useCallback(async () => {
     if (!order.is_invoice_generated) {
       show()
       return
     }
-
-    await downloadInvoice()
-  }, [order, show, downloadInvoice])
+    if (inFlightRef.current) return
+    inFlightRef.current = true
+    setLoading(true)
+    try {
+      const url = await fetchInvoiceUrl()
+      if (url) {
+        openInNewTab(url)
+      }
+    } finally {
+      setLoading(false)
+      inFlightRef.current = false
+    }
+  }, [order.is_invoice_generated, show, fetchInvoiceUrl])
 
   const onModalSubmit = useCallback(
     async (data: schemas['OrderUpdate']) => {
+      if (inFlightRef.current) return
+      inFlightRef.current = true
       setLoading(true)
-      const { error } = await api.PATCH(orderURL, {
-        params: { path: { id: order.id } },
-        body: data,
-      })
-
-      if (error) {
-        if (isValidationError(error.detail)) {
-          setValidationErrors(error.detail, setError)
-        } else {
-          setError('root', { message: error.detail })
+      clearErrors('root')
+      try {
+        const { error } = await api.PATCH(orderURL, {
+          params: { path: { id: order.id } },
+          body: data,
+        })
+        if (error) {
+          if (isValidationError(error.detail)) {
+            setValidationErrors(error.detail, setError)
+          } else {
+            setError('root', { message: error.detail })
+          }
+          return
         }
-        setLoading(false)
-        return
-      }
 
-      const { error: generateError } = await api.POST(invoiceURL, {
-        params: { path: { id: order.id } },
-      })
-      if (generateError) {
-        if (isValidationError(generateError.detail)) {
-          setValidationErrors(generateError.detail, setError)
-        } else {
-          setError('root', { message: generateError.detail })
+        const { error: generateError } = await api.POST(invoiceURL, {
+          params: { path: { id: order.id } },
+        })
+        if (generateError) {
+          if (isValidationError(generateError.detail)) {
+            setValidationErrors(generateError.detail, setError)
+          } else {
+            setError('root', { message: generateError.detail })
+          }
+          return
         }
+
+        // The backend only regenerates (and emits an event) when the invoice
+        // doesn't exist yet or a billing field changed; an unchanged re-submit
+        // is a no-op with no event, so only wait when we expect one.
+        const expectGeneration = !order.is_invoice_generated || isDirty
+        if (expectGeneration) {
+          const arrived = await waitForInvoice(
+            eventEmitter,
+            order.id,
+            INVOICE_GENERATION_TIMEOUT_MS,
+          )
+          if (!arrived) {
+            setError('root', {
+              message:
+                'Invoice generation is taking longer than expected. Please try again.',
+            })
+            return
+          }
+        }
+
+        const url = await fetchInvoiceUrl()
+        if (url) {
+          openInNewTab(url)
+          hide()
+        } else {
+          setError('root', {
+            message: 'Failed to download the invoice. Please try again.',
+          })
+        }
+      } finally {
         setLoading(false)
-        return
+        inFlightRef.current = false
       }
     },
-    [order, api, setError, orderURL, invoiceURL],
+    [
+      order.id,
+      order.is_invoice_generated,
+      isDirty,
+      api,
+      setError,
+      clearErrors,
+      orderURL,
+      invoiceURL,
+      eventEmitter,
+      fetchInvoiceUrl,
+      hide,
+    ],
   )
 
+  // Keep the parent's order in sync whenever an invoice finishes generating,
+  // even if it completes after our submit-scoped wait timed out or was
+  // triggered elsewhere. Refetch only — the download stays user-initiated.
   useEffect(() => {
     const callback = ({ order_id }: { order_id: string }) => {
       if (order_id === order.id) {
         onInvoiceGenerated()
-        downloadInvoice()
       }
     }
-    eventEmitter.on('order.invoice_generated', callback)
+    eventEmitter.on(INVOICE_GENERATED_EVENT, callback)
     return () => {
-      eventEmitter.off('order.invoice_generated', callback)
+      eventEmitter.off(INVOICE_GENERATED_EVENT, callback)
     }
-  }, [eventEmitter, order.id, onInvoiceGenerated, downloadInvoice])
+  }, [eventEmitter, order.id, onInvoiceGenerated])
 
   const action = useMemo(
     () =>

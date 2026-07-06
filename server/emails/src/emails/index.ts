@@ -27,7 +27,9 @@ import { SubscriptionCycled } from './subscription_cycled'
 import { SubscriptionCycledAfterTrial } from './subscription_cycled_after_trial'
 import { SubscriptionFinalInvoice } from './subscription_final_invoice'
 import { SubscriptionPastDue } from './subscription_past_due'
+import { SubscriptionPaused } from './subscription_paused'
 import { SubscriptionRenewalReminder } from './subscription_renewal_reminder'
+import { SubscriptionResumed } from './subscription_resumed'
 import { SubscriptionRevoked } from './subscription_revoked'
 import { SubscriptionTrialConversionReminder } from './subscription_trial_conversion_reminder'
 import { SubscriptionUncanceled } from './subscription_uncanceled'
@@ -55,6 +57,8 @@ const TEMPLATES: Record<string, React.FC<never>> = {
   subscription_cycled_after_trial: SubscriptionCycledAfterTrial,
   subscription_final_invoice: SubscriptionFinalInvoice,
   subscription_past_due: SubscriptionPastDue,
+  subscription_paused: SubscriptionPaused,
+  subscription_resumed: SubscriptionResumed,
   subscription_renewal_reminder: SubscriptionRenewalReminder,
   subscription_revoked: SubscriptionRevoked,
   subscription_trial_conversion_reminder: SubscriptionTrialConversionReminder,

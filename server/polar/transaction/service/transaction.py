@@ -181,7 +181,12 @@ class TransactionService(BaseTransactionService):
                     func.coalesce(
                         func.sum(Transaction.amount).filter(
                             or_(
-                                Transaction.type == TransactionType.payout,
+                                Transaction.type.in_(
+                                    (
+                                        TransactionType.payout,
+                                        TransactionType.payout_reversal,
+                                    )
+                                ),
                                 Transaction.platform_fee_type.in_(
                                     PlatformFeeType.payout_fee_types()
                                 ),
@@ -198,7 +203,12 @@ class TransactionService(BaseTransactionService):
                     func.coalesce(
                         func.sum(Transaction.account_amount).filter(
                             or_(
-                                Transaction.type == TransactionType.payout,
+                                Transaction.type.in_(
+                                    (
+                                        TransactionType.payout,
+                                        TransactionType.payout_reversal,
+                                    )
+                                ),
                                 Transaction.platform_fee_type.in_(
                                     PlatformFeeType.payout_fee_types()
                                 ),

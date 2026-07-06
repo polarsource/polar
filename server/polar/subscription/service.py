@@ -857,49 +857,7 @@ class SubscriptionService:
                 ):
                     subscription.discount = None
 
-            event = event = await event_service.create_event(
-                session,
-                build_system_event(
-                    SystemEvent.subscription_cycled,
-                    customer=subscription.customer,
-                    organization=subscription.organization,
-                    metadata=SubscriptionCycledMetadata(
-                        subscription_id=str(subscription.id),
-                        product_id=str(subscription.product_id),
-                        amount=subscription.amount,
-                        currency=subscription.currency,
-                        recurring_interval=subscription.recurring_interval.value,
-                        recurring_interval_count=subscription.recurring_interval_count,
-                    ),
-                ),
-            )
-            # Add a billing entry for a new period
-            billing_entry_repository = BillingEntryRepository.from_session(session)
-            for subscription_product_price in subscription.subscription_product_prices:
-                product_price = subscription_product_price.product_price
-                if is_static_price(product_price):
-                    discount_amount = 0
-                    if subscription.discount:
-                        discount_amount = subscription.discount.get_discount_amount(
-                            subscription_product_price.amount, subscription.currency
-                        )
-
-                    await billing_entry_repository.create(
-                        BillingEntry(
-                            start_timestamp=subscription.current_period_start,
-                            end_timestamp=subscription.current_period_end,
-                            type=BillingEntryType.cycle,
-                            direction=BillingEntryDirection.debit,
-                            amount=subscription_product_price.amount,
-                            currency=subscription.currency,
-                            customer=subscription.customer,
-                            product_price=product_price,
-                            discount=subscription.discount,
-                            discount_amount=discount_amount,
-                            subscription=subscription,
-                            event=event,
-                        ),
-                    )
+            await self._create_cycle_billing_entries(session, subscription)
 
         if previous_status == SubscriptionStatus.trialing:
             subscription.status = SubscriptionStatus.active
@@ -930,6 +888,53 @@ class SubscriptionService:
         )
 
         return subscription
+
+    async def _create_cycle_billing_entries(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        event = await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_cycled,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata=SubscriptionCycledMetadata(
+                    subscription_id=str(subscription.id),
+                    product_id=str(subscription.product_id),
+                    amount=subscription.amount,
+                    currency=subscription.currency,
+                    recurring_interval=subscription.recurring_interval.value,
+                    recurring_interval_count=subscription.recurring_interval_count,
+                ),
+            ),
+        )
+        # Add a billing entry for a new period
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        for subscription_product_price in subscription.subscription_product_prices:
+            product_price = subscription_product_price.product_price
+            if is_static_price(product_price):
+                discount_amount = 0
+                if subscription.discount:
+                    discount_amount = subscription.discount.get_discount_amount(
+                        subscription_product_price.amount, subscription.currency
+                    )
+
+                await billing_entry_repository.create(
+                    BillingEntry(
+                        start_timestamp=subscription.current_period_start,
+                        end_timestamp=subscription.current_period_end,
+                        type=BillingEntryType.cycle,
+                        direction=BillingEntryDirection.debit,
+                        amount=subscription_product_price.amount,
+                        currency=subscription.currency,
+                        customer=subscription.customer,
+                        product_price=product_price,
+                        discount=subscription.discount,
+                        discount_amount=discount_amount,
+                        subscription=subscription,
+                        event=event,
+                    ),
+                )
 
     async def reset_meters(
         self, session: AsyncSession, subscription: Subscription

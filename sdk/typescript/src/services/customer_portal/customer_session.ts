@@ -9,6 +9,7 @@ export const introspectCustomerSession = (client: ClientBase) => {
    *
    * @returns {CustomerCustomerSession}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    */
   return async (): Promise<CustomerCustomerSession> => {
@@ -33,6 +34,7 @@ export const getAuthenticatedUserCustomerSession = (client: ClientBase) => {
    *
    * @returns {PortalAuthenticatedUser}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    */
   return async (): Promise<PortalAuthenticatedUser> => {

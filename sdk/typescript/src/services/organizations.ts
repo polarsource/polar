@@ -20,6 +20,7 @@ export const listOrganizations = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceOrganization}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -57,6 +58,7 @@ export const listOrganizations = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<Organization>} A generator that yields items of type Organization.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
@@ -93,6 +95,7 @@ export const createOrganizations = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Organization}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {CannotCreateOrganizationError} Forbidden
    * @throws {HTTPValidationError} Validation Error
@@ -123,6 +126,7 @@ export const getOrganizations = (client: ClientBase) => {
    * @param id
    * @returns {Organization}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Organization not found.
    * @throws {HTTPValidationError} Validation Error
@@ -156,6 +160,7 @@ export const updateOrganizations = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Organization}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} You don't have the permission to update this organization.
    * @throws {ResourceNotFound} Organization not found.

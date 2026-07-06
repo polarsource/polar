@@ -37,6 +37,7 @@ export const listSeatsCustomerSeats = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {SeatsList}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ListSeats401Error} Authentication required
    * @throws {ListSeats403Error} Not permitted or seat-based pricing not enabled
@@ -75,6 +76,7 @@ export const assignSeatCustomerSeats = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomerSeat}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {AssignSeat400Error} No available seats or customer already has a seat
    * @throws {AssignSeat401Error} Authentication required
@@ -109,6 +111,7 @@ export const revokeSeatCustomerSeats = (client: ClientBase) => {
    * @param seat_id
    * @returns {CustomerSeat}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {RevokeSeat401Error} Authentication required
    * @throws {RevokeSeat403Error} Not permitted or seat-based pricing not enabled
@@ -143,6 +146,7 @@ export const resendInvitationCustomerSeats = (client: ClientBase) => {
    * @param seat_id
    * @returns {CustomerSeat}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResendInvitation400Error} Seat is not pending or already claimed
    * @throws {ResendInvitation401Error} Authentication required
@@ -178,6 +182,7 @@ export const getClaimInfoCustomerSeats = (client: ClientBase) => {
    * @param invitation_token
    * @returns {SeatClaimInfo}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {GetClaimInfo400Error} Invalid or expired invitation token
    * @throws {GetClaimInfo403Error} Seat-based pricing not enabled for organization
@@ -211,6 +216,7 @@ export const claimSeatCustomerSeats = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomerSeatClaimResponse}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ClaimSeat400Error} Invalid, expired, or already claimed token
    * @throws {ClaimSeat403Error} Seat-based pricing not enabled for organization

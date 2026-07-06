@@ -14,6 +14,7 @@ export const listRefunds = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceRefund}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -57,6 +58,7 @@ export const listRefunds = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<Refund>} A generator that yields items of type Refund.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
@@ -99,6 +101,7 @@ export const createRefunds = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Refund}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {RefundedAlready} Order is already fully refunded.
    * @throws {HTTPValidationError} Validation Error

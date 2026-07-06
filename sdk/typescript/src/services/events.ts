@@ -21,6 +21,7 @@ export const listEvents = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceEvent | ListResourceWithCursorPaginationEvent}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -81,6 +82,7 @@ export const listNamesEvents = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceEventName}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -126,6 +128,7 @@ export const listNamesEvents = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<EventName>} A generator that yields items of type EventName.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
@@ -166,6 +169,7 @@ export const getEvents = (client: ClientBase) => {
    * @param id - The event ID.
    * @returns {Event}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Event not found.
    * @throws {HTTPValidationError} Validation Error
@@ -198,6 +202,7 @@ export const ingestEvents = (client: ClientBase) => {
    * @param body - Request body
    * @returns {EventsIngestResponse}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */

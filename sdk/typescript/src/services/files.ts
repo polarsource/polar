@@ -13,6 +13,7 @@ export const listFiles = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceFileRead}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -44,6 +45,7 @@ export const listFiles = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<FileRead>} A generator that yields items of type FileRead.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
@@ -80,6 +82,7 @@ export const createFiles = (client: ClientBase) => {
    * @param body - Request body
    * @returns {FileUpload}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -103,6 +106,7 @@ export const uploadedFiles = (client: ClientBase) => {
    * @param body - Request body
    * @returns {FileRead}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} You don't have the permission to update this file.
    * @throws {ResourceNotFound} File not found.
@@ -137,6 +141,7 @@ export const deleteFiles = (client: ClientBase) => {
    * @param id
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} You don't have the permission to delete this file.
    * @throws {ResourceNotFound} File not found.
@@ -172,6 +177,7 @@ export const updateFiles = (client: ClientBase) => {
    * @param body - Request body
    * @returns {FileRead}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} You don't have the permission to update this file.
    * @throws {ResourceNotFound} File not found.

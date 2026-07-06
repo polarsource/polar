@@ -10,6 +10,7 @@ export const listDownloadables = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceDownloadableRead}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -43,6 +44,7 @@ export const listDownloadables = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<DownloadableRead>} A generator that yields items of type DownloadableRead.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */

@@ -16,6 +16,7 @@ export const getMetrics = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {MetricsResponse}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -58,6 +59,7 @@ export const exportMetrics = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {string}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -105,6 +107,7 @@ export const limitsMetrics = (client: ClientBase) => {
    *
    * @returns {MetricsLimits}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    */
   return async (): Promise<MetricsLimits> => {
@@ -130,6 +133,7 @@ export const listDashboardsMetrics = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {MetricDashboardSchema[]}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -162,6 +166,7 @@ export const createDashboardMetrics = (client: ClientBase) => {
    * @param body - Request body
    * @returns {MetricDashboardSchema}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -190,6 +195,7 @@ export const getDashboardMetrics = (client: ClientBase) => {
    * @param id - The metric dashboard ID.
    * @returns {MetricDashboardSchema}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -220,6 +226,7 @@ export const deleteDashboardMetrics = (client: ClientBase) => {
    * @param id - The metric dashboard ID.
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -251,6 +258,7 @@ export const updateDashboardMetrics = (client: ClientBase) => {
    * @param body - Request body
    * @returns {MetricDashboardSchema}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */

@@ -168,6 +168,7 @@ Raises:
     {{ error.name }}: {{ error.description }}
 {% endfor %}
     PolarNetworkError: Raised when a network error occurs while making the request.
+    PolarRateLimitError: Raised when the rate limit is exceeded.
     PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -303,6 +304,7 @@ Raises:
     {{ error.name }}: {{ error.description }}
 {% endfor %}
     PolarNetworkError: Raised when a network error occurs while making the request.
+    PolarRateLimitError: Raised when the rate limit is exceeded.
     PolarServerError: Raised when the server returns a 5xx error response.
         """
         while True:
@@ -447,6 +449,7 @@ Raises:
     {{ error.name }}: {{ error.description }}
 {% endfor %}
     PolarNetworkError: Raised when a network error occurs while making the request.
+    PolarRateLimitError: Raised when the rate limit is exceeded.
     PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -579,6 +582,7 @@ Raises:
     {{ error.name }}: {{ error.description }}
 {% endfor %}
     PolarNetworkError: Raised when a network error occurs while making the request.
+    PolarRateLimitError: Raised when the rate limit is exceeded.
     PolarServerError: Raised when the server returns a 5xx error response.
         """
         while True:

@@ -41,6 +41,7 @@ export const {{ method.name | camel }}{{ service.name }} = (
 * @returns {void}
 {% endif %}
 * @throws {{'{'}}PolarNetworkError{{'}'}} When a network error occurs
+* @throws {{'{'}}PolarRateLimitError{{'}'}} When the rate limit is exceeded
 * @throws {{'{'}}PolarServerError{{'}'}} When the server returns a 5xx error
 {% for error in method.errors %}
 * @throws {{'{'}}{{ error.name }}{{'}'}} {{ error.description or 'Error with status code ' + error.status_code }}
@@ -102,6 +103,7 @@ export const {{ method.name | camel }}{{ service.name }} = (
 {% endif %}
 * @returns {AsyncGenerator<{{ method.pagination.item_schema | ts_type }}>} A generator that yields items of type {{ method.pagination.item_schema | ts_type }}.
 * @throws {{'{'}}PolarNetworkError{{'}'}} When a network error occurs
+* @throws {{'{'}}PolarRateLimitError{{'}'}} When the rate limit is exceeded
 * @throws {{'{'}}PolarServerError{{'}'}} When the server returns a 5xx error
 {% for error in method.errors %}
 * @throws {{'{'}}{{ error.name }}{{'}'}} {{ error.description or 'Error with status code ' + error.status_code }}

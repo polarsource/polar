@@ -11,6 +11,7 @@ export const listWallets = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceCustomerWallet}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -44,6 +45,7 @@ export const listWallets = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<CustomerWallet>} A generator that yields items of type CustomerWallet.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
@@ -77,6 +79,7 @@ export const getWallets = (client: ClientBase) => {
    * @param id - The wallet ID.
    * @returns {CustomerWallet}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Wallet not found.
    * @throws {HTTPValidationError} Validation Error

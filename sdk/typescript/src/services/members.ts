@@ -13,6 +13,7 @@ export const listMembersMembers = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceMember}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -48,6 +49,7 @@ export const listMembersMembers = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<Member>} A generator that yields items of type Member.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */

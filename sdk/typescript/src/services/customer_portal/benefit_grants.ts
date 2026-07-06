@@ -14,6 +14,7 @@ export const listBenefitGrants = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceCustomerBenefitGrant}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -63,6 +64,7 @@ export const listBenefitGrants = (client: ClientBase) => {
  * @param query - Query parameters
  * @returns {AsyncGenerator<CustomerBenefitGrant>} A generator that yields items of type CustomerBenefitGrant.
  * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
@@ -105,6 +107,7 @@ export const getBenefitGrants = (client: ClientBase) => {
    * @param id - The benefit grant ID.
    * @returns {CustomerBenefitGrant}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Benefit grant not found.
    * @throws {HTTPValidationError} Validation Error
@@ -138,6 +141,7 @@ export const updateBenefitGrants = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomerBenefitGrant}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} The benefit grant is revoked and cannot be updated.
    * @throws {ResourceNotFound} Benefit grant not found.

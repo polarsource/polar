@@ -35,6 +35,14 @@ class PolarClientError(PolarError):
         super().__init__(f"Polar API returned an error: {status_code} - {error}")
 
 
+class PolarRateLimitError(PolarClientError):
+    error_type = None
+
+    def __init__(self, status_code: typing.Literal[429], retry_after: int | None = None):
+        super().__init__(status_code, "Rate limit exceeded")
+        self.retry_after = retry_after
+
+
 class BuildRequestMixin:
     def build_request(
         self: "SyncClientBase | AsyncClientBase",
@@ -150,6 +158,11 @@ def _handle_errors(
         raise PolarServerError(status_code, response.text)
 
     if response.is_client_error:
+        if status_code == 429:
+            retry_after = response.headers.get("Retry-After")
+            raise PolarRateLimitError(
+                429, int(retry_after) if retry_after is not None else None
+            )
         try:
             error_class = (errors or {})[status_code]
             match error_class.error_type:

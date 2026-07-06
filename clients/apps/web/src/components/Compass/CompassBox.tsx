@@ -77,7 +77,7 @@ export const CompassBox = ({
           paddingBottom="xl"
         >
           {/* Gradient fade — content scrolls under it toward the bottom. */}
-          <div className="dark:from-polar-900 dark:via-polar-900/90 pointer-events-none absolute inset-x-0 bottom-0 h-80 bg-gradient-to-t from-white via-white/90 to-transparent" />
+          <div className="dark:from-polar-900 dark:via-polar-900/90 pointer-events-none absolute inset-x-0 bottom-0 h-52 bg-gradient-to-t from-white via-white/90 to-transparent" />
 
           <Box
             position="absolute"

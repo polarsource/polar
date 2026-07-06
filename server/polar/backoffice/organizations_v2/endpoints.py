@@ -4091,7 +4091,9 @@ async def delete_payout_account(
 ) -> HXRedirectResponse | None:
     """Show modal to confirm and process payout account deletion."""
     repository = OrganizationRepository(session)
-    organization = await repository.get_by_id_with_payout_account(organization_id)
+    organization = await repository.get_by_id_with_payout_account(
+        organization_id, include_deleted=True
+    )
 
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
